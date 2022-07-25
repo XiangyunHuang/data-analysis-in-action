@@ -1,0 +1,2 @@
+html:
+	quarto render

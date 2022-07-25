@@ -1,0 +1,280 @@
+# 数据可视化 {#data-visualization}
+
+```{r}
+#| echo: false
+
+knitr::knit_hooks$set(par = function(before, options, envir) {
+  if (before && options$fig.show != "none") {
+    par(
+      mar = c(4, 4, .1, .1)
+    )
+  }
+})
+```
+
+
+## ggplot2 介绍 {#introduction-to-ggplot2}
+
+
+### ggplot2 概览 {#ggplot2-overview}
+
+
+ggplot2 [@Hadley2016] 是一个 R 语言扩展包，专用于绘制各种各样的统计图形，是数据探索和可视化的利器。
+2007 年 6 月 1 日 ggplot2 在 CRAN 上发布第一个正式版本 0.5，截止写作时间，ggplot2 已经持续迭代 10 多年了，发布了 40 多个版本，形成了一个非常庞大的生态，直接依赖 ggplot2 的 R 包接近 3000 个。从如下三个地方，可以窥见 ggplot2 生态的一角，感受其魅力。
+
+- Daniel Emaasit 收集了 110 多个 ggplot2 衍生包，维护了一个 网站(<https://exts.ggplot2.tidyverse.org/gallery/>)，统一组织、展示这些 R 包。本文会精心挑选一些高质量的 R 包予以介绍。
+
+- Tom Mock 发起的 tidytuesday 项目 (<https://github.com/rfordatascience/tidytuesday>) 吸引了数以千计的数据科学爱好者参与数据分析、探索和可视化项目，涌现了一批批优秀的基于 ggplot2 的可视化作品，极大地提升了 ggplot2 生态的影响力。本文也会基于真实的数据介绍每一个统计图形。
+
+- Yan Holtz 整理了数以百计的统计图形，分门别类地在网站 (<https://r-graph-gallery.com/>)上展示，方便读者预览效果、选择合适的图形。也是受该网站启发，本文在介绍完 ggplot2 绘图的基础要素后，从统计图形的作用出发，按照趋势、关系、占比、对比、分布和不确定性等六大方面予以介绍。
+
+
+### ggplot2 v.s. Base R {#ggplot2-vs-others}
+
+世事无绝对，尽管 ggplot2 非常流行，但并不意味着它比前辈们如 Base R 或 lattice [@Deepayan2008] 更加优秀，它们只是各领风骚。知晓各自的优缺点，更加有助于你选择合适的工具应用到合适的场景中。
+
+
+这里以 Base R 内置的地震数据集 quakes 为例，如 @fig-quakes 所示，展示太平洋岛国斐济及其周边的地震分布，左图是一行 ggplot2 绘图代码生成的图形，如果你的目的是看看数据情况，那到此结束。甚至还可以更快、更简单点，直接调用 Base R 的函数 `plot()`。如果你想要右图那样的出版级质量的图形，那才刚刚开始，前后两种作图方式分别应用于探索数据和解释数据。
+
+```{r}
+#| eval: false
+#| echo: true
+#| label: quakes-quick
+
+# ggplot2 绘图
+ggplot(data = quakes, aes(x = long, y = lat)) + geom_point()
+# Base R 绘图
+plot(data = quakes, lat ~ long)
+```
+
+
+
+
+```{r}
+#| label: fig-quakes
+#| echo: false
+#| fig.cap: "太平洋岛国斐济及其周边的地震分布"
+#| message: false
+#| fig.width: 8
+#| fig.height: 4.5
+
+library(ggplot2)
+p1 <- ggplot(data = quakes, aes(x = long, y = lat)) +
+  geom_point()
+
+library(sf)
+quakes_sf <- st_as_sf(quakes, coords = c("long", "lat"), crs = st_crs(4326))
+library(rnaturalearth)
+library(rnaturalearthdata)
+# 需要 rnaturalearthdata 包
+fiji_medium <- ne_countries(country = "fiji", scale = "medium", returnclass = "sf")
+nz_medium <- ne_countries(country = "New Zealand", scale = "medium", returnclass = "sf")
+
+p2 <- ggplot() +
+  geom_sf(data = fiji_medium, fill = "gray") +
+  geom_sf(data = nz_medium, fill = "gray") +
+  geom_sf(
+    data = quakes_sf, aes(color = cut(mag, 8)),  size = 0.3
+  ) +
+  scale_color_viridis_d(option = "C") +
+  coord_sf(crs = 3460, xlim = c(569061, 3008322), ylim = c(1603260, 4665206)) +
+  theme_minimal() +
+  labs(x = "Longitude", y = "Latitude", color = "Magnitude")
+
+library(patchwork)
+p1 + p2
+```
+
+
+
+所以，若以出版级的要求， ggplot2 绘图并不简单，那比 Base R 又如何呢？以 Base R 内置的 pressure 数据集为例，展示汞蒸气的压力随温度的变化趋势， 如 @fig-pressure 所示，左子图用区区 3 行 Base R 代码就搞定了，而右子图用 15 行 ggplot2 代码才勉强达到相似的效果。类似的情况绝不仅限于描述趋势的点线图，归根结底，是刻画图形细节的要素都差不多，只是表达方式不同罢了。比如示例(<https://stackoverflow.com/questions/27934840/>)用 Base R 复现一张直方图，示例(<https://stackoverflow.com/questions/3932038/>)给 Base R 图形添加图例，网站(<http://motioninsocial.com/tufte/>)更是用 Base R、ggplot2 和 lattice 分别绘制了 9 种常见统计图形。
+
+
+```{r}
+#| label: fig-pressure
+#| fig.cap: "汞蒸气的压力随温度的指数级变化"
+#| fig.subcap: 
+#|  - Base R 图形
+#|  - ggplot2 图形
+#| out.width: '50%'
+#| fig.width: 4.5
+#| fig.height: 3.5
+#| fig.showtext: true
+#| fig.ncol: 2
+#| par: true
+#| echo: false
+
+# Base R 图形
+plot(pressure, type = "b", pch = 19, ann = FALSE)
+title(xlab = "温度", ylab = "压力")
+# ggplot2 图形
+library(ggplot2)
+ggplot(data = pressure, aes(x = temperature, y = pressure)) +
+  geom_line() +
+  geom_point(size = 2) +
+  labs(x = "温度", y = "压力") +
+  scale_x_continuous(breaks = seq(0, 400, by = 50)) +
+  theme_bw(base_size = 13) +
+  theme(
+    axis.title = element_text(),
+    axis.title.x = element_text(
+      margin = margin(b = 0, l = 0, t = 20, r = 0)
+    ),
+    axis.title.y = element_text(
+      margin = margin(b = 0, l = 0, t = 0, r = 20)
+    ),
+    panel.border = element_rect(color = "black"),
+    panel.grid = element_blank(),
+    axis.ticks.length = unit(0.25, "cm"),
+    axis.text.x = element_text(
+      color = "black",
+      vjust = -1.5, size = rel(1.25)
+    ),
+    axis.text.y = element_text(
+      color = "black",
+      angle = 90, vjust = 1.5, hjust = 0.5,
+      size = rel(1.25)
+    )
+  )
+```
+
+
+
+### Why ggplot2 {#why-ggplot2}
+
+
+既然这样，为什么我仍然选择介绍 ggplot2 呢？对新手来说比较友好，有一套紧凑、一致的语法，掌握规律后，学习曲线比较低，可以非常高效地绘制中等质量的图形。此外，衍生包 gganimate [@gganimate2020] 可以与 ggplot2 如丝般顺滑衔接，以成本极低的方式绘制动态图形，而且，ggplot2 的绘图语法已经出圈到交互式可视化领域，举例来说，R包 plotly [@Carson2020] 和 leaflet [@leaflet2022] 等都提供一套相似度极高的管道语法，学习成本进一步摊薄了。总而言之，软件成熟，生态庞大，社区活跃。
+
+
+### Beyond ggplot2 {#beyond-ggplot2}
+
+就展示数据而言，本文将介绍数以十计的图形，如此丰富，就单一目的而言，也有多种可选的图形。可见，仅仅掌握 ggplot2 这套工具是远远不够的，还需要了解数据背景，探索分析数据，获得数据洞见，只有结合这些，才知道选择最合适的图形，进而传递关键的信息，数据也才能释放出应有的价值。
+
+举例来说，
+
+
+误差柱形图，提琴图
+
+```{r}
+#| eval: false
+
+library(data.table)
+ToothGrowth <- as.data.table(ToothGrowth)
+
+ToothGrowth[, .(mean_len = mean(len), sd_len = sd(len)), by = .(supp, dose)] |>
+  ggplot(aes(dose, mean_len, fill = supp)) +
+  geom_col(position = position_dodge(0.2), width = 0.2) +
+  geom_errorbar(aes(ymin = mean_len - sd_len, ymax = mean_len + sd_len),
+    position = position_dodge(0.2), width = 0.1
+  ) +
+  theme_minimal()
+```
+
+
+## 图形基础 {#foundations-of-ggplot2}
+
+本节不会基于真实数据，而是在模拟数据的基础上，着重介绍一些绘图的基础要素，理解这些将帮助我们绘制和加工各种各样的统计图形。
+
+
+
+
+### 图层 {#layer}
+
+ggplot2 目前有 53 个几何图层，33 个统计图层
+
+```{r}
+# 几何图层
+ls("package:ggplot2", pattern = "^geom_")
+# 统计图层
+ls("package:ggplot2", pattern = "^stat_")
+```
+
+
+### 图例 {#legend}
+
+多个图例
+[ggh4x](https://github.com/teunbrand/ggh4x)
+
+
+### 刻度 {#scale}
+
+几何元素的透明度 alpha、颜色 color、填充色 fill、线类型 linetype、几何元素的形状 shape 及大小 size，坐标轴 x/y 的变换
+
+```{r}
+ls("package:ggplot2", pattern = "^scale_")
+```
+
+
+
+### 文本 {#text}
+
+文本用于注释，注释不一定是文本，还可以是图像
+
+
+[geomtextpath](https://github.com/AllanCameron/geomtextpath) 新添几何图层：文本路径。文本随路径变化。
+
+[ggimage](https://github.com/GuangchuangYu/ggimage) 可以在 ggplot2 中愉快地使用图片，以图片代替散点，图片还可以是表情包，示例见[文章](https://cosx.org/2017/03/ggimage)。
+
+[ggrepel](https://github.com/slowkow/ggrepel)
+
+[ggtext](https://github.com/wilkelab/ggtext)
+
+
+### 字体 {#font}
+
+字体 [showtext](https://github.com/yixuan/showtext) 支持调用各种各样的字体，特别是好玩的字体配合好玩的图形，可以玩出很多花样，示例见[文章](https://cosx.org/2014/01/showtext-interesting-fonts-and-graphs)
+
+[ragg](https://github.com/r-lib/ragg)
+
+
+
+
+### 配色 {#color}
+
+
+
+[R 语言颜色](https://pkg.garrickadenbuie.com/r-colors-css/)
+
+[ggplot2 主题设置，绘图方法](https://github.com/z3tt/beyond-bar-and-box-plots) 介绍颜色、字体、布局、样式，写一个主题函数
+
+
+### 主题 {#theme}
+
+
+[ggsci](https://github.com/nanxstats/ggsci) 和 [ggthemr](https://github.com/Mikata-Project/ggthemr) 是比较早的 ggplot2 主题包，依赖也不多。
+
+[ggthemeassist](https://github.com/calligross/ggthemeassist) 包提供 RStudio IDE 插件，帮助用户以鼠标点击的交互方式设置 ggplot2 图形的主题样式 [@ggThemeAssist2016]
+
+[basetheme](https://github.com/karoliskoncevicius/basetheme) 包设置 Base R 图形的主题风格。
+
+针对分类离散型数据可视化，[pilot](https://github.com/olihawkins/pilot) 包 [@pilot2022] 提供一套简洁的 ggplot2 主题 
+
+
+
+```{r}
+#| label: fig-theme-pilot
+#| fig.cap: "使用 pilot 包对分类数据的设置主题风格"
+#| dev: "ragg_png"
+
+library(ggplot2)
+library(pilot)
+
+ggplot(data = mpg, aes(x = displ, y = hwy, color = class)) +
+  geom_point() +
+  labs(
+    title = "Cars with smaller engines are more efficient",
+    subtitle = "Engine size by fuel efficiency and class",
+    x = "Engine size in litres",
+    y = "Miles per gallon",
+    color = "Class",
+    caption = "Source: dataset mpg is from ggplot2"
+  ) +
+  theme_pilot() +
+  scale_color_pilot()
+```
+
+
+
+### 坐标轴 {#axis}
+
+### 参考系 {#coord}
