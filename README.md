@@ -3,5 +3,5 @@
 
 ## R 语言数据科学实战
 
-本仓库作为 [《R 语言数据科学实战》](https://bookdown.org/xiangyun/dsaction/) 书稿源码的托管地址
+本仓库作为 [《R 语言数据科学实战》](https://bookdown.org/xiangyun/data-science-in-action/) 书稿源码的托管地址。
 
