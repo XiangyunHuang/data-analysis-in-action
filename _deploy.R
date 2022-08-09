@@ -5,8 +5,8 @@ rsconnect::connectApiUser(
   apiKey = Sys.getenv("CONNECT_API_KEY")
 )
 quarto::quarto_publish_site(
-  name = "data-science-in-action", render = "none",
+  name = "data-analysis-in-action", render = "none",
   server = "bookdown.org",
   account = "xiangyun",
-  title = "Data Science in Action"
+  title = "Data Analysis in Action"
 )
