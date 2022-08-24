@@ -1,8 +1,19 @@
-## [![Book build status](https://github.com/XiangyunHuang/data-analysis-in-action/workflows/Render-Book/badge.svg?event=push)](https://github.com/XiangyunHuang/data-analysis-in-action/actions?workflow=Render-Book) [![Netlify Status](https://api.netlify.com/api/v1/badges/63e74f25-e5ff-4cee-9c4b-198d18872a6c/deploy-status)](https://app.netlify.com/sites/data-analysis-in-action/deploys) [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/XiangyunHuang/data-analysis-in-action/main?urlpath=rstudio)
+## [![Book build status](https://github.com/XiangyunHuang/data-analysis-in-action/workflows/Render-Book/badge.svg?event=push)](https://github.com/XiangyunHuang/data-analysis-in-action/actions?workflow=Render-Book) [![Netlify Status](https://api.netlify.com/api/v1/badges/63e74f25-e5ff-4cee-9c4b-198d18872a6c/deploy-status)](https://app.netlify.com/sites/data-analysis-in-action/deploys) [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/XiangyunHuang/data-analysis-in-action/HEAD?urlpath=rstudio)
 
 # R 语言数据分析实战
 
 本仓库作为《R 语言数据分析实战》书稿源码的托管地址。
+
+## 在线编译网页书籍
+
+> **Tip**
+>
+> 不需要安装任何软件和 R 包。
+
+1.  首先，点击[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/XiangyunHuang/data-analysis-in-action/HEAD?urlpath=rstudio)，等待 Binder 初始化环境。初次启动可能花费一些等待时间，但比起本地安装软件和 R 包，这点时间可以忽略。
+
+2.  然后，即可在 RStudio IDE 内运行书籍内任意代码和示例，甚至编译整本书籍。
+
 
 ## 本地编译网页书籍
 
@@ -22,3 +33,4 @@
     或者，点击 Build 窗口内的工具按钮 `Build All`，就可以看到编译书籍的过程了，等待编译完成。
 
 3.  最后，进入项目根目录下的文件夹 `_book/`，点击网页文件 `index.html`，即可在线浏览书籍。
+
