@@ -11,6 +11,70 @@ knitr::knit_hooks$set(par = function(before, options, envir) {
     )
   }
 })
+
+if (xfun::is_macos()) {
+  # 准备 Noto 中英文字体
+  sysfonts::font_paths(new = "~/Library/Fonts/")
+  ## 宋体
+  sysfonts::font_add(
+    family = "Noto Serif CJK SC",
+    regular = "NotoSerifCJKsc-Regular.otf",
+    bold = "NotoSerifCJKsc-Bold.otf"
+  )
+  ## 黑体
+  sysfonts::font_add(
+    family = "Noto Sans CJK SC",
+    regular = "NotoSansCJKsc-Regular.otf",
+    bold = "NotoSansCJKsc-Bold.otf"
+  )
+  ## 衬线字体
+  sysfonts::font_add(
+    family = "Noto Serif",
+    regular = "NotoSerif-Regular.ttf",
+    bold = "NotoSerif-Bold.ttf",
+    italic = "NotoSerif-Italic.ttf",
+    bolditalic = "NotoSerif-BoldItalic.ttf"
+  )
+  ## 无衬线字体
+  sysfonts::font_add(
+    family = "Noto Sans",
+    regular = "NotoSans-Regular.ttf",
+    bold = "NotoSans-Bold.ttf",
+    italic = "NotoSans-Italic.ttf",
+    bolditalic = "NotoSans-BoldItalic.ttf"
+  )
+} else { # Github Action Ubuntu 
+  sysfonts::font_paths(new = c(
+    "/usr/share/fonts/opentype/noto/",
+    "/usr/share/fonts/truetype/noto/"
+  ))
+  ## 宋体
+  sysfonts::font_add(
+    family = "Noto Serif CJK SC",
+    regular = "NotoSerifCJK-Regular.ttc",
+    bold = "NotoSerifCJK-Bold.ttc"
+  )
+  ## 黑体
+  sysfonts::font_add(
+    family = "Noto Sans CJK SC",
+    regular = "NotoSansCJK-Regular.ttc",
+    bold = "NotoSansCJK-Bold.ttc"
+  )
+  sysfonts::font_add(
+    family = "Noto Serif",
+    regular = "NotoSerif-Regular.ttf",
+    bold = "NotoSerif-Bold.ttf",
+    italic = "NotoSerif-Italic.ttf",
+    bolditalic = "NotoSerif-BoldItalic.ttf"
+  )
+  sysfonts::font_add(
+    family = "Noto Sans",
+    regular = "NotoSans-Regular.ttf",
+    bold = "NotoSans-Bold.ttf",
+    italic = "NotoSans-Italic.ttf",
+    bolditalic = "NotoSans-BoldItalic.ttf"
+  )
+}
 ```
 
 
@@ -61,6 +125,7 @@ plot(data = quakes, lat ~ long)
 #|  - "ggplot2 默认设置"
 #|  - "ggplot2 深度定制"
 #| layout-ncol: 2
+#| fig.showtext: true
 
 library(ggplot2)
 ggplot(data = quakes, aes(x = long, y = lat)) +
@@ -191,3 +256,544 @@ library(ggplot2)
 library(patchwork)
 p1 / p2 / p3
 ```
+
+
+
+
+
+
+## 图形基础 {#foundations-of-ggplot2}
+
+
+gapminder 数据集
+
+```{r}
+library(gapminder)
+```
+
+本节基于 gapminder 数据，着重介绍一些绘图的基础要素，理解这些将帮助我们绘制和加工各种各样的统计图形。
+
+
+
+### 图层 {#layer}
+
+ggplot2 目前有 53 个几何图层，33 个统计图层
+
+```{r}
+#| label: fig-layer-point
+
+gapminder_2007 <- gapminder[gapminder$year == 2007, ]
+ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point()
+```
+
+
+
+### 标签 {#label}
+
+
+
+```{r}
+#| label: fig-label
+#| fig-showtext: true
+
+ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point() +
+  labs(x = "人均 GDP", y = "预期寿命")
+```
+
+
+
+
+
+### 刻度 {#scale}
+
+几何元素的透明度 alpha、颜色 color、填充色 fill、线类型 linetype、几何元素的形状 shape 及大小 size，坐标轴 x/y 的变换
+
+```{r}
+#| label: fig-scale-log10
+#| fig-showtext: true
+ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point() +
+  scale_x_log10(labels = scales::label_log()) +
+  labs(x = "人均 GDP", y = "预期寿命")
+```
+
+
+修改横轴刻度标签，设置展示范围
+
+
+```{r}
+#| label: fig-scale-limits
+#| fig-showtext: true
+ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point() +
+  scale_x_log10(
+    labels = scales::label_dollar(),
+    limits = c(100, 100000)
+  ) +
+  labs(x = "人均 GDP", y = "预期寿命")
+```
+
+
+添加次刻度线
+
+
+```{r}
+#| label: fig-scale-minor-breaks
+#| fig-showtext: true
+
+mb <- unique(as.numeric(1:10 %o% 10^(1:4)))
+ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point() +
+  scale_x_log10(
+    labels = scales::label_dollar(),
+    minor_breaks = mb, limits = c(100, 100000)
+  ) +
+  labs(x = "人均 GDP", y = "预期寿命")
+```
+
+
+
+### 配色 {#color}
+
+RColorBrewer [@RColorBrewer2022] (<https://github.com/axismaps/colorbrewer/>)
+munsell [@munsell2018] (<https://github.com/cwickham/munsell/>)
+paletteer (<https://github.com/EmilHvitfeldt/paletteer>)
+scico (<https://github.com/thomasp85/scico>)
+colorspace [@Zeileis2020] (<https://colorspace.r-forge.r-project.org/>)
+viridis [@viridis2021] (<https://github.com/sjmgarnier/viridis/>)
+viridisLite (<https://github.com/sjmgarnier/viridisLite/>)
+
+[R 语言颜色](https://pkg.garrickadenbuie.com/r-colors-css/)
+
+[ggplot2 主题设置，绘图方法](https://github.com/z3tt/beyond-bar-and-box-plots) 介绍颜色、字体、布局、样式，写一个主题函数
+
+```{r}
+#| label: fig-color-brewer
+#| fig-cap: "使用调色板指定分类变量的颜色"
+#| fig-showtext: true
+
+ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point(aes(color = continent)) +
+  scale_color_brewer(palette = "Set1") +
+  scale_x_log10(
+    labels = scales::label_dollar(),
+    minor_breaks = mb, limits = c(100, 100000)
+  ) +
+  labs(x = "人均 GDP", y = "预期寿命", color = "大洲")
+```
+
+
+指定颜色，分类变量太多，图例不合适，可以去掉
+
+```{r}
+#| label: fig-color-manual
+#| fig.cap: "手动指定分类变量的颜色"
+#| fig.showtext: true
+
+ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point(aes(color = country), show.legend = FALSE) +
+  scale_color_manual(values = country_colors) +
+  scale_x_log10(
+    labels = scales::label_dollar(),
+    minor_breaks = mb, limits = c(100, 100000)
+  ) +
+  labs(x = "人均 GDP", y = "预期寿命", color = "大洲")
+```
+
+
+
+
+### 图例 {#legend}
+
+
+[ggh4x](https://github.com/teunbrand/ggh4x)
+
+
+
+多个图例，可以选择性保留
+
+```{r}
+#| label: fig-legend-show
+#| fig.cap: "手动指定分类变量的颜色"
+#| fig.showtext: true
+
+ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point(aes(color = country, size = pop), 
+             show.legend = c(color = FALSE, size = TRUE)) +
+  scale_color_manual(values = country_colors) +
+  scale_size(range = c(2, 12)) +
+  scale_x_log10(
+    labels = scales::label_dollar(),
+    minor_breaks = mb, limits = c(100, 100000)
+  ) +
+  labs(x = "人均 GDP", y = "预期寿命")
+```
+
+图例刻度
+
+```{r}
+#| label: fig-legend-label
+#| fig-cap: "手动指定分类变量的颜色"
+#| fig-showtext: true
+
+ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point(aes(color = country, size = pop),
+    show.legend = c(color = FALSE, size = TRUE)
+  ) +
+  scale_color_manual(values = country_colors) +
+  scale_size(
+    range = c(2, 12),
+    labels = scales::label_number(scale_cut = scales::cut_short_scale())
+  ) +
+  scale_x_log10(
+    labels = scales::label_dollar(),
+    minor_breaks = mb, limits = c(100, 100000)
+  ) +
+  labs(x = "人均 GDP", y = "预期寿命", size = "人口数")
+```
+
+
+### 主题 {#theme}
+
+
+ggsci [@ggsci2018]和 ggthemes [@ggthemes2021]
+
+[ggthemeassist](https://github.com/calligross/ggthemeassist) 包提供 RStudio IDE 插件，帮助用户以鼠标点击的交互方式设置 ggplot2 图形的主题样式 [@ggThemeAssist2016]
+
+
+针对分类离散型数据可视化，[pilot](https://github.com/olihawkins/pilot) 包 [@pilot2022] 提供一套简洁的 ggplot2 主题 
+[ggthemr](https://github.com/Mikata-Project/ggthemr) 是比较早的 ggplot2 主题包，依赖也不多。
+
+
+```{r}
+#| label: fig-theme-classic
+#| fig-cap: "设置主题风格"
+#| fig-showtext: true
+
+ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point(aes(color = country, size = pop), 
+             show.legend = c(color = FALSE, size = TRUE)) +
+  scale_color_manual(values = country_colors) +
+  scale_size(range = c(2, 12), labels = scales::label_number(scale_cut = scales::cut_short_scale())) +
+  scale_x_log10(
+    labels = scales::label_dollar(),
+    minor_breaks = mb, limits = c(100, 100000)
+  ) +
+  theme_classic() +
+  labs(x = "人均 GDP", y = "预期寿命", size = "人口数")
+```
+
+
+主题还可以进一步调整，将图例移动至绘图区域的下方
+
+
+
+```{r}
+#| label: fig-theme-position
+#| fig-cap: "设置主题风格"
+#| fig-showtext: true
+
+ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point(aes(color = country, size = pop), 
+             show.legend = c(color = FALSE, size = TRUE)) +
+  scale_color_manual(values = country_colors) +
+  scale_size(range = c(2, 12), labels = scales::label_number(scale_cut = scales::cut_short_scale())) +
+  scale_x_log10(
+    labels = scales::label_dollar(),
+    minor_breaks = mb, limits = c(100, 100000)
+  ) +
+  theme_classic() +
+  theme(
+    legend.position =  "bottom" 
+  ) +
+  labs(x = "人均 GDP", y = "预期寿命", size = "人口数")
+
+```
+
+或者任意，你觉得合适的指定位置
+
+```{r}
+#| label: fig-theme-custom
+#| fig-cap: "设置主题风格"
+#| fig-showtext: true
+ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point(aes(color = country, size = pop), 
+             show.legend = c(color = FALSE, size = TRUE)) +
+  scale_color_manual(values = country_colors) +
+  scale_size(range = c(2, 12), labels = scales::label_number(scale_cut = scales::cut_short_scale())) +
+  scale_x_log10(
+    labels = scales::label_dollar(),
+    minor_breaks = mb, limits = c(100, 100000)
+  ) +
+  theme_classic() +
+  theme(
+    legend.position =  c(0.9, 0.25)
+  ) +
+  labs(x = "人均 GDP", y = "预期寿命", size = "人口数")
+
+```
+
+还可以更换主题风格
+
+```{r}
+#| label: fig-theme-minimal
+#| fig-cap: "设置主题风格"
+#| fig-showtext: true
+
+ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point(aes(color = country, size = pop), 
+             show.legend = c(color = FALSE, size = TRUE)) +
+  scale_color_manual(values = country_colors) +
+  scale_size(range = c(2, 12), labels = scales::label_number(scale_cut = scales::cut_short_scale())) +
+  scale_x_log10(
+    labels = scales::label_dollar(),
+    minor_breaks = mb, limits = c(100, 100000)
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position =  c(0.9, 0.25)
+  ) +
+  labs(x = "人均 GDP", y = "预期寿命", size = "人口数")
+```
+
+
+### 文本 {#text}
+
+文本用于注释，注释不一定是文本，还可以是图像
+
+
+[geomtextpath](https://github.com/AllanCameron/geomtextpath) 新添几何图层：文本路径。文本随路径变化。
+
+基于字体文件，根据字体生成路径
+[string2path](https://github.com/yutannihilation/string2path)文本随路径变化。
+
+[ggimage](https://github.com/GuangchuangYu/ggimage) 可以在 ggplot2 中愉快地使用图片，以图片代替散点，图片还可以是表情包，示例见[文章](https://cosx.org/2017/03/ggimage)。
+
+[ggrepel](https://github.com/slowkow/ggrepel)
+
+[ggtext](https://github.com/wilkelab/ggtext)
+
+
+2007 年的数据为例，给人口大于 2000 万的添加国家名称
+
+
+```{r}
+#| label: fig-text-ggrepel
+#| fig-cap: "设置主题风格"
+#| fig-showtext: true
+
+library(ggrepel)
+ggplot(data = gapminder_2007, 
+       aes(x = gdpPercap, y = lifeExp)) +
+  geom_point(aes(color = country, size = pop), 
+             show.legend = c(color = FALSE, size = TRUE)) +
+  scale_color_manual(values = country_colors) +
+  scale_size(range = c(2, 12), labels = scales::label_number(scale_cut = scales::cut_short_scale())) +
+  scale_x_log10(
+    labels = scales::label_dollar(),
+    minor_breaks = mb, limits = c(100, 100000)
+  ) +
+  geom_text_repel(
+    data = gapminder_2007[gapminder_2007$pop >= 2 * 10^7, ],
+    aes(size = pop / (5 * 10^7), label = country),
+    max.overlaps = 50, 
+    segment.colour = "gray", seed = 2022,
+    show.legend = FALSE, na.rm = TRUE
+  ) +
+  theme(
+    legend.position =  c(0.9, 0.20)
+  ) +
+  labs(x = "人均 GDP", y = "预期寿命", size = "人口数")
+```
+
+
+
+
+### 分面 {#facet}
+
+`facet_wrap()`
+
+
+```{r}
+#| label: fig-facet-wrap
+#| fig-cap: "按大洲变量分面"
+#| fig-showtext: true
+
+ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point(aes(color = country, size = pop), 
+             show.legend = c(color = FALSE, size = TRUE)) +
+  scale_color_manual(values = country_colors) +
+  scale_size(range = c(2, 12), labels = scales::label_number(scale_cut = scales::cut_short_scale())) +
+  scale_x_log10(
+    labels = scales::label_dollar(),
+    minor_breaks = mb, limits = c(100, 100000)
+  ) +
+  facet_wrap(facets = ~continent) +
+  theme_classic() +
+  theme(
+    legend.position =  c(0.9, 0.20)
+  ) +
+  labs(x = "人均 GDP", y = "预期寿命", size = "人口数")
+```
+
+
+`facet_grid()` 与 `facet_wrap()` 的效果是类似的
+
+
+### 字体 {#font}
+
+字体 [showtext](https://github.com/yixuan/showtext) 支持调用各种各样的字体，特别是好玩的字体配合好玩的图形，可以玩出很多花样，示例见[文章](https://cosx.org/2014/01/showtext-interesting-fonts-and-graphs)
+
+[ragg](https://github.com/r-lib/ragg)
+
+
+配置字体
+
+
+```{r}
+#| eval: false
+#| echo: true
+
+## 简体中文宋体字
+sysfonts::font_add(
+  family = "Noto Serif CJK SC",
+  regular = "NotoSerifCJKsc-Regular.otf",
+  bold = "NotoSerifCJKsc-Bold.otf"
+)
+## 无衬线英文字体
+sysfonts::font_add(
+  family = "Noto Sans",
+  regular = "NotoSans-Regular.ttf",
+  bold = "NotoSans-Bold.ttf",
+  italic = "NotoSans-Italic.ttf",
+  bolditalic = "NotoSans-BoldItalic.ttf"
+)
+```
+
+可供 showtext 包使用的字体
+
+```{r}
+#| label: font-families
+
+sysfonts::font_families()
+```
+
+
+```{r}
+#| label: fig-font
+#| fig-cap: "按大洲变量分面"
+#| fig-showtext: true
+
+ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point(aes(color = country, size = pop), 
+             show.legend = c(color = FALSE, size = TRUE)) +
+  scale_color_manual(values = country_colors) +
+  scale_size(range = c(2, 12), labels = scales::label_number(scale_cut = scales::cut_short_scale())) +
+  scale_x_log10(
+    labels = scales::label_log(),
+    minor_breaks = mb, limits = c(100, 100000)
+  ) +
+  facet_wrap(facets = ~continent) +
+  theme_classic(base_family = "Noto Sans") +
+  theme(
+    title = element_text(family = "Noto Serif CJK SC"),
+    legend.position =  c(0.9, 0.20)
+  ) +
+  labs(x = "人均 GDP", y = "预期寿命", size = "人口数")
+```
+
+
+
+### 动画 {#animation}
+
+gifski
+
+
+```{r}
+#| label: fig-animate
+#| fig-cap: "动画"
+#| fig-width: 8
+#| fig-height: 6
+#| fig-showtext: true
+
+library(gganimate)
+ggplot(data = gapminder, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point(aes(color = country, size = pop),
+    show.legend = c(color = FALSE, size = TRUE), na.rm = TRUE
+  ) +
+  scale_color_manual(values = country_colors) +
+  scale_size(
+    range = c(2, 12),
+    labels = scales::label_number(scale_cut = scales::cut_short_scale())
+  ) +
+  scale_x_log10(
+    labels = scales::label_log(),
+    minor_breaks = mb, limits = c(100, 100000)
+  ) +
+  facet_wrap(facets = ~continent) +
+  theme_classic(base_family = "Noto Sans") +
+  theme(
+    title = element_text(family = "Noto Serif CJK SC"),
+    legend.position = c(0.9, 0.20)
+  ) +
+  labs(
+    title = "{frame_time} 年", x = "人均 GDP",
+    y = "预期寿命", size = "人口数"
+  ) +
+  transition_time(year) +
+  ease_aes("linear")
+```
+
+
+
+
+
+
+
+### 组合 {#patchwork}
+
+
+[gghalves](https://github.com/erocoar/gghalves)
+[patchwork](https://github.com/thomasp85/patchwork)
+[cowplot](https://github.com/wilkelab/cowplot)
+
+
+```{r}
+#| label: fig-patchwork
+#| fig-cap: "动画"
+#| fig-width: 8
+#| fig-height: 4
+
+library(patchwork)
+p1 <- ggplot(data = iris, aes(x = Sepal.Length, y = Sepal.Width)) +
+  geom_point() +
+  labs(
+    title = "Cars with smaller engines are more efficient",
+    subtitle = "Engine size by fuel efficiency and class",
+    x = "Engine size in litres",
+    y = "Miles per gallon",
+    color = "Class",
+    caption = "Source: dataset mpg is from ggplot2"
+  ) +
+  facet_grid(cols = vars(Species)) +
+  theme_classic()
+
+
+p2 <- ggplot(data = iris, aes(x = Sepal.Length, y = Sepal.Width)) +
+  geom_point() +
+  labs(
+    title = "Cars with smaller engines are more efficient",
+    subtitle = "Engine size by fuel efficiency and class",
+    x = "Engine size in litres",
+    y = "Miles per gallon",
+    color = "Class",
+    caption = "Source: dataset mpg is from ggplot2"
+  ) +
+  facet_grid(rows = vars(Species)) +
+  theme_classic()
+
+p1 | p2
+```
+
