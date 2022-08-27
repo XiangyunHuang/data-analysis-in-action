@@ -80,6 +80,14 @@ if (xfun::is_macos()) {
 
 ## ggplot2 介绍 {#intro-to-ggplot2}
 
+<!-- 
+目标读者
+
+1. 想要以一种完全可复现的方式作图，不涉及任何手动后期加工
+1. 享受用 ggplot2 包作图的过程，而且希望能用它做更多的事
+1. 数据探索、展示、交流
+
+-->
 
 ### ggplot2 概览 {#ggplot2-overview}
 
@@ -107,6 +115,7 @@ ggplot2 [@Hadley2016] 是一个 R 语言扩展包，专用于绘制各种各样�
 #| label: quakes-quick
 
 # ggplot2 绘图
+library(ggplot2)
 ggplot(data = quakes, aes(x = long, y = lat)) + geom_point()
 # Base R 绘图
 plot(data = quakes, lat ~ long)
@@ -297,30 +306,52 @@ gapminder 数据集中，中国香港 "Hong Kong, China"，波多黎各 "Puerto 
 
 ### 图层 {#layer}
 
-ggplot2 目前有 53 个几何图层，33 个统计图层
+ggplot2 绘图必须包含以下三个要素，缺少任何一个，图形都是不完整的。
 
+1.  数据，前面已经重点介绍和准备了；
+1.  映射，数据中的变量与几何元素的对应关系；
+1.  图层，至少需要一个图层用来渲染观察值。
 
-```{r}
-gapminder_2007 <- gapminder[gapminder$year == 2007, ]
-```
-
-```{r}
-#| label: fig-layer-empty
-
-ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) 
-```
-
+下面逐一说明三个要素的作用，为简单起见，从数据集 gapminder 中选取 2007 年的数据。
 
 ```{r}
 #| label: fig-layer-point
+#| fig-cap: "ggplot2 绘图三要素"
+#| fig-subcap: 
+#| - "只有数据"
+#| - "只有数据和映射"
+#| - "数据、映射和图层"
+#| layout-ncol: 1
+#| layout-nrow: 3
+#| fig-width: 4
+#| fig-height: 3
 
+gapminder_2007 <- gapminder[gapminder$year == 2007, ]
+ggplot(data = gapminder_2007)
+ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp))
 ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
   geom_point()
 ```
 
+@fig-layer-point-1 仅提供数据，只渲染出来一个绘图区域。 @fig-layer-point-2 仅提供数据和映射，将变量 gdpPercap 映射给横轴，变量 lifeExp 映射给纵轴，继续渲染出来横、纵坐标轴及标签。 @fig-layer-point-3 提供了数据、映射和图层三要素，观察值根据几何图层 `geom_point()` 将几何元素 「点」渲染在绘图区域上，形成散点图。函数 `ggplot()` 和函数 `geom_point()` 之间是以加号 `+` 连接的。无论最终产出的图形如何复杂，这个模式贯穿 ggplot2 绘图。
+
+
+10 多年来，**ggplot2** 包陆续添加了很多几何图层，目前支持的有 53 个，如下：
+
+```{r}
+#| eval: true
+#| echo: false
+#| label: layout-geom
+
+ls("package:ggplot2", pattern = "^geom_*")
+```
+
+也正因这些丰富多彩的图层，ggplot2 可以非常便捷地做各种数据探索和展示工作。从时间序列数据、网络社交数据到文本数据、空间数据，乃至时空数据都有它大显身手的地方。
+
 
 
 ### 标签 {#label}
+
 
 
 
@@ -337,7 +368,7 @@ ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
 
 
 
-### 刻度 {#scale}
+### 标度 {#scale}
 
 几何元素的透明度 alpha、颜色 color、填充色 fill、线类型 linetype、几何元素的形状 shape 及大小 size，坐标轴 x/y 的变换
 
@@ -369,12 +400,16 @@ ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
 
 添加次刻度线
 
+```{r}
+mb <- unique(as.numeric(1:10 %o% 10^(1:4)))
+log10(mb)
+```
+
 
 ```{r}
 #| label: fig-scale-minor-breaks
 #| fig-showtext: true
 
-mb <- unique(as.numeric(1:10 %o% 10^(1:4)))
 ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
   geom_point() +
   scale_x_log10(
@@ -590,9 +625,9 @@ ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
 ```
 
 
-### 文本 {#text}
+### 注释 {#annotation}
 
-文本用于注释，注释不一定是文本，还可以是图像
+注释可以是普通文本，数学公式，还可以是图形照片、表情包。
 
 
 [geomtextpath](https://github.com/AllanCameron/geomtextpath) 新添几何图层：文本路径。文本随路径变化。
@@ -624,8 +659,6 @@ ggplot(
     show.legend = c(color = FALSE, size = TRUE)
   ) +
   scale_color_manual(values = country_colors) +
-  scale_size(range = c(2, 12), 
-             labels = scales::label_number(scale_cut = scales::cut_short_scale())) +
   scale_x_log10(
     labels = scales::label_dollar(),
     minor_breaks = mb, limits = c(100, 100000)
@@ -637,6 +670,9 @@ ggplot(
     segment.colour = "gray", seed = 2022,
     show.legend = FALSE, na.rm = TRUE
   ) +
+  scale_size(range = c(2, 12), 
+             labels = scales::label_number(scale_cut = scales::cut_short_scale())) +
+  theme_minimal() +
   theme(
     legend.position = c(0.9, 0.25)
   ) +
@@ -646,7 +682,7 @@ ggplot(
 
 
 
-### 分面 {#facet}
+### 切片 {#facet}
 
 `facet_wrap()`
 
