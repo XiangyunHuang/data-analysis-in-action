@@ -264,25 +264,56 @@ p1 / p2 / p3
 
 ## 图形基础 {#foundations-of-ggplot2}
 
-
-gapminder 数据集
+2006 年 Hans Rosling 在 TED 做了一场精彩的演讲 --- The best stats you've ever seen (<https://www.ted.com/talks/hans_rosling_the_best_stats_you_ve_ever_seen>)。演讲中展示了一系列生动形象的动画，用数据记录的事实帮助大家理解世界的变化，可谓是动态图形领域的惊世之作。时至今日，已经超过 1500 万人观看，产生了十分广泛的影响。后来，Jennifer Bryan 从 Hans Rosling 创建的网站 <https://www.gapminder.org/data/> 中摘录了一部分数据，整理后，放在 R 包 **gapminder** [@gapminder2017] 中，而数据集的名字也叫 gapminder。本节将基于 gapminder 数据集介绍 ggplot2 绘图的基础知识，包括图层、标签、刻度、配色、图例、主题、文本、分面、字体、动画和组合等 11 个方面，理解这些有助于绘制和加工各种各样的统计图形，可以覆盖日常所需。gapminder 数据集以数据框的形式存储在 R 软件运行环境中，一共 1704 行，6 列，该数据集的部分内容见 @tbl-gapminder 。
 
 ```{r}
+#| echo: false
+#| label: tbl-gapminder
+#| tbl-cap: "gapminder 数据集（部分）"
+
 library(gapminder)
+knitr::kable(head(gapminder),
+  col.names = c("国家或地区", "区域", "年份", "预期寿命", "人口总数", "人均 GDP")
+)
 ```
 
-本节基于 gapminder 数据，着重介绍一些绘图的基础要素，理解这些将帮助我们绘制和加工各种各样的统计图形。
+在 R 环境中，加载 **gapminder** 包后，可以用 `str()` 函数查看数据集 gapminder 的情况。
 
+```{r}
+#| label: load-gapminder
+
+# 加载 R 包
+library(gapminder)
+# 查看数据
+str(gapminder)
+```
+
+其中，country（国家或地区）和 continent （区域）是因子型变量，year （年份）和 pop （人口总数）是整型变量，lifeExp （预期寿命，单位：岁）和 gdpPercap （人均 GDP，单位：美元）是数值型变量。
+
+<!--
+gapminder 数据集中，中国香港 "Hong Kong, China"，波多黎各 "Puerto Rico"， "Taiwan" 台湾是单独统计的数据，数据集 gapminder 的上游是网站<https://www.gapminder.org/data/>，而数据源头是世界银行 World Bank 的世界发展指数 World Development Indicators。
+-->
 
 
 ### 图层 {#layer}
 
 ggplot2 目前有 53 个几何图层，33 个统计图层
 
+
+```{r}
+gapminder_2007 <- gapminder[gapminder$year == 2007, ]
+```
+
+```{r}
+#| label: fig-layer-empty
+
+ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) 
+```
+
+
 ```{r}
 #| label: fig-layer-point
 
-gapminder_2007 <- gapminder[gapminder$year == 2007, ]
 ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
   geom_point()
 ```
@@ -585,12 +616,16 @@ ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
 #| fig-showtext: true
 
 library(ggrepel)
-ggplot(data = gapminder_2007, 
-       aes(x = gdpPercap, y = lifeExp)) +
-  geom_point(aes(color = country, size = pop), 
-             show.legend = c(color = FALSE, size = TRUE)) +
+ggplot(
+  data = gapminder_2007,
+  aes(x = gdpPercap, y = lifeExp)
+) +
+  geom_point(aes(color = country, size = pop),
+    show.legend = c(color = FALSE, size = TRUE)
+  ) +
   scale_color_manual(values = country_colors) +
-  scale_size(range = c(2, 12), labels = scales::label_number(scale_cut = scales::cut_short_scale())) +
+  scale_size(range = c(2, 12), 
+             labels = scales::label_number(scale_cut = scales::cut_short_scale())) +
   scale_x_log10(
     labels = scales::label_dollar(),
     minor_breaks = mb, limits = c(100, 100000)
@@ -598,12 +633,12 @@ ggplot(data = gapminder_2007,
   geom_text_repel(
     data = gapminder_2007[gapminder_2007$pop >= 2 * 10^7, ],
     aes(size = pop / (5 * 10^7), label = country),
-    max.overlaps = 50, 
+    max.overlaps = 50,
     segment.colour = "gray", seed = 2022,
     show.legend = FALSE, na.rm = TRUE
   ) +
   theme(
-    legend.position =  c(0.9, 0.20)
+    legend.position = c(0.9, 0.25)
   ) +
   labs(x = "人均 GDP", y = "预期寿命", size = "人口数")
 ```
@@ -717,6 +752,7 @@ gifski
 #| fig-width: 8
 #| fig-height: 6
 #| fig-showtext: true
+#| cache: true
 
 library(gganimate)
 ggplot(data = gapminder, aes(x = gdpPercap, y = lifeExp)) +
@@ -762,38 +798,25 @@ ggplot(data = gapminder, aes(x = gdpPercap, y = lifeExp)) +
 
 ```{r}
 #| label: fig-patchwork
-#| fig-cap: "动画"
-#| fig-width: 8
-#| fig-height: 4
+#| fig-cap: "组合"
+#| fig-width: 4
+#| fig-height: 8
+#| fig-showtext: true
+
+gapminder_2002 <- gapminder[gapminder$year == 2002, ]
 
 library(patchwork)
-p1 <- ggplot(data = iris, aes(x = Sepal.Length, y = Sepal.Width)) +
+p1 <- ggplot(data = gapminder_2002, aes(x = gdpPercap, y = lifeExp)) +
   geom_point() +
-  labs(
-    title = "Cars with smaller engines are more efficient",
-    subtitle = "Engine size by fuel efficiency and class",
-    x = "Engine size in litres",
-    y = "Miles per gallon",
-    color = "Class",
-    caption = "Source: dataset mpg is from ggplot2"
-  ) +
-  facet_grid(cols = vars(Species)) +
+  labs(x = "人均 GDP", y = "预期寿命", title = "2002年") +
   theme_classic()
 
-
-p2 <- ggplot(data = iris, aes(x = Sepal.Length, y = Sepal.Width)) +
+p2 <- ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
   geom_point() +
-  labs(
-    title = "Cars with smaller engines are more efficient",
-    subtitle = "Engine size by fuel efficiency and class",
-    x = "Engine size in litres",
-    y = "Miles per gallon",
-    color = "Class",
-    caption = "Source: dataset mpg is from ggplot2"
-  ) +
-  facet_grid(rows = vars(Species)) +
+  labs(x = "人均 GDP", y = "预期寿命", title = "2007年") +
   theme_classic()
 
-p1 | p2
+p1 / p2
 ```
+
 
