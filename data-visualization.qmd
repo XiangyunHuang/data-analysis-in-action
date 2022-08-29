@@ -11,31 +11,102 @@ knitr::knit_hooks$set(par = function(before, options, envir) {
     )
   }
 })
+
+if (xfun::is_macos()) {
+  # 准备 Noto 中英文字体
+  sysfonts::font_paths(new = "~/Library/Fonts/")
+  ## 宋体
+  sysfonts::font_add(
+    family = "Noto Serif CJK SC",
+    regular = "NotoSerifCJKsc-Regular.otf",
+    bold = "NotoSerifCJKsc-Bold.otf"
+  )
+  ## 黑体
+  sysfonts::font_add(
+    family = "Noto Sans CJK SC",
+    regular = "NotoSansCJKsc-Regular.otf",
+    bold = "NotoSansCJKsc-Bold.otf"
+  )
+  ## 衬线字体
+  sysfonts::font_add(
+    family = "Noto Serif",
+    regular = "NotoSerif-Regular.ttf",
+    bold = "NotoSerif-Bold.ttf",
+    italic = "NotoSerif-Italic.ttf",
+    bolditalic = "NotoSerif-BoldItalic.ttf"
+  )
+  ## 无衬线字体
+  sysfonts::font_add(
+    family = "Noto Sans",
+    regular = "NotoSans-Regular.ttf",
+    bold = "NotoSans-Bold.ttf",
+    italic = "NotoSans-Italic.ttf",
+    bolditalic = "NotoSans-BoldItalic.ttf"
+  )
+} else { # Github Action Ubuntu 
+  sysfonts::font_paths(new = c(
+    "/usr/share/fonts/opentype/noto/",
+    "/usr/share/fonts/truetype/noto/"
+  ))
+  ## 宋体
+  sysfonts::font_add(
+    family = "Noto Serif CJK SC",
+    regular = "NotoSerifCJK-Regular.ttc",
+    bold = "NotoSerifCJK-Bold.ttc"
+  )
+  ## 黑体
+  sysfonts::font_add(
+    family = "Noto Sans CJK SC",
+    regular = "NotoSansCJK-Regular.ttc",
+    bold = "NotoSansCJK-Bold.ttc"
+  )
+  sysfonts::font_add(
+    family = "Noto Serif",
+    regular = "NotoSerif-Regular.ttf",
+    bold = "NotoSerif-Bold.ttf",
+    italic = "NotoSerif-Italic.ttf",
+    bolditalic = "NotoSerif-BoldItalic.ttf"
+  )
+  sysfonts::font_add(
+    family = "Noto Sans",
+    regular = "NotoSans-Regular.ttf",
+    bold = "NotoSans-Bold.ttf",
+    italic = "NotoSans-Italic.ttf",
+    bolditalic = "NotoSans-BoldItalic.ttf"
+  )
+}
 ```
 
 
-## ggplot2 介绍 {#intro-to-ggplot2}
+## ggplot2 介绍 {#sec-intro-to-ggplot2}
+
+<!-- 
+目标读者
+
+1. 想要以一种完全可复现的方式作图，不涉及任何手动后期加工
+1. 享受用 ggplot2 包作图的过程，而且希望能用它做更多的事
+1. 数据探索、展示、交流
+-->
+
+### ggplot2 概览 {#sec-ggplot2-overview}
 
 
-### ggplot2 概览 {#ggplot2-overview}
+**ggplot2** [@Hadley2016] 是一个 R 语言扩展包，专用于绘制各种各样的统计图形，是数据探索和可视化的利器。
+2007 年 6 月 1 日 **ggplot2** 在 CRAN 上发布第一个正式版本 0.5，截止写作时间，**ggplot2** 已经持续迭代 10 多年了，发布了 40 多个版本，形成了一个非常庞大的生态，直接依赖 **ggplot2** 的 R 包接近 3000 个。从如下三个地方，可以窥见 **ggplot2** 生态的一角，感受其魅力。
+
+- Daniel Emaasit 收集了 110 多个 **ggplot2** 衍生包，维护了一个 网站(<https://exts.ggplot2.tidyverse.org/gallery/>)，统一组织、展示这些 R 包。本文会精心挑选一些高质量的 R 包予以介绍。
+
+- Tom Mock 发起的 tidytuesday 项目 (<https://github.com/rfordatascience/tidytuesday>) 吸引了数以千计的数据科学爱好者参与数据分析、探索和可视化项目，涌现了一批批优秀的基于 **ggplot2** 的可视化作品，极大地提升了 **ggplot2** 生态的影响力。本文也会基于真实的数据介绍每一个统计图形。
+
+- Yan Holtz 整理了数以百计的统计图形，分门别类地在网站 (<https://r-graph-gallery.com/>)上展示，方便读者预览效果、选择合适的图形。也是受该网站启发，本文在介绍完 **ggplot2** 绘图的基础要素后，从统计图形的作用出发，按照趋势、关系、占比、对比、分布和不确定性等六大方面予以介绍。
 
 
-ggplot2 [@Hadley2016] 是一个 R 语言扩展包，专用于绘制各种各样的统计图形，是数据探索和可视化的利器。
-2007 年 6 月 1 日 ggplot2 在 CRAN 上发布第一个正式版本 0.5，截止写作时间，ggplot2 已经持续迭代 10 多年了，发布了 40 多个版本，形成了一个非常庞大的生态，直接依赖 ggplot2 的 R 包接近 3000 个。从如下三个地方，可以窥见 ggplot2 生态的一角，感受其魅力。
+### ggplot2 v.s. Base R {#sec-ggplot2-vs-base-r}
 
-- Daniel Emaasit 收集了 110 多个 ggplot2 衍生包，维护了一个 网站(<https://exts.ggplot2.tidyverse.org/gallery/>)，统一组织、展示这些 R 包。本文会精心挑选一些高质量的 R 包予以介绍。
-
-- Tom Mock 发起的 tidytuesday 项目 (<https://github.com/rfordatascience/tidytuesday>) 吸引了数以千计的数据科学爱好者参与数据分析、探索和可视化项目，涌现了一批批优秀的基于 ggplot2 的可视化作品，极大地提升了 ggplot2 生态的影响力。本文也会基于真实的数据介绍每一个统计图形。
-
-- Yan Holtz 整理了数以百计的统计图形，分门别类地在网站 (<https://r-graph-gallery.com/>)上展示，方便读者预览效果、选择合适的图形。也是受该网站启发，本文在介绍完 ggplot2 绘图的基础要素后，从统计图形的作用出发，按照趋势、关系、占比、对比、分布和不确定性等六大方面予以介绍。
+世事无绝对，尽管 **ggplot2** 非常流行，但并不意味着它比前辈们如 Base R 或 **lattice** [@Deepayan2008] 更加优秀，它们只是各领风骚。知晓各自的优缺点，更加有助于你选择合适的工具应用到合适的场景中。
 
 
-### ggplot2 v.s. Base R {#ggplot2-vs-base-r}
-
-世事无绝对，尽管 ggplot2 非常流行，但并不意味着它比前辈们如 Base R 或 lattice [@Deepayan2008] 更加优秀，它们只是各领风骚。知晓各自的优缺点，更加有助于你选择合适的工具应用到合适的场景中。
-
-
-这里以 Base R 内置的地震数据集 quakes 为例，如 @fig-quakes 所示，展示太平洋岛国斐济及其周边的地震分布，左图是一行 ggplot2 绘图代码生成的图形，如果你的目的是看看数据情况，那到此结束。甚至还可以更快、更简单点，直接调用 Base R 的函数 `plot()`。如果你想要右图那样的出版级质量的图形，那才刚刚开始，前后两种作图方式分别应用于探索数据和解释数据。
+这里以 Base R 内置的地震数据集 quakes 为例，如 @fig-quakes 所示，展示太平洋岛国斐济及其周边的地震分布，左图是一行 **ggplot2** 绘图代码生成的图形，如果你的目的是看看数据情况，那到此结束。甚至还可以更快、更简单点，直接调用 Base R 的函数 `plot()`。如果你想要右图那样的出版级质量的图形，那才刚刚开始，前后两种作图方式分别应用于探索数据和解释数据。
 
 ```{r}
 #| eval: false
@@ -43,6 +114,7 @@ ggplot2 [@Hadley2016] 是一个 R 语言扩展包，专用于绘制各种各样�
 #| label: quakes-quick
 
 # ggplot2 绘图
+library(ggplot2)
 ggplot(data = quakes, aes(x = long, y = lat)) + geom_point()
 # Base R 绘图
 plot(data = quakes, lat ~ long)
@@ -59,36 +131,47 @@ plot(data = quakes, lat ~ long)
 #| fig-height: 3
 #| fig-subcap: 
 #|  - "ggplot2 默认设置"
+#|  - "Base R 默认设置"
 #|  - "ggplot2 深度定制"
 #| layout-ncol: 2
+#| fig.showtext: true
+#| layout-valign: bottom
+#| layout: "[[40,-10, 50]]"
+#| par: true
 
 library(ggplot2)
 ggplot(data = quakes, aes(x = long, y = lat)) +
   geom_point()
 
+plot(data = quakes, lat ~ long)
+
 library(sf)
 quakes_sf <- st_as_sf(quakes, coords = c("long", "lat"), crs = st_crs(4326))
-library(rnaturalearth)
-library(rnaturalearthdata)
-# 需要 rnaturalearthdata 包
-fiji_medium <- ne_countries(country = "fiji", scale = "medium", returnclass = "sf")
-nz_medium <- ne_countries(country = "New Zealand", scale = "medium", returnclass = "sf")
-
+# library(rnaturalearth)
+# library(rnaturalearthdata)
+## 需要 rnaturalearthdata 包
+# fiji_medium <- ne_countries(country = "fiji", scale = "medium", returnclass = "sf")
+# nz_medium <- ne_countries(country = "New Zealand", scale = "medium", returnclass = "sf")
+# 选择合适的震级区间数、散点点的大小、坐标参考系
 ggplot() +
-  geom_sf(data = fiji_medium, fill = "gray") +
-  geom_sf(data = nz_medium, fill = "gray") +
+  # geom_sf(data = fiji_medium, fill = "gray") +
+  # geom_sf(data = nz_medium, fill = "gray") +
   geom_sf(
-    data = quakes_sf, aes(color = cut(mag, 8)),  size = 0.3
+    data = quakes_sf, aes(color = cut(mag, 3))
   ) +
-  scale_color_viridis_d(option = "C") +
-  coord_sf(crs = 3460, xlim = c(569061, 3008322), ylim = c(1603260, 4665206)) +
+  # scale_color_viridis_d(option = "C") +
+  # scale_colour_brewer(palette = "Greys") +
+  scale_colour_brewer(palette = "Reds") +
+  coord_sf(
+    crs = 3460,
+    xlim = c(569061, 3008322),
+    ylim = c(1603260, 4665206)
+  ) +
   theme_minimal() +
-  labs(x = "Longitude", y = "Latitude", color = "Magnitude")
+  labs(x = "经度", y = "纬度", color = "震级")
 ```
 
-
-
-所以，若以出版级的要求， ggplot2 绘图并不简单，那比 Base R 又如何呢？以 Base R 内置的 pressure 数据集为例，展示汞蒸气的压力随温度的变化趋势，如 @fig-pressure 所示，左子图用区区 3 行 Base R 代码就搞定了，而右子图用 15 行 ggplot2 代码才勉强达到相似的效果。类似的情况绝不仅限于描述趋势的点线图，归根结底，是刻画图形细节的要素都差不多，只是表达方式不同罢了。比如示例(<https://stackoverflow.com/questions/27934840/>)用 Base R 复现一张直方图，示例(<https://stackoverflow.com/questions/3932038/>)给 Base R 图形添加图例，网站(<http://motioninsocial.com/tufte/>)更是用 Base R、ggplot2 和 lattice 分别绘制了 9 种常见统计图形。反之，用 Base R 实现 ggplot2 风格图形，也不那么简单，以分类散点图为例，详见博客[Styling plots in base R graphics to match ggplot2 classic theme](https://www.tenderisthebyte.com/blog/2021/05/09/pretty-plots-with-base-r-grahpics/)。
+所以，若以出版级的要求， **ggplot2** 绘图并不简单，那比 Base R 又如何呢？以 Base R 内置的 pressure 数据集为例，展示汞蒸气的压力随温度的变化趋势，如 @fig-pressure 所示，左子图用区区 3 行 Base R 代码就搞定了，而右子图用 15 行 **ggplot2** 代码才勉强达到相似的效果。类似的情况绝不仅限于描述趋势的点线图，归根结底，是刻画图形细节的要素都差不多，只是表达方式不同罢了。比如示例(<https://stackoverflow.com/questions/27934840/>)用 Base R 复现一张直方图，示例(<https://stackoverflow.com/questions/3932038/>)给 Base R 图形添加图例，网站(<http://motioninsocial.com/tufte/>)更是用 Base R、**ggplot2** 和 **lattice** 分别绘制了 9 种常见统计图形。反之，用 Base R 实现 **ggplot2** 风格图形，也不那么简单，以分类散点图为例，详见博客 [Styling plots in base R graphics to match ggplot2 classic theme](https://www.tenderisthebyte.com/blog/2021/05/09/pretty-plots-with-base-r-grahpics/)。
 
 
 
@@ -142,13 +225,13 @@ ggplot(data = pressure, aes(x = temperature, y = pressure)) +
 
 
 
-### Why ggplot2 {#why-ggplot2}
+### Why ggplot2 {#sec-why-ggplot2}
 
 
-既然这样，为什么我仍然选择介绍 ggplot2 呢？对新手来说比较友好，有一套紧凑、一致的语法，掌握规律后，学习曲线比较低，可以非常高效地绘制中等质量的图形。此外，衍生包 gganimate [@gganimate2020] 可以与 ggplot2 如丝般顺滑衔接，以成本极低的方式绘制动态图形，而且，ggplot2 的绘图语法已经出圈到交互式可视化领域，举例来说，R包 plotly [@Carson2020] 和 leaflet [@leaflet2022] 等都提供一套相似度极高的管道语法，学习成本进一步摊薄了。总而言之，软件成熟，生态庞大，社区活跃。
+既然这样，为什么我仍然选择介绍 **ggplot2** 呢？对新手来说比较友好，有一套紧凑、一致的语法，掌握规律后，学习曲线比较低，可以非常高效地绘制中等质量的图形。此外，衍生包 **gganimate** [@gganimate2020] 可以与 ggplot2 如丝般顺滑衔接，以成本极低的方式绘制动态图形，而且，**ggplot2** 的绘图语法已经出圈到交互式可视化领域，举例来说，R 包 **plotly** [@Carson2020] 和 **leaflet** [@leaflet2022] 等都提供一套相似度极高的管道语法，学习成本进一步摊薄了。总而言之，软件成熟，生态庞大，社区活跃。
 
 
-### Beyond ggplot2 {#beyond-ggplot2}
+### Beyond ggplot2 {#sec-beyond-ggplot2}
 
 就展示数据而言，本文将介绍数以十计的图形，如此丰富，就单一目的而言，也有多种可选的图形。可见，仅仅掌握 ggplot2 这套工具是远远不够的，还需要了解数据背景，探索、分析数据，获得数据洞见，只有结合这些，才知道选择最合适的图形，进而准确地传递信息，数据才能释放出应有的价值。
 
@@ -157,37 +240,794 @@ ggplot(data = pressure, aes(x = temperature, y = pressure)) +
 
 ```{r}
 #| label: fig-avoid-errorbar
-#| fig.cap: "防止误差线图"
-#| fig.height: 9
-#| fig.width: 6
+#| fig-cap: "防止误差线图"
+#| fig-subcap: 
+#| - "误差线"
+#| - "提琴图"
+#| - "散点图"
+#| layout-ncol: 2
+#| layout-nrow: 2
+#| fig-width: 3.5
+#| fig-height: 2.625
 #| echo: false
 
 library(data.table)
 ToothGrowth <- as.data.table(ToothGrowth)
 ToothGrowth[, dose := as.factor(dose)]
-p1 <- ToothGrowth[, .(mean_len = mean(len), sd_len = sd(len)), by = .(supp, dose)] |>
+
+ToothGrowth[, .(mean_len = mean(len), sd_len = sd(len)), by = .(supp, dose)] |>
   ggplot(aes(dose, mean_len, fill = supp)) +
-  geom_col(position = position_dodge(0.4), width = 0.4) +
+  geom_col(aes(color = supp),
+    show.legend = FALSE,
+    position = position_dodge(0.4), width = 0.4
+  ) +
   geom_errorbar(aes(ymin = mean_len - sd_len, ymax = mean_len + sd_len),
     position = position_dodge(0.4), width = 0.2
   ) +
   theme_minimal() +
   theme(axis.title.y = element_text(angle = 0, vjust = 1, size = 15)) +
-  labs(y = "A")
+  labs(x = NULL, y = "A")
 
-p2 <- ggplot(data = ToothGrowth, aes(x = dose, y = len, color = supp)) +
-  geom_violin() +
+ggplot(data = ToothGrowth, aes(x = dose, y = len)) +
+  geom_violin(aes(color = supp), show.legend = FALSE) +
   theme_minimal() +
   theme(axis.title.y = element_text(angle = 0, vjust = 1, size = 15)) +
-  labs(y = "B")
+  labs(x = NULL, y = "B")
 
-p3 <- ggplot(data = ToothGrowth, aes(x = dose, y = len, color = supp)) +
-  geom_point() +
+ggplot(data = ToothGrowth, aes(x = dose, y = len)) +
+  geom_point(aes(color = supp), show.legend = FALSE) +
   theme_minimal() +
   theme(axis.title.y = element_text(angle = 0, vjust = 1, size = 15)) +
-  labs(y = "C")
-
-library(ggplot2)
-library(patchwork)
-p1 / p2 / p3
+  labs(x = NULL, y = "C")
 ```
+
+
+
+## 图形基础 {#sec-foundations-of-ggplot2}
+
+2006 年 Hans Rosling 在 TED 做了一场精彩的演讲 --- The best stats you've ever seen (<https://www.ted.com/talks/hans_rosling_the_best_stats_you_ve_ever_seen>)。演讲中展示了一系列生动形象的动画，用数据记录的事实帮助大家理解世界的变化，可谓是动态图形领域的惊世之作。时至今日，已经超过 1500 万人观看，产生了十分广泛的影响。后来，Jennifer Bryan 从 Hans Rosling 创建的网站 <https://www.gapminder.org/data/> 中摘录了一部分数据，整理后，放在 R 包 **gapminder** [@gapminder2017] 中，而数据集的名字也叫 gapminder。本节将基于 gapminder 数据集介绍 ggplot2 绘图的基础知识，包括图层、标签、刻度、配色、图例、主题、文本、分面、字体、动画和组合等 11 个方面，理解这些有助于绘制和加工各种各样的统计图形，可以覆盖日常所需。gapminder 数据集以数据框的形式存储在 R 软件运行环境中，一共 1704 行，6 列，该数据集的部分内容见 @tbl-gapminder 。
+
+```{r}
+#| echo: false
+#| label: tbl-gapminder
+#| tbl-cap: "gapminder 数据集（部分）"
+
+library(gapminder)
+knitr::kable(head(gapminder),
+  col.names = c("国家或地区", "区域", "年份", "预期寿命", "人口总数", "人均 GDP")
+)
+```
+
+在 R 环境中，加载 **gapminder** 包后，可以用 `str()` 函数查看数据集 gapminder 的情况。
+
+```{r}
+#| label: load-gapminder
+
+# 加载 R 包
+library(gapminder)
+# 查看数据
+str(gapminder)
+```
+
+其中，country（国家或地区）和 continent （区域）是因子型变量，year （年份）和 pop （人口总数）是整型变量，lifeExp （预期寿命，单位：岁）和 gdpPercap （人均 GDP，单位：美元）是数值型变量。
+
+<!--
+gapminder 数据集中，中国香港 "Hong Kong, China"，波多黎各 "Puerto Rico"， "Taiwan" 台湾是单独统计的数据，数据集 gapminder 的上游是网站<https://www.gapminder.org/data/>，而数据源头是世界银行 World Bank 的世界发展指数 World Development Indicators。
+-->
+
+
+### 图层 {#sec-layer}
+
+ggplot2 绘图必须包含以下三个要素，缺少任何一个，图形都是不完整的。
+
+1.  数据，前面已经重点介绍和准备了；
+1.  映射，数据中的变量与几何元素的对应关系；
+1.  图层，至少需要一个图层用来渲染观察值。
+
+下面逐一说明三个要素的作用，为简单起见，从数据集 gapminder 中选取 2007 年的数据。
+
+```{r}
+#| label: fig-layer-point
+#| fig-cap: "ggplot2 绘图三要素"
+#| fig-subcap: 
+#| - "只有数据"
+#| - "只有数据和映射"
+#| - "数据、映射和图层"
+#| layout-ncol: 2
+#| layout-nrow: 2
+#| fig-width: 4
+#| fig-height: 3
+
+gapminder_2007 <- gapminder[gapminder$year == 2007, ]
+ggplot(data = gapminder_2007)
+ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp))
+ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point()
+```
+
+@fig-layer-point-1 仅提供数据，只渲染出来一个绘图区域。 @fig-layer-point-2 仅提供数据和映射，将变量 gdpPercap 映射给横轴，变量 lifeExp 映射给纵轴，继续渲染出来横、纵坐标轴及标签。 @fig-layer-point-3 提供了数据、映射和图层三要素，观察值根据几何图层 `geom_point()` 将几何元素 「点」渲染在绘图区域上，形成散点图。函数 `ggplot()` 和函数 `geom_point()` 之间是以加号 `+` 连接的。无论最终产出的图形如何复杂，这个模式贯穿 ggplot2 绘图。
+
+
+10 多年来，**ggplot2** 包陆续添加了很多几何图层，目前支持的有 53 个，如下：
+
+```{r}
+#| eval: true
+#| echo: false
+#| label: layout-geom
+
+ls("package:ggplot2", pattern = "^geom_*")
+```
+
+也正因这些丰富多彩的图层，ggplot2 可以非常便捷地做各种数据探索和展示工作。从时间序列数据、网络社交数据到文本数据、空间数据，乃至时空数据都有它大显身手的地方。
+
+
+
+### 标签 {#sec-label}
+
+用函数 `labs()` 可以添加横轴、纵轴、图例的标题，整个图片的标题和副标题等。下图 @fig-label-1 是默认设置下显示的标签内容，而 @fig-label-2 是用户指定标签内容后的显示效果。
+
+```{r}
+#| label: fig-label
+#| fig-width: 6
+#| fig-height: 3.5
+#| fig-cap: "添加标签"
+#| fig-subcap: 
+#| - "默认设置"
+#| - "自定义标签"
+#| layout-ncol: 1
+#| fig.showtext: true
+
+ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point(aes(color = continent))
+ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point(aes(color = continent)) +
+  labs(x = "人均 GDP", y = "预期寿命", tag = "标签",
+       title = "这里是标题", caption = "这是图形说明", 
+       subtitle = "这里是副标题", color = "图例标题")
+```
+
+
+### 标度 {#sec-scale}
+
+<!-- 
+几何元素的透明度 alpha、颜色 color、填充色 fill、线类型 linetype、几何元素的形状 shape 及大小 size，坐标轴 x/y 的变换 
+-->
+
+有时候 @fig-layer-point-3 看起来不太好，收入低的国家太多，聚集在一起，重叠覆盖比较严重。而高收入国家相对较少，分布稀疏，距离低收入比较远，数据整体的分布很不平衡。此时，可以考虑对横轴标度做一些变换，常用的有以 10 为底的对数变换，如 @fig-scale-log10 。
+
+
+```{r}
+#| label: fig-scale-log10
+#| fig-showtext: true
+#| fig-width: 5
+#| fig-height: 3
+#| fig-cap: "人均 GDP 做对数变换"
+
+library(scales)
+ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point() +
+  scale_x_log10() +
+  labs(x = "人均 GDP", y = "预期寿命")
+```
+
+为了更加醒目地展示横轴做了对数变换，需要添加对应的刻度标签。**scales** 包 [@scales2022] 提供很多刻度标签支持，比如函数 `label_log()` 默认提供以 10 为底的刻度标签，如 @fig-scale-labels 。
+
+```{r}
+#| label: fig-scale-labels
+#| fig-showtext: true
+#| fig-cap: "刻度标签随数据变换调整"
+#| fig-width: 5
+#| fig-height: 3
+
+ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point() +
+  scale_x_log10(labels = label_log()) +
+  labs(x = "人均 GDP", y = "预期寿命")
+```
+
+这其实还不够，有的刻度标签含义不够显然，且看 @fig-scale-labels 的横轴第一个刻度标签 $10^{2.48}$ 是用来替换 @fig-scale-log10 的横轴第一个刻度标签 300。10 的 2.48 次方可不容易看出是 300 的意思，实际上它等于 302。因此，结合人均 GDP 的实际范围，有必要适当调整横轴显示范围，这可以在函数 `scale_x_log10()` 中设置参数 `limits`，横轴刻度标签会随之适当调整，调整后的效果如 @fig-scale-limits 。
+
+
+```{r}
+#| label: fig-scale-limits
+#| fig-showtext: true
+#| fig-width: 5
+#| fig-height: 3
+#| fig-cap: "设置数据展示范围"
+
+ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point() +
+  scale_x_log10(labels = label_log(), limits = c(100, 100000)) +
+  labs(x = "人均 GDP", y = "预期寿命")
+```
+
+根据横轴所代表的人均 GDP （单位：美元）的实际含义，其实，可以进一步，添加更多的信息，即刻度标签带上数量单位，此处是美元符号。**scales** 包提供的函数 `label_dollar()` 可以实现，效果如 @fig-scale-dollar 。
+
+```{r}
+#| label: fig-scale-dollar
+#| fig-showtext: true
+#| fig-width: 5
+#| fig-height: 3
+#| fig-cap: "设置数据展示范围"
+
+ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point() +
+  scale_x_log10(labels = label_dollar(), limits = c(100, 100000)) +
+  labs(x = "人均 GDP", y = "预期寿命")
+```
+
+
+最后，有必要添加次刻度线作为辅助参考线。图中点与点之间的横向距离代表人均 GDP 差距，以 10 为底的对数变换不是线性变化的，肉眼识别起来有点困难。从 100 美元到 100000 美元，在 100 美元、1000 美元、10000 美元和 100000 美元之间均添加 10 条次刻度线，每个区间内相邻的两条次刻度线之差保持恒定。下面构造刻度线的位置，了解原值和对数变换后的对应关系。
+
+```{r}
+# 刻度线位置
+mb <- unique(as.numeric(1:10 %o% 10^(1:4)))
+# 对数变换后
+log10(mb)
+# 刻度线位置
+format(mb, big.mark = ",", scientific = 999)
+```
+
+函数 `scale_x_log10()` 提供参数 `minor_breaks` 设定刻度线的位置。最终效果如 @fig-scale-minor-breaks 。
+
+```{r}
+#| label: fig-scale-minor-breaks
+#| fig-showtext: true
+#| fig-width: 5
+#| fig-height: 3
+#| fig-cap: "添加次刻度线，提供更多参考"
+
+ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point() +
+  scale_x_log10(
+    labels = label_dollar(), minor_breaks = mb, limits = c(100, 100000)
+  ) +
+  labs(x = "人均 GDP", y = "预期寿命")
+```
+
+
+
+### 配色 {#sec-color}
+
+好的配色可以让图形产生眼前一亮的效果，R 语言社区在统计图形领域深耕 20 多年，陆续涌现很多专门调色的 R 包，常见的有：
+
+- **RColorBrewer** [@RColorBrewer2022] (<https://github.com/axismaps/colorbrewer/>)
+- **munsell** [@munsell2018] (<https://github.com/cwickham/munsell/>)
+- **colorspace** [@Zeileis2020] (<https://colorspace.r-forge.r-project.org/>)
+- **paletteer** [@paletteer2021] (<https://github.com/EmilHvitfeldt/paletteer>)
+- **scico** [@scico2022] (<https://github.com/thomasp85/scico>)
+- **viridis** [@viridis2021] (<https://github.com/sjmgarnier/viridis/>)
+- **viridisLite** [@viridis2021] (<https://github.com/sjmgarnier/viridisLite/>)
+- **colormap** [@colormap2016] (<https://github.com/bhaskarvk/colormap>)
+
+**ggplot2** 提供多种方式给图形配色，最常见的要数函数 `scale_color_brewer()`，它调用 RColorBrewer 包制作离散型的调色板，根据离散型变量的具体情况，可分为发散型 qualitative、对撞型 Diverging、有序型 Sequential。在图 @fig-scale-minor-breaks 的基础上，将分类型的区域变量映射给散点的颜色，即得到 @fig-color-brewer 。
+
+```{r}
+#| label: fig-color-brewer
+#| fig-cap: "使用 RColorBrewer 包提供的 Set1 调色板"
+#| fig-showtext: true
+#| fig-width: 6
+#| fig-height: 3.5
+
+ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point(aes(color = continent)) +
+  scale_color_brewer(palette = "Set1") +
+  scale_x_log10(
+    labels = label_dollar(), minor_breaks = mb, limits = c(100, 100000)
+  ) +
+  labs(x = "人均 GDP", y = "预期寿命", color = "区域")
+```
+
+另一种方式是调用函数 `scale_color_manual()`，需要用户给分类变量值逐个指定颜色，即提供一个命名的向量，效果如 @fig-color-manual 。
+
+```{r}
+#| label: fig-color-manual
+#| fig-cap: "手动挨个指定分类变量的颜色"
+#| fig-showtext: true
+#| fig-width: 6
+#| fig-height: 3.5
+
+ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point(aes(color = continent)) +
+  scale_color_manual(values = c(
+    Africa = "#E41A1C", Americas = "#377EB8",
+    Asia = "#4DAF4A", Europe = "#984EA3",
+    Oceania = "#FF7F00"
+  )) +
+  scale_x_log10(
+    labels = label_dollar(), minor_breaks = mb, limits = c(100, 100000)
+  ) +
+  labs(x = "人均 GDP", y = "预期寿命", color = "区域")
+```
+
+若分类变量太多，图例会特别冗长，占据较多版面，可以去掉，效果见 @fig-color-custom 。
+
+```{r}
+#| label: fig-color-custom
+#| fig.cap: "分类变量太多时可以隐藏图例"
+#| fig.showtext: true
+#| fig-width: 5
+#| fig-height: 3
+
+ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point(aes(color = country), show.legend = FALSE) +
+  scale_color_manual(values = country_colors) +
+  scale_x_log10(
+    labels = label_dollar(), minor_breaks = mb, limits = c(100, 100000)
+  ) +
+  labs(x = "人均 GDP", y = "预期寿命", color = "区域")
+```
+
+
+### 图例 {#sec-legend}
+
+在 @fig-color-custom 的基础上，继续将每个国家的人口总数映射给点的大小，绘制气泡图。此时有两个视觉映射变量 --- 离散型的变量 country （国家）和连续型的变量 pop （人口总数）。不仅仅是图层函数 `geom_point()`，所有的几何图层都提供参数 `show.legend` 来控制图例的显示或隐藏。传递命名逻辑向量还可以在多个图例中选择性保留。 @fig-legend-show 在两个图例中保留一个，即人口总数。
+
+```{r}
+#| label: fig-legend-show
+#| fig.cap: "在两个图例中保留一个"
+#| fig.showtext: true
+#| fig-width: 6
+#| fig-height: 3.5
+
+ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point(aes(color = country, size = pop),
+    show.legend = c(color = FALSE, size = TRUE)
+  ) +
+  scale_color_manual(values = country_colors) +
+  scale_size(range = c(2, 12)) +
+  scale_x_log10(
+    labels = label_dollar(), minor_breaks = mb, limits = c(100, 100000)
+  ) +
+  labs(x = "人均 GDP", y = "预期寿命", size = "人口总数")
+```
+
+全世界各个国家的人口总数从百万级横跨到十亿级，根据此实际情况，适当调整图例刻度标签是很有必要的，可以让图例内容更具可读性。 @fig-legend-label 是修改图例刻度标签后的效果，其中 M 表示 Million（百万），B 表示 Billion （十 亿）。
+
+```{r}
+#| label: fig-legend-label
+#| fig-cap: "修改图例刻度标签"
+#| fig-showtext: true
+#| fig-width: 5.5
+#| fig-height: 3.5
+
+ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point(aes(color = country, size = pop),
+    show.legend = c(color = FALSE, size = TRUE)
+  ) +
+  scale_color_manual(values = country_colors) +
+  scale_size(range = c(2, 12), labels = label_number(scale_cut = cut_short_scale())) +
+  scale_x_log10(
+    labels = label_dollar(), minor_breaks = mb, limits = c(100, 100000)
+  ) +
+  labs(x = "人均 GDP", y = "预期寿命", size = "人口总数")
+```
+
+
+### 主题 {#sec-theme}
+
+主题就是一系列风格样式的集合，提前设定标题、文本、坐标轴、图例等元素的默认参数，供后续调用。10 年来，R 语言社区陆续出现很多主题包。
+
+- **ggthemes** [@ggthemes2021] 收集了网站（如 Fivethirtyeight）、杂志（如《经济学家》）、软件（如 Stata）等的配色主题，打包成可供 **ggplot2** 绘图的主题，更多内容见 (<https://github.com/jrnold/ggthemes>)
+- **ggsci** [@ggsci2018] 包收集了多份期刊杂志的图形配色，将其融入 **ggplot2** 绘图主题中，更多内容见 (<https://github.com/road2stat/ggsci>)。
+- **ggpubr** [@ggpubr2020] 包在 **ggplot2** 之上封装一套更加易用的函数，可以快速绘制出版级的统计图形 (<https://github.com/kassambara/ggpubr>)。
+- **ggcharts** [@ggcharts2020] 包类似 **ggpubr** 包，也提供一套更加快捷的函数接口，缩短数据可视化的想法与实际图形的距离，更多内容见 (<https://github.com/thomas-neitmann/ggcharts>)。
+- **ggthemr** [@ggthemr2020] 是比较早的 **ggplot2** 主题包，上游依赖少，更多内容见 (<https://github.com/Mikata-Project/ggthemr>)。
+- **ggtech** [@ggtech2018] 包收集了许多科技公司的设计风格，将其制作成可供 ggplot2 绘图使用的主题，更多内容见 (<https://github.com/ricardo-bion/ggtech>)。
+- **bbplot** [@bbplot2022] 为 BBC 新闻定制的一套主题，更多内容见 (<https://github.com/bbc/bbplot>)。
+- **pilot** [@pilot2022] 包提供一套简洁的 **ggplot2** 主题，特别是适合展示分类、离散型数据，更多内容见 (<https://github.com/olihawkins/pilot>)。
+- **ggthemeassist** [@ggThemeAssist2016] 包提供 RStudio IDE 插件，帮助用户以鼠标点击的交互方式设置 **ggplot2** 图形的主题样式，更多内容见 (<https://github.com/calligross/ggthemeassist>)。
+
+
+在 @fig-legend-label 的基础上，以 **ggplot2** 包内置的主题 `theme_classic()` 替换默认的主题，效果如下 @fig-theme-classic ，这是一套非常经典的主题，它去掉所有的背景色和参考系，显得非常简洁。
+
+
+```{r}
+#| label: fig-theme-classic
+#| fig-cap: "ggplot2 内置的经典主题风格"
+#| fig-showtext: true
+#| fig-width: 6
+#| fig-height: 4.5
+
+ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point(aes(color = country, size = pop), 
+             show.legend = c(color = FALSE, size = TRUE)) +
+  scale_color_manual(values = country_colors) +
+  scale_size(range = c(2, 12), labels = label_number(scale_cut = cut_short_scale())) +
+  scale_x_log10(
+    labels = label_dollar(), minor_breaks = mb, limits = c(100, 100000)
+  ) +
+  theme_classic() +
+  labs(x = "人均 GDP", y = "预期寿命", size = "人口总数")
+```
+
+
+在已有主题的基础上，还可以进一步细微调整，比如，将图例移动至绘图区域的下方，见 @fig-theme-position 。
+
+```{r}
+#| label: fig-theme-position
+#| fig-cap: "图例置于图形下方"
+#| fig-showtext: true
+#| fig-width: 6
+#| fig-height: 4.5
+
+ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point(aes(color = country, size = pop), 
+             show.legend = c(color = FALSE, size = TRUE)) +
+  scale_color_manual(values = country_colors) +
+  scale_size(range = c(2, 12), labels = label_number(scale_cut = cut_short_scale())) +
+  scale_x_log10(
+    labels = label_dollar(), minor_breaks = mb, limits = c(100, 100000)
+  ) +
+  theme_classic() +
+  theme(legend.position =  "bottom") +
+  labs(x = "人均 GDP", y = "预期寿命", size = "人口总数")
+```
+
+或者用户觉得合适的任意位置。
+
+```{r}
+#| label: fig-theme-custom
+#| fig-cap: "微调图例位置"
+#| fig-showtext: true
+#| fig-width: 6
+#| fig-height: 4.5
+
+ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point(aes(color = country, size = pop), 
+             show.legend = c(color = FALSE, size = TRUE)) +
+  scale_color_manual(values = country_colors) +
+  scale_size(range = c(2, 12), labels = label_number(scale_cut = cut_short_scale())) +
+  scale_x_log10(
+    labels = label_dollar(), minor_breaks = mb, limits = c(100, 100000)
+  ) +
+  theme_classic() +
+  theme(legend.position =  c(0.9, 0.35)) +
+  labs(x = "人均 GDP", y = "预期寿命", size = "人口总数")
+```
+
+
+或者更换其它主题，比如 **ggplot2** 包内置极简主题 `theme_minimal()`，它还可以保留主、次刻度线，更加适合当下的数据。
+
+```{r}
+#| label: fig-theme-minimal
+#| fig-cap: "ggplot2 内置的极简主题风格"
+#| fig-showtext: true
+#| fig-width: 6
+#| fig-height: 4.5
+
+ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point(aes(color = country, size = pop), 
+             show.legend = c(color = FALSE, size = TRUE)) +
+  scale_color_manual(values = country_colors) +
+  scale_size(range = c(2, 12), labels = label_number(scale_cut = cut_short_scale())) +
+  scale_x_log10(
+    labels = label_dollar(), minor_breaks = mb, limits = c(100, 100000)
+  ) +
+  theme_minimal() +
+  theme(legend.position =  c(0.9, 0.35)) +
+  labs(x = "人均 GDP", y = "预期寿命", size = "人口总数")
+```
+
+
+
+
+### 注释 {#sec-annotation}
+
+注释可以是普通文本，数学公式，还可以是图形照片、表情包。注释功能非常强大，但也是非常灵活，往往使用起来颇费功夫，需要结合数据情况，从图形所要传递的信息出发，适当添加。R 语言社区陆续出现一些扩展包，让用户使用起来更方便些。
+
+- **ggrepel** [@ggrepel2021] 包可以通过添加一定距离的扰动，可以缓解文本重叠的问题，更多内容见 (<https://github.com/slowkow/ggrepel>)。
+- **ggtext** [@ggtext2020] 包支持以 Markdown 语法添加丰富的文本内容，更多内容见 (<https://github.com/wilkelab/ggtext>)。
+- **geomtextpath** [@geomtextpath2022] 包新添几何图层 --- 文本路径。注释文本随路径变化，更多内容见 (<https://github.com/AllanCameron/geomtextpath>) 。
+- **string2path** [@string2path2022] 包字体轮廓生成路径，注释文本随路径变化，更多内容见 (<https://github.com/yutannihilation/string2path>)。
+- **ggimage** [@ggimage2022] 包提供图像图层，实现以图片代替散点的效果，图片还可以是表情包，更多内容见 (<https://github.com/GuangchuangYu/ggimage>)。
+
+在 @fig-theme-minimal 的基础上，给人口总数大于 2 亿的国家添加文本注释。这可以用 **ggplot2** 包提供的文本图层函数 `geom_text()` 实现，效果如 @fig-text 。
+
+```{r}
+#| label: fig-text
+#| fig-cap: "添加文本注释"
+#| fig-showtext: true
+#| fig-width: 6
+#| fig-height: 4.5
+
+library(ggrepel)
+ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point(aes(color = country, size = pop),
+    show.legend = c(color = FALSE, size = TRUE)
+  ) +
+  scale_color_manual(values = country_colors) +
+  scale_x_log10(
+    labels = label_dollar(), minor_breaks = mb, limits = c(100, 100000)
+  ) +
+  geom_text(
+    data = gapminder_2007[gapminder_2007$pop >= 20 * 10^7, ],
+    aes(label = country), show.legend = FALSE
+  ) +
+  scale_size(range = c(2, 12), labels = label_number(scale_cut = cut_short_scale())) +
+  theme_minimal() +
+  theme(legend.position = c(0.9, 0.35)) +
+  labs(x = "人均 GDP", y = "预期寿命", size = "人口总数")
+```
+
+当需要给许多点添加文本注释时，就难以避免地遇到注释文本重叠的问题。比如给人口总数大于 2000 万的国家添加文本注释，此时，适合使用 **ggrepel** 包，调用函数 `geom_text_repel()` --- 这是一个新的文本图层，通过添加适当的位移缓解文本重叠问题。
+
+```{r}
+#| label: fig-text-ggrepel
+#| fig-cap: "缓解文本注释相互覆盖的问题"
+#| fig-showtext: true
+#| fig-width: 6
+#| fig-height: 4.5
+
+library(ggrepel)
+ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point(aes(color = country, size = pop),
+    show.legend = c(color = FALSE, size = TRUE)
+  ) +
+  scale_color_manual(values = country_colors) +
+  scale_x_log10(
+    labels = label_dollar(), minor_breaks = mb, limits = c(100, 100000)
+  ) +
+  geom_text_repel(
+    data = gapminder_2007[gapminder_2007$pop >= 2 * 10^7, ],
+    aes(label = country), size = 3, max.overlaps = 50,
+    segment.colour = "gray", seed = 2022, show.legend = FALSE
+  ) +
+  scale_size(range = c(2, 12), labels = label_number(scale_cut = cut_short_scale())) +
+  theme_minimal() +
+  theme(legend.position = c(0.9, 0.35)) +
+  labs(x = "人均 GDP", y = "预期寿命", size = "人口总数")
+```
+
+
+
+
+### 分面 {#sec-facet}
+
+**ggplot2** 包有两个函数 `facet_wrap()` 和 `facet_grid()` 都可以用来实现分面操作，分面的目的是将数据切分，一块一块地展示。下面在 @fig-theme-minimal 的基础上，按区域变量分面，即将各个国家或地区按地理区域分开，效果如 @fig-facet-wrap 所示。`facet_grid()` 与 `facet_wrap()` 的效果是类似的，就不再赘述了。
+
+```{r}
+#| label: fig-facet-wrap
+#| fig-cap: "按区域变量分面"
+#| fig-showtext: true
+#| fig-width: 8
+#| fig-height: 9
+
+ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point(aes(color = country, size = pop), 
+             show.legend = c(color = FALSE, size = TRUE)) +
+  scale_color_manual(values = country_colors) +
+  scale_size(range = c(2, 12), labels = label_number(scale_cut = cut_short_scale())) +
+  scale_x_log10(labels = label_dollar(), limits = c(100, 100000)) +
+  facet_wrap(facets = ~continent, ncol = 2) +
+  theme_classic() +
+  theme(legend.position =  c(0.7, 0.12)) +
+  labs(x = "人均 GDP", y = "预期寿命", size = "人口总数")
+```
+
+在函数 `facet_wrap()` 内设置不同的参数值，会有不同的排列效果。设置 `ncol = 3`，意味着排成 3 列，而分类变量 continent 总共有 5 种不同的类别，因此将会是 3 列 2 行的布局，效果如下 @fig-facet-ncol 。
+
+```{r}
+#| label: fig-facet-ncol
+#| fig-cap: "按区域变量分面"
+#| fig-showtext: true
+#| fig-width: 7
+#| fig-height: 6
+
+ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point(aes(color = country, size = pop), 
+             show.legend = c(color = FALSE, size = TRUE)) +
+  scale_color_manual(values = country_colors) +
+  scale_size(range = c(2, 12), labels = label_number(scale_cut = cut_short_scale())) +
+  scale_x_log10(labels = label_log(), limits = c(100, 100000)) +
+  facet_wrap(facets = ~continent, ncol = 3) +
+  theme_classic() +
+  theme(legend.position =  c(0.9, 0.20)) +
+  labs(x = "人均 GDP", y = "预期寿命", size = "人口总数")
+```
+
+
+
+
+### 字体 {#sec-font}
+
+**showtext** [@Qiu2015] 是一个专用于处理中英文字体的 R 包，支持 Base R 和 **ggplot2** 绘图，支持调用系统已安装的字体，也支持调用给定路径下的字体，还支持各种奇形怪状的表情字体，更多内容见 (<https://github.com/yixuan/showtext>)，好玩的字体配合好玩的图形，可以玩出很多花样。
+
+```{r}
+#| eval: false
+#| echo: true
+
+## 简体中文宋体字
+sysfonts::font_add(
+  family = "Noto Serif CJK SC",
+  regular = "NotoSerifCJKsc-Regular.otf",
+  bold = "NotoSerifCJKsc-Bold.otf"
+)
+## 无衬线英文字体
+sysfonts::font_add(
+  family = "Noto Sans",
+  regular = "NotoSans-Regular.ttf",
+  bold = "NotoSans-Bold.ttf",
+  italic = "NotoSans-Italic.ttf",
+  bolditalic = "NotoSans-BoldItalic.ttf"
+)
+```
+
+接下来查看在当前运行环境下，可供 **showtext** 包使用的字体。如果配置成功，输出的字体列表中会包含 `Noto Serif CJK SC` 和 `Noto Sans` 两款字体。
+
+```{r}
+#| label: font-families
+
+sysfonts::font_families()
+```
+
+确认字体配置好了以后，全局默认字体为 Noto 无衬线英文字体，将所有标题处的字体设置为 Noto 系列的简体中文字体。通过与前面的 @fig-facet-ncol 比较，下 @fig-font 中的字体样式是明显不一样的。
+
+```{r}
+#| label: fig-font
+#| fig-cap: "Noto 系列中英文字体"
+#| fig-showtext: true
+#| fig-width: 7
+#| fig-height: 6
+
+ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point(aes(color = country, size = pop), 
+             show.legend = c(color = FALSE, size = TRUE)) +
+  scale_color_manual(values = country_colors) +
+  scale_size(range = c(2, 12), labels = label_number(scale_cut = cut_short_scale())) +
+  scale_x_log10(labels = label_log(), limits = c(100, 100000)) +
+  facet_wrap(facets = ~continent, ncol = 3) +
+  theme_classic(base_family = "Noto Sans") +
+  theme(
+    title = element_text(family = "Noto Serif CJK SC"),
+    legend.position =  c(0.9, 0.20)
+  ) +
+  labs(x = "人均 GDP", y = "预期寿命", size = "人口总数")
+```
+
+**ragg** 包 (<https://github.com/r-lib/ragg>) 无需手动配置字体，只要是系统已经安装的字体，在 ggplot2 绘图时，将字体名称传递给 `family` 即可。
+
+
+### 动画 {#sec-animation}
+
+
+从 1952-2007 年，gapminder 数据集是每隔 5 年从源数据中摘录一次整理的，因此，实际只有 12 年的数据。 @sec-font 根据 2007 年的数据绘制了 @fig-font ，每年的数据绘制一幅图像，12 年总共可获得 12 帧图像，再以每秒播放 2 帧图像的速度将 12 帧图像合成 GIF 动画。因此，设置这个动画总共 12 帧，每秒播放的图像数为 2。
+
+```{r}
+options(gganimate.nframes = 12, gganimate.fps = 2)
+```
+
+**gganimate** 包提供一套代码风格类似 **ggplot2** 包的动态图形语法，可以非常顺滑地与之连接。在了解了 ggplot2 绘制图形的过程后，用 **gganimate** 包制作动画是非常容易的。**gganimate** 包会调用 **gifski** (<https://github.com/r-rust/gifski>) 包来合成动画，因此，除了安装 **gganimate** 包，还需要安装 **gifski** 包。接着，在已有的 **ggplot2** 绘图代码基础上，再追加一个转场图层函数 `transition_time()`，这里是按年逐帧展示图像，因此，其转场的时间变量为 gapminder 数据集中的变量 `year`。
+
+```{r}
+#| label: fig-animate-html
+#| fig-cap: "生成 GIF 动画"
+#| fig-width: 7
+#| fig-height: 6
+#| fig-showtext: true
+#| eval: !expr knitr::is_html_output()
+#| echo: !expr knitr::is_html_output()
+#| cache: true
+
+library(gganimate)
+ggplot(data = gapminder, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point(aes(color = country, size = pop),
+    show.legend = c(color = FALSE, size = TRUE), na.rm = TRUE
+  ) +
+  scale_color_manual(values = country_colors) +
+  scale_size(range = c(2, 12), labels = label_number(scale_cut = cut_short_scale())) +
+  scale_x_log10(labels = label_log(), minor_breaks = mb, limits = c(100, 100000)) +
+  facet_wrap(facets = ~continent) +
+  theme_classic(base_family = "Noto Sans") +
+  theme(
+    title = element_text(family = "Noto Serif CJK SC"),
+    legend.position = c(0.9, 0.20)
+  ) +
+  labs(
+    title = "{frame_time} 年", x = "人均 GDP",
+    y = "预期寿命", size = "人口总数"
+  ) +
+  transition_time(time = year)
+```
+```{r}
+#| label: fig-animate-pdf
+#| fig-show: "animate"
+#| fig-cap: "生成 GIF 动画"
+#| fig-width: 7
+#| fig-height: 6
+#| fig-showtext: true
+#| eval: !expr knitr::is_latex_output()
+#| echo: !expr knitr::is_latex_output()
+#| cache: true
+
+library(gganimate)
+ggplot(data = gapminder, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point(aes(color = country, size = pop),
+    show.legend = c(color = FALSE, size = TRUE), na.rm = TRUE
+  ) +
+  scale_color_manual(values = country_colors) +
+  scale_size(
+    range = c(2, 12), labels = label_number(scale_cut = cut_short_scale())
+  ) +
+  scale_x_log10(
+    labels = label_log(), minor_breaks = mb, limits = c(100, 100000)
+  ) +
+  facet_wrap(facets = ~continent) +
+  theme_classic(base_family = "Noto Sans") +
+  theme(
+    title = element_text(family = "Noto Serif CJK SC"),
+    legend.position = c(0.9, 0.20)
+  ) +
+  labs(
+    title = "{frame_time} 年", x = "人均 GDP",
+    y = "预期寿命", size = "人口总数"
+  ) +
+  transition_time(time = year)
+```
+
+
+
+### 组合 {#sec-patchwork}
+
+**patchwork** (<https://github.com/thomasp85/patchwork>) 包提供了一套非常简洁的语法，用来组合多个 ggplot2 图形。如 @fig-patchwork 所示，用散点图分别绘制 2002 年和 2007 年的数据，并将图形肩并肩的并排展示。
+
+
+```{r}
+#| label: fig-patchwork
+#| fig-cap: "左右组合"
+#| fig-width: 6
+#| fig-height: 3
+#| fig-showtext: true
+
+gapminder_2002 <- gapminder[gapminder$year == 2002, ]
+p1 <- ggplot(data = gapminder_2002, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point() +
+  labs(x = "人均 GDP", y = "预期寿命", title = "2002年") +
+  theme_classic()
+
+p2 <- ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point() +
+  labs(x = "人均 GDP", y = "预期寿命", title = "2007年") +
+  theme_classic()
+
+library(patchwork)
+p1 | p2
+```
+
+除了用竖线 `|` 左右并排，还可以用斜杠 `/` 做上下排列，见下 @fig-patchwork-updown 。
+
+```{r}
+#| label: fig-patchwork-updown
+#| fig-cap: "上下组合"
+#| fig-width: 3
+#| fig-height: 6
+#| fig-showtext: true
+
+p1 / p2
+```
+
+还可以引入括号 `()`，实现更加复杂的图形组合，见下 @fig-patchwork-grid 。
+
+```{r}
+#| label: fig-patchwork-grid
+#| fig-cap: "多图组合"
+#| fig-width: 6
+#| fig-height: 6
+#| fig-showtext: true
+
+p1 / (p1 | p2)
+```
+
+结合上面的介绍，不难看出，竖线 `|` 用于左右分割，斜杠 `/` 用于上下分割，而括号 `()` 用于范围的限定，下 @fig-patchwork-layout 是去掉括号后的效果。
+
+```{r}
+#| label: fig-patchwork-layout
+#| fig-cap: "多图组合"
+#| fig-width: 6
+#| fig-height: 6
+#| fig-showtext: true
+
+p1 / p1 | p2
+```
+
+最常用的功能就是这些啦，更多内容可以去 **patchwork** 包官网了解。其它可以用来组合多个 ggplot2 图形的 R 包有 **cowplot** (<https://github.com/wilkelab/cowplot>)、**gridExra** (<https://cran.r-project.org/package=gridExtra>) 和 **gghalves** (<https://github.com/erocoar/gghalves>)等。
