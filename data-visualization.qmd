@@ -902,13 +902,12 @@ options(gganimate.nframes = 12, gganimate.fps = 2)
 **gganimate** 包提供一套代码风格类似 **ggplot2** 包的动态图形语法，可以非常顺滑地与之连接。在了解了 ggplot2 绘制图形的过程后，用 **gganimate** 包制作动画是非常容易的。**gganimate** 包会调用 **gifski** (<https://github.com/r-rust/gifski>) 包来合成动画，因此，除了安装 **gganimate** 包，还需要安装 **gifski** 包。接着，在已有的 **ggplot2** 绘图代码基础上，再追加一个转场图层函数 `transition_time()`，这里是按年逐帧展示图像，因此，其转场的时间变量为 gapminder 数据集中的变量 `year`。
 
 ```{r}
-#| label: fig-animate-html
+#| label: fig-animate
 #| fig-cap: "生成 GIF 动画"
 #| fig-width: 7
 #| fig-height: 6
 #| fig-showtext: true
-#| eval: !expr knitr::is_html_output()
-#| echo: !expr knitr::is_html_output()
+#| fig-show: "animate"
 #| cache: true
 
 library(gganimate)
@@ -919,41 +918,6 @@ ggplot(data = gapminder, aes(x = gdpPercap, y = lifeExp)) +
   scale_color_manual(values = country_colors) +
   scale_size(range = c(2, 12), labels = label_number(scale_cut = cut_short_scale())) +
   scale_x_log10(labels = label_log(), minor_breaks = mb, limits = c(100, 100000)) +
-  facet_wrap(facets = ~continent) +
-  theme_classic(base_family = "Noto Sans") +
-  theme(
-    title = element_text(family = "Noto Serif CJK SC"),
-    legend.position = c(0.9, 0.20)
-  ) +
-  labs(
-    title = "{frame_time} 年", x = "人均 GDP",
-    y = "预期寿命", size = "人口总数"
-  ) +
-  transition_time(time = year)
-```
-```{r}
-#| label: fig-animate-pdf
-#| fig-show: "animate"
-#| fig-cap: "生成 GIF 动画"
-#| fig-width: 7
-#| fig-height: 6
-#| fig-showtext: true
-#| eval: !expr knitr::is_latex_output()
-#| echo: !expr knitr::is_latex_output()
-#| cache: true
-
-library(gganimate)
-ggplot(data = gapminder, aes(x = gdpPercap, y = lifeExp)) +
-  geom_point(aes(color = country, size = pop),
-    show.legend = c(color = FALSE, size = TRUE), na.rm = TRUE
-  ) +
-  scale_color_manual(values = country_colors) +
-  scale_size(
-    range = c(2, 12), labels = label_number(scale_cut = cut_short_scale())
-  ) +
-  scale_x_log10(
-    labels = label_log(), minor_breaks = mb, limits = c(100, 100000)
-  ) +
   facet_wrap(facets = ~continent) +
   theme_classic(base_family = "Noto Sans") +
   theme(
@@ -1058,7 +1022,7 @@ svn_trunk_log <- readRDS(file = "data/svn_trunk_log_20220727.rds")
 head(svn_trunk_log, 2)
 ```
 
-一共是四个字段，分别是代码提交时记录的版本号 revision，提交代码的人 author，提交代码的时间 date 和提交代码时伴随的说明 msg。接下来，带着问题一起探索开源统计软件 R 过去 25 年波澜壮阔的历史！
+一共是四个字段，分别是代码提交时记录的版本号 revision，提交代码的人 author，提交代码的时间 stamp 和提交代码时伴随的说明 msg。接下来，带着问题一起探索开源统计软件 R 过去 25 年波澜壮阔的历史！
 
 
 
@@ -1079,12 +1043,12 @@ head(svn_trunk_log, 2)
 先来了解一下总体趋势，即过去 25 年里代码提交次数的变化情况。
 
 
-数据集 `svn_trunk_log` 没有年份字段，但时间字段 date 隐含了年份信息，因此，新生成一个字段 year 将年份信息从 date 提取出来。
+数据集 `svn_trunk_log` 没有年份字段，但时间字段 stamp 隐含了年份信息，因此，新生成一个字段 year 将年份信息从 stamp 提取出来。
 
 
 ```{r}
 svn_trunk_log <- within(svn_trunk_log, {
-  year <- as.integer(format(date, "%Y"))
+  year <- as.integer(format(stamp, "%Y"))
 })
 ```
 
@@ -1336,40 +1300,73 @@ ggplot(data = trunk_year, aes(x = year, y = revision)) +
 
 时序关系，厘清发展脉络
 
+<!--
 https://benalexkeen.com/creating-a-timeline-graphic-using-r-and-ggplot2/
 https://rforpoliticalscience.com/2021/02/25/make-a-timeline-graph-with-dates-in-ggplot2/
-
+-->
 
 
 ### 日历图 {#sec-calendar}
 
-更加直观地展示出节假日、休息工作日、寒暑假，比如描述学生学习规律
+更加直观地展示出节假日、休息工作日、寒暑假，比如描述学生学习规律、需求的季节性变化、周期性变化。
 
 ```{r}
-#| eval: false
-
-data(quake6, package = "MSG")
-week.abb <- c("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+# 提取日期、月份、年份、星期、第几周等时间成分
+svn_trunk_log <- within(svn_trunk_log, {
+  date <- format(stamp, format = "%Y-%m-%d", tz = "UTC")
+  month <- format(stamp, format = "%m", tz = "UTC")
+  hour <- format(stamp, format = "%H", tz = "UTC")
+  week <- format(stamp, format = "%U", tz = "UTC")
+  wday <- format(stamp, format = "%a", tz = "UTC")
+})
+# 星期、月份缩写
+week.abb <- c(
+  "Sun", "Mon", "Tue", "Wed",
+  "Thu", "Fri", "Sat"
+)
 month.abb <- c(
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
 )
-
-quake6 <- within(quake6, {
-  date <- paste(year, month, day, sep = "-")
+# 按年、星期、第几周聚合统计提交量数据
+svn_trunk_year <- aggregate(
+  revision ~ year + wday + week,
+  FUN = length,
+  data = svn_trunk_log, 
+  subset = year %in% 2018:2022
+)
+# 第几周转为整型数据
+# 周几转为因子型数据
+svn_trunk_year <- within(svn_trunk_year, {
+   week = as.integer(week)
+   wday = factor(wday, labels = week.abb)
 })
-
-quake6$week <- data.table::week(quake6$date)
-quake6$weekdays <- factor(data.table::wday(quake6$date), labels = week.abb)
-
-ggplot(quake6, aes(x = week, y = weekdays, fill = magnitude)) +
-  scale_fill_viridis_c(name = "magnitude", option = "C", limits = range(quake6$magnitude)) +
-  geom_tile(color = "white", linewidth = 0.4) +
-  facet_wrap("year", ncol = 5) +
-  scale_x_continuous(expand = c(0, 0), breaks = seq(1, 52, length = 12), labels = month.abb)
 ```
 
+```{r}
+#| label: fig-calendar
+#| fig-cap: "最近 5 年休息和工作日打码活跃度"
+#| fig-width: 8
+#| fig-height: 7
+#| fig-showtext: true
 
+ggplot(data = svn_trunk_year, aes(
+  x = week, y = wday,
+  fill = cut(revision, breaks = 5 * 0:5)
+)) +
+  geom_tile(color = "white", linewidth = 0.5) +
+  scale_fill_brewer(palette = "Greens") +
+  scale_x_continuous(
+    expand = c(0, 0),
+    breaks = seq(1, 52, length = 12),
+    labels = month.abb
+  ) +
+  facet_wrap(~year, ncol = 1) +
+  theme_minimal() +
+  labs(x = "月份", y = "星期", fill = "提交量")
+```
+
+经过了解 svn_trunk_year 2018 - 2022 年每天提交量的范围是 0 次到 21 次，0 次表示当天没有提交代码，SVN 上也不会有日志记录。因此，将提交量划分为 5 档
 
 
 ### 水平图 {#sec-horiplot}
@@ -1401,8 +1398,8 @@ library(ggHoriPlot)
 
 <!-- 
 ggplot2 暂不支持三维曲面图，而 lattice 包支持，也是非常有限的支持，lattice 和 ggplot2 都是基于图层的概念，层层叠加会出现覆盖。
-用来绘制函数图像还是可以的。
-真三维图形可以用 
+用来绘制函数图像还是可以的。真三维图形可以用
+
 - rayrender (<https://github.com/tylermorganwall/rayrender>)
 - rayshader (<https://github.com/tylermorganwall/rayshader>)
 -->
@@ -1413,12 +1410,7 @@ ggplot2 暂不支持三维曲面图，而 lattice 包支持，也是非常有限
 
 <!-- 
 等高线也是描述地形地势，山洼、山谷还是高山、高原，抑或是断崖、峡谷、平原。 
+
+terra [来自谷歌地球的卫星图像](https://humus.rocks/post/2022/06/23/using-the-terra-r-package-to-view-download-and-analyze-google-earth-engine-images/)
 -->
-
-
-<!-- 
-terra [来自谷歌地球的卫星图像](https://humus.rocks/post/2022/06/23/using-the-terra-r-package-to-view-download-and-analyze-google-earth-engine-images/) 
--->
-
-
 
