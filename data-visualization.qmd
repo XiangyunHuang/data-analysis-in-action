@@ -86,6 +86,8 @@ if (xfun::is_macos()) {
 1. 想要以一种完全可复现的方式作图，不涉及任何手动后期加工
 1. 享受用 ggplot2 包作图的过程，而且希望能用它做更多的事
 1. 数据探索、展示、交流
+
+https://github.com/erikgahner/awesome-ggplot2
 -->
 
 ### ggplot2 概览 {#sec-ggplot2-overview}
@@ -1031,3 +1033,392 @@ p1 / p1 | p2
 ```
 
 最常用的功能就是这些啦，更多内容可以去 **patchwork** 包官网了解。其它可以用来组合多个 ggplot2 图形的 R 包有 **cowplot** (<https://github.com/wilkelab/cowplot>)、**gridExra** (<https://cran.r-project.org/package=gridExtra>) 和 **gghalves** (<https://github.com/erocoar/gghalves>)等。
+
+
+## 数据说明 {#sec-svn-trunk-log}
+
+R 是一个自由的统计计算和统计绘图环境，最初由新西兰奥克兰大学统计系的 Ross Ihaka 和 Robert Gentleman 共同开发。1997 年之后，成立了一个 R Core Team（R 语言核心团队），他们在版本控制系统 Apache Subversion（<https://subversion.apache.org/>）上一起协作开发至今。25 年，四分之一个世纪过去了，下面分析他们留下的一份开发日志，了解一段不轻易为人所知的故事。
+
+首先，下载 1997 年至今，约 25 年的原始代码提交日志数据。下载数据的代码如下，它是一行 Shell 命令，可在 MacOS 或 Ubuntu 等 Linux 系统的终端里运行，借助 Apache Subversion 软件，将提交日志导出为 XML 格式（<https://www.w3.org/standards/xml/core>）的数据文件，保存在目录 `data-raw/` 下，文件名为 `svn_trunk_log_20220727.xml`，本书网页版随附。
+
+```{bash}
+#| eval: false
+
+svn log --xml --verbose -r 6:82626 https://svn.r-project.org/R/trunk > data-raw/svn_trunk_log_20220727.xml
+```
+
+去掉没什么信息的前5次代码提交记录：初始化仓库，上传原始的 R 软件源码等。
+从 Ross Ihaka 在 1997-09-18 提交第 1 次代码改动开始，下载所有的提交日志。截至写作时间，即 2022年7月27日，代码最新版本号为 82626，意味着代码仓库已存在 8 万多次提交。
+
+下载数据后，借助 **xml2**（<https://github.com/r-lib/xml2/>）包预处理这份 XML 格式数据，提取最重要的信息，谁在什么时间做了什么改动。经过一番操作后，将清洗干净的数据，
+保存到目录 `data/` 下，以 R 软件特有的文件格式保存为 `svn_trunk_log_20220727.rds`，同样与书随附。这样下来，原 XML 格式保存的 35 M 文件减少为 1 M 多，极大地减少了存储空间，也极大地方便了后续的数据探索和可视化。下面是这份日志数据开头的两行：
+
+```{r}
+svn_trunk_log <- readRDS(file = "data/svn_trunk_log_20220727.rds")
+head(svn_trunk_log, 2)
+```
+
+一共是四个字段，分别是代码提交时记录的版本号 revision，提交代码的人 author，提交代码的时间 date 和提交代码时伴随的说明 msg。接下来，带着问题一起探索开源统计软件 R 过去 25 年波澜壮阔的历史！
+
+
+
+## 描述趋势 {#sec-trend}
+
+
+
+### 折线图 {#sec-line}
+
+
+- 过去 25 年代码提交次数的变化情况
+
+折线图的意义是什么？在表达趋势变化，趋势的解读很重要。
+
+不再介绍每个函数、每个参数和每行代码的作用，而是重点阐述折线图的作用，以及如何解读数据，阐述解读的思路和方向，建立起数据分析的思维。将重点放在这些方面，有助于书籍存在的长远意义，又结合了最真实的背景和原始数据，相信对实际工作的帮助会更大。而对于使用到统计方法的函数，则详加介绍，展示背后的实现细节，而不是调用函数做调包侠。
+
+
+先来了解一下总体趋势，即过去 25 年里代码提交次数的变化情况。
+
+
+数据集 `svn_trunk_log` 没有年份字段，但时间字段 date 隐含了年份信息，因此，新生成一个字段 year 将年份信息从 date 提取出来。
+
+
+```{r}
+svn_trunk_log <- within(svn_trunk_log, {
+  year <- as.integer(format(date, "%Y"))
+})
+```
+
+接着，调用分组聚合函数 `aggregate()` 统计各年的代码提交量。
+
+```{r}
+trunk_year <- aggregate(data = svn_trunk_log, revision ~ year, FUN = length)
+```
+
+然后，将数据集 trunk_year 以折线图展示，如 @fig-trunk-year-line 所示。
+
+```{r}
+#| label: fig-trunk-year-line
+#| fig-cap: "过去 25 年代码提交次数的变化情况"
+#| fig-showtext: true
+
+ggplot(data = trunk_year, aes(x = year, y = revision)) +
+  geom_point() +
+  geom_line() +
+  theme_classic() +
+  theme(panel.grid.major.y = element_line(colour = "gray90")) +
+  labs(x = "年份", y = "提交量")
+```
+
+
+
+为什么呈现这样的变化趋势？我最初想到的是先逐步增加，然后下降一会儿，再趋于平稳。
+
+
+
+### 瀑布图 {#sec-waterfall}
+
+**ggTimeSeries** (<https://github.com/thecomeonman/ggTimeSeries>)
+
+<!-- 
+https://bjt.name/2019/10/02/china-gdp.html 
+-->
+
+趋势和增减量都包含了。
+
+
+
+
+### 曲线图 {#sec-smooth}
+
+
+
+<!-- 
+https://stackoverflow.com/questions/35205795/plotting-smooth-line-through-all-data-points 
+
+2022-08-12 下午开始写的
+-->
+
+
+
+将散点以线段逐个连接起来，形成折线图，刻画原始的变化，而曲线图的目标是刻画潜在趋势。有两种画法，其一从代数的角度出发，做插值平滑，在相邻两点之间以一条平滑的曲线连接起来；其二从统计的角度出发，做趋势拟合，通过线性或非线性回归，获得变化趋势，以图呈现，使得散点之中隐藏的趋势更加清晰。
+
+
+**ggplot2** [@Hadley2016] 包提供函数 `geom_smooth()` 拟合散点图中隐含的趋势，通过查看函数 `geom_smooth()` 的帮助文档，可以了解其内部调用的统计方法。默认情况下，采用局部多项式回归拟合方法，内部调用了函数 `loess()` 来拟合趋势，如 @fig-trunk-year-smooth 所示。
+
+
+```{r}
+#| label: fig-trunk-year-smooth
+#| fig-cap: "过去 25 年代码提交次数的变化情况"
+#| fig-showtext: true
+
+ggplot(data = trunk_year, aes(x = year, y = revision)) +
+  geom_point() +
+  geom_smooth(data = subset(trunk_year, year != c(1997,2022))) +
+  theme_classic() +
+  theme(panel.grid.major.y = element_line(colour = "gray90")) +
+  labs(x = "年份", y = "提交量")
+```
+
+类似大家熟悉的线性回归拟合函数 `lm()`，函数 `loess()` 也是基于类似的使用语法。下面继续以此数据为例，了解该函数的使用，继而了解 ggplot2 绘制平滑曲线图背后的统计方法。1997 年和 2022 年是不完整的，不参与模型参数的估计。
+
+```{r}
+trunk_year_loess <- loess(revision ~ year,
+  data = subset(trunk_year, year != c(1997,2022)),
+  span = 0.75, degree = 2, method = "loess",
+  family = "symmetric",
+  control = loess.control(surface = "direct", iterations = 4)
+)
+```
+
+下面通过设定函数 `geom_smooth()` 的参数，可以达到一样的效果，见下 @fig-trunk-year-loess 
+
+```{r}
+#| label: fig-trunk-year-loess
+#| fig-cap: "过去 25 年代码提交次数的变化情况"
+#| fig-showtext: true
+
+ggplot(data = trunk_year, aes(x = year, y = revision)) +
+  geom_point() +
+  geom_smooth(method = "loess", formula = "y~x",
+    method.args = list(
+      span = 0.75, degree = 2, family = "symmetric",
+      control = loess.control(surface = "direct", iterations = 4)
+    ), data = subset(trunk_year, year != c(1997,2022))) +
+  theme_classic() +
+  theme(panel.grid.major.y = element_line(colour = "gray90")) +
+  labs(x = "年份", y = "提交量")
+```
+
+除了 `method = "loess"`，函数 `geom_smooth()` 支持的统计方法还有很多，比如非线性回归拟合 `nls()`
+
+```{r}
+trunk_year_nls <- nls(revision ~ a * (year - 1996)^2 + b,
+  data = subset(trunk_year, year != c(1997,2022)),
+  start = list(a = -0.1, b = 1000)
+)
+```
+
+采用一元二次非线性回归拟合方法，效果如 @fig-trunk-year-nls 所示。
+
+```{r}
+#| label: fig-trunk-year-nls
+#| fig-cap: "过去 25 年代码提交次数的变化情况"
+#| fig-showtext: true
+
+ggplot(data = trunk_year, aes(x = year, y = revision)) +
+  geom_point() +
+  geom_smooth(
+    method = "nls", 
+    formula = "y ~ a * (x - 1996)^2 + b",
+    method.args = list(
+      start = list(a = -0.1, b = 1000)
+    ), se = FALSE, 
+    data = subset(trunk_year, year != c(1997,2022)),
+  ) +
+  theme_classic() +
+  theme(panel.grid.major.y = element_line(colour = "gray90")) +
+  labs(x = "年份", y = "提交量")
+```
+
+::: {.callout-caution}
+在函数 `geom_smooth()` 内调用非线性回归拟合方法时，暂不支持提供置信区间。
+:::
+
+即便在不清楚统计原理的情况下，也不难看出 @fig-trunk-year-loess 和 @fig-trunk-year-nls 的差异，局部多项式回归捕捉到了更多的信息，特别是起步阶段的上升趋势，以及 2000-2005 年的高峰特点。
+
+
+```{r}
+summary(trunk_year_loess)
+```
+
+
+```{r}
+summary(trunk_year_nls)
+```
+
+非线性回归模型带有 2 个参数，一共 26 个观察值，因此，自由度为 26 - 2 = 24。
+RSE 残差平方和的标准差为
+
+```{r}
+# 非线性回归的残差平方和的标准差
+sqrt(sum(residuals(trunk_year_nls)^2)/24)
+```
+
+```{r}
+#| eval: false
+#| echo: false
+
+trunk_year_fit <- within(trunk_year, {
+  nls_fitted = fitted(trunk_year_nls)
+  loess_fitted = fitted(trunk_year_loess)
+})
+```
+
+以平滑曲线连接相邻的散点，可以构造一个插值方法给函数 `geom_smooth()`，如下示例基于样条插值函数 `spline()`。样条源于德国宝马工程师，车辆外壳弧线，那些拥有非常漂亮的弧线，越光滑，与空气的摩擦阻力越小，车辆的气动外形更加符合流体力学的要求，加工打磨更加困难，往往价值不菲。美感是相通的，即使不懂车标，通过气动外形，也能识别出车辆的档次。
+
+```{r}
+#| label: fig-trunk-year-xxspline
+#| fig-cap: "过去 25 年代码提交次数的变化情况"
+#| fig-showtext: true
+
+xxspline <- function(formula, data, ...) {
+  dat <- model.frame(formula, data)
+  res <- splinefun(dat[[2]], dat[[1]])
+  class(res) <- "xxspline"
+  res
+}
+
+predict.xxspline <- function(object, newdata, ...) {
+  object(newdata[[1]])
+}
+
+ggplot(data = trunk_year, aes(x = year, y = revision)) +
+  geom_point() +
+  geom_smooth(
+    formula = "y~x",
+    method = xxspline, se = FALSE,
+    data = subset(trunk_year, year != c(1997,2022))
+  ) +
+  theme_classic() +
+  theme(panel.grid.major.y = element_line(colour = "gray90")) +
+  labs(x = "年份", y = "提交量")
+```
+
+借助 spline 插值获得平滑曲线，ggalt 包的函数 `geom_xspline` 也提供类似的功能。
+
+
+ggplot2 当前支持的平滑方法，还有很多
+
+
+```{r}
+#| label: fig-trunk-year-smooth-sets
+#| fig-cap: "过去 25 年代码提交次数的变化情况"
+#| fig-showtext: true
+
+ggplot(data = trunk_year, aes(x = year, y = revision)) +
+  geom_point() +
+  geom_smooth(
+    formula = y ~ s(x, k = 12),
+    method = "gam", se = FALSE,
+    data = subset(trunk_year, year != c(1997, 2022))
+  ) +
+  theme_classic() +
+  theme(panel.grid.major.y = element_line(colour = "gray90")) +
+  labs(x = "年份", y = "提交量")
+```
+
+
+多项式拟合，三次多项式拟合
+
+
+```{r}
+#| label: fig-trunk-year-poly
+#| fig-cap: "过去 25 年代码提交次数的变化情况"
+#| fig-showtext: true
+
+ggplot(data = trunk_year, aes(x = year, y = revision)) +
+  geom_point() +
+  geom_smooth(
+    method = "lm", 
+    formula = "y ~ poly((x - 1996), 3)",
+    se = FALSE, 
+    data = subset(trunk_year, year != c(1997,2022)),
+  ) +
+  theme_classic() +
+  theme(panel.grid.major.y = element_line(colour = "gray90")) +
+  labs(x = "年份", y = "提交量")
+```
+
+
+### 时间线图 {#sec-timeline}
+
+时间线图，何时提交量达到 10000 20000 的，R 语言版本发布时间及提交量
+
+时序关系，厘清发展脉络
+
+https://benalexkeen.com/creating-a-timeline-graphic-using-r-and-ggplot2/
+https://rforpoliticalscience.com/2021/02/25/make-a-timeline-graph-with-dates-in-ggplot2/
+
+
+
+### 日历图 {#sec-calendar}
+
+更加直观地展示出节假日、休息工作日、寒暑假，比如描述学生学习规律
+
+```{r}
+#| eval: false
+
+data(quake6, package = "MSG")
+week.abb <- c("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+month.abb <- c(
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+)
+
+quake6 <- within(quake6, {
+  date <- paste(year, month, day, sep = "-")
+})
+
+quake6$week <- data.table::week(quake6$date)
+quake6$weekdays <- factor(data.table::wday(quake6$date), labels = week.abb)
+
+ggplot(quake6, aes(x = week, y = weekdays, fill = magnitude)) +
+  scale_fill_viridis_c(name = "magnitude", option = "C", limits = range(quake6$magnitude)) +
+  geom_tile(color = "white", linewidth = 0.4) +
+  facet_wrap("year", ncol = 5) +
+  scale_x_continuous(expand = c(0, 0), breaks = seq(1, 52, length = 12), labels = month.abb)
+```
+
+
+
+
+### 水平图 {#sec-horiplot}
+
+R 语言社区提供多个 R 包绘制水平线图，
+
+- **latticeExtra** 包出现的比较早，是 lattice 包
+- **ggalt** (<https://github.com/hrbrmstr/ggalt>) 包
+- **ggHoriPlot** (<https://github.com/rivasiker/ggHoriPlot>) 包 [@ggHoriPlot2021]，它依赖少，处于活跃维护中，属于 ggplot2 衍生包，笔者比较推荐。
+
+
+```{r}
+#| label: fig-horizon-plot
+
+library(ggHoriPlot)
+```
+
+[Time on the Horizon](http://www.perceptualedge.com/articles/visual_business_intelligence/time_on_the_horizon.pdf)
+
+[Sizing the Horizon: The Effects of Chart Size and Layering on the Graphical Perception of Time Series Visu](http://vis.berkeley.edu/papers/horizon/2009-TimeSeries-CHI.pdf)
+
+[股价波动示例](https://timelyportfolio.blogspot.com/2012/06/horizon-plot-already-available.html)
+
+
+### 蜡烛图 {#sec-candlestick}
+
+
+### 曲面图 {#sec-surf}
+
+<!-- 
+ggplot2 暂不支持三维曲面图，而 lattice 包支持，也是非常有限的支持，lattice 和 ggplot2 都是基于图层的概念，层层叠加会出现覆盖。
+用来绘制函数图像还是可以的。
+真三维图形可以用 
+- rayrender (<https://github.com/tylermorganwall/rayrender>)
+- rayshader (<https://github.com/tylermorganwall/rayshader>)
+-->
+
+
+
+### 地形图 {#sec-raster}
+
+<!-- 
+等高线也是描述地形地势，山洼、山谷还是高山、高原，抑或是断崖、峡谷、平原。 
+-->
+
+
+<!-- 
+terra [来自谷歌地球的卫星图像](https://humus.rocks/post/2022/06/23/using-the-terra-r-package-to-view-download-and-analyze-google-earth-engine-images/) 
+-->
+
+
+
