@@ -1029,8 +1029,22 @@ head(svn_trunk_log, 2)
 ## 描述趋势 {#sec-trend}
 
 
+<!--
+写作模式：
+
+1. 提出问题：引发兴趣，探案，讲故事。
+2. 数据探索：数据预处理、分组计算等操作
+3. 绘图说明：给出最终展示图，说明关键函数，技巧实现
+4. 一般总结：图形的一般作用，目的是方便读者将其应用于其它场景，举一反三。
+5. 本节小结：5-6 个不同图形探索的对比总结
+-->
+
 
 ### 折线图 {#sec-line}
+
+<!-- 
+折线图层 geom_line
+-->
 
 
 - 过去 25 年代码提交次数的变化情况
@@ -1048,13 +1062,14 @@ head(svn_trunk_log, 2)
 
 ```{r}
 svn_trunk_log <- within(svn_trunk_log, {
-  # 提取日期、月份、年份、星期、第几周等时间成分
+  # 提取日期、月份、年份、星期、第几周、第几天等时间成分
   year <- as.integer(format(stamp, "%Y"))
   date <- format(stamp, format = "%Y-%m-%d", tz = "UTC")
   month <- format(stamp, format = "%m", tz = "UTC")
   hour <- format(stamp, format = "%H", tz = "UTC")
   week <- format(stamp, format = "%U", tz = "UTC")
   wday <- format(stamp, format = "%a", tz = "UTC")
+  nday <- format(stamp, format = "%j", tz = "UTC")
 })
 ```
 
@@ -1083,27 +1098,127 @@ ggplot(data = trunk_year, aes(x = year, y = revision)) +
 
 为什么呈现这样的变化趋势？我最初想到的是先逐步增加，然后下降一会儿，再趋于平稳。
 
+> 小时趋势
+
+上午高峰
+
+```{r}
+#| label: fig-trunk-hour-line
+#| fig-cap: "提交代码的时段分布"
+#| fig-showtext: true
+
+aggregate(data = svn_trunk_log, revision ~ year + hour, length) |> 
+  ggplot(aes(x = hour, y = revision, group = year)) +
+  geom_line() +
+  theme_classic() +
+  labs(x = "时段", y = "提交量")
+```
+
+```{r}
+#| label: fig-trunk-hour-line-2013
+#| fig-cap: "2013 年以来提交代码的时段分布"
+#| fig-showtext: true
+
+aggregate(data = svn_trunk_log, revision ~ year + hour, 
+          length, subset = year >= 2013) |> 
+  ggplot(aes(x = hour, y = revision, group = year)) +
+  geom_line() +
+  theme_classic() +
+  labs(x = "时段", y = "提交量")
+```
+
+> 月趋势
+
+12月和次年1月、7-8 月份提交量迎来小高峰，应该是教授们放寒暑假。是否有新人加入？
+
+```{r}
+#| label: fig-trunk-month-line
+#| fig-cap: "提交代码的月份分布"
+#| fig-showtext: true
+#| fig-width: 7
+#| fig-height: 5
+
+aggregate(data = svn_trunk_log, revision ~ year + month, length) |>
+  transform(date = as.Date(paste(year, month, "01", sep = "-"))) |>
+  ggplot(aes(x = date, y = revision)) +
+  geom_point(aes(color = factor(year)), show.legend = F, size = 0.75) +
+  geom_line(aes(color = factor(year)), show.legend = F) +
+  scale_x_date(date_minor_breaks = "1 year") +
+  theme_classic() +
+  theme(panel.grid.minor.x = element_line()) +
+  labs(x = "时间（月粒度）", y = "提交量")
+```
+
 
 
 ### 瀑布图 {#sec-waterfall}
 
 
-**ggTimeSeries** [@ggTimeSeries2022] (<https://github.com/thecomeonman/ggTimeSeries>)
-就好像爬楼梯似的，瀑布上的水，每年的提交量
-
-25 年代码提交，数万提交量怎么累计起来的
-
 <!-- 
-https://bjt.name/2019/10/02/china-gdp.html 
+矩形图层 geom_rect
 -->
 
-趋势和增减量都包含了。当期相对于上一期的增减量
+相比于折线图，瀑布图将变化趋势和增减量都展示了，如 @fig-waterfall 所示，每年的提交量就好像瀑布上的水，图中当期相对于上一期的增减量
 
 ```{r}
 #| label: fig-waterfall
-#| fig-cap: "瀑布图"
+#| fig-cap: "25 年代码逐年提交量的变化趋势"
 #| fig-showtext: true
 
+trunk_year <- trunk_year[order(trunk_year$year), ]
+
+trunk_year_tmp <- data.frame(
+  xmin = trunk_year$year[-length(trunk_year$year)],
+  ymin = trunk_year$revision[-length(trunk_year$revision)],
+  xmax = trunk_year$year[-1],
+  ymax = trunk_year$revision[-1],
+  fill = trunk_year$revision[-1] - trunk_year$revision[-length(trunk_year$revision)] > 0
+)
+
+ggplot() +
+  geom_rect(
+    data = trunk_year_tmp,
+    aes(
+      xmin = xmin, ymin = ymin,
+      xmax = xmax, ymax = ymax, fill = fill
+    ), show.legend = FALSE
+  ) +
+  theme_classic() +
+  theme(panel.grid.major.y = element_line(colour = "gray90")) +
+  labs(x = "年份", y = "提交量")
+```
+
+
+瀑布图是以数据点作为对角点构造矩形，用对撞型的颜色表示增减，下 @fig-waterfall-point 在 @fig-waterfall 基础上添加了数据点，用以直观说明矩形图层 `geom_rect()` 构造瀑布图的方法。**ggTimeSeries** 包 [@ggTimeSeries2022] (<https://github.com/thecomeonman/ggTimeSeries>) 提供统计图层 `stat_waterfall()` 实现类似的瀑布图。
+
+```{r}
+#| label: fig-waterfall-point
+#| fig-cap: "矩形图层构造瀑布图"
+#| fig-showtext: true
+
+ggplot() +
+  geom_rect(
+    data = trunk_year_tmp,
+    aes(
+      xmin = xmin, ymin = ymin,
+      xmax = xmax, ymax = ymax, fill = fill
+    ), show.legend = FALSE
+  ) +
+  geom_point(
+    data = trunk_year,
+    aes(x = year, y = revision), size = 0.75
+  ) +
+  theme_classic() +
+  theme(panel.grid.major.y = element_line(colour = "gray90")) +
+  labs(x = "年份", y = "提交量")
+```
+
+
+```{r}
+#| echo: false
+#| eval: false
+
+# ggTimeSeries 包也可制作瀑布图
 library(ggTimeSeries)
 ggplot(data = trunk_year, aes(x = year, y = revision)) +
   stat_waterfall() +
@@ -1115,19 +1230,11 @@ ggplot(data = trunk_year, aes(x = year, y = revision)) +
 
 
 
-
-
 ### 曲线图 {#sec-smooth}
 
-
-
 <!-- 
-https://stackoverflow.com/questions/35205795/plotting-smooth-line-through-all-data-points 
-
-2022-08-12 下午开始写的
+平滑图层 geom_smooth
 -->
-
-
 
 将散点以线段逐个连接起来，形成折线图，刻画原始的变化，而曲线图的目标是刻画潜在趋势。有两种画法，其一从代数的角度出发，做插值平滑，在相邻两点之间以一条平滑的曲线连接起来；其二从统计的角度出发，做趋势拟合，通过线性或非线性回归，获得变化趋势，以图呈现，使得散点之中隐藏的趋势更加清晰。
 
@@ -1321,6 +1428,10 @@ ggplot(data = trunk_year, aes(x = year, y = revision)) +
 
 ### 日历图 {#sec-calendar}
 
+<!-- 
+瓦片图层 geom_tile
+-->
+
 更加直观地展示出节假日、休息工作日、寒暑假，比如描述学生学习规律、需求的季节性变化、周期性变化。
 
 ```{r}
@@ -1377,6 +1488,10 @@ ggplot(data = svn_trunk_year, aes(
 
 ### 棋盘图 {#sec-chess}
 
+<!-- 
+标签图层 geom_label
+-->
+
 棋盘图一般可以放所有时间节点的聚合信息，格点处为落的子
 
 
@@ -1400,8 +1515,6 @@ rversion$date <- as.Date(rversion$date, format = "%Y-%m-%d", tz = "UTC")
 rversion$year <- format(rversion$date, "%Y")
 rversion$month <- format(rversion$date, "%m")
 ```
-
-
 
 
 统计过去 25 年里每月的发版次数，如图 @fig-rversion-chess
@@ -1429,11 +1542,13 @@ aggregate(data = rversion, version ~ year + month, length) |>
 
 ### 时间线图 {#sec-timeline}
 
+<!-- 
+线段图层 geom_segment
+-->
+
 时间线图非常适合回顾过去，展望未来，讲故事
 
 时间线图展示信息的层次和密度一般由时间跨度决定。时间跨度大时，展示重点节点信息，时间跨度小时，重点和次重点信息都可以放。从更加宏观的视角，厘清发展脉络，比如近两年的 R 软件发版情况。
-
-
 
 
 本节用到一个数据集 rversion，记录了历次 R 软件发版时间及版本号，见 @tbl-rversion
@@ -1504,13 +1619,15 @@ year_dat <- within(year_dat, {
 #| fig-width: 8
 #| fig-height: 4
 
-ggplot() +
-  geom_segment(data = sub_rversion_df, aes(x = date, y = 0, xend = date, yend = position)) +
+ggplot(data = sub_rversion_df) +
+  geom_segment(aes(x = date, y = 0, xend = date, yend = position)) +
   geom_label(
-    data = sub_rversion_df,
-    aes(x = date, y = position, label = version, color = status), show.legend = FALSE
+    aes(x = date, y = position, label = version, color = status),
+    show.legend = FALSE
   ) +
-  geom_point(data = sub_rversion_df, aes(x = date, y = 0, color = status), size = 3, show.legend = FALSE) +
+  geom_point(aes(x = date, y = 0, color = status),
+    size = 3, show.legend = FALSE
+  ) +
   geom_hline(yintercept = 0, color = "black", linewidth = 1) +
   geom_text(
     data = month_dat,
@@ -1554,18 +1671,4 @@ ggplot(data = sub_rversion_df2) +
 ```
 
 在 R 语言诞生的前 5 年里，每年发布 3 个主要版本，这 5 年是 R 软件活跃开发的时期。而 2003-2012 年的这 10 年，基本上每年发布 2 个主要版本。2013-2022 年的这 10 年，基本上每年发布 1 个主要版本。
-
-
-
-<!--
-瀑布图，提交量按年聚合，还可以按发版时间分段聚合，每次发版包含的提交量有多大？
-
-时间线图，何时提交量达到 10000 20000 的，R 语言版本发布时间及提交量，分布函数
-
-时间线图参考了
-https://benalexkeen.com/creating-a-timeline-graphic-using-r-and-ggplot2/
-
-https://rforpoliticalscience.com/2021/02/25/make-a-timeline-graph-with-dates-in-ggplot2/
--->
-
 
