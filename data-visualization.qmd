@@ -1048,7 +1048,13 @@ head(svn_trunk_log, 2)
 
 ```{r}
 svn_trunk_log <- within(svn_trunk_log, {
+  # 提取日期、月份、年份、星期、第几周等时间成分
   year <- as.integer(format(stamp, "%Y"))
+  date <- format(stamp, format = "%Y-%m-%d", tz = "UTC")
+  month <- format(stamp, format = "%m", tz = "UTC")
+  hour <- format(stamp, format = "%H", tz = "UTC")
+  week <- format(stamp, format = "%U", tz = "UTC")
+  wday <- format(stamp, format = "%a", tz = "UTC")
 })
 ```
 
@@ -1091,12 +1097,23 @@ ggplot(data = trunk_year, aes(x = year, y = revision)) +
 https://bjt.name/2019/10/02/china-gdp.html 
 -->
 
-趋势和增减量都包含了。局部整体、是折线图的高级版本。
-
+趋势和增减量都包含了。当期相对于上一期的增减量
 
 ```{r}
+#| label: fig-waterfall
+#| fig-cap: "瀑布图"
+#| fig-showtext: true
+
 library(ggTimeSeries)
+ggplot(data = trunk_year, aes(x = year, y = revision)) +
+  stat_waterfall() +
+  scale_fill_brewer(palette = "Set2") +
+  theme_classic() +
+  theme(panel.grid.major.y = element_line(colour = "gray90")) +
+  labs(x = "年份", y = "提交量")
 ```
+
+
 
 
 
@@ -1302,175 +1319,11 @@ ggplot(data = trunk_year, aes(x = year, y = revision)) +
 ```
 
 
-### 时间线图 {#sec-timeline}
-
-
-```{r}
-#| echo: false
-#| label: rversion-raw-data
-
-rversion <- readRDS(file = "data/rversion.rds")
-```
-
-该数据集的存储结构很简单，是一个两列的数据框，它的一些属性如下：
-
-```{r}
-str(rversion)
-```
-
-
-做一点数据处理，将 date 字段转为日期类型，并从日期中提取年、月信息。
-
-```{r}
-rversion$date <- as.Date(rversion$date, format = "%Y-%m-%d", tz = "UTC")
-rversion$year <- format(rversion$date, "%Y")
-rversion$month <- format(rversion$date, "%m")
-```
-
-
-本节用到一个数据集 rversion，记录了历次 R 软件发版时间及版本号，见 @tbl-rversion
-
-```{r}
-#| echo: false
-#| label: tbl-rversion
-#| tbl-cap: "R 软件发版数据集（部分）"
-
-knitr::kable(head(rversion), col.names = c("版本号", "发版日期", "发版年份", "发版月份"))
-```
-
-
-
-```{r}
-rversion_tl <- within(rversion, {
-  # 版本号为 x.0.0 为重大版本 big
-  # 版本号为 x.1.0 为主要版本 major
-  # 版本号为 x.0.1 为次要版本 minor
-  status <- ifelse(grepl(pattern = "*\\.0\\.0", x = version), "big", version)
-  status <- ifelse(grepl(pattern = "*\\.[1-9]\\.[0]", x = version), "major", status)
-  status <- ifelse(!status %in% c("big", "major"), "minor", status)
-})
-positions <- c(0.5, -0.5, 1.0, -1.0, 1.5, -1.5)
-directions <- c(1, -1)
-# 位置
-rversion_pos <- data.frame(
-  # 只要不是同一天发布的版本，方向相对
-  date = unique(rversion_tl$date),
-  position = rep_len(positions, length.out = length(unique(rversion_tl$date))),
-  direction = rep_len(directions, length.out = length(unique(rversion_tl$date)))
-)
-# 原始数据上添加方向和位置信息
-rversion_df <- merge(x = rversion_tl, y = rversion_pos, by = "date", all = TRUE)
-# 最重要的状态放在最后绘制到图上
-rversion_df <- rversion_df[with(rversion_df, order(date, status)), ]
-# 选取 2020 - 2022 年的数据
-sub_rversion_df<- rversion_df[rversion_df$year %in% 2020:2022, ]
-# 月份注释
-month_dat <- data.frame(
-  date = seq(from = as.Date('2020-01-01'), to = as.Date('2022-12-31'), by = "3 month")
-)
-month_dat <- within(month_dat, {
-  month = format(date, "%b")
-})
-# 年份注释
-year_dat <- data.frame(
-  date = seq(from = as.Date('2020-01-01'), to = as.Date('2022-12-31'), by = "1 year")
-)
-year_dat <- within(year_dat, {
-  year = format(date, "%Y")
-})
-```
-
-
-@fig-rversion-timeline 时间线图非常适合回顾过去、展望未来，讲数据故事
-
-
-```{r}
-#| label: fig-rversion-timeline
-#| fig-cap: "2020-2022 年 R 软件发版情况"
-#| fig-width: 8
-#| fig-height: 4
-
-ggplot() +
-  geom_segment(data = sub_rversion_df, aes(x = date, y = 0, xend = date, yend = position)) +
-  geom_label(
-    data = sub_rversion_df,
-    aes(x = date, y = position, label = version, color = status), show.legend = FALSE
-  ) +
-  geom_point(data = sub_rversion_df, aes(x = date, y = 0, color = status), size = 3, show.legend = FALSE) +
-  geom_hline(yintercept = 0, color = "black", linewidth = 1) +
-  geom_text(
-    data = month_dat,
-    aes(x = date, y = 0, label = month), vjust = 1.5
-  ) +
-  geom_text(
-    data = year_dat,
-    aes(x = date, y = 0, label = year), vjust = -0.5
-  ) +
-  theme_void()
-```
-
-图中红色标注的是里程碑式的重大版本，绿色标注的是主要版本，蓝色标注的次要版本，小修小补，小版本更新。
-
-
-每次发版包含的提交量有多大？
-
-
-时间线图，何时提交量达到 10000 20000 的，R 语言版本发布时间及提交量
-
-时序关系，厘清发展脉络，近两年的情况
-
-<!--
-时间线图参考了
-https://benalexkeen.com/creating-a-timeline-graphic-using-r-and-ggplot2/
-
-https://rforpoliticalscience.com/2021/02/25/make-a-timeline-graph-with-dates-in-ggplot2/
--->
-
-
-
-### 棋盘图 {#sec-chess}
-
-棋盘图，格点处为落的子
-
-
-统计过去 25 年里每月的发版次数，如图 @fig-rversion-chess
-
-```{r}
-#| label: fig-rversion-chess
-#| fig-cap: "25 年 R 软件发版情况"
-#| fig-showtext: true
-#| fig-width: 6
-#| fig-height: 8
-
-aggregate(data = rversion, version ~ year + month, length) |>
-  ggplot(aes(x = month, y = year)) +
-  geom_label(aes(label = version, fill = version),
-    show.legend = F, color = "white"
-  ) +
-  scale_fill_viridis_c(option = "D", begin = 0.2, end = 0.8) +
-  theme_classic() +
-  theme(panel.grid.major.y = element_line(colour = "gray95")) +
-  labs(
-    x = "月份", y = "年份"
-  )
-```
-
-
-
-
 ### 日历图 {#sec-calendar}
 
 更加直观地展示出节假日、休息工作日、寒暑假，比如描述学生学习规律、需求的季节性变化、周期性变化。
 
 ```{r}
-# 提取日期、月份、年份、星期、第几周等时间成分
-svn_trunk_log <- within(svn_trunk_log, {
-  date <- format(stamp, format = "%Y-%m-%d", tz = "UTC")
-  month <- format(stamp, format = "%m", tz = "UTC")
-  hour <- format(stamp, format = "%H", tz = "UTC")
-  week <- format(stamp, format = "%U", tz = "UTC")
-  wday <- format(stamp, format = "%a", tz = "UTC")
-})
 # 星期、月份缩写
 week.abb <- c(
   "Sun", "Mon", "Tue", "Wed",
@@ -1519,4 +1372,200 @@ ggplot(data = svn_trunk_year, aes(
 ```
 
 经过了解 svn_trunk_year 2018 - 2022 年每天提交量的范围是 0 次到 21 次，0 次表示当天没有提交代码，SVN 上也不会有日志记录。因此，将提交量划分为 5 档
+
+
+
+### 棋盘图 {#sec-chess}
+
+棋盘图一般可以放所有时间节点的聚合信息，格点处为落的子
+
+
+```{r}
+#| echo: false
+#| label: rversion-raw-data
+
+rversion <- readRDS(file = "data/rversion.rds")
+```
+
+该数据集的存储结构很简单，是一个两列的数据框，它的一些属性如下：
+
+```{r}
+str(rversion)
+```
+
+做一点数据处理，将 date 字段转为日期类型，并从日期中提取年、月信息。
+
+```{r}
+rversion$date <- as.Date(rversion$date, format = "%Y-%m-%d", tz = "UTC")
+rversion$year <- format(rversion$date, "%Y")
+rversion$month <- format(rversion$date, "%m")
+```
+
+
+
+
+统计过去 25 年里每月的发版次数，如图 @fig-rversion-chess
+
+```{r}
+#| label: fig-rversion-chess
+#| fig-cap: "25 年 R 软件发版情况"
+#| fig-showtext: true
+#| fig-width: 6
+#| fig-height: 8
+
+aggregate(data = rversion, version ~ year + month, length) |>
+  ggplot(aes(x = month, y = year)) +
+  geom_label(aes(label = version, fill = version),
+    show.legend = F, color = "white"
+  ) +
+  scale_fill_viridis_c(option = "D", begin = 0.2, end = 0.8) +
+  theme_classic() +
+  theme(panel.grid.major.y = element_line(colour = "gray95")) +
+  labs(
+    x = "月份", y = "年份"
+  )
+```
+
+
+### 时间线图 {#sec-timeline}
+
+时间线图非常适合回顾过去，展望未来，讲故事
+
+时间线图展示信息的层次和密度一般由时间跨度决定。时间跨度大时，展示重点节点信息，时间跨度小时，重点和次重点信息都可以放。从更加宏观的视角，厘清发展脉络，比如近两年的 R 软件发版情况。
+
+
+
+
+本节用到一个数据集 rversion，记录了历次 R 软件发版时间及版本号，见 @tbl-rversion
+
+```{r}
+#| echo: false
+#| label: tbl-rversion
+#| tbl-cap: "R 软件发版数据集（部分）"
+
+knitr::kable(head(rversion), col.names = c("版本号", "发版日期", "发版年份", "发版月份"))
+```
+
+
+
+```{r}
+rversion_tl <- within(rversion, {
+  # 版本号为 x.0.0 为重大版本 big
+  # 版本号为 x.1.0 x.12.0 x.20.0 为主要版本 major
+  # 版本号为 x.0.1 为次要版本 minor
+  status <- ifelse(grepl(pattern = "*\\.0\\.0", x = version), "big", version)
+  status <- ifelse(grepl(pattern = "*\\.[1-9]{1,2}\\.0$", x = status), "major", status)
+  status <- ifelse(!status %in% c("big", "major"), "minor", status)
+})
+positions <- c(0.5, -0.5, 1.0, -1.0, 1.5, -1.5)
+directions <- c(1, -1)
+# 位置
+rversion_pos <- data.frame(
+  # 只要不是同一天发布的版本，方向相对
+  date = unique(rversion_tl$date),
+  position = rep_len(positions, length.out = length(unique(rversion_tl$date))),
+  direction = rep_len(directions, length.out = length(unique(rversion_tl$date)))
+)
+# 原始数据上添加方向和位置信息
+rversion_df <- merge(x = rversion_tl, y = rversion_pos, by = "date", all = TRUE)
+# 最重要的状态放在最后绘制到图上
+rversion_df <- rversion_df[with(rversion_df, order(date, status)), ]
+```
+
+选取一小段时间内的发版情况，比如最近的三年 --- 2020 - 2022 年 
+
+
+```{r}
+# 选取 2020 - 2022 年的数据
+sub_rversion_df<- rversion_df[rversion_df$year %in% 2020:2022, ]
+# 月份注释
+month_dat <- data.frame(
+  date = seq(from = as.Date('2020-01-01'), to = as.Date('2022-12-31'), by = "3 month")
+)
+month_dat <- within(month_dat, {
+  month = format(date, "%b")
+})
+# 年份注释
+year_dat <- data.frame(
+  date = seq(from = as.Date('2020-01-01'), to = as.Date('2022-12-31'), by = "1 year")
+)
+year_dat <- within(year_dat, {
+  year = format(date, "%Y")
+})
+```
+
+
+@fig-rversion-timeline 展示 2020-2022 年 R 软件发版情况
+
+
+```{r}
+#| label: fig-rversion-timeline
+#| fig-cap: "2020-2022 年 R 软件发版情况"
+#| fig-width: 8
+#| fig-height: 4
+
+ggplot() +
+  geom_segment(data = sub_rversion_df, aes(x = date, y = 0, xend = date, yend = position)) +
+  geom_label(
+    data = sub_rversion_df,
+    aes(x = date, y = position, label = version, color = status), show.legend = FALSE
+  ) +
+  geom_point(data = sub_rversion_df, aes(x = date, y = 0, color = status), size = 3, show.legend = FALSE) +
+  geom_hline(yintercept = 0, color = "black", linewidth = 1) +
+  geom_text(
+    data = month_dat,
+    aes(x = date, y = 0, label = month), vjust = 1.5
+  ) +
+  geom_text(
+    data = year_dat,
+    aes(x = date, y = 0, label = year), vjust = -0.5
+  ) +
+  theme_void()
+```
+
+图中红色标注的是里程碑式的重大版本，绿色标注的是主要版本，蓝色标注的次要版本，小修小补，小版本更新。
+
+
+当时间跨度非常大时，比如过去 25 年，那就只能放重大版本和主要版本信息了，时间上月份信息就不能用名称简写，而用数字更加合适。而且还得竖着放，同时添加那个版本最有影响力的改动。相比于，棋盘图，这是时间线图的优势。
+
+
+```{r}
+#| label: fig-rversion-major
+#| fig-cap: "25 年里 R 软件重大及主要版本发布情况"
+#| fig-width: 6
+#| fig-height: 9
+
+sub_rversion_df2 <- rversion_df[rversion_df$status %in% c("big", "major"), ]
+ggplot(data = sub_rversion_df2) +
+  geom_segment(aes(x = 0, y = date, xend = position, yend = date, color = status),
+    show.legend = F
+  ) +
+  geom_vline(xintercept = 0, color = "black", linewidth = 1) +
+  geom_label(
+    aes(x = position, y = date, label = version, color = status),
+    show.legend = FALSE
+  ) +
+  geom_point(aes(x = 0, y = date, color = status), size = 3, show.legend = FALSE) +
+  geom_text(
+    aes(x = 0, y = as.Date(format(date, "%Y-01-01")), label = year),
+    hjust = -0.1
+  ) +
+  theme_void()
+```
+
+在 R 语言诞生的前 5 年里，每年发布 3 个主要版本，这 5 年是 R 软件活跃开发的时期。而 2003-2012 年的这 10 年，基本上每年发布 2 个主要版本。2013-2022 年的这 10 年，基本上每年发布 1 个主要版本。
+
+
+
+<!--
+瀑布图，提交量按年聚合，还可以按发版时间分段聚合，每次发版包含的提交量有多大？
+
+时间线图，何时提交量达到 10000 20000 的，R 语言版本发布时间及提交量，分布函数
+
+时间线图参考了
+https://benalexkeen.com/creating-a-timeline-graphic-using-r-and-ggplot2/
+
+https://rforpoliticalscience.com/2021/02/25/make-a-timeline-graph-with-dates-in-ggplot2/
+-->
+
 
