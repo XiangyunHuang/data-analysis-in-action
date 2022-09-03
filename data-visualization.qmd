@@ -86,6 +86,16 @@ if (xfun::is_macos()) {
 1. 想要以一种完全可复现的方式作图，不涉及任何手动后期加工
 1. 享受用 ggplot2 包作图的过程，而且希望能用它做更多的事
 1. 数据探索、展示、交流
+
+立意还要高一些
+
+为什么数据可视化是重要的？
+**datasauRus** 包 [@datasauRus] (<https://github.com/jumpingrivers/datasauRus>)
+
+数据可视化过程中，什么是重要的？
+
+死亡率 各个年龄段 美国过去 50 年
+
 -->
 
 ### ggplot2 概览 {#sec-ggplot2-overview}
@@ -285,34 +295,37 @@ ggplot(data = ToothGrowth, aes(x = dose, y = len)) +
 
 ## 图形基础 {#sec-foundations-of-ggplot2}
 
-2006 年 Hans Rosling 在 TED 做了一场精彩的演讲 --- The best stats you've ever seen (<https://www.ted.com/talks/hans_rosling_the_best_stats_you_ve_ever_seen>)。演讲中展示了一系列生动形象的动画，用数据记录的事实帮助大家理解世界的变化，可谓是动态图形领域的惊世之作。时至今日，已经超过 1500 万人观看，产生了十分广泛的影响。后来，Jennifer Bryan 从 Hans Rosling 创建的网站 <https://www.gapminder.org/data/> 中摘录了一部分数据，整理后，放在 R 包 **gapminder** [@gapminder2017] 中，而数据集的名字也叫 gapminder。本节将基于 gapminder 数据集介绍 ggplot2 绘图的基础知识，包括图层、标签、刻度、配色、图例、主题、文本、分面、字体、动画和组合等 11 个方面，理解这些有助于绘制和加工各种各样的统计图形，可以覆盖日常所需。gapminder 数据集以数据框的形式存储在 R 软件运行环境中，一共 1704 行，6 列，该数据集的部分内容见 @tbl-gapminder 。
+2006 年 Hans Rosling 在 TED 做了一场精彩的演讲 --- The best stats you've ever seen (<https://www.ted.com/talks/hans_rosling_the_best_stats_you_ve_ever_seen>)。演讲中展示了一系列生动形象的动画，用数据记录的事实帮助大家理解世界的变化，可谓是动态图形领域的惊世之作。时至今日，已经超过 1500 万人观看，产生了十分广泛的影响。从世界银行获取数据，整理后 gapminder。本节将基于 gapminder 数据集介绍 ggplot2 绘图的基础知识，包括图层、标签、刻度、配色、图例、主题、文本、分面、字体、动画和组合等 11 个方面，理解这些有助于绘制和加工各种各样的统计图形，可以覆盖日常所需。gapminder 数据集以数据框的形式存储在 R 软件运行环境中，一共 1704 行，6 列，该数据集的部分内容见 @tbl-gapminder 。
 
 ```{r}
 #| echo: false
 #| label: tbl-gapminder
 #| tbl-cap: "gapminder 数据集（部分）"
 
-library(gapminder)
+gapminder <- readRDS(file = "data/gapminder.rds")
 knitr::kable(head(gapminder),
-  col.names = c("国家或地区", "区域", "年份", "预期寿命", "人口总数", "人均 GDP")
+  col.names = c(
+    "年份", "国家或地区", "区域划分", "收入划分",
+    "人均 GDP", "预期寿命", "人口总数"
+  )
 )
 ```
 
-在 R 环境中，加载 **gapminder** 包后，可以用 `str()` 函数查看数据集 gapminder 的情况。
+在 R 环境中，加载 gapminder 数据集后，可以用 `str()` 函数查看数据集 gapminder 的情况。
 
 ```{r}
 #| label: load-gapminder
 
-# 加载 R 包
-library(gapminder)
 # 查看数据
 str(gapminder)
 ```
 
-其中，country（国家或地区）和 continent （区域）是因子型变量，year （年份）和 pop （人口总数）是整型变量，lifeExp （预期寿命，单位：岁）和 gdpPercap （人均 GDP，单位：美元）是数值型变量。
+其中，country（国家或地区）和 region （区域）是字符型变量，year （年份）、 pop （人口总数）、lifeExp （预期寿命，单位：岁）和 gdpPercap （人均 GDP，单位：美元）是数值型变量。
 
 <!--
 gapminder 数据集中，中国香港 "Hong Kong, China"，波多黎各 "Puerto Rico"， "Taiwan" 台湾是单独统计的数据，数据集 gapminder 的上游是网站<https://www.gapminder.org/data/>，而数据源头是世界银行 World Bank 的世界发展指数 World Development Indicators。
+
+一天时间获取、检查、清理、整理、探索数据
 -->
 
 
@@ -368,7 +381,7 @@ ls("package:ggplot2", pattern = "^geom_*")
 
 ```{r}
 #| label: fig-label
-#| fig-width: 6
+#| fig-width: 7
 #| fig-height: 3.5
 #| fig-cap: "添加标签"
 #| fig-subcap: 
@@ -378,9 +391,9 @@ ls("package:ggplot2", pattern = "^geom_*")
 #| fig.showtext: true
 
 ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
-  geom_point(aes(color = continent))
+  geom_point(aes(color = region))
 ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
-  geom_point(aes(color = continent)) +
+  geom_point(aes(color = region)) +
   labs(x = "人均 GDP", y = "预期寿命", tag = "标签",
        title = "这里是标题", caption = "这是图形说明", 
        subtitle = "这里是副标题", color = "图例标题")
@@ -437,7 +450,7 @@ ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
 
 ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
   geom_point() +
-  scale_x_log10(labels = label_log(), limits = c(100, 100000)) +
+  scale_x_log10(labels = label_log(), limits = c(100, 110000)) +
   labs(x = "人均 GDP", y = "预期寿命")
 ```
 
@@ -452,7 +465,7 @@ ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
 
 ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
   geom_point() +
-  scale_x_log10(labels = label_dollar(), limits = c(100, 100000)) +
+  scale_x_log10(labels = label_dollar(), limits = c(100, 110000)) +
   labs(x = "人均 GDP", y = "预期寿命")
 ```
 
@@ -480,7 +493,7 @@ format(mb, big.mark = ",", scientific = 999)
 ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
   geom_point() +
   scale_x_log10(
-    labels = label_dollar(), minor_breaks = mb, limits = c(100, 100000)
+    labels = label_dollar(), minor_breaks = mb, limits = c(100, 110000)
   ) +
   labs(x = "人均 GDP", y = "预期寿命")
 ```
@@ -506,14 +519,14 @@ ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
 #| label: fig-color-brewer
 #| fig-cap: "使用 RColorBrewer 包提供的 Set1 调色板"
 #| fig-showtext: true
-#| fig-width: 6
+#| fig-width: 7
 #| fig-height: 3.5
 
 ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
-  geom_point(aes(color = continent)) +
+  geom_point(aes(color = region)) +
   scale_color_brewer(palette = "Set1") +
   scale_x_log10(
-    labels = label_dollar(), minor_breaks = mb, limits = c(100, 100000)
+    labels = label_dollar(), minor_breaks = mb, limits = c(100, 110000)
   ) +
   labs(x = "人均 GDP", y = "预期寿命", color = "区域")
 ```
@@ -524,36 +537,18 @@ ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
 #| label: fig-color-manual
 #| fig-cap: "手动挨个指定分类变量的颜色"
 #| fig-showtext: true
-#| fig-width: 6
+#| fig-width: 7
 #| fig-height: 3.5
 
 ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
-  geom_point(aes(color = continent)) +
+  geom_point(aes(color = region)) +
   scale_color_manual(values = c(
-    Africa = "#E41A1C", Americas = "#377EB8",
-    Asia = "#4DAF4A", Europe = "#984EA3",
-    Oceania = "#FF7F00"
+    `拉丁美洲与加勒比海地区` = "#E41A1C", `撒哈拉以南非洲地区` = "#377EB8",
+    `欧洲与中亚地区` = "#4DAF4A", `中东与北非地区` = "#984EA3",
+    `东亚与太平洋地区` = "#FF7F00", `南亚` = "#FFFF33", `北美` = "#A65628"
   )) +
   scale_x_log10(
-    labels = label_dollar(), minor_breaks = mb, limits = c(100, 100000)
-  ) +
-  labs(x = "人均 GDP", y = "预期寿命", color = "区域")
-```
-
-若分类变量太多，图例会特别冗长，占据较多版面，可以去掉，效果见 @fig-color-custom 。
-
-```{r}
-#| label: fig-color-custom
-#| fig.cap: "分类变量太多时可以隐藏图例"
-#| fig.showtext: true
-#| fig-width: 5
-#| fig-height: 3
-
-ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
-  geom_point(aes(color = country), show.legend = FALSE) +
-  scale_color_manual(values = country_colors) +
-  scale_x_log10(
-    labels = label_dollar(), minor_breaks = mb, limits = c(100, 100000)
+    labels = label_dollar(), minor_breaks = mb, limits = c(100, 110000)
   ) +
   labs(x = "人均 GDP", y = "预期寿命", color = "区域")
 ```
@@ -561,7 +556,7 @@ ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
 
 ### 图例 {#sec-legend}
 
-在 @fig-color-custom 的基础上，继续将每个国家的人口总数映射给点的大小，绘制气泡图。此时有两个视觉映射变量 --- 离散型的变量 country （国家）和连续型的变量 pop （人口总数）。不仅仅是图层函数 `geom_point()`，所有的几何图层都提供参数 `show.legend` 来控制图例的显示或隐藏。传递命名逻辑向量还可以在多个图例中选择性保留。 @fig-legend-show 在两个图例中保留一个，即人口总数。
+在 @fig-color-brewer 的基础上，继续将每个国家的人口总数映射给点的大小，绘制气泡图。此时有两个视觉映射变量 --- 离散型的变量 country （国家）和连续型的变量 pop （人口总数）。不仅仅是图层函数 `geom_point()`，所有的几何图层都提供参数 `show.legend` 来控制图例的显示或隐藏。传递命名逻辑向量还可以在多个图例中选择性保留。 @fig-legend-show 在两个图例中保留一个，即人口总数。
 
 ```{r}
 #| label: fig-legend-show
@@ -571,13 +566,17 @@ ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
 #| fig-height: 3.5
 
 ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
-  geom_point(aes(color = country, size = pop),
+  geom_point(aes(color = region, size = pop),
     show.legend = c(color = FALSE, size = TRUE)
   ) +
-  scale_color_manual(values = country_colors) +
+  scale_color_manual(values = c(
+    `拉丁美洲与加勒比海地区` = "#E41A1C", `撒哈拉以南非洲地区` = "#377EB8",
+    `欧洲与中亚地区` = "#4DAF4A", `中东与北非地区` = "#984EA3",
+    `东亚与太平洋地区` = "#FF7F00", `南亚` = "#FFFF33", `北美` = "#A65628"
+  )) +
   scale_size(range = c(2, 12)) +
   scale_x_log10(
-    labels = label_dollar(), minor_breaks = mb, limits = c(100, 100000)
+    labels = label_dollar(), minor_breaks = mb, limits = c(100, 110000)
   ) +
   labs(x = "人均 GDP", y = "预期寿命", size = "人口总数")
 ```
@@ -588,17 +587,21 @@ ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
 #| label: fig-legend-label
 #| fig-cap: "修改图例刻度标签"
 #| fig-showtext: true
-#| fig-width: 5.5
+#| fig-width: 6
 #| fig-height: 3.5
 
 ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
-  geom_point(aes(color = country, size = pop),
+  geom_point(aes(color = region, size = pop),
     show.legend = c(color = FALSE, size = TRUE)
   ) +
-  scale_color_manual(values = country_colors) +
+  scale_color_manual(values = c(
+    `拉丁美洲与加勒比海地区` = "#E41A1C", `撒哈拉以南非洲地区` = "#377EB8",
+    `欧洲与中亚地区` = "#4DAF4A", `中东与北非地区` = "#984EA3",
+    `东亚与太平洋地区` = "#FF7F00", `南亚` = "#FFFF33", `北美` = "#A65628"
+  )) +
   scale_size(range = c(2, 12), labels = label_number(scale_cut = cut_short_scale())) +
   scale_x_log10(
-    labels = label_dollar(), minor_breaks = mb, limits = c(100, 100000)
+    labels = label_dollar(), minor_breaks = mb, limits = c(100, 110000)
   ) +
   labs(x = "人均 GDP", y = "预期寿命", size = "人口总数")
 ```
@@ -630,12 +633,17 @@ ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
 #| fig-height: 4.5
 
 ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
-  geom_point(aes(color = country, size = pop), 
-             show.legend = c(color = FALSE, size = TRUE)) +
-  scale_color_manual(values = country_colors) +
+  geom_point(aes(color = region, size = pop),
+    show.legend = c(color = FALSE, size = TRUE)
+  ) +
+  scale_color_manual(values = c(
+    `拉丁美洲与加勒比海地区` = "#E41A1C", `撒哈拉以南非洲地区` = "#377EB8",
+    `欧洲与中亚地区` = "#4DAF4A", `中东与北非地区` = "#984EA3",
+    `东亚与太平洋地区` = "#FF7F00", `南亚` = "#FFFF33", `北美` = "#A65628"
+  )) +
   scale_size(range = c(2, 12), labels = label_number(scale_cut = cut_short_scale())) +
   scale_x_log10(
-    labels = label_dollar(), minor_breaks = mb, limits = c(100, 100000)
+    labels = label_dollar(), minor_breaks = mb, limits = c(100, 110000)
   ) +
   theme_classic() +
   labs(x = "人均 GDP", y = "预期寿命", size = "人口总数")
@@ -652,12 +660,17 @@ ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
 #| fig-height: 4.5
 
 ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
-  geom_point(aes(color = country, size = pop), 
-             show.legend = c(color = FALSE, size = TRUE)) +
-  scale_color_manual(values = country_colors) +
+  geom_point(aes(color = region, size = pop),
+    show.legend = c(color = FALSE, size = TRUE)
+  ) +
+  scale_color_manual(values = c(
+    `拉丁美洲与加勒比海地区` = "#E41A1C", `撒哈拉以南非洲地区` = "#377EB8",
+    `欧洲与中亚地区` = "#4DAF4A", `中东与北非地区` = "#984EA3",
+    `东亚与太平洋地区` = "#FF7F00", `南亚` = "#FFFF33", `北美` = "#A65628"
+  )) +
   scale_size(range = c(2, 12), labels = label_number(scale_cut = cut_short_scale())) +
   scale_x_log10(
-    labels = label_dollar(), minor_breaks = mb, limits = c(100, 100000)
+    labels = label_dollar(), minor_breaks = mb, limits = c(100, 110000)
   ) +
   theme_classic() +
   theme(legend.position =  "bottom") +
@@ -674,12 +687,17 @@ ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
 #| fig-height: 4.5
 
 ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
-  geom_point(aes(color = country, size = pop), 
-             show.legend = c(color = FALSE, size = TRUE)) +
-  scale_color_manual(values = country_colors) +
+  geom_point(aes(color = region, size = pop),
+    show.legend = c(color = FALSE, size = TRUE)
+  ) +
+  scale_color_manual(values = c(
+    `拉丁美洲与加勒比海地区` = "#E41A1C", `撒哈拉以南非洲地区` = "#377EB8",
+    `欧洲与中亚地区` = "#4DAF4A", `中东与北非地区` = "#984EA3",
+    `东亚与太平洋地区` = "#FF7F00", `南亚` = "#FFFF33", `北美` = "#A65628"
+  )) +
   scale_size(range = c(2, 12), labels = label_number(scale_cut = cut_short_scale())) +
   scale_x_log10(
-    labels = label_dollar(), minor_breaks = mb, limits = c(100, 100000)
+    labels = label_dollar(), minor_breaks = mb, limits = c(100, 110000)
   ) +
   theme_classic() +
   theme(legend.position =  c(0.9, 0.35)) +
@@ -697,12 +715,17 @@ ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
 #| fig-height: 4.5
 
 ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
-  geom_point(aes(color = country, size = pop), 
-             show.legend = c(color = FALSE, size = TRUE)) +
-  scale_color_manual(values = country_colors) +
+  geom_point(aes(color = region, size = pop),
+    show.legend = c(color = FALSE, size = TRUE)
+  ) +
+  scale_color_manual(values = c(
+    `拉丁美洲与加勒比海地区` = "#E41A1C", `撒哈拉以南非洲地区` = "#377EB8",
+    `欧洲与中亚地区` = "#4DAF4A", `中东与北非地区` = "#984EA3",
+    `东亚与太平洋地区` = "#FF7F00", `南亚` = "#FFFF33", `北美` = "#A65628"
+  )) +
   scale_size(range = c(2, 12), labels = label_number(scale_cut = cut_short_scale())) +
   scale_x_log10(
-    labels = label_dollar(), minor_breaks = mb, limits = c(100, 100000)
+    labels = label_dollar(), minor_breaks = mb, limits = c(100, 110000)
   ) +
   theme_minimal() +
   theme(legend.position =  c(0.9, 0.35)) +
@@ -733,12 +756,16 @@ ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
 
 library(ggrepel)
 ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
-  geom_point(aes(color = country, size = pop),
+  geom_point(aes(color = region, size = pop),
     show.legend = c(color = FALSE, size = TRUE)
   ) +
-  scale_color_manual(values = country_colors) +
+  scale_color_manual(values = c(
+    `拉丁美洲与加勒比海地区` = "#E41A1C", `撒哈拉以南非洲地区` = "#377EB8",
+    `欧洲与中亚地区` = "#4DAF4A", `中东与北非地区` = "#984EA3",
+    `东亚与太平洋地区` = "#FF7F00", `南亚` = "#FFFF33", `北美` = "#A65628"
+  )) +
   scale_x_log10(
-    labels = label_dollar(), minor_breaks = mb, limits = c(100, 100000)
+    labels = label_dollar(), minor_breaks = mb, limits = c(100, 110000)
   ) +
   geom_text(
     data = gapminder_2007[gapminder_2007$pop >= 20 * 10^7, ],
@@ -750,7 +777,7 @@ ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
   labs(x = "人均 GDP", y = "预期寿命", size = "人口总数")
 ```
 
-当需要给许多点添加文本注释时，就难以避免地遇到注释文本重叠的问题。比如给人口总数大于 2000 万的国家添加文本注释，此时，适合使用 **ggrepel** 包，调用函数 `geom_text_repel()` --- 这是一个新的文本图层，通过添加适当的位移缓解文本重叠问题。
+当需要给许多点添加文本注释时，就难以避免地遇到注释文本重叠的问题。比如给人口总数大于 5000 万的国家添加文本注释，此时，适合使用 **ggrepel** 包，调用函数 `geom_text_repel()` --- 这是一个新的文本图层，通过添加适当的位移缓解文本重叠问题。
 
 ```{r}
 #| label: fig-text-ggrepel
@@ -761,15 +788,19 @@ ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
 
 library(ggrepel)
 ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
-  geom_point(aes(color = country, size = pop),
+  geom_point(aes(color = region, size = pop),
     show.legend = c(color = FALSE, size = TRUE)
   ) +
-  scale_color_manual(values = country_colors) +
+  scale_color_manual(values = c(
+    `拉丁美洲与加勒比海地区` = "#E41A1C", `撒哈拉以南非洲地区` = "#377EB8",
+    `欧洲与中亚地区` = "#4DAF4A", `中东与北非地区` = "#984EA3",
+    `东亚与太平洋地区` = "#FF7F00", `南亚` = "#FFFF33", `北美` = "#A65628"
+  )) +
   scale_x_log10(
-    labels = label_dollar(), minor_breaks = mb, limits = c(100, 100000)
+    labels = label_dollar(), minor_breaks = mb, limits = c(100, 110000)
   ) +
   geom_text_repel(
-    data = gapminder_2007[gapminder_2007$pop >= 2 * 10^7, ],
+    data = gapminder_2007[gapminder_2007$pop >= 5 * 10^7, ],
     aes(label = country), size = 3, max.overlaps = 50,
     segment.colour = "gray", seed = 2022, show.legend = FALSE
   ) +
@@ -784,24 +815,28 @@ ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
 
 ### 分面 {#sec-facet}
 
-**ggplot2** 包有两个函数 `facet_wrap()` 和 `facet_grid()` 都可以用来实现分面操作，分面的目的是将数据切分，一块一块地展示。下面在 @fig-theme-minimal 的基础上，按区域变量分面，即将各个国家或地区按地理区域分开，效果如 @fig-facet-wrap 所示。`facet_grid()` 与 `facet_wrap()` 的效果是类似的，就不再赘述了。
+**ggplot2** 包有两个函数 `facet_wrap()` 和 `facet_grid()` 都可以用来实现分面操作，分面的目的是将数据切分，一块一块地展示。下面在 @fig-theme-minimal 的基础上，按收入水平变量分面，即将各个国家或地区按收入水平分开，效果如 @fig-facet-wrap 所示。`facet_grid()` 与 `facet_wrap()` 的效果是类似的，就不再赘述了。
 
 ```{r}
 #| label: fig-facet-wrap
-#| fig-cap: "按区域变量分面"
+#| fig-cap: "按收入水平变量分面"
 #| fig-showtext: true
-#| fig-width: 8
-#| fig-height: 9
+#| fig-width: 7
+#| fig-height: 5
 
 ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
-  geom_point(aes(color = country, size = pop), 
-             show.legend = c(color = FALSE, size = TRUE)) +
-  scale_color_manual(values = country_colors) +
+  geom_point(aes(color = region, size = pop),
+    show.legend = c(color = FALSE, size = TRUE)
+  ) +
+  scale_color_manual(values = c(
+    `拉丁美洲与加勒比海地区` = "#E41A1C", `撒哈拉以南非洲地区` = "#377EB8",
+    `欧洲与中亚地区` = "#4DAF4A", `中东与北非地区` = "#984EA3",
+    `东亚与太平洋地区` = "#FF7F00", `南亚` = "#FFFF33", `北美` = "#A65628"
+  )) +
   scale_size(range = c(2, 12), labels = label_number(scale_cut = cut_short_scale())) +
-  scale_x_log10(labels = label_dollar(), limits = c(100, 100000)) +
-  facet_wrap(facets = ~continent, ncol = 2) +
+  scale_x_log10(labels = label_log(), limits = c(100, 110000)) +
+  facet_wrap(facets = ~income_level, ncol = 2) +
   theme_classic() +
-  theme(legend.position =  c(0.7, 0.12)) +
   labs(x = "人均 GDP", y = "预期寿命", size = "人口总数")
 ```
 
@@ -815,14 +850,19 @@ ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
 #| fig-height: 6
 
 ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
-  geom_point(aes(color = country, size = pop), 
-             show.legend = c(color = FALSE, size = TRUE)) +
-  scale_color_manual(values = country_colors) +
+  geom_point(aes(color = region, size = pop),
+    show.legend = c(color = FALSE, size = TRUE)
+  ) +
+  scale_color_manual(values = c(
+    `拉丁美洲与加勒比海地区` = "#E41A1C", `撒哈拉以南非洲地区` = "#377EB8",
+    `欧洲与中亚地区` = "#4DAF4A", `中东与北非地区` = "#984EA3",
+    `东亚与太平洋地区` = "#FF7F00", `南亚` = "#FFFF33", `北美` = "#A65628"
+  )) +
   scale_size(range = c(2, 12), labels = label_number(scale_cut = cut_short_scale())) +
-  scale_x_log10(labels = label_log(), limits = c(100, 100000)) +
-  facet_wrap(facets = ~continent, ncol = 3) +
+  scale_x_log10(labels = label_log(), limits = c(100, 110000)) +
+  facet_wrap(facets = ~income_level, ncol = 3) +
   theme_classic() +
-  theme(legend.position =  c(0.9, 0.20)) +
+  theme(legend.position = c(0.9, 0.25)) +
   labs(x = "人均 GDP", y = "预期寿命", size = "人口总数")
 ```
 
@@ -871,15 +911,21 @@ sysfonts::font_families()
 #| fig-height: 6
 
 ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
-  geom_point(aes(color = country, size = pop), 
-             show.legend = c(color = FALSE, size = TRUE)) +
-  scale_color_manual(values = country_colors) +
+  geom_point(aes(color = region, size = pop),
+    show.legend = c(color = FALSE, size = TRUE)
+  ) +
+  scale_color_manual(values = c(
+    `拉丁美洲与加勒比海地区` = "#E41A1C", `撒哈拉以南非洲地区` = "#377EB8",
+    `欧洲与中亚地区` = "#4DAF4A", `中东与北非地区` = "#984EA3",
+    `东亚与太平洋地区` = "#FF7F00", `南亚` = "#FFFF33", `北美` = "#A65628"
+  )) +
   scale_size(range = c(2, 12), labels = label_number(scale_cut = cut_short_scale())) +
-  scale_x_log10(labels = label_log(), limits = c(100, 100000)) +
-  facet_wrap(facets = ~continent, ncol = 3) +
+  scale_x_log10(labels = label_log(), limits = c(100, 110000)) +
+  facet_wrap(facets = ~income_level, ncol = 3) +
   theme_classic(base_family = "Noto Sans") +
   theme(
     title = element_text(family = "Noto Serif CJK SC"),
+    strip.text = element_text(family = "Noto Serif CJK SC"),
     legend.position =  c(0.9, 0.20)
   ) +
   labs(x = "人均 GDP", y = "预期寿命", size = "人口总数")
@@ -891,80 +937,47 @@ ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
 ### 动画 {#sec-animation}
 
 
-从 1952-2007 年，gapminder 数据集是每隔 5 年从源数据中摘录一次整理的，因此，实际只有 12 年的数据。 @sec-font 根据 2007 年的数据绘制了 @fig-font ，每年的数据绘制一幅图像，12 年总共可获得 12 帧图像，再以每秒播放 2 帧图像的速度将 12 帧图像合成 GIF 动画。因此，设置这个动画总共 12 帧，每秒播放的图像数为 2。
+从 1991 年至2020 年，gapminder 数据集一共是 30 年的数据。 @sec-font 根据 2007 年的数据绘制了 @fig-font ，每年的数据绘制一幅图像，30 年总共可获得 30 帧图像，再以每秒播放 5 帧图像的速度将 30 帧图像合成 GIF 动画。因此，设置这个动画总共 30 帧，每秒播放的图像数为 5。
 
 ```{r}
-options(gganimate.nframes = 12, gganimate.fps = 2)
+options(gganimate.nframes = 30, gganimate.fps = 5)
 ```
 
 **gganimate** 包提供一套代码风格类似 **ggplot2** 包的动态图形语法，可以非常顺滑地与之连接。在了解了 ggplot2 绘制图形的过程后，用 **gganimate** 包制作动画是非常容易的。**gganimate** 包会调用 **gifski** (<https://github.com/r-rust/gifski>) 包来合成动画，因此，除了安装 **gganimate** 包，还需要安装 **gifski** 包。接着，在已有的 **ggplot2** 绘图代码基础上，再追加一个转场图层函数 `transition_time()`，这里是按年逐帧展示图像，因此，其转场的时间变量为 gapminder 数据集中的变量 `year`。
 
 ```{r}
-#| label: fig-animate-html
+#| label: fig-animate
 #| fig-cap: "生成 GIF 动画"
 #| fig-width: 7
 #| fig-height: 6
 #| fig-showtext: true
-#| eval: !expr knitr::is_html_output()
-#| echo: !expr knitr::is_html_output()
-#| cache: true
-
-library(gganimate)
-ggplot(data = gapminder, aes(x = gdpPercap, y = lifeExp)) +
-  geom_point(aes(color = country, size = pop),
-    show.legend = c(color = FALSE, size = TRUE), na.rm = TRUE
-  ) +
-  scale_color_manual(values = country_colors) +
-  scale_size(range = c(2, 12), labels = label_number(scale_cut = cut_short_scale())) +
-  scale_x_log10(labels = label_log(), minor_breaks = mb, limits = c(100, 100000)) +
-  facet_wrap(facets = ~continent) +
-  theme_classic(base_family = "Noto Sans") +
-  theme(
-    title = element_text(family = "Noto Serif CJK SC"),
-    legend.position = c(0.9, 0.20)
-  ) +
-  labs(
-    title = "{frame_time} 年", x = "人均 GDP",
-    y = "预期寿命", size = "人口总数"
-  ) +
-  transition_time(time = year)
-```
-```{r}
-#| label: fig-animate-pdf
 #| fig-show: "animate"
-#| fig-cap: "生成 GIF 动画"
-#| fig-width: 7
-#| fig-height: 6
-#| fig-showtext: true
-#| eval: !expr knitr::is_latex_output()
-#| echo: !expr knitr::is_latex_output()
 #| cache: true
 
 library(gganimate)
 ggplot(data = gapminder, aes(x = gdpPercap, y = lifeExp)) +
-  geom_point(aes(color = country, size = pop),
-    show.legend = c(color = FALSE, size = TRUE), na.rm = TRUE
+  geom_point(aes(color = region, size = pop),
+    show.legend = c(color = TRUE, size = TRUE)
   ) +
-  scale_color_manual(values = country_colors) +
-  scale_size(
-    range = c(2, 12), labels = label_number(scale_cut = cut_short_scale())
-  ) +
-  scale_x_log10(
-    labels = label_log(), minor_breaks = mb, limits = c(100, 100000)
-  ) +
-  facet_wrap(facets = ~continent) +
+  scale_color_manual(values = c(
+    `拉丁美洲与加勒比海地区` = "#E41A1C", `撒哈拉以南非洲地区` = "#377EB8",
+    `欧洲与中亚地区` = "#4DAF4A", `中东与北非地区` = "#984EA3",
+    `东亚与太平洋地区` = "#FF7F00", `南亚` = "#FFFF33", `北美` = "#A65628"
+  )) +
+  scale_size(range = c(2, 12), labels = label_number(scale_cut = cut_short_scale())) +
+  scale_x_log10(labels = label_log(), minor_breaks = mb, limits = c(10, 130000)) +
+  facet_wrap(facets = ~income_level) +
   theme_classic(base_family = "Noto Sans") +
   theme(
     title = element_text(family = "Noto Serif CJK SC"),
-    legend.position = c(0.9, 0.20)
+    text = element_text(family = "Noto Serif CJK SC")
   ) +
   labs(
     title = "{frame_time} 年", x = "人均 GDP",
-    y = "预期寿命", size = "人口总数"
+    y = "预期寿命", size = "人口总数", color = "区域"
   ) +
   transition_time(time = year)
 ```
-
 
 
 ### 组合 {#sec-patchwork}
