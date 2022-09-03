@@ -144,7 +144,7 @@ plot(data = quakes, lat ~ long)
 #|  - "Base R 默认设置"
 #|  - "ggplot2 深度定制"
 #| layout-ncol: 2
-#| fig.showtext: true
+#| fig-showtext: true
 #| layout-valign: bottom
 #| layout: "[[40,-10, 50]]"
 #| par: true
@@ -162,16 +162,26 @@ quakes_sf <- st_as_sf(quakes, coords = c("long", "lat"), crs = st_crs(4326))
 ## 需要 rnaturalearthdata 包
 # fiji_medium <- ne_countries(country = "fiji", scale = "medium", returnclass = "sf")
 # nz_medium <- ne_countries(country = "New Zealand", scale = "medium", returnclass = "sf")
-# 选择合适的震级区间数、散点点的大小、坐标参考系
+## 选择合适的震级区间数、散点点的大小、坐标参考系
+# ggplot() +
+#   geom_sf(data = fiji_medium, fill = "gray") +
+#   geom_sf(data = nz_medium, fill = "gray") +
+#   geom_sf(
+#     data = quakes_sf, aes(color = cut(mag, 3))
+#   ) +
+#   scale_colour_brewer(palette = "Greys") +
+#   coord_sf(
+#     crs = 3460,
+#     xlim = c(569061, 3008322),
+#     ylim = c(1603260, 4665206)
+#   ) +
+#   theme_minimal() +
+#   labs(x = "经度", y = "纬度", color = "震级")
 ggplot() +
-  # geom_sf(data = fiji_medium, fill = "gray") +
-  # geom_sf(data = nz_medium, fill = "gray") +
   geom_sf(
     data = quakes_sf, aes(color = cut(mag, 3))
   ) +
-  # scale_color_viridis_d(option = "C") +
-  # scale_colour_brewer(palette = "Greys") +
-  scale_colour_brewer(palette = "Reds") +
+  scale_colour_brewer(palette = "Greys") +
   coord_sf(
     crs = 3460,
     xlim = c(569061, 3008322),
@@ -187,15 +197,15 @@ ggplot() +
 
 ```{r}
 #| label: fig-pressure
-#| fig.cap: "汞蒸气的压力随温度的指数级变化"
-#| fig.subcap: 
+#| fig-cap: "汞蒸气的压力随温度的指数级变化"
+#| fig-subcap: 
 #|  - Base R 图形
 #|  - ggplot2 图形
 #| out.width: '50%'
-#| fig.width: 4.5
-#| fig.height: 3.5
-#| fig.showtext: true
-#| fig.ncol: 2
+#| fig-width: 4.5
+#| fig-height: 3.5
+#| fig-showtext: true
+#| fig-ncol: 2
 #| par: true
 #| echo: false
 
@@ -252,14 +262,13 @@ ggplot(data = pressure, aes(x = temperature, y = pressure)) +
 #| label: fig-avoid-errorbar
 #| fig-cap: "防止误差线图"
 #| fig-subcap: 
-#| - "误差线"
-#| - "提琴图"
-#| - "散点图"
-#| layout-ncol: 2
-#| layout-nrow: 2
-#| fig-width: 3.5
-#| fig-height: 2.625
+#|   - 误差线
+#|   - 提琴图
+#| fig-ncol: 2
+#| fig-width: 4.5
+#| fig-height: 3.5
 #| echo: false
+#| fig-showtext: true
 
 library(data.table)
 ToothGrowth <- as.data.table(ToothGrowth)
@@ -283,12 +292,6 @@ ggplot(data = ToothGrowth, aes(x = dose, y = len)) +
   theme_minimal() +
   theme(axis.title.y = element_text(angle = 0, vjust = 1, size = 15)) +
   labs(x = NULL, y = "B")
-
-ggplot(data = ToothGrowth, aes(x = dose, y = len)) +
-  geom_point(aes(color = supp), show.legend = FALSE) +
-  theme_minimal() +
-  theme(axis.title.y = element_text(angle = 0, vjust = 1, size = 15)) +
-  labs(x = NULL, y = "C")
 ```
 
 
@@ -303,6 +306,9 @@ ggplot(data = ToothGrowth, aes(x = dose, y = len)) +
 #| tbl-cap: "gapminder 数据集（部分）"
 
 gapminder <- readRDS(file = "data/gapminder.rds")
+gapminder$region <- factor(gapminder$region,
+  levels = c("北美", "欧洲与中亚地区", "东亚与太平洋地区", "中东与北非地区", "拉丁美洲与加勒比海地区", "南亚", "撒哈拉以南非洲地区")
+)
 knitr::kable(head(gapminder),
   col.names = c(
     "年份", "国家或地区", "区域划分", "收入划分",
@@ -350,6 +356,7 @@ ggplot2 绘图必须包含以下三个要素，缺少任何一个，图形都是
 #| layout-nrow: 2
 #| fig-width: 4
 #| fig-height: 3
+#| fig-showtext: true
 
 gapminder_2007 <- gapminder[gapminder$year == 2007, ]
 ggplot(data = gapminder_2007)
@@ -388,7 +395,7 @@ ls("package:ggplot2", pattern = "^geom_*")
 #| - "默认设置"
 #| - "自定义标签"
 #| layout-ncol: 1
-#| fig.showtext: true
+#| fig-showtext: true
 
 ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
   geom_point(aes(color = region))
@@ -560,8 +567,8 @@ ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
 
 ```{r}
 #| label: fig-legend-show
-#| fig.cap: "在两个图例中保留一个"
-#| fig.showtext: true
+#| fig-cap: "在两个图例中保留一个"
+#| fig-showtext: true
 #| fig-width: 6
 #| fig-height: 3.5
 
@@ -946,7 +953,7 @@ options(gganimate.nframes = 30, gganimate.fps = 5)
 **gganimate** 包提供一套代码风格类似 **ggplot2** 包的动态图形语法，可以非常顺滑地与之连接。在了解了 ggplot2 绘制图形的过程后，用 **gganimate** 包制作动画是非常容易的。**gganimate** 包会调用 **gifski** (<https://github.com/r-rust/gifski>) 包来合成动画，因此，除了安装 **gganimate** 包，还需要安装 **gifski** 包。接着，在已有的 **ggplot2** 绘图代码基础上，再追加一个转场图层函数 `transition_time()`，这里是按年逐帧展示图像，因此，其转场的时间变量为 gapminder 数据集中的变量 `year`。
 
 ```{r}
-#| label: fig-animate
+#| label: fig-animate-facets
 #| fig-cap: "生成 GIF 动画"
 #| fig-width: 7
 #| fig-height: 6
@@ -965,7 +972,7 @@ ggplot(data = gapminder, aes(x = gdpPercap, y = lifeExp)) +
     `东亚与太平洋地区` = "#FF7F00", `南亚` = "#FFFF33", `北美` = "#A65628"
   )) +
   scale_size(range = c(2, 12), labels = label_number(scale_cut = cut_short_scale())) +
-  scale_x_log10(labels = label_log(), minor_breaks = mb, limits = c(10, 130000)) +
+  scale_x_log10(labels = label_log(), limits = c(10, 130000)) +
   facet_wrap(facets = ~income_level) +
   theme_classic(base_family = "Noto Sans") +
   theme(
@@ -978,6 +985,77 @@ ggplot(data = gapminder, aes(x = gdpPercap, y = lifeExp)) +
   ) +
   transition_time(time = year)
 ```
+
+
+```{r}
+#| label: fig-animate-region
+#| fig-cap: "生成 GIF 动画"
+#| fig-width: 7
+#| fig-height: 7
+#| fig-showtext: true
+#| fig-show: "animate"
+#| cache: true
+
+ggplot(data = gapminder, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point(aes(color = income_level, size = pop),
+    show.legend = c(color = TRUE, size = TRUE)
+  ) +
+  scale_color_brewer(palette = "RdYlGn") +
+  scale_radius(range = c(1, 6), trans = "log10",
+             labels = label_number(scale_cut = cut_short_scale())) +
+  scale_x_log10(labels = label_log(), limits = c(10, 130000)) +
+  facet_wrap(facets = ~region, ncol = 3) +
+  theme_classic(base_family = "Noto Sans") +
+  theme(
+    title = element_text(family = "Noto Serif CJK SC"),
+    text = element_text(family = "Noto Serif CJK SC")
+  ) +
+  labs(
+    title = "{frame_time} 年", x = "人均 GDP",
+    y = "预期寿命", size = "人口总数", color = "区域"
+  ) +
+  transition_time(time = year)
+```
+
+
+去掉分面
+
+```{r}
+#| label: fig-animate-scale
+#| fig-cap: "生成 GIF 动画"
+#| fig-width: 7
+#| fig-height: 5
+#| fig-showtext: true
+#| fig-show: "animate"
+#| cache: true
+
+ggplot(data = gapminder, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point(aes(color = region, size = pop),
+             show.legend = c(color = TRUE, size = TRUE)
+  ) +
+  scale_color_manual(values = c(
+    `拉丁美洲与加勒比海地区` = "#E41A1C", `撒哈拉以南非洲地区` = "#377EB8",
+    `欧洲与中亚地区` = "#4DAF4A", `中东与北非地区` = "#984EA3",
+    `东亚与太平洋地区` = "#FF7F00", `南亚` = "#FFFF33", `北美` = "#A65628"
+  )) +
+  scale_radius(range = c(1, 6), trans = "log10",
+             labels = label_number(scale_cut = cut_short_scale())) +
+  scale_x_log10(labels = label_dollar(), minor_breaks = mb, limits = c(10, 130000)) +
+  scale_y_continuous(n.breaks = 6) +
+  theme_classic(base_family = "Noto Sans") +
+  theme(
+    title = element_text(family = "Noto Serif CJK SC"),
+    text = element_text(family = "Noto Serif CJK SC"),
+    panel.grid.major = element_line(),
+    panel.grid.minor.x = element_line()
+  ) +
+  labs(
+    title = "{frame_time} 年", x = "人均 GDP",
+    y = "预期寿命", size = "人口总数", color = "区域"
+  ) +
+  transition_time(time = year)
+```
+
 
 
 ### 组合 {#sec-patchwork}
