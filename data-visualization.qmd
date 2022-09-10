@@ -204,6 +204,46 @@ ggplot() +
   labs(x = "经度", y = "纬度", color = "震级")
 ```
 
+有的地理区域靠近板块交界处，地震频发，以至于 @fig-quakes-sf 部分区域的散点覆盖严重，影响重点区域的观测。因此，将斐济及周边区域划分成 $40 \times 80$ 的网格，统计每个小格子内散点的数量，即地震次数，再将地震次数映射给颜色。相比于 @fig-quakes-sf，@fig-quakes-grid-sf 可以更加清晰地展示地震活跃度的空间分布。
+
+```{r}
+#| label: fig-quakes-grid-sf
+#| echo: false
+#| fig-cap: "斐济及其周边的地震活动"
+#| message: false
+#| fig-width: 5
+#| fig-height: 4.5
+#| fig-showtext: true
+
+# 目标区域划分成 40x80 的网格
+quakes_grid_sf <- st_make_grid(quakes_sf, n = c(40, 80))
+# 统计每个区域内包含的点的数量，也就是地震次数
+quakes_grid_cnt <- st_sf(
+  count = lengths(st_intersects(quakes_grid_sf, quakes_sf)),
+  geometry = st_cast(quakes_grid_sf, "MULTIPOLYGON")
+)
+# 将多边形绘制出来，以地震次数填充颜色
+ggplot() +
+  geom_sf(
+    data = quakes_grid_cnt[quakes_grid_cnt$count > 0, ],
+    aes(fill = count), linewidth = 0.01
+  ) +
+  scale_fill_viridis_c(option = "C") +
+  scale_x_continuous(breaks = c(
+    # 东经
+    seq(from = 165, to = 180, by = 5),
+    # 西经
+    seq(from = -180, to = -170, by = 5)
+  )) +
+  coord_sf(
+    crs = 3460,
+    xlim = c(569061, 3008322),
+    ylim = c(1603260, 4665206)
+  ) +
+  theme_minimal() +
+  labs(x = "经度", y = "纬度", fill = "震次")
+```
+
 
 所以，若以出版级的要求， **ggplot2** 绘图并不简单，那比 Base R 又如何呢？以 Base R 内置的 pressure 数据集为例，展示汞蒸气的压力随温度的变化趋势，如 @fig-pressure 所示，左子图用区区 3 行 Base R 代码就搞定了，而右子图用 15 行 **ggplot2** 代码才勉强达到相似的效果。类似的情况绝不仅限于描述趋势的点线图，归根结底，是刻画图形细节的要素都差不多，只是表达方式不同罢了。比如示例(<https://stackoverflow.com/questions/27934840/>)用 Base R 复现一张直方图，示例(<https://stackoverflow.com/questions/3932038/>)给 Base R 图形添加图例，网站(<http://motioninsocial.com/tufte/>)更是用 Base R、**ggplot2** 和 **lattice** 分别绘制了 9 种常见统计图形。反之，用 Base R 实现 **ggplot2** 风格图形，也不那么简单，以分类散点图为例，详见博客 [Styling plots in base R graphics to match ggplot2 classic theme](https://www.tenderisthebyte.com/blog/2021/05/09/pretty-plots-with-base-r-grahpics/)。
 
