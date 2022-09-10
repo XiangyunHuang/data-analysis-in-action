@@ -204,7 +204,7 @@ ggplot() +
   labs(x = "经度", y = "纬度", color = "震级")
 ```
 
-有的地理区域靠近板块交界处，地震频发，以至于 @fig-quakes-sf 部分区域的散点覆盖严重，影响重点区域的观测。因此，将斐济及周边区域划分成 $40 \times 80$ 的网格，统计每个小格子内散点的数量，即地震次数，再将地震次数映射给颜色。相比于 @fig-quakes-sf，@fig-quakes-grid-sf 可以更加清晰地展示地震活跃度的空间分布。
+有的地理区域处于板块交界处，地震频发，以至于 @fig-quakes-sf 部分区域的散点覆盖严重，影响重点区域的观测。因此，将斐济及周边区域划分成 $40 \times 80$ 的网格，统计每个小格子内散点的数量，即地震次数，再将地震次数映射给颜色。相比于 @fig-quakes-sf，@fig-quakes-grid-sf 可以更加清晰地展示地震活跃度的空间分布。
 
 ```{r}
 #| label: fig-quakes-grid-sf
@@ -242,6 +242,62 @@ ggplot() +
   ) +
   theme_minimal() +
   labs(x = "经度", y = "纬度", fill = "震次")
+```
+
+@fig-quakes-grid-sf 通过将连续空间离散化，再统计各个小网格中地震次数，而 @fig-quakes-density-ppp 将地震活动看作是一种随机事件，用非参数的方法 --- 二维核密度估计方法计算各个位置发生地震活动的可能性。
+
+```{r}
+#| label: fig-quakes-density-ppp
+#| echo: false
+#| fig-cap: "斐济及其周边的地震活动"
+#| message: false
+#| fig-width: 5
+#| fig-height: 4.5
+#| fig-showtext: true
+
+## 基于 sf 对象构造
+quakes_sf <- st_transform(quakes_sf, crs = 3460)
+# 组合 POINT 构造 POLYGON
+quakes_sfp <- st_cast(st_combine(st_geometry(quakes_sf)), "POLYGON")
+# 构造 POLYGON 的凸包
+quakes_sfp_hull <- st_convex_hull(st_geometry(quakes_sfp))
+# 添加 buffer 
+quakes_sfp_buffer <- st_buffer(quakes_sfp_hull, dist = 100000)
+# planar point pattern 表示 ppp 
+# sf 转化为 ppp 类型
+quakes_ppp <- spatstat.geom::as.ppp(X = st_geometry(quakes_sf))
+# 限制散点在给定的窗口边界内平滑
+spatstat.geom::Window(quakes_ppp) <- spatstat.geom::as.owin(quakes_sfp_buffer)
+# 高斯核密度估计 36*36 的网格
+# density.ppp 的含义是什么？统计原理是什么？
+# dimyx 指定先 y 后 x
+# spatstat 版本 3.0-0 以后 spatstat.core 包被拆分成 spatstat.explore 和 spatstat.model 两个包
+# 届时得用 spatstat.explore::density.ppp 替换 spatstat.core::density.ppp
+density_spatstat <- spatstat.core::density.ppp(quakes_ppp, 
+                                               dimyx = c(36, 36), 
+                                               kernel = "gaussian")
+# 转化为 stars 对象 栅格数据
+density_stars <- stars::st_as_stars(density_spatstat)
+# 设置坐标参考系
+density_sf <- st_set_crs(st_as_sf(density_stars), 3460)
+
+ggplot() +
+  geom_sf(data = density_sf, aes(fill = v), col = NA) +
+  geom_sf(data = st_boundary(quakes_sfp_hull), linewidth = 0.25) +
+  geom_sf(data = st_boundary(quakes_sfp_buffer), linewidth = 0.5) +
+  scale_fill_viridis_c(
+    option = "C", trans = "log10",
+    labels = scales::label_log(),
+    limits = c(1e-12, 1e-9)
+  ) +
+  scale_x_continuous(breaks = c(
+    # 东经
+    seq(from = 165, to = 180, by = 5),
+    # 西经
+    seq(from = -180, to = -170, by = 5)
+  )) +
+  labs(x = "经度", y = "纬度", fill = "活跃度") +
+  theme_minimal()
 ```
 
 
