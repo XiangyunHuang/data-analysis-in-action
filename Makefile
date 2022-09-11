@@ -9,3 +9,6 @@ pdf:
 
 docx:
 	quarto render --to docx
+
+epub:
+	quarto render --to epub
