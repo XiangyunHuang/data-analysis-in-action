@@ -71,6 +71,16 @@ sysfonts::font_add(
 其它小节完成后再写本节。
 :::
 
+<!-- 
+看 10 篇文章总结对数据可视化的理解和应用
+
+https://www.visualisingdata.com/2022/07/explore-explain-s3-e7-mick-yang-nur-munirah-mansoor/
+
+目前市面上已经出版一些专著，它们有不同的特点
+-->
+
+数据可视化的主要目的有两个：其一是探索 Explore，其二是解释 Explain。
+
 
 ## ggplot2 概览 {#sec-overview-of-ggplot2}
 
@@ -123,7 +133,14 @@ plot(data = quakes, lat ~ long)
 ```
 
 
-所以，若以出版级的要求， **ggplot2** 绘图并不简单，那比 Base R 又如何呢？以 Base R 内置的 pressure 数据集为例，展示汞蒸气的压力随温度的变化趋势，如 @fig-pressure 所示，左子图用区区 3 行 Base R 代码就搞定了，而右子图用 15 行 **ggplot2** 代码才勉强达到相似的效果。类似的情况绝不仅限于描述趋势的点线图，归根结底，是刻画图形细节的要素都差不多，只是表达方式不同罢了。比如示例(<https://stackoverflow.com/questions/27934840/>)用 Base R 复现一张直方图，示例(<https://stackoverflow.com/questions/3932038/>)给 Base R 图形添加图例，网站(<http://motioninsocial.com/tufte/>)更是用 Base R、**ggplot2** 和 **lattice** 分别绘制了 9 种常见统计图形。反之，用 Base R 实现 **ggplot2** 风格图形，也不那么简单，以分类散点图为例，详见博客 [Styling plots in base R graphics to match ggplot2 classic theme](https://www.tenderisthebyte.com/blog/2021/05/09/pretty-plots-with-base-r-grahpics/)。
+所以，若以出版级的要求， **ggplot2** 绘图并不简单，那比 Base R 又如何呢？以 Base R 内置的 pressure 数据集为例，展示汞蒸气的压力随温度的变化趋势，如 @fig-pressure 所示，左子图用区区 3 行 Base R 代码就搞定了，而右子图用 15 行 **ggplot2** 代码才勉强达到相似的效果。类似的情况绝不仅限于描述趋势的点线图，归根结底，是刻画图形细节的要素都差不多，只是表达方式不同罢了。
+
+
+
+
+<!-- 
+比如示例(<https://stackoverflow.com/questions/27934840/>)用 Base R 复现一张直方图，示例(<https://stackoverflow.com/questions/3932038/>)给 Base R 图形添加图例，网站(<http://motioninsocial.com/tufte/>)更是用 Base R、**ggplot2** 和 **lattice** 分别绘制了 9 种常见统计图形。反之，用 Base R 实现 **ggplot2** 风格图形，也不那么简单，以分类散点图为例，详见博客 [Styling plots in base R graphics to match ggplot2 classic theme](https://www.tenderisthebyte.com/blog/2021/05/09/pretty-plots-with-base-r-grahpics/)。 
+-->
 
 
 ```{r}
@@ -173,11 +190,112 @@ ggplot(data = pressure, aes(x = temperature, y = pressure)) +
   )
 ```
 
+
+@fig-pressure 所用数据集 pressure 来自 Base R 自带的 **datasets** 包，描述汞蒸气压力（以毫米计）随温度（以摄氏度计）的变化。为美观起见，除了设置字体外，右图以黑白主题替换了默认的灰色主题，调整了横、纵坐标轴标题到坐标轴的距离，面板边界线从灰色调为黑色，取消背景网格线，轴须增加至0.25厘米，适当增加了刻度标签的大小和位置。再和原始的 ggplot2 的图形对比，@fig-pressure-ugly 所示，美颜前后已不可同日而语，能解决最重要的 20% 细节问题就能让整个档次显著提升，达到让大多数人认可的水准。当然，一味地追求统一 Base R 风格或 ggplot2 风格是没有必要的，举此例也无意宣扬 Base R 绘图的简便，展示 ggplot2 绘图的复杂，简便和复杂往往不是由工具决定的，而是数据本身和工具使用的场景。将错误的工具放在错误的数据上，除了能带来实现上的技术挑战，造出一堆难以理解的图形垃圾，还可能误导受众。
+
+```{r}
+#| label: fig-pressure-ugly
+#| fig-cap: "ggplot2 默认的风格"
+#| echo: false
+#| fig-width: 4.5
+#| fig-height: 3.5
+#| fig-showtext: true
+#| out-width: '60%'
+
+# https://github.com/Mikata-Project/ggthemr
+# 书籍就绪后，考虑统一颜色主题
+ggplot(data = pressure, aes(x = temperature, y = pressure)) +
+  geom_line() +
+  geom_point() +
+  labs(x = "温度", y = "压力") +
+  theme(
+    axis.title = element_text(family = "Noto Serif CJK SC"),
+    axis.text = element_text(family = "Noto Sans")
+  )
+```
+
+
 既然这样，为什么我仍然选择介绍 **ggplot2** 呢？对新手来说比较友好，有一套紧凑、一致的语法，掌握规律后，学习曲线比较低，可以非常高效地绘制中等质量的图形。此外，衍生包 **gganimate** [@gganimate2020] 可以与 ggplot2 如丝般顺滑衔接，以成本极低的方式绘制动态图形，而且，**ggplot2** 的绘图语法已经出圈到交互式可视化领域，举例来说，R 包 **plotly** [@Carson2020] 和 **leaflet** [@leaflet2022] 等都提供一套相似度极高的管道语法，学习成本进一步摊薄了。总而言之，软件成熟，生态庞大，社区活跃。
 
 
 
 ## 案例展示 {#sec-case-study}
+
+### 老忠实间歇泉喷发规律 {#sec-faithful}
+
+@fig-faithful-bkde2d 展示美国怀俄明州黄石国家公园[老忠实间歇泉](https://en.wikipedia.org/wiki/Old_Faithful)喷发规律，横轴表示喷发持续时间（以分钟计），纵轴表示等待时间（以分钟计），点的亮暗程度（白到黑）代表附近点密度的高低，亮度值通过二维核密度估计方法得到，具体实现借助了 **KernSmooth** [@KernSmooth1995] 包提供的 `bkde2D()` 函数，设置了喷发时间的窗宽为 0.7 分钟，等待时间的窗宽为 7分钟。不难看出，每等待55分钟左右间歇泉喷发约2分钟，或者每等待80分钟左右间歇泉喷发4.5约分钟，非常守时，表现得很老实，故而得名。说实话，二维核密度估计在这里有点大材小用了，因为数据点比较少，肉眼也能分辨出来哪里聚集的点多，哪里聚集的点少。
+
+```{r}
+#| label: fig-faithful-bkde2d
+#| echo: false
+#| par: true
+#| fig-cap: "二维核密度估计"
+#| fig-subcap: 
+#| - '亮度/等值线表示核密度估计值'
+#| - '等值线表示核密度估计值'
+#| fig-width: 4.5
+#| fig-height: 4.5
+#| fig-showtext: true
+#| fig-ncol: 2
+#| message: false
+#| out-width: '50%'
+
+# faithful 添加二维核密度估计 density 列
+library(KernSmooth)
+den <- bkde2D(x = faithful, bandwidth = c(0.7, 7), gridsize = c(51L, 51L))
+faithful2d <- expand.grid(eruptions = den$x1, waiting = den$x2) |>
+  transform(density = as.vector(den$fhat))
+
+plot(faithful,
+  pch = 20, panel.first = grid(), cex = 1, ann = FALSE,
+  xlim = c(0.5, 6.5),
+  ylim = c(35, 100),
+  col = densCols(faithful,
+    bandwidth = c(0.7, 7),
+    nbin = c(51L, 51L), colramp = hcl.colors
+  )
+)
+contour(den$x1, den$x2, den$fhat, add = TRUE)
+title(xlab = "喷发时间", ylab = "等待时间", family = "Noto Serif CJK SC")
+
+library(ggplot2)
+ggplot() +
+  geom_point(data = faithful, aes(x = eruptions, y = waiting), 
+             shape = 20, size = 2, color = "gray60") +
+  geom_contour(data = faithful2d, aes(
+    x = eruptions, y = waiting,
+    z = density, colour = after_stat(level)
+  ), linemitre = 8, linewidth = 0.45, show.legend = FALSE) +
+  scale_colour_viridis_c(option = "D") +
+  scale_x_continuous(breaks = 1:6) +
+  scale_y_continuous(breaks = 10*4:10) +
+  coord_cartesian(xlim = c(0.5, 6.5), ylim = c(35, 100)) +
+  labs(x = "喷发时间", y = "等待时间", colour = "核密度值") +
+  theme_bw(base_size = 13) +
+  theme(
+    legend.title = element_text(family = "Noto Serif CJK SC"),
+    axis.title = element_text(family = "Noto Serif CJK SC"),
+    axis.title.x = element_text(
+      margin = margin(b = 0, l = 0, t = 20, r = 0)
+    ),
+    axis.title.y = element_text(
+      margin = margin(b = 0, l = 0, t = 0, r = 20)
+    ),
+    panel.border = element_rect(color = "black"),
+    panel.grid = element_blank(),
+    panel.grid.major = element_line(color = "lightgray", linetype = 3, linewidth = 0.5),
+    axis.ticks.length = unit(0.25, "cm"),
+    axis.text.x = element_text(
+      family = "Noto Sans", color = "black",
+      vjust = -1.5, size = rel(1.25)
+    ),
+    axis.text.y = element_text(
+      family = "Noto Sans", color = "black",
+      angle = 90, vjust = 1.5, hjust = 0.5,
+      size = rel(1.25)
+    )
+  )
+```
 
 
 ### 斐济及其周边地震活动 {#sec-fiji-quakes}
@@ -283,7 +401,7 @@ ggplot() +
     ylim = c(1603260, 4665206)
   ) +
   theme_minimal() +
-  labs(x = "经度", y = "纬度", fill = "震次")
+  labs(x = "经度", y = "纬度", fill = "频次")
 ```
 
 @fig-quakes-grid-sf 通过将连续空间离散化，再统计各个小网格中地震次数，而 @fig-quakes-density-ppp 将地震活动看作是一种随机事件，用非参数的方法 --- 二维核密度估计方法计算各个位置发生地震活动的可能性。
@@ -338,11 +456,11 @@ ggplot() +
     # 西经
     seq(from = -180, to = -170, by = 5)
   )) +
-  labs(x = "经度", y = "纬度", fill = "活跃度") +
+  labs(x = "经度", y = "纬度", fill = "密度") +
   theme_minimal()
 ```
 
-### 美国男性死亡率曲线变化 {#sec-usa-mortality}
+### 美国近88年男性死亡率变化 {#sec-usa-mortality}
 
 <!-- 函数型数据探索、分析和可视化，趋势分析，时间 -->
 
