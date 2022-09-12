@@ -175,6 +175,7 @@ ggplot(data = pressure, aes(x = temperature, y = pressure)) +
 
 ### 斐济及其周边地震活动 {#sec-fiji-quakes}
 
+<!-- 空间数据探索、分析、可视化，空间分析，空间 -->
 
 下面将震级数据分割成三个区间，并以明暗不同的颜色表示震级大小，接着，根据斐济及周边地区的位置，选择相应的坐标参考系，最后，用 ggplot2 深度定制出 @fig-quakes-sf ，相比于 @fig-quakes 更加清晰、准确地反映了数据情况，目标区域位于南半球，横跨 180 度经线。
 
@@ -336,6 +337,8 @@ ggplot() +
 
 ### 美国男性死亡率曲线变化 {#sec-usa-mortality}
 
+<!-- 函数型数据探索、分析和可视化，趋势分析，时间 -->
+
 @fig-usa-mortality 展示美国 1933-2020 年男性分年龄的死亡率数据[^usa-mortality]。图分上下两部分，上半部分展示死亡率原值随年龄的变化情况，以 ggplot2 默认的调色板给各个年份配色，下半部分展示死亡率对数变换后随年龄的变化情况，并以红、橙、黄、绿、青、蓝、紫构造彩虹式的调色板给各个年份配色。作图过程中，使用对数变换和调用彩虹式的调色板，帮助我们观察到更多的细节、层次。对数变换后，更加清晰地展示死亡率的变化，尤其是 0-20 岁之间的死亡率起伏变化。调用彩虹式的调色板后，约 20 年为一个阶段，每个阶段内呈现梯度变化，多个阶段体现层次性，更加清晰地展示死亡率曲线的变动趋势，透过层次看到 80 多年来，美国在医疗和公共卫生方面取得的显著改善。
 
 [^usa-mortality]: 数据来自德国马克斯普朗克人口研究所、美国加州大学伯克利分校、法国人口研究所共同建立的人类死亡率数据库 (<https://www.mortality.org/>)。
@@ -379,7 +382,10 @@ https://rafalab.github.io/dsbook/data-visualization-principles.html
 数据说明
 -->
 
+
 ### 子代身高与亲代身高的关系 {#sec-galton}
+
+<!-- 生物遗传示例，相关关系，遗传，因果 -->
 
 Francis Galton（弗朗西斯·高尔顿）(<https://galton.org/>)
 
@@ -409,7 +415,7 @@ Galton[, .(median = mean((father + mother) / 2), height = mean(height)), by = .(
 
 ## 图形基础 {#sec-foundations-of-ggplot2}
 
-2006 年 Hans Rosling 在 TED 做了一场精彩的演讲 --- The best stats you've ever seen。演讲中展示了一系列生动形象的动画，用数据记录的事实帮助大家理解世界的变化，可谓是动态图形领域的惊世之作。时至今日，已经超过 1500 万人观看，产生了十分广泛的影响。从世界银行获取数据，整理后 gapminder。本节将基于 gapminder 数据集介绍 ggplot2 绘图的基础知识，包括图层、标签、刻度、配色、图例、主题、文本、分面、字体、动画和组合等 11 个方面，理解这些有助于绘制和加工各种各样的统计图形，可以覆盖日常所需。gapminder 数据集以数据框的形式存储在 R 软件运行环境中，一共 1704 行，6 列，该数据集的部分内容见 @tbl-gapminder 。
+2006 年 Hans Rosling（汉斯·罗琳）在 TED 做了一场精彩的演讲 --- The best stats you've ever seen。演讲中展示了一系列生动形象的动画，用数据记录的事实帮助大家理解世界的变化，可谓是动态图形领域的惊世之作。时至今日，已经超过 1500 万人观看，产生了十分广泛的影响。下面从数据源头 --- 世界银行获取数据，整理后取名 `gapminder`。本节将基于 `gapminder` 数据集介绍 **ggplot2** 绘图的基础知识，包括图层、标签、刻度、配色、图例、主题、文本、分面、字体、动画和组合等 11 个方面，理解这些有助于绘制和加工各种各样的统计图形，可以覆盖日常所需。gapminder 数据集以数据框的形式存储在 R 软件运行环境中，一共 4950 行，7 列。篇幅所限，下 @tbl-gapminder 展示该数据集的部分内容，表中人均 GDP 和预期寿命两列四舍五入保留一位小数。
 
 ```{r}
 #| echo: false
@@ -417,15 +423,15 @@ Galton[, .(median = mean((father + mother) / 2), height = mean(height)), by = .(
 #| tbl-cap: "gapminder 数据集（部分）"
 
 gapminder <- readRDS(file = "data/gapminder-2020.rds")
-knitr::kable(head(gapminder),
+knitr::kable(head(gapminder), digits = 1,
   col.names = c(
-    "年份", "国家或地区", "区域划分", "收入划分",
+    "年份", "国家或地区", "区域划分", "收入水平",
     "人均 GDP", "预期寿命", "人口总数"
   )
 )
 ```
 
-在 R 环境中，加载 gapminder 数据集后，可以用 `str()` 函数查看数据集 gapminder 的情况。
+在 R 环境中，加载 gapminder 数据集后，可以用 `str()` 函数查看数据集 gapminder 各个列的数据类型和部分属性值。
 
 ```{r}
 #| label: load-gapminder
@@ -434,7 +440,7 @@ knitr::kable(head(gapminder),
 str(gapminder)
 ```
 
-其中，country（国家或地区）和 region （区域）是字符型变量，year （年份）、 pop （人口总数）、lifeExp （出生时的预期寿命，单位：岁）和 gdpPercap （人均 GDP，单位：美元）是数值型变量。
+其中，country（国家或地区）是字符型变量，region （区域）是因子型变量，income_level（收入水平）是有序的因子型变量，year （年份）、 pop （人口总数）、lifeExp （出生时的预期寿命，单位：岁）和 gdpPercap （人均 GDP，单位：美元）是数值型变量。
 
 
 ### 图层 {#sec-layer}
@@ -512,7 +518,7 @@ ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
 ```
 
 
-### 标度 {#sec-scale}
+### 刻度 {#sec-scale}
 
 <!-- 
 几何元素的透明度 alpha、颜色 color、填充色 fill、线类型 linetype、几何元素的形状 shape 及大小 size，坐标轴 x/y 的变换 
@@ -2005,6 +2011,9 @@ ggplot(data = sub_rversion_df2) +
 ```
 
 在 R 语言诞生的前 5 年里，每年发布 3 个主要版本，这 5 年是 R 软件活跃开发的时期。而 2003-2012 年的这 10 年，基本上每年发布 2 个主要版本。2013-2022 年的这 10 年，基本上每年发布 1 个主要版本。
+
+
+[timevis](https://github.com/daattali/timevis) 包基于 JavaScript 库 [Vis](https://visjs.org/) 的 [vis-timeline](https://github.com/visjs/vis-timeline) 模块，可以 创建交互式的时间线图，支持与 Shiny 应用集成。
 
 
 ## 经验总结 {#sec-principles-of-ggplot2}
