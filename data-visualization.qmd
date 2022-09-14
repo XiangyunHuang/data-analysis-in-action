@@ -74,13 +74,37 @@ sysfonts::font_add(
 <!-- 
 看 10 篇文章总结对数据可视化的理解和应用
 
+探索 Explore 解释 Explain
 https://www.visualisingdata.com/2022/07/explore-explain-s3-e7-mick-yang-nur-munirah-mansoor/
 
 目前市面上已经出版一些专著，它们有不同的特点，概览介绍，本文的特点
+
+为什么数据可视化是重要的？数据可视化过程中，什么是重要的？目标读者是哪些？《R 语言实战》分三章介绍图形，分入门、基础和中级三层，本章亦有此意。
 -->
 
 数据可视化的主要目的有两个：其一是探索 Explore，其二是解释 Explain。
 
+
+大多教科书侧重理论和方法，计算机强调编程，数值计算是精确的，图形是粗燥的。然而，只有模型和方法，缺乏数据探索的分析和建模，计算的结果和分析的结论可能是不正确的，数据可能在欺骗你[@Anscombe1973]。
+
+数据可视化的重要性还在于数据建模和模型评估，下 @fig-datasaurus-dozen 展示 13 个数据集在相关系数、均值、标准差等描述性统计量方面十分接近，但是数据分布千差万别。单个统计量就好比管窥蠡测，稍有不慎，我们就成了盲人摸象，可见数据可视化在洞察数据真实分布方面的重要性。
+
+
+```{r}
+#| label: fig-datasaurus-dozen
+#| fig-cap: "数据可视化为何如此重要"
+#| fig-width: 7
+#| fig-height: 7
+#| fig-showtext: true
+#| echo: false
+
+data("datasaurus_dozen", package = "datasauRus")
+library(ggplot2)
+ggplot(datasaurus_dozen, aes(x = x, y = y)) +
+  geom_point(aes(colour = dataset), show.legend = FALSE) +
+  theme_void() +
+  facet_wrap(facets = ~dataset, ncol = 4)
+```
 
 
 
@@ -564,11 +588,11 @@ nsample = ifelse(n == 10, "n=10", "n=100")
 )
 
 ggplot(data = sim_dat, aes(x = p, y = prob, color = nsample)) +
-  geom_hline(yintercept = 0.95, linetype = 2) +
+  geom_hline(yintercept = 0.95, linetype = 2, linewidth = 1, color = "gray60") +
   geom_point() +
   geom_path() +
   annotate(geom = "text", x = 0, y = 0.95, label = "0.95",
-           fontface = "bold", hjust = 2, size = 3.75) +
+           fontface = "bold", hjust = 2.1, size = 3.5) +
   # scale_color_grey() +
   scale_color_brewer(palette = "Set1") +
   facet_wrap(facets = ~methods, ncol = 1, scales = "free_y") +
@@ -582,28 +606,6 @@ ggplot(data = sim_dat, aes(x = p, y = prob, color = nsample)) +
 请读者再思考两个问题： @fig-coverage 为什么呈现对称的形式，泊松分布会和二项分布有类似的现象吗？如果有的话，连续分布，如正态分布和指数分布也会有吗？
 :::
 
-
-### 管窥蠡测与盲人摸象的关系 {#sec-datasaurus-dozen}
-
-大多教科书侧重理论和方法，计算机强调编程，数值计算是精确的，图形是粗燥的。然而，只有模型和方法，缺乏数据探索的分析和建模，计算的结果和分析的结论可能是不正确的，数据可能在欺骗你[@Anscombe1973]。
-
-数据可视化的重要性还在于数据建模和模型评估，下 @fig-datasaurus-dozen 展示 13 个数据集在相关系数、均值、标准差等描述性统计量方面十分接近，但是数据分布千差万别。单个统计量就好比管窥蠡测，稍有不慎，我们就成了盲人摸象，可见数据可视化在揭露数据真实分布方面的重要性。
-
-
-```{r}
-#| label: fig-datasaurus-dozen
-#| fig-cap: "数据可视化为何如此重要"
-#| fig-width: 7
-#| fig-height: 7
-#| fig-showtext: true
-#| echo: false
-
-data("datasaurus_dozen", package = "datasauRus")
-ggplot(datasaurus_dozen, aes(x = x, y = y))+
-  geom_point(aes(colour = dataset), show.legend = FALSE) +
-  theme_void() +
-  facet_wrap(facets = ~dataset, ncol = 4)
-```
 
 
 
