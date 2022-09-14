@@ -120,7 +120,7 @@ plot(faithful,
     nbin = c(51L, 51L), colramp = hcl.colors
   )
 )
-contour(den$x1, den$x2, den$fhat, nlevels = 10, add = TRUE)
+contour(den$x1, den$x2, den$fhat, nlevels = 10, add = TRUE, family = "Noto Sans")
 title(xlab = "喷发时间", ylab = "等待时间", family = "Noto Serif CJK SC")
 
 # 散点添加颜色
@@ -419,6 +419,105 @@ Galton[, .(median = mean((father + mother) / 2), height = mean(height)), by = .(
   guides(fill = guide_legend(reverse = TRUE)) +
   theme_classic()
 ```
+
+
+### 预期寿命与人均收入的关系 {#sec-state-x77}
+
+
+```{r}
+#| label: fig-state-x77-scatter
+#| fig-cap: "散点图"
+#| fig-width: 4.5
+#| fig-height: 3.5
+#| echo: false
+#| fig-showtext: true
+
+state_x77 <- data.frame(state.x77,
+  state_name = rownames(state.x77),
+  state_region = state.region,
+  check.names = FALSE
+)
+library(ggplot2)
+ggplot(data = state_x77, aes(x = Income, y = `Life Exp`)) +
+  geom_point() +
+  labs(
+    x = "人均收入（美元）", y = "预期寿命（年）",
+    title = "1977 年",
+    caption = "数据源：美国人口调查局"
+  ) +
+  theme_classic() +
+  theme(
+    panel.grid = element_line(colour = "gray92"),
+    panel.grid.major = element_line(linewidth = rel(1.0)),
+    panel.grid.minor = element_line(linewidth = rel(0.5))
+  )
+```
+
+
+平均预期寿命与人均收入的关系
+
+
+R 软件内置数据集 state.x77 源于 1977 年美国人口调查局发布的数据
+
+```{r}
+#| label: fig-state-x77-bubble
+#| fig-cap: "气泡图"
+#| fig-width: 7
+#| fig-height: 5.5
+#| echo: false
+#| fig-showtext: true
+
+library(ggplot2)
+library(ggrepel)
+library(scales)
+ggplot(data = state_x77, aes(x = Income, y = `Life Exp`)) +
+  geom_point(aes(size = 1000 * Population, color = state_region)) +
+  geom_text_repel(aes(label = state_name), size = 3, seed = 2022) +
+  scale_size(labels = label_number(scale_cut = cut_short_scale())) +
+  labs(
+    x = "人均收入（美元）", y = "预期寿命（年）",
+    title = "1977 年",
+    caption = "数据源：美国人口调查局",
+    size = "人口数量", color = "区域划分"
+  ) +
+  theme_classic() +
+  theme(
+    panel.grid = element_line(colour = "gray92"),
+    panel.grid.major = element_line(linewidth = rel(1.0)),
+    panel.grid.minor = element_line(linewidth = rel(0.5))
+  )
+```
+
+整体来说，预期寿命与人均收入息息相关。
+
+
+```{r}
+#| label: fig-state-x77-lm
+#| fig-cap: "回归"
+#| fig-width: 7
+#| fig-height: 5.5
+#| echo: false
+#| fig-showtext: true
+
+ggplot(data = state_x77, aes(x = Income, y = `Life Exp`)) +
+  geom_point(aes(size = 1000 * Population, color = state_region)) +
+  geom_smooth(method = "lm", formula = "y~x") +
+  geom_text_repel(aes(label = state_name), size = 3, seed = 2022) +
+  scale_size(labels = label_number(scale_cut = cut_short_scale())) +
+  labs(
+    x = "人均收入（美元）", y = "预期寿命（年）",
+    title = "1977 年",
+    caption = "数据源：美国人口调查局",
+    size = "人口数量", color = "区域划分"
+  ) +
+  theme_classic() +
+  theme(
+    panel.grid = element_line(colour = "gray92"),
+    panel.grid.major = element_line(linewidth = rel(1.0)),
+    panel.grid.minor = element_line(linewidth = rel(0.5))
+  )
+```
+
 
 ### 区间估计及其覆盖概率 {#sec-coverage}
 
@@ -2107,9 +2206,7 @@ aggregate(data = rversion, version ~ year + month, length) |>
   scale_fill_viridis_c(option = "D", begin = 0.2, end = 0.8) +
   theme_classic() +
   theme(panel.grid.major.y = element_line(colour = "gray95")) +
-  labs(
-    x = "月份", y = "年份"
-  )
+  labs(x = "月份", y = "年份")
 ```
 
 
@@ -2191,6 +2288,7 @@ year_dat <- within(year_dat, {
 #| fig-cap: "2020-2022 年 R 软件发版情况"
 #| fig-width: 8
 #| fig-height: 4
+#| fig-showtext: true
 
 ggplot(data = sub_rversion_df) +
   geom_segment(aes(x = date, y = 0, xend = date, yend = position)) +
@@ -2224,6 +2322,7 @@ ggplot(data = sub_rversion_df) +
 #| fig-cap: "25 年里 R 软件重大及主要版本发布情况"
 #| fig-width: 6
 #| fig-height: 9
+#| fig-showtext: true
 
 sub_rversion_df2 <- rversion_df[rversion_df$status %in% c("big", "major"), ]
 ggplot(data = sub_rversion_df2) +
@@ -2247,6 +2346,9 @@ ggplot(data = sub_rversion_df2) +
 
 
 [timevis](https://github.com/daattali/timevis) 包基于 JavaScript 库 [Vis](https://visjs.org/) 的 [vis-timeline](https://github.com/visjs/vis-timeline) 模块，可以 创建交互式的时间线图，支持与 Shiny 应用集成。
+
+
+
 
 
 ## 绘图经验 {#sec-principles-of-ggplot2}
