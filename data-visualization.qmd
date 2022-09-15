@@ -89,6 +89,7 @@ sysfonts::font_add(
 #| echo: false
 
 data("datasaurus_dozen", package = "datasauRus")
+
 library(ggplot2)
 ggplot(datasaurus_dozen, aes(x = x, y = y)) +
   geom_point(aes(colour = dataset), show.legend = FALSE) +
@@ -99,6 +100,36 @@ ggplot(datasaurus_dozen, aes(x = x, y = y)) +
 
 [**datasauRus**](https://github.com/jumpingrivers/datasauRus) 包 [@datasauRus2022] 13 个数据集，统计量非常接近，然而数据形态千差万别
 
+回归方程式
+
+$$y = \beta_0 + \beta_1 x + \epsilon$$
+$\bar{x},\sigma_x,\bar{y},\sigma_y,\beta_0,\beta_1$
+
+```{r}
+#| echo: false
+#| label: tbl-datasaurus-summ
+#| tbl-cap: "datasaurus_dozen 数据集的一些描述性统计量和线性回归结果"
+
+library(data.table)
+datasaurus_dozen <- as.data.table(datasaurus_dozen)
+datasaurus_summ <- datasaurus_dozen[, cbind.data.frame(
+  x_mean = mean(x),
+  x_sd = sd(x),
+  y_mean = mean(y),
+  y_sd = sd(y),
+  as.list(coef(lm(y ~ x))),
+  r_squared = summary(lm(y ~ x))$r.squared #,
+  # adj_r_squared = summary(lm(y ~ x))$adj.r.squared,
+  # rse = sqrt(sum(residuals(lm(y ~ x))^2)/(.N - 2))
+), by = .(dataset)]
+
+knitr::kable(datasaurus_summ, col.names = c(
+  "数据集", "$\\bar{x}$", "$\\sigma_x$", "$\\bar{y}$", "$\\sigma_y$",
+  "$\\beta_0$", "$\\beta_1$", "$R^2$" #, "调整的 $R^2$", "残差标准差"
+), digits = 3, escape = FALSE)
+```
+
+其中 $\bar{x},\sigma_x$ 分别代表预测变量 $X$ 的均值和标准差，$\bar{y},\sigma_y$ 代表响应变量 $Y$ 的均值和标准差，$\beta_0,\beta_1$ 代表回归方程的截距和斜率，$R^2$ 代表模型拟合数据的程度。
 
 
 ## 图形实例 {#sec-case-study}
@@ -113,8 +144,10 @@ ggplot(datasaurus_dozen, aes(x = x, y = y)) +
 #| par: true
 #| fig-cap: "二维核密度估计"
 #| fig-subcap: 
-#| - "点的亮暗、等高线的疏密表示核密度估计值的大小"
-#| - "等高线的疏密表示核密度估计值的大小"
+#| - "faithful 数据集的散点图"
+#| - "点的亮暗表示核密度估计值的大小"
+#| - "等高线表示核密度估计值"
+#| - "等高线表示核密度估计值"
 #| fig-width: 4.5
 #| fig-height: 4.5
 #| fig-showtext: true
@@ -127,6 +160,24 @@ library(KernSmooth)
 den <- bkde2D(x = faithful, bandwidth = c(0.7, 7), gridsize = c(51L, 51L))
 faithful2d <- expand.grid(eruptions = den$x1, waiting = den$x2) |>
   transform(density = as.vector(den$fhat))
+
+plot(faithful,
+  pch = 20, panel.first = grid(), cex = 1, ann = FALSE,
+  xlim = c(0.5, 6.5),
+  ylim = c(35, 100)
+)
+title(xlab = "喷发时间", ylab = "等待时间", family = "Noto Serif CJK SC")
+
+plot(faithful,
+  pch = 20, panel.first = grid(), cex = 1, ann = FALSE,
+  xlim = c(0.5, 6.5),
+  ylim = c(35, 100),
+  col = densCols(faithful,
+    bandwidth = c(0.7, 7),
+    nbin = c(51L, 51L), colramp = hcl.colors
+  )
+)
+title(xlab = "喷发时间", ylab = "等待时间", family = "Noto Serif CJK SC")
 
 plot(faithful,
   pch = 20, panel.first = grid(), cex = 1, ann = FALSE,
@@ -415,7 +466,24 @@ https://rafalab.github.io/dsbook/data-visualization-principles.html
 
 <!-- 生物遗传示例，相关关系，遗传，因果 -->
 
-Francis Galton（弗朗西斯·高尔顿）(<https://galton.org/>)
+[弗朗西斯·高尔顿](https://galton.org/)（Francis Galton, 1822---1911） 是历史上著名的优生学家、遗传学家和统计学家等，是统计学中相关和回归概念的提出者，是生物遗传中回归现象的发现者。1885年，高尔顿以保密和给予金钱报酬的方式，向社会征集了 205 对夫妇及其 928 个成年子女的身高数据。目前，Randall Pruim 从原始文献中整理后，将该数据集命名为 Galton，放在 R 包 **mosaicData** [@mosaicData2022] 内，方便大家使用。篇幅所限，下 @tbl-galton 展示该数据集的部分内容。
+
+```{r}
+#| echo: false
+#| label: tbl-galton
+#| tbl-cap: "高尔顿收集的 205 对夫妇及其子女的身高数据（部分）"
+
+library(data.table)
+data(Galton, package = "mosaicData")
+Galton <- as.data.table(Galton)
+
+knitr::kable(head(Galton), col.names = c(
+  "家庭编号", "父亲身高", "母亲身高",
+  "孩子性别", "孩子身高", "子女数量"
+))
+```
+
+表中孩子性别一栏，M 表示男性（Male），F 表示女性（Female）。表中 1 号家庭父亲身高 78.5 英寸，母亲身高 67.0 英寸，育有 4 个成年子女，1 男 3 女，子女身高依次是 73.2 英寸、 69.2 英寸、 69.0 英寸 和 69.0 英寸。1 英寸相当于 2.54 厘米，78.5 英寸相当于 199.39 厘米，约等于 2 米的身高。
 
 ```{r}
 #| label: fig-galton
@@ -425,10 +493,7 @@ Francis Galton（弗朗西斯·高尔顿）(<https://galton.org/>)
 #| echo: false
 #| fig-showtext: true
 
-library(data.table)
-data(Galton, package = "mosaicData")
-Galton <- as.data.table(Galton)
-Galton[, .(median = mean((father + mother) / 2), height = mean(height)), by = .(family, sex)] |>
+Galton[, .(median = mean((father + 1.08*mother) / 2), height = mean(height)), by = .(family, sex)] |>
   ggplot(aes(x = median, y = height, fill = sex)) +
   geom_point(pch = 21, color = "white", size = 3, alpha = 0.75) +
   scale_fill_brewer(palette = "Set1", labels = c(M = "男", F = "女")) +
@@ -437,29 +502,56 @@ Galton[, .(median = mean((father + mother) / 2), height = mean(height)), by = .(
   theme_classic()
 ```
 
+高尔顿提出「中亲」概念，即父母的平均身高，认为子代身高只与父母平均身高相关，而与父母身高差无关，为了消除性别给身高带来的差异，女性身高均乘以 1.08。
+
 
 ### 预期寿命与人均收入的关系 {#sec-state-x77}
 
+与回归紧密相连的是另一个统计概念：相关。在经济、社会领域中，很多数据指标存在相关性，接下来的这个例子基于 1977 年美国人口调查局发布的统计数据，篇幅所限，下 @tbl-state-x77 展示美国各州的部分统计数据。
 
 ```{r}
-#| label: fig-state-x77-scatter
-#| fig-cap: "散点图"
-#| fig-width: 4.5
-#| fig-height: 3.5
 #| echo: false
-#| fig-showtext: true
+#| label: tbl-state-x77
+#| tbl-cap: "1977 年美国人口调查局发布的各州统计数据（部分）"
 
 state_x77 <- data.frame(state.x77,
   state_name = rownames(state.x77),
   state_region = state.region,
   check.names = FALSE
 )
+
+knitr::kable(head(state_x77[, c(
+  "state_name", "state_region", "Population",
+  "Income", "Life Exp"
+)]), col.names = c(
+  "州名", "区域划分", "人口数量",
+  "人均收入", "预期寿命"
+), row.names = FALSE)
+```
+
+该数据集在 R 环境中的结构如下：
+
+```{r}
+str(state_x77)
+```
+
+它是一个 50 行 10 列的数据框，其中，state_name（州名）是字符型变量， state_region（区域划分）是因子型变量。除了这两个变量外，Population（人口数量，单位：1000），Income（人均收入，单位：美元），Life Exp（预期寿命，单位：岁）等都是数值型的变量。下 @fig-state-x77-scatter 展示了1977 年美国各州的预期寿命和人均收入的关系，通过此图，可以初步观察出两个指标存在一些明显的正向相关性，也符合常识。
+
+
+```{r}
+#| label: fig-state-x77-scatter
+#| fig-cap: "1977 年美国各州预期寿命与人均收入的关系：散点图"
+#| fig-width: 4.5
+#| fig-height: 3.5
+#| echo: false
+#| fig-showtext: true
+
 library(ggplot2)
 ggplot(data = state_x77, aes(x = Income, y = `Life Exp`)) +
   geom_point() +
   labs(
     x = "人均收入（美元）", y = "预期寿命（年）",
-    title = "1977 年",
+    title = "1977 年各州预期寿命与人均收入的关系",
     caption = "数据源：美国人口调查局"
   ) +
   theme_classic() +
@@ -470,15 +562,11 @@ ggplot(data = state_x77, aes(x = Income, y = `Life Exp`)) +
   )
 ```
 
-
-平均预期寿命与人均收入的关系
-
-
-R 软件内置数据集 state.x77 源于 1977 年美国人口调查局发布的数据
+为了更加清楚地观察到哪些州预期寿命长，哪些州人均收入高，在 @fig-state-x77-scatter 基础上，在散点旁边添加州名。此外，为了观察各州的地域差异，根据各州所属区域，给散点分类，最后，将各州人口数量映射给散点的大小，形成如下 @fig-state-x77-bubble 所示的分类气泡图。
 
 ```{r}
 #| label: fig-state-x77-bubble
-#| fig-cap: "气泡图"
+#| fig-cap: "1977 年美国各州预期寿命与人均收入的关系：分地域气泡图"
 #| fig-width: 7
 #| fig-height: 5.5
 #| echo: false
@@ -493,7 +581,7 @@ ggplot(data = state_x77, aes(x = Income, y = `Life Exp`)) +
   scale_size(labels = label_number(scale_cut = cut_short_scale())) +
   labs(
     x = "人均收入（美元）", y = "预期寿命（年）",
-    title = "1977 年",
+    title = "1977 年各州预期寿命与人均收入的关系（分地域）",
     caption = "数据源：美国人口调查局",
     size = "人口数量", color = "区域划分"
   ) +
@@ -510,7 +598,7 @@ ggplot(data = state_x77, aes(x = Income, y = `Life Exp`)) +
 
 ```{r}
 #| label: fig-state-x77-lm
-#| fig-cap: "回归"
+#| fig-cap: "1977 年美国各州预期寿命与人均收入的关系：回归分析"
 #| fig-width: 7
 #| fig-height: 5.5
 #| echo: false
@@ -523,7 +611,7 @@ ggplot(data = state_x77, aes(x = Income, y = `Life Exp`)) +
   scale_size(labels = label_number(scale_cut = cut_short_scale())) +
   labs(
     x = "人均收入（美元）", y = "预期寿命（年）",
-    title = "1977 年",
+    title = "1977 年各州预期寿命与人均收入的关系",
     caption = "数据源：美国人口调查局",
     size = "人口数量", color = "区域划分"
   ) +
@@ -534,6 +622,8 @@ ggplot(data = state_x77, aes(x = Income, y = `Life Exp`)) +
     panel.grid.minor = element_line(linewidth = rel(0.5))
   )
 ```
+
+稳健回归
 
 
 ### 解释置信区间及其覆盖概率 {#sec-coverage-probability}
@@ -606,17 +696,9 @@ ggplot(data = sim_dat, aes(x = p, y = prob, color = nsample)) +
 ## 作图工具 {#sec-overview-of-ggplot2}
 
 
-**ggplot2** [@Hadley2016] 是一个 R 语言扩展包，专用于绘制各种各样的统计图形，是数据探索和可视化的利器。
-2007 年 6 月 1 日 **ggplot2** 在 CRAN 上发布第一个正式版本 0.5，截止写作时间，**ggplot2** 已经持续迭代 10 多年了，发布了 40 多个版本，形成了一个非常庞大的生态，直接依赖 **ggplot2** 的 R 包接近 3000 个。从如下三个地方，可以窥见 **ggplot2** 生态的一角，感受其魅力。
+### 基础作图系统 {#sec-base-graphics}
 
-- Daniel Emaasit 收集了 110 多个 **ggplot2** 衍生包，维护了一个 [网站](https://exts.ggplot2.tidyverse.org/gallery/)，统一组织、展示这些 R 包。本文会精心挑选一些高质量的 R 包予以介绍。
-
-- Tom Mock 发起的 [tidytuesday](https://github.com/rfordatascience/tidytuesday/) 项目吸引了数以千计的数据科学爱好者参与数据分析、探索和可视化项目，涌现了一批批优秀的基于 **ggplot2** 的可视化作品，极大地提升了 **ggplot2** 生态的影响力。本文也会基于真实的数据介绍每一个统计图形。
-
-- Yan Holtz 整理了数以百计的统计图形，分门别类地在[网站](https://r-graph-gallery.com/)上展示，方便读者预览效果、选择合适的图形。也是受该网站启发，本文在介绍完 **ggplot2** 绘图的基础要素后，从统计图形的作用出发，按照趋势、关系、占比、对比、分布和不确定性等六大方面予以介绍。
-
-
-世事无绝对，尽管 **ggplot2** 非常流行，但并不意味着它比前辈们如 Base R 或 **lattice** [@Deepayan2008] 更加优秀，它们只是各领风骚。知晓各自的优缺点，更加有助于你选择合适的工具应用到合适的场景中。
+尽管 **ggplot2** 非常流行，但并不意味着它比前辈们如 Base R 或 **lattice** [@Deepayan2008] 更加优秀，它们只是各领风骚。知晓各自的优缺点，更加有助于你选择合适的工具应用到合适的场景中。
 
 这里以 Base R 内置的地震数据集 quakes 为例，如 @fig-quakes 所示，展示太平洋岛国斐济及其周边的地震分布，左图是一行 **ggplot2** 绘图代码生成的图形，如果你的目的是看看数据情况，那到此结束。甚至还可以更快、更简单点，直接调用 Base R 的函数 `plot()`，这是探索数据，而不是表达洞见。
 
@@ -736,6 +818,19 @@ ggplot(data = pressure, aes(x = temperature, y = pressure)) +
 
 
 既然这样，为什么我仍然选择介绍 **ggplot2** 呢？对新手来说比较友好，有一套紧凑、一致的语法，掌握规律后，学习曲线比较低，可以非常高效地绘制中等质量的图形。此外，衍生包 **gganimate** [@gganimate2020] 可以与 ggplot2 如丝般顺滑衔接，以成本极低的方式绘制动态图形，而且，**ggplot2** 的绘图语法已经出圈到交互式可视化领域，举例来说，R 包 **plotly** [@Carson2020] 和 **leaflet** [@leaflet2022] 等都提供一套相似度极高的管道语法，学习成本进一步摊薄了。总而言之，软件成熟，生态庞大，社区活跃。
+
+
+
+### ggplot2 作图系统 {#sec-grammar-of-graphics}
+
+**ggplot2** [@Hadley2016] 是一个 R 语言扩展包，专用于绘制各种各样的统计图形，是数据探索和可视化的利器。
+2007 年 6 月 1 日 **ggplot2** 在 CRAN 上发布第一个正式版本 0.5，截止写作时间，**ggplot2** 已经持续迭代 10 多年了，发布了 40 多个版本，形成了一个非常庞大的生态，直接依赖 **ggplot2** 的 R 包接近 3000 个。从如下三个地方，可以窥见 **ggplot2** 生态的一角，感受其魅力。
+
+- Daniel Emaasit 收集了 110 多个 **ggplot2** 衍生包，维护了一个 [网站](https://exts.ggplot2.tidyverse.org/gallery/)，统一组织、展示这些 R 包。本文会精心挑选一些高质量的 R 包予以介绍。
+
+- Tom Mock 发起的 [tidytuesday](https://github.com/rfordatascience/tidytuesday/) 项目吸引了数以千计的数据科学爱好者参与数据分析、探索和可视化项目，涌现了一批批优秀的基于 **ggplot2** 的可视化作品，极大地提升了 **ggplot2** 生态的影响力。本文也会基于真实的数据介绍每一个统计图形。
+
+- Yan Holtz 整理了数以百计的统计图形，分门别类地在[网站](https://r-graph-gallery.com/)上展示，方便读者预览效果、选择合适的图形。也是受该网站启发，本文在介绍完 **ggplot2** 绘图的基础要素后，从统计图形的作用出发，按照趋势、关系、占比、对比、分布和不确定性等六大方面予以介绍。
 
 
 
