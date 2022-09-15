@@ -71,45 +71,22 @@ sysfonts::font_add(
 其它小节完成后再写本节。
 :::
 
-
 数据可视化的主要目的有两个：其一是探索 Explore，其二是解释 Explain。
-
 
 大多教科书侧重理论和方法，计算机强调编程，数值计算是精确的，图形是粗燥的。然而，只有模型和方法，缺乏数据探索的分析和建模，计算的结果和分析的结论可能是不正确的，数据可能在欺骗你[@Anscombe1973]。
 
-数据可视化的重要性还在于数据建模和模型评估，下 @fig-datasaurus-dozen 展示 13 个数据集在相关系数、均值、标准差等描述性统计量方面十分接近，但是数据分布千差万别。单个统计量就好比管窥蠡测，稍有不慎，我们就成了盲人摸象，可见数据可视化在洞察数据真实分布方面的重要性。
+[**datasauRus**](https://github.com/jumpingrivers/datasauRus) 包 [@datasauRus2022] 内置了一个数据集 datasaurus_dozen，它整合了 13 个子数据集，它们在均值、标准差等描述性统计量方面十分接近，见下 @tbl-datasaurus-summ 。其中 $\bar{x},\sigma_x$ 分别代表预测变量 $X$ 的均值和标准差，$\bar{y},\sigma_y$ 代表响应变量 $Y$ 的均值和标准差，$\beta_0,\beta_1$ 代表回归方程 @eq-datasaurus-lm 的截距和斜率，$R^2$ 代表模型拟合数据的程度。
 
-
-```{r}
-#| label: fig-datasaurus-dozen
-#| fig-cap: "数据可视化为何如此重要"
-#| fig-width: 6
-#| fig-height: 6
-#| fig-showtext: true
-#| echo: false
-
-data("datasaurus_dozen", package = "datasauRus")
-
-library(ggplot2)
-ggplot(datasaurus_dozen, aes(x = x, y = y)) +
-  geom_point(aes(colour = dataset), show.legend = FALSE) +
-  facet_wrap(facets = ~dataset, ncol = 4) +
-  theme_void() +
-  theme(strip.text = element_blank())
-```
-
-[**datasauRus**](https://github.com/jumpingrivers/datasauRus) 包 [@datasauRus2022] 13 个数据集，统计量非常接近，然而数据形态千差万别
-
-回归方程式
-
-$$y = \beta_0 + \beta_1 x + \epsilon$$
-$\bar{x},\sigma_x,\bar{y},\sigma_y,\beta_0,\beta_1$
+$$
+y = \beta_0 + \beta_1 x + \epsilon
+$$ {#eq-datasaurus-lm}
 
 ```{r}
 #| echo: false
 #| label: tbl-datasaurus-summ
 #| tbl-cap: "datasaurus_dozen 数据集的一些描述性统计量和线性回归结果"
 
+data("datasaurus_dozen", package = "datasauRus")
 library(data.table)
 datasaurus_dozen <- as.data.table(datasaurus_dozen)
 datasaurus_summ <- datasaurus_dozen[, cbind.data.frame(
@@ -124,12 +101,34 @@ datasaurus_summ <- datasaurus_dozen[, cbind.data.frame(
 ), by = .(dataset)]
 
 knitr::kable(datasaurus_summ, col.names = c(
-  "数据集", "$\\bar{x}$", "$\\sigma_x$", "$\\bar{y}$", "$\\sigma_y$",
+  "子数据集", "$\\bar{x}$", "$\\sigma_x$", "$\\bar{y}$", "$\\sigma_y$",
   "$\\beta_0$", "$\\beta_1$", "$R^2$" #, "调整的 $R^2$", "残差标准差"
 ), digits = 3, escape = FALSE)
 ```
 
-其中 $\bar{x},\sigma_x$ 分别代表预测变量 $X$ 的均值和标准差，$\bar{y},\sigma_y$ 代表响应变量 $Y$ 的均值和标准差，$\beta_0,\beta_1$ 代表回归方程的截距和斜率，$R^2$ 代表模型拟合数据的程度。
+
+诸多统计量都难以发现它们的差异，透过数据可视化这面照妖镜，却可以使数据的本来面目无所遁形，如 @fig-datasaurus-dozen 所示。可见，单个统计量就好比管窥蠡测，稍有不慎，我们就成了盲人摸象。
+
+
+```{r}
+#| label: fig-datasaurus-dozen
+#| fig-cap: "数据可视化为何如此重要"
+#| fig-width: 6
+#| fig-height: 6
+#| fig-showtext: true
+#| echo: false
+
+library(ggplot2)
+ggplot(datasaurus_dozen, aes(x = x, y = y)) +
+  geom_point(aes(colour = dataset), show.legend = FALSE) +
+  facet_wrap(facets = ~dataset, ncol = 4) +
+  theme_void() +
+  theme(strip.text = element_blank())
+```
+
+数据可视化的重要性在于探索数据的真实分布，为数据建模提供假设和依据，也为验证、评估模型的效果。结合 @fig-datasaurus-dozen 也解释了为什么线性回归模型在解释数据方面的无能为力，即 $R^2$ 介于 0.004 至 0.005 之间，数据根本不符合线性模型的条件。
+
+
 
 
 ## 图形实例 {#sec-case-study}
