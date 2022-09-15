@@ -493,12 +493,19 @@ knitr::kable(head(Galton), col.names = c(
 #| echo: false
 #| fig-showtext: true
 
-Galton[, .(median = mean((father + 1.08*mother) / 2), height = mean(height)), by = .(family, sex)] |>
+Galton[, .(median = mean((father + 1.08 * mother) / 2), height = mean(height)), by = .(family, sex)] |>
   ggplot(aes(x = median, y = height, fill = sex)) +
+  geom_smooth(aes(color = sex),
+    method = "lm", formula = "y~x",
+    se = FALSE #, show.legend = FALSE
+  ) +
+  scale_color_brewer(palette = "Set1", labels = c(M = "男", F = "女")) +
   geom_point(pch = 21, color = "white", size = 3, alpha = 0.75) +
+  stat_ellipse(type = "norm", linetype = 2) +
   scale_fill_brewer(palette = "Set1", labels = c(M = "男", F = "女")) +
-  labs(x = "父母平均身高", y = "子女平均身高", fill = "性别") + 
-  guides(fill = guide_legend(reverse = TRUE)) +
+  labs(x = "父母平均身高", y = "子女平均身高", fill = "性别", color = "性别") +
+  guides(color = guide_legend(reverse = TRUE), 
+         fill = guide_legend(reverse = TRUE)) +
   theme_classic()
 ```
 
