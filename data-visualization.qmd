@@ -250,6 +250,26 @@ ggplot() +
 ```
 
 
+:::{.callout-tip}
+函数 `bkde2D()` 实现二维带窗宽的核密度估计（2D Binned Kernel Density Estimate），R 语言存在多个版本，**grDevices** 包的函数 `densCols()` 直接调用 **KernSmooth** 包的函数 `bkde2D()`，**graphics** 包的函数 `smoothScatter()` 与函数 `densCols()` 一样，内部也是调用 `bkde2D()` 函数，**ggplot2** 包的图层 `geom_density_2d()` 采用 **MASS** 包的函数 `kde2d()`，在算法实现上，`MASS::kde2d()` 与 `KernSmooth::bkde2D()` 不同，前者是二维核密度估计（Two-Dimensional Kernel Density Estimation）。
+:::
+
+
+<!-- 
+在不规则的区域上插值，geom_contour 和 geom_contour_filled 先调用 interp::interp() 或 akima::bilinear()
+
+[interp](https://cran.r-project.org/package=interp)
+
+规则的方形网格上，二元高斯核
+
+核密度估计方法在可视化中应用是相当广泛的，下面简单介绍核密度估计的原理，做到知其然且知其所以然
+
+多维核平滑方法见文献 @Chacon2018
+
+密度估计和二维平滑方法 参考书籍
+https://cswr.nrhstat.org/
+-->
+
 
 ### 斐济及其周边地震活动 {#sec-fiji-quakes}
 
@@ -463,9 +483,14 @@ https://rafalab.github.io/dsbook/data-visualization-principles.html
 
 ### 子代身高与亲代身高的关系 {#sec-galton}
 
-<!-- 生物遗传示例，相关关系，遗传，因果 -->
+<!-- 生物遗传的回归现象，更确切地说是因果而不是相关，是一种近似的函数关系，而下面要讲才是相关，刻画数量指标之间的关系深浅程度，相关系数就是其中一个
 
-[弗朗西斯·高尔顿](https://galton.org/)（Francis Galton, 1822---1911） 是历史上著名的优生学家、遗传学家和统计学家等，是统计学中相关和回归概念的提出者，是生物遗传中回归现象的发现者。1885年，高尔顿以保密和给予金钱报酬的方式，向社会征集了 205 对夫妇及其 928 个成年子女的身高数据。目前，Randall Pruim 从原始文献中整理后，将该数据集命名为 Galton，放在 R 包 **mosaicData** [@mosaicData2022] 内，方便大家使用。篇幅所限，下 @tbl-galton 展示该数据集的部分内容。
+回归分析 
+相关分析 寻找变量之间的
+方差分析 样本方差分解
+-->
+
+[弗朗西斯·高尔顿](https://galton.org/)（Francis Galton, 1822-1911）是历史上著名的优生学家、遗传学家和统计学家，是统计学中相关和回归概念的提出者，是遗传学中回归现象的发现者。1885年，高尔顿以保密和给予金钱报酬的方式，向社会征集了 205 对夫妇及其 928 个成年子女的身高数据。目前，Michael Friendly 从原始文献中整理后，将该数据集命名为 GaltonFamilies，放在 R 包 **HistData** [@Friendly2021] 内，方便大家使用。篇幅所限，下 @tbl-galton 展示该数据集的部分内容。
 
 ```{r}
 #| echo: false
@@ -473,16 +498,18 @@ https://rafalab.github.io/dsbook/data-visualization-principles.html
 #| tbl-cap: "高尔顿收集的 205 对夫妇及其子女的身高数据（部分）"
 
 library(data.table)
-data(Galton, package = "mosaicData")
-Galton <- as.data.table(Galton)
+data(GaltonFamilies, package = "HistData")
+GaltonFamilies <- as.data.table(GaltonFamilies)
 
-knitr::kable(head(Galton), col.names = c(
-  "家庭编号", "父亲身高", "母亲身高",
-  "孩子性别", "孩子身高", "子女数量"
+knitr::kable(head(GaltonFamilies), col.names = c(
+  "家庭编号", "父亲身高", "母亲身高", "中亲身高", 
+  "子女数量", "子女编号", "子女性别", "子女身高"
 ))
 ```
 
-表中孩子性别一栏，M 表示男性（Male），F 表示女性（Female）。表中 1 号家庭父亲身高 78.5 英寸，母亲身高 67.0 英寸，育有 4 个成年子女，1 男 3 女，子女身高依次是 73.2 英寸、 69.2 英寸、 69.0 英寸 和 69.0 英寸。1 英寸相当于 2.54 厘米，78.5 英寸相当于 199.39 厘米，约等于 2 米的身高。
+表中子女性别一栏，Male 表示男性，Female 表示女性。表中 1 号家庭父亲身高 78.5 英寸，母亲身高 67.0 英寸，育有 4 个成年子女，1 男 3 女，子女身高依次是 73.2 英寸、 69.2 英寸、 69.0 英寸 和 69.0 英寸。1 英寸相当于 2.54 厘米，78.5 英寸相当于 199.39 厘米，约等于 2 米的身高。
+
+高尔顿提出「中亲」概念，即父母的平均身高，认为子代身高只与父母平均身高相关，而与父母身高差无关，为了消除性别给身高带来的差异，女性身高均乘以 1.08。
 
 ```{r}
 #| label: fig-galton
@@ -492,23 +519,64 @@ knitr::kable(head(Galton), col.names = c(
 #| echo: false
 #| fig-showtext: true
 
-Galton[, .(median = mean((father + 1.08 * mother) / 2), height = mean(height)), by = .(family, sex)] |>
-  ggplot(aes(x = median, y = height, fill = sex)) +
-  geom_smooth(aes(color = sex),
+GaltonFamilies[, .(median = mean((father + 1.08 * mother) / 2), height = mean(childHeight)), by = .(family, gender)] |>
+  ggplot(aes(x = median, y = height, fill = gender)) +
+  geom_smooth(aes(color = gender),
     method = "lm", formula = "y~x",
-    se = FALSE #, show.legend = FALSE
+    se = FALSE
   ) +
-  scale_color_brewer(palette = "Set1", labels = c(M = "男", F = "女")) +
+  scale_color_brewer(palette = "Set1", labels = c(male = "男", female = "女")) +
   geom_point(pch = 21, color = "white", size = 3, alpha = 0.75) +
   stat_ellipse(type = "norm", linetype = 2) +
-  scale_fill_brewer(palette = "Set1", labels = c(M = "男", F = "女")) +
+  scale_fill_brewer(palette = "Set1", labels = c(male = "男", female = "女")) +
   labs(x = "父母平均身高", y = "子女平均身高", fill = "性别", color = "性别") +
   guides(color = guide_legend(reverse = TRUE), 
          fill = guide_legend(reverse = TRUE)) +
   theme_classic()
 ```
 
-高尔顿提出「中亲」概念，即父母的平均身高，认为子代身高只与父母平均身高相关，而与父母身高差无关，为了消除性别给身高带来的差异，女性身高均乘以 1.08。
+
+
+
+```{r}
+#| label: fig-galton
+#| fig-cap: "子代身高与亲代身高的关系"
+#| fig-width: 6
+#| fig-height: 5
+#| echo: false
+#| fig-showtext: true
+
+GaltonFamilies[, median_parent := (father + 1.08 * mother) / 2][, height_children := childHeight * c("female" = 1.08, "male" = 1)[gender]] |>
+  ggplot(aes(x = height_children, y = median_parent )) +
+  geom_smooth(method = "lm", formula = "y~x", se = FALSE) +
+  geom_point(size = 1, alpha = 0.75) +
+  stat_ellipse(type = "norm", linetype = 2) +
+  labs(x = "子女平均身高", y = "父母平均身高") +
+  theme_classic()
+```
+
+
+
+
+
+```{r}
+#| echo: false
+#| eval: false
+
+data(Galton, package = "HistData")
+plot(Galton,
+  pch = 20, panel.first = grid(), cex = 1, ann = FALSE,
+  xlim = c(63.5, 73.5),
+  ylim = c(61, 74.5),
+  col = densCols(Galton,
+    bandwidth = c(1, 1),
+    nbin = c(11L, 11L), colramp = hcl.colors
+  )
+)
+```
+
+
+
 
 
 ### 预期寿命与人均收入的关系 {#sec-state-x77}
@@ -2476,7 +2544,18 @@ ggplot(data = sub_rversion_df2) +
 
 就展示数据而言，本文将介绍数以十计的图形，如此丰富，就单一目的而言，也有多种可选的图形。可见，仅仅掌握 ggplot2 这套工具是远远不够的，还需要了解数据背景，探索、分析数据，获得数据洞见，只有结合这些，才知道选择最合适的图形，进而准确地传递信息，数据才能释放出应有的价值。
 
-举例来说，如 @fig-avoid-errorbar 所示，图中从上往下包含三幅子图，依次是误差图 A 、提琴图 B 和散点图 C，它们是基于同一份数据，采用不同的图形展示数据的分布情况。在一些期刊杂志上，图 A 非常受欢迎，而实际上它所表达的信息非常有限，严重的情况下，甚至会产生误导。在数据量很大的情况下，借助提琴图可以非常方便地展示数据分布，而在数据量很小的情况下，借助散点图可以快速看出原始的数据信息。
+
+### 防止误差线图 {#sec-avoid-errorbar}
+
+举例来说，如 @fig-avoid-errorbar 所示，图中从左往右、从上往下依次是误差线图、 、箱线图、提琴图和散点图，它们基于同一份数据，采用不同的图形展示数据的分布情况。在一些期刊杂志上， @fig-avoid-errorbar-1 非常受欢迎，而实际上它所表达的信息非常有限，严重的情况下，甚至会产生误导。
+
+数据来自中国国家统计局 2021 年发布的统计年鉴，是分城市、镇和乡村的各省、自治区、直辖市的男女比例数据。
+一般来说，各地区的性别比例不可能出现严重失调，比如男的是女的一倍，一个省要是出现如此失调的现象是非常罕见的。而 @fig-avoid-errorbar-1 的纵轴给人感觉还有性别比为 50% 甚至 30% 的情况，纯属误导。相比而言，箱线图 @fig-avoid-errorbar-2 就好很多，既把整体情况展示出来了，又将一些性别比例离群的突出出来了，就整个图形来说，城市、镇和乡村的比较也突出出来了，占据了图的主要位置。
+
+在数据量很大的情况下，借助箱线图、提琴图可以非常方便地展示数据分布，
+
+
+而在数据量很小的情况下，借助散点图可以快速看出原始的数据信息。
 
 
 ```{r}
