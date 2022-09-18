@@ -704,6 +704,33 @@ ggplot(data = state_x77, aes(x = Income, y = `Life Exp`)) +
 :::
 
 
+
+```{r}
+#| eval: false
+#| echo: false
+ggplot(data = state_x77, aes(x = Income, y = `Life Exp`)) +
+  geom_point(aes(size = 1000 * Population, color = state_region)) +
+  geom_smooth(method = "lm", formula = "y~x", color = "red") +
+  geom_smooth(data = function(x) subset(x, !state_name %in% c("Nevada", "Alaska") ), method = "lm", formula = "y~x", color = "green") +
+  geom_text_repel(aes(label = state_name), size = 3, seed = 2022) +
+  scale_size(labels = label_number(scale_cut = cut_short_scale())) +
+  labs(
+    x = "人均收入（美元）", y = "预期寿命（年）",
+    title = "1977 年各州预期寿命与人均收入的关系",
+    caption = "数据源：美国人口调查局",
+    size = "人口数量", color = "区域划分"
+  ) +
+  theme_classic() +
+  theme(
+    panel.grid = element_line(colour = "gray92"),
+    panel.grid.major = element_line(linewidth = rel(1.0)),
+    panel.grid.minor = element_line(linewidth = rel(0.5))
+  )
+```
+
+
+
+
 ### 解释置信区间及其覆盖概率 {#sec-coverage-probability}
 
 统计图形很重要的一个作用是解释统计概念，这就要求不拘泥于抽象的严格数学表达，借助数值模拟，可视化等手段帮助读者发散思维，加深理解复杂的逻辑概念，建立统计直觉，正如顾恺之所言「以形写神，形神兼备」。下面仅以二项分布为例讲讲区间估计及其覆盖概率。众所周知，在置信水平为 $1 - \alpha$ 的情况下，二项分布 $\mathrm{Bin}(n,p)$ 的参数 $p$ （也叫成功概率）的 Wald 区间估计为 $(\hat{p} - Z_{1-\alpha/2} \sqrt{\hat{p}*(1-\hat{p})/n}, \hat{p} + Z_{1-\alpha/2} \sqrt{\hat{p}*(1-\hat{p})/n})$，这里 $n$ 为样本量，$Z_{1-\alpha/2}$ 为标准正态分布 $\mathcal{N}(0,1)$ 在 $1-\alpha/2$ 处的分位点，一般 $\alpha$ 取 0.05，进而 $Z_{1-\alpha/2} \approx 1.96$。用通俗的话说，有 $1 - \alpha$ 的把握确定参数真值 $p$ 在该估计区间内，可见区间估计的意义是解决点估计可靠性问题，但是可靠性和精度往往不能兼得。统计上，通常的做法是先给定可靠性，去尽可能提升精度，即给定置信水平，使估计区间的长度尽可能短，这就涉及到区间估计的方法问题。
@@ -714,7 +741,6 @@ ggplot(data = state_x77, aes(x = Income, y = `Life Exp`)) +
 ```{r}
 #| label: fig-coverage
 #| fig-cap: "二项分布参数的区间估计：覆盖概率随成功概率的变化"
-#| out-width: "75%"
 #| fig-width: 6
 #| fig-height: 6
 #| fig-showtext: true
