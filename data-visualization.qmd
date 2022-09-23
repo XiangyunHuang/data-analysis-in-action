@@ -558,7 +558,9 @@ p2 / p3
 ### 子代身高与亲代身高的关系 {#sec-galton}
 
 
-[弗朗西斯·高尔顿](https://galton.org/)（Francis Galton, 1822-1911）是历史上著名的优生学家、遗传学家和统计学家，是统计学中相关和回归等一批概念的提出者，是遗传学中回归现象的发现者。1885年，高尔顿以保密和给予金钱报酬的方式，向社会征集了 205 对夫妇及其 928 个成年子女的身高数据。目前，Michael Friendly 从原始文献中整理后，将该数据集命名为 `GaltonFamilies`，放在 R 包 **HistData** [@Friendly2021] 内，方便大家使用。篇幅所限，下 @tbl-galton 展示该数据集的部分内容。
+[弗朗西斯·高尔顿](https://galton.org/)（Francis Galton, 1822-1911）是历史上著名的优生学家、遗传学家和统计学家，是统计学中相关和回归等一批概念的提出者，是遗传学中回归现象的发现者。1885年，高尔顿以保密和给予金钱报酬的方式，向社会征集了 205 对夫妇及其 928 个成年子女的身高数据[@Galton1886]。
+
+目前，Michael Friendly 从原始文献中整理后，将该数据集命名为 `GaltonFamilies`，放在 R 包 **HistData** [@Friendly2021] 内，方便大家使用。篇幅所限，下 @tbl-galton 展示该数据集的部分内容。
 
 ```{r}
 #| echo: false
@@ -579,6 +581,8 @@ knitr::kable(head(GaltonFamilies), col.names = c(
 
 高尔顿提出「中亲」概念，即父母的平均身高，认为子代身高只与父母平均身高相关，而与父母身高差无关，为了消除性别给身高带来的差异，女性身高均乘以 1.08。
 
+
+
 ```{r}
 #| label: fig-galton-gender
 #| fig-cap: "子代身高与亲代身高的关系"
@@ -587,24 +591,19 @@ knitr::kable(head(GaltonFamilies), col.names = c(
 #| echo: false
 #| fig-showtext: true
 
-GaltonFamilies[, .(median = mean((father + 1.08 * mother) / 2), height = mean(childHeight)), by = .(family, gender)] |>
-  ggplot(aes(x = median, y = height, fill = gender)) +
-  geom_smooth(aes(color = gender),
-    method = "lm", formula = "y~x",
-    se = FALSE
-  ) +
-  scale_color_brewer(palette = "Set1", labels = c(male = "男", female = "女")) +
-  geom_point(pch = 21, color = "white", size = 3, alpha = 0.75) +
+ggplot(data = GaltonFamilies, aes(x = midparentHeight, y = childHeight, color = gender)) +
+  geom_point(aes(fill = gender), pch = 21, color = "white", 
+             size = 3, alpha = 0.75) +
+  geom_smooth(method = "lm", formula = "y~x", se = FALSE) +
   stat_ellipse(type = "norm", linetype = 2) +
+  scale_color_brewer(palette = "Set1", labels = c(male = "男", female = "女")) +
   scale_fill_brewer(palette = "Set1", labels = c(male = "男", female = "女")) +
-  labs(x = "父母平均身高", y = "子女平均身高", fill = "性别", color = "性别") +
-  guides(color = guide_legend(reverse = TRUE), 
-         fill = guide_legend(reverse = TRUE)) +
+  labs(x = "父母平均身高", y = "子女身高", fill = "性别", color = "性别") +
   theme_classic()
 ```
 
 
-
+女儿的身高乘以 1.08 后
 
 ```{r}
 #| label: fig-galton
@@ -614,12 +613,13 @@ GaltonFamilies[, .(median = mean((father + 1.08 * mother) / 2), height = mean(ch
 #| echo: false
 #| fig-showtext: true
 
-GaltonFamilies[, median_parent := (father + 1.08 * mother) / 2][, height_children := childHeight * c("female" = 1.08, "male" = 1)[gender]] |>
-  ggplot(aes(x = height_children, y = median_parent )) +
+GaltonFamilies[, height_children := childHeight * c("female" = 1.08, "male" = 1)[gender]] |>
+  ggplot(aes(x = midparentHeight, y = height_children, color = gender)) +
   geom_smooth(method = "lm", formula = "y~x", se = FALSE) +
   geom_point(size = 1, alpha = 0.75) +
-  stat_ellipse(type = "norm", linetype = 2) +
-  labs(x = "子女平均身高", y = "父母平均身高") +
+  stat_ellipse( type = "norm", linetype = 2) +
+  scale_color_brewer(palette = "Set1", labels = c(male = "男", female = "女")) +
+  labs(x = "父母平均身高", y = "子女身高", color = "性别") +
   theme_classic()
 ```
 
