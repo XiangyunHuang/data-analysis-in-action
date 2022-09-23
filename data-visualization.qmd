@@ -129,6 +129,85 @@ ggplot(datasaurus_dozen, aes(x = x, y = y)) +
 数据可视化的重要性在于探索数据的真实分布，为数据建模提供假设和依据，也为验证、评估模型的效果。结合 @fig-datasaurus-dozen 也解释了为什么线性回归模型在解释数据方面的无能为力，即 $R^2$ 介于 0.004 至 0.005 之间，数据根本不符合线性模型的条件。
 
 
+有时候是有的数据符合模型假设，而有的不符合，我们没有上帝之眼，看不到哪些符合哪些不符合。在数据集不多的情况下，可以全部展示出来，数据集很多的时候，可以抽样一部分，再展示。下面再举一个例子，anscombe 数据集来自 R 软件内置的 R 包 **datasets**，它包含四组数据 $(x_i, y_i), i =1,2,3,4$，如 @tbl-anscombe-datasets 所示。
+
+```{r}
+#| label: tbl-anscombe-datasets
+#| tbl-cap: "anscombe 数据集"
+#| echo: false
+
+new_order <- unlist(lapply(1:4, function(x) paste(c("x", "y"), x, sep = "")))
+# knitr::kable(anscombe[, new_order], booktabs = T) |>
+#   kableExtra::kable_styling(
+#     bootstrap_options = "basic",
+#     full_width = F, position = "center"
+#   ) |>
+#   kableExtra::add_header_above(c(
+#     "第1组" = 2, "第2组" = 2,
+#     "第3组" = 2, "第4组" = 2
+#   ))
+
+# flextable::flextable(anscombe[, new_order]) |>
+#   flextable::add_header_row(
+#     colwidths = c(2, 2, 2, 2),
+#     values = c("第1组", "第2组", "第3组", "第4组")
+#   )
+
+gt::gt(anscombe[, new_order]) |> 
+  gt::tab_spanner(label = "第1组", columns = c("x1", "y1")) |> 
+  gt::tab_spanner(label = "第2组", columns = c("x2", "y2")) |> 
+  gt::tab_spanner(label = "第3组", columns = c("x3", "y3")) |> 
+  gt::tab_spanner(label = "第4组", columns = c("x4", "y4"))
+```
+
+用统计的方法发现四组数据的样本均值、方差、相关系数和回归系数几乎是相同的，实际上，借助散点 @fig-anscombe 分别描述各组数据的关系时，却发现四组数据之间有极大的差异，且只有第一组数据看起来符合线性模型的条件 [@Anscombe1973]。
+
+```{r}
+#| label: fig-anscombe
+#| echo: false
+#| fig-cap: "数据可视化为何如此重要"
+#| fig-subcap: 
+#| - "第一组数据"
+#| - "第二组数据"
+#| - "第三组数据"
+#| - "第四组数据"
+#| fig-width: 3
+#| fig-height: 3
+#| fig-showtext: true
+#| fig-ncol: 2
+
+library(ggplot2)
+data(anscombe)
+p <- ggplot(data = anscombe) +
+  theme_classic()
+p +
+  geom_point(aes(x = x1, y = y1), color = "#E41A1C") +
+  geom_smooth(aes(x = x1, y = y1),
+    color = "#E41A1C",
+    formula = y ~ x, method = "lm", se = FALSE
+  )
+
+p +
+  geom_point(aes(x = x2, y = y2), color = "#377EB8") +
+  geom_smooth(aes(x = x2, y = y2),
+    color = "#377EB8",
+    formula = y ~ x, method = "lm", se = FALSE
+  )
+p +
+  geom_point(aes(x = x3, y = y3), color = "#4DAF4A") +
+  geom_smooth(aes(x = x3, y = y3),
+    color = "#4DAF4A",
+    formula = y ~ x, method = "lm", se = FALSE
+  )
+p +
+  geom_point(aes(x = x4, y = y4), color = "#984EA3") +
+  geom_smooth(aes(x = x4, y = y4),
+    color = "#984EA3",
+    formula = y ~ x, method = "lm", se = FALSE
+  )
+```
+
+图形还告诉我们第二组数据的更适合二次非线性回归，第三组数据受到离群点的重大影响，第四组数据自变量只有两个取值，像是两个分布按不同比例混合的结果。
 
 
 ## 图形实例 {#sec-case-study}
@@ -474,23 +553,12 @@ p2 / p3
 @fig-usa-mortality 还展示了一个潜在的数据质量问题，在 100 岁之后，死亡率波动程度明显在变大，这是因为高龄人数变得很少，即死亡率的分母变得很小，分子的细小波动会被放大，也因为同样的原因，100 岁以上的死亡率主要依赖模型估计，甚至出现死亡率大于 1 的罕见情况。因此，就对比医疗和公共卫生水平的变化而言，从数据的实际情况出发，100 岁以上的情况可以不参与比较。
 
 
-<!-- 
-过去几十年各个州死亡率变化
-https://rafalab.github.io/dsbook/data-visualization-principles.html
-数据说明
--->
 
 
 ### 子代身高与亲代身高的关系 {#sec-galton}
 
-<!-- 生物遗传的回归现象，更确切地说是因果而不是相关，是一种近似的函数关系，而下面要讲才是相关，刻画数量指标之间的关系深浅程度，相关系数就是其中一个度量。
 
-回归分析 
-相关分析 寻找变量之间的
-方差分析 样本方差分解
--->
-
-[弗朗西斯·高尔顿](https://galton.org/)（Francis Galton, 1822-1911）是历史上著名的优生学家、遗传学家和统计学家，是统计学中相关和回归等一批概念的提出者，是遗传学中回归现象的发现者。1885年，高尔顿以保密和给予金钱报酬的方式，向社会征集了 205 对夫妇及其 928 个成年子女的身高数据。目前，Michael Friendly 从原始文献中整理后，将该数据集命名为 GaltonFamilies，放在 R 包 **HistData** [@Friendly2021] 内，方便大家使用。篇幅所限，下 @tbl-galton 展示该数据集的部分内容。
+[弗朗西斯·高尔顿](https://galton.org/)（Francis Galton, 1822-1911）是历史上著名的优生学家、遗传学家和统计学家，是统计学中相关和回归等一批概念的提出者，是遗传学中回归现象的发现者。1885年，高尔顿以保密和给予金钱报酬的方式，向社会征集了 205 对夫妇及其 928 个成年子女的身高数据。目前，Michael Friendly 从原始文献中整理后，将该数据集命名为 `GaltonFamilies`，放在 R 包 **HistData** [@Friendly2021] 内，方便大家使用。篇幅所限，下 @tbl-galton 展示该数据集的部分内容。
 
 ```{r}
 #| echo: false
@@ -502,7 +570,7 @@ data(GaltonFamilies, package = "HistData")
 GaltonFamilies <- as.data.table(GaltonFamilies)
 
 knitr::kable(head(GaltonFamilies), col.names = c(
-  "家庭编号", "父亲身高", "母亲身高", "中亲身高", 
+  "家庭编号", "父亲身高", "母亲身高", "中亲身高",
   "子女数量", "子女编号", "子女性别", "子女身高"
 ))
 ```
@@ -560,8 +628,13 @@ GaltonFamilies[, median_parent := (father + 1.08 * mother) / 2][, height_childre
 
 
 ```{r}
+#| label: fig-galton-bivar
 #| echo: false
-#| eval: false
+#| par: true
+#| fig-cap: "二维核密度估计与二元正态分布"
+#| fig-width: 4.5
+#| fig-height: 4.5
+#| fig-showtext: true
 
 data(Galton, package = "HistData")
 plot(Galton,
@@ -573,6 +646,13 @@ plot(Galton,
     nbin = c(11L, 11L), colramp = hcl.colors
   )
 )
+reg <- lm(child ~ parent, data = Galton)
+abline(reg, lwd = 2)
+lines(lowess(x = Galton$parent, y = Galton$child), col = "blue", lwd = 2)
+library(KernSmooth)
+den <- bkde2D(x = Galton, bandwidth = c(1, 1), gridsize = c(11L, 11L))
+contour(den$x1, den$x2, den$fhat, nlevels = 10, add = TRUE, family = "Noto Sans")
+title(xlab = "父母平均身高", ylab = "子女身高", family = "Noto Serif CJK SC")
 ```
 
 
@@ -581,7 +661,7 @@ plot(Galton,
 
 ### 预期寿命与人均收入的关系 {#sec-state-x77}
 
-与回归紧密相连的是另一个统计概念：相关。在经济、社会领域中，很多数据指标存在相关性，接下来的这个例子基于 1977 年美国人口调查局发布的统计数据，篇幅所限，下 @tbl-state-x77 展示美国各州的部分统计数据。
+生物遗传的回归现象，更确切地说是因果而不是相关，是一种近似的函数关系。与回归紧密相连的是另一个统计概念是相关，主要刻画数量指标之间的关系深浅程度，相关系数是其中一个度量。在经济、社会领域中，很多数据指标存在相关性，接下来的这个例子基于 1977 年美国人口调查局发布的统计数据，篇幅所限，下 @tbl-state-x77 展示美国各州的部分统计数据。
 
 ```{r}
 #| echo: false
@@ -2672,4 +2752,12 @@ ggplot(data = province_sex_ratio, aes(x = `性别比（女=100）`, y = `区域`
   ) +
   theme_classic()
 ```
+
+:::{.callout-tip}
+除了中国国家统计年鉴，各省、自治区、直辖市及各级统计局每年都会发布一些统计年鉴、公告等数据，读者可以在此基础上继续收集更多数据，来分析诸多有意思的问题：
+
+1. 城市、镇和乡村男女性别比呈现差异化分布的成因。
+1. 城市、镇和乡村男女年龄构成。
+1. 将上述问题从省级下钻到市、县级来分析。
+:::
 
