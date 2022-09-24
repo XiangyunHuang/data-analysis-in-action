@@ -626,7 +626,7 @@ ggplot(data = GaltonFamilies, aes(x = midparentHeight, y = childHeight, color = 
 GaltonFamilies[, height_children := childHeight * c("female" = 1.08, "male" = 1)[gender]] |>
   ggplot(aes(x = midparentHeight, y = height_children, color = gender)) +
   geom_smooth(method = "lm", formula = "y~x", se = FALSE) +
-  geom_point(size = 1, alpha = 0.75) +
+  geom_point(size = 2, alpha = 0.75) +
   stat_ellipse( type = "norm", linetype = 2) +
   scale_color_brewer(palette = "Set1", labels = c(male = "男", female = "女")) +
   guides(color = guide_legend(reverse = TRUE)) +
@@ -838,17 +838,18 @@ ggplot(data = state_x77, aes(x = Income, y = `Life Exp`)) +
 
 下面通过数值模拟的方式辅助说明 Wald 和 Agresti-Coull 两种区间估计方法，现固定样本量 $n = 10$ 或 $n = 100$，重复抽样 1000 次，将参数 $p$ 以 0.01 的间隔离散化，从 0.01 取值到 0.99。已知给定参数 $p$，每次抽样都可以得到参数 $p$ 的估计值 $\hat{p}$ 及其置信区间，1000 次的重复抽样可以计算出来 1000 个置信区间，每个区间要么覆盖真值，要么没有覆盖真值，覆盖的比例可以近似为覆盖概率。
 
-如 @fig-coverage 所示，从上往下分别代表 Wald、 Agresti-Coull 和 Wilson 区间估计，纵坐标是覆盖概率，横坐标是参数 $p$ 的真值，图中黑虚线表示置信水平 $1-\alpha=0.95$，红、蓝点线分别表示样本量 $n=10$ 和 $n=100$ 的模拟情况。不难看出，Wald 区间估计方法在小样本情况下表现很差，覆盖概率很少能达到置信水平的，而 Agresti-Coull 区间估计在 Wald 基础上添加了修正后，情况得到显著改善，详细的介绍见文献 @Blyth1960;@Lawrence2001;@Geyer2005 。
+如 @fig-coverage 所示，从上往下分别代表 Wald、 Agresti-Coull、 Wilson 和 Clopper-Pearson 区间估计，纵坐标是覆盖概率，横坐标是参数 $p$ 的真值，图中黑虚线表示置信水平 $1-\alpha=0.95$，红、蓝点线分别表示样本量 $n=10$ 和 $n=100$ 的模拟情况。不难看出，Wald 区间估计方法在小样本情况下表现很差，覆盖概率很少能达到置信水平的，而 Agresti-Coull 区间估计在 Wald 基础上添加了修正后，情况得到显著改善。更多区间估计方法的详细比较见文献 @Blyth1960;@Lawrence2001;@Geyer2005 。
 
 
 ```{r}
 #| label: fig-coverage
 #| fig-cap: "二项分布参数的几种区间估计：覆盖概率随成功概率的变化"
 #| fig-width: 6
-#| fig-height: 8
+#| fig-height: 10
 #| fig-showtext: true
 #| echo: false
 
+# 计算覆盖概率
 # Wald 覆盖
 coverage_wald <- function(p = 0.1, n = 10, nsim = 1000) {
   phats <- rbinom(nsim, prob = p, size = n) / n
@@ -864,13 +865,15 @@ coverage_agresti <- function(p = 0.1, n = 10, nsim = 1000) {
   mean(ll < p & ul > p)
 }
 # Clopper and Pearson (1934)
+# 与 binom.test() 计算结果一致
 coverage_clopper <- function(p = 0.1, n = 10, nsim = 1000) {
-  phats <- rbinom(nsim, prob = p, size = n) / n
-  ll <- 0
-  ul <- 0
+  nd <- rbinom(nsim, prob = p, size = n)
+  ll <- qbeta(p = 0.05 / 2, shape1 = nd, shape2 = n - nd + 1)
+  ul <- qbeta(p = 1 - 0.05 / 2, shape1 = nd + 1, shape2 = n - nd)
   mean(ll < p & ul > p)
 }
 # Wilson (1927)
+# 与 prop.test(correct = FALSE) 计算结果一致
 coverage_wilson <- function(p = 0.1, n = 10, nsim = 1000) {
   phats <- rbinom(nsim, prob = p, size = n) / n
   lambda <- qnorm(1 - 0.05 / 2)
@@ -883,17 +886,17 @@ sim_dat <- transform(expand.grid(
   p = seq(0.01, 0.99, by = 0.01),
   n = c(10, 100),
   nsim = 1000,
-  methods = c("Wald", "Agresti-Coull", "Wilson")
-),
-prob = ifelse(methods == "Wald",
+  methods = c("Wald", "Agresti-Coull", "Wilson", "Clopper-Pearson")
+), prob = ifelse(methods == "Wald",
   Vectorize(coverage_wald)(p = p, n = n, nsim = nsim),
   ifelse(methods == "Agresti-Coull",
-    Vectorize(coverage_agresti)(p = p, n = n, nsim = nsim), 
-    Vectorize(coverage_wilson)(p = p, n = n, nsim = nsim)
+    Vectorize(coverage_agresti)(p = p, n = n, nsim = nsim),
+    ifelse(methods == "Wilson",
+      Vectorize(coverage_wilson)(p = p, n = n, nsim = nsim),
+      Vectorize(coverage_clopper)(p = p, n = n, nsim = nsim)
+    )
   )
-),
-nsample = ifelse(n == 10, "n=10", "n=100")
-)
+), nsample = ifelse(n == 10, "n=10", "n=100"))
 
 ggplot(data = sim_dat, aes(x = p, y = prob, color = nsample)) +
   geom_hline(yintercept = 0.95, linetype = 2, 
@@ -911,7 +914,7 @@ ggplot(data = sim_dat, aes(x = p, y = prob, color = nsample)) +
   coord_cartesian(clip = 'off')
 ```
 
-通过 @fig-coverage 一看就明白了几种区间估计方法的优劣，以及为什么软件普遍默认采用 Wilson 估计方法？因为它又稳定又准确。 Wilson 区间估计用的更加广泛的，Base R 内置的二项比例检验函数 `prop.test()` 在不启用 Yates 修正时，就是用该方法获得比例 $p$ 的区间估计[@Wilson1927]。
+通过 @fig-coverage 一看就明白了几种区间估计方法的优劣，以及为什么软件普遍默认采用 Wilson 估计方法？因为它又稳定又准确。 Wilson 区间估计用的更加广泛的，Base R 内置的比例检验函数 `prop.test()` 在不启用 Yates 修正时，就是用该方法获得比例 $p$ 的区间估计 [@Wilson1927]。Clopper-Pearson 区间估计特别适合小样本情形，它是精确区间估计方法，Base R 内置的二项比例检验函数 `binom.test()` 就是用该方法获得比例 $p$ 的区间估计[@Clopper1934]。
 
 
 
