@@ -354,7 +354,7 @@ https://cswr.nrhstat.org/
 
 <!-- 空间数据探索、分析、可视化，空间分析，空间 -->
 
-下面将震级数据分割成三个区间，并以明暗不同的颜色表示震级大小，接着，根据斐济及周边地区的位置，选择相应的坐标参考系，最后，用 ggplot2 深度定制出 @fig-quakes-sf ，相比于 @fig-quakes 更加清晰、准确地反映了数据情况，目标区域位于南半球，横跨 180 度经线。
+将震级分割成三个区间，并以明暗不同的颜色表示震级大小，接着，根据斐济及周边地区的位置，选择相应的坐标参考系，最后，用 ggplot2 深度定制出 @fig-quakes-sf ，相比于 @fig-quakes 更加清晰、准确地反映了数据情况，目标区域位于南半球，横跨 180 度经线。
 
 ```{r}
 #| label: fig-quakes-sf
@@ -557,6 +557,7 @@ p2 / p3
 
 ### 子代身高与亲代身高的关系 {#sec-galton}
 
+<!-- 函数型数据探索、分析和可视化，关系 -->
 
 [弗朗西斯·高尔顿](https://galton.org/)（Francis Galton, 1822-1911）是历史上著名的优生学家、遗传学家和统计学家，是统计学中相关和回归等一批概念的提出者，是遗传学中回归现象的发现者。1885年，高尔顿以保密和给予金钱报酬的方式，向社会征集了 205 对夫妇及其 928 个成年子女的身高数据[@Galton1886]。
 
@@ -581,7 +582,7 @@ knitr::kable(head(GaltonFamilies), col.names = c(
 
 高尔顿提出「中亲」概念，即父母的平均身高，认为子代身高只与父母平均身高相关，而与父母身高差无关，为了消除性别给身高带来的差异，女性身高均乘以 1.08。
 
-
+根据数据统计的均值和协方差，椭圆 level = 0.95
 
 ```{r}
 #| label: fig-galton-gender
@@ -593,17 +594,19 @@ knitr::kable(head(GaltonFamilies), col.names = c(
 
 ggplot(data = GaltonFamilies, aes(x = midparentHeight, y = childHeight, color = gender)) +
   geom_point(aes(fill = gender), pch = 21, color = "white", 
-             size = 3, alpha = 0.75) +
+             size = 2, alpha = 0.75) +
   geom_smooth(method = "lm", formula = "y~x", se = FALSE) +
-  stat_ellipse(type = "norm", linetype = 2) +
+  stat_ellipse(type = "norm", level = 0.95, linetype = 2) +
   scale_color_brewer(palette = "Set1", labels = c(male = "男", female = "女")) +
   scale_fill_brewer(palette = "Set1", labels = c(male = "男", female = "女")) +
+  guides(fill = guide_legend(reverse = TRUE), 
+         color = guide_legend(reverse = TRUE)) +
   labs(x = "父母平均身高", y = "子女身高", fill = "性别", color = "性别") +
   theme_classic()
 ```
 
 
-女儿的身高乘以 1.08 后
+女儿的身高乘以 1.08 后，两条回归线将几乎重合。
 
 ```{r}
 #| label: fig-galton
@@ -624,6 +627,12 @@ GaltonFamilies[, height_children := childHeight * c("female" = 1.08, "male" = 1)
 ```
 
 
+```{r}
+#| eval: false
+#| echo: false
+
+GaltonFamilies[, height_children := childHeight * c("female" = 1.08, "male" = 1)[gender]][, as.list(coef(lm(height_children ~ midparentHeight))), by = "gender"]
+```
 
 
 
@@ -660,6 +669,8 @@ title(xlab = "父母平均身高", ylab = "子女身高", family = "Noto Serif C
 
 
 ### 预期寿命与人均收入的关系 {#sec-state-x77}
+
+<!-- 相关性探索、分析和可视化，关系 -->
 
 生物遗传的回归现象，更确切地说是因果而不是相关，是一种近似的函数关系。与回归紧密相连的是另一个统计概念是相关，主要刻画数量指标之间的关系深浅程度，相关系数是其中一个度量。在经济、社会领域中，很多数据指标存在相关性，接下来的这个例子基于 1977 年美国人口调查局发布的统计数据，篇幅所限，下 @tbl-state-x77 展示美国各州的部分统计数据。
 
@@ -813,14 +824,18 @@ ggplot(data = state_x77, aes(x = Income, y = `Life Exp`)) +
 
 ### 解释置信区间及其覆盖概率 {#sec-coverage-probability}
 
+<!-- 统计理论、方法的可视化，理论 -->
+
 统计图形很重要的一个作用是解释统计概念，这就要求不拘泥于抽象的严格数学表达，借助数值模拟，可视化等手段帮助读者发散思维，加深理解复杂的逻辑概念，建立统计直觉，正如顾恺之所言「以形写神，形神兼备」。下面仅以二项分布为例讲讲区间估计及其覆盖概率。众所周知，在置信水平为 $1 - \alpha$ 的情况下，二项分布 $\mathrm{Bin}(n,p)$ 的参数 $p$ （也叫成功概率）的 Wald 区间估计为 $(\hat{p} - Z_{1-\alpha/2} \sqrt{\hat{p}*(1-\hat{p})/n}, \hat{p} + Z_{1-\alpha/2} \sqrt{\hat{p}*(1-\hat{p})/n})$，这里 $n$ 为样本量，$Z_{1-\alpha/2}$ 为标准正态分布 $\mathcal{N}(0,1)$ 在 $1-\alpha/2$ 处的分位点，一般 $\alpha$ 取 0.05，进而 $Z_{1-\alpha/2} \approx 1.96$。用通俗的话说，有 $1 - \alpha$ 的把握确定参数真值 $p$ 在该估计区间内，可见区间估计的意义是解决点估计可靠性问题，但是可靠性和精度往往不能兼得。统计上，通常的做法是先给定可靠性，去尽可能提升精度，即给定置信水平，使估计区间的长度尽可能短，这就涉及到区间估计的方法问题。
 
 下面通过数值模拟的方式辅助说明 Wald 和 Agresti-Coull 两种区间估计方法，现固定样本量 $n = 10$ 或 $n = 100$，重复抽样 1000 次，将参数 $p$ 以 0.01 的间隔离散化，从 0.01 取值到 0.99。已知给定参数 $p$，每次抽样都可以得到参数 $p$ 的估计值 $\hat{p}$ 及其置信区间，1000 次的重复抽样可以计算出来 1000 个置信区间，每个区间要么覆盖真值，要么没有覆盖真值，覆盖的比例可以近似为覆盖概率。
-如 @fig-coverage 所示，上下两个子图分别代表 Wald 和 Agresti-Coull 区间估计，纵坐标是覆盖概率，横坐标是参数 $p$ 的真值，图中黑虚线表示置信水平 $1-\alpha=0.95$，黑灰点线分别表示样本量 $n=10$ 和 $n=100$ 的模拟情况，不难看出，Wald 区间估计方法在小样本情况下表现很差，覆盖概率很少能达到置信水平的，而 Agresti-Coull 区间估计在 Wald 基础上添加了修正后，情况得到显著改善，详细的介绍见文献 @Blyth1960;@Lawrence2001;@Geyer2005 。此外，还有 Wilson 区间估计，也是用的更加广泛的，Base R 内置的二项比例检验函数 `prop.test()` 就是用该方法获得比例 $p$ 的区间估计[@Wilson1927]。
+
+如 @fig-coverage 所示，从上往下分别代表 Wald、 Agresti-Coull 和 Wilson 区间估计，纵坐标是覆盖概率，横坐标是参数 $p$ 的真值，图中黑虚线表示置信水平 $1-\alpha=0.95$，红、蓝点线分别表示样本量 $n=10$ 和 $n=100$ 的模拟情况。不难看出，Wald 区间估计方法在小样本情况下表现很差，覆盖概率很少能达到置信水平的，而 Agresti-Coull 区间估计在 Wald 基础上添加了修正后，情况得到显著改善，详细的介绍见文献 @Blyth1960;@Lawrence2001;@Geyer2005 。
+
 
 ```{r}
 #| label: fig-coverage
-#| fig-cap: "二项分布参数的区间估计：覆盖概率随成功概率的变化"
+#| fig-cap: "二项分布参数的几种区间估计：覆盖概率随成功概率的变化"
 #| fig-width: 6
 #| fig-height: 6
 #| fig-showtext: true
@@ -840,26 +855,45 @@ coverage_agresti <- function(p = 0.1, n = 10, nsim = 1000) {
   ul <- phats + qnorm(1 - 0.05 / 2) * sqrt(phats * (1 - phats) / n)
   mean(ll < p & ul > p)
 }
+# Clopper and Pearson (1934)
+coverage_clopper <- function(p = 0.1, n = 10, nsim = 1000) {
+  phats <- rbinom(nsim, prob = p, size = n) / n
+  ll <- 0
+  ul <- 0
+  mean(ll < p & ul > p)
+}
+# Wilson (1927)
+coverage_wilson <- function(p = 0.1, n = 10, nsim = 1000) {
+  phats <- rbinom(nsim, prob = p, size = n) / n
+  lambda <- qnorm(1 - 0.05 / 2)
+  ll <- phats + lambda^2 / (2 * n) - lambda * sqrt(phats * (1 - phats) / n + lambda^2 / (4 * n^2))
+  ul <- phats + lambda^2 / (2 * n) + lambda * sqrt(phats * (1 - phats) / n + lambda^2 / (4 * n^2))
+  mean(ll / (1 + lambda^2 / n) < p & ul / (1 + lambda^2 / n) > p)
+}
 
 sim_dat <- transform(expand.grid(
   p = seq(0.01, 0.99, by = 0.01),
   n = c(10, 100),
   nsim = 1000,
-  methods = c("Wald", "Agresti-Coull")
+  methods = c("Wald", "Agresti-Coull", "Wilson")
 ),
 prob = ifelse(methods == "Wald",
   Vectorize(coverage_wald)(p = p, n = n, nsim = nsim),
-  Vectorize(coverage_agresti)(p = p, n = n, nsim = nsim)
+  ifelse(methods == "Agresti-Coull",
+    Vectorize(coverage_agresti)(p = p, n = n, nsim = nsim), 
+    Vectorize(coverage_wilson)(p = p, n = n, nsim = nsim)
+  )
 ),
 nsample = ifelse(n == 10, "n=10", "n=100")
 )
 
 ggplot(data = sim_dat, aes(x = p, y = prob, color = nsample)) +
-  geom_hline(yintercept = 0.95, linetype = 2, linewidth = 1, color = "gray60") +
+  geom_hline(yintercept = 0.95, linetype = 2, 
+             linewidth = 1, color = "gray60") +
   geom_point() +
   geom_path() +
-  annotate(geom = "text", x = 0, y = 0.95, label = "0.95",
-           fontface = "bold", hjust = 2, size = 3.5) +
+  # annotate(geom = "text", x = 0, y = 0.95, label = "0.950",
+  #          fontface = "bold", hjust = 2, size = 3.5) +
   # scale_color_grey() +
   scale_color_brewer(palette = "Set1") +
   facet_wrap(facets = ~methods, ncol = 1, scales = "free_y") +
@@ -868,6 +902,11 @@ ggplot(data = sim_dat, aes(x = p, y = prob, color = nsample)) +
   theme(title = element_text(family = "Noto Serif CJK SC")) + 
   coord_cartesian(clip = 'off')
 ```
+
+通过 @fig-coverage 一看就明白了几种区间估计方法的优劣，以及为什么软件普遍默认采用 Wilson 估计方法？因为它又稳定又准确。 Wilson 区间估计用的更加广泛的，Base R 内置的二项比例检验函数 `prop.test()` 在不启用 Yates 修正时，就是用该方法获得比例 $p$ 的区间估计[@Wilson1927]。
+
+
+
 
 :::{.callout-tip}
 请读者再思考两个问题： @fig-coverage 为什么呈现对称的形式，泊松分布会和二项分布有类似的现象吗？如果有的话，连续分布，如正态分布和指数分布也会有吗？
