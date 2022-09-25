@@ -392,35 +392,26 @@ quakes_sf <- st_as_sf(quakes, coords = c("long", "lat"), crs = st_crs(4326))
 # 也可以借助 st_graticule 构造经纬网数据，再添加一个地理图层 geom_sf 
 ggplot() +
   geom_sf(
-    data = quakes_sf, aes(color = cut(mag, 6))
+    data = quakes_sf,
+    aes(color = cut(depth, breaks = 100 * 0:7), size = mag),
+    alpha = 0.5
   ) +
+  geom_point() +
   scale_x_continuous(breaks = c(
     # 东经
     seq(from = 165, to = 180, by = 5),
     # 西经
     seq(from = -180, to = -170, by = 5)
   )) +
-  scale_colour_viridis_d(
-    option = "C",
-    labels = c(
-      "(4.0,4.4]", "(4.4,4.8]", "(4.8,5.2]",
-      "(5.2,5.6]", "(5.6,6.0]", "(6.0,6.4]"
-    )
-  ) +
-  # scale_colour_brewer(
-  #   palette = "Greys",
-  #   labels = c(
-  #     "(4.0,4.4]", "(4.4,4.8]", "(4.8,5.2]",
-  #     "(5.2,5.6]", "(5.6,6.0]", "(6.0,6.4]"
-  #   )
-  # ) +
+  scale_size_binned(range = c(1, 6)) +
+  scale_color_viridis_d(option = "C") +
   coord_sf(
     crs = 3460,
     xlim = c(569061, 3008322),
     ylim = c(1603260, 4665206)
   ) +
   theme_minimal() +
-  labs(x = "经度", y = "纬度", color = "震级")
+  labs(x = "经度", y = "纬度", color = "震深", size = "震级")
 ```
 
 有的地理区域处于板块交界处，地震频发，以至于 @fig-quakes-sf 部分区域的散点覆盖严重，影响重点区域的观测。因此，将斐济及周边区域划分成 $40 \times 80$ 的网格，统计每个小格子内散点的数量，即地震次数，再将地震次数映射给颜色。相比于 @fig-quakes-sf，@fig-quakes-grid-sf 可以更加清晰地展示地震活跃度的空间分布。
