@@ -2832,6 +2832,7 @@ ggplot(data = province_sex_ratio, aes(x = `性别比（女=100）`, color = `区
 
 ### 密度图 {#sec-density}
 
+@fig-density 展示分组密度曲线图
 
 ```{r}
 #| label: fig-density
@@ -2841,9 +2842,151 @@ ggplot(data = province_sex_ratio, aes(x = `性别比（女=100）`, color = `区
 #| fig-showtext: true
 
 ggplot(data = province_sex_ratio, aes(x = `性别比（女=100）`)) +
-  geom_density(aes(color = `区域`)) +
+  geom_density(aes(fill = `区域`), alpha = 0.5) +
   theme_classic()
 ```
+
+
+@fig-density-stack 丢失边际密度
+
+```{r}
+#| label: fig-density-stack
+#| fig-cap: "堆积密度图"
+#| fig-width: 4.5
+#| fig-height: 3.5
+#| fig-showtext: true
+
+ggplot(data = province_sex_ratio, aes(x = `性别比（女=100）`, y = after_stat(density))) +
+  geom_density(aes(fill = `区域`), position = "stack", alpha = 0.5) +
+  theme_classic()
+```
+
+:::{.callout-caution}
+Stacked density plots: if you want to create a stacked density plot, you probably want to 'count' (density * n) variable instead of the default density
+:::
+
+
+@fig-density-count 保护边际密度
+
+```{r}
+#| label: fig-density-count
+#| fig-cap: "累积分布密度图"
+#| fig-width: 4.5
+#| fig-height: 3.5
+#| fig-showtext: true
+
+ggplot(data = province_sex_ratio, aes(x = `性别比（女=100）`, y = after_stat(density * n))) +
+  geom_density(aes(fill = `区域`), position = "stack", alpha = 0.5) +
+  theme_classic()
+```
+
+什么原因导致 @fig-density-count 和 @fig-density-stack 看起来没什么差别呢？而换一组数据，就可以看出明显的差别，条件密度曲线 @fig-density-count
+
+
+```{r}
+#| label: fig-density-diamonds
+#| fig-cap: "堆积密度图"
+#| fig-width: 6
+#| fig-height: 7.5
+#| fig-showtext: true
+
+p1 <- ggplot(diamonds, aes(x = carat, y = after_stat(density), fill = cut)) +
+  geom_density(position = "stack") +
+  theme_classic()
+
+p2 <- ggplot(diamonds, aes(x = carat, y = after_stat(density * n), fill = cut)) +
+  geom_density(position = "stack") +
+  theme_classic()
+
+p3 <- ggplot(diamonds, aes(x = carat, y = after_stat(count), fill = cut)) +
+  geom_density(position = "stack") +
+  theme_classic()
+
+p1 / p2 / p3
+```
+
+联合密度曲线
+
+```{r}
+#| label: fig-density-2d
+#| fig-cap: "二维密度图"
+#| fig-width: 4.5
+#| fig-height: 3.5
+#| fig-showtext: true
+
+p1 <- ggplot(data = state_x77, aes(x = Income, y = `Life Exp`)) +
+  geom_point() +
+  geom_density_2d(aes(
+    color = after_stat(level),
+    alpha = after_stat(level)
+  ),
+  show.legend = F
+  ) +
+  scale_color_viridis_c(option = "inferno") +
+  labs(
+    x = "人均收入（美元）", y = "预期寿命（年）",
+    title = "1977 年各州预期寿命与人均收入的关系",
+    caption = "数据源：美国人口调查局"
+  ) +
+  theme_classic() +
+  theme(
+    panel.grid = element_line(colour = "gray92"),
+    panel.grid.major = element_line(linewidth = rel(1.0)),
+    panel.grid.minor = element_line(linewidth = rel(0.5))
+  )
+
+p1
+```
+
+边际密度曲线，ggExtra 添加
+
+```{r}
+#| label: fig-density-margins
+#| fig-cap: "边际密度图"
+#| fig-width: 5
+#| fig-height: 4
+#| fig-showtext: true
+
+library(ggExtra)
+ggMarginal(p1)
+```
+
+热力图，二维密度图 [ggdist](https://github.com/mjskay/ggdist) [@ggdist2022]
+
+```{r}
+#| label: fig-density-2d-filled
+#| fig-cap: "二维密度图"
+#| fig-width: 5.5
+#| fig-height: 3.5
+#| fig-showtext: true
+
+ggplot(data = state_x77, aes(x = Income, y = `Life Exp`)) +
+  geom_density_2d_filled() +
+  theme_classic()
+```
+
+相比于 ggplot2 内置的二维核密度估计，[ggdensity](https://github.com/jamesotto852/ggdensity/) [@ggdensity2022] 有一些优势
+
+
+```{r}
+#| label: fig-density-hdr
+#| fig-cap: "二维密度图"
+#| fig-width: 4.5
+#| fig-height: 3.5
+#| fig-showtext: true
+
+library(ggdensity)
+ggplot(data = state_x77, aes(x = Income, y = `Life Exp`)) +
+  geom_point() +
+  geom_hdr() +
+  theme_classic()
+```
+
+
+
+
+
+
 
 
 
