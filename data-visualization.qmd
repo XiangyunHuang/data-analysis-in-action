@@ -2687,79 +2687,177 @@ ggplot(data = sub_rversion_df2) +
 [timevis](https://github.com/daattali/timevis) 包基于 JavaScript 库 [Vis](https://visjs.org/) 的 [vis-timeline](https://github.com/visjs/vis-timeline) 模块，可以 创建交互式的时间线图，支持与 Shiny 应用集成。
 
 
+## 描述分布 {#sec-visualize-data-distribution}
+
+数据来自中国国家统计局发布的2021年统计年鉴，各省、直辖市和自治区分区域的性别比数据（部分）情况见 @tbl-province-sex-ratio 。
+
+```{r}
+#| label: tbl-province-sex-ratio
+#| tbl-cap: "各省、直辖市和自治区分区域的性别比数据（部分）"
+#| echo: false
+
+province_sex_ratio <- readRDS(file = "data/province-sex-ratio-2020.rds")
+knitr::kable(head(province_sex_ratio))
+```
 
 
 
-## 绘图经验 {#sec-principles-of-ggplot2}
+### 箱线图 {#sec-boxplot}
 
-
-就展示数据而言，本文将介绍数以十计的图形，如此丰富，就单一目的而言，也有多种可选的图形。可见，仅仅掌握 ggplot2 这套工具是远远不够的，还需要了解数据背景，探索、分析数据，获得数据洞见，只有结合这些，才知道选择最合适的图形，进而准确地传递信息，数据才能释放出应有的价值。
-
-
-### 防止误差线图 {#sec-avoid-errorbar}
-
-举例来说，如 @fig-avoid-errorbar 所示，图中从左往右、从上往下依次是误差线图、 、箱线图、提琴图和散点图，它们基于同一份数据，采用不同的图形展示数据的分布情况。在一些期刊杂志上， @fig-avoid-errorbar-1 非常受欢迎，而实际上它所表达的信息非常有限，严重的情况下，甚至会产生误导。
-
-数据来自中国国家统计局 2021 年发布的统计年鉴，是分城市、镇和乡村的各省、自治区、直辖市的男女比例数据。
-一般来说，各地区的性别比例不可能出现严重失调，比如男的是女的一倍，一个省要是出现如此失调的现象是非常罕见的。而 @fig-avoid-errorbar-1 的纵轴给人感觉还有性别比为 50% 甚至 30% 的情况，纯属误导。相比而言，箱线图 @fig-avoid-errorbar-2 就好很多，既把整体情况展示出来了，又将一些性别比例离群的突出出来了，就整个图形来说，城市、镇和乡村的比较也突出出来了，占据了图的主要位置。
-
-在数据量很大的情况下，借助箱线图、提琴图可以非常方便地展示数据分布，
-
-
-而在数据量很小的情况下，借助散点图可以快速看出原始的数据信息。
 
 
 ```{r}
-#| label: fig-avoid-errorbar
-#| fig-cap: "防止误差线图"
-#| fig-subcap: 
-#|   - 误差线
-#|   - 箱线图
-#|   - 提琴图
-#|   - 提琴图和抖动图组合
-#| fig-ncol: 2
+#| label: fig-boxplot-gg
+#| fig-cap: "箱线图"
 #| fig-width: 4.5
 #| fig-height: 3.5
-#| echo: false
 #| fig-showtext: true
-
-library(data.table)
-province_sex_ratio <- readRDS(file = "data/province-sex-ratio-2020.rds")
-province_sex_ratio <- as.data.table(province_sex_ratio)
-
-province_sex_ratio[, .(mean_len = mean(`性别比（女=100）`), sd_len = sd(`性别比（女=100）`)), by = "区域"] |>
-  ggplot(aes(x = `区域`, y = mean_len)) +
-  geom_col(
-    position = position_dodge(0.4), width = 0.4
-  ) +
-  geom_errorbar(aes(ymin = mean_len - sd_len, ymax = mean_len + sd_len),
-    position = position_dodge(0.4), width = 0.2
-  ) +
-  theme_classic() +
-  labs(y = "性别比（女=100）")
 
 ggplot(data = province_sex_ratio, aes(x = `区域`, y = `性别比（女=100）`)) +
   geom_boxplot() +
   theme_classic()
+```
 
-ggplot(data = province_sex_ratio, aes(x = `区域`, y = `性别比（女=100）`)) +
-  geom_violin() +
-  theme_classic()
+@fig-boxplot-lv 是箱线图的变体 [@Tukey1978]
 
-library(ggforce)
+```{r}
+#| label: fig-boxplot-lv
+#| fig-cap: "箱线图的变体"
+#| fig-width: 4.5
+#| fig-height: 3.5
+#| fig-showtext: true
+
+library(lvplot)
 ggplot(data = province_sex_ratio, aes(x = `区域`, y = `性别比（女=100）`)) +
-  geom_violin() +
-  geom_sina() +
+  geom_lv() +
   theme_classic()
 ```
 
-1.5 个百分点为间隔
+
+
+
+箱线图的历史有 50 多年了，它的变体也有很多。
 
 ```{r}
-#| label: fig-visualize-distributions
+#| label: fig-boxplot-base
+#| fig-cap: "箱线图"
+#| fig-width: 4.5
+#| fig-height: 3.5
+#| fig-showtext: true
+#| par: true
+
+boxplot(`性别比（女=100）` ~ `区域` , data = province_sex_ratio)
+```
+
+
+
+
+### 提琴图 {#sec-violin}
+
+
+```{r}
+#| label: fig-violin-gg
+#| fig-cap: "提琴图"
+#| fig-width: 4.5
+#| fig-height: 3.5
+#| fig-showtext: true
+
+ggplot(data = province_sex_ratio, aes(x = `区域`, y = `性别比（女=100）`)) +
+  geom_violin(fill = "lightgray", draw_quantiles = c(0.25, 0.5, 0.75)) +
+  theme_classic()
+```
+
+
+
+```{r}
+#| label: fig-violin-vioplot
+#| fig-cap: "提琴图"
+#| fig-width: 4.5
+#| fig-height: 3.5
+#| fig-showtext: true
+#| par: true
+
+vioplot::vioplot(`性别比（女=100）` ~ `区域`,
+  data = province_sex_ratio, col = "lightgray"
+)
+```
+
+beanplot 的名字是根据图形的外观取的，豌豆，rug 用须线表示数据
+
+
+```{r}
+#| label: fig-violin-beanplot
+#| fig-cap: "提琴图"
+#| fig-width: 4.5
+#| fig-height: 3.5
+#| fig-showtext: true
+#| par: true
+
+beanplot::beanplot(`性别比（女=100）` ~ `区域`,
+  data = province_sex_ratio, col = "lightgray", log = "",
+  xlab = "区域", ylab = "性别比（女=100）"
+)
+```
+
+
+
+### 直方图 {#sec-histogram}
+
+
+```{r}
+#| label: fig-histogram
+#| fig-cap: "直方图"
+#| fig-width: 4.5
+#| fig-height: 3.5
+#| fig-showtext: true
+
+ggplot(data = province_sex_ratio, aes(x = `性别比（女=100）`, fill = `区域`)) +
+  geom_histogram(binwidth = 5, color = "white", position = "stack") +
+  theme_classic()
+```
+
+
+```{r}
+#| label: fig-freqpoly
+#| fig-cap: "直方图"
+#| fig-width: 4.5
+#| fig-height: 3.5
+#| fig-showtext: true
+
+ggplot(data = province_sex_ratio, aes(x = `性别比（女=100）`, color = `区域`)) +
+  geom_freqpoly(binwidth = 5, stat = "bin") +
+  theme_classic()
+```
+
+
+### 密度图 {#sec-density}
+
+
+```{r}
+#| label: fig-density
+#| fig-cap: "密度图"
+#| fig-width: 4.5
+#| fig-height: 3.5
+#| fig-showtext: true
+
+ggplot(data = province_sex_ratio, aes(x = `性别比（女=100）`)) +
+  geom_density(aes(color = `区域`)) +
+  theme_classic()
+```
+
+
+
+### 岭线图 {#sec-ridge-line}
+
+叠嶂图，还有些其它名字，如峰峦图、岭线图等，详情参考统计之都主站[《叠嶂图的前世今生》](https://cosx.org/2018/04/ridgeline-story/)，主要用来描述数据的分布情况，在展示分布的对比上效果非常好。
+
+
+@fig-ridge-line 设置窗宽为 1.5 个百分点
+
+```{r}
+#| label: fig-ridge-line
 #| fig-cap: "描述数据分布"
 #| fig-subcap: 
-#|   - 抖动图
 #|   - 岭线图
 #|   - 岭线图和抖动图组合
 #|   - 岭线图和轴须图组合
@@ -2769,9 +2867,6 @@ ggplot(data = province_sex_ratio, aes(x = `区域`, y = `性别比（女=100）`
 #| echo: false
 #| fig-showtext: true
 
-ggplot(data = province_sex_ratio, aes(x = `区域`, y = `性别比（女=100）`)) +
-  geom_jitter(width = 0.25) +
-  theme_classic()
 
 library(ggridges)
 
@@ -2801,4 +2896,152 @@ ggplot(data = province_sex_ratio, aes(x = `性别比（女=100）`, y = `区域`
 1. 城市、镇和乡村男女年龄构成。
 1. 将上述问题从省级下钻到市、县级来分析。
 :::
+
+
+
+
+### 抖动图 {#sec-jitter}
+
+散点图展示原始数据
+
+```{r}
+#| label: fig-point
+#| fig-cap: "散点图"
+#| fig-width: 4.5
+#| fig-height: 3.5
+#| fig-showtext: true
+
+ggplot(data = province_sex_ratio, aes(x = `区域`, y = `性别比（女=100）`)) +
+  geom_point() +
+  theme_classic()
+```
+
+
+抖动图展示原始数据
+
+```{r}
+#| label: fig-jitter
+#| fig-cap: "抖动图"
+#| fig-width: 4.5
+#| fig-height: 3.5
+#| fig-showtext: true
+
+ggplot(data = province_sex_ratio, aes(x = `区域`, y = `性别比（女=100）`)) +
+  geom_jitter(width = 0.25) +
+  theme_classic()
+```
+
+@SinaPlot2018 提出一种新的方式描述数据的分布，集合抖动图和小提琴图的功能，在给定的分布界限内抖动
+
+```{r}
+#| label: fig-sina
+#| fig-cap: "加强版的抖动图"
+#| fig-width: 4.5
+#| fig-height: 3.5
+#| fig-showtext: true
+
+library(ggforce)
+ggplot(data = province_sex_ratio, aes(x = `区域`, y = `性别比（女=100）`)) +
+  geom_sina() +
+  theme_classic()
+```
+
+数据点受 violin 的曲线限制
+
+```{r}
+#| label: fig-sina-violin
+#| fig-cap: "加强版的抖动图"
+#| fig-width: 4.5
+#| fig-height: 3.5
+#| fig-showtext: true
+
+ggplot(data = province_sex_ratio, aes(x = `区域`, y = `性别比（女=100）`)) +
+  geom_violin() +
+  geom_sina() +
+  theme_classic()
+```
+
+蜂群图也是某种形式的抖动图
+
+```{r}
+#| label: fig-beeswarm
+#| fig-cap: "加强版的抖动图"
+#| fig-width: 4.5
+#| fig-height: 3.5
+#| fig-showtext: true
+
+library(ggbeeswarm)
+ggplot(data = province_sex_ratio, aes(x = `区域`, y = `性别比（女=100）`)) +
+  geom_quasirandom() +
+  theme_classic()
+```
+
+添加 violin 作为参考边界，与 sina 是非常类似的
+
+```{r}
+#| label: fig-beeswarm-violin
+#| fig-cap: "加强版的抖动图"
+#| fig-width: 4.5
+#| fig-height: 3.5
+#| fig-showtext: true
+
+ggplot(data = province_sex_ratio, aes(x = `区域`, y = `性别比（女=100）`)) +
+  geom_violin() +
+  geom_quasirandom() +
+  theme_classic()
+```
+
+
+
+
+## 绘图经验 {#sec-principles-of-ggplot2}
+
+
+就展示数据而言，本文将介绍数以十计的图形，如此丰富，就单一目的而言，也有多种可选的图形。可见，仅仅掌握 ggplot2 这套工具是远远不够的，还需要了解数据背景，探索、分析数据，获得数据洞见，只有结合这些，才知道选择最合适的图形，进而准确地传递信息，数据才能释放出应有的价值。
+
+
+### 防止误差线图 {#sec-avoid-errorbar}
+
+举例来说，如 @fig-avoid-errorbar 所示，图中从左往右、从上往下依次是误差线图、 、箱线图、提琴图和散点图，它们基于同一份数据，采用不同的图形展示数据的分布情况。在一些期刊杂志上， @fig-avoid-errorbar-1 非常受欢迎，而实际上它所表达的信息非常有限，严重的情况下，甚至会产生误导。
+
+数据来自中国国家统计局 2021 年发布的统计年鉴，是分城市、镇和乡村的各省、自治区、直辖市的男女比例数据。
+一般来说，各地区的性别比例不可能出现严重失调，比如男的是女的一倍，一个省要是出现如此失调的现象是非常罕见的。而 @fig-avoid-errorbar-1 的纵轴给人感觉还有性别比为 50% 甚至 30% 的情况，纯属误导。相比而言，箱线图 @fig-avoid-errorbar-2 就好很多，既把整体情况展示出来了，又将一些性别比例离群的突出出来了，就整个图形来说，城市、镇和乡村的比较也突出出来了，占据了图的主要位置。
+
+在数据量很大的情况下，借助箱线图、提琴图可以非常方便地展示数据分布，
+
+
+而在数据量很小的情况下，借助散点图可以快速看出原始的数据信息。
+
+
+```{r}
+#| label: fig-avoid-errorbar
+#| fig-cap: "防止误差线图"
+#| fig-subcap: 
+#|   - 误差线
+#|   - 箱线图
+#| fig-ncol: 2
+#| fig-width: 4.5
+#| fig-height: 3.5
+#| echo: false
+#| fig-showtext: true
+
+library(data.table)
+province_sex_ratio <- readRDS(file = "data/province-sex-ratio-2020.rds")
+province_sex_ratio <- as.data.table(province_sex_ratio)
+
+province_sex_ratio[, .(mean_len = mean(`性别比（女=100）`), sd_len = sd(`性别比（女=100）`)), by = "区域"] |>
+  ggplot(aes(x = `区域`, y = mean_len)) +
+  geom_col(
+    position = position_dodge(0.4), width = 0.4, fill = "gray"
+  ) +
+  geom_errorbar(aes(ymin = mean_len - sd_len, ymax = mean_len + sd_len),
+    position = position_dodge(0.4), width = 0.2
+  ) +
+  theme_classic() +
+  labs(y = "性别比（女=100）")
+
+ggplot(data = province_sex_ratio, aes(x = `区域`, y = `性别比（女=100）`)) +
+  geom_boxplot() +
+  theme_classic()
+```
 
