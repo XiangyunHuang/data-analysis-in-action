@@ -1,0 +1,115 @@
+# 绘图经验 {#sec-summary}
+
+
+
+```{r}
+#| echo: false
+
+knitr::knit_hooks$set(par = function(before, options, envir) {
+  if (before && options$fig.show != "none") {
+    par(
+      mar = c(4, 4, .5, .5)
+    )
+  }
+})
+
+if (xfun::is_macos()) {
+  # 准备 Noto 中英文字体
+  sysfonts::font_paths(new = "~/Library/Fonts/")
+  ## 宋体
+  sysfonts::font_add(
+    family = "Noto Serif CJK SC",
+    regular = "NotoSerifCJKsc-Regular.otf",
+    bold = "NotoSerifCJKsc-Bold.otf"
+  )
+  ## 黑体
+  sysfonts::font_add(
+    family = "Noto Sans CJK SC",
+    regular = "NotoSansCJKsc-Regular.otf",
+    bold = "NotoSansCJKsc-Bold.otf"
+  )
+} else { # Github Action Ubuntu
+  sysfonts::font_paths(new = c(
+    "/usr/share/fonts/opentype/noto/",
+    "/usr/share/fonts/truetype/noto/"
+  ))
+  ## 宋体
+  sysfonts::font_add(
+    family = "Noto Serif CJK SC",
+    regular = "NotoSerifCJK-Regular.ttc",
+    bold = "NotoSerifCJK-Bold.ttc"
+  )
+  ## 黑体
+  sysfonts::font_add(
+    family = "Noto Sans CJK SC",
+    regular = "NotoSansCJK-Regular.ttc",
+    bold = "NotoSansCJK-Bold.ttc"
+  )
+}
+
+## 衬线字体
+sysfonts::font_add(
+  family = "Noto Serif",
+  regular = "NotoSerif-Regular.ttf",
+  bold = "NotoSerif-Bold.ttf",
+  italic = "NotoSerif-Italic.ttf",
+  bolditalic = "NotoSerif-BoldItalic.ttf"
+)
+## 无衬线字体
+sysfonts::font_add(
+  family = "Noto Sans",
+  regular = "NotoSans-Regular.ttf",
+  bold = "NotoSans-Bold.ttf",
+  italic = "NotoSans-Italic.ttf",
+  bolditalic = "NotoSans-BoldItalic.ttf"
+)
+```
+
+
+就展示数据而言，本文将介绍数以十计的图形，如此丰富，就单一目的而言，也有多种可选的图形。可见，仅仅掌握 ggplot2 这套工具是远远不够的，还需要了解数据背景，探索、分析数据，获得数据洞见，只有结合这些，才知道选择最合适的图形，进而准确地传递信息，数据才能释放出应有的价值。
+
+
+## 防止误差线图 {#sec-avoid-errorbar}
+
+举例来说，如 @fig-avoid-errorbar 所示，图中从左往右、从上往下依次是误差线图、 、箱线图、提琴图和散点图，它们基于同一份数据，采用不同的图形展示数据的分布情况。在一些期刊杂志上， @fig-avoid-errorbar-1 非常受欢迎，而实际上它所表达的信息非常有限，严重的情况下，甚至会产生误导。
+
+数据来自中国国家统计局 2021 年发布的统计年鉴，是分城市、镇和乡村的各省、自治区、直辖市的男女比例数据。
+一般来说，各地区的性别比例不可能出现严重失调，比如男的是女的一倍，一个省要是出现如此失调的现象是非常罕见的。而 @fig-avoid-errorbar-1 的纵轴给人感觉还有性别比为 50% 甚至 30% 的情况，纯属误导。相比而言，箱线图 @fig-avoid-errorbar-2 就好很多，既把整体情况展示出来了，又将一些性别比例离群的突出出来了，就整个图形来说，城市、镇和乡村的比较也突出出来了，占据了图的主要位置。
+
+在数据量很大的情况下，借助箱线图、提琴图可以非常方便地展示数据分布，
+
+
+而在数据量很小的情况下，借助散点图可以快速看出原始的数据信息。
+
+
+```{r}
+#| label: fig-avoid-errorbar
+#| fig-cap: "防止误差线图"
+#| fig-subcap: 
+#|   - 误差线
+#|   - 箱线图
+#| fig-ncol: 2
+#| fig-width: 4.5
+#| fig-height: 3.5
+#| echo: false
+#| fig-showtext: true
+
+library(data.table)
+province_sex_ratio <- readRDS(file = "data/province-sex-ratio-2020.rds")
+province_sex_ratio <- as.data.table(province_sex_ratio)
+library(ggplot2)
+province_sex_ratio[, .(mean_len = mean(`性别比（女=100）`), sd_len = sd(`性别比（女=100）`)), by = "区域"] |>
+  ggplot(aes(x = `区域`, y = mean_len)) +
+  geom_col(
+    position = position_dodge(0.4), width = 0.4, fill = "gray"
+  ) +
+  geom_errorbar(aes(ymin = mean_len - sd_len, ymax = mean_len + sd_len),
+    position = position_dodge(0.4), width = 0.2
+  ) +
+  theme_classic() +
+  labs(y = "性别比（女=100）")
+
+ggplot(data = province_sex_ratio, aes(x = `区域`, y = `性别比（女=100）`)) +
+  geom_boxplot() +
+  theme_classic()
+```
