@@ -386,8 +386,8 @@ p1 <- ggplot(data = usa_mortality, aes(x = Age, y = Male, group = Year)) +
   geom_vline(xintercept = "100", colour = "gray", lty = 2) +
   geom_line(aes(color = Year), linewidth = 0.25) +
   scale_x_discrete(
-    breaks = c("0", "20", "40", "60", "80", "100"),
-    labels = c("0", "20", "40", "60", "80", "100")
+    breaks = as.character(20 * 0:5),
+    labels = as.character(20 * 0:5)
   ) +
   theme_classic() 
 p2 <- p1 +
@@ -402,6 +402,72 @@ p2 / p3
 @fig-usa-mortality 也展示了很多基础信息，出生时有很高的死亡率，出生后死亡率迅速下降，一直到10岁，死亡率才又开始回升，直到 20 岁，死亡率才回到出生时的水平。之后，在青年阶段死亡率缓慢增加，直至老年阶段达到很高的死亡率水平。相比于老年阶段，医疗水平的改善作用主要体现在婴儿、儿童、青少年阶段。
 
 @fig-usa-mortality 还展示了一个潜在的数据质量问题，在 100 岁之后，死亡率波动程度明显在变大，这是因为高龄人数变得很少，即死亡率的分母变得很小，分子的细小波动会被放大，也因为同样的原因，100 岁以上的死亡率主要依赖模型估计，甚至出现死亡率大于 1 的罕见情况。因此，就对比医疗和公共卫生水平的变化而言，从数据的实际情况出发，100 岁以上的情况可以不参与比较。
+
+@fig-usa-mortality-heatmap 死亡率数据是对数尺度
+
+```{r}
+#| label: fig-usa-mortality-heatmap
+#| fig-cap: "1933-2020 年美国男性死亡率热力图"
+#| fig-width: 7
+#| fig-height: 5
+#| echo: false
+#| fig-showtext: true
+
+ggplot(data = usa_mortality, aes(x = Year, y = Age, fill = Male)) +
+  scale_fill_gradientn(
+    colors = pals::tol.rainbow(),
+    trans = "log10", labels = scales::percent
+  ) +
+  geom_tile(linewidth = 0.4) +
+  scale_y_discrete(
+    breaks = as.character(10 * 0:10),
+    labels = as.character(10 * 0:10)
+  ) +
+  scale_x_continuous(
+    breaks = 1940 + 10 * 0:8,
+    labels = 1940 + 10 * 0:8
+  ) +
+  coord_cartesian(xlim = c(1936, 2017)) +
+  theme_classic() +
+  labs(x = "年份", y = "年龄", fill = "死亡率")
+```
+
+@fig-usa-mortality-wireframe 是用 lattice 包的 `wireframe()` 函数绘制三维透视图
+
+```{r}
+#| label: fig-usa-mortality-wireframe
+#| fig-cap: "1933-2020 年美国男性死亡率透视图"
+#| fig-width: 7
+#| fig-height: 6
+#| echo: false
+#| fig-showtext: true
+
+library(lattice)
+wireframe(
+  data = usa_mortality, Male ~ Year * as.integer(Age),
+  shade = TRUE, drape = FALSE,
+  xlab = "年份",
+  ylab = "年龄",
+  zlab = list("男性死亡率（对数尺度）", rot = 90),
+  scales = list(
+    arrows = FALSE, col = "black",
+    z = list(log = 10)
+  ),
+  # 减少三维图形的边空
+  lattice.options = list(
+    layout.widths = list(
+      left.padding = list(x = -.6, units = "inches"),
+      right.padding = list(x = -1.0, units = "inches")
+    ),
+    layout.heights = list(
+      bottom.padding = list(x = -.8, units = "inches"),
+      top.padding = list(x = -1.0, units = "inches")
+    )
+  ),
+  par.settings = list(axis.line = list(col = "transparent")),
+  screen = list(z = -60, x = -70, y = 0)
+)
+```
 
 
 
