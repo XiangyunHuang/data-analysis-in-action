@@ -363,6 +363,45 @@ ggplot() +
   theme_minimal()
 ```
 
+
+## 中国地区级男女性别比分布 {#sec-china-household-sex}
+
+
+@fig-china-household-sex-1 展示 2020 年中国各省、自治区和直辖市分城市、镇和乡村的性别比数据。数据来自中国国家统计局发布的 2021 年统计年鉴，在数据量不太大的情况下，尽可能展示原始数据，可以捕捉到更加细致的差异。社会经济相关的数据常常显示有马太效应，对原始数据适当做一些变换有利于比较和展示数据，@fig-china-household-sex-2 展示对数变换后的性别比数据的分布。大部分地区的性别比数据都在 100:100 左右，流动人口的性别比波动大很多。
+
+```{r}
+#| label: fig-china-household-sex
+#| echo: false
+#| fig-cap: "2020 年中国地区级男女性别比分布"
+#| fig-subcap: 
+#|  - 原始性别比数据
+#|  - 对数变换后的性别比数据
+#| fig-width: 7
+#| fig-height: 4.5
+#| fig-showtext: true
+#| fig-ncol: 1
+
+china_household_sex <- readRDS(file = "data/china-household-sex-2020.rds")
+
+ggplot(data = china_household_sex, aes(x = `户口登记状况`, y = `男性` / `女性`)) +
+  geom_jitter(aes(color = `区域`), width = 0.3) +
+  theme_classic()
+
+ggplot(data = china_household_sex, aes(x = `户口登记状况`, y = `男性` / `女性`)) +
+  geom_jitter(aes(color = `区域`), width = 0.3) +
+  scale_y_continuous(trans = "log10") +
+  theme_classic()
+```
+
+
+- 「住本乡、镇、街道，户口在本乡、镇、街道」土著和已获得当地户口的。性别比分布有明显的层次差异，性别比均值从大到小依次是城市、乡村、镇。城市里，男性略多于女性，镇里，男性明显少于女性，乡村里，男性略低于女性。
+- 「住本乡、镇、街道，户口待定」黑户或其它。性别比分布有明显的层次差异。同上。
+- 「住本乡、镇、街道，户口在外乡、镇、街道，离开户口登记地半年以上」流出人口，流出乡、镇、街道。城市、镇、乡村的性别比数据充分混合了，性别比分布没有明显的层次差异。
+- 「居住在港澳台或国外，户口在本乡、镇、街道」流出人口，流出国。同上。
+
+
+
+
 ## 美国近88年男性死亡率变化 {#sec-usa-mortality}
 
 <!-- 函数型数据探索、分析和可视化，趋势分析，时间 -->
