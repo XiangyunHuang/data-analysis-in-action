@@ -513,6 +513,79 @@ ggplot(data = trunk_year, aes(x = year, y = revision)) +
 广义可加模型 gam 中回归样条的方法 `s()`
 
 
+### 曲面图 {#sec-wireframe}
+
+ggplot2 暂不支持三维曲面图，而 lattice 包支持，也是非常有限的支持，lattice 和 ggplot2 都是基于图层的概念，层层叠加会出现覆盖。
+用来绘制函数图像还是可以的。
+
+真三维图形可以用[rayrender](https://github.com/tylermorganwall/rayrender) 和[rayshader](https://github.com/tylermorganwall/rayshader) 包绘制。交互式三维图形可以用 [rgl](https://github.com/dmurdoch/rgl) 或 [plotly](https://github.com/plotly/plotly.R) 包绘制。
+
+@fig-trunk-year-wireframe 是用 **lattice** 包的 `wireframe()` 函数绘制三维曲面透视图，三维图形有时候并不能很好地表达数据，或者数据并不适合用三维图形表示。数据本身并没有那么明显的趋势规律，同样也会体现不出三维图形的表达能力。大部分情况下，我们应当避免使用静态的三维图形。函数型数据是适合用三维图形来表达的，比如 @fig-usa-mortality-wireframe 。
+
+```{r}
+#| label: fig-trunk-year-wireframe
+#| fig-cap: "25 年代码提交量变化趋势图"
+#| fig-width: 7
+#| fig-height: 6
+#| echo: true
+#| fig-showtext: true
+
+trunk_year_day <- aggregate(data = svn_trunk_log, revision ~ year + nday, FUN = length)
+library(lattice)
+wireframe(
+  data = trunk_year_day, revision ~ year * as.integer(nday),
+  shade = TRUE, drape = FALSE,
+  xlab = "年份",
+  ylab = "第几天",
+  zlab = list("提交量", rot = 90),
+  scales = list(
+    arrows = FALSE, col = "black"
+  ),
+  # 减少三维图形的边空
+  lattice.options = list(
+    layout.widths = list(
+      left.padding = list(x = -.6, units = "inches"),
+      right.padding = list(x = -1.0, units = "inches")
+    ),
+    layout.heights = list(
+      bottom.padding = list(x = -.8, units = "inches"),
+      top.padding = list(x = -1.0, units = "inches")
+    )
+  ),
+  par.settings = list(axis.line = list(col = "transparent")),
+  screen = list(z = -60, x = -70, y = 0)
+)
+```
+
+
+### 热力图 {#sec-heatmap}
+
+<!-- 
+瓦片图层 geom_tile
+-->
+
+
+@fig-trunk-year-heatmap 提交量变化趋势
+
+```{r}
+#| label: fig-trunk-year-heatmap
+#| fig-cap: "25 年代码提交量变化热力图"
+#| fig-width: 7
+#| fig-height: 5
+#| echo: false
+#| fig-showtext: true
+
+ggplot(data = trunk_year_day, aes(x = as.integer(nday) , y = year, fill = revision)) +
+  scale_fill_gradientn(
+    colors = pals::tol.rainbow()
+  ) +
+  geom_tile(linewidth = 0.4) +
+  theme_classic() +
+  labs(x = "第几天", y = "年份", fill = "提交量")
+```
+
+
+
 
 
 ### 日历图 {#sec-calendar}
@@ -1218,6 +1291,17 @@ ggplot(data = province_sex_ratio, aes(x = `区域`, y = `性别比（女=100）`
   theme_classic()
 ```
 
+函数 `geom_beeswarm()` 提供了另一种散点的组织方式，按一定的规则，而不是近似随机的方式组织
+
+```{r}
+#| eval: false
+
+ggplot(data = province_sex_ratio, aes(x = `区域`, y = `性别比（女=100）`)) +
+  geom_violin() +
+  geom_beeswarm() +
+  theme_classic()
+```
+
 
 ## 描述对比 {#sec-comparisons}
 
@@ -1250,7 +1334,7 @@ knitr::kable(head(china_age_sex))
 
 ggplot(data = china_age_sex, aes(x = `年龄`, y = `性别比（女=100）`, fill = `区域`)) +
   geom_hline(yintercept = 100, color = "gray", lty = 2, linewidth = 1) +
-  geom_col(position = "dodge2", width = 0.5) +
+  geom_col(position = "dodge2", width = 0.75) +
   theme_bw()
 ```
 
@@ -1265,7 +1349,7 @@ ggplot(data = china_age_sex, aes(x = `年龄`, y = `性别比（女=100）`, fil
 
 ggplot(data = china_age_sex, aes(x = `年龄`, y = `性别比（女=100）`, fill = `区域`)) +
   geom_hline(yintercept = 100, color = "gray", lty = 2, linewidth = 1) +
-  geom_col(position = "dodge2", width = 0.5) +
+  geom_col(position = "dodge2", width = 0.75) +
   coord_cartesian(ylim = c(70, 130)) +
   theme_bw()
 ```
@@ -1285,7 +1369,7 @@ ggplot(data = china_age_sex, aes(x = `年龄`, y = `性别比（女=100）`, fil
 
 ggplot(data = china_age_sex, aes(x = `性别比（女=100）`, y = `年龄`, fill = `区域`)) +
   geom_vline(xintercept = 100, color = "gray", lty = 2, linewidth = 1) +
-  geom_col(position = "dodge2", width = 0.5) +
+  geom_col(position = "dodge2", width = 0.75) +
   coord_cartesian(xlim = c(70, 130)) +
   theme_bw()
 ```
@@ -1340,5 +1424,39 @@ ggplot(data = china_age_sex, aes(x = `性别比（女=100）`, y = `年龄`, col
 
 
 <!-- 根据代码提交的说明制作词云图。ggwordcloud -->
+
+
+## 描述占比 {#sec-proportion}
+
+
+### 简单饼图 {#sec-naive-pie}
+
+### 环形饼图 {#sec-ring-pie}
+
+### 扇形饼图 {#sec-sector-pie}
+
+<!-- 南丁格尔玫瑰图 -->
+
+### 帕累托图 {#sec-pareto}
+
+<!-- 描述各个部分的占比，特别是关键要素的占比 -->
+
+
+### 马赛克图 {#sec-mosic}
+
+<!-- 多个分类变量 -->
+
+### 矩阵树图 {#sec-treemap}
+
+<!-- 有层次的占比 -->
+
+
+<!-- 
+贡献的代码是另一个人的多少倍
+
+漏斗图
+转换关系，从 A 转化到 B，强调转化过程，留存率，它其实是描述占比
+留存图、生存分析图 
+-->
 
 

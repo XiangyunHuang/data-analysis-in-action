@@ -739,53 +739,73 @@ ggplot(data = state_x77, aes(x = Income, y = `Life Exp`)) +
 ```
 
 
-## 展示调查研究中的用户态度 {#sec-likert}
+## 展示调查研究中的用户态度 {#sec-likert-scales}
 
-比较 ggplot2 条形图和 likert 条形图的区别，
+量表在市场调查，问卷调查，App 用户体验反馈等方面应用十分广泛，已经成为调查研究中的黄金标准。量表由心理学家 Rensis Likert 于 1932 年提出 [@Likert1932]，[Likert Scale](https://en.wikipedia.org/wiki/Likert_scale) 就是以他的名字命名的。
 
-在市场调查，问卷调查，App 用户体验反馈等方面应用十分广泛。
+量表中的问题、观点的描述极其简单明了，对回答、表明态度的任何人都不会造成歧义，以确保不受文化差异、学历差异等的影响，受调查的人只需在待选的几个选项中圈选即可。候选项一般为 5-7 个，下面是一组典型的选项：
 
-1932 年 Rensis Likert  [@Likert1932]
-
-一个非常典型的 Likert Items 是 
-
-1. Strongly disagree （强烈不同意） 
-1. Disagree（不同意）
-1. Neither agree nor disagree（既不表示同意也不表示不同意，没态度）
-1. Agree（同意）
-1. Strongly agree（强烈同意）
-
-Jason M. Bryer 开发了一个 R 包[likert](https://github.com/jbryer/likert)，特别适合调查研究数据可视化，将研究对象的态度以直观有效的方式展示出来。
-
-[Likert Scale](https://en.wikipedia.org/wiki/Likert_scale)
+1. Strongly disagree （强烈反对），
+1. Disagree（反对），
+1. Neither agree nor disagree（中立），
+1. Agree（同意），
+1. Strongly agree（强烈同意）。
 
 ```{r}
-#| label: tbl-math-anxiety
 #| echo: false
-#| tbl-cap: "你对数学感到焦虑吗？"
+#| eval: false
 
-library(likert)
-data("MathAnxiety")
-library(gt)
-gt(MathAnxiety) |>
-  cols_label(
-    Item = md("**观点**"),
-    `Strongly Disagree` = md("**强烈反对**"),
-    Disagree = md("**反对**"),
-    Neutral = md("**中立**"),
-    Agree = md("**同意**"),
-    `Strongly Agree` = md("**非常同意**")
-  ) |>
-  cols_width(
-    Item ~ px(300),
-    `Strongly Disagree` ~ px(80),
-    Disagree ~ px(80),
-    Neutral ~ px(80),
-    Agree ~ px(80),
-    `Strongly Agree` ~ px(80)
-  )
+# library(likert)
+# data("MathAnxiety")
+# 获取 Markdown 版本表格
+# knitr::kable(MathAnxiety)
+# library(gt)
+# gt(MathAnxiety) |>
+#   cols_label(
+#     Item = md("**观点**"),
+#     `Strongly Disagree` = md("**强烈反对**"),
+#     Disagree = md("**反对**"),
+#     Neutral = md("**中立**"),
+#     Agree = md("**同意**"),
+#     `Strongly Agree` = md("**非常同意**")
+#   ) |>
+#   cols_width(
+#     Item ~ px(300),
+#     `Strongly Disagree` ~ px(80),
+#     Disagree ~ px(80),
+#     Neutral ~ px(80),
+#     Agree ~ px(80),
+#     `Strongly Agree` ~ px(80)
+#   )
 ```
 
+
+Jason M. Bryer 开发了一个 R 包[**likert**](https://github.com/jbryer/likert)，特别适合调查研究数据可视化，将研究对象的态度以直观有效的方式展示出来，内置多个数据集，其中 @tbl-math-anxiety 是一个数学焦虑量表调查的结果，调查数据来自统计课上的 20 个学生。
+
+调查对象是 78 个来自不同学科的本科生，样本含有 36 个男性和 42 个女性，64\% 的样本的年龄在 18 至 24 岁，36\% 的样本年龄 25 岁及以上。更多数据背景信息 [@Bai2009]。
+
+
+|观点 | 强烈反对| 反对| 中立| 同意| 强烈同意|
+|:--------------|----:|--:|--:|--:|----:|
+|I find math interesting.                                 |       10|       15|      10|    35|        30|
+|I get uptight during math tests.                         |       10|       20|      20|    25|        25|
+|I think that I will use math in the future.              |        0|        0|      20|    25|        55|
+|Mind goes blank and I am unable to think clearly when doing my math test. | 30|       30|      15|    10|      15|
+|Math relates to my life.                                  |    5|       20|      10|    40|   25|
+|I worry about my ability to solve math problems.          |   20|       20|      20|    30|   10|
+|I get a sinking feeling when I try to do math problems.   |   35|       10|      15|    35|    5|
+|I find math challenging.               |   5|       10|      15|    45|    25|
+|Mathematics makes me feel nervous.     |  20|       25|      15|    25|    15|
+|I would like to take more math classes.|  20|       25|      30|    20|     5|
+|Mathematics makes me feel uneasy.      |  25|       15|      20|    25|    15|
+|Math is one of my favorite subjects.   |  35|       15|      25|    20|     5|
+|I enjoy learning with mathematics.     |  15|       25|      30|    20|    10|
+|Mathematics makes me feel confused.    |  15|       20|      15|    35|    15|
+
+: 你对数学感到焦虑吗？ {#tbl-math-anxiety}
+
+
+相比于 **ggplot2** 绘制的普通条形图， @fig-likert 有一些独特之处：对立型的渐变色表示两个不同方向的态度，左右两侧以中立态度为中间位置，非常形象，并且按照其中一个方向的态度数据排序，显得比较整齐有序，便于理解。
 
 
 ```{r}
@@ -797,13 +817,11 @@ gt(MathAnxiety) |>
 #| fig-showtext: true
 #| warning: false
 
+library(likert)
+data("MathAnxiety")
 math_anxiety <- likert(summary = MathAnxiety)
 plot(math_anxiety, type = "bar", legend.position = "bottom")
 ```
-
-
-
-
 
 
 
