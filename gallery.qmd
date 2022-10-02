@@ -1668,17 +1668,66 @@ aggregate(data = svn_trunk_log, revision ~ author, FUN = length) |>
 
 <!-- 多个分类变量 -->
 
+```{r}
+#| label: fig-mosaic
+#| fig-cap: "加州伯克利分校的各系录取情况"
+#| fig-width: 7
+#| fig-height: 5
+#| fig-showtext: true
+#| warning: false
+
+library(ggmosaic)
+ggplot(data = as.data.frame(UCBAdmissions)) +
+  geom_mosaic(aes(
+    x = product(Dept, Gender),
+    weight = Freq, fill = Admit
+  )) +
+  theme_minimal()
+```
 
 
 ### 矩阵树图 {#sec-treemap}
 
-<!-- 有层次的占比
-
-
-贡献的代码是另一个人的多少倍
+<!-- 
+有层次的占比
 -->
 
+```{r}
+#| eval: true
+#| echo: false
+#| label: tbl-g20
+#| tbl-cap: "G20 国家经济水平：GDP 总量、人类发展指数等"
 
+library(treemapify)
+data("G20")
+knitr::kable(head(G20), col.names = c(
+  "区域", "国家", "GDP",
+  "人类发展指数", "经济水平", "所属半球"
+))
+```
+
+
+```{r}
+#| label: fig-treemap
+#| fig-cap: "G20 主要经济体"
+#| fig-width: 7
+#| fig-height: 6
+#| fig-showtext: true
+
+library(treemapify)
+ggplot(G20, aes(
+  area = gdp_mil_usd, fill = region,
+  label = country, subgroup = region
+)) +
+  geom_treemap() +
+  geom_treemap_text(grow = T, reflow = T, colour = "black") +
+  facet_wrap(~hemisphere) +
+  scale_fill_brewer(palette = "Set1") +
+  theme(legend.position = "bottom") +
+  labs(title = "G20 主要经济体", fill = "区域")
+```
+
+每个瓦片的大小代表国家的 GDP 在所属半球里的比重。
 
 
 ## 描述关系 {#sec-visualize-data-relation}
