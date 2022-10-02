@@ -86,7 +86,7 @@ R 是一个自由的统计计算和统计绘图环境，最初由新西兰奥克
 ```{bash}
 #| eval: false
 
-svn log --xml --verbose -r 6:82626 https://svn.r-project.org/R/trunk > data-raw/svn_trunk_log_20220727.xml
+svn log --xml --verbose -r 6:82626 https://svn.r-project.org/R/trunk > data-raw/svn-trunk-log-2022.xml
 ```
 
 去掉没什么信息的前5次代码提交记录：初始化仓库，上传原始的 R 软件源码等。
@@ -96,7 +96,7 @@ svn log --xml --verbose -r 6:82626 https://svn.r-project.org/R/trunk > data-raw/
 保存到目录 `data/` 下，以 R 软件特有的文件格式保存为 `svn_trunk_log_20220727.rds`，同样与书随附。这样下来，原 XML 格式保存的 35 M 文件减少为 1 M 多，极大地减少了存储空间，也极大地方便了后续的数据探索和可视化。下面是这份日志数据开头的两行：
 
 ```{r}
-svn_trunk_log <- readRDS(file = "data/svn_trunk_log_20220727.rds")
+svn_trunk_log <- readRDS(file = "data/svn-trunk-log-2022.rds")
 head(svn_trunk_log, 2)
 ```
 
@@ -863,7 +863,7 @@ ggplot(data = sub_rversion_df2) +
 #| tbl-cap: "各省、直辖市和自治区分区域的性别比数据（部分）"
 #| echo: false
 
-province_sex_ratio <- readRDS(file = "data/province-sex-ratio-2020.rds")
+province_sex_ratio <- readRDS(file = "data/china-sex-ratio-2020.rds")
 knitr::kable(head(province_sex_ratio))
 ```
 
@@ -1319,7 +1319,7 @@ ggplot(data = province_sex_ratio, aes(x = `区域`, y = `性别比（女=100）`
 ```
 
 
-## 描述对比 {#sec-comparisons}
+## 描述对比 {#sec-visualize-data-comparisons}
 
 数据来自中国国家统计局发布的2021年统计年鉴，
 
@@ -1449,40 +1449,471 @@ ggradar(plot.data = state_x77_comp, base.size = 13, legend.position = "right")
 ### 词云图 {#sec-wordcloud}
 
 
-<!-- 根据代码提交的说明制作词云图。ggwordcloud -->
+<!-- 
+根据代码提交的说明制作词云图。根据各位开发者提交的代码量制作
+-->
 
 
-## 描述占比 {#sec-proportion}
+词云图帮助我们从众多的因素中展现出影响力比较大的主题。目前，R 语言社区官方发布的 R 包超过 18000 个，这些 R 包都是干什么的呢？热门的方向是什么呢？根据 R 包的标题内容分词，统计词频就可以帮助我们初步了解一些信息。
+
+
+
+[ggwordcloud](https://github.com/lepennec/ggwordcloud) 包提供词云图层 `geom_text_wordcloud()`
+
+
+
+```{r}
+#| label: fig-wordcloud
+#| fig-cap: "词云图"
+#| fig-width: 7
+#| fig-showtext: true
+#| fig-asp: 0.618
+#| fig-dpi: 96
+
+library(ggwordcloud)
+
+aggregate(data = svn_trunk_log, revision ~ author, FUN = length) |> 
+  ggplot(aes(label = author, size = revision)) +
+  geom_text_wordcloud(seed = 2022, grid_size = 1, max_grid_size = 24) +
+  scale_size_area(max_size = 20) +
+  theme_minimal()
+```
+
+
+词云图也可以是条形图或柱形图的一种替代，词云图不用担心数目多少，而条形图不适合太多的分类情形。
+
+
+```{r}
+#| label: fig-trunk-author
+#| fig-cap: "开发者提交量排行榜"
+#| fig-width: 6
+#| fig-height: 4
+#| fig-showtext: true
+
+aggregate(data = svn_trunk_log, revision ~ author, FUN = length) |>
+  subset(subset = revision >= 100) |> 
+  ggplot(aes(x = revision, y = reorder(author, revision))) +
+  geom_col() +
+  theme_classic() +
+  coord_cartesian(expand = FALSE) +
+  labs(x = "提交量", y = "维护者")
+```
+
+
+
+## 描述占比 {#sec-visualize-data-proportion}
 
 
 ### 简单饼图 {#sec-naive-pie}
 
+
+
+
+```{r}
+#| label: fig-pie
+#| fig-cap: "维护者提交量占比"
+#| fig-width: 5
+#| fig-height: 4
+#| fig-showtext: true
+
+aggregate(data = svn_trunk_log, revision ~ author, FUN = length) |> 
+  transform(author2 = ifelse(revision < 2000, "Others", author)) |> 
+  aggregate(revision ~ author2, FUN = sum) |> 
+  transform(label = paste0(round(revision / sum(revision), digits = 4) * 100, "%")) |> 
+  ggplot(aes(x = 1, fill = reorder(author2, revision)  , y = revision)) +
+  geom_col(position = "fill", show.legend = FALSE, color = "white") +
+  scale_y_continuous(labels = scales::percent) +
+  coord_polar(theta = "y") +
+  geom_text(aes(x = 1.2, label = author2),
+    position = position_fill(vjust = 0.5), color = "black"
+  ) +
+  geom_text(aes(x = 1.6, label = label),
+    position = position_fill(vjust = 0.5), color = "black"
+  ) +
+  theme_void() +
+  labs(x = NULL, y = NULL)
+```
+
+在分类很多的情况下，占比小的，显得十分拥挤
+
+```{r}
+#| label: fig-pie-bad
+#| fig-cap: "维护者提交量占比"
+#| fig-width: 5
+#| fig-height: 4
+#| fig-showtext: true
+
+aggregate(data = svn_trunk_log, revision ~ author, FUN = length) |> 
+  transform(author2 = ifelse(revision < 1000, "Others", author)) |> 
+  aggregate(revision ~ author2, FUN = sum) |> 
+  transform(label = paste0(round(revision / sum(revision), digits = 4) * 100, "%")) |> 
+  ggplot(aes(x = 1, fill = reorder(author2, revision)  , y = revision)) +
+  geom_col(position = "fill", show.legend = FALSE, color = "white") +
+  scale_y_continuous(labels = scales::percent) +
+  coord_polar(theta = "y") +
+  geom_text(aes(x = 1.2, label = author2),
+    position = position_fill(vjust = 0.5), color = "black"
+  ) +
+  geom_text(aes(x = 1.6, label = label),
+    position = position_fill(vjust = 0.5), color = "black"
+  ) +
+  theme_void() +
+  labs(x = NULL, y = NULL)
+```
+
+一种缓解办法是添加注释 
+
+```{r}
+#| label: fig-pie-repel
+#| fig-cap: "维护者提交量占比"
+#| fig-width: 6.5
+#| fig-height: 5
+#| fig-showtext: true
+
+library(ggrepel)
+dat1 <- aggregate(data = svn_trunk_log, revision ~ author, FUN = length) |>
+  transform(author2 = ifelse(revision < 1000, "Others", author)) |>
+  aggregate(revision ~ author2, FUN = sum)
+
+dat2 <- within(dat1, {
+  value <- 100 * revision / sum(revision)
+  csum <- rev(cumsum(rev(value)))
+  pos <- value / 1.5 + c(csum[-1], NA)
+  pos <- ifelse(is.na(pos), value / 2, pos)
+  label <- paste(author2, paste0(round(value, 2), "%"), sep = "\n")
+})
+
+ggplot(data = dat2, aes(x = 1, fill = author2, y = value)) +
+  geom_col(show.legend = FALSE, color = "white") +
+  coord_polar(theta = "y") +
+  geom_label_repel(aes(y = pos, label = label),
+    size = 4.5, nudge_x = 0.75, show.legend = FALSE
+  ) +
+  theme_void() +
+  labs(x = NULL, y = NULL)
+```
+
+
+但是数量很多的情况下，也是无能为力的，当然，是否需要显示那么多，是否可以合并占比小的部分，也是值得考虑的问题。
+
+
+
+
+
 ### 环形饼图 {#sec-ring-pie}
+
+中间空了一块
+
+
+```{r}
+#| label: fig-ring-pie
+#| fig-cap: "维护者提交量占比"
+#| fig-width: 5
+#| fig-height: 4
+#| fig-showtext: true
+
+aggregate(data = svn_trunk_log, revision ~ author, FUN = length) |> 
+  transform(author2 = ifelse(revision < 2000, "Others", author)) |> 
+  aggregate(revision ~ author2, FUN = sum) |> 
+  transform(label = paste0(round(revision / sum(revision), digits = 4) * 100, "%")) |> 
+  ggplot(aes(x = 1, fill = author2, y = revision)) +
+  geom_col(position = "fill", show.legend = FALSE, color = "white") +
+  scale_y_continuous(labels = scales::percent) +
+  coord_polar(theta = "y") +
+  geom_text(aes(x = 1.2, label = author2),
+    position = position_fill(vjust = 0.5), color = "black"
+  ) +
+  geom_text(aes(x = 1.6, label = label),
+    position = position_fill(vjust = 0.5), color = "black"
+  ) +
+  theme_void() +
+  labs(x = NULL, y = NULL) +
+  xlim(c(0.2, 1.7))
+```
+
 
 ### 扇形饼图 {#sec-sector-pie}
 
-<!-- 南丁格尔玫瑰图 -->
+扇形饼图又叫风玫瑰图或南丁格尔图
+
+```{r}
+#| label: fig-wind-rose
+#| fig-cap: "维护者提交量分布"
+#| fig-width: 5
+#| fig-height: 4.5
+#| fig-showtext: true
+
+aggregate(data = svn_trunk_log, revision ~ author, FUN = length) |> 
+  transform(author2 = ifelse(revision < 2000, "Others", author)) |> 
+  aggregate(revision ~ author2, FUN = sum) |> 
+  ggplot(aes(x = reorder(author2, revision), y = revision)) +
+  geom_col(aes(fill = author2), show.legend = FALSE) +
+  coord_polar() +
+  theme_minimal() +
+  theme(axis.text.y = element_blank()) +
+  labs(x = NULL, y = NULL)
+```
+
+
+
 
 ### 帕累托图 {#sec-pareto}
 
 <!-- 描述各个部分的占比，特别是关键要素的占比 -->
 
 
+
+
 ### 马赛克图 {#sec-mosic}
 
 <!-- 多个分类变量 -->
 
+
+
 ### 矩阵树图 {#sec-treemap}
 
-<!-- 有层次的占比 -->
+<!-- 有层次的占比
+
+
+贡献的代码是另一个人的多少倍
+-->
+
+
+
+
+## 描述关系 {#sec-visualize-data-relation}
+
+
+
+
+### 散点图 {#sec-scatter}
 
 
 <!-- 
-贡献的代码是另一个人的多少倍
+在介绍 ggplot2 的基础知识时，已经介绍过绘制过程，本节是否还有必要介绍，如果介绍应该怎么介绍？
 
-漏斗图
-转换关系，从 A 转化到 B，强调转化过程，留存率，它其实是描述占比
-留存图、生存分析图 
+散点图的历史，主要作用
+展示原始的数据，关系
+
+点的形态、大小、颜色等都可以变化
 -->
 
+中国国家统计局 2021 年发布的统计年鉴，2020 年 31 个省、直辖市、自治区，抚养比 文盲率、人口数的关系
+
+```{r}
+#| label: tbl-china-raise-illiteracy
+#| tbl-cap: "2020 年各省、直辖市、自治区，抚养比、文盲率、人口数等数据"
+#| echo: false
+
+china_raise_illiteracy <- readRDS(file = "data/china-raise-illiteracy-2020.rds")
+knitr::kable(head(china_raise_illiteracy[order(china_raise_illiteracy$`人口数`, decreasing = TRUE),]))
+```
+
+
+
+```{r}
+#| label: fig-china-raise-illiteracy
+#| fig-cap: "文盲人口占15岁及以上人口的比重与总抚养比的关系"
+#| fig-width: 6
+#| fig-height: 4
+#| fig-showtext: true
+
+ggplot(data = china_raise_illiteracy, aes(x = `总抚养比`, y = `文盲人口占15岁及以上人口的比重`)) +
+  geom_point() +
+  theme_classic() +
+  labs(x = "总抚养比（%）", y = "文盲人口占15岁及以上人口的比重（%）")
+```
+
+
+### 气泡图 {#sec-bubble}
+
+<!-- 
+散点图的历史，主要作用
+-->
+
+
+```{r}
+#| label: fig-china-raise-illiteracy-bubble
+#| fig-cap: "文盲率和抚养比数据"
+#| fig-width: 6
+#| fig-height: 4.5
+#| fig-showtext: true
+
+library(ggrepel)
+library(scales)
+ggplot(
+  data = china_raise_illiteracy,
+  aes(x = `总抚养比`, y = `文盲人口占15岁及以上人口的比重`)
+) +
+  geom_point(aes(size = `人口数`, color = `人口数`),
+    alpha = 0.85, pch = 16,
+    show.legend = c(color = FALSE, size = TRUE)
+  ) +
+  scale_size(labels = label_number(scale_cut = cut_short_scale())) +
+  scale_color_viridis_c(option = "C") +
+  geom_text_repel(
+    aes(label = `地区`),
+    size = 3, max.overlaps = 50,
+    segment.colour = "gray", seed = 2022, show.legend = FALSE
+  ) +
+  coord_cartesian(xlim = c(30, 60), ylim = c(0, 10.5), expand = FALSE) +
+  theme_classic() +
+  labs(x = "总抚养比（%）", y = "文盲人口占15岁及以上人口的比重（%）")
+```
+
+
+### 凹凸图 {#sec-bump}
+
+<!-- 
+凹凸图描述的是一种转化、变化关系，排序的变化
+
+待议是否适合放在描述关系一节
+
+排序位置变化，一段时间到另一段时间，比如话题热度的转变，比如今年国庆与去年国庆
+空间移动，路径移动，强调位置的移动
+
+ggbump 有警告
+2: In dplyr::left_join(., data %>% dplyr::select(-x, -y) %>% dplyr::mutate(key = 1) %>%  :
+  Each row in `x` is expected to match at most 1 row in `y`.
+ℹ Row 1 of `x` matches multiple rows.
+ℹ If multiple matches are expected, set `multiple = "all"` to silence this
+  warning.
+-->
+
+[ggbump](https://github.com/davidsjoberg/ggbump)
+
+```{r}
+#| label: fig-bump
+#| fig-cap: "凹凸图"
+#| fig-width: 7
+#| fig-height: 3.5
+#| fig-showtext: true
+#| warning: false
+
+library(ggbump)
+
+df <- data.frame(
+  country = c(
+    "India", "India", "India", "Sweden",
+    "Sweden", "Sweden", "Germany", "Germany",
+    "Germany", "Finland", "Finland", "Finland"
+  ),
+  year = c(
+    2011, 2012, 2013, 2011,
+    2012, 2013, 2011, 2012,
+    2013, 2011, 2012, 2013
+  ),
+  value = c(
+    492, 246, 246, 369,
+    123, 492, 246, 369,
+    123, 123, 492, 369
+  )
+)
+
+library(data.table)
+df <- as.data.table(df)
+df[, rank := rank(value, ties.method = "random"), by = "year"]
+
+ggplot(df, aes(year, rank, color = country)) +
+  geom_point(size = 7) +
+  geom_text(data = df[df$year == min(df$year), ],
+            aes(x = year - .1, label = country), size = 5, hjust = 1) +
+  geom_text(data = df[df$year == max(df$year), ],
+            aes(x = year + .1, label = country), size = 5, hjust = 0) +
+  geom_bump(linewidth = 2, smooth = 8) +
+  scale_x_continuous(limits = c(2010.6, 2013.4),
+                     breaks = seq(2011, 2013, 1)) +
+  theme_minimal(base_size = 14) +
+  theme(legend.position = "none",
+        panel.grid.major = element_blank()) +
+  labs(y = "RANK", x = NULL) +
+  scale_y_reverse()
+```
+
+
+
+### 韦恩图 {#sec-venn}
+
+<!-- 
+描述交叉关系
+部分和整体的关系
+https://r-charts.com/part-whole/ggvenndiagram/
+-->
+
+[ggVennDiagram](https://github.com/gaospecial/ggVennDiagram/)
+
+A、B、C 三个集合的交叉关系
+
+```{r}
+#| label: fig-venn
+#| fig-cap: "A、B、C 三个集合的交叉关系"
+#| fig-width: 5
+#| fig-height: 4.5
+#| fig-showtext: true
+
+x <- list(A = 1:5, B = 2:7, C = 5:10)
+ggVennDiagram::ggVennDiagram(x) +
+  scale_fill_gradient(low = "#F4FAFE", high = "#4981BF")
+```
+
+
+### 甘特图 {#sec-gantt}
+
+<!-- 
+描述依赖关系 
+
+项目管理也是数据分析应有的内容，与之相关的图形，了解和应用好也是重要的
+项目依赖关系 
+-->
+
+
+[ganttrify](https://github.com/giocomai/ganttrify)
+
+
+```{r}
+#| label: fig-gant
+#| fig-cap: "项目和任务进展"
+#| fig-width: 7
+#| fig-height: 4.5
+#| fig-showtext: true
+
+library(ganttrify)
+ganttrify(project = ganttrify::test_project,
+          project_start_date = "2021-03",
+          font_family = "sans")
+```
+
+
+
+### 网络图 {#sec-network}
+
+[ggraph](https://github.com/thomasp85/ggraph)
+[tidygraph](https://github.com/thomasp85/tidygraph) 描述依赖关系
+
+```{r}
+library(ggraph)
+graph <- tidygraph::as_tbl_graph(highschool) |> 
+    dplyr::mutate(Popularity = tidygraph::centrality_degree(mode = 'in'))
+
+graph
+```
+
+
+```{r}
+#| label: fig-graph
+#| fig-cap: "学校关系"
+#| fig-width: 7
+#| fig-height: 4.5
+#| fig-showtext: true
+
+ggraph(graph, layout = "kk") +
+  geom_edge_fan(aes(alpha = after_stat(index)), show.legend = FALSE) +
+  geom_node_point(aes(size = Popularity)) +
+  facet_edges(~year) +
+  theme_graph(
+    base_family = "sans",
+    foreground = "steelblue",
+    fg_text_colour = "white"
+  )
+```
 
