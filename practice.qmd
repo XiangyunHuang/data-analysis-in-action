@@ -1,0 +1,968 @@
+# 图形实例 {#sec-practice}
+
+
+```{r}
+#| echo: false
+
+knitr::knit_hooks$set(par = function(before, options, envir) {
+  if (before && options$fig.show != "none") {
+    par(
+      mar = c(4, 4, .5, .5)
+    )
+  }
+})
+
+if (xfun::is_macos()) {
+  # 准备 Noto 中英文字体
+  sysfonts::font_paths(new = "~/Library/Fonts/")
+  ## 宋体
+  sysfonts::font_add(
+    family = "Noto Serif CJK SC",
+    regular = "NotoSerifCJKsc-Regular.otf",
+    bold = "NotoSerifCJKsc-Bold.otf"
+  )
+  ## 黑体
+  sysfonts::font_add(
+    family = "Noto Sans CJK SC",
+    regular = "NotoSansCJKsc-Regular.otf",
+    bold = "NotoSansCJKsc-Bold.otf"
+  )
+} else { # Github Action Ubuntu
+  sysfonts::font_paths(new = c(
+    "/usr/share/fonts/opentype/noto/",
+    "/usr/share/fonts/truetype/noto/"
+  ))
+  ## 宋体
+  sysfonts::font_add(
+    family = "Noto Serif CJK SC",
+    regular = "NotoSerifCJK-Regular.ttc",
+    bold = "NotoSerifCJK-Bold.ttc"
+  )
+  ## 黑体
+  sysfonts::font_add(
+    family = "Noto Sans CJK SC",
+    regular = "NotoSansCJK-Regular.ttc",
+    bold = "NotoSansCJK-Bold.ttc"
+  )
+}
+
+## 衬线字体
+sysfonts::font_add(
+  family = "Noto Serif",
+  regular = "NotoSerif-Regular.ttf",
+  bold = "NotoSerif-Bold.ttf",
+  italic = "NotoSerif-Italic.ttf",
+  bolditalic = "NotoSerif-BoldItalic.ttf"
+)
+## 无衬线字体
+sysfonts::font_add(
+  family = "Noto Sans",
+  regular = "NotoSans-Regular.ttf",
+  bold = "NotoSans-Bold.ttf",
+  italic = "NotoSans-Italic.ttf",
+  bolditalic = "NotoSans-BoldItalic.ttf"
+)
+```
+
+
+## 老忠实间歇泉喷发规律 {#sec-faithful}
+
+@fig-faithful-bkde2d 展示美国怀俄明州黄石国家公园[老忠实间歇泉](https://en.wikipedia.org/wiki/Old_Faithful)喷发规律，横轴表示喷发持续时间（以分钟计），纵轴表示等待时间（以分钟计），点的亮暗程度（白到黑）代表附近点密度的高低，亮度值通过二维核密度估计方法得到，具体实现借助了 **KernSmooth** [@KernSmooth1995] 包提供的 `bkde2D()` 函数，设置了喷发时间的窗宽为 0.7 分钟，等待时间的窗宽为 7分钟。不难看出，每等待55分钟左右间歇泉喷发约2分钟，或者每等待80分钟左右间歇泉喷发4.5约分钟，非常守时，表现得很老实，故而得名。说实话，二维核密度估计在这里有点大材小用了，因为数据点比较少，肉眼也能分辨出来哪里聚集的点多，哪里聚集的点少。
+
+```{r}
+#| label: fig-faithful-bkde2d
+#| echo: false
+#| par: true
+#| fig-cap: "二维核密度估计"
+#| fig-subcap: 
+#| - "faithful 数据集的散点图"
+#| - "点的亮暗表示核密度估计值的大小"
+#| - "等高线表示核密度估计值"
+#| - "等高线表示核密度估计值"
+#| fig-width: 4.5
+#| fig-height: 4.5
+#| fig-showtext: true
+#| fig-ncol: 2
+#| message: false
+#| out-width: '50%'
+
+# faithful 添加二维核密度估计 density 列
+library(KernSmooth)
+den <- bkde2D(x = faithful, bandwidth = c(0.7, 7), gridsize = c(51L, 51L))
+faithful2d <- expand.grid(eruptions = den$x1, waiting = den$x2) |>
+  transform(density = as.vector(den$fhat))
+
+plot(faithful,
+  pch = 20, panel.first = grid(), cex = 1, ann = FALSE,
+  xlim = c(0.5, 6.5),
+  ylim = c(35, 100)
+)
+title(xlab = "喷发时间", ylab = "等待时间", family = "Noto Serif CJK SC")
+
+plot(faithful,
+  pch = 20, panel.first = grid(), cex = 1, ann = FALSE,
+  xlim = c(0.5, 6.5),
+  ylim = c(35, 100),
+  col = densCols(faithful,
+    bandwidth = c(0.7, 7),
+    nbin = c(51L, 51L), colramp = hcl.colors
+  )
+)
+title(xlab = "喷发时间", ylab = "等待时间", family = "Noto Serif CJK SC")
+
+plot(faithful,
+  pch = 20, panel.first = grid(), cex = 1, ann = FALSE,
+  xlim = c(0.5, 6.5),
+  ylim = c(35, 100),
+  col = densCols(faithful,
+    bandwidth = c(0.7, 7),
+    nbin = c(51L, 51L), colramp = hcl.colors
+  )
+)
+contour(den$x1, den$x2, den$fhat, nlevels = 10, add = TRUE, family = "Noto Sans")
+title(xlab = "喷发时间", ylab = "等待时间", family = "Noto Serif CJK SC")
+
+# 散点添加颜色
+mkBreaks <- function(u) u - diff(range(u)) / (length(u) - 1) / 2
+# faithful 划入网格内
+xbin <- cut(faithful[, 1], mkBreaks(den$x1), labels = FALSE)
+ybin <- cut(faithful[, 2], mkBreaks(den$x2), labels = FALSE)
+# 网格对应的核密度估计值即为 faithful 对应的核密度估计值
+faithful$dens <- den$fhat[cbind(xbin, ybin)]
+# 若是 faithful 数据点没有划分，则置为 0 
+faithful$dens[is.na(faithful$dens)] <- 0
+
+library(ggplot2)
+library(ggnewscale)
+
+ggplot() +
+  geom_point(
+    data = faithful, aes(x = eruptions, y = waiting, color = dens),
+    shape = 20, size = 2, show.legend = FALSE
+  ) +
+  scale_colour_viridis_c(option = "D") +
+  new_scale_color() +
+  geom_contour(data = faithful2d, aes(
+    x = eruptions, y = waiting,
+    z = density, colour = after_stat(level)
+  ), bins = 14, linewidth = 0.45, show.legend = FALSE) +
+  scale_colour_viridis_c(option = "C", direction = -1, begin = 0.2, end = 0.8) +
+  # colorspace::scale_color_continuous_sequential(palette = "Grays") +
+  scale_x_continuous(breaks = 1:6) +
+  scale_y_continuous(breaks = 10 * 4:10) +
+  coord_cartesian(xlim = c(0.5, 6.5), ylim = c(35, 100)) +
+  labs(x = "喷发时间", y = "等待时间", colour = "密度") +
+  theme_bw(base_size = 13) +
+  theme(
+    legend.title = element_text(family = "Noto Serif CJK SC"),
+    axis.title = element_text(family = "Noto Serif CJK SC"),
+    axis.title.x = element_text(
+      margin = margin(b = 0, l = 0, t = 20, r = 0)
+    ),
+    axis.title.y = element_text(
+      margin = margin(b = 0, l = 0, t = 0, r = 20)
+    ),
+    panel.border = element_rect(color = "black"),
+    panel.grid = element_blank(),
+    panel.grid.major = element_line(
+      color = "lightgray",
+      linetype = 3, linewidth = 0.5
+    ),
+    axis.ticks.length = unit(0.25, "cm"),
+    axis.text.x = element_text(
+      family = "Noto Sans", color = "black",
+      vjust = -1.5, size = rel(1.25)
+    ),
+    axis.text.y = element_text(
+      family = "Noto Sans", color = "black",
+      angle = 90, vjust = 1.5, hjust = 0.5,
+      size = rel(1.25)
+    )
+  )
+```
+
+
+:::{.callout-tip}
+函数 `bkde2D()` 实现二维带窗宽的核密度估计（2D Binned Kernel Density Estimate），R 语言存在多个版本，**grDevices** 包的函数 `densCols()` 直接调用 **KernSmooth** 包的函数 `bkde2D()`，**graphics** 包的函数 `smoothScatter()` 与函数 `densCols()` 一样，内部也是调用 `bkde2D()` 函数，**ggplot2** 包的图层 `geom_density_2d()` 采用 **MASS** 包的函数 `kde2d()`，在算法实现上，`MASS::kde2d()` 与 `KernSmooth::bkde2D()` 不同，前者是二维核密度估计（Two-Dimensional Kernel Density Estimation）。
+:::
+
+
+<!-- 
+在不规则的区域上插值，geom_contour 和 geom_contour_filled 先调用 interp::interp() 或 akima::bilinear()
+
+[interp](https://cran.r-project.org/package=interp)
+
+规则的方形网格上，二元高斯核
+
+核密度估计方法在可视化中应用是相当广泛的，下面简单介绍核密度估计的原理，做到知其然且知其所以然
+
+多维核平滑方法见文献 @Chacon2018
+
+密度估计和二维平滑方法 参考书籍
+https://cswr.nrhstat.org/
+-->
+
+
+## 斐济及其周边地震活动分布 {#sec-fiji-quakes}
+
+<!-- 空间数据探索、分析、可视化，空间分析，空间 -->
+
+将震级分割成六个区间，并以明暗不同的颜色表示震级大小，接着，根据斐济及周边地区的位置，选择相应的坐标参考系，最后，用 ggplot2 深度定制出 @fig-quakes-sf ，相比于 @fig-quakes 更加清晰、准确地反映了数据情况，目标区域位于南半球，横跨 180 度经线。
+
+```{r}
+#| label: fig-quakes-sf
+#| echo: false
+#| fig-cap: "太平洋岛国斐济及其周边的地震分布"
+#| message: false
+#| fig-height: 4.5
+#| fig-width: 5
+#| fig-showtext: true
+
+library(sf)
+quakes_sf <- st_as_sf(quakes, coords = c("long", "lat"), crs = st_crs(4326))
+
+# library(rnaturalearth)
+# library(rnaturalearthdata)
+## 需要 rnaturalearthdata 包
+# fiji_medium <- ne_countries(country = "fiji", scale = "medium", returnclass = "sf")
+# nz_medium <- ne_countries(country = "New Zealand", scale = "medium", returnclass = "sf")
+# ggplot() +
+#   geom_sf(data = fiji_medium, fill = "gray") +
+#   geom_sf(data = nz_medium, fill = "gray") +
+#   geom_sf(
+#     data = quakes_sf, aes(color = cut(mag, 3))
+#   ) +
+#   scale_colour_brewer(palette = "Greys") +
+#   coord_sf(
+#     crs = 3460,
+#     xlim = c(569061, 3008322),
+#     ylim = c(1603260, 4665206)
+#   ) +
+#   theme_minimal() +
+#   labs(x = "经度", y = "纬度", color = "震级")
+# st_bbox 获取数据 quakes_sf 的边界
+# 地理图层 geom_sf 支持通过 scale_x_continuous 设定刻度标签
+# 也可以借助 st_graticule 构造经纬网数据，再添加一个地理图层 geom_sf 
+ggplot() +
+  geom_sf(
+    data = quakes_sf,
+    aes(size = mag, color = cut(depth, breaks = 150 * 0:5)),
+    alpha = 0.5
+  ) +
+  geom_point() +
+  scale_x_continuous(breaks = c(
+    # 东经
+    seq(from = 165, to = 180, by = 5),
+    # 西经
+    seq(from = -180, to = -170, by = 5)
+  )) +
+  scale_size(range = c(0.25, 4.75)) +
+  scale_color_viridis_d(option = "C") +
+  coord_sf(
+    crs = 3460,
+    xlim = c(569061, 3008322),
+    ylim = c(1603260, 4665206)
+  ) +
+  theme_minimal() +
+  labs(x = "经度", y = "纬度", color = "震深", size = "震级")
+```
+
+有的地理区域处于板块交界处，地震频发，以至于 @fig-quakes-sf 部分区域的散点覆盖严重，影响重点区域的观测。因此，将斐济及周边区域划分成 $40 \times 80$ 的网格，统计每个小格子内散点的数量，即地震次数，再将地震次数映射给颜色。相比于 @fig-quakes-sf，@fig-quakes-grid-sf 可以更加清晰地展示地震活跃度的空间分布。
+
+```{r}
+#| label: fig-quakes-grid-sf
+#| echo: false
+#| fig-cap: "斐济及其周边的地震活动"
+#| message: false
+#| fig-width: 5
+#| fig-height: 4.5
+#| fig-showtext: true
+
+# 目标区域划分成 40x80 的网格
+quakes_grid_sf <- st_make_grid(quakes_sf, n = c(40, 80))
+# 统计每个区域内包含的点的数量，也就是地震次数
+quakes_grid_cnt <- st_sf(
+  count = lengths(st_intersects(quakes_grid_sf, quakes_sf)),
+  geometry = st_cast(quakes_grid_sf, "MULTIPOLYGON")
+)
+# 将多边形绘制出来，以地震次数填充颜色
+ggplot() +
+  geom_sf(
+    data = quakes_grid_cnt[quakes_grid_cnt$count > 0, ],
+    aes(fill = count), linewidth = 0.01
+  ) +
+  scale_fill_viridis_c(option = "C") +
+  scale_x_continuous(breaks = c(
+    # 东经
+    seq(from = 165, to = 180, by = 5),
+    # 西经
+    seq(from = -180, to = -170, by = 5)
+  )) +
+  coord_sf(
+    crs = 3460,
+    xlim = c(569061, 3008322),
+    ylim = c(1603260, 4665206)
+  ) +
+  theme_minimal() +
+  labs(x = "经度", y = "纬度", fill = "频次")
+```
+
+@fig-quakes-grid-sf 通过将连续空间离散化，再统计各个小网格中地震次数，而 @fig-quakes-density-ppp 将地震活动看作是一种随机事件，用非参数的方法 --- 二维核密度估计方法计算各个位置发生地震活动的可能性。
+
+```{r}
+#| label: fig-quakes-density-ppp
+#| echo: false
+#| fig-cap: "斐济及其周边的地震活动"
+#| message: false
+#| fig-width: 5
+#| fig-height: 4.5
+#| fig-showtext: true
+
+## 基于 sf 对象构造
+quakes_sf <- st_transform(quakes_sf, crs = 3460)
+# 组合 POINT 构造 POLYGON
+quakes_sfp <- st_cast(st_combine(st_geometry(quakes_sf)), "POLYGON")
+# 构造 POLYGON 的凸包
+quakes_sfp_hull <- st_convex_hull(st_geometry(quakes_sfp))
+# 添加 buffer 
+quakes_sfp_buffer <- st_buffer(quakes_sfp_hull, dist = 100000)
+# planar point pattern 表示 ppp 
+# sf 转化为 ppp 类型
+quakes_ppp <- spatstat.geom::as.ppp(X = st_geometry(quakes_sf))
+# 限制散点在给定的窗口边界内平滑
+spatstat.geom::Window(quakes_ppp) <- spatstat.geom::as.owin(quakes_sfp_buffer)
+# 高斯核密度估计 36*36 的网格
+# density.ppp 的含义是什么？统计原理是什么？
+# dimyx 指定先 y 后 x
+# spatstat 版本 3.0-0 以后 spatstat.core 包被拆分成 spatstat.explore 和 spatstat.model 两个包
+# 届时得用 spatstat.explore::density.ppp 替换 spatstat.core::density.ppp
+density_spatstat <- spatstat.core::density.ppp(quakes_ppp, 
+                                               dimyx = c(36, 36), 
+                                               kernel = "gaussian")
+# 转化为 stars 对象 栅格数据
+density_stars <- stars::st_as_stars(density_spatstat)
+# 设置坐标参考系
+density_sf <- st_set_crs(st_as_sf(density_stars), 3460)
+
+ggplot() +
+  geom_sf(data = density_sf, aes(fill = v), col = NA) +
+  geom_sf(data = st_boundary(quakes_sfp_hull), linewidth = 0.25) +
+  geom_sf(data = st_boundary(quakes_sfp_buffer), linewidth = 0.5) +
+  scale_fill_viridis_c(
+    option = "C", trans = "log10",
+    labels = scales::label_log(),
+    limits = c(1e-12, 1e-9)
+  ) +
+  scale_x_continuous(breaks = c(
+    # 东经
+    seq(from = 165, to = 180, by = 5),
+    # 西经
+    seq(from = -180, to = -170, by = 5)
+  )) +
+  labs(x = "经度", y = "纬度", fill = "密度") +
+  theme_minimal()
+```
+
+
+## 中国地区级男女性别比分布 {#sec-china-household-sex}
+
+
+@fig-china-household-sex-1 展示 2020 年中国各省、自治区和直辖市分城市、镇和乡村的性别比数据。数据来自中国国家统计局发布的 2021 年统计年鉴，在数据量不太大的情况下，尽可能展示原始数据，可以捕捉到更加细致的差异。社会经济相关的数据常常显示有马太效应，对原始数据适当做一些变换有利于比较和展示数据，@fig-china-household-sex-2 展示对数变换后的性别比数据的分布。大部分地区的性别比数据都在 100:100 左右，流动人口的性别比波动大很多。
+
+```{r}
+#| label: fig-china-household-sex
+#| echo: false
+#| fig-cap: "2020 年中国地区级男女性别比分布"
+#| fig-subcap: 
+#|  - 原始性别比数据
+#|  - 对数变换后的性别比数据
+#| fig-width: 7
+#| fig-height: 4.5
+#| fig-showtext: true
+#| fig-ncol: 1
+
+china_household_sex <- readRDS(file = "data/china-household-sex-2020.rds")
+
+ggplot(data = china_household_sex, aes(x = `户口登记状况`, y = `男性` / `女性`)) +
+  geom_jitter(aes(color = `区域`), width = 0.3) +
+  theme_classic()
+
+ggplot(data = china_household_sex, aes(x = `户口登记状况`, y = `男性` / `女性`)) +
+  geom_jitter(aes(color = `区域`), width = 0.3) +
+  scale_y_continuous(trans = "log10") +
+  theme_classic()
+```
+
+
+- 「住本乡、镇、街道，户口在本乡、镇、街道」土著和已获得当地户口的。性别比分布有明显的层次差异，性别比均值从大到小依次是城市、乡村、镇。城市里，男性略多于女性，镇里，男性明显少于女性，乡村里，男性略低于女性。
+- 「住本乡、镇、街道，户口待定」黑户或其它。性别比分布有明显的层次差异。同上。
+- 「住本乡、镇、街道，户口在外乡、镇、街道，离开户口登记地半年以上」流出人口，流出乡、镇、街道。城市、镇、乡村的性别比数据充分混合了，性别比分布没有明显的层次差异。
+- 「居住在港澳台或国外，户口在本乡、镇、街道」流出人口，流出国。同上。
+
+
+
+
+## 美国近88年男性死亡率变化 {#sec-usa-mortality}
+
+<!-- 函数型数据探索、分析和可视化，趋势分析，时间 -->
+
+@fig-usa-mortality 展示美国 1933-2020 年男性分年龄的死亡率数据[^usa-mortality]。图分上下两部分，上半部分展示死亡率原值随年龄的变化情况，以 ggplot2 默认的调色板给各个年份配色，下半部分展示死亡率对数变换后随年龄的变化情况，并以红、橙、黄、绿、青、蓝、紫构造彩虹式的调色板给各个年份配色。作图过程中，使用对数变换和调用彩虹式的调色板，帮助我们观察到更多的细节、层次。对数变换后，更加清晰地展示死亡率的变化，尤其是 0-20 岁之间的死亡率起伏变化。调用彩虹式的调色板后，约 20 年为一个阶段，每个阶段内呈现梯度变化，多个阶段体现层次性，更加清晰地展示死亡率曲线的变动趋势，透过层次看到 80 多年来，美国在医疗和公共卫生方面取得的显著改善。
+
+[^usa-mortality]: 数据来自德国马克斯普朗克人口研究所、美国加州大学伯克利分校、法国人口研究所共同建立的人类死亡率数据库 (<https://www.mortality.org/>)。
+
+
+```{r}
+#| label: fig-usa-mortality
+#| fig-cap: "1933-2020 年美国男性死亡率曲线"
+#| fig-width: 6
+#| fig-height: 6
+#| echo: false
+#| fig-showtext: true
+
+usa_mortality <- readRDS(file = "data/usa-mortality-2020.rds")
+library(patchwork)
+p1 <- ggplot(data = usa_mortality, aes(x = Age, y = Male, group = Year)) +
+  geom_vline(xintercept = "100", colour = "gray", lty = 2) +
+  geom_line(aes(color = Year), linewidth = 0.25) +
+  scale_x_discrete(
+    breaks = as.character(20 * 0:5),
+    labels = as.character(20 * 0:5)
+  ) +
+  theme_classic() 
+p2 <- p1 +
+  labs(x = "年龄", y = "死亡率", color = "年份")
+p3 <- p1 +
+  scale_y_log10(labels = scales::label_log()) +
+  scale_colour_gradientn(colors = pals::tol.rainbow()) +
+  labs(x = "年龄", y = "死亡率（对数尺度）", color = "年份")
+p2 / p3
+```
+
+@fig-usa-mortality 也展示了很多基础信息，出生时有很高的死亡率，出生后死亡率迅速下降，一直到10岁，死亡率才又开始回升，直到 20 岁，死亡率才回到出生时的水平。之后，在青年阶段死亡率缓慢增加，直至老年阶段达到很高的死亡率水平。相比于老年阶段，医疗水平的改善作用主要体现在婴儿、儿童、青少年阶段。
+
+@fig-usa-mortality 还展示了一个潜在的数据质量问题，在 100 岁之后，死亡率波动程度明显在变大，这是因为高龄人数变得很少，即死亡率的分母变得很小，分子的细小波动会被放大，也因为同样的原因，100 岁以上的死亡率主要依赖模型估计，甚至出现死亡率大于 1 的罕见情况。因此，就对比医疗和公共卫生水平的变化而言，从数据的实际情况出发，100 岁以上的情况可以不参与比较。
+
+@fig-usa-mortality-heatmap 死亡率数据是对数尺度
+
+```{r}
+#| label: fig-usa-mortality-heatmap
+#| fig-cap: "1933-2020 年美国男性死亡率热力图"
+#| fig-width: 7
+#| fig-height: 5
+#| echo: false
+#| fig-showtext: true
+
+ggplot(data = usa_mortality, aes(x = Year, y = Age, fill = Male)) +
+  scale_fill_gradientn(
+    colors = pals::tol.rainbow(),
+    trans = "log10", labels = scales::percent
+  ) +
+  geom_tile(linewidth = 0.4) +
+  scale_y_discrete(
+    breaks = as.character(10 * 0:10),
+    labels = as.character(10 * 0:10),
+    expand = c(0, 0)
+  ) +
+  scale_x_continuous(
+    breaks = 1940 + 10 * 0:8,
+    labels = 1940 + 10 * 0:8,
+    expand = c(0, 0)
+  ) + 
+  theme_classic() +
+  labs(x = "年份", y = "年龄", fill = "死亡率")
+```
+
+@fig-usa-mortality-wireframe 是用 lattice 包的 `wireframe()` 函数绘制三维透视图
+
+```{r}
+#| label: fig-usa-mortality-wireframe
+#| fig-cap: "1933-2020 年美国男性死亡率透视图"
+#| fig-width: 7
+#| fig-height: 6
+#| echo: false
+#| fig-showtext: true
+
+library(lattice)
+wireframe(
+  data = usa_mortality, Male ~ Year * as.integer(Age),
+  shade = TRUE, drape = FALSE,
+  xlab = "年份",
+  ylab = "年龄",
+  zlab = list("男性死亡率（对数尺度）", rot = 90),
+  scales = list(
+    arrows = FALSE, col = "black",
+    z = list(log = 10)
+  ),
+  # 减少三维图形的边空
+  lattice.options = list(
+    layout.widths = list(
+      left.padding = list(x = -.6, units = "inches"),
+      right.padding = list(x = -1.0, units = "inches")
+    ),
+    layout.heights = list(
+      bottom.padding = list(x = -.8, units = "inches"),
+      top.padding = list(x = -1.0, units = "inches")
+    )
+  ),
+  par.settings = list(axis.line = list(col = "transparent")),
+  screen = list(z = -60, x = -70, y = 0)
+)
+```
+
+
+
+
+## 子代身高与亲代身高的关系 {#sec-galton}
+
+<!-- 函数型数据探索、分析和可视化，关系 -->
+
+[弗朗西斯·高尔顿](https://galton.org/)（Francis Galton, 1822-1911）是历史上著名的优生学家、遗传学家和统计学家，是统计学中相关和回归等一批概念的提出者，是遗传学中回归现象的发现者。1885年，高尔顿以保密和给予金钱报酬的方式，向社会征集了 205 对夫妇及其 928 个成年子女的身高数据[@Galton1886]。
+
+目前，Michael Friendly 从原始文献中整理后，将该数据集命名为 `GaltonFamilies`，放在 R 包 **HistData** [@Friendly2021] 内，方便大家使用。篇幅所限，下 @tbl-galton 展示该数据集的部分内容。
+
+```{r}
+#| echo: false
+#| label: tbl-galton
+#| tbl-cap: "高尔顿收集的 205 对夫妇及其子女的身高数据（部分）"
+
+library(data.table)
+data(GaltonFamilies, package = "HistData")
+GaltonFamilies <- as.data.table(GaltonFamilies)
+
+knitr::kable(head(GaltonFamilies), col.names = c(
+  "家庭编号", "父亲身高", "母亲身高", "中亲身高",
+  "子女数量", "子女编号", "子女性别", "子女身高"
+))
+```
+
+表中子女性别一栏，Male 表示男性，Female 表示女性。表中 1 号家庭父亲身高 78.5 英寸，母亲身高 67.0 英寸，育有 4 个成年子女，1 男 3 女，子女身高依次是 73.2 英寸、 69.2 英寸、 69.0 英寸 和 69.0 英寸。1 英寸相当于 2.54 厘米，78.5 英寸相当于 199.39 厘米，约等于 2 米的身高。
+
+高尔顿提出「中亲」概念，即父母的平均身高，认为子代身高只与父母平均身高相关，而与父母身高差无关，为了消除性别给身高带来的差异，女性身高均乘以 1.08。
+
+根据数据统计的均值和协方差，椭圆 level = 0.95
+
+```{r}
+#| label: fig-galton-gender
+#| fig-cap: "子代身高与亲代身高的关系"
+#| fig-width: 6
+#| fig-height: 5
+#| echo: false
+#| fig-showtext: true
+
+ggplot(data = GaltonFamilies, aes(x = midparentHeight, y = childHeight, color = gender)) +
+  geom_point(aes(fill = gender), pch = 21, color = "white", 
+             size = 2, alpha = 0.75) +
+  geom_smooth(method = "lm", formula = "y~x", se = FALSE) +
+  stat_ellipse(type = "norm", level = 0.95, linetype = 2) +
+  scale_color_brewer(palette = "Set1", labels = c(male = "男", female = "女")) +
+  scale_fill_brewer(palette = "Set1", labels = c(male = "男", female = "女")) +
+  guides(fill = guide_legend(reverse = TRUE), 
+         color = guide_legend(reverse = TRUE)) +
+  labs(x = "父母平均身高", y = "子女身高", fill = "性别", color = "性别") +
+  theme_classic()
+```
+
+
+女儿的身高乘以 1.08 后，两条回归线将几乎重合。[@Hanley2004]
+
+```{r}
+#| label: fig-galton
+#| fig-cap: "子代身高与亲代身高的关系"
+#| fig-width: 6
+#| fig-height: 5
+#| echo: false
+#| fig-showtext: true
+
+GaltonFamilies[, height_children := childHeight * c("female" = 1.08, "male" = 1)[gender]] |>
+  ggplot(aes(x = midparentHeight, y = height_children, color = gender)) +
+  geom_smooth(method = "lm", formula = "y~x", se = FALSE) +
+  geom_point(size = 1.5, alpha = 0.75) +
+  stat_ellipse( type = "norm", linetype = 2) +
+  scale_color_brewer(palette = "Set1", labels = c(male = "男", female = "女")) +
+  guides(color = guide_legend(reverse = TRUE)) +
+  labs(x = "父母平均身高", y = "子女身高", color = "性别") +
+  theme_classic()
+```
+
+
+```{r}
+#| eval: false
+#| echo: false
+
+GaltonFamilies[, height_children := childHeight * c("female" = 1.08, "male" = 1)[gender]][, as.list(coef(lm(height_children ~ midparentHeight))), by = "gender"]
+```
+
+
+
+```{r}
+#| label: fig-galton-bivar
+#| echo: false
+#| par: true
+#| fig-cap: "二维核密度估计与二元正态分布"
+#| fig-width: 4.5
+#| fig-height: 4.5
+#| fig-showtext: true
+
+data(Galton, package = "HistData")
+plot(Galton,
+  pch = 20, panel.first = grid(), cex = 1, ann = FALSE,
+  xlim = c(63.5, 73.5),
+  ylim = c(61, 74.5),
+  col = densCols(Galton,
+    bandwidth = c(1, 1),
+    nbin = c(11L, 11L), colramp = hcl.colors
+  )
+)
+reg <- lm(child ~ parent, data = Galton)
+abline(reg, lwd = 2)
+lines(lowess(x = Galton$parent, y = Galton$child), col = "blue", lwd = 2)
+library(KernSmooth)
+den <- bkde2D(x = Galton, bandwidth = c(1, 1), gridsize = c(11L, 11L))
+contour(den$x1, den$x2, den$fhat, nlevels = 10, add = TRUE, family = "Noto Sans")
+title(xlab = "父母平均身高", ylab = "子女身高", family = "Noto Serif CJK SC")
+```
+
+
+
+
+
+## 预期寿命与人均收入的关系 {#sec-state-x77}
+
+<!-- 相关性探索、分析和可视化，关系 -->
+
+生物遗传的回归现象，更确切地说是因果而不是相关，是一种近似的函数关系。与回归紧密相连的是另一个统计概念是相关，主要刻画数量指标之间的关系深浅程度，相关系数是其中一个度量。在经济、社会领域中，很多数据指标存在相关性，接下来的这个例子基于 1977 年美国人口调查局发布的统计数据，篇幅所限，下 @tbl-state-x77 展示美国各州的部分统计数据。
+
+```{r}
+#| echo: false
+#| label: tbl-state-x77
+#| tbl-cap: "1977 年美国人口调查局发布的各州统计数据（部分）"
+
+state_x77 <- data.frame(state.x77,
+  state_name = rownames(state.x77),
+  state_region = state.region,
+  check.names = FALSE
+)
+
+knitr::kable(head(state_x77[, c(
+  "state_name", "state_region", "Population",
+  "Income", "Life Exp"
+)]), col.names = c(
+  "州名", "区域划分", "人口数量",
+  "人均收入", "预期寿命"
+), row.names = FALSE)
+```
+
+该数据集在 R 环境中的结构如下：
+
+```{r}
+str(state_x77)
+```
+
+它是一个 50 行 10 列的数据框，其中，state_name（州名）是字符型变量， state_region（区域划分）是因子型变量。除了这两个变量外，Population（人口数量，单位：1000），Income（人均收入，单位：美元），Life Exp（预期寿命，单位：岁）等都是数值型的变量。下 @fig-state-x77-scatter 展示了1977 年美国各州的预期寿命和人均收入的关系，通过此图，可以初步观察出两个指标存在一些明显的正向相关性，也符合常识。
+
+
+```{r}
+#| label: fig-state-x77-scatter
+#| fig-cap: "1977 年美国各州预期寿命与人均收入的关系：散点图"
+#| fig-width: 4.5
+#| fig-height: 3.5
+#| echo: false
+#| fig-showtext: true
+
+library(ggplot2)
+ggplot(data = state_x77, aes(x = Income, y = `Life Exp`)) +
+  geom_point() +
+  labs(
+    x = "人均收入（美元）", y = "预期寿命（年）",
+    title = "1977 年各州预期寿命与人均收入的关系",
+    caption = "数据源：美国人口调查局"
+  ) +
+  theme_classic() +
+  theme(
+    panel.grid = element_line(colour = "gray92"),
+    panel.grid.major = element_line(linewidth = rel(1.0)),
+    panel.grid.minor = element_line(linewidth = rel(0.5))
+  )
+```
+
+为了更加清楚地观察到哪些州预期寿命长，哪些州人均收入高，在 @fig-state-x77-scatter 基础上，在散点旁边添加州名。此外，为了观察各州的地域差异，根据各州所属区域，给散点分类，最后，将各州人口数量映射给散点的大小，形成如下 @fig-state-x77-bubble 所示的分类气泡图。
+
+```{r}
+#| label: fig-state-x77-bubble
+#| fig-cap: "1977 年美国各州预期寿命与人均收入的关系：分地域气泡图"
+#| fig-width: 7
+#| fig-height: 5.5
+#| echo: false
+#| fig-showtext: true
+
+library(ggplot2)
+library(ggrepel)
+library(scales)
+ggplot(data = state_x77, aes(x = Income, y = `Life Exp`)) +
+  geom_point(aes(size = 1000 * Population, color = state_region)) +
+  geom_text_repel(aes(label = state_name), size = 3, seed = 2022) +
+  scale_size(labels = label_number(scale_cut = cut_short_scale())) +
+  labs(
+    x = "人均收入（美元）", y = "预期寿命（年）",
+    title = "1977 年各州预期寿命与人均收入的关系（分地域）",
+    caption = "数据源：美国人口调查局",
+    size = "人口数量", color = "区域划分"
+  ) +
+  theme_classic() +
+  theme(
+    panel.grid = element_line(colour = "gray92"),
+    panel.grid.major = element_line(linewidth = rel(1.0)),
+    panel.grid.minor = element_line(linewidth = rel(0.5))
+  )
+```
+
+整体来说，预期寿命与人均收入息息相关。
+
+
+```{r}
+#| label: fig-state-x77-lm
+#| fig-cap: "1977 年美国各州预期寿命与人均收入的关系：回归分析"
+#| fig-width: 7
+#| fig-height: 5.5
+#| echo: false
+#| fig-showtext: true
+
+ggplot(data = state_x77, aes(x = Income, y = `Life Exp`)) +
+  geom_point(aes(size = 1000 * Population, color = state_region)) +
+  geom_smooth(method = "lm", formula = "y~x") +
+  geom_text_repel(aes(label = state_name), size = 3, seed = 2022) +
+  scale_size(labels = label_number(scale_cut = cut_short_scale())) +
+  labs(
+    x = "人均收入（美元）", y = "预期寿命（年）",
+    title = "1977 年各州预期寿命与人均收入的关系",
+    caption = "数据源：美国人口调查局",
+    size = "人口数量", color = "区域划分"
+  ) +
+  theme_classic() +
+  theme(
+    panel.grid = element_line(colour = "gray92"),
+    panel.grid.major = element_line(linewidth = rel(1.0)),
+    panel.grid.minor = element_line(linewidth = rel(0.5))
+  )
+```
+
+
+
+:::{.callout-tip}
+从 @fig-state-x77-bubble 到 @fig-state-x77-lm ，尝试初步量化两个变量之间的相关性之前，有没有想过，回归线应该更加陡峭一些，即回归线的斜率应该更大一些，是什么原因导致平缓了这么多？是阿拉斯加州和内华达州的数据偏离集体太远。那又是什么原因导致阿拉斯加州人均收入全美第一，而预期寿命倒数呢？同样的，内华达州的人均收入也不低，但预期寿命为什么上不去呢？
+:::
+
+
+
+```{r}
+#| eval: false
+#| echo: false
+
+ggplot(data = state_x77, aes(x = Income, y = `Life Exp`)) +
+  geom_point(aes(size = 1000 * Population, color = state_region)) +
+  geom_smooth(method = "lm", formula = "y~x", color = "red") +
+  geom_smooth(data = function(x) subset(x, !state_name %in% c("Nevada", "Alaska") ), method = "lm", formula = "y~x", color = "green") +
+  geom_text_repel(aes(label = state_name), size = 3, seed = 2022) +
+  scale_size(labels = label_number(scale_cut = cut_short_scale())) +
+  labs(
+    x = "人均收入（美元）", y = "预期寿命（年）",
+    title = "1977 年各州预期寿命与人均收入的关系",
+    caption = "数据源：美国人口调查局",
+    size = "人口数量", color = "区域划分"
+  ) +
+  theme_classic() +
+  theme(
+    panel.grid = element_line(colour = "gray92"),
+    panel.grid.major = element_line(linewidth = rel(1.0)),
+    panel.grid.minor = element_line(linewidth = rel(0.5))
+  )
+```
+
+
+## 展示调查研究中的用户态度 {#sec-likert-scales}
+
+量表在市场调查，问卷调查，App 用户体验反馈等方面应用十分广泛，已经成为调查研究中的黄金标准。量表由心理学家 Rensis Likert 于 1932 年提出 [@Likert1932]，[Likert Scale](https://en.wikipedia.org/wiki/Likert_scale) 就是以他的名字命名的。
+
+量表中的问题、观点的描述极其简单明了，对回答、表明态度的任何人都不会造成歧义，以确保不受文化差异、学历差异等的影响，受调查的人只需在待选的几个选项中圈选即可。候选项一般为 5-7 个，下面是一组典型的选项：
+
+1. Strongly disagree （强烈反对），
+1. Disagree（反对），
+1. Neither agree nor disagree（中立），
+1. Agree（同意），
+1. Strongly agree（强烈同意）。
+
+```{r}
+#| echo: false
+#| eval: false
+
+# library(likert)
+# data("MathAnxiety")
+# 获取 Markdown 版本表格
+# knitr::kable(MathAnxiety)
+# library(gt)
+# gt(MathAnxiety) |>
+#   cols_label(
+#     Item = md("**观点**"),
+#     `Strongly Disagree` = md("**强烈反对**"),
+#     Disagree = md("**反对**"),
+#     Neutral = md("**中立**"),
+#     Agree = md("**同意**"),
+#     `Strongly Agree` = md("**非常同意**")
+#   ) |>
+#   cols_width(
+#     Item ~ px(300),
+#     `Strongly Disagree` ~ px(80),
+#     Disagree ~ px(80),
+#     Neutral ~ px(80),
+#     Agree ~ px(80),
+#     `Strongly Agree` ~ px(80)
+#   )
+```
+
+
+Jason M. Bryer 开发了一个 R 包[**likert**](https://github.com/jbryer/likert)，特别适合调查研究数据可视化，将研究对象的态度以直观有效的方式展示出来，内置多个数据集，其中 @tbl-math-anxiety 是一个数学焦虑量表调查的结果，调查数据来自统计课上的 20 个学生。
+
+调查对象是 78 个来自不同学科的本科生，样本含有 36 个男性和 42 个女性，64\% 的样本的年龄在 18 至 24 岁，36\% 的样本年龄 25 岁及以上。更多数据背景信息 [@Bai2009]。
+
+
+|观点 | 强烈反对| 反对| 中立| 同意| 强烈同意|
+|:--------------|----:|--:|--:|--:|----:|
+|I find math interesting.                                 |       10|       15|      10|    35|        30|
+|I get uptight during math tests.                         |       10|       20|      20|    25|        25|
+|I think that I will use math in the future.              |        0|        0|      20|    25|        55|
+|Mind goes blank and I am unable to think clearly when doing my math test. | 30|       30|      15|    10|      15|
+|Math relates to my life.                                  |    5|       20|      10|    40|   25|
+|I worry about my ability to solve math problems.          |   20|       20|      20|    30|   10|
+|I get a sinking feeling when I try to do math problems.   |   35|       10|      15|    35|    5|
+|I find math challenging.               |   5|       10|      15|    45|    25|
+|Mathematics makes me feel nervous.     |  20|       25|      15|    25|    15|
+|I would like to take more math classes.|  20|       25|      30|    20|     5|
+|Mathematics makes me feel uneasy.      |  25|       15|      20|    25|    15|
+|Math is one of my favorite subjects.   |  35|       15|      25|    20|     5|
+|I enjoy learning with mathematics.     |  15|       25|      30|    20|    10|
+|Mathematics makes me feel confused.    |  15|       20|      15|    35|    15|
+
+: 你对数学感到焦虑吗？ {#tbl-math-anxiety}
+
+
+相比于 **ggplot2** 绘制的普通条形图， @fig-likert 有一些独特之处：对立型的渐变色表示两个不同方向的态度，左右两侧以中立态度为中间位置，非常形象，并且按照其中一个方向的态度数据排序，显得比较整齐有序，便于理解。
+
+
+```{r}
+#| label: fig-likert
+#| fig-cap: "你喜欢数学吗"
+#| fig-width: 8.5
+#| fig-height: 5
+#| echo: false
+#| fig-showtext: true
+#| warning: false
+
+library(likert)
+data("MathAnxiety")
+math_anxiety <- likert(summary = MathAnxiety)
+plot(math_anxiety, type = "bar", legend.position = "bottom")
+```
+
+
+
+## 解释置信区间及其覆盖概率 {#sec-coverage-probability}
+
+<!-- 统计理论、方法的可视化，理论 -->
+
+统计图形很重要的一个作用是解释统计概念，这就要求不拘泥于抽象的严格数学表达，借助数值模拟，可视化等手段帮助读者发散思维，加深理解复杂的逻辑概念，建立统计直觉，正如顾恺之所言「以形写神，形神兼备」。下面仅以二项分布为例讲讲区间估计及其覆盖概率。众所周知，在置信水平为 $1 - \alpha$ 的情况下，二项分布 $\mathrm{Bin}(n,p)$ 的参数 $p$ （也叫成功概率）的 Wald 区间估计为 
+
+$$
+(\hat{p} - Z_{1-\alpha/2} \sqrt{\hat{p}*(1-\hat{p})/n}, \hat{p} + Z_{1-\alpha/2} \sqrt{\hat{p}*(1-\hat{p})/n})
+$$ {#eq-wald-ci}
+
+其中，$n$ 为样本量，$Z_{1-\alpha/2}$ 为标准正态分布 $\mathcal{N}(0,1)$ 在 $1-\alpha/2$ 处的分位点。 $\alpha$ 一般取 0.05，进而 $Z_{1-\alpha/2} \approx 1.96$。用通俗的话说，有 $1 - \alpha$ 的把握确定参数真值 $p$ 在该估计区间内。可见区间估计的意义是解决点估计可靠性问题，但是可靠性和精度往往不能兼得。统计上，通常的做法是先给定可靠性，去尽可能提升精度，即给定置信水平，使估计区间的长度尽可能短，这就涉及到区间估计的方法问题。
+
+下面通过数值模拟的方式辅助说明 Wald 和 Agresti-Coull 两种区间估计方法，现固定样本量 $n = 10$ 或 $n = 100$，重复抽样 1000 次，将参数 $p$ 以 0.01 的间隔离散化，从 0.01 取值到 0.99。已知给定参数 $p$，每次抽样都可以得到参数 $p$ 的估计值 $\hat{p}$ 及其置信区间，1000 次的重复抽样可以计算出来 1000 个置信区间，每个区间要么覆盖真值，要么没有覆盖真值，覆盖的比例可以近似为覆盖概率。
+
+如 @fig-coverage 所示，从上往下分别代表 Wald、 Agresti-Coull、 Wilson 和 Clopper-Pearson 区间估计，纵坐标是覆盖概率，横坐标是参数 $p$ 的真值，图中黑虚线表示置信水平 $1-\alpha=0.95$，红、蓝点线分别表示样本量 $n=10$ 和 $n=100$ 的模拟情况。不难看出，Wald 区间估计方法在小样本情况下表现很差，覆盖概率很少能达到置信水平的，而 Agresti-Coull 区间估计在 Wald 基础上添加了修正后，情况得到显著改善。更多区间估计方法的详细比较见文献 @Blyth1960;@Lawrence2001;@Geyer2005 。
+
+
+```{r}
+#| label: fig-coverage
+#| fig-cap: "二项分布参数的几种区间估计：覆盖概率随成功概率的变化"
+#| fig-width: 6
+#| fig-height: 8.5
+#| fig-showtext: true
+#| echo: false
+
+# 计算覆盖概率
+# Wald 覆盖
+coverage_wald <- function(p = 0.1, n = 10, nsim = 1000) {
+  phats <- rbinom(nsim, prob = p, size = n) / n
+  ll <- phats - qnorm(1 - 0.05 / 2) * sqrt(phats * (1 - phats) / n)
+  ul <- phats + qnorm(1 - 0.05 / 2) * sqrt(phats * (1 - phats) / n)
+  mean(ll < p & ul > p)
+}
+# Agresti-Coull 覆盖
+coverage_agresti <- function(p = 0.1, n = 10, nsim = 1000) {
+  phats <- (rbinom(nsim, prob = p, size = n) + 2) / (n + 4)
+  ll <- phats - qnorm(1 - 0.05 / 2) * sqrt(phats * (1 - phats) / n)
+  ul <- phats + qnorm(1 - 0.05 / 2) * sqrt(phats * (1 - phats) / n)
+  mean(ll < p & ul > p)
+}
+# Clopper and Pearson (1934)
+# 与 binom.test() 计算结果一致
+coverage_clopper <- function(p = 0.1, n = 10, nsim = 1000) {
+  nd <- rbinom(nsim, prob = p, size = n)
+  ll <- qbeta(p = 0.05 / 2, shape1 = nd, shape2 = n - nd + 1)
+  ul <- qbeta(p = 1 - 0.05 / 2, shape1 = nd + 1, shape2 = n - nd)
+  mean(ll < p & ul > p)
+}
+# Wilson (1927)
+# 与 prop.test(correct = FALSE) 计算结果一致
+coverage_wilson <- function(p = 0.1, n = 10, nsim = 1000) {
+  phats <- rbinom(nsim, prob = p, size = n) / n
+  lambda <- qnorm(1 - 0.05 / 2)
+  ll <- phats + lambda^2 / (2 * n) - lambda * sqrt(phats * (1 - phats) / n + lambda^2 / (4 * n^2))
+  ul <- phats + lambda^2 / (2 * n) + lambda * sqrt(phats * (1 - phats) / n + lambda^2 / (4 * n^2))
+  mean(ll / (1 + lambda^2 / n) < p & ul / (1 + lambda^2 / n) > p)
+}
+
+sim_dat <- transform(expand.grid(
+  p = seq(0.01, 0.99, by = 0.01),
+  n = c(10, 100),
+  nsim = 1000,
+  methods = c("Wald", "Agresti-Coull", "Wilson", "Clopper-Pearson")
+), prob = ifelse(methods == "Wald",
+  Vectorize(coverage_wald)(p = p, n = n, nsim = nsim),
+  ifelse(methods == "Agresti-Coull",
+    Vectorize(coverage_agresti)(p = p, n = n, nsim = nsim),
+    ifelse(methods == "Wilson",
+      Vectorize(coverage_wilson)(p = p, n = n, nsim = nsim),
+      Vectorize(coverage_clopper)(p = p, n = n, nsim = nsim)
+    )
+  )
+), nsample = ifelse(n == 10, "n=10", "n=100"))
+
+ggplot(data = sim_dat, aes(x = p, y = prob, color = nsample)) +
+  geom_hline(yintercept = 0.95, linetype = 2, 
+             linewidth = 1, color = "gray60") +
+  geom_point() +
+  geom_path() +
+  # annotate(geom = "text", x = 0, y = 0.95, label = "0.950",
+  #          fontface = "bold", hjust = 2, size = 3.5) +
+  # scale_color_grey() +
+  scale_color_brewer(palette = "Set1") +
+  facet_wrap(facets = ~methods, ncol = 1, scales = "free_y") +
+  labs(x = "成功概率", y = "覆盖概率", color = "样本量") +
+  theme_bw(base_size = 13, base_family = "Noto Sans") +
+  theme(title = element_text(family = "Noto Serif CJK SC")) + 
+  coord_cartesian(clip = 'off')
+```
+
+通过 @fig-coverage 一看就明白了几种区间估计方法的优劣，以及为什么软件普遍默认采用 Wilson 估计方法？因为它又稳定又准确。 Wilson 区间估计用的更加广泛的，Base R 内置的比例检验函数 `prop.test()` 在不启用 Yates 修正时，就是用该方法获得比例 $p$ 的区间估计 [@Wilson1927]。Clopper-Pearson 区间估计特别适合小样本情形，它是精确区间估计方法，Base R 内置的二项比例检验函数 `binom.test()` 就是用该方法获得比例 $p$ 的区间估计[@Clopper1934]。
+
+
+
+
+:::{.callout-tip}
+请读者再思考两个问题： @fig-coverage 为什么呈现对称的形式，泊松分布会和二项分布有类似的现象吗？如果有的话，连续分布，如正态分布和指数分布也会有吗？
+:::
+
+
+

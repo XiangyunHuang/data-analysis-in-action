@@ -1,0 +1,1968 @@
+# 统计图形 {#sec-gallery}
+
+
+```{r}
+#| echo: false
+
+knitr::knit_hooks$set(par = function(before, options, envir) {
+  if (before && options$fig.show != "none") {
+    par(
+      mar = c(4, 4, .5, .5)
+    )
+  }
+})
+
+if (xfun::is_macos()) {
+  # 准备 Noto 中英文字体
+  sysfonts::font_paths(new = "~/Library/Fonts/")
+  ## 宋体
+  sysfonts::font_add(
+    family = "Noto Serif CJK SC",
+    regular = "NotoSerifCJKsc-Regular.otf",
+    bold = "NotoSerifCJKsc-Bold.otf"
+  )
+  ## 黑体
+  sysfonts::font_add(
+    family = "Noto Sans CJK SC",
+    regular = "NotoSansCJKsc-Regular.otf",
+    bold = "NotoSansCJKsc-Bold.otf"
+  )
+} else { # Github Action Ubuntu
+  sysfonts::font_paths(new = c(
+    "/usr/share/fonts/opentype/noto/",
+    "/usr/share/fonts/truetype/noto/"
+  ))
+  ## 宋体
+  sysfonts::font_add(
+    family = "Noto Serif CJK SC",
+    regular = "NotoSerifCJK-Regular.ttc",
+    bold = "NotoSerifCJK-Bold.ttc"
+  )
+  ## 黑体
+  sysfonts::font_add(
+    family = "Noto Sans CJK SC",
+    regular = "NotoSansCJK-Regular.ttc",
+    bold = "NotoSansCJK-Bold.ttc"
+  )
+}
+
+## 衬线字体
+sysfonts::font_add(
+  family = "Noto Serif",
+  regular = "NotoSerif-Regular.ttf",
+  bold = "NotoSerif-Bold.ttf",
+  italic = "NotoSerif-Italic.ttf",
+  bolditalic = "NotoSerif-BoldItalic.ttf"
+)
+## 无衬线字体
+sysfonts::font_add(
+  family = "Noto Sans",
+  regular = "NotoSans-Regular.ttf",
+  bold = "NotoSans-Bold.ttf",
+  italic = "NotoSans-Italic.ttf",
+  bolditalic = "NotoSans-BoldItalic.ttf"
+)
+```
+
+
+## 描述趋势 {#sec-visualize-data-trend}
+
+
+<!--
+写作模式：
+
+1. 提出问题：引发兴趣，探案，讲故事。
+2. 数据探索：数据预处理、分组计算等操作
+3. 绘图说明：给出最终展示图，说明关键函数，技巧实现
+4. 一般总结：图形的一般作用，目的是方便读者将其应用于其它场景，举一反三。
+5. 本节小结：5-6 个不同图形探索的对比总结
+-->
+
+
+R 是一个自由的统计计算和统计绘图环境，最初由新西兰奥克兰大学统计系的 Ross Ihaka 和 Robert Gentleman 共同开发。1997 年之后，成立了一个 R Core Team（R 语言核心团队），他们在版本控制系统 Apache Subversion（<https://subversion.apache.org/>）上一起协作开发至今。25 年，四分之一个世纪过去了，下面分析他们留下的一份开发日志，了解一段不轻易为人所知的故事。
+
+首先，下载 1997 年至今，约 25 年的原始代码提交日志数据。下载数据的代码如下，它是一行 Shell 命令，可在 MacOS 或 Ubuntu 等 Linux 系统的终端里运行，借助 Apache Subversion 软件，将提交日志导出为 XML 格式（<https://www.w3.org/standards/xml/core>）的数据文件，保存在目录 `data-raw/` 下，文件名为 `svn_trunk_log_20220727.xml`，本书网页版随附。
+
+```{bash}
+#| eval: false
+
+svn log --xml --verbose -r 6:82626 https://svn.r-project.org/R/trunk > data-raw/svn-trunk-log-2022.xml
+```
+
+去掉没什么信息的前5次代码提交记录：初始化仓库，上传原始的 R 软件源码等。
+从 Ross Ihaka 在 1997-09-18 提交第 1 次代码改动开始，下载所有的提交日志。截至写作时间，即 2022年7月27日，代码最新版本号为 82626，意味着代码仓库已存在 8 万多次提交。
+
+下载数据后，借助 **xml2**（<https://github.com/r-lib/xml2/>）包预处理这份 XML 格式数据，提取最重要的信息，谁在什么时间做了什么改动。经过一番操作后，将清洗干净的数据，
+保存到目录 `data/` 下，以 R 软件特有的文件格式保存为 `svn_trunk_log_20220727.rds`，同样与书随附。这样下来，原 XML 格式保存的 35 M 文件减少为 1 M 多，极大地减少了存储空间，也极大地方便了后续的数据探索和可视化。下面是这份日志数据开头的两行：
+
+```{r}
+svn_trunk_log <- readRDS(file = "data/svn-trunk-log-2022.rds")
+head(svn_trunk_log, 2)
+```
+
+一共是四个字段，分别是代码提交时记录的版本号 revision，提交代码的人 author，提交代码的时间 stamp 和提交代码时伴随的说明 msg。接下来，带着问题一起探索开源统计软件 R 过去 25 年波澜壮阔的历史！
+
+
+
+### 折线图 {#sec-line}
+
+<!-- 
+折线图层 geom_line
+-->
+
+
+- 过去 25 年代码提交次数的变化情况
+
+折线图的意义是什么？在表达趋势变化，趋势的解读很重要。
+
+不再介绍每个函数、每个参数和每行代码的作用，而是重点阐述折线图的作用，以及如何解读数据，阐述解读的思路和方向，建立起数据分析的思维。将重点放在这些方面，有助于书籍存在的长远意义，又结合了最真实的背景和原始数据，相信对实际工作的帮助会更大。而对于使用到统计方法的函数，则详加介绍，展示背后的实现细节，而不是调用函数做调包侠。
+
+
+先来了解一下总体趋势，即过去 25 年里代码提交次数的变化情况。
+
+
+数据集 `svn_trunk_log` 没有年份字段，但时间字段 stamp 隐含了年份信息，因此，新生成一个字段 year 将年份信息从 stamp 提取出来。
+
+
+```{r}
+svn_trunk_log <- within(svn_trunk_log, {
+  # 提取日期、月份、年份、星期、第几周、第几天等时间成分
+  year <- as.integer(format(stamp, "%Y"))
+  date <- format(stamp, format = "%Y-%m-%d", tz = "UTC")
+  month <- format(stamp, format = "%m", tz = "UTC")
+  hour <- format(stamp, format = "%H", tz = "UTC")
+  week <- format(stamp, format = "%U", tz = "UTC")
+  wday <- format(stamp, format = "%a", tz = "UTC")
+  nday <- format(stamp, format = "%j", tz = "UTC")
+})
+```
+
+接着，调用分组聚合函数 `aggregate()` 统计各年的代码提交量。
+
+```{r}
+trunk_year <- aggregate(data = svn_trunk_log, revision ~ year, FUN = length)
+```
+
+然后，将数据集 trunk_year 以折线图展示，如 @fig-trunk-year-line 所示。
+
+```{r}
+#| label: fig-trunk-year-line
+#| fig-cap: "过去 25 年代码提交次数的变化情况"
+#| fig-showtext: true
+
+library(ggplot2)
+ggplot(data = trunk_year, aes(x = year, y = revision)) +
+  geom_point() +
+  geom_line() +
+  theme_classic() +
+  theme(panel.grid.major.y = element_line(colour = "gray90")) +
+  labs(x = "年份", y = "提交量")
+```
+
+
+
+为什么呈现这样的变化趋势？我最初想到的是先逐步增加，然后下降一会儿，再趋于平稳。
+
+> 小时趋势
+
+上午高峰
+
+```{r}
+#| label: fig-trunk-hour-line
+#| fig-cap: "提交代码的时段分布"
+#| fig-showtext: true
+
+aggregate(data = svn_trunk_log, revision ~ year + hour, length) |> 
+  ggplot(aes(x = hour, y = revision, group = year)) +
+  geom_line() +
+  theme_classic() +
+  labs(x = "时段", y = "提交量")
+```
+
+```{r}
+#| label: fig-trunk-hour-line-2013
+#| fig-cap: "2013 年以来提交代码的时段分布"
+#| fig-showtext: true
+
+aggregate(data = svn_trunk_log, revision ~ year + hour, 
+          length, subset = year >= 2013) |> 
+  ggplot(aes(x = hour, y = revision, group = year)) +
+  geom_line() +
+  theme_classic() +
+  labs(x = "时段", y = "提交量")
+```
+
+> 月趋势
+
+12月和次年1月、7-8 月份提交量迎来小高峰，应该是教授们放寒暑假。是否有新人加入？
+
+```{r}
+#| label: fig-trunk-month-line
+#| fig-cap: "提交代码的月份分布"
+#| fig-showtext: true
+#| fig-width: 7
+#| fig-height: 5
+
+aggregate(data = svn_trunk_log, revision ~ year + month, length) |>
+  transform(date = as.Date(paste(year, month, "01", sep = "-"))) |>
+  ggplot(aes(x = date, y = revision)) +
+  geom_point(aes(color = factor(year)), show.legend = F, size = 0.75) +
+  geom_line(aes(color = factor(year)), show.legend = F) +
+  scale_x_date(date_minor_breaks = "1 year") +
+  theme_classic() +
+  theme(panel.grid.minor.x = element_line()) +
+  labs(x = "时间（月粒度）", y = "提交量")
+```
+
+
+
+### 瀑布图 {#sec-waterfall}
+
+
+<!-- 
+矩形图层 geom_rect
+-->
+
+相比于折线图，瀑布图将变化趋势和增减量都展示了，如 @fig-waterfall 所示，每年的提交量就好像瀑布上的水，图中当期相对于上一期的增减量
+
+```{r}
+#| label: fig-waterfall
+#| fig-cap: "25 年代码逐年提交量的变化趋势"
+#| fig-showtext: true
+
+trunk_year <- trunk_year[order(trunk_year$year), ]
+
+trunk_year_tmp <- data.frame(
+  xmin = trunk_year$year[-length(trunk_year$year)],
+  ymin = trunk_year$revision[-length(trunk_year$revision)],
+  xmax = trunk_year$year[-1],
+  ymax = trunk_year$revision[-1],
+  fill = trunk_year$revision[-1] - trunk_year$revision[-length(trunk_year$revision)] > 0
+)
+
+ggplot() +
+  geom_rect(
+    data = trunk_year_tmp,
+    aes(
+      xmin = xmin, ymin = ymin,
+      xmax = xmax, ymax = ymax, fill = fill
+    ), show.legend = FALSE
+  ) +
+  theme_classic() +
+  theme(panel.grid.major.y = element_line(colour = "gray90")) +
+  labs(x = "年份", y = "提交量")
+```
+
+
+瀑布图是以数据点作为对角点构造矩形，用对撞型的颜色表示增减，下 @fig-waterfall-point 在 @fig-waterfall 基础上添加了数据点，用以直观说明矩形图层 `geom_rect()` 构造瀑布图的方法。**ggTimeSeries** 包 [@ggTimeSeries2022] (<https://github.com/thecomeonman/ggTimeSeries>) 提供统计图层 `stat_waterfall()` 实现类似的瀑布图。
+
+```{r}
+#| label: fig-waterfall-point
+#| fig-cap: "矩形图层构造瀑布图"
+#| fig-showtext: true
+
+ggplot() +
+  geom_rect(
+    data = trunk_year_tmp,
+    aes(
+      xmin = xmin, ymin = ymin,
+      xmax = xmax, ymax = ymax, fill = fill
+    ), show.legend = FALSE
+  ) +
+  geom_point(
+    data = trunk_year,
+    aes(x = year, y = revision), size = 0.75
+  ) +
+  theme_classic() +
+  theme(panel.grid.major.y = element_line(colour = "gray90")) +
+  labs(x = "年份", y = "提交量")
+```
+
+
+```{r}
+#| echo: false
+#| eval: false
+
+# ggTimeSeries 包也可制作瀑布图
+library(ggTimeSeries)
+ggplot(data = trunk_year, aes(x = year, y = revision)) +
+  stat_waterfall() +
+  scale_fill_brewer(palette = "Set2") +
+  theme_classic() +
+  theme(panel.grid.major.y = element_line(colour = "gray90")) +
+  labs(x = "年份", y = "提交量")
+```
+
+
+
+### 曲线图 {#sec-smooth}
+
+<!-- 
+平滑图层 geom_smooth
+-->
+
+将散点以线段逐个连接起来，形成折线图，刻画原始的变化，而曲线图的目标是刻画潜在趋势。有两种画法，其一从代数的角度出发，做插值平滑，在相邻两点之间以一条平滑的曲线连接起来；其二从统计的角度出发，做趋势拟合，通过线性或非线性回归，获得变化趋势，以图呈现，使得散点之中隐藏的趋势更加清晰。
+
+
+**ggplot2** [@Hadley2016] 包提供函数 `geom_smooth()` 拟合散点图中隐含的趋势，通过查看函数 `geom_smooth()` 的帮助文档，可以了解其内部调用的统计方法。默认情况下，采用局部多项式回归拟合方法，内部调用了函数 `loess()` 来拟合趋势，如 @fig-trunk-year-smooth 所示。
+
+
+```{r}
+#| label: fig-trunk-year-smooth
+#| fig-cap: "过去 25 年代码提交次数的变化情况"
+#| fig-showtext: true
+
+ggplot(data = trunk_year, aes(x = year, y = revision)) +
+  geom_point() +
+  geom_smooth(data = subset(trunk_year, year != c(1997,2022))) +
+  theme_classic() +
+  theme(panel.grid.major.y = element_line(colour = "gray90")) +
+  labs(x = "年份", y = "提交量")
+```
+
+类似大家熟悉的线性回归拟合函数 `lm()`，函数 `loess()` 也是基于类似的使用语法。下面继续以此数据为例，了解该函数的使用，继而了解 ggplot2 绘制平滑曲线图背后的统计方法。1997 年和 2022 年是不完整的，不参与模型参数的估计。
+
+```{r}
+trunk_year_loess <- loess(revision ~ year,
+  data = subset(trunk_year, year != c(1997,2022)),
+  span = 0.75, degree = 2, method = "loess",
+  family = "symmetric",
+  control = loess.control(surface = "direct", iterations = 4)
+)
+```
+
+下面通过设定函数 `geom_smooth()` 的参数，可以达到一样的效果，见下 @fig-trunk-year-loess 
+
+```{r}
+#| label: fig-trunk-year-loess
+#| fig-cap: "过去 25 年代码提交次数的变化情况"
+#| fig-showtext: true
+
+ggplot(data = trunk_year, aes(x = year, y = revision)) +
+  geom_point() +
+  geom_smooth(method = "loess", formula = "y~x",
+    method.args = list(
+      span = 0.75, degree = 2, family = "symmetric",
+      control = loess.control(surface = "direct", iterations = 4)
+    ), data = subset(trunk_year, year != c(1997,2022))) +
+  theme_classic() +
+  theme(panel.grid.major.y = element_line(colour = "gray90")) +
+  labs(x = "年份", y = "提交量")
+```
+
+除了 `method = "loess"`，函数 `geom_smooth()` 支持的统计方法还有很多，比如非线性回归拟合 `nls()`
+
+```{r}
+trunk_year_nls <- nls(revision ~ a * (year - 1996)^2 + b,
+  data = subset(trunk_year, year != c(1997,2022)),
+  start = list(a = -0.1, b = 1000)
+)
+```
+
+采用一元二次非线性回归拟合方法，效果如 @fig-trunk-year-nls 所示。
+
+```{r}
+#| label: fig-trunk-year-nls
+#| fig-cap: "过去 25 年代码提交次数的变化情况"
+#| fig-showtext: true
+
+ggplot(data = trunk_year, aes(x = year, y = revision)) +
+  geom_point() +
+  geom_smooth(
+    method = "nls", 
+    formula = "y ~ a * (x - 1996)^2 + b",
+    method.args = list(
+      start = list(a = -0.1, b = 1000)
+    ), se = FALSE, 
+    data = subset(trunk_year, year != c(1997,2022)),
+  ) +
+  theme_classic() +
+  theme(panel.grid.major.y = element_line(colour = "gray90")) +
+  labs(x = "年份", y = "提交量")
+```
+
+::: {.callout-caution}
+在函数 `geom_smooth()` 内调用非线性回归拟合方法时，暂不支持提供置信区间。
+:::
+
+即便在不清楚统计原理的情况下，也不难看出 @fig-trunk-year-loess 和 @fig-trunk-year-nls 的差异，局部多项式回归捕捉到了更多的信息，特别是起步阶段的上升趋势，以及 2000-2005 年的高峰特点。
+
+
+```{r}
+summary(trunk_year_loess)
+```
+
+
+```{r}
+summary(trunk_year_nls)
+```
+
+非线性回归模型带有 2 个参数，一共 26 个观察值，因此，自由度为 26 - 2 = 24。
+RSE 残差平方和的标准差为
+
+```{r}
+# 非线性回归的残差平方和的标准差
+sqrt(sum(residuals(trunk_year_nls)^2)/24)
+```
+
+```{r}
+#| eval: false
+#| echo: false
+
+trunk_year_fit <- within(trunk_year, {
+  nls_fitted = fitted(trunk_year_nls)
+  loess_fitted = fitted(trunk_year_loess)
+})
+```
+
+以平滑曲线连接相邻的散点，可以构造一个插值方法给函数 `geom_smooth()`，如下示例基于样条插值函数 `spline()`。样条源于德国宝马工程师，车辆外壳弧线，那些拥有非常漂亮的弧线，越光滑，与空气的摩擦阻力越小，车辆的气动外形更加符合流体力学的要求，加工打磨更加困难，往往价值不菲。美感是相通的，即使不懂车标，通过气动外形，也能识别出车辆的档次。
+
+```{r}
+#| label: fig-trunk-year-xxspline
+#| fig-cap: "过去 25 年代码提交次数的变化情况"
+#| fig-showtext: true
+
+xxspline <- function(formula, data, ...) {
+  dat <- model.frame(formula, data)
+  res <- splinefun(dat[[2]], dat[[1]])
+  class(res) <- "xxspline"
+  res
+}
+
+predict.xxspline <- function(object, newdata, ...) {
+  object(newdata[[1]])
+}
+
+ggplot(data = trunk_year, aes(x = year, y = revision)) +
+  geom_point() +
+  geom_smooth(
+    formula = "y~x",
+    method = xxspline, se = FALSE,
+    data = subset(trunk_year, year != c(1997,2022))
+  ) +
+  theme_classic() +
+  theme(panel.grid.major.y = element_line(colour = "gray90")) +
+  labs(x = "年份", y = "提交量")
+```
+
+借助 spline 插值获得平滑曲线，ggalt 包的函数 `geom_xspline` 也提供类似的功能。
+
+
+ggplot2 当前支持的平滑方法，还有很多
+
+
+```{r}
+#| label: fig-trunk-year-smooth-sets
+#| fig-cap: "过去 25 年代码提交次数的变化情况"
+#| fig-showtext: true
+
+ggplot(data = trunk_year, aes(x = year, y = revision)) +
+  geom_point() +
+  geom_smooth(
+    formula = y ~ s(x, k = 12),
+    method = "gam", se = FALSE,
+    data = subset(trunk_year, year != c(1997, 2022))
+  ) +
+  theme_classic() +
+  theme(panel.grid.major.y = element_line(colour = "gray90")) +
+  labs(x = "年份", y = "提交量")
+```
+
+
+自由度为 3 的正交多项式拟合
+
+
+```{r}
+#| label: fig-trunk-year-poly
+#| fig-cap: "过去 25 年代码提交次数的变化情况"
+#| fig-showtext: true
+
+ggplot(data = trunk_year, aes(x = year, y = revision)) +
+  geom_point() +
+  geom_smooth(
+    method = "lm", 
+    formula = "y ~ poly((x - 1996), 3)",
+    se = FALSE, 
+    data = subset(trunk_year, year != c(1997,2022)),
+  ) +
+  theme_classic() +
+  theme(panel.grid.major.y = element_line(colour = "gray90")) +
+  labs(x = "年份", y = "提交量")
+```
+
+数学公式表达的统计模型与 R 语言表达的计算公式的对应关系见下 @tbl-formula ，更多详情见帮助文档 `?formula`。
+
+| 数学公式 | R 语言计算公式|
+|:---------------- |:---------------- |
+| $y = \beta_0$ | `y ~ 1` |
+| $y = \beta_0 + \beta_1 x_1$ | `y ~ 1 + x1` 或 `y ~ x1` 或 `y ~ x1 + x1^2` |
+| $y = \beta_1 x_1$ | `y ~ 0 + x1` 或 `y ~ -1 + x1` |
+| $y = \beta_0 + \beta_1 x_1 + \beta_2 x_2$ | `y ~ x1 + x2` |
+| $y = \beta_0 + \beta_1 x_1 + \beta_2 x_2 + \beta_3 x_1 x_2$ | `y ~ x1 * x2` |
+| $y = \beta_0 + \beta_1 x_1 x_2$ | `y ~ x1:x2` |
+| $y = \beta_0 + \beta_1 x_1 + \beta_2 x_2 + \beta_3 x_1 x_2$ | `y ~ x1 + x2 + x1:x2` |
+| $y = \beta_0 + \sum_{i=1}^{999}\beta_i x_i$ | `y ~ .` |
+| $y = \beta_0 + \beta_1 x + \beta_2 x^5$ | `y ~ x + I(x^5)` |
+| $y = \beta_0 + \beta_1 x + \beta_2 x^2$ | `y ~ x + I(x^2)` |
+| $y = \beta_0 + \beta_1 x + \beta_2 x^2$ | `y ~ poly(x, degree = 2, raw = TRUE)` |
+
+: 数学公式与 R 语言表示的计算公式 {#tbl-formula}
+
+自由度为 1 的正交多项式 `poly(x, 1)` 回归模型，
+函数 `glm()` 的参数 `offset` 的含义，`weights` 的含义
+广义可加模型 gam 中回归样条的方法 `s()`
+
+
+### 曲面图 {#sec-wireframe}
+
+ggplot2 暂不支持三维曲面图，而 lattice 包支持，也是非常有限的支持，lattice 和 ggplot2 都是基于图层的概念，层层叠加会出现覆盖。
+用来绘制函数图像还是可以的。
+
+真三维图形可以用[rayrender](https://github.com/tylermorganwall/rayrender) 和[rayshader](https://github.com/tylermorganwall/rayshader) 包绘制。交互式三维图形可以用 [rgl](https://github.com/dmurdoch/rgl) 或 [plotly](https://github.com/plotly/plotly.R) 包绘制。
+
+@fig-trunk-year-wireframe 是用 **lattice** 包的 `wireframe()` 函数绘制三维曲面透视图，三维图形有时候并不能很好地表达数据，或者数据并不适合用三维图形表示。数据本身并没有那么明显的趋势规律，同样也会体现不出三维图形的表达能力。大部分情况下，我们应当避免使用静态的三维图形。函数型数据是适合用三维图形来表达的，比如 @fig-usa-mortality-wireframe 。
+
+```{r}
+#| label: fig-trunk-year-wireframe
+#| fig-cap: "25 年代码提交量变化趋势图"
+#| fig-width: 7
+#| fig-height: 6
+#| echo: true
+#| fig-showtext: true
+
+trunk_year_day <- aggregate(data = svn_trunk_log, revision ~ year + nday, FUN = length)
+library(lattice)
+wireframe(
+  data = trunk_year_day, revision ~ year * as.integer(nday),
+  shade = TRUE, drape = FALSE,
+  xlab = "年份",
+  ylab = "第几天",
+  zlab = list("提交量", rot = 90),
+  scales = list(
+    arrows = FALSE, col = "black"
+  ),
+  # 减少三维图形的边空
+  lattice.options = list(
+    layout.widths = list(
+      left.padding = list(x = -.6, units = "inches"),
+      right.padding = list(x = -1.0, units = "inches")
+    ),
+    layout.heights = list(
+      bottom.padding = list(x = -.8, units = "inches"),
+      top.padding = list(x = -1.0, units = "inches")
+    )
+  ),
+  par.settings = list(axis.line = list(col = "transparent")),
+  screen = list(z = -60, x = -70, y = 0)
+)
+```
+
+
+### 热力图 {#sec-heatmap}
+
+<!-- 
+瓦片图层 geom_tile
+-->
+
+
+@fig-trunk-year-heatmap 提交量变化趋势
+
+```{r}
+#| label: fig-trunk-year-heatmap
+#| fig-cap: "25 年代码提交量变化热力图"
+#| fig-width: 7
+#| fig-height: 4
+#| fig-showtext: true
+
+ggplot(data = trunk_year_day, aes(x = as.integer(nday) , y = year, fill = revision)) +
+  geom_tile(linewidth = 0.4) +
+  scale_fill_viridis_c(option = "C") +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  theme_classic() +
+  labs(x = "第几天", y = "年份", fill = "提交量")
+```
+
+图层 `scale_x_continuous()` 中设置 `expand = c(0, 0)` 可以去掉数据与 x 轴之间的空隙。
+或者添加坐标参考系图层 `coord_cartesian()`，设置参数 `expand = FALSE` 同时去掉横纵轴与数据之间的空隙。
+
+```{r}
+#| label: fig-trunk-month-heatmap
+#| fig-cap: "25 年代码提交量变化热力图"
+#| fig-width: 5
+#| fig-height: 4
+#| fig-showtext: true
+
+aggregate(data = svn_trunk_log, revision ~ year + month, length) |>
+  ggplot(aes(x = month, y = year, fill = revision)) +
+  geom_tile(linewidth = 0.4) +
+  scale_fill_viridis_c(option = "C") +
+  coord_cartesian(expand = FALSE) +
+  theme_classic() +
+  labs(x = "月份", y = "年份", fill = "提交量")
+```
+
+
+
+### 日历图 {#sec-calendar}
+
+<!-- 
+瓦片图层 geom_tile
+-->
+
+更加直观地展示出节假日、休息工作日、寒暑假，比如描述学生学习规律、需求的季节性变化、周期性变化。
+
+```{r}
+# 星期、月份缩写
+week.abb <- c(
+  "Sun", "Mon", "Tue", "Wed",
+  "Thu", "Fri", "Sat"
+)
+month.abb <- c(
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+)
+# 按年、星期、第几周聚合统计提交量数据
+svn_trunk_year <- aggregate(
+  revision ~ year + wday + week,
+  FUN = length,
+  data = svn_trunk_log, 
+  subset = year %in% 2018:2022
+)
+# 第几周转为整型数据
+# 周几转为因子型数据
+svn_trunk_year <- within(svn_trunk_year, {
+   week = as.integer(week)
+   wday = factor(wday, labels = week.abb)
+})
+```
+
+```{r}
+#| label: fig-calendar
+#| fig-cap: "最近 5 年休息和工作日打码活跃度"
+#| fig-width: 8
+#| fig-height: 7
+#| fig-showtext: true
+
+ggplot(data = svn_trunk_year, aes(
+  x = week, y = wday,
+  fill = cut(revision, breaks = 5 * 0:5)
+)) +
+  geom_tile(color = "white", linewidth = 0.5) +
+  scale_fill_brewer(palette = "Greens") +
+  scale_x_continuous(
+    expand = c(0, 0),
+    breaks = seq(1, 52, length = 12),
+    labels = month.abb
+  ) +
+  facet_wrap(~year, ncol = 1) +
+  theme_minimal() +
+  labs(x = "月份", y = "星期", fill = "提交量")
+```
+
+经过了解 svn_trunk_year 2018 - 2022 年每天提交量的范围是 0 次到 21 次，0 次表示当天没有提交代码，SVN 上也不会有日志记录。因此，将提交量划分为 5 档
+
+
+
+### 棋盘图 {#sec-chess}
+
+<!-- 
+标签图层 geom_label
+-->
+
+棋盘图一般可以放所有时间节点的聚合信息，格点处为落的子
+
+
+```{r}
+#| echo: false
+#| label: rversion-raw-data
+
+rversion <- readRDS(file = "data/rversion-2022.rds")
+```
+
+该数据集的存储结构很简单，是一个两列的数据框，它的一些属性如下：
+
+```{r}
+str(rversion)
+```
+
+做一点数据处理，将 date 字段转为日期类型，并从日期中提取年、月信息。
+
+```{r}
+rversion$date <- as.Date(rversion$date, format = "%Y-%m-%d", tz = "UTC")
+rversion$year <- format(rversion$date, "%Y")
+rversion$month <- format(rversion$date, "%m")
+```
+
+
+统计过去 25 年里每月的发版次数，如图 @fig-rversion-chess
+
+```{r}
+#| label: fig-rversion-chess
+#| fig-cap: "25 年 R 软件发版情况"
+#| fig-showtext: true
+#| fig-width: 6
+#| fig-height: 8
+
+aggregate(data = rversion, version ~ year + month, length) |>
+  ggplot(aes(x = month, y = year)) +
+  geom_label(aes(label = version, fill = version),
+    show.legend = F, color = "white"
+  ) +
+  scale_fill_viridis_c(option = "D", begin = 0.2, end = 0.8) +
+  theme_classic() +
+  theme(panel.grid.major.y = element_line(colour = "gray95")) +
+  labs(x = "月份", y = "年份")
+```
+
+
+### 时间线图 {#sec-timeline}
+
+<!-- 
+线段图层 geom_segment
+-->
+
+时间线图非常适合回顾过去，展望未来，讲故事
+
+时间线图展示信息的层次和密度一般由时间跨度决定。时间跨度大时，展示重点节点信息，时间跨度小时，重点和次重点信息都可以放。从更加宏观的视角，厘清发展脉络，比如近两年的 R 软件发版情况。
+
+
+本节用到一个数据集 rversion，记录了历次 R 软件发版时间及版本号，见 @tbl-rversion
+
+```{r}
+#| echo: false
+#| label: tbl-rversion
+#| tbl-cap: "R 软件发版数据集（部分）"
+
+knitr::kable(head(rversion), col.names = c("版本号", "发版日期", "发版年份", "发版月份"))
+```
+
+
+
+```{r}
+rversion_tl <- within(rversion, {
+  # 版本号为 x.0.0 为重大版本 big
+  # 版本号为 x.1.0 x.12.0 x.20.0 为主要版本 major
+  # 版本号为 x.0.1 为次要版本 minor
+  status <- ifelse(grepl(pattern = "*\\.0\\.0", x = version), "big", version)
+  status <- ifelse(grepl(pattern = "*\\.[1-9]{1,2}\\.0$", x = status), "major", status)
+  status <- ifelse(!status %in% c("big", "major"), "minor", status)
+})
+positions <- c(0.5, -0.5, 1.0, -1.0, 1.5, -1.5)
+directions <- c(1, -1)
+# 位置
+rversion_pos <- data.frame(
+  # 只要不是同一天发布的版本，方向相对
+  date = unique(rversion_tl$date),
+  position = rep_len(positions, length.out = length(unique(rversion_tl$date))),
+  direction = rep_len(directions, length.out = length(unique(rversion_tl$date)))
+)
+# 原始数据上添加方向和位置信息
+rversion_df <- merge(x = rversion_tl, y = rversion_pos, by = "date", all = TRUE)
+# 最重要的状态放在最后绘制到图上
+rversion_df <- rversion_df[with(rversion_df, order(date, status)), ]
+```
+
+选取一小段时间内的发版情况，比如最近的三年 --- 2020 - 2022 年 
+
+
+```{r}
+# 选取 2020 - 2022 年的数据
+sub_rversion_df<- rversion_df[rversion_df$year %in% 2020:2022, ]
+# 月份注释
+month_dat <- data.frame(
+  date = seq(from = as.Date('2020-01-01'), to = as.Date('2022-12-31'), by = "3 month")
+)
+month_dat <- within(month_dat, {
+  month = format(date, "%b")
+})
+# 年份注释
+year_dat <- data.frame(
+  date = seq(from = as.Date('2020-01-01'), to = as.Date('2022-12-31'), by = "1 year")
+)
+year_dat <- within(year_dat, {
+  year = format(date, "%Y")
+})
+```
+
+
+@fig-rversion-timeline 展示 2020-2022 年 R 软件发版情况
+
+
+```{r}
+#| label: fig-rversion-timeline
+#| fig-cap: "2020-2022 年 R 软件发版情况"
+#| fig-width: 8
+#| fig-height: 4
+#| fig-showtext: true
+
+ggplot(data = sub_rversion_df) +
+  geom_segment(aes(x = date, y = 0, xend = date, yend = position)) +
+  geom_hline(yintercept = 0, color = "black", linewidth = 1) +
+  geom_label(
+    aes(x = date, y = position, label = version, color = status),
+    show.legend = FALSE
+  ) +
+  geom_point(aes(x = date, y = 0, color = status),
+    size = 3, show.legend = FALSE
+  ) +
+  geom_text(
+    data = month_dat,
+    aes(x = date, y = 0, label = month), vjust = 1.5
+  ) +
+  geom_text(
+    data = year_dat,
+    aes(x = date, y = 0, label = year), vjust = -0.5
+  ) +
+  theme_void()
+```
+
+图中红色标注的是里程碑式的重大版本，绿色标注的是主要版本，蓝色标注的次要版本，小修小补，小版本更新。
+
+
+当时间跨度非常大时，比如过去 25 年，那就只能放重大版本和主要版本信息了，时间上月份信息就不能用名称简写，而用数字更加合适。而且还得竖着放，同时添加那个版本最有影响力的改动。相比于，棋盘图，这是时间线图的优势。
+
+
+```{r}
+#| label: fig-rversion-major
+#| fig-cap: "25 年里 R 软件重大及主要版本发布情况"
+#| fig-width: 6
+#| fig-height: 9
+#| fig-showtext: true
+
+sub_rversion_df2 <- rversion_df[rversion_df$status %in% c("big", "major"), ]
+ggplot(data = sub_rversion_df2) +
+  geom_segment(aes(x = 0, y = date, xend = position, yend = date, color = status),
+    show.legend = F
+  ) +
+  geom_vline(xintercept = 0, color = "black", linewidth = 1) +
+  geom_label(
+    aes(x = position, y = date, label = version, color = status),
+    show.legend = FALSE
+  ) +
+  geom_point(aes(x = 0, y = date, color = status), size = 3, show.legend = FALSE) +
+  geom_text(
+    aes(x = 0, y = as.Date(format(date, "%Y-01-01")), label = year),
+    hjust = -0.1
+  ) +
+  theme_void()
+```
+
+在 R 语言诞生的前 5 年里，每年发布 3 个主要版本，这 5 年是 R 软件活跃开发的时期。而 2003-2012 年的这 10 年，基本上每年发布 2 个主要版本。2013-2022 年的这 10 年，基本上每年发布 1 个主要版本。
+
+
+[timevis](https://github.com/daattali/timevis) 包基于 JavaScript 库 [Vis](https://visjs.org/) 的 [vis-timeline](https://github.com/visjs/vis-timeline) 模块，可以 创建交互式的时间线图，支持与 Shiny 应用集成。
+
+
+## 描述分布 {#sec-visualize-data-distribution}
+
+数据来自中国国家统计局发布的2021年统计年鉴，各省、直辖市和自治区分区域的性别比数据（部分）情况见 @tbl-province-sex-ratio 。
+
+```{r}
+#| label: tbl-province-sex-ratio
+#| tbl-cap: "各省、直辖市和自治区分区域的性别比数据（部分）"
+#| echo: false
+
+province_sex_ratio <- readRDS(file = "data/china-sex-ratio-2020.rds")
+knitr::kable(head(province_sex_ratio))
+```
+
+
+
+### 箱线图 {#sec-boxplot}
+
+
+
+```{r}
+#| label: fig-boxplot-gg
+#| fig-cap: "箱线图"
+#| fig-width: 4.5
+#| fig-height: 3.5
+#| fig-showtext: true
+
+ggplot(data = province_sex_ratio, aes(x = `区域`, y = `性别比（女=100）`)) +
+  geom_boxplot() +
+  theme_classic()
+```
+
+@fig-boxplot-lv 是箱线图的变体 [@Tukey1978]
+
+```{r}
+#| label: fig-boxplot-lv
+#| fig-cap: "箱线图的变体"
+#| fig-width: 4.5
+#| fig-height: 3.5
+#| fig-showtext: true
+
+library(lvplot)
+ggplot(data = province_sex_ratio, aes(x = `区域`, y = `性别比（女=100）`)) +
+  geom_lv() +
+  theme_classic()
+```
+
+
+
+
+箱线图的历史有 50 多年了，它的变体也有很多。
+
+```{r}
+#| label: fig-boxplot-base
+#| fig-cap: "箱线图"
+#| fig-width: 4.5
+#| fig-height: 3.5
+#| fig-showtext: true
+#| par: true
+
+boxplot(`性别比（女=100）` ~ `区域` , data = province_sex_ratio)
+```
+
+
+
+
+### 提琴图 {#sec-violin}
+
+
+```{r}
+#| label: fig-violin-gg
+#| fig-cap: "提琴图"
+#| fig-width: 4.5
+#| fig-height: 3.5
+#| fig-showtext: true
+
+ggplot(data = province_sex_ratio, aes(x = `区域`, y = `性别比（女=100）`)) +
+  geom_violin(fill = "lightgray", draw_quantiles = c(0.25, 0.5, 0.75)) +
+  theme_classic()
+```
+
+
+
+```{r}
+#| label: fig-violin-vioplot
+#| fig-cap: "提琴图"
+#| fig-width: 4.5
+#| fig-height: 3.5
+#| fig-showtext: true
+#| par: true
+
+vioplot::vioplot(`性别比（女=100）` ~ `区域`,
+  data = province_sex_ratio, col = "lightgray"
+)
+```
+
+beanplot 的名字是根据图形的外观取的，豌豆，rug 用须线表示数据
+
+
+```{r}
+#| label: fig-violin-beanplot
+#| fig-cap: "提琴图"
+#| fig-width: 4.5
+#| fig-height: 3.5
+#| fig-showtext: true
+#| par: true
+
+beanplot::beanplot(`性别比（女=100）` ~ `区域`,
+  data = province_sex_ratio, col = "lightgray", log = "",
+  xlab = "区域", ylab = "性别比（女=100）"
+)
+```
+
+
+
+### 直方图 {#sec-histogram}
+
+
+```{r}
+#| label: fig-histogram
+#| fig-cap: "直方图"
+#| fig-width: 4.5
+#| fig-height: 3.5
+#| fig-showtext: true
+
+ggplot(data = province_sex_ratio, aes(x = `性别比（女=100）`, fill = `区域`)) +
+  geom_histogram(binwidth = 5, color = "white", position = "stack") +
+  theme_classic()
+```
+
+
+```{r}
+#| label: fig-freqpoly
+#| fig-cap: "直方图"
+#| fig-width: 4.5
+#| fig-height: 3.5
+#| fig-showtext: true
+
+ggplot(data = province_sex_ratio, aes(x = `性别比（女=100）`, color = `区域`)) +
+  geom_freqpoly(binwidth = 5, stat = "bin") +
+  theme_classic()
+```
+
+
+### 密度图 {#sec-density}
+
+@fig-density 展示分组密度曲线图
+
+```{r}
+#| label: fig-density
+#| fig-cap: "密度图"
+#| fig-width: 4.5
+#| fig-height: 3.5
+#| fig-showtext: true
+
+ggplot(data = province_sex_ratio, aes(x = `性别比（女=100）`)) +
+  geom_density(aes(fill = `区域`), alpha = 0.5) +
+  theme_classic()
+```
+
+
+@fig-density-stack 丢失边际密度
+
+```{r}
+#| label: fig-density-stack
+#| fig-cap: "堆积密度图"
+#| fig-width: 4.5
+#| fig-height: 3.5
+#| fig-showtext: true
+
+ggplot(data = province_sex_ratio, aes(x = `性别比（女=100）`, y = after_stat(density))) +
+  geom_density(aes(fill = `区域`), position = "stack", alpha = 0.5) +
+  theme_classic()
+```
+
+:::{.callout-caution}
+Stacked density plots: if you want to create a stacked density plot, you probably want to 'count' (density * n) variable instead of the default density
+:::
+
+
+@fig-density-count 保护边际密度
+
+```{r}
+#| label: fig-density-count
+#| fig-cap: "累积分布密度图"
+#| fig-width: 4.5
+#| fig-height: 3.5
+#| fig-showtext: true
+
+ggplot(data = province_sex_ratio, aes(x = `性别比（女=100）`, y = after_stat(density * n))) +
+  geom_density(aes(fill = `区域`), position = "stack", alpha = 0.5) +
+  theme_classic()
+```
+
+什么原因导致 @fig-density-count 和 @fig-density-stack 看起来没什么差别呢？而换一组数据，就可以看出明显的差别，条件密度曲线 @fig-density-count
+
+
+```{r}
+#| label: fig-density-diamonds
+#| fig-cap: "堆积密度图"
+#| fig-width: 6
+#| fig-height: 7.5
+#| fig-showtext: true
+
+p1 <- ggplot(diamonds, aes(x = carat, y = after_stat(density), fill = cut)) +
+  geom_density(position = "stack") +
+  theme_classic()
+
+p2 <- ggplot(diamonds, aes(x = carat, y = after_stat(density * n), fill = cut)) +
+  geom_density(position = "stack") +
+  theme_classic()
+
+p3 <- ggplot(diamonds, aes(x = carat, y = after_stat(count), fill = cut)) +
+  geom_density(position = "stack") +
+  theme_classic()
+
+library(patchwork)
+p1 / p2 / p3
+```
+
+联合密度曲线
+
+```{r}
+#| label: fig-density-2d
+#| fig-cap: "二维密度图"
+#| fig-width: 4.5
+#| fig-height: 3.5
+#| fig-showtext: true
+
+state_x77 <- data.frame(state.x77,
+  state_name = rownames(state.x77),
+  state_region = state.region,
+  check.names = FALSE
+)
+p1 <- ggplot(data = state_x77, aes(x = Income, y = `Life Exp`)) +
+  geom_point() +
+  geom_density_2d(aes(
+    color = after_stat(level),
+    alpha = after_stat(level)
+  ),
+  show.legend = F
+  ) +
+  scale_color_viridis_c(option = "inferno") +
+  labs(
+    x = "人均收入（美元）", y = "预期寿命（年）",
+    title = "1977 年各州预期寿命与人均收入的关系",
+    caption = "数据源：美国人口调查局"
+  ) +
+  theme_classic() +
+  theme(
+    panel.grid = element_line(colour = "gray92"),
+    panel.grid.major = element_line(linewidth = rel(1.0)),
+    panel.grid.minor = element_line(linewidth = rel(0.5))
+  )
+
+p1
+```
+
+边际密度曲线，ggExtra 添加
+
+```{r}
+#| label: fig-density-margins
+#| fig-cap: "边际密度图"
+#| fig-width: 5
+#| fig-height: 4
+#| fig-showtext: true
+
+library(ggExtra)
+ggMarginal(p1)
+```
+
+热力图，二维密度图 [ggdist](https://github.com/mjskay/ggdist) [@ggdist2022]
+
+```{r}
+#| label: fig-density-2d-filled
+#| fig-cap: "二维密度图"
+#| fig-width: 5.5
+#| fig-height: 3.5
+#| fig-showtext: true
+
+ggplot(data = state_x77, aes(x = Income, y = `Life Exp`)) +
+  geom_density_2d_filled() +
+  theme_classic()
+```
+
+相比于 ggplot2 内置的二维核密度估计，[ggdensity](https://github.com/jamesotto852/ggdensity/) [@ggdensity2022] 有一些优势
+
+
+```{r}
+#| label: fig-density-hdr
+#| fig-cap: "二维密度图"
+#| fig-width: 4.5
+#| fig-height: 3.5
+#| fig-showtext: true
+
+library(ggdensity)
+ggplot(data = state_x77, aes(x = Income, y = `Life Exp`)) +
+  geom_point() +
+  geom_hdr() +
+  theme_classic()
+```
+
+
+
+
+
+
+
+
+
+### 岭线图 {#sec-ridge-line}
+
+叠嶂图，还有些其它名字，如峰峦图、岭线图等，详情参考统计之都主站[《叠嶂图的前世今生》](https://cosx.org/2018/04/ridgeline-story/)，主要用来描述数据的分布情况，在展示分布的对比上效果非常好。
+
+
+@fig-ridge-line 设置窗宽为 1.5 个百分点
+
+```{r}
+#| label: fig-ridge-line
+#| fig-cap: "描述数据分布"
+#| fig-subcap: 
+#|   - 岭线图
+#|   - 岭线图和抖动图组合
+#|   - 岭线图和轴须图组合
+#| fig-ncol: 2
+#| fig-width: 4.5
+#| fig-height: 3.5
+#| echo: false
+#| fig-showtext: true
+
+
+library(ggridges)
+
+ggplot(data = province_sex_ratio, aes(x = `性别比（女=100）`, y = `区域`)) +
+  geom_density_ridges(bandwidth = 1.5, alpha = 0.7) +
+  theme_classic()
+
+ggplot(data = province_sex_ratio, aes(x = `性别比（女=100）`, y = `区域`)) +
+  geom_density_ridges(bandwidth = 1.5, jittered_points = TRUE, alpha = 0.7) +
+  theme_classic()
+
+ggplot(data = province_sex_ratio, aes(x = `性别比（女=100）`, y = `区域`)) +
+  geom_density_ridges(
+    bandwidth = 1.5,
+    jittered_points = TRUE,
+    position = position_points_jitter(height = 0),
+    point_shape = "|", point_size = 3,
+    point_alpha = 1, alpha = 0.7
+  ) +
+  theme_classic()
+```
+
+:::{.callout-tip}
+除了中国国家统计年鉴，各省、自治区、直辖市及各级统计局每年都会发布一些统计年鉴、公告等数据，读者可以在此基础上继续收集更多数据，来分析诸多有意思的问题：
+
+1. 城市、镇和乡村男女性别比呈现差异化分布的成因。
+1. 城市、镇和乡村男女年龄构成。
+1. 将上述问题从省级下钻到市、县级来分析。
+:::
+
+
+
+
+### 抖动图 {#sec-jitter}
+
+散点图展示原始数据
+
+```{r}
+#| label: fig-point
+#| fig-cap: "散点图"
+#| fig-width: 4.5
+#| fig-height: 3.5
+#| fig-showtext: true
+
+ggplot(data = province_sex_ratio, aes(x = `区域`, y = `性别比（女=100）`)) +
+  geom_point() +
+  theme_classic()
+```
+
+
+抖动图展示原始数据
+
+```{r}
+#| label: fig-jitter
+#| fig-cap: "抖动图"
+#| fig-width: 4.5
+#| fig-height: 3.5
+#| fig-showtext: true
+
+ggplot(data = province_sex_ratio, aes(x = `区域`, y = `性别比（女=100）`)) +
+  geom_jitter(width = 0.25) +
+  theme_classic()
+```
+
+@SinaPlot2018 提出一种新的方式描述数据的分布，集合抖动图和小提琴图的功能，在给定的分布界限内抖动
+
+```{r}
+#| label: fig-sina
+#| fig-cap: "加强版的抖动图"
+#| fig-width: 4.5
+#| fig-height: 3.5
+#| fig-showtext: true
+
+library(ggforce)
+ggplot(data = province_sex_ratio, aes(x = `区域`, y = `性别比（女=100）`)) +
+  geom_sina() +
+  theme_classic()
+```
+
+数据点受 violin 的曲线限制
+
+```{r}
+#| label: fig-sina-violin
+#| fig-cap: "加强版的抖动图"
+#| fig-width: 4.5
+#| fig-height: 3.5
+#| fig-showtext: true
+
+ggplot(data = province_sex_ratio, aes(x = `区域`, y = `性别比（女=100）`)) +
+  geom_violin() +
+  geom_sina() +
+  theme_classic()
+```
+
+蜂群图也是某种形式的抖动图
+
+```{r}
+#| label: fig-beeswarm
+#| fig-cap: "加强版的抖动图"
+#| fig-width: 4.5
+#| fig-height: 3.5
+#| fig-showtext: true
+
+library(ggbeeswarm)
+ggplot(data = province_sex_ratio, aes(x = `区域`, y = `性别比（女=100）`)) +
+  geom_quasirandom() +
+  theme_classic()
+```
+
+添加 violin 作为参考边界，与 sina 是非常类似的
+
+```{r}
+#| label: fig-beeswarm-violin
+#| fig-cap: "加强版的抖动图"
+#| fig-width: 4.5
+#| fig-height: 3.5
+#| fig-showtext: true
+
+ggplot(data = province_sex_ratio, aes(x = `区域`, y = `性别比（女=100）`)) +
+  geom_violin() +
+  geom_quasirandom() +
+  theme_classic()
+```
+
+函数 `geom_beeswarm()` 提供了另一种散点的组织方式，按一定的规则，而不是近似随机的方式组织
+
+```{r}
+#| eval: false
+
+ggplot(data = province_sex_ratio, aes(x = `区域`, y = `性别比（女=100）`)) +
+  geom_violin() +
+  geom_beeswarm() +
+  theme_classic()
+```
+
+
+## 描述对比 {#sec-visualize-data-comparisons}
+
+数据来自中国国家统计局发布的2021年统计年鉴，
+
+```{r}
+#| label: tbl-china-age-sex
+#| tbl-cap: "中国各年龄段的性别比数据（部分）"
+#| echo: false
+
+china_age_sex = readRDS(file = "data/china-age-sex-2020.rds")
+knitr::kable(head(china_age_sex))
+```
+
+对比的是什么？城市、镇和乡村的性别分布，是否失衡？在哪个年龄段表现很失衡？
+
+
+### 柱形图 {#sec-column}
+
+
+分年龄段比较城市、镇和乡村的性别比数据
+
+
+```{r}
+#| label: fig-column
+#| fig-cap: "分年龄段比较城市、镇和乡村的性别比数据"
+#| fig-width: 7.5
+#| fig-height: 4.5
+#| fig-showtext: true
+
+ggplot(data = china_age_sex, aes(x = `年龄`, y = `性别比（女=100）`, fill = `区域`)) +
+  geom_hline(yintercept = 100, color = "gray", lty = 2, linewidth = 1) +
+  geom_col(position = "dodge2", width = 0.75) +
+  theme_bw()
+```
+
+考虑到数据本身的含义，一般来说，性别比不可能从 0 开始，除非现实中出现了《西游记》里的女儿国。因此，将纵轴的范围，稍加限制，从 性别比为 70 开始，目的是突出城市、镇和乡村的差异。
+
+```{r}
+#| label: fig-column-better
+#| fig-cap: "分年龄段比较城市、镇和乡村的性别比数据"
+#| fig-width: 7.5
+#| fig-height: 4.5
+#| fig-showtext: true
+
+ggplot(data = china_age_sex, aes(x = `年龄`, y = `性别比（女=100）`, fill = `区域`)) +
+  geom_hline(yintercept = 100, color = "gray", lty = 2, linewidth = 1) +
+  geom_col(position = "dodge2", width = 0.75) +
+  coord_cartesian(ylim = c(70, 130)) +
+  theme_bw()
+```
+
+
+
+### 条形图 {#sec-barchart}
+
+将柱形图横过来即可得到条形图，横过来的好处主要体现在分类很多的时候，留足空间给年龄分组的分类标签，从左到右，从上往下也十分符合大众的阅读习惯
+
+```{r}
+#| label: fig-barchart
+#| fig-cap: "分年龄段比较城市、镇和乡村的性别比数据"
+#| fig-width: 6
+#| fig-height: 5.5
+#| fig-showtext: true
+
+ggplot(data = china_age_sex, aes(x = `性别比（女=100）`, y = `年龄`, fill = `区域`)) +
+  geom_vline(xintercept = 100, color = "gray", lty = 2, linewidth = 1) +
+  geom_col(position = "dodge2", width = 0.75) +
+  coord_cartesian(xlim = c(70, 130)) +
+  theme_bw()
+```
+
+
+
+
+
+
+### 点线图 {#sec-cleveland}
+
+<!-- 克利夫兰点图 dotchart 在条形图的基础上，省略了条形图的宽度，可以容纳更多的数据点。 -->
+
+```{r}
+#| label: fig-dotchart
+#| fig-cap: "分年龄段比较城市、镇和乡村的性别比数据"
+#| fig-width: 5.5
+#| fig-height: 5.5
+#| fig-showtext: true
+
+ggplot(data = china_age_sex, aes(x = `性别比（女=100）`, y = `年龄`, color = `区域`)) +
+  geom_vline(xintercept = 100, color = "lightgray", lty = 2, linewidth = 1) +
+  geom_point() +
+  theme_bw()
+```
+
+
+### 雷达图 {#sec-radar}
+
+<!-- 多元数据，30多个省份多个指标的对比，观察潜力 -->
+
+[ggradar](https://github.com/ricardo-bion/ggradar) 包绘制雷达图对比美国三个州的数据，根据人口密度，从 state.x77 选择康涅狄格州 Connecticut， 马塞诸塞州 Massachusetts， 新泽西州 New Jersey，比较它们的人均收入 Income，文盲率 Illiteracy， 预期寿命 Life Exp，谋杀率 Murder 和高中毕业率 HS Grad。 函数 `ggradar()` 要求数据集各个比较的变量归一化到 0-1 区间。
+
+```{r}
+#| label: fig-state-x77-comp
+#| fig-cap: "康涅狄格州、马塞诸塞州、新泽西州的比较"
+#| fig-width: 7.5
+#| fig-height: 4
+#| fig-showtext: true
+#| warning: false
+
+state_x77 <- data.frame(state.x77,
+  state_name = rownames(state.x77),
+  state_region = state.region,
+  check.names = FALSE
+)
+state_x77_sub <- state_x77[
+  c("Connecticut", "Massachusetts", "New Jersey"),
+  c("Income", "Illiteracy", "Life Exp", "Murder", "HS Grad")
+]
+state_x77_scale <- apply(state_x77_sub, 2, scales::rescale)
+state_x77_comp <- data.frame(state = rownames(state_x77_scale), state_x77_scale)
+
+library(ggradar)
+ggradar(plot.data = state_x77_comp, base.size = 13, legend.position = "right")
+```
+
+
+
+
+### 词云图 {#sec-wordcloud}
+
+
+<!-- 
+根据代码提交的说明制作词云图。根据各位开发者提交的代码量制作
+-->
+
+
+词云图帮助我们从众多的因素中展现出影响力比较大的主题。目前，R 语言社区官方发布的 R 包超过 18000 个，这些 R 包都是干什么的呢？热门的方向是什么呢？根据 R 包的标题内容分词，统计词频就可以帮助我们初步了解一些信息。
+
+
+
+[ggwordcloud](https://github.com/lepennec/ggwordcloud) 包提供词云图层 `geom_text_wordcloud()`
+
+
+
+```{r}
+#| label: fig-wordcloud
+#| fig-cap: "词云图"
+#| fig-width: 7
+#| fig-showtext: true
+#| fig-asp: 0.618
+#| fig-dpi: 96
+
+library(ggwordcloud)
+
+aggregate(data = svn_trunk_log, revision ~ author, FUN = length) |> 
+  ggplot(aes(label = author, size = revision)) +
+  geom_text_wordcloud(seed = 2022, grid_size = 1, max_grid_size = 24) +
+  scale_size_area(max_size = 20) +
+  theme_minimal()
+```
+
+
+词云图也可以是条形图或柱形图的一种替代，词云图不用担心数目多少，而条形图不适合太多的分类情形。
+
+
+```{r}
+#| label: fig-trunk-author
+#| fig-cap: "开发者提交量排行榜"
+#| fig-width: 6
+#| fig-height: 4
+#| fig-showtext: true
+
+aggregate(data = svn_trunk_log, revision ~ author, FUN = length) |>
+  subset(subset = revision >= 100) |> 
+  ggplot(aes(x = revision, y = reorder(author, revision))) +
+  geom_col() +
+  theme_classic() +
+  coord_cartesian(expand = FALSE) +
+  labs(x = "提交量", y = "维护者")
+```
+
+
+
+## 描述占比 {#sec-visualize-data-proportion}
+
+
+### 简单饼图 {#sec-naive-pie}
+
+
+
+
+```{r}
+#| label: fig-pie
+#| fig-cap: "维护者提交量占比"
+#| fig-width: 5
+#| fig-height: 4
+#| fig-showtext: true
+
+aggregate(data = svn_trunk_log, revision ~ author, FUN = length) |> 
+  transform(author2 = ifelse(revision < 2000, "Others", author)) |> 
+  aggregate(revision ~ author2, FUN = sum) |> 
+  transform(label = paste0(round(revision / sum(revision), digits = 4) * 100, "%")) |> 
+  ggplot(aes(x = 1, fill = reorder(author2, revision)  , y = revision)) +
+  geom_col(position = "fill", show.legend = FALSE, color = "white") +
+  scale_y_continuous(labels = scales::percent) +
+  coord_polar(theta = "y") +
+  geom_text(aes(x = 1.2, label = author2),
+    position = position_fill(vjust = 0.5), color = "black"
+  ) +
+  geom_text(aes(x = 1.6, label = label),
+    position = position_fill(vjust = 0.5), color = "black"
+  ) +
+  theme_void() +
+  labs(x = NULL, y = NULL)
+```
+
+在分类很多的情况下，占比小的，显得十分拥挤
+
+```{r}
+#| label: fig-pie-bad
+#| fig-cap: "维护者提交量占比"
+#| fig-width: 5
+#| fig-height: 4
+#| fig-showtext: true
+
+aggregate(data = svn_trunk_log, revision ~ author, FUN = length) |> 
+  transform(author2 = ifelse(revision < 1000, "Others", author)) |> 
+  aggregate(revision ~ author2, FUN = sum) |> 
+  transform(label = paste0(round(revision / sum(revision), digits = 4) * 100, "%")) |> 
+  ggplot(aes(x = 1, fill = reorder(author2, revision)  , y = revision)) +
+  geom_col(position = "fill", show.legend = FALSE, color = "white") +
+  scale_y_continuous(labels = scales::percent) +
+  coord_polar(theta = "y") +
+  geom_text(aes(x = 1.2, label = author2),
+    position = position_fill(vjust = 0.5), color = "black"
+  ) +
+  geom_text(aes(x = 1.6, label = label),
+    position = position_fill(vjust = 0.5), color = "black"
+  ) +
+  theme_void() +
+  labs(x = NULL, y = NULL)
+```
+
+一种缓解办法是添加注释 
+
+```{r}
+#| label: fig-pie-repel
+#| fig-cap: "维护者提交量占比"
+#| fig-width: 6.5
+#| fig-height: 5
+#| fig-showtext: true
+
+library(ggrepel)
+dat1 <- aggregate(data = svn_trunk_log, revision ~ author, FUN = length) |>
+  transform(author2 = ifelse(revision < 1000, "Others", author)) |>
+  aggregate(revision ~ author2, FUN = sum)
+
+dat2 <- within(dat1, {
+  value <- 100 * revision / sum(revision)
+  csum <- rev(cumsum(rev(value)))
+  pos <- value / 1.5 + c(csum[-1], NA)
+  pos <- ifelse(is.na(pos), value / 2, pos)
+  label <- paste(author2, paste0(round(value, 2), "%"), sep = "\n")
+})
+
+ggplot(data = dat2, aes(x = 1, fill = author2, y = value)) +
+  geom_col(show.legend = FALSE, color = "white") +
+  coord_polar(theta = "y") +
+  geom_label_repel(aes(y = pos, label = label),
+    size = 4.5, nudge_x = 0.75, show.legend = FALSE
+  ) +
+  theme_void() +
+  labs(x = NULL, y = NULL)
+```
+
+
+但是数量很多的情况下，也是无能为力的，当然，是否需要显示那么多，是否可以合并占比小的部分，也是值得考虑的问题。
+
+
+
+
+
+### 环形饼图 {#sec-ring-pie}
+
+中间空了一块
+
+
+```{r}
+#| label: fig-ring-pie
+#| fig-cap: "维护者提交量占比"
+#| fig-width: 5
+#| fig-height: 4
+#| fig-showtext: true
+
+aggregate(data = svn_trunk_log, revision ~ author, FUN = length) |> 
+  transform(author2 = ifelse(revision < 2000, "Others", author)) |> 
+  aggregate(revision ~ author2, FUN = sum) |> 
+  transform(label = paste0(round(revision / sum(revision), digits = 4) * 100, "%")) |> 
+  ggplot(aes(x = 1, fill = author2, y = revision)) +
+  geom_col(position = "fill", show.legend = FALSE, color = "white") +
+  scale_y_continuous(labels = scales::percent) +
+  coord_polar(theta = "y") +
+  geom_text(aes(x = 1.2, label = author2),
+    position = position_fill(vjust = 0.5), color = "black"
+  ) +
+  geom_text(aes(x = 1.6, label = label),
+    position = position_fill(vjust = 0.5), color = "black"
+  ) +
+  theme_void() +
+  labs(x = NULL, y = NULL) +
+  xlim(c(0.2, 1.7))
+```
+
+
+### 扇形饼图 {#sec-sector-pie}
+
+扇形饼图又叫风玫瑰图或南丁格尔图
+
+```{r}
+#| label: fig-wind-rose
+#| fig-cap: "维护者提交量分布"
+#| fig-width: 5
+#| fig-height: 4.5
+#| fig-showtext: true
+
+aggregate(data = svn_trunk_log, revision ~ author, FUN = length) |> 
+  transform(author2 = ifelse(revision < 2000, "Others", author)) |> 
+  aggregate(revision ~ author2, FUN = sum) |> 
+  ggplot(aes(x = reorder(author2, revision), y = revision)) +
+  geom_col(aes(fill = author2), show.legend = FALSE) +
+  coord_polar() +
+  theme_minimal() +
+  theme(axis.text.y = element_blank()) +
+  labs(x = NULL, y = NULL)
+```
+
+
+
+
+### 帕累托图 {#sec-pareto}
+
+<!-- 描述各个部分的占比，特别是关键要素的占比 -->
+
+
+
+
+### 马赛克图 {#sec-mosic}
+
+<!-- 多个分类变量 -->
+
+```{r}
+#| label: fig-mosaic
+#| fig-cap: "加州伯克利分校的各系录取情况"
+#| fig-width: 7
+#| fig-height: 5
+#| fig-showtext: true
+#| warning: false
+
+library(ggmosaic)
+ggplot(data = as.data.frame(UCBAdmissions)) +
+  geom_mosaic(aes(
+    x = product(Dept, Gender),
+    weight = Freq, fill = Admit
+  )) +
+  theme_minimal()
+```
+
+
+### 矩阵树图 {#sec-treemap}
+
+<!-- 
+有层次的占比
+-->
+
+```{r}
+#| eval: true
+#| echo: false
+#| label: tbl-g20
+#| tbl-cap: "G20 国家经济水平：GDP 总量、人类发展指数等"
+
+library(treemapify)
+data("G20")
+knitr::kable(head(G20), col.names = c(
+  "区域", "国家", "GDP",
+  "人类发展指数", "经济水平", "所属半球"
+))
+```
+
+
+```{r}
+#| label: fig-treemap
+#| fig-cap: "G20 主要经济体"
+#| fig-width: 7
+#| fig-height: 6
+#| fig-showtext: true
+
+library(treemapify)
+ggplot(G20, aes(
+  area = gdp_mil_usd, fill = region,
+  label = country, subgroup = region
+)) +
+  geom_treemap() +
+  geom_treemap_text(grow = T, reflow = T, colour = "black") +
+  facet_wrap(~hemisphere) +
+  scale_fill_brewer(palette = "Set1") +
+  theme(legend.position = "bottom") +
+  labs(title = "G20 主要经济体", fill = "区域")
+```
+
+每个瓦片的大小代表国家的 GDP 在所属半球里的比重。
+
+
+## 描述关系 {#sec-visualize-data-relation}
+
+
+
+
+### 散点图 {#sec-scatter}
+
+
+<!-- 
+在介绍 ggplot2 的基础知识时，已经介绍过绘制过程，本节是否还有必要介绍，如果介绍应该怎么介绍？
+
+散点图的历史，主要作用
+展示原始的数据，关系
+
+点的形态、大小、颜色等都可以变化
+-->
+
+中国国家统计局 2021 年发布的统计年鉴，2020 年 31 个省、直辖市、自治区，抚养比 文盲率、人口数的关系
+
+```{r}
+#| label: tbl-china-raise-illiteracy
+#| tbl-cap: "2020 年各省、直辖市、自治区，抚养比、文盲率、人口数等数据"
+#| echo: false
+
+china_raise_illiteracy <- readRDS(file = "data/china-raise-illiteracy-2020.rds")
+knitr::kable(head(china_raise_illiteracy[order(china_raise_illiteracy$`人口数`, decreasing = TRUE),]))
+```
+
+
+
+```{r}
+#| label: fig-china-raise-illiteracy
+#| fig-cap: "文盲人口占15岁及以上人口的比重与总抚养比的关系"
+#| fig-width: 6
+#| fig-height: 4
+#| fig-showtext: true
+
+ggplot(data = china_raise_illiteracy, aes(x = `总抚养比`, y = `文盲人口占15岁及以上人口的比重`)) +
+  geom_point() +
+  theme_classic() +
+  labs(x = "总抚养比（%）", y = "文盲人口占15岁及以上人口的比重（%）")
+```
+
+
+### 气泡图 {#sec-bubble}
+
+<!-- 
+散点图的历史，主要作用
+-->
+
+
+```{r}
+#| label: fig-china-raise-illiteracy-bubble
+#| fig-cap: "文盲率和抚养比数据"
+#| fig-width: 6
+#| fig-height: 4.5
+#| fig-showtext: true
+
+library(ggrepel)
+library(scales)
+ggplot(
+  data = china_raise_illiteracy,
+  aes(x = `总抚养比`, y = `文盲人口占15岁及以上人口的比重`)
+) +
+  geom_point(aes(size = `人口数`, color = `人口数`),
+    alpha = 0.85, pch = 16,
+    show.legend = c(color = FALSE, size = TRUE)
+  ) +
+  scale_size(labels = label_number(scale_cut = cut_short_scale())) +
+  scale_color_viridis_c(option = "C") +
+  geom_text_repel(
+    aes(label = `地区`),
+    size = 3, max.overlaps = 50,
+    segment.colour = "gray", seed = 2022, show.legend = FALSE
+  ) +
+  coord_cartesian(xlim = c(30, 60), ylim = c(0, 10.5), expand = FALSE) +
+  theme_classic() +
+  labs(x = "总抚养比（%）", y = "文盲人口占15岁及以上人口的比重（%）")
+```
+
+
+### 凹凸图 {#sec-bump}
+
+<!-- 
+凹凸图描述的是一种转化、变化关系，排序的变化
+
+待议是否适合放在描述关系一节
+
+排序位置变化，一段时间到另一段时间，比如话题热度的转变，比如今年国庆与去年国庆
+空间移动，路径移动，强调位置的移动
+
+ggbump 有警告
+2: In dplyr::left_join(., data %>% dplyr::select(-x, -y) %>% dplyr::mutate(key = 1) %>%  :
+  Each row in `x` is expected to match at most 1 row in `y`.
+ℹ Row 1 of `x` matches multiple rows.
+ℹ If multiple matches are expected, set `multiple = "all"` to silence this
+  warning.
+-->
+
+[ggbump](https://github.com/davidsjoberg/ggbump)
+
+```{r}
+#| label: fig-bump
+#| fig-cap: "凹凸图"
+#| fig-width: 7
+#| fig-height: 3.5
+#| fig-showtext: true
+#| warning: false
+
+library(ggbump)
+
+df <- data.frame(
+  country = c(
+    "India", "India", "India", "Sweden",
+    "Sweden", "Sweden", "Germany", "Germany",
+    "Germany", "Finland", "Finland", "Finland"
+  ),
+  year = c(
+    2011, 2012, 2013, 2011,
+    2012, 2013, 2011, 2012,
+    2013, 2011, 2012, 2013
+  ),
+  value = c(
+    492, 246, 246, 369,
+    123, 492, 246, 369,
+    123, 123, 492, 369
+  )
+)
+
+library(data.table)
+df <- as.data.table(df)
+df[, rank := rank(value, ties.method = "random"), by = "year"]
+
+ggplot(df, aes(year, rank, color = country)) +
+  geom_point(size = 7) +
+  geom_text(data = df[df$year == min(df$year), ],
+            aes(x = year - .1, label = country), size = 5, hjust = 1) +
+  geom_text(data = df[df$year == max(df$year), ],
+            aes(x = year + .1, label = country), size = 5, hjust = 0) +
+  geom_bump(linewidth = 2, smooth = 8) +
+  scale_x_continuous(limits = c(2010.6, 2013.4),
+                     breaks = seq(2011, 2013, 1)) +
+  theme_minimal(base_size = 14) +
+  theme(legend.position = "none",
+        panel.grid.major = element_blank()) +
+  labs(y = "RANK", x = NULL) +
+  scale_y_reverse()
+```
+
+
+
+### 韦恩图 {#sec-venn}
+
+<!-- 
+描述交叉关系
+部分和整体的关系
+https://r-charts.com/part-whole/ggvenndiagram/
+-->
+
+[ggVennDiagram](https://github.com/gaospecial/ggVennDiagram/)
+
+A、B、C 三个集合的交叉关系
+
+```{r}
+#| label: fig-venn
+#| fig-cap: "A、B、C 三个集合的交叉关系"
+#| fig-width: 5
+#| fig-height: 4.5
+#| fig-showtext: true
+
+x <- list(A = 1:5, B = 2:7, C = 5:10)
+ggVennDiagram::ggVennDiagram(x) +
+  scale_fill_gradient(low = "#F4FAFE", high = "#4981BF")
+```
+
+
+### 甘特图 {#sec-gantt}
+
+<!-- 
+描述依赖关系 
+
+项目管理也是数据分析应有的内容，与之相关的图形，了解和应用好也是重要的
+项目依赖关系 
+-->
+
+
+[ganttrify](https://github.com/giocomai/ganttrify)
+
+
+```{r}
+#| label: fig-gant
+#| fig-cap: "项目和任务进展"
+#| fig-width: 7
+#| fig-height: 4.5
+#| fig-showtext: true
+
+library(ganttrify)
+ganttrify(project = ganttrify::test_project,
+          project_start_date = "2021-03",
+          font_family = "sans")
+```
+
+
+
+### 网络图 {#sec-network}
+
+[ggraph](https://github.com/thomasp85/ggraph)
+[tidygraph](https://github.com/thomasp85/tidygraph) 描述依赖关系
+
+```{r}
+library(ggraph)
+graph <- tidygraph::as_tbl_graph(highschool) |> 
+    dplyr::mutate(Popularity = tidygraph::centrality_degree(mode = 'in'))
+
+graph
+```
+
+
+```{r}
+#| label: fig-graph
+#| fig-cap: "学校关系"
+#| fig-width: 7
+#| fig-height: 4.5
+#| fig-showtext: true
+
+ggraph(graph, layout = "kk") +
+  geom_edge_fan(aes(alpha = after_stat(index)), show.legend = FALSE) +
+  geom_node_point(aes(size = Popularity)) +
+  facet_edges(~year) +
+  theme_graph(
+    base_family = "sans",
+    foreground = "steelblue",
+    fg_text_colour = "white"
+  )
+```
+
