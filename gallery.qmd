@@ -93,7 +93,7 @@ svn log --xml --verbose -r 6:82626 https://svn.r-project.org/R/trunk > data-raw/
 从 Ross Ihaka 在 1997-09-18 提交第 1 次代码改动开始，下载所有的提交日志。截至写作时间，即 2022年7月27日，代码最新版本号为 82626，意味着代码仓库已存在 8 万多次提交。
 
 下载数据后，借助 **xml2**（<https://github.com/r-lib/xml2/>）包预处理这份 XML 格式数据，提取最重要的信息，谁在什么时间做了什么改动。经过一番操作后，将清洗干净的数据，
-保存到目录 `data/` 下，以 R 软件特有的文件格式保存为 `svn_trunk_log_20220727.rds`，同样与书随附。这样下来，原 XML 格式保存的 35 M 文件减少为 1 M 多，极大地减少了存储空间，也极大地方便了后续的数据探索和可视化。下面是这份日志数据开头的两行：
+保存到目录 `data/` 下，以 R 软件特有的文件格式保存为 `svn-trunk-log-2022.rds`，同样与书随附。这样下来，原 XML 格式保存的 35 M 文件减少为 1 M 多，极大地减少了存储空间，也极大地方便了后续的数据探索和可视化。下面是这份日志数据开头的两行：
 
 ```{r}
 svn_trunk_log <- readRDS(file = "data/svn-trunk-log-2022.rds")
@@ -1660,11 +1660,67 @@ aggregate(data = svn_trunk_log, revision ~ author, FUN = length) |>
 ### 帕累托图 {#sec-pareto}
 
 <!-- 
+https://en.wikipedia.org/wiki/Vilfredo_Pareto
 描述各个部分的占比，特别是关键要素的占比
-
+收入服从帕累托分布，这是一个幂率分布
+80% 的财富集中在 20% 的人的手中
 构造几何统计图层 geom_pareto
 多边形、点线、双轴
 -->
+
+开发者们的贡献量
+
+```{r}
+#| label: fig-pareto-stack
+#| fig-cap: "代码提交量的比例趋势"
+#| fig-showtext: true
+
+aggregate(data = svn_trunk_log, revision ~ year + author, FUN = length) |> 
+  ggplot(aes(x = year, y = revision, fill = author)) +
+  geom_col() +
+  theme_classic() +
+  coord_cartesian(expand = FALSE) +
+  labs(x = "年份", y = "提交量", fill = "开发者")
+```
+
+比例趋势图
+
+```{r}
+#| label: fig-pareto-fill
+#| fig-cap: "代码提交量的比例趋势"
+#| fig-showtext: true
+
+aggregate(data = svn_trunk_log, revision ~ year + author, FUN = length) |> 
+  ggplot(aes(x = year, y = revision, fill = author)) +
+  geom_col(position = "fill") +
+  scale_y_continuous(labels = scales::percent) +
+  theme_classic() +
+  coord_cartesian(expand = FALSE) +
+  labs(x = "年份", y = "提交量", fill = "开发者")
+```
+
+帕累托图
+
+```{r}
+#| label: fig-pareto
+#| fig-cap: "代码提交量的比例分布"
+#| fig-showtext: true
+
+dat <- aggregate(data = svn_trunk_log, revision ~ author, FUN = length) |>
+  transform(author = ifelse(revision < 1000, "Others", author)) |>
+  aggregate(revision ~ author, FUN = sum)
+dat <- dat[order(-dat$revision), ]
+
+ggplot(data = dat, aes(
+  x = reorder(author, revision, decreasing = T),
+  y = revision
+)) +
+  geom_col(width = 0.75) +
+  geom_line(aes(y = cumsum(revision), group = 1)) +
+  geom_point(aes(y = cumsum(revision))) +
+  theme_classic() +
+  labs(x = "维护者", y = "累计提交量")
+```
 
 
 
@@ -1756,14 +1812,20 @@ ggplot(G20, aes(
 
 ```{r}
 #| label: tbl-china-raise-illiteracy
-#| tbl-cap: "2020 年各省、直辖市、自治区，抚养比、文盲率、人口数等数据"
+#| tbl-cap: "2020 年各省、直辖市、自治区，总抚养比和文盲率相关数据（部分）"
 #| echo: false
 
 china_raise_illiteracy <- readRDS(file = "data/china-raise-illiteracy-2020.rds")
-knitr::kable(head(china_raise_illiteracy[order(china_raise_illiteracy$`人口数`, decreasing = TRUE),]))
+knitr::kable(head(china_raise_illiteracy[order(china_raise_illiteracy$`人口数`, decreasing = TRUE), ]),
+  col.names = c(
+    "地区", "人口数", "15-64岁", "总抚养比",
+    "15岁以上人口", "文盲人口", "文盲率"
+  ),
+  row.names = FALSE
+)
 ```
 
-
+其中，文盲人口是指15岁及15岁以上不识字及识字很少人口。文盲率 = 文盲人口 / 15岁以上人口。抚养比 = (0-14岁 + 65岁及以上) / 15-64岁人口数。
 
 ```{r}
 #| label: fig-china-raise-illiteracy
