@@ -191,6 +191,78 @@ ggplot(data = pressure, aes(x = temperature, y = pressure)) +
 
 既然这样，为什么我仍然选择介绍 **ggplot2** 呢？对新手来说比较友好，有一套紧凑、一致的语法，掌握规律后，学习曲线比较低，可以非常高效地绘制中等质量的图形。此外，衍生包 **gganimate** [@gganimate2020] 可以与 ggplot2 如丝般顺滑衔接，以成本极低的方式绘制动态图形，而且，**ggplot2** 的绘图语法已经出圈到交互式可视化领域，举例来说，R 包 **plotly** [@Carson2020] 和 **leaflet** [@leaflet2022] 等都提供一套相似度极高的管道语法，学习成本进一步摊薄了。总而言之，软件成熟，生态庞大，社区活跃。
 
+### lattice 作图系统 {#sec-trellis-graphics}
+
+<!-- 
+基于斐济地震数据集，以三维气泡图为例，
+介绍 lattice 绘图的一般模式，而不是事无巨细地详细介绍
+-->
+
+**lattice** 包 [@Deepayan2008] 是继承自 **grid** 包的栅格绘图系统。
+
+地震发生的位置（包括纬度、经度和深度），地震的震级和检测地震的站点编号。
+
+```{r}
+#| label: tbl-quakes
+#| tbl-cap: "斐济地震数据集"
+#| echo: false
+
+knitr::kable(head(quakes), col.names = c("纬度", "经度", "深度", "震级", "站点"))
+```
+
+
+
+```{r}
+#| label: fig-quakes-lattice
+#| fig-cap: "lattice 图形"
+#| fig-width: 6
+#| fig-height: 5.5
+#| fig-showtext: true
+
+# 将连续型数据向量转化为颜色向量
+colorize_numeric <- function(x) {
+  scales::col_numeric(palette = "viridis", domain = range(x))(x)
+}
+# 在数据集 quakes 上添加新的数据 color 和 cex
+quakes <- within(quakes, {
+  color <- colorize_numeric(mag)
+  cex <- mag - 4
+})
+library(lattice)
+# 三维气泡图
+cloud(-depth ~ long * lat,
+  data = quakes, pch = 19,
+  col = quakes$color, # 气泡颜色映射震级
+  cex = quakes$cex, # 气泡大小映射震级
+  xlab = "经度",
+  ylab = "纬度",
+  zlab = list("深度", rot = 90),
+  # z 轴标签旋转 90 度
+  scales = list(
+    arrows = FALSE, col = "black",
+    z = list(rot = 90)
+  ),
+  # 减少三维图形的边空
+  lattice.options = list(
+    layout.widths = list(
+      left.padding = list(x = -.6, units = "inches"),
+      right.padding = list(x = -1.0, units = "inches")
+    ),
+    layout.heights = list(
+      bottom.padding = list(x = -.8, units = "inches"),
+      top.padding = list(x = -1.0, units = "inches")
+    )
+  ),
+  # 设置坐标轴字体大小
+  par.settings = list(
+    axis.line = list(col = "transparent"),
+    fontsize = list(text = 15, points = 10)
+  ),
+  # 设置三维图的观察方位
+  screen = list(z = 30, x = -65, y = 0)
+)
+```
+
 
 
 ### ggplot2 作图系统 {#sec-grammar-of-graphics}
@@ -203,6 +275,76 @@ ggplot(data = pressure, aes(x = temperature, y = pressure)) +
 - Tom Mock 发起的 [tidytuesday](https://github.com/rfordatascience/tidytuesday/) 项目吸引了数以千计的数据科学爱好者参与数据分析、探索和可视化项目，涌现了一批批优秀的基于 **ggplot2** 的可视化作品，极大地提升了 **ggplot2** 生态的影响力。本文也会基于真实的数据介绍每一个统计图形。
 
 - Yan Holtz 整理了数以百计的统计图形，分门别类地在[网站](https://r-graph-gallery.com/)上展示，方便读者预览效果、选择合适的图形。也是受该网站启发，本文在介绍完 **ggplot2** 绘图的基础要素后，从统计图形的作用出发，按照趋势、关系、占比、对比、分布和不确定性等六大方面予以介绍。
+
+
+### 动态交互绘图系统 {#sec-interactive-graphics}
+
+<!-- 
+介绍 echarts4r 和 rgl 绘图的一般模式，而不是事无巨细像 ggplot2 那样详细去介绍
+-->
+
+R 语言社区有很多 R 包可以绘制动态交互图形，有的 R 包功能非常综合，如 **echarts4r** 包、 **plotly** 包等，有的 R 包功能非常专门化，如 **rgl** 包。
+
+
+[rgl](https://github.com/dmurdoch/rgl)
+
+```{r}
+#| label: fig-quakes-rgl
+#| fig-cap: "rgl 绘制交互三维图形"
+#| echo: true
+#| eval: !expr knitr::is_html_output()
+
+# 设置 WebGL 渲染
+options(rgl.useNULL = TRUE)
+options(rgl.printRglwidget = TRUE)
+library(rgl)
+with(quakes, {
+  plot3d(
+    x = long, y = lat, z = -depth,
+    xlab = "经度",
+    ylab = "纬度",
+    zlab = "深度",
+    col = color, size = mag - 4, type = "s"
+  )
+})
+```
+
+
+[echarts4r](https://github.com/JohnCoene/echarts4r)
+
+```{r}
+#| label: fig-quakes-echarts4r
+#| fig-cap: "echarts4r 绘制交互三维图形"
+#| echo: true
+#| eval: !expr knitr::is_html_output()
+
+library(echarts4r)
+quakes <- within(quakes, {
+  depth2 <- -depth
+  mag2 <- mag - 4
+  lat2 <- -lat
+})
+
+quakes |>
+  e_charts(x = lat2) |>
+  e_scatter_3d(
+    y = long, z = depth2, 
+    size = mag, color = mag,
+    bind = stations,
+    coordinate_system = "cartesian3D",
+    name = "斐济"
+  ) |> 
+  e_x_axis_3d(min = 10, max = 40, name = "纬度（南纬）") |> 
+  e_y_axis_3d(min = 165, max = 190, name = "经度（东经）") |> 
+  e_z_axis_3d(name = "深度（千米）") |> 
+  e_visual_map(
+    serie = mag,
+    inRange = list(color = c('#4B0055', '#009B95', '#FDE333')),
+    dimension = 4 # third dimension 0 = x, y = 1, z = 2, size = 3, color = 4
+  ) |> 
+  e_tooltip()
+```
+
 
 
 
