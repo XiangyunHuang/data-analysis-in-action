@@ -286,7 +286,7 @@ cloud(-depth ~ long * lat,
 R 语言社区有很多 R 包可以绘制动态交互图形，有的 R 包功能非常综合，如 **echarts4r** 包、 **plotly** 包等，有的 R 包功能非常专门化，如 **rgl** 包。
 
 
-[rgl](https://github.com/dmurdoch/rgl)
+[rgl](https://github.com/dmurdoch/rgl) 是制作三维交互图形的专门化 R 包。
 
 ```{r}
 #| label: fig-quakes-rgl
@@ -298,6 +298,12 @@ R 语言社区有很多 R 包可以绘制动态交互图形，有的 R 包功能
 options(rgl.useNULL = TRUE)
 options(rgl.printRglwidget = TRUE)
 library(rgl)
+# 设置视角 
+rgl.viewpoint(
+  theta = 30, phi = 45, fov = 30,
+  zoom = 1, interactive = TRUE
+)
+# 绘制图形
 with(quakes, {
   plot3d(
     x = long, y = lat, z = -depth,
@@ -308,9 +314,29 @@ with(quakes, {
   )
 })
 ```
+```{r}
+#| echo: false
+#| eval: false
+
+snapshot3d(
+  filename = "screenshots/quakes-rgl.png",
+  webshot = TRUE, width = 700, height = 700
+)
+```
+
+极坐标参考系下， theta 绕垂直轴的旋转角度， phi 绕水平轴旋转的角度，zoom 表示缩放因子，interactive 是否允许旋转图形。下 @fig-quakes-rgl-screenshots 是不同视角下保存的截图。
+
+::: {#fig-quakes-rgl-screenshots layout-ncol=2}
+
+![视角 1](screenshots/quakes-rgl-01.png){#fig-quakes-rgl-01}
+
+![视角 2](screenshots/quakes-rgl-02.png){#fig-quakes-rgl-02}
+
+不同视角下的三维图形
+:::
 
 
-[echarts4r](https://github.com/JohnCoene/echarts4r)
+[echarts4r](https://github.com/JohnCoene/echarts4r) 是 Apache Echarts 的 R 语言接口。
 
 ```{r}
 #| label: fig-quakes-echarts4r
@@ -334,17 +360,28 @@ quakes |>
     coordinate_system = "cartesian3D",
     name = "斐济"
   ) |> 
-  e_x_axis_3d(min = 10, max = 40, name = "纬度（南纬）") |> 
-  e_y_axis_3d(min = 165, max = 190, name = "经度（东经）") |> 
-  e_z_axis_3d(name = "深度（千米）") |> 
+  e_x_axis_3d(min = 10, max = 40, name = "纬度") |> 
+  e_y_axis_3d(min = 165, max = 190, name = "经度") |> 
+  e_z_axis_3d(name = "深度") |> 
   e_visual_map(
     serie = mag,
     inRange = list(color = c('#4B0055', '#009B95', '#FDE333')),
-    dimension = 4 # third dimension 0 = x, y = 1, z = 2, size = 3, color = 4
+    dimension = 4
   ) |> 
   e_tooltip()
 ```
 
+目标区域在南半球，纬度南纬 0 度至 40 度，经度东经 165 度至 190 度（西经 170 度）。参数 dimension 的取值和实际含义的关系：0 对应 x 轴，1 对应 y 轴，2 对应 z 轴， 3 对应 size 变量（点的大小），4 对应 color 变量（点的颜色）。下 @fig-quakes-echarts4r-screenshots 是两个不同视角下的截图。
+
+
+::: {#fig-quakes-echarts4r-screenshots layout="[40,-10,50]" layout-valign="bottom" layout-ncol=2}
+
+![视角 1](screenshots/quakes-echarts4r-01.png){#fig-quakes-echarts4r-01}
+
+![视角 2](screenshots/quakes-echarts4r-02.png){#fig-quakes-echarts4r-02}
+
+不同视角下的三维图形
+:::
 
 
 
