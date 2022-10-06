@@ -191,15 +191,6 @@ ggplot(data = pressure, aes(x = temperature, y = pressure)) +
 
 既然这样，为什么我仍然选择介绍 **ggplot2** 呢？对新手来说比较友好，有一套紧凑、一致的语法，掌握规律后，学习曲线比较低，可以非常高效地绘制中等质量的图形。此外，衍生包 **gganimate** [@gganimate2020] 可以与 ggplot2 如丝般顺滑衔接，以成本极低的方式绘制动态图形，而且，**ggplot2** 的绘图语法已经出圈到交互式可视化领域，举例来说，R 包 **plotly** [@Carson2020] 和 **leaflet** [@leaflet2022] 等都提供一套相似度极高的管道语法，学习成本进一步摊薄了。总而言之，软件成熟，生态庞大，社区活跃。
 
-### lattice 作图系统 {#sec-trellis-graphics}
-
-<!-- 
-基于斐济地震数据集，以三维气泡图为例，
-介绍 lattice 绘图的一般模式，而不是事无巨细地详细介绍
--->
-
-**lattice** 包 [@Deepayan2008] 是继承自 **grid** 包的栅格绘图系统。
-
 地震发生的位置（包括纬度、经度和深度），地震的震级和检测地震的站点编号。
 
 ```{r}
@@ -210,6 +201,47 @@ ggplot(data = pressure, aes(x = temperature, y = pressure)) +
 knitr::kable(head(quakes), col.names = c("纬度", "经度", "深度", "震级", "站点"))
 ```
 
+scatterplot3d 包 [@Uwe2003] 是基于 Base R 基础绘图系统的，专门用于三维可视化。
+
+```{r}
+#| label: fig-quakes-scatterplot3d
+#| fig-cap: "Base R 图形"
+#| fig-width: 6
+#| fig-height: 5.5
+#| fig-showtext: true
+
+# 将连续型数据向量转化为颜色向量
+colorize_numeric <- function(x) {
+  scales::col_numeric(palette = "viridis", domain = range(x))(x)
+}
+# 在数据集 quakes 上添加新的数据 color
+quakes <- within(quakes, {
+  color <- colorize_numeric(mag)
+})
+# 三维散点图
+library(scatterplot3d)
+with(quakes, {
+  scatterplot3d(
+    x = long, y = lat, z = - depth,
+    color = color, pch = 20,
+    mar = c(3, 3, 0, 3) + 0.1, 
+    xlab = "经度", ylab = "纬度", zlab = "深度"
+  )
+})
+```
+
+
+
+
+### lattice 作图系统 {#sec-trellis-graphics}
+
+<!-- 
+基于斐济地震数据集，以三维气泡图为例，
+介绍 lattice 绘图的一般模式，而不是事无巨细地详细介绍
+-->
+
+**lattice** 包 [@Deepayan2008] 是继承自 **grid** 包的栅格绘图系统。
+
 
 
 ```{r}
@@ -219,21 +251,12 @@ knitr::kable(head(quakes), col.names = c("纬度", "经度", "深度", "震级",
 #| fig-height: 5.5
 #| fig-showtext: true
 
-# 将连续型数据向量转化为颜色向量
-colorize_numeric <- function(x) {
-  scales::col_numeric(palette = "viridis", domain = range(x))(x)
-}
-# 在数据集 quakes 上添加新的数据 color 和 cex
-quakes <- within(quakes, {
-  color <- colorize_numeric(mag)
-  cex <- mag - 4
-})
 library(lattice)
 # 三维气泡图
 cloud(-depth ~ long * lat,
   data = quakes, pch = 19,
   col = quakes$color, # 气泡颜色映射震级
-  cex = quakes$cex, # 气泡大小映射震级
+  cex = quakes$mag - 4, # 气泡大小映射震级
   xlab = "经度",
   ylab = "纬度",
   zlab = list("深度", rot = 90),
@@ -301,7 +324,7 @@ cloud(-depth ~ long * lat,
 : **lattice** 及其部分衍生包的主要绘图函数 {#tbl-lattice}
 
 
-除了 @tbl-lattice 外，[sp](https://github.com/edzer/sp/) 包和 [rasterVis](https://github.com/oscarperpinan/rastervis/) 包 分别针对空间点和栅格数据，大大扩充了 **lattice** 在空间数据可视化方面的功能。
+除了 @tbl-lattice 外，[**sp**](https://github.com/edzer/sp/) 包和 [**rasterVis**](https://github.com/oscarperpinan/rastervis/) 包 分别针对空间点和栅格数据，大大扩充了 **lattice** 在空间数据可视化方面的功能。
 
 
 
