@@ -2234,21 +2234,57 @@ ggplot(data = trunk_year, aes(x = year, y = revision)) +
 ### 模型诊断 {#sec-model-diagnostics}
 
 
+> 所有的模型都是错的，有些模型是有用的。
+>
+> --- 博克斯
+
 <!-- 
-描述模型拟合数据的不确定性，所有的模型都是错的，有的模型是有用的。
+描述模型拟合数据的不确定性，
 Cook 距离、高杠杆值、模型诊断、影响测量
 [ggPMX](https://github.com/ggPMXdevelopment/ggPMX) 'ggplot2' Based Tool to Facilitate Diagnostic Plots for NLME Models
 -->
+
+```{r}
+#| eval: false
+
+state_x77 <- data.frame(state.x77,
+  state_name = rownames(state.x77),
+  state_region = state.region,
+  check.names = FALSE
+)
+# 模型诊断图
+fit <- lm(`Life Exp` ~ Income, data = state_x77)
+plot(fit)
+```
 
 
 
 ### 边际效应 {#sec-marginal-effects}
 
-<!-- 
-描述单个变量的作用
-[ggeffects](https://github.com/strengejacke/ggeffects)
-纵向数据，条件分布，后验分布 
--->
+
+[ggeffects](https://github.com/strengejacke/ggeffects) 描述单个变量的作用
+
+```{r}
+#| label: fig-marginal-effects
+#| fig-cap: "边际效应"
+#| fig-width: 5
+#| fig-height: 4.5
+#| fig-showtext: true
+
+library(ggeffects)
+state_x77 <- data.frame(state.x77,
+  state_name = rownames(state.x77),
+  state_region = state.region,
+  check.names = FALSE
+)
+fit <- lm(`Life Exp` ~ Income + Murder, data = state_x77)
+mydf <- ggpredict(fit, terms = "Income")
+ggplot(mydf, aes(x, predicted)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = .1) +
+  theme_classic() +
+  labs(x = "人均收入", y = "预期寿命")
+```
 
 
 
