@@ -512,6 +512,62 @@ wireframe(
 
 
 
+<!-- 
+[misc3d](https://gitlab.com/luke-tierney/misc3d) 制作三维图形 
+[plot3D](https://cran.r-project.org/package=plot3D)
+[plot3Drgl](https://cran.r-project.org/package=plot3Drgl)
+[scatterplot3d](https://cran.r-project.org/package=scatterplot3d)
+
+
+```{r}
+#| eval: false
+#| echo: false
+
+# 将连续型数据向量转化为颜色向量
+colorize_numeric <- function(x) {
+  scales::col_numeric(palette = "viridis", domain = range(x))(x)
+}
+# 
+usa_mortality <- within(usa_mortality, {
+  color <- colorize_numeric(log10(Male))
+})
+
+options(rgl.useNULL = TRUE)
+options(rgl.printRglwidget = TRUE)
+library(rgl)
+# 设置视角 
+rgl.viewpoint(
+  theta = 0, phi = -65, fov = 30,
+  zoom = 1, interactive = TRUE
+)
+
+with(usa_mortality, {
+  plot3d(
+    x =  Age, y = Year, z = log10(Male),
+    type = "p", col = color
+  )
+})
+
+library(scatterplot3d)
+with(usa_mortality, {
+  scatterplot3d(
+    x = Year,
+    y = Age,
+    z = log10(Male),
+    color = color, # 给数据点上色
+    pch = 20,
+    mar = c(3, 3, 0, 3) + 0.1,
+    xlab = "年份",
+    ylab = "年龄",
+    zlab = "死亡率"
+  )
+})
+```
+
+
+-->
+
+
 ## 子代身高与亲代身高的关系 {#sec-galton}
 
 <!-- 函数型数据探索、分析和可视化，关系 -->

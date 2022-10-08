@@ -93,7 +93,7 @@ svn log --xml --verbose -r 6:82626 https://svn.r-project.org/R/trunk > data-raw/
 从 Ross Ihaka 在 1997-09-18 提交第 1 次代码改动开始，下载所有的提交日志。截至写作时间，即 2022年7月27日，代码最新版本号为 82626，意味着代码仓库已存在 8 万多次提交。
 
 下载数据后，借助 **xml2**（<https://github.com/r-lib/xml2/>）包预处理这份 XML 格式数据，提取最重要的信息，谁在什么时间做了什么改动。经过一番操作后，将清洗干净的数据，
-保存到目录 `data/` 下，以 R 软件特有的文件格式保存为 `svn_trunk_log_20220727.rds`，同样与书随附。这样下来，原 XML 格式保存的 35 M 文件减少为 1 M 多，极大地减少了存储空间，也极大地方便了后续的数据探索和可视化。下面是这份日志数据开头的两行：
+保存到目录 `data/` 下，以 R 软件特有的文件格式保存为 `svn-trunk-log-2022.rds`，同样与书随附。这样下来，原 XML 格式保存的 35 M 文件减少为 1 M 多，极大地减少了存储空间，也极大地方便了后续的数据探索和可视化。下面是这份日志数据开头的两行：
 
 ```{r}
 svn_trunk_log <- readRDS(file = "data/svn-trunk-log-2022.rds")
@@ -320,7 +320,7 @@ ggplot(data = trunk_year, aes(x = year, y = revision)) +
   labs(x = "年份", y = "提交量")
 ```
 
-类似大家熟悉的线性回归拟合函数 `lm()`，函数 `loess()` 也是基于类似的使用语法。下面继续以此数据为例，了解该函数的使用，继而了解 ggplot2 绘制平滑曲线图背后的统计方法。1997 年和 2022 年是不完整的，不参与模型参数的估计。
+类似大家熟悉的线性回归拟合函数 `lm()`，函数 `loess()` 也是基于类似的使用语法。下面继续以此数据为例，了解该函数的使用，继而了解 ggplot2 绘制平滑曲线图背后的统计方法。1997 年是不完整的，不参与模型参数的估计。
 
 ```{r}
 trunk_year_loess <- loess(revision ~ year,
@@ -1516,18 +1516,18 @@ aggregate(data = svn_trunk_log, revision ~ author, FUN = length) |>
 #| fig-height: 4
 #| fig-showtext: true
 
-aggregate(data = svn_trunk_log, revision ~ author, FUN = length) |> 
-  transform(author2 = ifelse(revision < 2000, "Others", author)) |> 
-  aggregate(revision ~ author2, FUN = sum) |> 
-  transform(label = paste0(round(revision / sum(revision), digits = 4) * 100, "%")) |> 
-  ggplot(aes(x = 1, fill = reorder(author2, revision)  , y = revision)) +
+aggregate(data = svn_trunk_log, revision ~ author, FUN = length) |>
+  transform(author2 = ifelse(revision < 2000, "Others", author)) |>
+  aggregate(revision ~ author2, FUN = sum) |>
+  transform(label = paste0(round(revision / sum(revision), digits = 4) * 100, "%")) |>
+  ggplot(aes(x = 1, fill = reorder(author2, revision), y = revision)) +
   geom_col(position = "fill", show.legend = FALSE, color = "white") +
   scale_y_continuous(labels = scales::percent) +
   coord_polar(theta = "y") +
   geom_text(aes(x = 1.2, label = author2),
     position = position_fill(vjust = 0.5), color = "black"
   ) +
-  geom_text(aes(x = 1.6, label = label),
+  geom_text(aes(x = 1.65, label = label),
     position = position_fill(vjust = 0.5), color = "black"
   ) +
   theme_void() +
@@ -1586,7 +1586,7 @@ dat2 <- within(dat1, {
 ggplot(data = dat2, aes(x = 1, fill = author2, y = value)) +
   geom_col(show.legend = FALSE, color = "white") +
   coord_polar(theta = "y") +
-  geom_label_repel(aes(y = pos, label = label),
+  geom_label_repel(aes(y = pos, label = label), 
     size = 4.5, nudge_x = 0.75, show.legend = FALSE
   ) +
   theme_void() +
@@ -1623,7 +1623,7 @@ aggregate(data = svn_trunk_log, revision ~ author, FUN = length) |>
   geom_text(aes(x = 1.2, label = author2),
     position = position_fill(vjust = 0.5), color = "black"
   ) +
-  geom_text(aes(x = 1.6, label = label),
+  geom_text(aes(x = 1.7, label = label),
     position = position_fill(vjust = 0.5), color = "black"
   ) +
   theme_void() +
@@ -1659,7 +1659,68 @@ aggregate(data = svn_trunk_log, revision ~ author, FUN = length) |>
 
 ### 帕累托图 {#sec-pareto}
 
-<!-- 描述各个部分的占比，特别是关键要素的占比 -->
+<!-- 
+https://en.wikipedia.org/wiki/Vilfredo_Pareto
+描述各个部分的占比，特别是关键要素的占比
+收入服从帕累托分布，这是一个幂率分布
+80% 的财富集中在 20% 的人的手中
+构造几何统计图层 geom_pareto
+多边形、点线、双轴
+-->
+
+开发者们的贡献量
+
+```{r}
+#| label: fig-pareto-stack
+#| fig-cap: "代码提交量的比例趋势"
+#| fig-showtext: true
+
+aggregate(data = svn_trunk_log, revision ~ year + author, FUN = length) |> 
+  ggplot(aes(x = year, y = revision, fill = author)) +
+  geom_col() +
+  theme_classic() +
+  coord_cartesian(expand = FALSE) +
+  labs(x = "年份", y = "提交量", fill = "开发者")
+```
+
+比例趋势图
+
+```{r}
+#| label: fig-pareto-fill
+#| fig-cap: "代码提交量的比例趋势"
+#| fig-showtext: true
+
+aggregate(data = svn_trunk_log, revision ~ year + author, FUN = length) |> 
+  ggplot(aes(x = year, y = revision, fill = author)) +
+  geom_col(position = "fill") +
+  scale_y_continuous(labels = scales::percent) +
+  theme_classic() +
+  coord_cartesian(expand = FALSE) +
+  labs(x = "年份", y = "提交量", fill = "开发者")
+```
+
+帕累托图
+
+```{r}
+#| label: fig-pareto
+#| fig-cap: "代码提交量的比例分布"
+#| fig-showtext: true
+
+dat <- aggregate(data = svn_trunk_log, revision ~ author, FUN = length) |>
+  transform(author = ifelse(revision < 1000, "Others", author)) |>
+  aggregate(revision ~ author, FUN = sum)
+dat <- dat[order(-dat$revision), ]
+
+ggplot(data = dat, aes(
+  x = reorder(author, revision, decreasing = T),
+  y = revision
+)) +
+  geom_col(width = 0.75) +
+  geom_line(aes(y = cumsum(revision), group = 1)) +
+  geom_point(aes(y = cumsum(revision))) +
+  theme_classic() +
+  labs(x = "维护者", y = "累计提交量")
+```
 
 
 
@@ -1751,14 +1812,20 @@ ggplot(G20, aes(
 
 ```{r}
 #| label: tbl-china-raise-illiteracy
-#| tbl-cap: "2020 年各省、直辖市、自治区，抚养比、文盲率、人口数等数据"
+#| tbl-cap: "2020 年各省、直辖市、自治区，总抚养比和文盲率相关数据（部分）"
 #| echo: false
 
 china_raise_illiteracy <- readRDS(file = "data/china-raise-illiteracy-2020.rds")
-knitr::kable(head(china_raise_illiteracy[order(china_raise_illiteracy$`人口数`, decreasing = TRUE),]))
+knitr::kable(head(china_raise_illiteracy[order(china_raise_illiteracy$`人口数`, decreasing = TRUE), ]),
+  col.names = c(
+    "地区", "人口数", "15-64岁", "总抚养比",
+    "15岁以上人口", "文盲人口", "文盲率"
+  ),
+  row.names = FALSE
+)
 ```
 
-
+其中，文盲人口是指15岁及15岁以上不识字及识字很少人口。文盲率 = 文盲人口 / 15岁以上人口。抚养比 = (0-14岁 + 65岁及以上) / 15-64岁人口数。
 
 ```{r}
 #| label: fig-china-raise-illiteracy
@@ -1964,5 +2031,365 @@ ggraph(graph, layout = "kk") +
     foreground = "steelblue",
     fg_text_colour = "white"
   )
+```
+
+
+
+
+
+## 描述不确定性 {#sec-visualize-data-uncertainty}
+
+
+<!-- 
+可视化不确定性，这属于高级篇内容，阐述一些常用、常见的统计概念
+https://github.com/wilkelab/ungeviz
+https://wilkelab.org/SDS375/schedule.html
+
+Psychology of Data Visualization 2021 Michael Friendly
+http://euclid.psych.yorku.ca/www/psy6135/
+
+Visualizing the uncertainty of point estimates.
+Uncertainty is expressed as standard error, confidence interval, or credible interval
+https://wilkelab.org/SDS375/slides/visualizing-uncertainty.html#1
+
+[ggdist](https://github.com/mjskay/ggdist) Visualizations of distributions and uncertainty [@ggdist2022]
+-->
+
+
+
+### 置信区间 {#sec-confidence-interval}
+
+<!-- 
+描述点估计的不确定性
+二项分布参数 p 的点估计与区间估计，与后续覆盖概率联系起来
+-->
+
+
+
+| 0 | 1 | 2 | $\cdots$ | n |
+|:--|:---|:---|:---|:---|
+| $p_0$ | $p_1$ | $p_2$ | $\cdots$ | $p_n$ |
+
+: 二项分布的分布列 {#tbl-binom}
+
+
+
+二项分布 $\mathrm{Bin}(n,p)$ 的参数 $p$ 的精确区间估计如下：
+
+$$
+(B(\frac{\alpha}{2}; x, n-x+1), B(1-\frac{\alpha}{2}; x+1, n-x))
+$$ {#eq-clopper-ci}
+
+$x$ 是成功次数，$n$ 是实验次数，$B(p;v,w)$ 是形状参数为 v 和 w 的 Beta 分布的 p 分位数，p 的置信区间的上下限 $P_L,P_U$ 满足
+
+
+\begin{align}
+\frac{\Gamma(n+1)}{\Gamma(x)\Gamma(n-x+1)}\int_{0}^{P_L}t^{x-1}(1-t)^{n-x}\mathrm{dt} &= \frac{\alpha}{2} \\
+\frac{\Gamma(n+1)}{\Gamma(x+1)\Gamma(n-x)}\int_{0}^{P_U}t^{x}(1-t)^{n-x-1}\mathrm{dt} &= 1-\frac{\alpha}{2}
+\end{align}
+
+
+$p_x$ 表示二项分布 $\mathrm{Bin}(n,p)$ 第 $x$ 项的概率，$x$ 的取值为 $0,1,\cdots,n$
+
+$$p_x = \binom{n}{x}p^x(1-p)^{n-x}, \quad x = 0,1,\cdots,n$$
+
+二项分布的累积分布函数和 $S_k$ 表示前 $k$ 项概率之和
+
+$$S_k = \sum_{x=0}^{k} p_x$$
+
+$S_k$ 服从形状参数为 $n-k,k+1$ 的贝塔分布 $I_x(a,b)$，对应于 R 函数 `pbeta(x,a,b)`。 $S_k$ 看作贝塔分布的随机变量 $X$
+
+\begin{align}
+B_x(a,b) &=\int_{0}^{x}t^{a-1}(1-t)^{b-1}\mathrm{dt} \\
+I_x(a,b) &= \frac{B_x(a,b)}{B(a,b)}, \quad B(a,b) = B_1(a,b)
+\end{align}
+
+考虑二项总体的参数 $p=0.7$，重复模拟 50 次，每次模拟获得的比例 $\hat{p}$ 及其置信区间，如 @fig-clopper-pearson-ci 所示，置信区间覆盖真值的情况用不同颜色表示，覆盖用 TRUE 表示，没有覆盖用 FALSE 表示
+
+```{r}
+#| label: fig-clopper-pearson-ci
+#| fig-cap: "Clopper-Pearson 置信区间"
+#| fig-width: 7
+#| fig-height: 4
+#| fig-showtext: true
+# Clopper and Pearson (1934)
+# 与 binom.test() 计算结果一致
+clopper_pearson <- function(p = 0.1, n = 10, nsim = 100) {
+  set.seed(2022)
+  nd <- rbinom(nsim, prob = p, size = n)
+  ll <- qbeta(p = 0.05 / 2, shape1 = nd, shape2 = n - nd + 1)
+  ul <- qbeta(p = 1 - 0.05 / 2, shape1 = nd + 1, shape2 = n - nd)
+  data.frame(nd = nd, ll = ll, ul = ul, cover = ul > p & ll < p)
+}
+# 二项分布的参数 p = 0.7
+dat <- clopper_pearson(p = 0.7, n = 10, nsim = 50)
+# 二项分布的参数的置信区间覆盖真值的情况
+ggplot(data = dat, aes(x = 1:50, y = nd / 10, colour = cover)) +
+  geom_hline(yintercept = 0.7, lty = 2, linewidth = 1.2, color = "gray") +
+  geom_pointrange(aes(ymin = ll, ymax = ul)) +
+  theme_classic() +
+  labs(x = "第几次模拟", y = "置信区间上下限", color = "覆盖")
+```
+
+
+
+
+
+
+### 假设检验 {#sec-hypothesis-tests}
+
+<!-- 
+描述检验统计假设的不确定性  P 值和功效
+对一个统计假设，我有一套方法来检验其正确性，但结论具有不确定性（小概率原理，P 值和风险联系），同一个统计假设，同一组数据，不同的检验方法有不同的 P 值，是检验方法的功效不同。
+
+[ggpubr](https://github.com/kassambara/ggpubr) 制作出版级统计图形，两样本均值的比较
+-->
+
+[ggpval](https://github.com/s6juncheng/ggpval) 在图上添加检验的 P 值结果，[**ggsignif**](https://github.com/const-ae/ggsignif) 在图上添加显著性注释。[ggstatsplot](https://github.com/IndrajeetPatil/ggstatsplot) [@Indrajeet2021] 可视化统计检验、模型的结果，描述功效变化。
+
+@fig-p-val 展示假设检验的结果
+
+```{r}
+#| label: fig-p-val
+#| fig-cap: "展示假设检验的结果"
+#| fig-width: 5
+#| fig-height: 4.5
+#| fig-showtext: true
+
+library(ggpval)
+p_val <- ggplot(PlantGrowth, aes(x = group, y = weight)) +
+  geom_boxplot(width = 0.25) +
+  geom_jitter(width = 0.15) +
+  theme_classic()
+
+add_pval(p_val,
+  pairs = list(c(1, 2), c(2,3)),
+  test = "t.test",
+  pval_star = FALSE,
+  alternative = "two.sided"
+)
+```
+
+
+
+### 模型预测 {#sec-model-predictions}
+
+<!-- 
+描述模型预测/曲线拟合的不确定性
+趋势拟合和描述关系中添加回归线及置信带
+
+rgl 广义可加模型可视化
+https://menugget.blogspot.com/2016/02/visualizing-model-predictions-in-3d.html
+
+[mgcViz](https://github.com/mfasiolo/mgcViz)
+
+Scalable visualisation methods for modern Generalized Additive Models
+https://arxiv.org/abs/1809.10632
+-->
+
+代码提交量的趋势拟合
+
+```{r}
+#| label: fig-smooth
+#| fig-cap: "趋势拟合、预测和推断"
+#| fig-width: 7
+#| fig-height: 4.5
+#| fig-showtext: true
+
+ggplot(data = trunk_year, aes(x = year, y = revision)) +
+  geom_point() +
+  geom_smooth(aes(color = "LOESS", fill = "LOESS"),
+    method = "loess", formula = "y~x",
+    method.args = list(
+      span = 0.75, degree = 2, family = "symmetric",
+      control = loess.control(surface = "direct", iterations = 4)
+    ), data = subset(trunk_year, year != c(1997, 2022))
+  ) +
+  geom_smooth(aes(color = "GAM", fill = "GAM"),
+    formula = y ~ s(x, k = 12),
+    method = "gam", se = T,
+    data = subset(trunk_year, year != c(1997, 2022))
+  ) +
+  geom_smooth(aes(color = "Cubic Spline", fill = "Cubic Spline"),
+                method = "lm", formula = y ~ splines::bs(x, 3), se = T,
+              data = subset(trunk_year, year != c(1997, 2022))) +
+  scale_color_brewer(name = "模型", palette = "Set1") +
+  scale_fill_brewer(name = "模型", palette = "Set1") +
+  theme_classic() +
+  theme(panel.grid.major.y = element_line(colour = "gray90")) +
+  labs(x = "年份", y = "提交量")
+```
+
+
+
+### 模型诊断 {#sec-model-diagnostics}
+
+
+> 所有模型都是错误的，但有些是有用的。
+>
+> --- 乔治·博克斯
+
+<!-- 
+描述模型拟合数据的不确定性，
+Cook 距离、高杠杆值、模型诊断、影响测量
+[ggPMX](https://github.com/ggPMXdevelopment/ggPMX) 'ggplot2' Based Tool to Facilitate Diagnostic Plots for NLME Models
+-->
+
+```{r}
+#| label: fig-lm-diagnostics
+#| fig-cap: "线性模型的诊断图"
+#| fig-showtext: true
+#| collapse: true
+#| fig-width: 7
+#| fig-height: 8
+
+state_x77 <- data.frame(state.x77,
+  state_name = rownames(state.x77),
+  state_region = state.region,
+  check.names = FALSE
+)
+# 模型诊断图
+fit <- lm(`Life Exp` ~ Income, data = state_x77)
+op <- par(mfrow = c(3, 2), mar = c(4, 4, 3, 1))
+plot(fit,
+  ask = FALSE, which = c(1, 2, 3, 4, 5, 6),
+  caption = list(
+    "残差和拟合值", "正态 Q-Q 图",
+    "尺度-位置", "Cook 距离", "残差和杠杆值",
+    expression("Cook 距离 vs 杠杆值" * h[ii] / (1 - h[ii]))
+  )
+)
+par(op)
+```
+
+
+
+### 边际效应 {#sec-marginal-effects}
+
+
+[ggeffects](https://github.com/strengejacke/ggeffects) 描述单个变量的作用
+
+```{r}
+#| label: fig-marginal-effects
+#| fig-cap: "边际效应"
+#| fig-width: 5
+#| fig-height: 4
+#| fig-showtext: true
+
+library(ggeffects)
+fit <- lm(`Life Exp` ~ Income + Murder, data = state_x77)
+mydf <- ggpredict(fit, terms = "Income")
+ggplot(mydf, aes(x, predicted)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = .1) +
+  theme_classic() +
+  labs(x = "人均收入", y = "预期寿命")
+```
+
+
+
+### 后验分布 {#sec-posterior-distributions}
+
+```{r}
+#| label: setup-cmdstan
+#| echo: false
+#| eval: false
+
+# Github Action 已经设置
+# Sys.setenv(CMDSTAN="/opt/cmdstan-2.29.2")
+# Sys.setenv(CMDSTANR_NO_VER_CHECK=TRUE)
+```
+
+以一个最简单的线性模型为例，介绍贝叶斯统计中的后验分布
+
+<!-- 
+描述参数先验分布的不确定性
+先验分布与后验分布
+描述分布的不确定性 
+
+先验分布 参数的分布
+观测分布 给定参数的情况下，数据的分布
+后验分布 给定数据的情况下，参数的分布
+
+条件分布、累积分布 [pgog](https://github.com/MUCollective/pgog)
+-->
+
+Stan 编码的线性模型如下：
+
+```{verbatim, file="code/state_x77.stan", lang="stan"}
+```
+
+
+继续以 state_x77 数据为例，以贝叶斯线性模型拟合数据，获得参数的后验分布。
+
+```{r}
+#| label: compile-stan-model
+#| message: false
+#| results: hide
+
+library(cmdstanr)
+# 编译模型
+mod_state_x77 <- cmdstan_model(
+  stan_file = "code/state_x77.stan",
+  compile = TRUE,
+  cpp_options = list(stan_threads = TRUE)
+)
+# 准备数据
+state_x77_d <- list(
+  N = nrow(state_x77), # 观测记录的条数
+  K = 2, # 协变量个数
+  x = state_x77[, c("Income", "Murder")], # N x 2 矩阵
+  y = state_x77[, "Life Exp"] # N 向量
+)
+nchains <- 4 # 4 条迭代链
+# 给每条链设置不同的参数初始值
+inits_data <- lapply(1:nchains, function(i) {
+  list(
+    alpha = runif(1, 0, 1),
+    beta = runif(2, 1, 10),
+    sigma = runif(1, 1, 10)
+  )
+})
+# 采样拟合模型
+fit_state_x77 <- mod_state_x77$sample(
+  data = state_x77_d, # 观测数据
+  init = inits_data, # 迭代初值
+  iter_warmup = 1000, # 每条链预处理迭代次数
+  iter_sampling = 2000, # 每条链总迭代次数
+  chains = nchains, # 马尔科夫链的数目
+  parallel_chains = 1, # 指定 CPU 核心数，可以给每条链分配一个
+  threads_per_chain = 1, # 每条链设置一个线程
+  show_messages = FALSE, # 不显示迭代的中间过程
+  refresh = 0, # 不显示采样的进度
+  seed = 20190425 # 设置随机数种子，不要使用 set.seed() 函数
+)
+```
+
+
+```{r}
+#| label: fig-post-dists
+#| fig-cap: "后验分布"
+#| fig-showtext: true
+#| fig-width: 7
+#| fig-height: 5
+#| message: false
+
+library(bayesplot)
+# 参数的迭代轨迹
+p1 <- mcmc_trace(fit_state_x77$draws(c("alpha", "beta[1]")),
+  facet_args = list(
+    labeller = ggplot2::label_parsed,
+    strip.position = "bottom"
+  )
+) + theme_classic()
+# 参数的后验分布
+p2 <- mcmc_hist(fit_state_x77$draws(c("alpha", "beta[1]")),
+  facet_args = list(
+    labeller = ggplot2::label_parsed,
+    strip.position = "bottom"
+  )
+) + theme_classic()
+# 绘图
+p1 / p2
 ```
 

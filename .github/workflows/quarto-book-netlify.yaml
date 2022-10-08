@@ -20,6 +20,12 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      RGL_USE_NULL: true
+      LANG: "en_US.UTF-8"
+      TZ: "Asia/Shanghai"
+      CMDSTAN_VERSION: "2.29.2"
+      CMDSTAN: "/opt/cmdstan/cmdstan-2.29.2"
+      CMDSTANR_NO_VER_CHECK: true
     steps:
       - uses: actions/checkout@v2
 
@@ -42,6 +48,19 @@ jobs:
           sudo apt-get install -y fonts-noto-core fonts-noto-cjk
           fc-list | grep 'noto' | sort
           fc-list | sort
+
+      - name: Build CmdStan
+        run: |
+          mkdir -p /opt/cmdstan
+          curl -fLo cmdstan-${CMDSTAN_VERSION}.tar.gz https://github.com/stan-dev/cmdstan/releases/download/v${CMDSTAN_VERSION}/cmdstan-${CMDSTAN_VERSION}.tar.gz
+          tar -xzf cmdstan-${CMDSTAN_VERSION}.tar.gz -C /opt/cmdstan/
+          cd ${CMDSTAN}
+          make build
+
+      - name: Install R packages
+        run: |
+          if(!require("cmdstanr")) install.packages("cmdstanr", repos = "https://mc-stan.org/r-packages")
+        shell: Rscript {0}
 
       - name: Render book to all format
         # Add any command line argument needed
