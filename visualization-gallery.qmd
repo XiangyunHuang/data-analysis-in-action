@@ -1522,7 +1522,6 @@ aggregate(data = svn_trunk_log, revision ~ author, FUN = length) |>
   transform(label = paste0(round(revision / sum(revision), digits = 4) * 100, "%")) |>
   ggplot(aes(x = 1, fill = reorder(author2, revision), y = revision)) +
   geom_col(position = "fill", show.legend = FALSE, color = "white") +
-  scale_fill_viridis_d(option = "C") +
   scale_y_continuous(labels = scales::percent) +
   coord_polar(theta = "y") +
   geom_text(aes(x = 1.2, label = author2),
@@ -1550,7 +1549,6 @@ aggregate(data = svn_trunk_log, revision ~ author, FUN = length) |>
   transform(label = paste0(round(revision / sum(revision), digits = 4) * 100, "%")) |> 
   ggplot(aes(x = 1, fill = reorder(author2, revision)  , y = revision)) +
   geom_col(position = "fill", show.legend = FALSE, color = "white") +
-  scale_fill_viridis_d(option = "C") +
   scale_y_continuous(labels = scales::percent) +
   coord_polar(theta = "y") +
   geom_text(aes(x = 1.2, label = author2),
@@ -1588,7 +1586,6 @@ dat2 <- within(dat1, {
 ggplot(data = dat2, aes(x = 1, fill = author2, y = value)) +
   geom_col(show.legend = FALSE, color = "white") +
   coord_polar(theta = "y") +
-  scale_fill_viridis_d(option = "C") +
   geom_label_repel(aes(y = pos, label = label), 
     size = 4.5, nudge_x = 0.75, show.legend = FALSE
   ) +
@@ -1621,7 +1618,6 @@ aggregate(data = svn_trunk_log, revision ~ author, FUN = length) |>
   transform(label = paste0(round(revision / sum(revision), digits = 4) * 100, "%")) |> 
   ggplot(aes(x = 1, fill = author2, y = revision)) +
   geom_col(position = "fill", show.legend = FALSE, color = "white") +
-  scale_fill_viridis_d(option = "C") +
   scale_y_continuous(labels = scales::percent) +
   coord_polar(theta = "y") +
   geom_text(aes(x = 1.2, label = author2),
@@ -1652,7 +1648,6 @@ aggregate(data = svn_trunk_log, revision ~ author, FUN = length) |>
   aggregate(revision ~ author2, FUN = sum) |> 
   ggplot(aes(x = reorder(author2, revision), y = revision)) +
   geom_col(aes(fill = author2), show.legend = FALSE) +
-  scale_fill_viridis_d(option = "C") +
   coord_polar() +
   theme_minimal() +
   theme(axis.text.y = element_blank()) +
@@ -1683,7 +1678,6 @@ https://en.wikipedia.org/wiki/Vilfredo_Pareto
 aggregate(data = svn_trunk_log, revision ~ year + author, FUN = length) |> 
   ggplot(aes(x = year, y = revision, fill = author)) +
   geom_col() +
-  scale_fill_viridis_d(option = "C") +
   theme_classic() +
   coord_cartesian(expand = FALSE) +
   labs(x = "年份", y = "提交量", fill = "开发者")
@@ -1699,7 +1693,6 @@ aggregate(data = svn_trunk_log, revision ~ year + author, FUN = length) |>
 aggregate(data = svn_trunk_log, revision ~ year + author, FUN = length) |> 
   ggplot(aes(x = year, y = revision, fill = author)) +
   geom_col(position = "fill") +
-  scale_fill_viridis_d(option = "C") +
   scale_y_continuous(labels = scales::percent) +
   theme_classic() +
   coord_cartesian(expand = FALSE) +
@@ -2118,11 +2111,12 @@ I_x(a,b) &= \frac{B_x(a,b)}{B(a,b)}, \quad B(a,b) = B_1(a,b)
 #| label: fig-clopper-pearson-ci
 #| fig-cap: "学校关系"
 #| fig-width: 7
-#| fig-height: 4.5
+#| fig-height: 4
 #| fig-showtext: true
 # Clopper and Pearson (1934)
 # 与 binom.test() 计算结果一致
 clopper_pearson <- function(p = 0.1, n = 10, nsim = 100) {
+  set.seed(2022)
   nd <- rbinom(nsim, prob = p, size = n)
   ll <- qbeta(p = 0.05 / 2, shape1 = nd, shape2 = n - nd + 1)
   ul <- qbeta(p = 1 - 0.05 / 2, shape1 = nd + 1, shape2 = n - nd)
@@ -2132,10 +2126,10 @@ clopper_pearson <- function(p = 0.1, n = 10, nsim = 100) {
 dat <- clopper_pearson(p = 0.7, n = 10, nsim = 50)
 # 二项分布的参数的置信区间覆盖真值的情况
 ggplot(data = dat, aes(x = 1:50, y = nd / 10, colour = cover)) +
-  geom_hline(yintercept = 0.7) +
+  geom_hline(yintercept = 0.7, lty = 2, linewidth = 1.2, color = "gray") +
   geom_pointrange(aes(ymin = ll, ymax = ul)) +
   theme_classic() +
-  labs(x = "模拟次数", y = "概率", color = "覆盖")
+  labs(x = "第几次模拟", y = "概率", color = "覆盖")
 ```
 
 
@@ -2159,20 +2153,20 @@ ggplot(data = dat, aes(x = 1:50, y = nd / 10, colour = cover)) +
 ```{r}
 #| label: fig-p-val
 #| fig-cap: "展示假设检验的结果"
-#| fig-width: 7
+#| fig-width: 5
 #| fig-height: 4.5
 #| fig-showtext: true
 
 library(ggpval)
 p_val <- ggplot(PlantGrowth, aes(x = group, y = weight)) +
-  geom_boxplot() +
-  geom_jitter(width = 0.25) +
+  geom_boxplot(width = 0.25) +
+  geom_jitter(width = 0.15) +
   theme_classic()
 
 add_pval(p_val,
   pairs = list(c(1, 2), c(2,3)),
   test = "t.test",
-  pval_star = TRUE,
+  pval_star = FALSE,
   alternative = "two.sided"
 )
 ```
@@ -2232,9 +2226,9 @@ ggplot(data = trunk_year, aes(x = year, y = revision)) +
 ### 模型诊断 {#sec-model-diagnostics}
 
 
-> 所有的模型都是错的，有些模型是有用的。
+> 所有模型都是错误的，但有些是有用的。
 >
-> --- 博克斯
+> --- 乔治·博克斯
 
 <!-- 
 描述模型拟合数据的不确定性，
@@ -2243,7 +2237,12 @@ Cook 距离、高杠杆值、模型诊断、影响测量
 -->
 
 ```{r}
-#| eval: false
+#| label: fig-lm-diagnostics
+#| fig-cap: "线性模型的诊断图"
+#| fig-showtext: true
+#| collapse: true
+#| fig-width: 7
+#| fig-height: 8
 
 state_x77 <- data.frame(state.x77,
   state_name = rownames(state.x77),
@@ -2252,7 +2251,16 @@ state_x77 <- data.frame(state.x77,
 )
 # 模型诊断图
 fit <- lm(`Life Exp` ~ Income, data = state_x77)
-plot(fit)
+op <- par(mfrow = c(3, 2), mar = c(4, 4, 3, 1))
+plot(fit,
+  ask = FALSE, which = c(1, 2, 3, 4, 5, 6),
+  caption = list(
+    "残差和拟合值", "正态 Q-Q 图",
+    "尺度-位置", "Cook 距离", "残差和杠杆值",
+    expression("Cook 距离 vs 杠杆值" * h[ii] / (1 - h[ii]))
+  )
+)
+par(op)
 ```
 
 
@@ -2266,15 +2274,10 @@ plot(fit)
 #| label: fig-marginal-effects
 #| fig-cap: "边际效应"
 #| fig-width: 5
-#| fig-height: 4.5
+#| fig-height: 4
 #| fig-showtext: true
 
 library(ggeffects)
-state_x77 <- data.frame(state.x77,
-  state_name = rownames(state.x77),
-  state_region = state.region,
-  check.names = FALSE
-)
 fit <- lm(`Life Exp` ~ Income + Murder, data = state_x77)
 mydf <- ggpredict(fit, terms = "Income")
 ggplot(mydf, aes(x, predicted)) +
@@ -2286,7 +2289,19 @@ ggplot(mydf, aes(x, predicted)) +
 
 
 
-### 后验分布 {#sec-residuals-distributions}
+### 后验分布 {#sec-posterior-distributions}
+
+```{r}
+#| label: setup-cmdstan
+#| echo: false
+#| eval: false
+
+# Github Action 已经设置
+# Sys.setenv(CMDSTAN="/opt/cmdstan-2.29.2")
+# Sys.setenv(CMDSTANR_NO_VER_CHECK=TRUE)
+```
+
+以一个最简单的线性模型为例，介绍贝叶斯统计中的后验分布
 
 <!-- 
 描述参数先验分布的不确定性
@@ -2297,8 +2312,82 @@ ggplot(mydf, aes(x, predicted)) +
 观测分布 给定参数的情况下，数据的分布
 后验分布 给定数据的情况下，参数的分布
 
-条件分布、累积分布
-
-[pgog](https://github.com/MUCollective/pgog)
+条件分布、累积分布 [pgog](https://github.com/MUCollective/pgog)
 -->
+
+Stan 编码的线性模型如下：
+
+```{verbatim, file="code/state_x77.stan", lang="stan"}
+```
+
+
+继续以 state_x77 数据为例，以贝叶斯线性模型拟合数据，获得参数的后验分布。
+
+```{r}
+#| message: false
+
+library(cmdstanr)
+# 编译模型
+mod_state_x77 <- cmdstan_model(
+  stan_file = "code/state_x77.stan",
+  compile = TRUE,
+  cpp_options = list(stan_threads = TRUE)
+)
+# 准备数据
+state_x77_d <- list(
+  N = nrow(state_x77), # 观测记录的条数
+  K = 2, # 协变量个数
+  x = state_x77[, c("Income", "Murder")], # N x 2 矩阵
+  y = state_x77[, "Life Exp"] # N 向量
+)
+nchains <- 4 # 4 条迭代链
+# 给每条链设置不同的参数初始值
+inits_data <- lapply(1:nchains, function(i) {
+  list(
+    alpha = runif(1, 0, 1),
+    beta = runif(1, 1, 10),
+    sigma = runif(1, 1, 10)
+  )
+})
+# 采样拟合模型
+fit_state_x77 <- mod_state_x77$sample(
+  data = state_x77_d, # 观测数据
+  init = inits_data, # 迭代初值
+  iter_warmup = 1000, # 每条链预处理迭代次数
+  iter_sampling = 2000, # 每条链总迭代次数
+  chains = nchains, # 马尔科夫链的数目
+  parallel_chains = 1, # 指定 CPU 核心数，可以给每条链分配一个
+  threads_per_chain = 1, # 每条链设置一个线程
+  show_messages = FALSE, # 不显示迭代的中间过程
+  refresh = 0, # 不显示采样的进度
+  seed = 20190425 # 设置随机数种子，不要使用 set.seed() 函数
+)
+```
+
+
+```{r}
+#| label: fig-post-dists
+#| fig-cap: "后验分布"
+#| fig-showtext: true
+#| fig-width: 7
+#| fig-height: 5
+
+library(bayesplot)
+# 迭代轨迹
+p1 <- mcmc_trace(fit_state_x77$draws(c("alpha", "beta[1]")),
+  facet_args = list(
+    labeller = ggplot2::label_parsed,
+    strip.position = "bottom"
+  )
+) + theme_classic()
+# 参数的后验分布
+p2 <- mcmc_hist(fit_state_x77$draws(c("alpha", "beta[1]")),
+  facet_args = list(
+    labeller = ggplot2::label_parsed,
+    strip.position = "bottom"
+  )
+) + theme_classic()
+# 绘图
+p1 / p2
+```
 
