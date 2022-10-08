@@ -1743,7 +1743,6 @@ ggplot(data = as.data.frame(UCBAdmissions)) +
     x = product(Dept, Gender),
     weight = Freq, fill = Admit
   )) +
-  scale_fill_viridis_d(option = "C") +
   theme_minimal()
 ```
 
@@ -1784,7 +1783,7 @@ ggplot(G20, aes(
   geom_treemap() +
   geom_treemap_text(grow = T, reflow = T, colour = "black") +
   facet_wrap(~hemisphere) +
-  scale_fill_viridis_d(option = "C") +
+  scale_fill_brewer(palette = "Set1") +
   theme(legend.position = "bottom") +
   labs(title = "G20 主要经济体", fill = "区域")
 ```
@@ -2109,7 +2108,7 @@ I_x(a,b) &= \frac{B_x(a,b)}{B(a,b)}, \quad B(a,b) = B_1(a,b)
 
 ```{r}
 #| label: fig-clopper-pearson-ci
-#| fig-cap: "学校关系"
+#| fig-cap: "Clopper-Pearson 置信区间"
 #| fig-width: 7
 #| fig-height: 4
 #| fig-showtext: true
@@ -2129,7 +2128,7 @@ ggplot(data = dat, aes(x = 1:50, y = nd / 10, colour = cover)) +
   geom_hline(yintercept = 0.7, lty = 2, linewidth = 1.2, color = "gray") +
   geom_pointrange(aes(ymin = ll, ymax = ul)) +
   theme_classic() +
-  labs(x = "第几次模拟", y = "概率", color = "覆盖")
+  labs(x = "第几次模拟", y = "置信区间上下限", color = "覆盖")
 ```
 
 
@@ -2324,7 +2323,9 @@ Stan 编码的线性模型如下：
 继续以 state_x77 数据为例，以贝叶斯线性模型拟合数据，获得参数的后验分布。
 
 ```{r}
+#| label: compile-stan-model
 #| message: false
+#| results: hide
 
 library(cmdstanr)
 # 编译模型
@@ -2345,7 +2346,7 @@ nchains <- 4 # 4 条迭代链
 inits_data <- lapply(1:nchains, function(i) {
   list(
     alpha = runif(1, 0, 1),
-    beta = runif(1, 1, 10),
+    beta = runif(2, 1, 10),
     sigma = runif(1, 1, 10)
   )
 })
@@ -2371,9 +2372,10 @@ fit_state_x77 <- mod_state_x77$sample(
 #| fig-showtext: true
 #| fig-width: 7
 #| fig-height: 5
+#| message: false
 
 library(bayesplot)
-# 迭代轨迹
+# 参数的迭代轨迹
 p1 <- mcmc_trace(fit_state_x77$draws(c("alpha", "beta[1]")),
   facet_args = list(
     labeller = ggplot2::label_parsed,
