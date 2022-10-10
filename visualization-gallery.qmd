@@ -2147,6 +2147,10 @@ ggplot(data = dat, aes(x = 1:50, y = nd / 10, colour = cover)) +
 
 [ggpval](https://github.com/s6juncheng/ggpval) 在图上添加检验的 P 值结果，[**ggsignif**](https://github.com/const-ae/ggsignif) 在图上添加显著性注释。[ggstatsplot](https://github.com/IndrajeetPatil/ggstatsplot) [@Indrajeet2021] 可视化统计检验、模型的结果，描述功效变化。
 
+```{r}
+oneway.test(data = PlantGrowth, weight ~ group)
+```
+
 @fig-p-val 展示假设检验的结果
 
 ```{r}
@@ -2249,7 +2253,7 @@ state_x77 <- data.frame(state.x77,
   check.names = FALSE
 )
 # 模型诊断图
-fit <- lm(`Life Exp` ~ Income, data = state_x77)
+fit <- lm(`Life Exp` ~ Income + Murder, data = state_x77)
 op <- par(mfrow = c(3, 2), mar = c(4, 4, 3, 1))
 plot(fit,
   ask = FALSE, which = c(1, 2, 3, 4, 5, 6),
@@ -2266,8 +2270,25 @@ par(op)
 
 ### 边际效应 {#sec-marginal-effects}
 
+继续 state_x77 数据集，以预期寿命（1969-1971 年统计）为因变量，Income 人均收入（1974 年）和 Murder 谋杀和非过失杀人率（单位：十万分之一，1976 年统计）为自变量，建立线性模型如下：
 
-[ggeffects](https://github.com/strengejacke/ggeffects) 描述单个变量的作用
+$$
+\text{Life Exp} = \alpha + \beta_1  \text{Income} + \beta_2 \text{Murder} + \epsilon
+$$ {#eq-lm-state-x77}
+
+在 R 语言中，可以用函数 `lm()` 拟合上述模型，
+
+```{r}
+fit <- lm(`Life Exp` ~ Income + Murder, data = state_x77)
+```
+
+模型拟合结果输出如下：
+
+```{r}
+summary(fit)
+```
+
+[ggeffects](https://github.com/strengejacke/ggeffects) 描述单个自变量的作用，人均收入对预期寿命的边际效应
 
 ```{r}
 #| label: fig-marginal-effects
@@ -2277,11 +2298,10 @@ par(op)
 #| fig-showtext: true
 
 library(ggeffects)
-fit <- lm(`Life Exp` ~ Income + Murder, data = state_x77)
-mydf <- ggpredict(fit, terms = "Income")
-ggplot(mydf, aes(x, predicted)) +
+income_pred <- ggpredict(fit, terms = "Income")
+ggplot(income_pred, aes(x, predicted)) +
   geom_line() +
-  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = .1) +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.1) +
   theme_classic() +
   labs(x = "人均收入", y = "预期寿命")
 ```
@@ -2289,18 +2309,6 @@ ggplot(mydf, aes(x, predicted)) +
 
 
 ### 后验分布 {#sec-posterior-distributions}
-
-```{r}
-#| label: setup-cmdstan
-#| echo: false
-#| eval: false
-
-# Github Action 已经设置
-# Sys.setenv(CMDSTAN="/opt/cmdstan-2.29.2")
-# Sys.setenv(CMDSTANR_NO_VER_CHECK=TRUE)
-```
-
-以一个最简单的线性模型为例，介绍贝叶斯统计中的后验分布
 
 <!-- 
 描述参数先验分布的不确定性
@@ -2314,13 +2322,25 @@ ggplot(mydf, aes(x, predicted)) +
 条件分布、累积分布 [pgog](https://github.com/MUCollective/pgog)
 -->
 
-Stan 编码的线性模型如下：
+
+```{r}
+#| label: setup-cmdstan
+#| echo: false
+#| eval: false
+
+# Github Action 已经设置
+# Sys.setenv(CMDSTAN="/opt/cmdstan-2.29.2")
+# Sys.setenv(CMDSTANR_NO_VER_CHECK=TRUE)
+```
+
+以一个最简单的贝叶斯线性模型为例，介绍贝叶斯统计中的后验分布。继续以 state_x77 数据为例，以贝叶斯线性模型拟合数据，获得参数的后验分布。
+
+[Stan](https://github.com/stan-dev) 是一个统计建模和高性能统计计算的平台，广泛应用于社会、生物、物理、工程、商业等领域，提供统计建模、数据分析和预测能力[@Gelman2015]。它提供一套成熟的概率编程语言[@Carpenter2017]，Stan 语言编码的贝叶斯线性模型如下：
 
 ```{verbatim, file="code/state_x77.stan", lang="stan"}
 ```
 
-
-继续以 state_x77 数据为例，以贝叶斯线性模型拟合数据，获得参数的后验分布。
+这里采用汉密尔顿蒙特卡洛算法（HMC）做全贝叶斯推断，下面依次编译模型、准备数据、参数初值和迭代设置。Stan 的 R 语言接口 [**cmdstanr**](https://github.com/stan-dev/cmdstanr) 包可以让这一切在 R 语言环境里做起来比较顺畅。
 
 ```{r}
 #| label: compile-stan-model
@@ -2365,31 +2385,51 @@ fit_state_x77 <- mod_state_x77$sample(
 )
 ```
 
+:::{.callout-tip}
+Stan 还提供自动微分变分推断（ADVI）算法做近似贝叶斯推断获取参数的后验分布，以及拟牛顿法（L-BFGS）优化算法获取参数的惩罚极大似然估计。
+:::
+
+模型参数估计结果如下：
+
+```{r}
+#| label: tbl-state-x77-output
+#| tbl-cap: "贝叶斯线性模型参数估计结果"
+#| echo: false
+
+fit_state_x77$summary(c("alpha", "beta[1]", "beta[2]", "sigma", "lp__")) |> 
+  knitr::kable()
+```
+
+参数的 $\alpha,\beta_1,\beta_2$ 后验均值估计与普通线性模型的拟合结果非常一致。采样结果可以直接传递给 **bayesplot** 包[@Gabry2019]，绘制参数迭代的轨迹图和后验分布图。
 
 ```{r}
 #| label: fig-post-dists
-#| fig-cap: "后验分布"
+#| fig-cap: "参数的迭代轨迹和后验分布"
 #| fig-showtext: true
-#| fig-width: 7
-#| fig-height: 5
+#| fig-width: 6
+#| fig-height: 8.5
 #| message: false
 
 library(bayesplot)
-# 参数的迭代轨迹
-p1 <- mcmc_trace(fit_state_x77$draws(c("alpha", "beta[1]")),
+# 参数的后验分布
+p1 <- mcmc_hist(fit_state_x77$draws(c("alpha", "beta[1]", "beta[2]")),
   facet_args = list(
     labeller = ggplot2::label_parsed,
-    strip.position = "bottom"
+    strip.position = "top",
+    ncol = 1
   )
 ) + theme_classic()
-# 参数的后验分布
-p2 <- mcmc_hist(fit_state_x77$draws(c("alpha", "beta[1]")),
+# 参数的迭代轨迹
+p2 <- mcmc_trace(fit_state_x77$draws(c("alpha", "beta[1]", "beta[2]")),
   facet_args = list(
     labeller = ggplot2::label_parsed,
-    strip.position = "bottom"
+    strip.position = "top",
+    ncol = 1
   )
 ) + theme_classic()
 # 绘图
-p1 / p2
+p1 | p2
 ```
+
+从参数的迭代轨迹可以看出四条马尔可夫链混合得很好，后验分布图主要用来描述参数的迭代结果，后验分布图可以是直方图或密度图的形式，可以和 @tbl-state-x77-output 一道检验模型的拟合情况。
 
