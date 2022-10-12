@@ -1520,20 +1520,36 @@ p1 / (p4 | p5) +
 
 ggplot2 包内置了一些的数学公式解析和表达能力，[latex2exp](https://github.com/stefano-meschiari/latex2exp) 包和[tikzDevice](https://github.com/daqana/tikzDevice)包大大扩展了数学公式的处理能力，相比于 latex2exp 包，tikzDevice 调用 LaTeX 编译引擎处理数学公式，渲染的公式效果更加精美。
 
+形状参数分别为 $a$ 和 $b$ 的贝塔分布的概率密度函数如下：
+
+$$
+f(x) = \frac{\Gamma(a+b)}{\Gamma(a)\Gamma(b)}x^{a-1}(1-x)^{b-1}, \quad a>0,b>0,0\leq x \leq 1
+$$
+
 @fig-beta 中红线对应贝塔分布 $B(3,0.9)$ 而蓝线对应贝塔分布 $B(3,9)$
 
 ```{r}
 #| label: fig-beta
 #| fig-cap: "贝塔分布的概率密度函数"
 #| fig-showtext: true
+#| fig-width: 6
+#| fig-height: 4.5
 
 ggplot() +
-  geom_function(fun = dbeta, args = list(shape1 = 3, shape2 = 0.9), 
-                col = "#E41A1C", linewidth = 1.2) +
-  geom_function(fun = dbeta, args = list(shape1 = 3, shape2 = 9), 
-                col = "#377EB8", linewidth = 1.2) +
+  geom_function(
+    fun = dbeta, args = list(shape1 = 3, shape2 = 0.9),
+    aes(colour = "dbeta(3,0.9)"), linewidth = 1.2
+  ) +
+  geom_function(
+    fun = dbeta, args = list(shape1 = 3, shape2 = 9),
+    aes(colour = "dbeta(3,9)"), linewidth = 1.2
+  ) +
   theme_classic() +
-  labs(x = expression(x), y = expression(Gamma(x)))
+  scale_color_manual(values = c("#E41A1C", "#377EB8")) +
+  labs(
+    x = expression(x), y = expression(f(x)), color = "分布",
+    title = expression(f(x) == frac(Gamma(a + b), Gamma(a) * Gamma(b)) * x^{a - 1} * (1 - x)^{b - 1})
+  )
 ```
 
 
@@ -1570,6 +1586,8 @@ ggsave(filename = "iris.png", plot = p,
 #| label: fig-text-path
 #| fig-cap: "图文混合"
 #| fig-showtext: true
+#| fig-width: 5
+#| fig-height: 4
 
 library(geomtextpath)
 ggplot(iris, aes(x = Sepal.Length, y = Sepal.Width, color = Species)) +
@@ -1591,6 +1609,8 @@ ggplot(iris, aes(x = Sepal.Length, y = Sepal.Width, color = Species)) +
 #| label: fig-zoom-out
 #| fig-cap: "局部缩放"
 #| fig-showtext: true
+#| fig-width: 6
+#| fig-height: 5
 
 library(ggforce)
 ggplot(iris, aes(x = Petal.Length, y = Petal.Width, colour = Species)) +
@@ -1608,6 +1628,8 @@ ggplot(iris, aes(x = Petal.Length, y = Petal.Width, colour = Species)) +
 #| label: fig-watermark
 #| fig-cap: "添加水印图片和文字"
 #| fig-showtext: true
+#| fig-width: 5
+#| fig-height: 4
 
 # 绘图展示数据
 p <- ggplot(iris, aes(x = Sepal.Length, y = Sepal.Width)) +
