@@ -175,22 +175,12 @@ ggplot(data = trunk_year, aes(x = year, y = revision)) +
 aggregate(data = svn_trunk_log, revision ~ year + hour, length) |> 
   ggplot(aes(x = hour, y = revision, group = year)) +
   geom_line() +
+  geom_line(data = function(x) subset(x, year < 2006),
+            aes(color = as.character(year))) +
   theme_classic() +
-  labs(x = "时段", y = "提交量")
+  labs(x = "时段", y = "提交量", color = "年份")
 ```
 
-```{r}
-#| label: fig-trunk-hour-line-2013
-#| fig-cap: "2013 年以来提交代码的时段分布"
-#| fig-showtext: true
-
-aggregate(data = svn_trunk_log, revision ~ year + hour, 
-          length, subset = year >= 2013) |> 
-  ggplot(aes(x = hour, y = revision, group = year)) +
-  geom_line() +
-  theme_classic() +
-  labs(x = "时段", y = "提交量")
-```
 
 > 月趋势
 
@@ -827,7 +817,7 @@ ggplot(data = sub_rversion_df) +
 #| label: fig-rversion-major
 #| fig-cap: "25 年里 R 软件重大及主要版本发布情况"
 #| fig-width: 6
-#| fig-height: 9
+#| fig-height: 8
 #| fig-showtext: true
 
 sub_rversion_df2 <- rversion_df[rversion_df$status %in% c("big", "major"), ]
@@ -1220,6 +1210,7 @@ ggplot(data = province_sex_ratio, aes(x = `性别比（女=100）`, y = `区域`
 
 散点图展示原始数据
 
+
 ```{r}
 #| label: fig-point
 #| fig-cap: "散点图"
@@ -1231,6 +1222,25 @@ ggplot(data = province_sex_ratio, aes(x = `区域`, y = `性别比（女=100）`
   geom_point() +
   theme_classic()
 ```
+
+:::{.callout-tip}
+Base R 函数 `stripchart()` 可以实现类似 @fig-point 的效果。
+
+```{r}
+#| label: fig-point-stripchart
+#| fig-cap: "散点图"
+#| fig-width: 5
+#| fig-height: 4
+#| fig-showtext: true
+#| par: true
+
+stripchart(`性别比（女=100）` ~ `区域`,
+  vertical = TRUE, pch = 1,
+  data = province_sex_ratio,
+  xlab = "区域"
+)
+```
+:::
 
 
 抖动图展示原始数据
@@ -1731,7 +1741,7 @@ ggplot(data = dat, aes(
 
 ```{r}
 #| label: fig-mosaic
-#| fig-cap: "加州伯克利分校的各系录取情况"
+#| fig-cap: "加州伯克利分校院系录取情况"
 #| fig-width: 7
 #| fig-height: 5
 #| fig-showtext: true
@@ -1746,6 +1756,28 @@ ggplot(data = as.data.frame(UCBAdmissions)) +
   theme_minimal()
 ```
 
+
+:::{.callout-tip}
+Base R 提供函数 `plot()` 和 `mosaicplot()` 对 `table` 表格类型的数据可视化，提供一套公式绘图语法，可以绘制类似的马赛克图。
+
+```{r}
+#| label: fig-mosaic-base
+#| fig-width: 7
+#| fig-height: 5
+#| fig-cap: "加州伯克利分校院系录取情况"
+#| fig-showtext: true
+#| echo: true
+#| par: true
+#| eval: false
+
+mosaicplot(~ Gender + Dept + Admit,
+  data = UCBAdmissions, color = TRUE,
+  main = "", xlab = "性别", ylab = "院系"
+)
+```
+
+对于多维列联表数据，Base R 提供函数 `loglin()` 拟合对数线性模型，以获取更加定量的结果。更进一步，**MASS** 包在函数 `loglin()` 的基础上，打包了另一个函数 `loglm()` ，它提供与函数 `lm()` 和 `glm()` 相一致的公式语法，使用起来更加方便。当然，函数 `glm()` 本身也是可以拟合对数线性模型的，毕竟它也是一种特殊的广义线性模型。
+:::
 
 ### 矩阵树图 {#sec-treemap}
 
@@ -1791,6 +1823,7 @@ ggplot(G20, aes(
 每个瓦片的大小代表国家的 GDP 在所属半球里的比重。
 
 
+
 ## 描述关系 {#sec-visualize-data-relation}
 
 
@@ -1808,7 +1841,7 @@ ggplot(G20, aes(
 点的形态、大小、颜色等都可以变化
 -->
 
-中国国家统计局 2021 年发布的统计年鉴，2020 年 31 个省、直辖市、自治区，抚养比 文盲率、人口数的关系
+中国国家统计局 2021 年发布的统计年鉴，2020 年 31 个省、直辖市、自治区，抚养比、文盲率、人口数的关系
 
 ```{r}
 #| label: tbl-china-raise-illiteracy
@@ -1818,18 +1851,18 @@ ggplot(G20, aes(
 china_raise_illiteracy <- readRDS(file = "data/china-raise-illiteracy-2020.rds")
 knitr::kable(head(china_raise_illiteracy[order(china_raise_illiteracy$`人口数`, decreasing = TRUE), ]),
   col.names = c(
-    "地区", "人口数", "15-64岁", "总抚养比",
-    "15岁以上人口", "文盲人口", "文盲率"
+    "地区", "人口数", "15-64岁", "抚养比",
+    "15岁及以上人口", "文盲人口", "文盲率"
   ),
   row.names = FALSE
 )
 ```
 
-其中，文盲人口是指15岁及15岁以上不识字及识字很少人口。文盲率 = 文盲人口 / 15岁以上人口。抚养比 = (0-14岁 + 65岁及以上) / 15-64岁人口数。
+其中，文盲人口是指15岁及以上不识字及识字很少人口，文盲率 = 文盲人口 / 15岁及以上人口，抚养比 = (0-14岁 + 65岁及以上) / 15-64岁人口数。
 
 ```{r}
 #| label: fig-china-raise-illiteracy
-#| fig-cap: "文盲人口占15岁及以上人口的比重与总抚养比的关系"
+#| fig-cap: "文盲率与抚养比的关系"
 #| fig-width: 6
 #| fig-height: 4
 #| fig-showtext: true
@@ -1837,7 +1870,7 @@ knitr::kable(head(china_raise_illiteracy[order(china_raise_illiteracy$`人口数
 ggplot(data = china_raise_illiteracy, aes(x = `总抚养比`, y = `文盲人口占15岁及以上人口的比重`)) +
   geom_point() +
   theme_classic() +
-  labs(x = "总抚养比（%）", y = "文盲人口占15岁及以上人口的比重（%）")
+  labs(x = "抚养比（%）", y = "文盲率（%）")
 ```
 
 
@@ -1874,7 +1907,7 @@ ggplot(
   ) +
   coord_cartesian(xlim = c(30, 60), ylim = c(0, 10.5), expand = FALSE) +
   theme_classic() +
-  labs(x = "总抚养比（%）", y = "文盲人口占15岁及以上人口的比重（%）")
+  labs(x = "抚养比（%）", y = "文盲率（%）")
 ```
 
 
@@ -2397,16 +2430,16 @@ Stan 还提供自动微分变分推断（ADVI）算法做近似贝叶斯推断�
 #| echo: false
 
 fit_state_x77$summary(c("alpha", "beta[1]", "beta[2]", "sigma", "lp__")) |> 
-  knitr::kable()
+  knitr::kable(digits = 3)
 ```
 
 参数的 $\alpha,\beta_1,\beta_2$ 后验均值估计与普通线性模型的拟合结果非常一致。采样结果可以直接传递给 **bayesplot** 包[@Gabry2019]，绘制参数迭代的轨迹图和后验分布图。
 
 ```{r}
 #| label: fig-post-dists
-#| fig-cap: "参数的迭代轨迹和后验分布"
+#| fig-cap: "参数的后验分布和迭代轨迹"
 #| fig-showtext: true
-#| fig-width: 6
+#| fig-width: 7
 #| fig-height: 8.5
 #| message: false
 

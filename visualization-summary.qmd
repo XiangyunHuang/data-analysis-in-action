@@ -71,15 +71,10 @@ sysfonts::font_add(
 
 ## 防止误差线图 {#sec-avoid-errorbar}
 
-举例来说，如 @fig-avoid-errorbar 所示，图中从左往右、从上往下依次是误差线图、 、箱线图、提琴图和散点图，它们基于同一份数据，采用不同的图形展示数据的分布情况。在一些期刊杂志上， @fig-avoid-errorbar-1 非常受欢迎，而实际上它所表达的信息非常有限，严重的情况下，甚至会产生误导。
+举例来说，如 @fig-avoid-errorbar 所示，图中从左往右依次是误差线图、 、箱线图，它们基于同一份数据，采用不同的图形展示数据的分布情况。在一些期刊杂志上， @fig-avoid-errorbar-1 非常受欢迎，而实际上它所表达的信息非常有限，严重的情况下，甚至会产生误导。
 
 数据来自中国国家统计局 2021 年发布的统计年鉴，是分城市、镇和乡村的各省、自治区、直辖市的男女比例数据。
 一般来说，各地区的性别比例不可能出现严重失调，比如男的是女的一倍，一个省要是出现如此失调的现象是非常罕见的。而 @fig-avoid-errorbar-1 的纵轴给人感觉还有性别比为 50% 甚至 30% 的情况，纯属误导。相比而言，箱线图 @fig-avoid-errorbar-2 就好很多，既把整体情况展示出来了，又将一些性别比例离群的突出出来了，就整个图形来说，城市、镇和乡村的比较也突出出来了，占据了图的主要位置。
-
-在数据量很大的情况下，借助箱线图、提琴图可以非常方便地展示数据分布，
-
-
-而在数据量很小的情况下，借助散点图可以快速看出原始的数据信息。
 
 
 ```{r}
@@ -115,22 +110,99 @@ ggplot(data = province_sex_ratio, aes(x = `区域`, y = `性别比（女=100）`
 ```
 
 
-## 避免三维图形 {#sec-avoid-3d}
-
-
-
-## 少用简单饼图 {#sec-avoid-pie}
-
-
-
 ## 展示原始数据 {#sec-raw-data}
 
 
+在数据量很大的情况下，借助箱线图、提琴图可以非常方便地展示数据分布，而在数据量很小的情况下，借助散点图可以快速看出原始的数据信息。如果散点存在聚集，还可以添加水平的随机抖动，如 @fig-show-raw-data 所示。
 
-## 注意信息密度 {#sec-information-density}
+```{r}
+#| label: fig-show-raw-data
+#| fig-cap: "展示原始数据"
+#| fig-subcap: 
+#|   - 散点图
+#|   - 抖动图
+#| fig-ncol: 2
+#| fig-width: 4.5
+#| fig-height: 3.5
+#| echo: false
+#| fig-showtext: true
 
+ggplot(data = province_sex_ratio, aes(x = `区域`, y = `性别比（女=100）`)) +
+  geom_point() +
+  theme_classic()
+
+ggplot(data = province_sex_ratio, aes(x = `区域`, y = `性别比（女=100）`)) +
+  geom_jitter(width = 0.25) +
+  theme_classic()
+```
+
+
+
+## 适当添加注释 {#sec-add-annotate}
+
+在 @fig-show-raw-data 的基础上，我们想了解哪些离群的点都代表哪些地方，这就需要添加注释。下 @fig-add-annotate 的左子图在散点周围添加了地区名称，由于数据的非均匀分布，重叠文本有很多。而且，图中想要重点突出的是离群的地区，而不是将所有点都注释上。在图中，注释可以看作是一种强调，处处强调也就无所谓强调，强调的要求是有起伏对比。因此，@fig-add-annotate 的右子图，只对离群的散点添加了注释，对离群值的定义可根据具体数据情况而定，此处从简。
+
+```{r}
+#| label: fig-add-annotate
+#| fig-cap: "适当添加注释"
+#| fig-subcap: 
+#|   - 添加文本注释
+#|   - 突出离群地区
+#| fig-ncol: 2
+#| fig-width: 4.5
+#| fig-height: 3.5
+#| echo: false
+#| fig-showtext: true
+
+ggplot(data = province_sex_ratio, aes(x = `区域`, y = `性别比（女=100）`)) +
+  geom_point() +
+  geom_text(aes(label = `地区`)) +
+  theme_classic()
+
+outlier_filter <- function(x) {
+  x < (quantile(x, probs = 0.25) - 1.5 * IQR(x)) | x > (quantile(x, probs = 0.75) + 1.5 * IQR(x))
+}
+ggplot(data = province_sex_ratio, aes(x = `区域`, y = `性别比（女=100）`)) +
+  geom_jitter(width = 0.25) +
+  geom_text(aes(label = `地区`),
+    data = function(x) subset(x, subset = outlier_filter(`性别比（女=100）`))
+  ) +
+  theme_classic()
+```
 
 
 ## 结合数据背景 {#sec-data-background}
 
+结合数据背景绘图具有很大的灵活性，添加简单、清晰的辅助信息的目的是增加可读性，方式上可以通过参考线，刻度单位等体现出来。一般地，女性的寿命比男性的普遍要长一些，高龄女性远多于男性，之前分年龄段展示性别比数据时，也说明了这一点。人口学家认为新生儿正常的人口比约为 104，在人口统计学上，一般正常范围在102至105之间，亚洲一些国家重男轻女思想根深蒂固，往往远高于此区间。因此，下 @fig-data-background 左子图将参考线设为性别比 100 是不合适的，而应该结合人口统计数据的背景，设置为 104。
+
+```{r}
+#| label: fig-data-background
+#| fig-cap: "结合数据背景添加辅助参考信息"
+#| fig-subcap: 
+#|   - 添加参考线
+#|   - 男女比平衡点
+#| fig-ncol: 2
+#| fig-width: 4.5
+#| fig-height: 3.5
+#| echo: false
+#| fig-showtext: true
+
+ggplot(data = province_sex_ratio, aes(x = `区域`, y = `性别比（女=100）`)) +
+  geom_hline(yintercept = 100, linewidth = 0.8, lty = 2, color = "gray") +
+  geom_jitter(width = 0.25) +
+  geom_text(aes(label = `地区`),
+    data = function(x) subset(x, subset = outlier_filter(`性别比（女=100）`))
+  ) +
+  theme_classic()
+
+ggplot(data = province_sex_ratio, aes(x = `区域`, y = `性别比（女=100）`)) +
+  geom_hline(yintercept = 104, linewidth = 0.8, lty = 2, color = "gray") +
+  geom_jitter(width = 0.25) +
+  geom_text(aes(label = `地区`),
+    data = function(x) subset(x, subset = outlier_filter(`性别比（女=100）`))
+  ) +
+  theme_classic()
+```
+
+由上图也不难看出，城市里女性占比更多，说明女性往城里跑，而小镇青年留下的大多是男性，农村老太太远多于老大爷。城市里，大龄女青年很多，小镇里大龄男青年很多，适龄区间的男女性别比在空间区域上严重失衡，也是造成新生儿出生率低的原因之一。
 
