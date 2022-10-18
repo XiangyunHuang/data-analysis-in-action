@@ -929,6 +929,77 @@ math_anxiety <- likert(summary = MathAnxiety)
 plot(math_anxiety, type = "bar", legend.position = "bottom")
 ```
 
+## 加州伯克利分校的录取情况 {#sec-ucb-admissions}
+
+<!-- 
+辛普森悖论，分类数据处理，高维列联表的压缩和分层，边际和条件
+-->
+
+1973 年加州伯克利分校 6 个最大的院系的录取情况见下 @tbl-ucb-admissions 。
+
+```{r}
+#| label: tbl-ucb-admissions
+#| tbl-cap: "1973 年加州伯克利分校的录取情况"
+
+knitr::kable(as.data.frame(UCBAdmissions),
+  col.names = c("录取与否", "学生性别", "院系", "人数")
+)
+```
+
+首先，按性别和录取情况统计人数，如下：
+
+```{r}
+m <- xtabs(Freq ~ Gender + Admit, data = as.data.frame(UCBAdmissions))
+m
+```
+
+可以看到，申请加州伯克利分校的女生当中，只有 $557 / (557 + 1278) = 30.35\%$ 录取了，而男生则有 $1198 / (1198 + 1493) = 44.52\%$ 的录取率。根据皮尔逊 $\chi^2$ 检验：
+
+```{r}
+# 不带耶茨矫正
+chisq.test(m, correct = FALSE)
+```
+
+可知 $\chi^2$ 统计量的值为 $92.205$ 且 P 值远远小于 0.05， 差异达到统计显著性，不是随机因素导致的。因此，加州伯克利分校 被指控在招生录取工作中存在性别歧视。然而，当我们细分到各个院系去看录取率（录取人数 / 申请人数），结果显示院系 A 的录取率为 64.41\%，院系 B 的录取率为 63.24\%，依次类推，各院系情况如下：
+
+```{r}
+proportions(xtabs(Freq ~ Dept + Admit,
+  data = as.data.frame(UCBAdmissions)
+), margin = 1)
+```
+
+对每个院系，单独使用皮尔逊 $\chi^2$ 检验，发现只有 A 系的男女生录取率的差异达到统计显著性，其它系的差异都不显著。辛普森悖论在这里出现了，在分类数据的分析中，常常遇到。
+
+```{r}
+# 以 A 系为例
+ma <- xtabs(Freq ~ Gender + Admit,
+  subset = Dept == "A",
+  data = as.data.frame(UCBAdmissions)
+)
+chisq.test(ma, correct = FALSE)
+```
+
+为了经一步说明此现象的原因，建立对数线性模型来拟合数据，值得一提的是皮尔逊卡方检验可以从对数线性模型的角度来看，而对数线性模型是一种特殊的广义线性模型，针对计数数据建模。
+
+```{r}
+fit_ucb0 <- glm(Freq ~ Dept + Admit + Gender,
+  family = poisson(link = "log"),
+  data = as.data.frame(UCBAdmissions)
+)
+summary(fit_ucb0)
+```
+
+添加性别和院系的交互效应后，对数线性模型的 AIC 下降一半，说明模型的交互效应是显著的，也就是说性别和院系之间存在非常强的关联。
+
+```{r}
+fit_ucb1 <- glm(Freq ~ Dept + Admit + Gender + Dept * Gender,
+  family = poisson(link = "log"),
+  data = as.data.frame(UCBAdmissions)
+)
+summary(fit_ucb1)
+```
+
+此辛普森悖论现象的解释是女生倾向于申请录取率低的院系，而男生倾向于申请录取率高的院系，最终导致整体上，男生的录取率显著高于女生。至于为什么女生会倾向于申请录取率低的院系？这可能要看具体的院系是哪些，招生政策如何？这已经不是仅仅依靠招生办的统计数字就可以完全解释得了的，更多详情见文献 @Bickel1975 。
 
 
 ## 解释置信区间及其覆盖概率 {#sec-coverage-probability}
