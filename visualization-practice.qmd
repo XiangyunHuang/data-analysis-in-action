@@ -65,7 +65,7 @@ sysfonts::font_add(
 ```
 
 
-## 老忠实间歇泉喷发规律 {#sec-faithful}
+## 分析老忠实间歇泉喷发规律 {#sec-faithful}
 
 @fig-faithful-bkde2d 展示美国怀俄明州黄石国家公园[老忠实间歇泉](https://en.wikipedia.org/wiki/Old_Faithful)喷发规律，横轴表示喷发持续时间（以分钟计），纵轴表示等待时间（以分钟计），点的亮暗程度（白到黑）代表附近点密度的高低，亮度值通过二维核密度估计方法得到，具体实现借助了 **KernSmooth** [@KernSmooth1995] 包提供的 `bkde2D()` 函数，设置了喷发时间的窗宽为 0.7 分钟，等待时间的窗宽为 7分钟。不难看出，每等待55分钟左右间歇泉喷发约2分钟，或者每等待80分钟左右间歇泉喷发4.5约分钟，非常守时，表现得很老实，故而得名。说实话，二维核密度估计在这里有点大材小用了，因为数据点比较少，肉眼也能分辨出来哪里聚集的点多，哪里聚集的点少。
 
@@ -402,7 +402,7 @@ ggplot(data = china_household_sex, aes(x = `户口登记状况`, y = `男性` / 
 
 
 
-## 美国近88年男性死亡率变化 {#sec-usa-mortality}
+## 美国历年各年龄死亡率变化 {#sec-usa-mortality}
 
 <!-- 函数型数据探索、分析和可视化，趋势分析，时间 -->
 
@@ -572,7 +572,7 @@ with(usa_mortality, {
 
 <!-- 函数型数据探索、分析和可视化，关系 -->
 
-[弗朗西斯·高尔顿](https://galton.org/)（Francis Galton, 1822-1911）是历史上著名的优生学家、遗传学家和统计学家，是统计学中相关和回归等一批概念的提出者，是遗传学中回归现象的发现者。1885年，高尔顿以保密和给予金钱报酬的方式，向社会征集了 205 对夫妇及其 928 个成年子女的身高数据[@Galton1886]。
+[弗朗西斯·高尔顿](https://galton.org/)（Francis Galton, 1822-1911）是历史上著名的优生学家、心理学家、遗传学家和统计学家，是统计学中相关和回归等一批概念的提出者，是遗传学中回归现象的发现者。1885年，高尔顿以保密和给予金钱报酬的方式，向社会征集了 205 对夫妇及其 928 个成年子女的身高数据[@Galton1886]。
 
 目前，Michael Friendly 从原始文献中整理后，将该数据集命名为 `GaltonFamilies`，放在 R 包 **HistData** [@Friendly2021] 内，方便大家使用。篇幅所限，下 @tbl-galton 展示该数据集的部分内容。
 
@@ -929,6 +929,198 @@ math_anxiety <- likert(summary = MathAnxiety)
 plot(math_anxiety, type = "bar", legend.position = "bottom")
 ```
 
+## 加州伯克利分校的录取情况 {#sec-ucb-admissions}
+
+<!-- 
+辛普森悖论，分类数据处理，高维列联表的压缩和分层，边际和条件
+-->
+
+1973 年加州伯克利分校 6 个最大的院系的录取情况见下 @tbl-ucb-admissions ，研究目标是加州伯克利分校在招生录取工作中是否有性别歧视？
+
+```{r}
+#| label: tbl-ucb-admissions
+#| tbl-cap: "1973 年加州伯克利分校的录取情况"
+#| echo: false
+
+# knitr::kable(as.data.frame(UCBAdmissions),
+#   col.names = c("录取与否", "学生性别", "院系", "人数")
+# )
+# 长格式转宽格式
+dat1 <- reshape(
+  data = as.data.frame(UCBAdmissions), direction = "wide",
+  idvar = c("Dept", "Admit"),
+  timevar = "Gender", v.names = "Freq", sep = "_"
+)
+# 再一次长格式转宽格式
+dat2 <- reshape(
+  data = dat1, direction = "wide",
+  idvar = "Dept", timevar = "Admit",
+  v.names = c("Freq_Male", "Freq_Female"), sep = "_"
+)
+# 面对 HTML 和 PDF 输出 kableExtra 需要两套代码
+# kableExtra 不支持 DOCX 输出
+# knitr::kable(dat2, booktabs = TRUE, row.names = F, col.names = NULL, align = "ccccc") |>
+#   kableExtra::kable_styling(
+#     bootstrap_options = "basic", full_width = TRUE, position = "center"
+#   ) |> 
+#   kableExtra::add_header_above(c("院系" = 1, "男性" = 1, "女性" = 1, "男性" = 1, "女性" = 1)) |>
+#   kableExtra::add_header_above(c(" " = 1, "录取" = 2, "拒绝" = 2))
+
+gt::gt(dat2) |> 
+  gt::cols_label(
+    Dept = "院系",
+    Freq_Male_Admitted = "男性",
+    Freq_Female_Admitted = "女性",
+    Freq_Male_Rejected = "男性",
+    Freq_Female_Rejected = "女性"
+  ) |> 
+  gt::tab_spanner(
+    label = "录取",
+    columns = c(Freq_Male_Admitted, Freq_Female_Admitted)
+  ) |> 
+  gt::tab_spanner(
+    label = "拒绝",
+    columns = c(Freq_Male_Rejected, Freq_Female_Rejected)
+  ) |> 
+  gt::opt_row_striping()
+```
+
+借助马赛克图 @fig-ucb-admissions 可以更加直观的看出数据中的比例关系。
+
+```{r}
+#| label: fig-ucb-admissions
+#| fig-width: 7
+#| fig-height: 5
+#| fig-cap: "加州伯克利分校院系录取情况"
+#| fig-showtext: true
+#| echo: false
+#| par: true
+
+# plot(UCBAdmissions, col = "lightblue", border = "white",
+#      main = "", xlab = "性别", ylab = "院系")
+op <- par(mar = c(0.5, 2, 0.5, 0.5))
+mosaicplot(~ Admit + Dept + Gender,
+  data = UCBAdmissions, color = TRUE, border = "white",
+  main = "", xlab = "", ylab = "院系"
+)
+par(op)
+```
+
+
+接下来进行定量的分析，首先，按性别和录取情况统计人数，如下：
+
+```{r}
+m <- xtabs(Freq ~ Gender + Admit, data = as.data.frame(UCBAdmissions))
+m
+```
+
+可以看到，申请加州伯克利分校的女生当中，只有 $557 / (557 + 1278) = 30.35\%$ 录取了，而男生则有 $1198 / (1198 + 1493) = 44.52\%$ 的录取率。根据皮尔逊 $\chi^2$ 检验：
+
+```{r}
+# 不带耶茨矫正
+chisq.test(m, correct = FALSE)
+```
+
+可知 $\chi^2$ 统计量的值为 $92.205$ 且 P 值远远小于 0.05， 差异达到统计显著性，不是随机因素导致的。因此，加州伯克利分校被指控在招生录取工作中存在性别歧视。然而，当我们细分到各个院系去看录取率（录取人数 / 申请人数），结果显示院系 A 的录取率为 64.41\%，院系 B 的录取率为 63.24\%，依次类推，各院系情况如下：
+
+```{r}
+proportions(xtabs(Freq ~ Dept + Admit,
+  data = as.data.frame(UCBAdmissions)
+), margin = 1)
+```
+
+对每个院系，单独使用皮尔逊 $\chi^2$ 检验，发现只有 A 系的男女生录取率的差异达到统计显著性，其它系的差异都不显著。辛普森悖论在这里出现了，在分类数据的分析中，常常遇到。
+
+```{r}
+# 以 A 系为例
+ma <- xtabs(Freq ~ Gender + Admit,
+  subset = Dept == "A",
+  data = as.data.frame(UCBAdmissions)
+)
+chisq.test(ma, correct = FALSE)
+```
+
+为了经一步说明此现象的原因，建立对数线性模型来拟合数据，值得一提的是皮尔逊卡方检验可以从对数线性模型的角度来看，而对数线性模型是一种特殊的广义线性模型，针对计数数据建模。
+
+```{r}
+fit_ucb0 <- glm(Freq ~ Dept + Admit + Gender,
+  family = poisson(link = "log"),
+  data = as.data.frame(UCBAdmissions)
+)
+summary(fit_ucb0)
+```
+
+添加性别和院系的交互效应后，对数线性模型的 AIC 下降一半多，说明模型的交互效应是显著的，也就是说性别和院系之间存在非常强的关联。
+
+```{r}
+fit_ucb1 <- glm(Freq ~ Dept + Admit + Gender + Dept * Gender,
+  family = poisson(link = "log"),
+  data = as.data.frame(UCBAdmissions)
+)
+summary(fit_ucb1)
+```
+
+此辛普森悖论现象的解释是女生倾向于申请录取率低的院系，而男生倾向于申请录取率高的院系，最终导致整体上，男生的录取率显著高于女生。至于为什么女生会倾向于申请录取率低的院系？这可能要看具体的院系是哪些，招生政策如何？这已经不是仅仅依靠招生办的统计数字就可以完全解释得了的，更多详情见文献 @Bickel1975 。
+
+
+## 被告肤色和死刑判决的关系 {#sec-florida-ethnicity}
+
+<!-- 高维列联表，独立性检验，条件独立性检验 -->
+
+1976~1977年美国佛罗里达州的凶杀案件中被告肤色和死刑判决的关系
+
+```{r}
+#| label: tbl-florida-ethnicity
+#| tbl-cap: "佛罗里达州的凶杀案件统计数据"
+#| echo: false
+# 示例来自茆诗松、王静龙和濮晓龙的《高等数理统计》第二版第 232 页
+tbl <- expand.grid(
+  Death = c("Yes", "No"), # 判决结果 是否死刑
+  Defend = c("白人", "黑人"),  # 被告 肤色
+  Victim = c("白人", "黑人") # 原告 （被害人）肤色
+)
+ethnicity <- data.frame(tbl, Freq = c(19, 132, 11, 52, 0, 9,  6, 97))
+
+# 长格式转宽格式
+dat1 <- reshape(
+  data = ethnicity, direction = "wide",
+  idvar = c("Defend", "Victim"),
+  timevar = "Death", v.names = "Freq", sep = "_"
+)
+# 制作表格
+gt::gt(dat1) |> 
+  gt::cols_label(
+    Freq_Yes = "是",
+    Freq_No = "否",
+    Victim = "被害人",
+    Defend = "被告"
+  ) |> 
+  gt::tab_spanner(
+    label = "死刑",
+    columns = c(Freq_Yes, Freq_No)
+  ) |> 
+  gt::opt_row_striping()
+```
+
+
+
+## 分析《红楼梦》的情景描写 {#sec-the-story-of-the-stone}
+
+<!-- 数据分析与统计检验应用 -->
+
+2009 年东南大学韦博成教授将两个独立二项总体的等价性检验应用于《红楼梦》前80回与后40回某些文风差异的统计分析[@Wei2009]
+
+
+
+## 解释二项分布参数的置信带 {#sec-confidence-belt}
+
+<!-- 
+0 和 1 是世界的原点，蕴含大道真意。本书多个地方涉及二项分布，从二项分布衍生出来超几何分布、泊松分布、正态分布、贝塔分布等等 
+-->
+
+解释二项分布参数的置信带，内容来自 C. J. Clopper 和 E. S. Pearson 的经典论文《The Use of Confidence or Fiducial Limits Illustrated In The Case of The Binomial》[@Clopper1934]。
+
+
 
 
 ## 解释置信区间及其覆盖概率 {#sec-coverage-probability}
@@ -1023,12 +1215,6 @@ ggplot(data = sim_dat, aes(x = p, y = prob, color = nsample)) +
 
 通过 @fig-coverage 一看就明白了几种区间估计方法的优劣，以及为什么软件普遍默认采用 Wilson 估计方法？因为它又稳定又准确。 Wilson 区间估计用的更加广泛的，Base R 内置的比例检验函数 `prop.test()` 在不启用 Yates 修正时，就是用该方法获得比例 $p$ 的区间估计 [@Wilson1927]。Clopper-Pearson 区间估计特别适合小样本情形，它是精确区间估计方法，Base R 内置的二项比例检验函数 `binom.test()` 就是用该方法获得比例 $p$ 的区间估计[@Clopper1934]。
 
-
-
-
 :::{.callout-tip}
 请读者再思考两个问题： @fig-coverage 为什么呈现对称的形式，泊松分布会和二项分布有类似的现象吗？如果有的话，连续分布，如正态分布和指数分布也会有吗？
 :::
-
-
-
