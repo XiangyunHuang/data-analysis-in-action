@@ -2184,29 +2184,24 @@ ggplot(data = dat, aes(x = 1:50, y = nd / 10, colour = cover)) +
 oneway.test(data = PlantGrowth, weight ~ group)
 ```
 
-@fig-p-val 展示假设检验的结果
+@fig-signif 展示假设检验的结果
 
 ```{r}
-#| label: fig-p-val
+#| label: fig-signif
 #| fig-cap: "展示假设检验的结果"
 #| fig-width: 5
 #| fig-height: 4.5
 #| fig-showtext: true
 
-library(ggpval)
-p_val <- ggplot(PlantGrowth, aes(x = group, y = weight)) +
+library(ggsignif)
+ggplot(data = PlantGrowth, aes(x = group, y = weight)) +
   geom_boxplot(width = 0.25) +
   geom_jitter(width = 0.15) +
+  geom_signif(comparisons = list(c("ctrl", "trt1"), c("trt1", "trt2")), 
+              map_signif_level = function(p) sprintf("p = %.2g", p), 
+              textsize = 6, test = "t.test") +
   theme_classic()
-
-add_pval(p_val,
-  pairs = list(c(1, 2), c(2,3)),
-  test = "t.test",
-  pval_star = FALSE,
-  alternative = "two.sided"
-)
 ```
-
 
 
 ### 模型预测 {#sec-model-predictions}
