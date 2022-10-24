@@ -1101,20 +1101,25 @@ p1 <- ggplot(data = state_x77, aes(x = Income, y = `Life Exp`)) +
 p1
 ```
 
-边际密度曲线，ggExtra 添加
+**ggExtra** 包[@ggExtra2022] 添加边际密度曲线和边际直方图
 
 ```{r}
-#| label: fig-density-margins
-#| fig-cap: "边际密度图"
+#| label: fig-margins
+#| fig-cap: 
+#| - "边际密度图"
+#| - "边际直方图"
 #| fig-width: 5
 #| fig-height: 4
 #| fig-showtext: true
+#| fig-ncol: 2
+#| out-width: '50%'
 
 library(ggExtra)
 ggMarginal(p1)
+ggMarginal(p1, type = 'histogram')
 ```
 
-热力图，二维密度图 [ggdist](https://github.com/mjskay/ggdist) [@ggdist2022]
+**ggplot2** 包提供二维密度图层 `geom_density_2d_filled()` 绘制热力图， [**ggdist**](https://github.com/mjskay/ggdist) [@ggdist2022] 进行了一些扩展。
 
 ```{r}
 #| label: fig-density-2d-filled
@@ -1128,7 +1133,7 @@ ggplot(data = state_x77, aes(x = Income, y = `Life Exp`)) +
   theme_classic()
 ```
 
-相比于 ggplot2 内置的二维核密度估计，[ggdensity](https://github.com/jamesotto852/ggdensity/) [@ggdensity2022] 有一些优势
+相比于 **ggplot2** 内置的二维核密度估计，[**ggdensity**](https://github.com/jamesotto852/ggdensity/) [@ggdensity2022] 有一些优势，根据数据密度将目标区域划分，更加突出层次和边界。
 
 
 ```{r}
@@ -1920,13 +1925,6 @@ ggplot(
 
 排序位置变化，一段时间到另一段时间，比如话题热度的转变，比如今年国庆与去年国庆
 空间移动，路径移动，强调位置的移动
-
-ggbump 有警告
-2: In dplyr::left_join(., data %>% dplyr::select(-x, -y) %>% dplyr::mutate(key = 1) %>%  :
-  Each row in `x` is expected to match at most 1 row in `y`.
-ℹ Row 1 of `x` matches multiple rows.
-ℹ If multiple matches are expected, set `multiple = "all"` to silence this
-  warning.
 -->
 
 [ggbump](https://github.com/davidsjoberg/ggbump)
@@ -1938,6 +1936,7 @@ ggbump 有警告
 #| fig-height: 3.5
 #| fig-showtext: true
 #| warning: false
+#| eval: false
 
 library(ggbump)
 
@@ -1981,7 +1980,7 @@ ggplot(df, aes(year, rank, color = country)) +
 
 
 
-### 韦恩图 {#sec-venn}
+### 韦恩图 {#sec-venn-diagram}
 
 <!-- 
 描述交叉关系
@@ -2047,6 +2046,7 @@ graph <- tidygraph::as_tbl_graph(highschool) |>
 graph
 ```
 
+<!-- ggplot2 升级 3.4.0 导致问题 -->
 
 ```{r}
 #| label: fig-graph
@@ -2054,6 +2054,7 @@ graph
 #| fig-width: 7
 #| fig-height: 4.5
 #| fig-showtext: true
+#| eval: false
 
 ggraph(graph, layout = "kk") +
   geom_edge_fan(aes(alpha = after_stat(index)), show.legend = FALSE) +
@@ -2178,35 +2179,68 @@ ggplot(data = dat, aes(x = 1:50, y = nd / 10, colour = cover)) +
 [ggpubr](https://github.com/kassambara/ggpubr) 制作出版级统计图形，两样本均值的比较
 -->
 
-[ggpval](https://github.com/s6juncheng/ggpval) 在图上添加检验的 P 值结果，[**ggsignif**](https://github.com/const-ae/ggsignif) 在图上添加显著性注释。[ggstatsplot](https://github.com/IndrajeetPatil/ggstatsplot) [@Indrajeet2021] 可视化统计检验、模型的结果，描述功效变化。
+[**ggpval**](https://github.com/s6juncheng/ggpval) 在图上添加检验的 P 值结果，[**ggsignif**](https://github.com/const-ae/ggsignif) [@ggsignif2021] 在图上添加显著性注释。[**ggstatsplot**](https://github.com/IndrajeetPatil/ggstatsplot) [@Indrajeet2021] 可视化统计检验、模型的结果，描述功效变化。
+
+
+```{r}
+#| label: fig-plant-growth
+#| echo: true
+#| fig-cap: "植物生长"
+#| fig-width: 5
+#| fig-height: 4.5
+#| fig-showtext: true
+
+with(
+  aggregate(
+    data = PlantGrowth, weight ~ group,
+    FUN = function(x) c(dist_mean = mean(x), dist_sd = sd(x))
+  ),
+  cbind.data.frame(weight, group)
+) |>
+  ggplot(aes(x = group, y = dist_mean)) +
+  geom_col(
+    position = position_dodge(0.4), width = 0.4, fill = "gray"
+  ) +
+  geom_errorbar(aes(
+    ymin = dist_mean - dist_sd,
+    ymax = dist_mean + dist_sd
+  ),
+  position = position_dodge(0.4), width = 0.2
+  ) +
+  theme_classic() +
+  labs(x = "组别", y = "植物干重")
+```
+
+::: {.callout-note}
+R 3.5.0 以后，函数 `aggregate()` 的参数 `drop` 默认值为 `TRUE`， 表示扔掉未用来分组的变量，聚合返回的是一个矩阵类型的数据对象。
+:::
+
+
+单因素方差分析
 
 ```{r}
 oneway.test(data = PlantGrowth, weight ~ group)
 ```
 
-@fig-p-val 展示假设检验的结果
+
+@fig-signif 展示假设检验的结果
 
 ```{r}
-#| label: fig-p-val
+#| label: fig-signif
 #| fig-cap: "展示假设检验的结果"
 #| fig-width: 5
 #| fig-height: 4.5
 #| fig-showtext: true
 
-library(ggpval)
-p_val <- ggplot(PlantGrowth, aes(x = group, y = weight)) +
+library(ggsignif)
+ggplot(data = PlantGrowth, aes(x = group, y = weight)) +
   geom_boxplot(width = 0.25) +
   geom_jitter(width = 0.15) +
+  geom_signif(comparisons = list(c("ctrl", "trt1"), c("trt1", "trt2")), 
+              map_signif_level = function(p) sprintf("p = %.2g", p), 
+              textsize = 6, test = "t.test") +
   theme_classic()
-
-add_pval(p_val,
-  pairs = list(c(1, 2), c(2,3)),
-  test = "t.test",
-  pval_star = FALSE,
-  alternative = "two.sided"
-)
 ```
-
 
 
 ### 模型预测 {#sec-model-predictions}
@@ -2442,6 +2476,7 @@ fit_state_x77$summary(c("alpha", "beta[1]", "beta[2]", "sigma", "lp__")) |>
 #| fig-width: 7
 #| fig-height: 8.5
 #| message: false
+#| eval: false
 
 library(bayesplot)
 # 参数的后验分布
