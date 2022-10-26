@@ -1111,6 +1111,7 @@ https://bookdown.org/ssjackson300/ASM_Lecture_Notes/twocontingencytables.html#ch
 #| tbl-cap: "佛罗里达州的凶杀案件统计数据"
 #| echo: false
 # 示例来自茆诗松、王静龙和濮晓龙的《高等数理统计》第二版第 232 页
+# 还需要找一下源头和背景故事
 tbl <- expand.grid(
   Death = c("Yes", "No"), # 判决结果 是否死刑
   Defend = c("白人", "黑人"),  # 被告 肤色
@@ -1155,41 +1156,62 @@ gt::gt(dat1) |>
 0 和 1 是世界的原点，蕴含大道真意，从0-1分布到二项分布，继而衍生出超几何分布、泊松分布、正态分布、贝塔分布等等。本书多个地方以二项分布为例介绍基本概念。
 -->
 
-解释二项总体参数的置信带，内容来自 C. J. Clopper 和 E. S. Pearson 的经典论文《The Use of Confidence or Fiducial Limits Illustrated In The Case of The Binomial》[@Clopper1934]。
+在给定置信水平为 0.95，即 $\alpha = 0.05$，固定样本量 $n = 10$，观测到的成功次数 $x$ 可能为 $0,1,\cdots,10$。对于给定的 $p$，不同 $x$ 值出现的机率 $P(X = x)$ 由 $(p + q)^{10}$ 二项展开式的项给出，这里 $q = 1-p$，即：
 
-首先简单回顾一下什么是区间估计？关于置信区间，学校和教科书里，老师让我们记住二者的差别，可是差别究竟是什么？为什么要采纳第一种说法而不是第二种呢？两种说法如下：
+$$
+P(X = x) = \binom{n}{x}p^x(1-p)^{n-x}
+$$
 
-1. $1-\alpha$ 的把握确定区间包含真值。
-1. 区间包含真值的概率是 $1-\alpha$。
+在给定 $p = 0.1$ 的情况下，求二项分布的上 $\alpha/2 = 0.025$ 分位点，尾项之和不应超过 $\alpha/2$，最大的 $x$ 值可有如下方程给出：
 
-关于区间估计，历史上 E. S. Pearson 和 R. A. Fisher 曾有过争论。和大多数以正态分布为例介绍参数的置信估计不同，下面以二项分布为例展开介绍。我们知道二项分布是 N 个伯努利分布的卷积，而伯努利分布又称为 0-1 分布。
+$$
+\sum_{r = x}^{n}\binom{n}{x}p^x(1-p)^{n-x} = \frac{\alpha}{2}
+$$
 
-
-1934 年 C. J. Clopper 和 E. S. Pearson 在给定置信水平 $1- \alpha = 0.95$ 和样本量 $n = 10$ 的情况下，给出二项分布 $B(n, p)$ 参数 $p$ 的区间估计（即所谓的 Clopper-Pearson 精确区间估计）和置信带 [@Clopper1934]。如 @fig-confidence-belt 所示，横坐标为观测到的成功次数，纵坐标为参数 $p$ 的区间估计的上下限。举个例子，固定样本量为 10，假定观测到的成功次数为 2，在置信水平为 0.95 的情况下，Base R 内置的二项精确检验函数 `binom.test()`，可以获得参数 $p$ 的精确区间估计为 $(p_1, p_2) = (0.03, 0.55)$，即：
-
-```{r}
-# 精确二项检验
-binom.test(x = 2, n = 10, p = 0.2)
-```
-
-在给定置信水平为 0.95，即 $\alpha = 0.05$，固定样本量 $n = 10$，观测到的成功次数 $x$ 可能为 $0,1,\cdots,10$，
-对于给定的 $p$，不同 $x$ 值出现的机率由 $(p + q)^{10}$ 二项展开式的项给出，这里 $q = 1-p$，二项分布有对称性，尾项之和应不超过 $\alpha/2$，最大的 $x$ 值可有如下方程给出
-
-$$\sum_{r = x}^{n}\binom{n}{x}p^x(1-p)^{n-x} = \frac{\alpha}{2}$$
-
-在给定 $p = 0.1$ 的情况下，二项分布的上分位点 $x = 3$，即
+在 R 语言中，函数 `qbinom()` 可以计算上述二项分布的上分位点 $x = 3$，即
 
 ```{r}
 qbinom(0.025, size = 10, prob = 0.1, lower.tail = F)
 ```
 
-反过来，若已知上分位点为 $x = 3$，则概率 $p$ 为 $0.0127952$。
+反过来，若已知上分位点为 $x = 3$，则概率为 
+
+$$
+P(X > 3) = \sum_{x > 3}^{10}\binom{10}{x}0.1^x*(1-0.1)^{10-x}
+$$
+
+在 R 语言中，函数 `pbinom()` 可以计算上述二项分布的上分位点对应的概率为 $0.0127952$。
 
 ```{r}
 pbinom(q = 3, size = 10, prob = 0.1, lower.tail = F)
 ```
 
-给定置信水平 $1- \alpha = 0.95$ 和样本量 $n = 10$ 的情况下，二项分布 $\mathrm{Bin}(n,p)$ 参数 $p$ 的置信带，如 @fig-confidence-belt 所示。
+首先简单回顾一下置信区间，在学校和教科书里，有两种说法如下：
+
+1. $1-\alpha$ 的把握确定区间包含真值。
+1. 区间包含真值的概率是 $1-\alpha$。
+
+为什么要采纳第一种说法而不是第二种呢？这其实涉及到置信区间的定义问题，历史上 E. S. Pearson 和 R. A. Fisher 曾有过争论。和大多数以正态分布为例介绍参数的置信估计不同，下面以二项分布为例展开介绍。我们知道二项分布是 N 个伯努利分布的卷积，而伯努利分布又称为 0-1 分布，最形象的例子要数抛硬币了，反复投掷硬币，将正面朝上记为 1，反面朝上记为 0，记录正反面出现的次数，正面朝上的总次数又叫成功次数。
+
+1934 年 C. J. Clopper 和 E. S. Pearson 的经典论文《The Use of Confidence or Fiducial Limits Illustrated In The Case of The Binomial》[@Clopper1934] 在给定置信水平 $1- \alpha = 0.95$ 和样本量 $n = 10$ 的情况下，给出二项分布 $B(n, p)$ 参数 $p$ 的区间估计（即所谓的 Clopper-Pearson 精确区间估计）和置信带 [@Clopper1934]，如 @fig-confidence-belt 所示，横坐标为观测到的成功次数，纵坐标为参数 $p$ 的置信限。具体来说，固定样本量为 10，假定观测到的成功次数为 2，在置信水平为 0.95 的情况下，Base R 内置的二项精确检验函数 `binom.test()`，可以获得参数 $p$ 的精确区间估计为 $(p_1, p_2) = (0.025, 0.556)$，即：
+
+```{r}
+# 精确二项检验 p = 0.2
+binom.test(x = 2, n = 10, p = 0.2)
+```
+
+值得注意，这个估计的区间与函数 `binom.test()` 中参数 `p` 的取值无关，也就是说，当 $p = 0.4$，区间估计结果是一样的，如下：
+
+```{r}
+# 精确二项检验 p = 0.4
+binom.test(x = 2, n = 10, p = 0.4)
+```
+
+由此，也可以看出区间估计与假设检验的一些关系。
+
+<!-- 
+给定置信水平 $1- \alpha = 0.95$ 和样本量 $n = 10$ 的情况下，二项分布 $\mathrm{Bin}(n,p)$ 参数 $p$ 的置信带，如 @fig-confidence-belt 所示。 
+-->
 
 ```{r}
 #| label: fig-confidence-belt
@@ -1198,6 +1220,7 @@ pbinom(q = 3, size = 10, prob = 0.1, lower.tail = F)
 #| fig-width: 5
 #| fig-height: 5
 #| fig-showtext: true
+#| par: true
 
 library(rootSolve) # uniroot.all
 options(digits = 4)
@@ -1217,7 +1240,7 @@ plot(
   type = "n", ann = FALSE, panel.first = grid(),
   family = "Noto Sans"
 )
-title(xlab = "成功次数", ylab = "比例", family = "Noto Serif CJK SC")
+title(xlab = "成功次数", ylab = "置信限", family = "Noto Serif CJK SC")
 lines(x = 0:10, y = p, type = "s") # 朝下的阶梯线
 lines(x = 0:10, y = p, type = "l") # 折线
 # points(x = 0:10, y = p, pch = 16, cex = .8) # 散点
@@ -1232,8 +1255,8 @@ lines(x = 0:10, y = l, type = "l") # 折线
 # points(x = 0:10, y = l, pch = 16, cex = .8) # 散点
 
 points(x = c(2, 2), y = c(0.03, 0.55), pch = 8, col = "black")
-text(x = 2, y = 0.55, labels = "p2", pos = 1)
-text(x = 2, y = 0.03, labels = "p1", pos = 3)
+text(x = 2, y = 0.55, labels = expression(p[2]), pos = 1)
+text(x = 2, y = 0.03, labels = expression(p[1]), pos = 3)
 ```
 
 
