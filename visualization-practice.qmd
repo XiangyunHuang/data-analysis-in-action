@@ -336,7 +336,7 @@ spatstat.geom::Window(quakes_ppp) <- spatstat.geom::as.owin(quakes_sfp_buffer)
 # dimyx 指定先 y 后 x
 # spatstat 版本 3.0-0 以后 spatstat.core 包被拆分成 spatstat.explore 和 spatstat.model 两个包
 # 届时得用 spatstat.explore::density.ppp 替换 spatstat.core::density.ppp
-density_spatstat <- spatstat.core::density.ppp(quakes_ppp, 
+density_spatstat <- spatstat.explore::density.ppp(quakes_ppp, 
                                                dimyx = c(36, 36), 
                                                kernel = "gaussian")
 # 转化为 stars 对象 栅格数据
@@ -362,6 +362,52 @@ ggplot() +
   labs(x = "经度", y = "纬度", fill = "密度") +
   theme_minimal()
 ```
+
+[**SpatialKDE**](https://github.com/JanCaha/SpatialKDE)
+
+```{r}
+#| eval: false
+#| echo: false
+#| message: false
+
+library(SpatialKDE)
+cell_size <- 100000
+band_width <- 150000
+
+grid_quakes <- create_grid_rectangular(
+  geometry = quakes_sf,
+  cell_size = cell_size,
+  side_offset = band_width
+)
+
+quakes_kde <- kde(
+  points = quakes_sf,
+  band_width = band_width,
+  kernel = "quartic",
+  grid = grid_quakes
+)
+
+library(ggplot2)
+
+ggplot() +
+  geom_sf(data = quakes_kde, aes(fill = kde_value), col = NA) +
+  scale_fill_viridis_c(option = "C") +
+  scale_x_continuous(breaks = c(
+    # 东经
+    seq(from = 165, to = 180, by = 5),
+    # 西经
+    seq(from = -180, to = -170, by = 5)
+  )) +
+  coord_sf(
+    crs = 3460,
+    xlim = c(569061, 3008322),
+    ylim = c(1603260, 4665206)
+  ) +
+  theme_minimal() +
+  labs(x = "经度", y = "纬度", fill = "KDE 估计")
+```
+
+
 
 
 ## 中国地区级男女性别比分布 {#sec-china-household-sex}
@@ -447,8 +493,8 @@ p2 / p3
 ```{r}
 #| label: fig-usa-mortality-heatmap
 #| fig-cap: "1933-2020 年美国男性死亡率热力图"
-#| fig-width: 7
-#| fig-height: 5
+#| fig-width: 6.5
+#| fig-height: 4.5
 #| echo: false
 #| fig-showtext: true
 
@@ -482,12 +528,38 @@ ggplot(data = usa_mortality, aes(x = Year, y = Age, fill = Male)) +
 #| echo: false
 #| fig-showtext: true
 
+tol_rainbow <- colorRamp(pals::tol.rainbow())
+# 默认的调色板 hsv 数学原理，可视化图形，使用示例
+# trellis.par.get("shade.colors")$palette
+# function (irr, ref, height, saturation = 0.9) 
+# {
+#     hsv(h = height, s = 1 - saturation * (1 - (1 - ref)^0.5), 
+#         v = irr)
+# }
+# https://stackoverflow.com/questions/50230598/
+custom_palette <- function(irr, ref, height, ramp_fun = tol_rainbow) {
+  if (height != 1) {
+    ## convert height to color using ramp_fun and map to HSV space
+    h.hsv <- rgb2hsv(t(ramp_fun(height)))
+    ## reduce 'V' (brightness): multiply by irradiance
+    toReturn <- hsv(
+      h = h.hsv["h", ],
+      s = h.hsv["s", ],
+      v = 0.8 * h.hsv["v", ]
+      # v = irr * h.hsv["v", ]
+    )
+  } else {
+    toReturn <- "grey"
+  }
+  return(toReturn)
+}
+
 library(lattice)
 wireframe(
   data = usa_mortality, Male ~ Year * as.integer(Age),
   shade = TRUE, drape = FALSE,
-  xlab = "年份",
-  ylab = "年龄",
+  shade.colors.palette = custom_palette,
+  xlab = "年份", ylab = "年龄",
   zlab = list("男性死亡率（对数尺度）", rot = 90),
   scales = list(
     arrows = FALSE, col = "black",
@@ -510,62 +582,7 @@ wireframe(
 ```
 
 
-
-
-<!-- 
-[misc3d](https://gitlab.com/luke-tierney/misc3d) 制作三维图形 
-[plot3D](https://cran.r-project.org/package=plot3D)
-[plot3Drgl](https://cran.r-project.org/package=plot3Drgl)
-[scatterplot3d](https://cran.r-project.org/package=scatterplot3d)
-
-
-```{r}
-#| eval: false
-#| echo: false
-
-# 将连续型数据向量转化为颜色向量
-colorize_numeric <- function(x) {
-  scales::col_numeric(palette = "viridis", domain = range(x))(x)
-}
-# 
-usa_mortality <- within(usa_mortality, {
-  color <- colorize_numeric(log10(Male))
-})
-
-options(rgl.useNULL = TRUE)
-options(rgl.printRglwidget = TRUE)
-library(rgl)
-# 设置视角 
-rgl.viewpoint(
-  theta = 0, phi = -65, fov = 30,
-  zoom = 1, interactive = TRUE
-)
-
-with(usa_mortality, {
-  plot3d(
-    x =  Age, y = Year, z = log10(Male),
-    type = "p", col = color
-  )
-})
-
-library(scatterplot3d)
-with(usa_mortality, {
-  scatterplot3d(
-    x = Year,
-    y = Age,
-    z = log10(Male),
-    color = color, # 给数据点上色
-    pch = 20,
-    mar = c(3, 3, 0, 3) + 0.1,
-    xlab = "年份",
-    ylab = "年龄",
-    zlab = "死亡率"
-  )
-})
-```
-
-
--->
+更加深入的分析和建模，详见 @Marron2022 的第一章
 
 
 ## 子代身高与亲代身高的关系 {#sec-galton}
@@ -594,6 +611,10 @@ knitr::kable(head(GaltonFamilies), col.names = c(
 表中子女性别一栏，Male 表示男性，Female 表示女性。表中 1 号家庭父亲身高 78.5 英寸，母亲身高 67.0 英寸，育有 4 个成年子女，1 男 3 女，子女身高依次是 73.2 英寸、 69.2 英寸、 69.0 英寸 和 69.0 英寸。1 英寸相当于 2.54 厘米，78.5 英寸相当于 199.39 厘米，约等于 2 米的身高。
 
 高尔顿提出「中亲」概念，即父母的平均身高，认为子代身高只与父母平均身高相关，而与父母身高差无关，为了消除性别给身高带来的差异，女性身高均乘以 1.08。
+
+<!-- 
+均值回归现象最早是高尔顿在甜豌豆实验中发现的，实际上，均值回归现象在社会经济和自然界中广泛存在，比如一个人的智力水平受家族平均水平的影响。
+-->
 
 根据数据统计的均值和协方差，椭圆 level = 0.95
 
@@ -641,11 +662,16 @@ GaltonFamilies[, height_children := childHeight * c("female" = 1.08, "male" = 1)
 ```
 
 
+$$
+\mathrm{height}_{children} = \alpha + \beta * \mathrm{height}_{midparent} + \epsilon
+$$
+
 ```{r}
-#| eval: false
+#| label: tbl-galton-families
+#| tbl-cap: "子女身高向中亲平均身高回归"
 #| echo: false
 
-GaltonFamilies[, height_children := childHeight * c("female" = 1.08, "male" = 1)[gender]][, as.list(coef(lm(height_children ~ midparentHeight))), by = "gender"]
+GaltonFamilies[, height_children := childHeight * c("female" = 1.08, "male" = 1)[gender]][, as.list(coef(lm(height_children ~ midparentHeight))), by = "gender"] |> knitr::kable(col.names = c("性别", "截距", "中亲身高"))
 ```
 
 
@@ -985,10 +1011,10 @@ gt::gt(dat2) |>
   gt::opt_row_striping()
 ```
 
-借助马赛克图 @fig-ucb-admissions 可以更加直观的看出数据中的比例关系。
+借助马赛克图 @fig-ucb-admissions-mosaicplot 可以更加直观的看出数据中的比例关系。
 
 ```{r}
-#| label: fig-ucb-admissions
+#| label: fig-ucb-admissions-mosaicplot
 #| fig-width: 7
 #| fig-height: 5
 #| fig-cap: "加州伯克利分校院系录取情况"
@@ -1005,7 +1031,6 @@ mosaicplot(~ Admit + Dept + Gender,
 )
 par(op)
 ```
-
 
 接下来进行定量的分析，首先，按性别和录取情况统计人数，如下：
 
@@ -1028,6 +1053,20 @@ proportions(xtabs(Freq ~ Dept + Admit,
   data = as.data.frame(UCBAdmissions)
 ), margin = 1)
 ```
+
+
+```{r}
+#| label: fig-ucb-admissions-fourfoldplot
+#| fig-width: 7
+#| fig-height: 5
+#| fig-cap: "加州伯克利分校各院系录取情况"
+#| fig-showtext: true
+#| echo: false
+#| par: true
+
+fourfoldplot(aperm(UCBAdmissions, c(2, 1, 3)), mfcol = c(2, 3))
+```
+
 
 对每个院系，单独使用皮尔逊 $\chi^2$ 检验，发现只有 A 系的男女生录取率的差异达到统计显著性，其它系的差异都不显著。辛普森悖论在这里出现了，在分类数据的分析中，常常遇到。
 
@@ -1096,7 +1135,7 @@ anova(fit_ucb0, fit_ucb1, test = "LRT")
 ## 被告肤色和死刑判决的关系 {#sec-florida-ethnicity}
 
 <!-- 
-高维列联表，独立性检验，条件独立性检验，耶茨连续矫正是什么意思
+高维列联表，联合独立性检验，条件独立性检验，耶茨连续矫正是什么意思
 多维列联表
 http://staff.ustc.edu.cn/~jbs/CDA/chapt22.pdf
 
@@ -1105,13 +1144,13 @@ https://bookdown.org/ssjackson300/ASM_Lecture_Notes/twocontingencytables.html#ch
 -->
 
 1976-1977年美国佛罗里达州的凶杀案件中被告肤色和死刑判决的关系
+数据来自 2007 年 Alan Agresti 的著作《An Introduction to Categorical Data Analysis》第二版第2章习题 2.33
 
 ```{r}
 #| label: tbl-florida-ethnicity
 #| tbl-cap: "佛罗里达州的凶杀案件统计数据"
 #| echo: false
-# 示例来自茆诗松、王静龙和濮晓龙的《高等数理统计》第二版第 232 页
-# 还需要找一下源头和背景故事
+
 tbl <- expand.grid(
   Death = c("Yes", "No"), # 判决结果 是否死刑
   Defend = c("白人", "黑人"),  # 被告 肤色
@@ -1140,7 +1179,86 @@ gt::gt(dat1) |>
   gt::opt_row_striping()
 ```
 
+<!-- 是否存在辛普森悖论？ -->
 
+```{r}
+# Death 死刑与 Defend （被告）独立性检验
+m = xtabs(Freq ~ Death + Defend, data = ethnicity)
+chisq.test(m, correct = TRUE)
+chisq.test(m, correct = FALSE)
+```
+
+
+```{r}
+# Death 死刑与 Victim （原告）独立性检验
+m = xtabs(Freq ~ Death + Victim, data = ethnicity)
+chisq.test(m, correct = TRUE)
+chisq.test(m, correct = FALSE)
+```
+
+多维列联表
+
+```{r}
+m <- xtabs(Freq ~ Death + Defend + Victim, data = ethnicity)
+m
+## Model of joint independence of Victim from Death and Defend
+# 联合独立性 (Victim, Death)  (Victim, Defend)  (Death, Defend)
+fm <- loglin(m, list(c(1, 2), c(1, 3), c(2, 3)))
+fm 
+## 拟合对数线性模型
+fm <- loglin(m, list(c(1), c(2), c(3)))
+fm 
+# lrt 似然比 the Likelihood Ratio Test statistic.
+# pearson 皮尔逊  the Pearson test statistic (X-squared).
+1 - pchisq(fm$lrt, fm$df)
+```
+
+拟合对数线性模型
+
+```{r}
+fit_dvp <- glm(Freq ~ ., data = ethnicity, family = poisson(link = "log"))
+```
+
+模型输出
+
+```{r}
+summary(fit_dvp)
+```
+
+Pearson X^2 统计量
+
+```{r}
+sum(residuals(fit_dvp, type = "pearson")^2)
+```
+模型参数的置信区间
+
+```{r}
+# 需要 MASS 包
+confint(fit_dvp)
+```
+
+计数数据转逻辑回归模型，二分类（死刑与否）
+
+```{r}
+# 长变宽 
+ethnicity2 <- reshape(
+  data = ethnicity, direction = "wide", idvar = c("Victim", "Defend"),
+  timevar = "Death", v.names = "Freq", sep = "_"
+)
+
+fit_dvp2 <- glm(cbind(Freq_No, Freq_Yes) ~., data = ethnicity2, family = binomial(link = "logit"))
+```
+
+
+```{r}
+summary(fit_dvp2)
+```
+
+
+```{r}
+# Pearson X^2 统计量
+sum(residuals(fit_dvp2, type = "pearson")^2)
+```
 
 ## 分析《红楼梦》的情景描写 {#sec-the-story-of-the-stone}
 

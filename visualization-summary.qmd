@@ -202,3 +202,112 @@ p + geom_hline(yintercept = 104, linewidth = 0.8, lty = 2, color = "gray")
 
 由上图也不难看出，城市里女性占比更多，说明女性往城里跑，而小镇青年留下的大多是男性，农村老太太远多于老大爷。城市里，大龄女青年很多，小镇里大龄男青年很多，适龄区间的男女性别比在空间区域上严重失衡，也是造成新生儿出生率低的原因之一。
 
+
+
+## 防止三维图形 {#sec-avoid-3d}
+
+三维图形是非常常见的，在表达数据趋势方面应用非常广泛。
+
+```{r}
+usa_mortality <- readRDS(file = "data/usa-mortality-2020.rds")
+# 将连续型数据向量转化为颜色向量
+colorize_numeric <- function(x) {
+  scales::col_numeric(palette = "viridis", domain = range(x))(x)
+}
+# 添加颜色
+usa_mortality <- within(usa_mortality, {
+  color <- colorize_numeric(log10(Male))
+})
+```
+
+[scatterplot3d](https://cran.r-project.org/package=scatterplot3d)
+
+```{r}
+#| label: fig-3d-scatterplot3d
+#| fig-cap: "三维透视图"
+#| fig-width: 5
+#| fig-height: 4
+#| fig-showtext: true
+
+library(scatterplot3d)
+plt <- with(usa_mortality, {
+  scatterplot3d(
+    x = Year, y = Age, z = log10(Male),
+    color = color, # 给数据点上色
+    pch = 20, mar = c(3, 3, 0, 3) + 0.1,
+    xlab = "年份", ylab = "", zlab = "死亡率（对数）"
+  )
+})
+## 三维空间坐标转二维平面坐标
+xy <- unlist(plt$xyz.convert(2040, 60, -4.5))
+## 添加 y 轴标签
+text(xy[1], xy[2], "年龄", srt = 45, pos = 2)
+```
+
+[plot3D](https://cran.r-project.org/package=plot3D)
+
+```{r}
+#| label: fig-3d-plot3d
+#| fig-cap: "三维透视图"
+#| fig-width: 8
+#| fig-height: 8
+#| fig-showtext: true
+#| collapse: true
+
+usa_mortality2 <- reshape(usa_mortality, direction = "wide",
+  idvar = "Year", drop = c("Female", "Total", "color"),
+  timevar = "Age", v.names = "Male", sep = "_"
+)
+
+usa_mortality2 <- as.matrix(usa_mortality2[, setdiff(colnames(usa_mortality2), "Year")])
+
+library(plot3D)
+op <- par(mar = c(1, 1.5, 0, 0), mfrow = c(2, 2))
+scatter3D(
+  x = usa_mortality$Year, y = as.integer(usa_mortality$Age), 
+  z = log10(usa_mortality$Male),
+  pch = 20, ticktype = "detailed", colkey = FALSE,
+  xlab = "\n年份", ylab = "\n年龄", zlab = "\n死亡率（对数）"
+)
+hist3D(
+  x = 1933:2020, y = 0:110, z = log10(usa_mortality2), 
+  ticktype = "detailed", colkey = FALSE,
+  xlab = "\n年份", ylab = "\n年龄", zlab = "\n死亡率（对数）"
+)
+persp3D(
+  x = 1933:2020, y = 0:110, z = log10(usa_mortality2), 
+  ticktype = "detailed", colkey = FALSE,
+  xlab = "\n年份", ylab = "\n年龄", zlab = "\n死亡率（对数）"
+)
+ribbon3D(
+  x = 1933:2020, y = 0:110, z = log10(usa_mortality2), 
+  ticktype = "detailed", colkey = FALSE,
+  xlab = "\n年份", ylab = "\n年龄", zlab = "\n死亡率（对数）"
+)
+par(op)
+```
+
+[rgl](https://github.com/dmurdoch/rgl) 包
+
+```{r}
+#| label: fig-3d-rgl
+#| eval: !expr knitr::is_html_output()
+#| fig-cap: "三维透视图"
+
+options(rgl.useNULL = TRUE)
+options(rgl.printRglwidget = TRUE)
+library(rgl)
+# 设置视角 
+rgl.viewpoint(
+  theta = 0, phi = -45, fov = 30,
+  zoom = 1, interactive = TRUE
+)
+
+plot3d(
+  log10(Male) ~ Age + Year, data = usa_mortality,
+  type = "p", col = color,
+  xlab = "年份", ylab = "年龄", zlab = "死亡率（对数）"
+)
+```
+
+顾名思义，[plot3Drgl](https://cran.r-project.org/package=plot3Drgl) 包集成了 plot3D 包和 rgl 包的优势，扩展了 plot3D 包的功能，支持绘制基于 rgl 的交互图形。[misc3d](https://gitlab.com/luke-tierney/misc3d) 包 [@misc3d2008] 基于 tcltk 包制作三维空间中的图形。
