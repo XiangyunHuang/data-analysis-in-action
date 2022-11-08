@@ -1105,18 +1105,13 @@ p1
 ```{r}
 #| label: fig-margins
 #| fig-cap: "描述边际分布"
-#| fig-subcap:
-#| - "边际密度图"
-#| - "边际直方图"
 #| fig-width: 5
 #| fig-height: 4
 #| fig-showtext: true
-#| fig-ncol: 2
-#| out-width: '50%'
 
 library(ggExtra)
-ggMarginal(p1)
-ggMarginal(p1, type = 'histogram')
+ggMarginal(p1, type = "density")
+ggMarginal(p1, type = "histogram")
 ```
 
 **ggplot2** 包提供二维密度图层 `geom_density_2d_filled()` 绘制热力图， [**ggdist**](https://github.com/mjskay/ggdist) [@ggdist2022] 进行了一些扩展。
@@ -1130,7 +1125,12 @@ ggMarginal(p1, type = 'histogram')
 
 ggplot(data = state_x77, aes(x = Income, y = `Life Exp`)) +
   geom_density_2d_filled() +
-  theme_classic()
+  theme_classic() +
+  labs(
+    x = "人均收入（美元）", y = "预期寿命（年）",
+    title = "1977 年各州预期寿命与人均收入的关系",
+    caption = "数据源：美国人口调查局"
+  )
 ```
 
 相比于 **ggplot2** 内置的二维核密度估计，[**ggdensity**](https://github.com/jamesotto852/ggdensity/) [@ggdensity2022] 有一些优势，根据数据密度将目标区域划分，更加突出层次和边界。[gghdr](https://github.com/Sayani07/gghdr) 与 ggdensity 类似，展示 highest density regions (HDR)
@@ -1139,15 +1139,20 @@ ggplot(data = state_x77, aes(x = Income, y = `Life Exp`)) +
 ```{r}
 #| label: fig-density-hdr
 #| fig-cap: "二维密度图"
-#| fig-width: 4.5
-#| fig-height: 3.5
+#| fig-width: 5
+#| fig-height: 4
 #| fig-showtext: true
 
 library(ggdensity)
 ggplot(data = state_x77, aes(x = Income, y = `Life Exp`)) +
   geom_point() +
   geom_hdr() +
-  theme_classic()
+  theme_classic() +
+  labs(
+    x = "人均收入（美元）", y = "预期寿命（年）",
+    title = "1977 年各州预期寿命与人均收入的关系",
+    caption = "数据源：美国人口调查局"
+  )
 ```
 
 
