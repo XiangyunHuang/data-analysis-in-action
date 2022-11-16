@@ -173,7 +173,7 @@ ggplot(data = province_sex_ratio, aes(x = `区域`, y = `性别比（女=100）`
 
 ## 结合数据背景 {#sec-data-background}
 
-结合数据背景绘图具有很大的灵活性，添加简单、清晰的辅助信息的目的是增加可读性，方式上可以通过参考线，刻度单位等体现出来。一般地，女性的寿命比男性的普遍要长一些，高龄女性远多于男性，之前分年龄段展示性别比数据时，也说明了这一点。人口学家认为新生儿正常的人口比约为 104，在人口统计学上，一般正常范围在102至105之间，亚洲一些国家重男轻女思想根深蒂固，往往远高于此区间。因此，下 @fig-data-background 左子图将参考线设为性别比 100 是不合适的，而应该结合人口统计数据的背景，设置为 104。
+结合数据背景绘图具有很大的灵活性，添加简单、清晰的辅助信息的目的是增加可读性，方式上可以通过参考线，刻度单位等体现出来。一般地，女性的寿命比男性的普遍要长一些，高龄女性远多于男性，之前分年龄段展示性别比数据时，也说明了这一点。人口学家认为新生儿正常的人口比约为 104，在人口统计学上，一般正常范围在 102 至 105 之间，亚洲一些国家重男轻女思想根深蒂固，往往远高于此区间。因此，下 @fig-data-background 左子图将参考线设为性别比 100 是不合适的，而应该结合人口统计数据的背景，设置为 104。
 
 ```{r}
 #| label: fig-data-background
@@ -201,6 +201,63 @@ p + geom_hline(yintercept = 104, linewidth = 0.8, lty = 2, color = "gray")
 ```
 
 由上图也不难看出，城市里女性占比更多，说明女性往城里跑，而小镇青年留下的大多是男性，农村老太太远多于老大爷。城市里，大龄女青年很多，小镇里大龄男青年很多，适龄区间的男女性别比在空间区域上严重失衡，也是造成新生儿出生率低的原因之一。
+
+
+
+## 简单胜过复杂 {#sec-less-more}
+
+简单准确地传达数据洞见比使用各种特效、技巧有效得多。下 @fig-less-more 左、右两幅子图构成鲜明的对比，为了表示中国城市、镇和农村的性别比差异。右图额外添加了一系列复杂的元素 --- 绘图区域设置橘黄色背景，根据区域给不同的柱子配色，添加灰色绘图主题，添加图形的主、副标题和说明。左图化繁为简，直截了当，将读者注意力快速吸引到不同柱子的高度上，没有花里胡哨的东西分散宝贵的注意力。
+
+```{r}
+#| label: fig-less-more
+#| fig-cap: "简单胜过复杂"
+#| fig-subcap: 
+#|   - 简单有效
+#|   - 复杂
+#| fig-ncol: 2
+#| fig-width: 4.5
+#| fig-height: 3.5
+#| echo: false
+#| fig-showtext: true
+
+# 添加注释后，条形 bar 会自动向右移动，这可能是 ggplot2 的问题
+aggregate(data = province_sex_ratio, `性别比（女=100）` ~ 区域, FUN = mean) |>
+  ggplot(aes(x = `区域`, y = `性别比（女=100）`)) +
+  geom_bar(stat = "identity", fill = "gray", width = 0.5) +
+  geom_hline(yintercept = 104, linewidth = 0.8, lty = 2, color = "gray") +
+  # annotate(geom = "text", x = 0, y = 104, label = "104", hjust = 1.25) +
+  # coord_cartesian(clip = 'off', expand = FALSE) +
+  theme_classic()
+  
+aggregate(data = province_sex_ratio, `性别比（女=100）` ~ 区域, FUN = mean) |>
+  ggplot(aes(x = `区域`, y = `性别比（女=100）`)) +
+  geom_bar(stat = "identity", aes(fill = `区域`), width = 0.5) +
+  geom_hline(yintercept = 104, linewidth = 0.8, lty = 2, color = "gray") +
+  scale_fill_brewer(palette = "Set1") +
+  theme_gray() +
+  labs(title = "中国的城市、镇、乡村性别比", subtitle = "2020 年",
+       caption = "数据来源：国家统计局统计年鉴") +
+  theme(plot.background = element_rect(fill = "orange"))
+```
+
+
+```{r}
+#| echo: false
+#| eval: false
+
+# 还可以更加辣眼睛
+library(ggpattern)
+aggregate(data = province_sex_ratio, `性别比（女=100）` ~ 区域, FUN = mean) |>
+  ggplot(aes(x = `区域`, y = `性别比（女=100）`)) +
+  geom_bar_pattern(stat = "identity", aes(fill = `区域`, pattern_fill = `区域`), 
+                   pattern = 'stripe', width = 0.5) +
+  geom_hline(yintercept = 104, linewidth = 0.8, lty = 2, color = "gray") +
+  scale_fill_brewer(palette = "Set1") +
+  theme_gray() +
+  labs(title = "中国的城市、镇、乡村性别比", subtitle = "2020 年",
+       caption = "数据来源：国家统计局统计年鉴") +
+  theme(plot.background = element_rect(fill = "orange"))
+```
 
 
 
