@@ -71,7 +71,7 @@ sysfonts::font_add(
 
 ## 防止误差线图 {#sec-avoid-errorbar}
 
-举例来说，如 @fig-avoid-errorbar 所示，图中从左往右依次是误差线图、 、箱线图，它们基于同一份数据，采用不同的图形展示数据的分布情况。在一些期刊杂志上， @fig-avoid-errorbar-1 非常受欢迎，而实际上它所表达的信息非常有限，严重的情况下，甚至会产生误导。
+举例来说，如 @fig-avoid-errorbar 所示，图中从左往右依次是误差线图、箱线图，它们基于同一份数据，采用不同的图形展示数据的分布情况。在一些期刊杂志上， @fig-avoid-errorbar-1 非常受欢迎，而实际上它所表达的信息非常有限，严重的情况下，甚至会产生误导。
 
 数据来自中国国家统计局 2021 年发布的统计年鉴，是分城市、镇和乡村的各省、自治区、直辖市的男女比例数据。
 一般来说，各地区的性别比例不可能出现严重失调，比如男的是女的一倍，一个省要是出现如此失调的现象是非常罕见的。而 @fig-avoid-errorbar-1 的纵轴给人感觉还有性别比为 50% 甚至 30% 的情况，纯属误导。相比而言，箱线图 @fig-avoid-errorbar-2 就好很多，既把整体情况展示出来了，又将一些性别比例离群的突出出来了，就整个图形来说，城市、镇和乡村的比较也突出出来了，占据了图的主要位置。
@@ -269,7 +269,7 @@ aggregate(data = province_sex_ratio, `性别比（女=100）` ~ 区域, FUN = me
 
 三维图形是很常见的，在数据可视化方面，三维图形的视觉效果好在直观，像饼图一样深入人心。在科学可视化中的仿真建模和应用统计中的函数型数据分析中常常用到，这些应用领域有一个共同的特点，就是表达确定性的趋势。相比于二维平面图形，静态的三维立体图形增加了一个维度，可以同时表达更多的数据，而且升维之后给人很酷、很高级的感觉，比较吸引眼球，R 语言有不少扩展包可以制作 3D 三维图形。
 
-1.  **graphics** 包提供函数 `persp()` 绘制三维透视图，基于 **graphics** 包， [**scatterplot3d**](https://cran.r-project.org/package=scatterplot3d) 包[@scatterplot3d] 主要绘制三维散点图，而 [**plot3D**](https://cran.r-project.org/package=plot3D) 包[@plot3D2021] 提供更加丰富的三维图形，曲面图、柱状图、分片图等。
+1.  **graphics** 包提供函数 `persp()` 绘制三维透视图，基于 **graphics** 包， [**scatterplot3d**](https://cran.r-project.org/package=scatterplot3d) 包[@Uwe2003] 主要绘制三维散点图，而 [**plot3D**](https://cran.r-project.org/package=plot3D) 包[@plot3D2021] 提供更加丰富的三维图形，曲面图、柱状图、分片图等。
 1.  [**lattice**](https://github.com/deepayan/lattice) 包 [@Deepayan2008] 提供函数 `wireframe()` 绘制三维透视图，函数 `cloud()` 绘制三维散点图。
 
 三维图形虽然很酷，但也因为数据之间的覆盖遮挡容易产生误导，所以需要慎用。为了保持准确直观的优点，避免透视产生的数据模糊，一个缓减的办法是使用交互的三维图形，用户可以随意旋转、缩放原始图形，观察任何一个角落。R 语言社区也有很多扩展包绘制交互的三维图形。
@@ -302,7 +302,7 @@ usa_mortality <- within(usa_mortality, {
 
 ```{r}
 #| label: fig-3d-scatterplot3d
-#| fig-cap: "三维透视图"
+#| fig-cap: "scatterplot3d 包制作三维散点图"
 #| fig-width: 5
 #| fig-height: 4
 #| fig-showtext: true
@@ -313,26 +313,27 @@ plt <- with(usa_mortality, {
   scatterplot3d(
     x = Year, y = Age, z = log10(Male),
     color = color, # 给数据点上色
-    pch = 20, mar = c(3, 3, 0, 3) + 0.1,
+    pch = 20, mar = c(3, 3, 0, 0.5) + 0.1,
     xlab = "年份", ylab = "", zlab = "死亡率（对数）"
   )
 })
 ## 三维空间坐标转二维平面坐标
 xy <- unlist(plt$xyz.convert(2040, 60, -4.5))
 ## 添加 y 轴标签
-text(xy[1], xy[2], "年龄", srt = 45, pos = 2)
+text(xy[1], xy[2], "\n年龄", srt = 45, pos = 2)
 ```
 
 @fig-3d-plot3d 采用 [**plot3D**](https://cran.r-project.org/package=plot3D) 包分别绘制静态的三维散点图、柱状图、透视图、带状图。
 
 ```{r}
 #| label: fig-3d-plot3d
-#| fig-cap: "三维透视图"
+#| fig-cap: "plot3D 包制作三维透视图"
 #| fig-width: 8
 #| fig-height: 8
 #| fig-showtext: true
 #| collapse: true
 #| echo: false
+#| warning: false
 
 # 数据重塑，长格式转宽格式
 usa_mortality2 <- reshape(usa_mortality, direction = "wide",
@@ -342,6 +343,8 @@ usa_mortality2 <- reshape(usa_mortality, direction = "wide",
 # 数据类型转化为矩阵
 usa_mortality2 <- as.matrix(usa_mortality2[, setdiff(colnames(usa_mortality2), "Year")])
 # 绘制三维透视图形
+# 加载 plot3D 包会自动导入 tcltk 包
+## Warning: no DISPLAY variable so Tk is not available
 library(plot3D)
 op <- par(mar = c(1, 1.5, 0, 0), mfrow = c(2, 2))
 scatter3D(
@@ -373,7 +376,7 @@ par(op)
 ::: {.content-visible when-format="html"}
 ```{r}
 #| label: fig-3d-rgl-1
-#| fig-cap: "三维透视图"
+#| fig-cap: "rgl 包制作三维散点图"
 #| echo: false
 
 options(rgl.useNULL = TRUE)
@@ -395,9 +398,9 @@ plot3d(
 ::: {.content-visible unless-format="html"}
 ```{r}
 #| label: fig-3d-rgl-2
-#| fig-cap: "三维透视图"
+#| fig-cap: "rgl 包制作三维散点图"
 #| echo: false
-#| out-width: "60%"
+#| out-width: "75%"
 
 knitr::include_graphics(path = "screenshots/usa-mortality-rgl.png")
 ```
