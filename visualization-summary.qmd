@@ -213,20 +213,18 @@ p + geom_hline(yintercept = 104, linewidth = 0.8, lty = 2, color = "gray")
 #| fig-cap: "简单胜过复杂"
 #| fig-subcap: 
 #|   - 简单有效
-#|   - 复杂
+#|   - 繁冗低效
 #| fig-ncol: 2
 #| fig-width: 4.5
 #| fig-height: 3.5
 #| echo: false
 #| fig-showtext: true
 
-# 添加注释后，条形 bar 会自动向右移动，这可能是 ggplot2 的问题
 aggregate(data = province_sex_ratio, `性别比（女=100）` ~ 区域, FUN = mean) |>
   ggplot(aes(x = `区域`, y = `性别比（女=100）`)) +
   geom_bar(stat = "identity", fill = "gray", width = 0.5) +
   geom_hline(yintercept = 104, linewidth = 0.8, lty = 2, color = "gray") +
-  # annotate(geom = "text", x = 0, y = 104, label = "104", hjust = 1.25) +
-  # coord_cartesian(clip = 'off', expand = FALSE) +
+  scale_y_continuous(breaks = c(0, 30, 60, 90, 104), labels = c(0, 30, 60, 90, 104)) +
   theme_classic()
   
 aggregate(data = province_sex_ratio, `性别比（女=100）` ~ 区域, FUN = mean) |>
@@ -245,27 +243,50 @@ aggregate(data = province_sex_ratio, `性别比（女=100）` ~ 区域, FUN = me
 #| echo: false
 #| eval: false
 
-# 还可以更加辣眼睛
+# 还可以更加辣眼睛，在柱子上作文章，比如纹理、阴影等 Cool but useless
+# https://github.com/coolbutuseless/ggpattern
 library(ggpattern)
 aggregate(data = province_sex_ratio, `性别比（女=100）` ~ 区域, FUN = mean) |>
   ggplot(aes(x = `区域`, y = `性别比（女=100）`)) +
-  geom_bar_pattern(stat = "identity", aes(fill = `区域`, pattern_fill = `区域`), 
-                   pattern = 'stripe', width = 0.5) +
+  geom_bar_pattern(
+    stat = "identity", width = 0.5,
+    aes(fill = `区域`, pattern = `区域`, pattern_fill = `区域`),
+    color = "white", pattern_colour = "white", show.legend = FALSE
+  ) +
   geom_hline(yintercept = 104, linewidth = 0.8, lty = 2, color = "gray") +
-  scale_fill_brewer(palette = "Set1") +
+  scale_pattern_fill_brewer(palette = "Set1") +
   theme_gray() +
-  labs(title = "中国的城市、镇、乡村性别比", subtitle = "2020 年",
-       caption = "数据来源：国家统计局统计年鉴") +
+  labs(
+    title = "中国的城市、镇、乡村性别比", subtitle = "2020 年",
+    caption = "数据来源：国家统计局统计年鉴"
+  ) +
   theme(plot.background = element_rect(fill = "orange"))
 ```
 
 
 
-## 防止三维图形 {#sec-avoid-3d}
+## 慎用三维图形 {#sec-avoid-3d}
 
-三维图形是非常常见的，在表达数据趋势方面应用非常广泛。
+三维图形是很常见的，在数据可视化方面，三维图形的视觉效果好在直观，像饼图一样深入人心。在科学可视化中的仿真建模和应用统计中的函数型数据分析中常常用到，这些应用领域有一个共同的特点，就是表达确定性的趋势。相比于二维平面图形，静态的三维立体图形增加了一个维度，可以同时表达更多的数据，而且升维之后给人很酷、很高级的感觉，比较吸引眼球，R 语言有不少扩展包可以制作 3D 三维图形。
+
+1.  **graphics** 包提供函数 `persp()` 绘制三维透视图，基于 **graphics** 包， [**scatterplot3d**](https://cran.r-project.org/package=scatterplot3d) 包[@scatterplot3d] 主要绘制三维散点图，而 [**plot3D**](https://cran.r-project.org/package=plot3D) 包[@plot3D2021] 提供更加丰富的三维图形，曲面图、柱状图、分片图等。
+1.  [**lattice**](https://github.com/deepayan/lattice) 包 [@Deepayan2008] 提供函数 `wireframe()` 绘制三维透视图，函数 `cloud()` 绘制三维散点图。
+
+三维图形虽然很酷，但也因为数据之间的覆盖遮挡容易产生误导，所以需要慎用。为了保持准确直观的优点，避免透视产生的数据模糊，一个缓减的办法是使用交互的三维图形，用户可以随意旋转、缩放原始图形，观察任何一个角落。R 语言社区也有很多扩展包绘制交互的三维图形。
+
+1.  [**rgl**](https://github.com/dmurdoch/rgl) 包[@rgl2022]基于 OpenGL 技术，在 MacOS 系统上借助 XQuartz 设备渲染三维图形，也可以基于 WebGL 技术由浏览器渲染三维图形。[**plot3Drgl**](https://cran.r-project.org/package=plot3Drgl) 包[@plot3Drgl2022]集成了 **plot3D** 包和 **rgl** 包的优势，扩展了 **plot3D** 包的功能，支持绘制基于 **rgl** 的交互图形。[**rayshader**](https://github.com/tylermorganwall/rayshader) 包[@rayshader2021]支持构建和渲染复杂的三维场景和数据可视化。[**barplot3d**](https://cran.r-project.org/package=barplot3d) 包[@barplot3d2019]基于 **rgl** 包用于绘制三维柱（条）形图。
+1.  **plotly** 包[@Carson2020]基于 WebGL 技术由浏览器渲染三维图形，支持启用 GPU 渲染大规模数据。 **echarts4r** 包[@echarts4r2022]也基于 WebGL 技术，绘图功能类似 **plotly** 包。
+1.  [**misc3d**](https://gitlab.com/luke-tierney/misc3d) 包 [@misc3d2008] 基于 **tcltk** 包制作三维空间中的图形。
+
+
+<!-- rayshader 制作死亡率三维图形，应该会更加漂亮 -->
+
+下面以美国历年男性死亡率数据为例，用不同的 R 包绘制静态的和交互的三维图形，以便读者观察效果，应用到具体的数据展示中。
 
 ```{r}
+#| echo: false
+
+# 导入数据
 usa_mortality <- readRDS(file = "data/usa-mortality-2020.rds")
 # 将连续型数据向量转化为颜色向量
 colorize_numeric <- function(x) {
@@ -277,7 +298,7 @@ usa_mortality <- within(usa_mortality, {
 })
 ```
 
-[scatterplot3d](https://cran.r-project.org/package=scatterplot3d)
+@fig-3d-scatterplot3d 采用 [**scatterplot3d**](https://cran.r-project.org/package=scatterplot3d) 包绘制静态的三维散点图。
 
 ```{r}
 #| label: fig-3d-scatterplot3d
@@ -285,6 +306,7 @@ usa_mortality <- within(usa_mortality, {
 #| fig-width: 5
 #| fig-height: 4
 #| fig-showtext: true
+#| echo: false
 
 library(scatterplot3d)
 plt <- with(usa_mortality, {
@@ -301,7 +323,7 @@ xy <- unlist(plt$xyz.convert(2040, 60, -4.5))
 text(xy[1], xy[2], "年龄", srt = 45, pos = 2)
 ```
 
-[plot3D](https://cran.r-project.org/package=plot3D)
+@fig-3d-plot3d 采用 [**plot3D**](https://cran.r-project.org/package=plot3D) 包分别绘制静态的三维散点图、柱状图、透视图、带状图。
 
 ```{r}
 #| label: fig-3d-plot3d
@@ -310,14 +332,16 @@ text(xy[1], xy[2], "年龄", srt = 45, pos = 2)
 #| fig-height: 8
 #| fig-showtext: true
 #| collapse: true
+#| echo: false
 
+# 数据重塑，长格式转宽格式
 usa_mortality2 <- reshape(usa_mortality, direction = "wide",
   idvar = "Year", drop = c("Female", "Total", "color"),
   timevar = "Age", v.names = "Male", sep = "_"
 )
-
+# 数据类型转化为矩阵
 usa_mortality2 <- as.matrix(usa_mortality2[, setdiff(colnames(usa_mortality2), "Year")])
-
+# 绘制三维透视图形
 library(plot3D)
 op <- par(mar = c(1, 1.5, 0, 0), mfrow = c(2, 2))
 scatter3D(
@@ -344,12 +368,13 @@ ribbon3D(
 par(op)
 ```
 
-[rgl](https://github.com/dmurdoch/rgl) 包
+下图采用 [**rgl**](https://github.com/dmurdoch/rgl) 包的函数 `plot3d()` 绘制交互的三维散点图。
 
 ```{r}
 #| label: fig-3d-rgl
 #| eval: !expr knitr::is_html_output()
 #| fig-cap: "三维透视图"
+#| echo: false
 
 options(rgl.useNULL = TRUE)
 options(rgl.printRglwidget = TRUE)
@@ -366,5 +391,13 @@ plot3d(
   xlab = "年份", ylab = "年龄", zlab = "死亡率（对数）"
 )
 ```
+```{r}
+#| label: fig-3d-rgl-2
+#| eval: !expr !knitr::is_html_output()
+#| fig-cap: "三维透视图"
+#| echo: false
+#| out-width: "60%"
 
-顾名思义，[plot3Drgl](https://cran.r-project.org/package=plot3Drgl) 包集成了 plot3D 包和 rgl 包的优势，扩展了 plot3D 包的功能，支持绘制基于 rgl 的交互图形。[misc3d](https://gitlab.com/luke-tierney/misc3d) 包 [@misc3d2008] 基于 tcltk 包制作三维空间中的图形。
+knitr::include_graphics(path = "screenshots/usa-mortality-rgl.png")
+```
+
