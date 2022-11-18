@@ -65,7 +65,7 @@ sysfonts::font_add(
 ```
 
 
-## 作图工具 {#basic-tools}
+## 作图工具 {#sec-dv-tools}
 
 
 ### 基础作图系统 {#sec-base-graphics}
@@ -1679,5 +1679,65 @@ cowplot::ggdraw() +
 ```
 
 
+### 表情符号 {#sec-emoji}
 
+
+<!-- 
+余光创 [ggimage：ggplot2 中愉快地使用图片](https://cosx.org/2017/03/ggimage) 
+-->
+
+描述态度非常形象 [ggChernoff](https://github.com/Selbosh/ggChernoff) 切尔诺夫脸表达多元数据 [@Chernoff1973]
+
+```{r}
+#| label: fig-chernoff
+#| fig-cap: "Chernoff 脸"
+#| fig-showtext: true
+#| fig-width: 5
+#| fig-height: 4
+
+library(ggChernoff)
+sub_iris <- iris[iris$Species != "setosa", ]
+sub_iris$smile <- ifelse(sub_iris$Species == "versicolor", 1, 0)
+
+ggplot(sub_iris, aes(x = Petal.Width, y = Petal.Length)) +
+  geom_chernoff(aes(smile = smile, fill = Species),
+    show.legend = c(smile = FALSE, fill = TRUE), color = "white"
+  ) +
+  scale_fill_brewer(palette = "Set1") +
+  scale_smile_continuous("Smilez", breaks = 0:1, midpoint = .5) +
+  theme_classic()
+```
+
+
+
+[emo](https://github.com/hadley/emo)
+
+
+```r
+remotes::install_github("hadley/emo")
+```
+
+```{r}
+#| label: fig-emoji
+#| fig-cap: "表情字体"
+#| fig-width: 4
+#| fig-height: 4
+#| fig-showtext: true
+
+dat <- data.frame(
+  fruits = c("pineapple", "apple", "watermelon", "mango", "pear"),
+  weight = c(5, 4, 3, 6, 2)
+)
+dat <- within(dat, {
+  fruits_emo <- sapply(fruits, emo::ji)
+})
+
+ggplot(dat, aes(x = fruits_emo, y = weight)) +
+  scale_y_continuous(limits = c(2, 7)) +
+  geom_text(aes(label = fruits_emo),
+    size = 12, vjust = -0.5
+  ) +
+  theme_classic() +
+  labs(x = "水果", y = "重量")
+```
 
