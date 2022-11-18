@@ -1307,7 +1307,32 @@ ggplot(data = gapminder, aes(x = gdpPercap, y = lifeExp)) +
   labs(x = "人均 GDP", y = "预期寿命", fill = "区域")
 ```
 
-**ragg** 包 (<https://github.com/r-lib/ragg>) 无需手动配置字体，只要是系统已经安装的字体，在 ggplot2 绘图时，将字体名称传递给 `family` 即可。
+**ragg** 包 (<https://github.com/r-lib/ragg>) 无需手动配置字体，只要是系统已经安装的字体，在 ggplot2 绘图时，将字体名称传递给 `family` 即可。 **emojifont** 包将 emoji 字体引入 ggplot2 绘图，如 @fig-emoji 所示。
+
+```{r}
+#| label: fig-emoji
+#| fig-cap: "表情字体"
+#| fig-width: 5
+#| fig-height: 4
+#| fig-showtext: true
+
+dat <- data.frame(
+  fruits = c("pineapple", "apple", "watermelon", "pear"),
+  weight = c(5, 4, 3, 2)
+)
+dat$fruits_emo <- emojifont::emoji(dat$fruits)
+
+ggplot(dat, aes(x = fruits_emo, y = weight)) +
+  scale_y_continuous(limits = c(2, 7)) +
+  geom_text(aes(label = fruits_emo),
+    size = 12, vjust = -0.5, family = "EmojiOne"
+  ) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size = 20, family = "EmojiOne"),
+        axis.text.y = element_text(size = 20, family = "Noto Sans"),
+        axis.title = element_text(size = 20, family = "Noto Serif CJK SC")) +
+  labs(x = "水果", y = "重量")
+```
 
 
 ### 制作动画 {#sec-animation}
@@ -1679,7 +1704,7 @@ cowplot::ggdraw() +
 ```
 
 
-### 表情符号 {#sec-emoji}
+### 表情符号 {#sec-chernoff}
 
 
 <!-- 
@@ -1706,38 +1731,5 @@ ggplot(sub_iris, aes(x = Petal.Width, y = Petal.Length)) +
   scale_fill_brewer(palette = "Set1") +
   scale_smile_continuous("Smilez", breaks = 0:1, midpoint = .5) +
   theme_classic()
-```
-
-
-
-[emo](https://github.com/hadley/emo)
-
-
-```r
-remotes::install_github("hadley/emo")
-```
-
-```{r}
-#| label: fig-emoji
-#| fig-cap: "表情字体"
-#| fig-width: 4
-#| fig-height: 4
-#| fig-showtext: true
-
-dat <- data.frame(
-  fruits = c("pineapple", "apple", "watermelon", "mango", "pear"),
-  weight = c(5, 4, 3, 6, 2)
-)
-dat <- within(dat, {
-  fruits_emo <- sapply(fruits, emo::ji)
-})
-
-ggplot(dat, aes(x = fruits_emo, y = weight)) +
-  scale_y_continuous(limits = c(2, 7)) +
-  geom_text(aes(label = fruits_emo),
-    size = 12, vjust = -0.5
-  ) +
-  theme_classic() +
-  labs(x = "水果", y = "重量")
 ```
 
