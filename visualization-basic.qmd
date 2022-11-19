@@ -1307,22 +1307,41 @@ ggplot(data = gapminder, aes(x = gdpPercap, y = lifeExp)) +
   labs(x = "人均 GDP", y = "预期寿命", fill = "区域")
 ```
 
-**ragg** 包 (<https://github.com/r-lib/ragg>) 无需手动配置字体，只要是系统已经安装的字体，在 **ggplot2** 绘图时，将字体名称传递给 `family` 即可。 [**emojifont**](https://github.com/GuangchuangYu/emojifont) 包将 [Emoji 字体](https://github.com/ikatyang/emoji-cheat-sheet)引入 **ggplot2** 绘图，如 @fig-emoji 所示。
+**ragg** 包 (<https://github.com/r-lib/ragg>) 无需手动配置字体，只要是系统已经安装的字体，在 **ggplot2** 绘图时，将字体名称传递给 `family` 即可。
 
 ```{r}
 #| label: fig-emoji
 #| fig-cap: "emoji 字体"
 #| fig-width: 5
 #| fig-height: 4
-#| fig-showtext: true
 
 dat <- data.frame(
   fruits = c("pineapple", "apple", "watermelon", "pear"),
   weight = c(5, 4, 3, 2)
 )
+# emo 字体
+dat$fruits_emo <- sapply(dat$fruits, emo::ji)
+ggplot(dat, aes(x = fruits_emo, y = weight)) +
+  scale_y_continuous(limits = c(2, 7)) +
+  geom_text(aes(label = fruits_emo),
+    size = 12, vjust = -0.5
+  ) +
+  theme_classic() +
+  labs(x = "Fruits", y = "Weight")
+```
+
+[**emojifont**](https://github.com/GuangchuangYu/emojifont) 包将 [Emoji 字体](https://github.com/ikatyang/emoji-cheat-sheet)引入 **ggplot2** 绘图，如 @fig-emojifont 所示。
+
+```{r}
+#| label: fig-emojifont
+#| fig-cap: "制作含 Emoji 的图形"
+#| fig-width: 5
+#| fig-height: 4
+#| fig-showtext: true
+
+# 加载 emojifont 包会自动加载 Emoji 字体
 library(emojifont)
 dat$fruits_emo <- emojifont::emoji(dat$fruits)
-
 ggplot(dat, aes(x = fruits_emo, y = weight)) +
   scale_y_continuous(limits = c(2, 7)) +
   geom_text(aes(label = fruits_emo),
@@ -1335,24 +1354,9 @@ ggplot(dat, aes(x = fruits_emo, y = weight)) +
   labs(x = "水果", y = "重量")
 ```
 
-
-```{r}
-#| label: fig-emoji-color
-#| fig-cap: "emoji 字体"
-#| fig-width: 5
-#| fig-height: 4
-
-dat$fruits_emo <- sapply(dat$fruits, emo::ji)
-
-ggplot(dat, aes(x = fruits_emo, y = weight)) +
-  scale_y_continuous(limits = c(2, 7)) +
-  geom_text(aes(label = fruits_emo),
-    size = 12, vjust = -0.5
-  ) +
-  theme_classic() +
-  labs(x = "Fruits", y = "Weight")
-```
-
+<!-- 
+先加载 emojifont 包会导致 emo 包无法使用彩色字体，因为 emojifont 自动加载了字体和设备，emo 不能与 showtext 包同时使用
+-->
 
 ### 制作动画 {#sec-animation}
 
