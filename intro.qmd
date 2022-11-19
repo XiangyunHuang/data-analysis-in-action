@@ -1,6 +1,71 @@
 # 介绍 {#sec-intro}
 
-<!-- 介绍整个数据分析的工作流，the whole game -->
+```{r}
+#| echo: false
+
+knitr::knit_hooks$set(par = function(before, options, envir) {
+  if (before && options$fig.show != "none") {
+    par(
+      mar = c(4, 4, .5, .5)
+    )
+  }
+})
+
+if (xfun::is_macos()) {
+  # 准备 Noto 中英文字体
+  sysfonts::font_paths(new = "~/Library/Fonts/")
+  ## 宋体
+  sysfonts::font_add(
+    family = "Noto Serif CJK SC",
+    regular = "NotoSerifCJKsc-Regular.otf",
+    bold = "NotoSerifCJKsc-Bold.otf"
+  )
+  ## 黑体
+  sysfonts::font_add(
+    family = "Noto Sans CJK SC",
+    regular = "NotoSansCJKsc-Regular.otf",
+    bold = "NotoSansCJKsc-Bold.otf"
+  )
+} else { # Github Action Ubuntu
+  sysfonts::font_paths(new = c(
+    "/usr/share/fonts/opentype/noto/",
+    "/usr/share/fonts/truetype/noto/"
+  ))
+  ## 宋体
+  sysfonts::font_add(
+    family = "Noto Serif CJK SC",
+    regular = "NotoSerifCJK-Regular.ttc",
+    bold = "NotoSerifCJK-Bold.ttc"
+  )
+  ## 黑体
+  sysfonts::font_add(
+    family = "Noto Sans CJK SC",
+    regular = "NotoSansCJK-Regular.ttc",
+    bold = "NotoSansCJK-Bold.ttc"
+  )
+}
+
+## 衬线字体
+sysfonts::font_add(
+  family = "Noto Serif",
+  regular = "NotoSerif-Regular.ttf",
+  bold = "NotoSerif-Bold.ttf",
+  italic = "NotoSerif-Italic.ttf",
+  bolditalic = "NotoSerif-BoldItalic.ttf"
+)
+## 无衬线字体
+sysfonts::font_add(
+  family = "Noto Sans",
+  regular = "NotoSans-Regular.ttf",
+  bold = "NotoSans-Bold.ttf",
+  italic = "NotoSans-Italic.ttf",
+  bolditalic = "NotoSans-BoldItalic.ttf"
+)
+```
+
+:::{.callout-tip}
+其它小节完成后再写本节。
+:::
 
 本书围绕数据分析实战工作流分四大部分：
 
@@ -9,4 +74,155 @@
 (@interpretation)  数据建模和解释。
 (@communication)  数据交流和应用。
 
-对分析师来说，相比于整理、探索、建模和交流，收集、分析、解释和应用是更难的事。
+对分析师来说，相比于整理、探索、建模和交流，收集、分析、解释和应用是更难的事。始终围绕 R 语言、数据分析、实战来介绍每一部分、每一章的内容，让每一部分、每一章的内容都在丰富和解释 R 语言、数据分析、实战主题。
+
+《Design Principles for Data Analysis》在数据分析的实践中，提炼出设计思维，在解决问题的过程中，理解解决方案为谁而设计。不同的数据分析师（数据分析的生产者）在分析方法、工具和工作流等方面的选择，不仅影响数据分析产品本身，而且影响数据分析的消费者的体验。生产者的角色可以看作围绕一套设计原则设计数据分析，基于这套原则去量化。
+
+2015 年《科学》杂志发表重量级文章《Estimating the reproducibility of psychological science》，讨论了目前心理学的可重复性问题。可重复性受到越来越多的关注，数据分析是科学研究中非常重要的一环，可重复性数据分析的需求越来越大，在真实数据的基础上，本书试图通过 R 语言展现数据分析的技术栈，包括数据获取、数据清洗、数据整理和数据操作，数据探索和分析，数据建模和结果解释，以及数据展示和交流。
+
+
+## 数据探索和分析 {#sec-exploration-explaination}
+
+数据可视化是数据探索和分析的一个手段，数据可视化的主要目的有两个：其一是探索 Explore，其二是解释 Explain。
+
+探索是面向数据分析师自己，而展示是面向数据分析的消费者。面对不同的角色，可视化的目的是不一样的，探索是了解数据，展示是传递信息。了解数据的分布、隐藏的模式、缺失情况、异常情况，步步深入地挖掘数据的潜在规律。展示是传递数据分析的结论和洞见，强调美观、效率、效果，除了数据分析师本人几乎没人想看探索数据过程中产生的数以十计的中间图形。
+
+数据可视化是通过计算机程序绘制图形来展示数据，有时是在图上展示原始数据，比如散点图，有时展示汇总数据，比如直方图，有时借助一些数据变换，比如对数变换，甚至更为复杂的统计变换。数据可视化主要是描述、提炼和汇总原始数据，从数据中获取信息。
+
+除了选择合适的工具（Base R / grid / lattice / ggplot2）绘制图形（提供 R 代码实现），选择图形（30+多种常见图形）和解释图形（真实数据背景）往往比想的更加困难，本书试图去回答这些问题。
+
+大多教科书侧重理论和方法，计算机强调编程，数值计算是精确的，图形是粗燥的。然而，只有模型和方法，缺乏数据探索的分析和建模，计算的结果和分析的结论可能是不正确的，数据可能在欺骗你[@Anscombe1973]。
+
+[**datasauRus**](https://github.com/jumpingrivers/datasauRus) 包 [@datasauRus2022] 内置了一个数据集 datasaurus_dozen，它整合了 13 个子数据集，它们在均值、标准差等描述性统计量方面十分接近，见下 @tbl-datasaurus-summ 。其中 $\bar{x},\sigma_x$ 分别代表预测变量 $X$ 的均值和标准差，$\bar{y},\sigma_y$ 代表响应变量 $Y$ 的均值和标准差，$\beta_0,\beta_1$ 代表回归方程 @eq-datasaurus-lm 的截距和斜率，$R^2$ 代表模型拟合数据的程度。
+
+$$
+y = \beta_0 + \beta_1 x + \epsilon
+$$ {#eq-datasaurus-lm}
+
+```{r}
+#| echo: false
+#| label: tbl-datasaurus-summ
+#| tbl-cap: "datasaurus_dozen 数据集的一些描述性统计量和线性回归结果"
+
+data("datasaurus_dozen", package = "datasauRus")
+library(data.table)
+datasaurus_dozen <- as.data.table(datasaurus_dozen)
+datasaurus_summ <- datasaurus_dozen[, cbind.data.frame(
+  x_mean = mean(x),
+  x_sd = sd(x),
+  y_mean = mean(y),
+  y_sd = sd(y),
+  as.list(coef(lm(y ~ x))),
+  r_squared = summary(lm(y ~ x))$r.squared #,
+  # adj_r_squared = summary(lm(y ~ x))$adj.r.squared,
+  # rse = sqrt(sum(residuals(lm(y ~ x))^2)/(.N - 2))
+), by = .(dataset)]
+
+knitr::kable(datasaurus_summ, col.names = c(
+  "子数据集", "$\\bar{x}$", "$\\sigma_x$", "$\\bar{y}$", "$\\sigma_y$",
+  "$\\beta_0$", "$\\beta_1$", "$R^2$" #, "调整的 $R^2$", "残差标准差"
+), digits = 3, escape = FALSE)
+```
+
+
+诸多统计量都难以发现它们的差异，透过数据可视化这面照妖镜，却可以使数据的本来面目无所遁形，如 @fig-datasaurus-dozen 所示。可见，单个统计量就好比管窥蠡测，稍有不慎，我们就成了盲人摸象。
+
+
+```{r}
+#| label: fig-datasaurus-dozen
+#| fig-cap: "数据可视化为何如此重要"
+#| fig-width: 6
+#| fig-height: 6
+#| fig-showtext: true
+#| echo: false
+
+library(ggplot2)
+ggplot(datasaurus_dozen, aes(x = x, y = y)) +
+  geom_point(aes(colour = dataset), show.legend = FALSE) +
+  facet_wrap(facets = ~dataset, ncol = 4) +
+  theme_void() +
+  theme(strip.text = element_blank())
+```
+
+数据可视化的重要性在于探索数据的真实分布，为数据建模提供假设和依据，也为验证、评估模型的效果。结合 @fig-datasaurus-dozen 也解释了为什么线性回归模型在解释数据方面的无能为力，即 $R^2$ 介于 0.004 至 0.005 之间，数据根本不符合线性模型的条件。
+
+
+有时候是有的数据符合模型假设，而有的不符合，我们没有上帝之眼，看不到哪些符合哪些不符合。在数据集不多的情况下，可以全部展示出来，数据集很多的时候，可以抽样一部分，再展示。下面再举一个例子，anscombe 数据集来自 R 软件内置的 R 包 **datasets**，它包含四组数据 $(x_i, y_i), i =1,2,3,4$，如 @tbl-anscombe-datasets 所示。
+
+```{r}
+#| label: tbl-anscombe-datasets
+#| tbl-cap: "anscombe 数据集"
+#| echo: false
+
+new_order <- unlist(lapply(1:4, function(x) paste(c("x", "y"), x, sep = "")))
+# knitr::kable(anscombe[, new_order], booktabs = T) |>
+#   kableExtra::kable_styling(
+#     bootstrap_options = "basic",
+#     full_width = F, position = "center"
+#   ) |>
+#   kableExtra::add_header_above(c(
+#     "第1组" = 2, "第2组" = 2,
+#     "第3组" = 2, "第4组" = 2
+#   ))
+
+# flextable::flextable(anscombe[, new_order]) |>
+#   flextable::add_header_row(
+#     colwidths = c(2, 2, 2, 2),
+#     values = c("第1组", "第2组", "第3组", "第4组")
+#   )
+
+gt::gt(anscombe[, new_order]) |> 
+  gt::tab_spanner(label = "第1组", columns = c("x1", "y1")) |> 
+  gt::tab_spanner(label = "第2组", columns = c("x2", "y2")) |> 
+  gt::tab_spanner(label = "第3组", columns = c("x3", "y3")) |> 
+  gt::tab_spanner(label = "第4组", columns = c("x4", "y4"))
+```
+
+用统计的方法发现四组数据的样本均值、方差、相关系数和回归系数几乎是相同的，实际上，借助散点 @fig-anscombe 分别描述各组数据的关系时，却发现四组数据之间有极大的差异，且只有第一组数据看起来符合线性模型的条件 [@Anscombe1973]。
+
+```{r}
+#| label: fig-anscombe
+#| echo: false
+#| fig-cap: "数据可视化为何如此重要"
+#| fig-subcap: 
+#| - "第一组数据"
+#| - "第二组数据"
+#| - "第三组数据"
+#| - "第四组数据"
+#| fig-width: 3
+#| fig-height: 3
+#| fig-showtext: true
+#| fig-ncol: 2
+
+library(ggplot2)
+data(anscombe)
+p <- ggplot(data = anscombe) +
+  theme_classic()
+p +
+  geom_point(aes(x = x1, y = y1), color = "#E41A1C") +
+  geom_smooth(aes(x = x1, y = y1),
+    color = "#E41A1C",
+    formula = y ~ x, method = "lm", se = FALSE
+  )
+
+p +
+  geom_point(aes(x = x2, y = y2), color = "#377EB8") +
+  geom_smooth(aes(x = x2, y = y2),
+    color = "#377EB8",
+    formula = y ~ x, method = "lm", se = FALSE
+  )
+p +
+  geom_point(aes(x = x3, y = y3), color = "#4DAF4A") +
+  geom_smooth(aes(x = x3, y = y3),
+    color = "#4DAF4A",
+    formula = y ~ x, method = "lm", se = FALSE
+  )
+p +
+  geom_point(aes(x = x4, y = y4), color = "#984EA3") +
+  geom_smooth(aes(x = x4, y = y4),
+    color = "#984EA3",
+    formula = y ~ x, method = "lm", se = FALSE
+  )
+```
+
+图形还告诉我们第二组数据的更适合二次非线性回归，第三组数据受到离群点的重大影响，第四组数据自变量只有两个取值，像是两个分布按不同比例混合的结果。
