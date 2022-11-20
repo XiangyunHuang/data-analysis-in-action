@@ -2496,3 +2496,99 @@ p1 | p2
 
 从参数的迭代轨迹可以看出四条马尔可夫链混合得很好，后验分布图主要用来描述参数的迭代结果，后验分布图可以是直方图或密度图的形式，可以和 @tbl-state-x77-output 一道检验模型的拟合情况。
 
+
+## 描述空间分布 {#sec-visualize-spatial-data}
+
+
+以 R 软件内置的数据集 state.x77 为例展示 1975 年美国**各个州**每平方英里的人口数，即以专题地图形式展示各州人口密度，此处专题的含义是「人口」，显而易见，人口密度只是一方面，还有人口结构，结构又可以分性别、年龄、种族等等。
+
+state.x77 数据集中 Population 州人口数据是 1977 年美国人口调查局发布的统计数据，单位是 1000 人，统计的是 1975 年的人口数据，原始数据可以从官网发布的年度报告[Statistical Abstract of the United States: 1977](https://www.census.gov/library/publications/1977/compendia/statab/98ed.html)获取。
+
+
+```{r}
+library(sf)
+us_states_map <- readRDS(file = "data/us-states-shifted.rds")
+us_states_df <- merge(us_states_map, state_x77,
+  by.x = "NAME", by.y = "state_name", all.x = TRUE
+)
+us_states_df <- within(us_states_df, {
+  den <- 1000 * Population / Area
+})
+```
+
+
+### 地区分布图 {#sec-choropleth-map}
+
+
+1975 年美国各州人口密度，单位每平方英里人口数
+
+
+```{r}
+#| label: fig-choropleth-map
+#| fig-cap: "1975 年美国各州人口密度"
+#| fig-width: 7
+#| fig-height: 4
+#| fig-showtext: true
+#| echo: true
+
+ggplot() +
+  geom_sf(
+    data = us_states_df, aes(fill = den),
+    color = "gray80", lwd = 0.25
+  ) +
+  scale_fill_viridis_c(
+    trans = "log10", option = "plasma",
+    na.value = "white"
+  ) +
+  labs(
+    fill = "人口密度", title = "1975 年美国各州人口密度",
+    caption = "数据源：美国人口调查局"
+  ) +
+  theme_void() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+
+### 比例符号图 {#sec-proportional-symbols-map}
+
+1975 年美国各州人口密度，单位每平方英里人口数，人口密度映射为圆的面积
+
+
+```{r}
+#| echo: true
+
+us_states_df <- within(us_states_df, {
+  geometry_center <- st_centroid(geometry)
+})
+```
+
+
+```{r}
+#| label: fig-proportional-symbols-map
+#| fig-cap: "1975 年美国各州人口密度"
+#| fig-width: 7
+#| fig-height: 4
+#| fig-showtext: true
+#| echo: true
+
+ggplot() +
+  geom_sf(
+    data = us_states_df, fill = NA
+  ) +
+  geom_sf_label(data = us_states_df, aes(label = STUSPS)) +
+  geom_sf(
+    data = us_states_df, 
+    aes(geometry = geometry_center, color = den, size = den),
+    show.legend = c(color = FALSE, size = TRUE), na.rm = TRUE
+  ) +
+  scale_color_viridis_c(
+    trans = "log10", option = "plasma", na.value = "white"
+  ) +
+  labs(
+    size = "人口密度", title = "1975 年美国各州人口密度",
+    caption = "数据源：美国人口调查局"
+  ) +
+  theme_void() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
