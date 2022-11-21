@@ -1323,24 +1323,18 @@ ggplot() +
 
 #### tikzDevice
 
+Ralf Stubner 维护的 [**tikzDevice**](https://github.com/daqana/tikzDevice) 包提供了另一种嵌入数学字体的方式，其提供的 `tikzDevice::tikz()` 绘图设备将图形对象转化为 TikZ 代码，调用 LaTeX 引擎编译成 PDF 文档。[**tikzDevice**](https://github.com/daqana/tikzDevice)包大大扩展了数学公式的处理能力，相比于 **latex2exp** 包，**tikzDevice** 调用 LaTeX 编译引擎处理数学公式，渲染的公式效果更加精美，支持的数学公式符合更多，不再局限于 plotmath 的能力。
+
+首先安装一些所需的 LaTeX 宏包。
+
 ```{r}
-#| echo: false
+#| echo: true
+#| eval: false
 
-# convert pdf to png
-to_png <- function(fig_path) {
-  png_path <- sub("\\.pdf$", ".png", fig_path)
-  magick::image_write(magick::image_read_pdf(fig_path),
-    format = "png", path = png_path,
-    density = 300, quality = 100
-  )
-  return(png_path)
-}
-
-# 安装一些所需的 LaTeX 宏包
-# tinytex::tlmgr_install('standalone', 'sourcesanspro', 'jknapltx')
+tinytex::tlmgr_install('standalone', 'sourcesanspro', 'jknapltx')
 ```
 
-推荐的全局 LaTeX 环境配置如下：
+设置默认的 LaTeX 编译引擎为 XeLaTeX，相比于 PDFLaTeX，它对中文的兼容性更好，支持多平台下的中文环境，中文字体这里采用了开源的 Fandol 字体，默认加载了 mathrsfs 宏包支持 `\mathcal`、`\mathscr` 等命令，此外， LaTeX 发行版采用谢益辉自定义的 [TinyTeX](https://yihui.org/tinytex/)。推荐的全局 LaTeX 环境配置如下：
 
 ```{r}
 #| label: setup-tinytex
@@ -1359,12 +1353,10 @@ options(
 ```
 
 
-[**tikzDevice**](https://github.com/daqana/tikzDevice)包大大扩展了数学公式的处理能力，相比于 **latex2exp** 包，**tikzDevice** 调用 LaTeX 编译引擎处理数学公式，渲染的公式效果更加精美，支持的数学公式符合更多，不再局限于 plotmath 的能力。
-
-Ralf Stubner 维护的 [**tikzDevice**](https://github.com/daqana/tikzDevice) 包提供了另一种嵌入数学字体的方式，其提供的 `tikzDevice::tikz()` 绘图设备将图形对象转化为 TikZ 代码，调用 LaTeX 引擎编译成 PDF 文档。安装后，先测试一下 LaTeX 编译环境是否正常。
+再测试一下 LaTeX 编译环境是否正常。
 
 ```{r}
-#| label: tikz-device
+#| label: test-tikz-device
 #| echo: true
 
 tikzDevice::tikzTest()
@@ -1373,10 +1365,23 @@ tikzDevice::tikzTest()
 确认没有问题后，下面 @fig-tikz-regression 的坐标轴标签，标题，图例等位置都支持数学公式，使用 **tikzDevice** 打造出版级的效果图。更多功能的介绍见 <https://www.daqana.org/tikzDevice/>。
 
 ```{r}
+#| echo: false
+
+# 用 magick 将 pdf 格式图片转化为 png 格式
+to_png <- function(fig_path) {
+  png_path <- sub("\\.pdf$", ".png", fig_path)
+  magick::image_write(magick::image_read_pdf(fig_path),
+    format = "png", path = png_path,
+    density = 300, quality = 100
+  )
+  return(png_path)
+}
+```
+
+```{r}
 #| label: fig-tikz-regression
 #| dev: 'tikz'
-#| fig-cap: "线性回归模型"
-#| out-width: "75%" 
+#| fig-cap: "TikZ 表示线性回归模型的数学公式"
 #| fig-process: !expr to_png 
 #| cache: true 
 #| fig-width: 4
@@ -1406,21 +1411,20 @@ legend("bottomright",
 ```
 
 
-设置默认的 LaTeX 编译引擎为 XeLaTeX，相比于 PDFLaTeX，它对中文的兼容性更好，支持多平台下的中文环境，中文字体这里采用了 Adobe 的字体，默认加载了 mathrsfs 宏包支持 `\mathcal`、`\mathscr` 等命令，此外， LaTeX 发行版采用谢益辉自定义的 [TinyTeX](https://yihui.org/tinytex/)。绘制独立的 PDF 图形的过程如下：
+绘制独立的 PDF 图形的过程如下：
 
 ```{r}
 #| eval: false
+#| echo: true
 
 library(tikzDevice)
 tf <- file.path(getwd(), "tikz-regression.tex")
 tikz(tf, width = 6, height = 5.5, pointsize = 30, standAlone = TRUE)
-# 绘图代码
+## 绘图代码 ##
 dev.off()
 # 编译成 PDF 图形
 tinytex::latexmk(file = "tikz-regression.tex")
 ```
-
-
 
 
 ### 设置字体 {#sec-font}
