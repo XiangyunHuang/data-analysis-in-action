@@ -794,7 +794,7 @@ ggplot(data = gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
 
 - **ggthemes** [@ggthemes2021] 收集了网站（如 Fivethirtyeight）、杂志（如《经济学家》）、软件（如 Stata）等的配色主题，打包成可供 **ggplot2** 绘图的主题，更多内容见 (<https://github.com/jrnold/ggthemes>)
 - **ggsci** [@ggsci2018] 包收集了多份期刊杂志的图形配色，将其融入 **ggplot2** 绘图主题中，更多内容见 (<https://github.com/road2stat/ggsci>)。
-- **ggpubr** [@ggpubr2020] 包在 **ggplot2** 之上封装一套更加易用的函数，可以快速绘制出版级的统计图形 (<https://github.com/kassambara/ggpubr>)。
+- **ggpubr** [@ggpubr2022] 包在 **ggplot2** 之上封装一套更加易用的函数，可以快速绘制出版级的统计图形 (<https://github.com/kassambara/ggpubr>)。
 - **ggcharts** [@ggcharts2020] 包类似 **ggpubr** 包，也提供一套更加快捷的函数接口，缩短数据可视化的想法与实际图形的距离，更多内容见 (<https://github.com/thomas-neitmann/ggcharts>)。
 - **ggthemr** [@ggthemr2020] 是比较早的 **ggplot2** 主题包，上游依赖少，更多内容见 (<https://github.com/Mikata-Project/ggthemr>)。
 - **ggtech** [@ggtech2018] 包收集了许多科技公司的设计风格，将其制作成可供 ggplot2 绘图使用的主题，更多内容见 (<https://github.com/ricardo-bion/ggtech>)。
@@ -1243,6 +1243,90 @@ ggplot(diamonds, aes(x = cut, fill = clarity)) +
 ```
 
 
+
+### 插入公式 {#sec-math}
+
+**ggplot2** 包内置了一些的数学公式解析和表达能力
+
+形状参数分别为 $a$ 和 $b$ 的贝塔分布的概率密度函数如下：
+
+$$
+f(x;a,b) = \frac{\Gamma(a+b)}{\Gamma(a)\Gamma(b)}x^{a-1}(1-x)^{b-1}, \quad a>0,b>0,0\leq x \leq 1
+$$
+
+#### plotmath
+
+<!-- 适合全英文的环境 -->
+
+Base R 内置的 plotmath 提供一套处理数学公式的方法，详见 `?plotmath`
+
+@fig-beta-plotmath 中红线对应贝塔分布 $B(3,0.9)$ 而蓝线对应贝塔分布 $B(3,9)$
+
+```{r}
+#| label: fig-beta-plotmath
+#| fig-cap: "贝塔分布的概率密度函数"
+#| fig-width: 5
+#| fig-height: 4
+#| dev: !expr ifelse(knitr::is_latex_output(), "cairo_pdf", "png")
+
+ggplot() +
+  geom_function(
+    fun = dbeta, args = list(shape1 = 3, shape2 = 0.9),
+    colour = "#E41A1C", linewidth = 1.2,
+  ) +
+  geom_function(
+    fun = dbeta, args = list(shape1 = 3, shape2 = 9),
+    colour = "#377EB8", linewidth = 1.2
+  ) +
+  theme_classic() +
+  labs(
+    x = expression(x), y = expression(f(x)),
+    title = expression(f(x) == frac(Gamma(a + b), Gamma(a) * Gamma(b)) * x^{a - 1} * (1 - x)^{b - 1})
+  )
+```
+
+<!-- 
+警告：启用 showtext 包会导致数学公式中的括号 () 倾斜，公式和中文混合的情况还不好处理。不能使用 cairo_pdf 设备
+-->
+
+
+#### latex2exp
+
+[**latex2exp**](https://github.com/stefano-meschiari/latex2exp) 包仍然基于 plotmath，但提供 LaTeX 数学公式的书写方式，相比于 plotmath，使用上会更加方便。
+
+
+
+```{r}
+#| label: fig-beta-latex2exp
+#| fig-cap: "贝塔分布的概率密度函数"
+#| fig-width: 5
+#| fig-height: 4
+#| dev: !expr ifelse(knitr::is_latex_output(), "cairo_pdf", "png")
+
+library(latex2exp)
+ggplot() +
+  geom_function(
+    fun = dbeta, args = list(shape1 = 3, shape2 = 0.9),
+    colour = "#E41A1C", linewidth = 1.2,
+  ) +
+  geom_function(
+    fun = dbeta, args = list(shape1 = 3, shape2 = 9),
+    colour = "#377EB8", linewidth = 1.2
+  ) +
+  theme_classic() +
+  labs(
+    x = TeX(r'($x$)'), y = TeX(r'($f(x)$)'),
+    title = TeX(r'($f(x) = \frac{\Gamma(a+b)}{\Gamma(a)\Gamma(b)}x^{a-1}(1-x)^{b-1}$)')
+  )
+```
+
+
+#### tikzDevice
+
+[**tikzDevice**](https://github.com/daqana/tikzDevice)包大大扩展了数学公式的处理能力，相比于 **latex2exp** 包，**tikzDevice** 调用 LaTeX 编译引擎处理数学公式，渲染的公式效果更加精美，支持的数学公式符合更多，不再局限于 plotmath 的能力。
+
+
+
 ### 设置字体 {#sec-font}
 
 **showtext** [@Qiu2015] 是一个专用于处理中英文字体的 R 包，支持 Base R 和 **ggplot2** 绘图，支持调用系统已安装的字体，也支持调用给定路径下的字体，还支持各种奇形怪状的表情字体，更多内容见 (<https://github.com/yixuan/showtext>)，好玩的字体配合好玩的图形，可以玩出很多花样。
@@ -1323,12 +1407,13 @@ dat <- data.frame(
 # emo 字体
 dat$fruits_emo <- sapply(dat$fruits, emo::ji)
 ggplot(dat, aes(x = fruits_emo, y = weight)) +
-  scale_y_continuous(limits = c(2, 7)) +
   geom_text(aes(label = fruits_emo),
     size = 12, vjust = -0.5
   ) +
+  scale_y_continuous(limits = c(2, 7)) +
   theme_classic() +
-  labs(x = "Fruits", y = "Weight")
+  theme(axis.title = element_text(family = "Noto Serif CJK SC")) +
+  labs(x = "水果", y = "重量")
 ```
 
 [**emojifont**](https://github.com/GuangchuangYu/emojifont) 包将 [Emoji 字体](https://github.com/ikatyang/emoji-cheat-sheet)引入 **ggplot2** 绘图，如 @fig-emojifont 所示。
@@ -1340,14 +1425,14 @@ ggplot(dat, aes(x = fruits_emo, y = weight)) +
 #| fig-height: 4
 #| fig-showtext: true
 
-# 加载 emojifont 包会自动加载 Emoji 字体
+# emojifont::load.emojifont()
 library(emojifont)
 dat$fruits_emo <- emojifont::emoji(dat$fruits)
 ggplot(dat, aes(x = fruits_emo, y = weight)) +
-  scale_y_continuous(limits = c(2, 7)) +
-  geom_text(aes(label = fruits_emo),
-    size = 12, vjust = -0.5, family = "EmojiOne"
+  geom_text(aes(label = fruits_emo, color = fruits_emo),
+    size = 12, vjust = -0.5, family = "EmojiOne", show.legend = FALSE
   ) +
+  scale_y_continuous(limits = c(2, 7)) +
   theme_classic() +
   theme(axis.text.x = element_text(size = 20, family = "EmojiOne"),
         axis.text.y = element_text(family = "Noto Sans"),
@@ -1355,9 +1440,15 @@ ggplot(dat, aes(x = fruits_emo, y = weight)) +
   labs(x = "水果", y = "重量")
 ```
 
+
 <!-- 
-先加载 emojifont 包会导致 emo 包无法使用彩色字体，因为 emojifont 自动加载了字体和设备，emo 不能与 showtext 包同时使用
+先加载 emojifont 包会导致 emo 包无法使用彩色字体，因为 emojifont 自动加载了字体和设备，emo 不能与 showtext 包同时使用。而且 plotmath 数学符号会变形，所以插入公式放在设置字体前面。
+
+加载 emojifont 包会自动加载 Emoji 字体，而从命名空间导入字体 `emojifont::load.emojifont()` 同样会导致插入公式一节不能正常使用
 -->
+
+
+
 
 ### 制作动画 {#sec-animation}
 
@@ -1592,44 +1683,6 @@ p1 / (p4 | p5) +
 
 
 最常用的功能就是这些啦，更多内容可以去 **patchwork** 包官网了解。其它可以用来组合多个 ggplot2 图形的 R 包有 **cowplot** (<https://github.com/wilkelab/cowplot>)、**gridExra** (<https://cran.r-project.org/package=gridExtra>) 和 **gghalves** (<https://github.com/erocoar/gghalves>) 等。
-
-
-### 插入公式 {#sec-math}
-
-ggplot2 包内置了一些的数学公式解析和表达能力，[latex2exp](https://github.com/stefano-meschiari/latex2exp) 包和[tikzDevice](https://github.com/daqana/tikzDevice)包大大扩展了数学公式的处理能力，相比于 latex2exp 包，tikzDevice 调用 LaTeX 编译引擎处理数学公式，渲染的公式效果更加精美。
-
-形状参数分别为 $a$ 和 $b$ 的贝塔分布的概率密度函数如下：
-
-$$
-f(x) = \frac{\Gamma(a+b)}{\Gamma(a)\Gamma(b)}x^{a-1}(1-x)^{b-1}, \quad a>0,b>0,0\leq x \leq 1
-$$
-
-@fig-beta 中红线对应贝塔分布 $B(3,0.9)$ 而蓝线对应贝塔分布 $B(3,9)$
-
-```{r}
-#| label: fig-beta
-#| fig-cap: "贝塔分布的概率密度函数"
-#| fig-showtext: true
-#| fig-width: 6
-#| fig-height: 4.5
-
-ggplot() +
-  geom_function(
-    fun = dbeta, args = list(shape1 = 3, shape2 = 0.9),
-    aes(colour = "dbeta(3,0.9)"), linewidth = 1.2
-  ) +
-  geom_function(
-    fun = dbeta, args = list(shape1 = 3, shape2 = 9),
-    aes(colour = "dbeta(3,9)"), linewidth = 1.2
-  ) +
-  theme_classic() +
-  scale_color_manual(values = c("#E41A1C", "#377EB8")) +
-  labs(
-    x = expression(x), y = expression(f(x)), color = "分布",
-    title = expression(f(x) == frac(Gamma(a + b), Gamma(a) * Gamma(b)) * x^{a - 1} * (1 - x)^{b - 1})
-  )
-```
-
 
 
 
