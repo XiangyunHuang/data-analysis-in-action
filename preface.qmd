@@ -1,6 +1,70 @@
 # 前言 {#sec-preface .unnumbered}
 
 
+```{r}
+#| echo: false
+
+knitr::knit_hooks$set(par = function(before, options, envir) {
+  if (before && options$fig.show != "none") {
+    par(
+      mar = c(4, 4, .5, .5)
+    )
+  }
+})
+
+if (xfun::is_macos()) {
+  # 准备 Noto 中英文字体
+  sysfonts::font_paths(new = "~/Library/Fonts/")
+  ## 宋体
+  sysfonts::font_add(
+    family = "Noto Serif CJK SC",
+    regular = "NotoSerifCJKsc-Regular.otf",
+    bold = "NotoSerifCJKsc-Bold.otf"
+  )
+  ## 黑体
+  sysfonts::font_add(
+    family = "Noto Sans CJK SC",
+    regular = "NotoSansCJKsc-Regular.otf",
+    bold = "NotoSansCJKsc-Bold.otf"
+  )
+} else { # Github Action Ubuntu
+  sysfonts::font_paths(new = c(
+    "/usr/share/fonts/opentype/noto/",
+    "/usr/share/fonts/truetype/noto/"
+  ))
+  ## 宋体
+  sysfonts::font_add(
+    family = "Noto Serif CJK SC",
+    regular = "NotoSerifCJK-Regular.ttc",
+    bold = "NotoSerifCJK-Bold.ttc"
+  )
+  ## 黑体
+  sysfonts::font_add(
+    family = "Noto Sans CJK SC",
+    regular = "NotoSansCJK-Regular.ttc",
+    bold = "NotoSansCJK-Bold.ttc"
+  )
+}
+
+## 衬线字体
+sysfonts::font_add(
+  family = "Noto Serif",
+  regular = "NotoSerif-Regular.ttf",
+  bold = "NotoSerif-Bold.ttf",
+  italic = "NotoSerif-Italic.ttf",
+  bolditalic = "NotoSerif-BoldItalic.ttf"
+)
+## 无衬线字体
+sysfonts::font_add(
+  family = "Noto Sans",
+  regular = "NotoSans-Regular.ttf",
+  bold = "NotoSans-Bold.ttf",
+  italic = "NotoSans-Italic.ttf",
+  bolditalic = "NotoSans-BoldItalic.ttf"
+)
+```
+
+
 <!-- 
 本书市场分析
 
@@ -28,6 +92,60 @@
 营销建议
 重点区域为国内统计学、数据科学与大数据技术、管理科学、经济学、社会科学、新闻传播等专业的学生，作为数据科学课程教材；在数据分析相关从业人员中也可进行推广。
 -->
+
+
+## 为什么是 R 语言？ {#sec-why-r}
+
+<!-- 可视化、可重复性文档、演示交流、统计模型等方面都很强 -->
+
+R 语言在统计图形方面不仅走得早还走得远，当然，Python 语言也不错，近年来新起的 Julia 语言也很好。R 语言在统计图形方面的沉淀是非常深厚的，近年来，我发现越是简洁的越是优美，灵活的东西使用起来还非常简单，以 R 包 **datasets**内的数据集 PlantGrowth 为例，一般地，展示数据的分布会想到箱线图、直方图、密度图等，R 函数的泛型设计可以根据数据对象和变量的类型自动选择合适的图形， @fig-plant-growth 是泛型函数 `plot()` 调用普通函数 `boxplot()` 和 `spineplot()` 绘制的。
+
+```{r}
+#| label: fig-plant-growth
+#| fig-cap: "影响植物生长的因素"
+#| fig-subcap: 
+#|   - "箱线图"
+#|   - "脊柱图"
+#| fig-width: 4.5
+#| fig-height: 4
+#| fig-showtext: true
+#| fig-ncol: 2
+#| echo: false
+#| out-width: '50%'
+#| collapse: true
+#| par: true
+
+plot(weight ~ group, data = PlantGrowth, family = "Noto Sans", ann = FALSE)
+title(xlab = "组", ylab = "植物干重", family = "Noto Serif CJK SC")
+plot(cut(weight, 2) ~ group,
+  data = PlantGrowth,
+  family = "Noto Sans", xlab = "", ylab = ""
+)
+title(xlab = "组", ylab = "植物干重", family = "Noto Serif CJK SC")
+```
+
+所以，直接调用相应的绘图函数也是可以的，如下：
+
+```{r}
+#| label: fig-spinograms
+#| eval: false
+#| echo: true
+#| fig-showtext: true
+
+boxplot(weight ~ group, data = PlantGrowth, 
+        ylab = "植物干重", xlab = "组")
+spineplot(cut(weight, 2) ~ group, data = PlantGrowth, 
+          ylab = "植物干重", xlab = "组")
+```
+
+脊柱图是马赛克图的一种特殊情况，也可以看做是堆积条形图的推广形式或者直方图的扩展。上面 `cut()` 函数的作用是将数值型变量 weight 分桶，对照组（control，简写 ctrl）和两个不同的实验组（treatment，简写 trt）都按同样的划分方式分作两桶。
+
+```{r}
+#| label: plant-growth-group
+
+dat <- transform(PlantGrowth, weight_bucket = cut(weight, 2))
+aggregate(data = dat, weight ~ weight_bucket + group, FUN = length)
+```
 
 
 ## 为什么写这本书？ {#sec-why-book}
