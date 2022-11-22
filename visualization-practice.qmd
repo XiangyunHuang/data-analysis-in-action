@@ -1267,6 +1267,54 @@ summary(fit_dvp2)
 sum(residuals(fit_dvp2, type = "pearson")^2)
 ```
 
+
+
+
+## 分析泰坦尼克号乘客生存率 {#sec-titanic}
+
+<!-- 
+4x2x2x2 高维复杂列联表分析
+-->
+
+泰坦尼克号乘客生存死亡统计数据
+
+```{r}
+#| label: tbl-titanic-data
+#| tbl-cap: "泰坦尼克号乘客生存死亡统计数据"
+#| echo: false
+
+# 长格式转宽格式
+titanic_data <- reshape(
+  data = as.data.frame(Titanic), direction = "wide",
+  idvar = c("Class", "Sex", "Age"),
+  timevar = "Survived", v.names = "Freq", sep = "_"
+)
+
+# 制作表格
+gt::gt(titanic_data) |> 
+  gt::cols_label(
+    Freq_Yes = "存活",
+    Freq_No = "死亡",
+    Class = "船舱",
+    Sex = "性别",
+    Age = "年龄"
+  )
+```
+
+
+建立逻辑回归模型
+
+```{r}
+# 建立模型
+fit_titanic <- glm(cbind(Freq_Yes, Freq_No) ~ Class + Sex + Age,
+  data = titanic_data, family = binomial(link = "logit")
+)
+# 模型输出
+summary(fit_titanic)
+```
+
+
+
 ## 分析《红楼梦》的情景描写 {#sec-the-story-of-the-stone}
 
 <!-- 
@@ -1287,13 +1335,13 @@ sum(residuals(fit_dvp2, type = "pearson")^2)
 
 $$
 P(X = x) = \binom{n}{x}p^x(1-p)^{n-x}
-$$
+$$ {#eq-binom-probability}
 
 在给定 $p = 0.1$ 的情况下，求二项分布的上 $\alpha/2 = 0.025$ 分位点，尾项之和不应超过 $\alpha/2$，最大的 $x$ 值可有如下方程给出：
 
 $$
 \sum_{r = x}^{n}\binom{n}{x}p^x(1-p)^{n-x} = \frac{\alpha}{2}
-$$
+$$ {#eq-binom-quantile}
 
 在 R 语言中，函数 `qbinom()` 可以计算上述二项分布的上分位点 $x = 3$，即
 
@@ -1305,7 +1353,7 @@ qbinom(0.025, size = 10, prob = 0.1, lower.tail = F)
 
 $$
 P(X > 3) = \sum_{x > 3}^{10}\binom{10}{x}0.1^x*(1-0.1)^{10-x}
-$$
+$$ {#eq-binom-prob}
 
 在 R 语言中，函数 `pbinom()` 可以计算上述二项分布的上分位点对应的概率为 $0.0127952$。
 
