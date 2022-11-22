@@ -1331,13 +1331,13 @@ Ralf Stubner 维护的 [**tikzDevice**](https://github.com/daqana/tikzDevice) �
 #| echo: true
 #| eval: false
 
-tinytex::tlmgr_install('standalone', 'sourcesanspro', 'jknapltx')
+tinytex::tlmgr_install("ctex", "fandol", "standalone", "sourcesanspro", "jknapltx")
 ```
 
 设置默认的 LaTeX 编译引擎为 XeLaTeX，相比于 PDFLaTeX，它对中文的兼容性更好，支持多平台下的中文环境，中文字体这里采用了开源的 Fandol 字体，默认加载了 mathrsfs 宏包支持 `\mathcal`、`\mathscr` 等命令，此外， LaTeX 发行版采用谢益辉自定义的 [TinyTeX](https://yihui.org/tinytex/)。推荐的全局 LaTeX 环境配置如下：
 
 ```{r}
-#| label: setup-tinytex
+#| label: setup-tinytex-tikz
 #| echo: true
 
 options(
@@ -1362,7 +1362,7 @@ options(
 tikzDevice::tikzTest()
 ```
 
-确认没有问题后，下面 @fig-tikz-regression 的坐标轴标签，标题，图例等位置都支持数学公式，使用 **tikzDevice** 打造出版级的效果图。更多功能的介绍见 <https://www.daqana.org/tikzDevice/>。
+确认没有问题后，下面 @fig-tikz-beta 的坐标轴标签，标题，图例等位置都支持数学公式，也支持中文，使用 **tikzDevice** 打造出版级的效果图。更多功能的介绍见 <https://www.daqana.org/tikzDevice/>。
 
 ```{r}
 #| echo: false
@@ -1378,36 +1378,31 @@ to_png <- function(fig_path) {
 }
 ```
 
+
 ```{r}
-#| label: fig-tikz-regression
+#| label: fig-tikz-beta
 #| dev: 'tikz'
-#| fig-cap: "TikZ 表示线性回归模型的数学公式"
+#| fig-cap: "TikZ 渲染的贝塔函数公式"
 #| fig-process: !expr to_png 
 #| cache: true 
 #| fig-width: 4
 #| fig-height: 4
 
-x <- rnorm(10)
-y <- x + rnorm(5, sd = 0.25)
-model <- lm(y ~ x)
-rsq <- summary(model)$r.squared
-rsq <- signif(rsq, 4)
-plot(x, y,
-  main = "Hello \\LaTeX!", xlab = "$x$", ylab = "$y$",
-  sub = "$\\mathcal{N}(x;\\mu,\\Sigma)$"
-)
-abline(model, col = "red")
-mtext(paste0("Linear model: $R^{2}=", rsq, "$"), line = 0.5)
-legend("bottomright",
-  legend = paste0(
-    "$y = ",
-    round(coef(model)[2], 3),
-    "x +",
-    round(coef(model)[1], 3),
-    "$"
-  ),
-  bty = "n"
-)
+library(ggplot2)
+ggplot() +
+  geom_function(
+    fun = dbeta, args = list(shape1 = 3, shape2 = 0.9),
+    colour = "#E41A1C", linewidth = 1.2,
+  ) +
+  geom_function(
+    fun = dbeta, args = list(shape1 = 3, shape2 = 9),
+    colour = "#377EB8", linewidth = 1.2
+  ) +
+  theme_classic() +
+  labs(
+    x = "$x$", y = "$f(x)$",
+    title = "$f(x) = \\frac{\\Gamma(a+b)}{\\Gamma(a)\\Gamma(b)}x^{a-1}(1-x)^{b-1}$"
+  )
 ```
 
 
@@ -1418,12 +1413,12 @@ legend("bottomright",
 #| echo: true
 
 library(tikzDevice)
-tf <- file.path(getwd(), "tikz-regression.tex")
+tf <- file.path(getwd(), "tikz-beta.tex")
 tikz(tf, width = 6, height = 5.5, pointsize = 30, standAlone = TRUE)
 ## 绘图代码 ##
 dev.off()
 # 编译成 PDF 图形
-tinytex::latexmk(file = "tikz-regression.tex")
+tinytex::latexmk(file = "tikz-beta.tex")
 ```
 
 
