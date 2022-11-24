@@ -1862,16 +1862,16 @@ ggplot(iris, aes(x = Sepal.Length, y = Sepal.Width, color = Species)) +
 #| fig-height: 5
 
 library(ggforce)
-ggplot(iris, aes(x = Petal.Length, y = Petal.Width, colour = Species)) +
-  geom_point() +
-  facet_zoom(x = Species == "versicolor")
+ggplot(gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point(aes(colour = income_level)) +
+  facet_zoom(x = income_level == "低收入") +
+  labs(x = "人均 GDP", y = "预期寿命", color = "收入水平")
 ```
 
 
 ### 添加水印 {#sec-watermark}
 
-[**cowplot**](https://github.com/wilkelab/cowplot) 包可以给图片上添加某公司的徽标或水印文字，以示版权归属。
-
+**patchwork** 包的函数 `inset_element()` 可以给图片上添加某公司的徽标或水印文字，以示版权归属。
 
 ```{r}
 #| label: fig-watermark
@@ -1881,21 +1881,25 @@ ggplot(iris, aes(x = Petal.Length, y = Petal.Width, colour = Species)) +
 #| fig-height: 4
 
 # 绘图展示数据
-p <- ggplot(iris, aes(x = Sepal.Length, y = Sepal.Width)) +
-  geom_point(aes(shape = Species, color = Species)) +
-  theme_classic()
+p <- ggplot(gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point(aes(color = income_level)) +
+  scale_x_log10(labels = scales::label_log()) +
+  theme_classic() +
+  labs(x = "人均 GDP", y = "预期寿命", color = "收入水平")
 # 提供水印图片
-logo_file <- system.file("extdata", "logo.png", package = "cowplot")
+logo_file <- system.file("help", "figures", "logo.png",
+                         package = "patchwork")
+# 读取 PNG 图片
+img <- png::readPNG(logo_file, native = TRUE)
 # 添加水印图片
-cowplot::ggdraw() + 
-  cowplot::draw_plot(p) +
-  cowplot::draw_image(
-    image = logo_file, 
-    x = 1, y = 1, 
-    hjust = 1, vjust = 1,
-    halign = 1, valign = 1,
-    width = 0.15
-  )
+p + inset_element(
+  p = img,
+  left = 0.8,
+  bottom = 0.8,
+  right = 1,
+  top = 1,
+  align_to = "full"
+)
 ```
 
 
