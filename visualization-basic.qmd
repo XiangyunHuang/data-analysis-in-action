@@ -357,7 +357,7 @@ cloud(-depth ~ long * lat,
 
 
 
-### 动态交互绘图系统 {#sec-interactive-graphics}
+### 交互作图系统 {#sec-interactive-graphics}
 
 <!-- 
 介绍 echarts4r 和 rgl 绘图的一般模式，而不是事无巨细像 ggplot2 那样详细去介绍
@@ -425,30 +425,40 @@ snapshot3d(
 #| eval: !expr knitr::is_html_output()
 
 library(echarts4r)
+# color 列还原为 mag
 quakes <- within(quakes, {
-  depth2 <- -depth
-  mag2 <- mag - 4
-  lat2 <- -lat
+  color <- mag
 })
-
+# 绘制图形
 quakes |>
-  e_charts(x = lat2) |>
+  e_charts(x = lat) |>
   e_scatter_3d(
-    y = long, z = depth2, 
-    size = mag, color = mag,
+    y = long, z = depth,
+    size = mag,
+    color = mag,
     bind = stations,
     coordinate_system = "cartesian3D",
-    name = "斐济"
-  ) |> 
-  e_x_axis_3d(min = 10, max = 40, name = "纬度") |> 
-  e_y_axis_3d(min = 165, max = 190, name = "经度") |> 
-  e_z_axis_3d(name = "深度") |> 
+    name = "Fiji"
+  ) |>
+  e_x_axis_3d(min = -40, max = -10, name = "纬度") |>
+  e_y_axis_3d(min = 165, max = 190, name = "经度") |>
+  e_z_axis_3d(name = "深度") |>
   e_visual_map(
     serie = mag,
+    type = "continuous",
     inRange = list(color = c('#4B0055', '#009B95', '#FDE333')),
-    dimension = 4
-  ) |> 
-  e_tooltip()
+    dimension = 4, # third dimension x = 0, y = 1, z = 2, color = 3, size = 4
+    top = 20
+  ) |>
+  e_visual_map(
+    serie = mag,
+    type = "continuous",
+    inRange = list(symbolSize = c(5, 15)),
+    dimension = 3,
+    bottom = 10
+  ) |>
+  e_tooltip() |>
+  e_title(text = "斐济及其周边地震活动")
 ```
 
 目标区域在南半球，纬度南纬 0 度至 40 度，经度东经 165 度至 190 度（西经 170 度）。参数 dimension 的取值和实际含义的关系：0 对应 x 轴，1 对应 y 轴，2 对应 z 轴， 3 对应 size 变量（点的大小），4 对应 color 变量（点的颜色）。下 @fig-quakes-echarts4r-screenshots 是两个不同视角下的截图。
