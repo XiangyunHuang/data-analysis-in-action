@@ -1144,10 +1144,6 @@ https://bookdown.org/ssjackson300/ASM_Lecture_Notes/twocontingencytables.html#ch
 
 library(vcdExtra)
 datasets(package = c("vcd", "vcdExtra"))
-
-[vcd](https://cran.r-project.org/package=vcd) [@Meyer2006;@Zeileis2007]
-Visualizing Categorical Data [@Friendly2016]
-[vcdExtra](https://github.com/friendly/vcdExtra)
 -->
 
 本节数据来自著作《An Introduction to Categorical Data Analysis》[@Agresti2007] 的第2章习题 2.33，探索 1976-1977 年美国佛罗里达州的凶杀案件中被告肤色和死刑判决的关系。
@@ -1267,6 +1263,146 @@ summary(fit_dvp2)
 sum(residuals(fit_dvp2, type = "pearson")^2)
 ```
 
+
+
+
+## 分析泰坦尼克号乘客生存率 {#sec-titanic}
+
+<!-- 
+4x2x2x2 高维复杂列联表分析
+-->
+
+泰坦尼克号乘客生存死亡统计数据
+
+```{r}
+#| label: tbl-titanic-data
+#| tbl-cap: "泰坦尼克号乘客生存死亡统计数据"
+#| echo: false
+
+# 长格式转宽格式
+titanic_data <- reshape(
+  data = as.data.frame(Titanic), direction = "wide",
+  idvar = c("Class", "Sex", "Age"),
+  timevar = "Survived", v.names = "Freq", sep = "_"
+)
+
+# 制作表格
+gt::gt(titanic_data) |> 
+  gt::cols_label(
+    Freq_Yes = "存活",
+    Freq_No = "死亡",
+    Class = "船舱",
+    Sex = "性别",
+    Age = "年龄"
+  )
+```
+
+
+泰坦尼克号处女航乘客数量按船舱、性别、年龄和存活情况分层，用 [**ggalluvial**](https://github.com/corybrunson/ggalluvial/) 包[@Brunson2020]绘制桑基图展示多维分类数据。
+
+```{r}
+#| label: fig-titanic-alluvial
+#| fig-cap: "桑基图展示多维分类数据"
+#| fig-showtext: true
+#| fig-width: 7
+#| fig-height: 5
+
+library(ggalluvial)
+ggplot(
+  data = as.data.frame(Titanic),
+  aes(axis1 = Class, axis2 = Sex, axis3 = Age, y = Freq)
+) +
+  scale_x_discrete(limits = c("Class", "Sex", "Age")) +
+  geom_alluvium(aes(fill = Survived)) +
+  geom_stratum() +
+  geom_text(stat = "stratum", aes(label = after_stat(stratum))) +
+  theme_classic() +
+  labs(
+    x = "分层维度", y = "人数", fill = "存活",
+    title = "泰坦尼克号处女航乘客分层情况"
+  )
+```
+
+
+::: {.callout-tip}
+
+```{r}
+#| label: fig-titanic-mosaicplot
+#| fig-cap: "马赛克图展示多维分类数据"
+#| fig-showtext: true
+#| fig-width: 7
+#| fig-height: 5
+#| echo: false
+#| collapse: true
+
+op <- par(mar = c(2.5, 2.5, 1.5, 0.5))
+mosaicplot(~ Class + Sex + Age + Survived,
+  data = Titanic, # shade = TRUE, 
+  color = TRUE, border = "white",
+  xlab = "船舱", ylab = "性别", main = "泰坦尼克号")
+par(op)
+```
+
+[**vcd**](https://cran.r-project.org/package=vcd)包针对分类数据做了很多专门的可视化工作，内置了很多数据集和绘图函数，在 Base R 绘图基础上，整合了许多统计分析功能，提供了一个统一的可视化框架[@Meyer2006;@Zeileis2007]，更多细节见著作《Discrete Data Analysis with R: Visualization and Modeling Techniques for Categorical and Count Data》及其附带的 R 包[**vcdExtra**](https://github.com/friendly/vcdExtra)[@Friendly2016]。
+
+```{r}
+#| label: fig-titanic-mosaic
+#| fig-cap: "马赛克图展示多维分类数据"
+#| fig-showtext: true
+#| fig-width: 7
+#| fig-height: 6
+
+library(grid)
+library(vcd)
+mosaic(~ Class + Sex + Age + Survived,
+  data = Titanic, shade = TRUE, legend = TRUE
+)
+```
+:::
+
+
+除了从条件独立性检验的角度，下面从逻辑回归模型的角度分析这个高维列联表数据，由此，我们可以知道假设检验和广义线性模型之间的联系，针对复杂高维列联表数据进行关联分析和解释。
+
+响应变量是乘客的状态，存活还是死亡，titanic_data 是按船舱 Class、性别 Sex 和年龄 Age 分类汇总统计的数据，因此，下面的逻辑回归模型是对乘客群体的建模。
+
+```{r}
+# 建立模型
+fit_titanic <- glm(cbind(Freq_Yes, Freq_No) ~ Class + Sex + Age,
+  data = titanic_data, family = binomial(link = "logit")
+)
+```
+
+接着，我们查看模型输出的情况
+
+```{r}
+# 模型输出
+summary(fit_titanic)
+```
+
+[**titanic**](https://github.com/paulhendricks/titanic) 包整理了来自 kaggle 的 [Titanic](https://www.kaggle.com/c/titanic/data) 数据集，详细记录了 891 位乘客的信息，它比 Base R 内置的 Titanic 数据集更加原始，细节更多，信息更加丰富。原数据集拆分为训练集 `titanic_train` 和测试集 `titanic_test`。首先来预览一下训练数据集 titanic_train 的情况：
+
+```{r}
+data(titanic_train, package = "titanic")
+str(titanic_train)
+```
+
+因为有每个乘客的原始信息，我们可以在个体水平上建模，采用更加复杂的模型分析泰坦尼克号乘客存活率及其影响因素。
+
+
+
+
+
+
+
+
+```{r}
+#| eval: false
+#| echo: false
+
+# 另一个数据源
+data("TitanicSurvival", package = "carData")
+```
+
 ## 分析《红楼梦》的情景描写 {#sec-the-story-of-the-stone}
 
 <!-- 
@@ -1287,13 +1423,13 @@ sum(residuals(fit_dvp2, type = "pearson")^2)
 
 $$
 P(X = x) = \binom{n}{x}p^x(1-p)^{n-x}
-$$
+$$ {#eq-binom-probability}
 
 在给定 $p = 0.1$ 的情况下，求二项分布的上 $\alpha/2 = 0.025$ 分位点，尾项之和不应超过 $\alpha/2$，最大的 $x$ 值可有如下方程给出：
 
 $$
 \sum_{r = x}^{n}\binom{n}{x}p^x(1-p)^{n-x} = \frac{\alpha}{2}
-$$
+$$ {#eq-binom-quantile}
 
 在 R 语言中，函数 `qbinom()` 可以计算上述二项分布的上分位点 $x = 3$，即
 
@@ -1305,7 +1441,7 @@ qbinom(0.025, size = 10, prob = 0.1, lower.tail = F)
 
 $$
 P(X > 3) = \sum_{x > 3}^{10}\binom{10}{x}0.1^x*(1-0.1)^{10-x}
-$$
+$$ {#eq-binom-prob}
 
 在 R 语言中，函数 `pbinom()` 可以计算上述二项分布的上分位点对应的概率为 $0.0127952$。
 

@@ -79,20 +79,21 @@ sysfonts::font_add(
 -->
 
 
-R 是一个自由的统计计算和统计绘图环境，最初由新西兰奥克兰大学统计系的 Ross Ihaka 和 Robert Gentleman 共同开发。1997 年之后，成立了一个 R Core Team（R 语言核心团队），他们在版本控制系统 Apache Subversion（<https://subversion.apache.org/>）上一起协作开发至今。25 年，四分之一个世纪过去了，下面分析他们留下的一份开发日志，了解一段不轻易为人所知的故事。
+R 是一个自由的统计计算和统计绘图环境，最初由新西兰奥克兰大学统计系的 Ross Ihaka 和 Robert Gentleman 共同开发。1997 年之后，成立了一个 R Core Team（R 语言核心团队），他们在版本控制系统 [Apache Subversion](https://subversion.apache.org/)上一起协作开发至今。25 年，四分之一个世纪过去了，下面分析他们留下的一份开发日志，了解一段不轻易为人所知的故事。
 
-首先，下载 1997 年至今，约 25 年的原始代码提交日志数据。下载数据的代码如下，它是一行 Shell 命令，可在 MacOS 或 Ubuntu 等 Linux 系统的终端里运行，借助 Apache Subversion 软件，将提交日志导出为 XML 格式（<https://www.w3.org/standards/xml/core>）的数据文件，保存在目录 `data-raw/` 下，文件名为 `svn_trunk_log_20220727.xml`，本书网页版随附。
+首先，下载 1997 年至今，约 25 年的原始代码提交日志数据。下载数据的代码如下，它是一行 Shell 命令，可在 MacOS 或 Ubuntu 等 Linux 系统的终端里运行，借助 Apache Subversion 软件，将提交日志导出为 [XML 格式](https://www.w3.org/standards/xml/core) 的数据文件，保存在目录 `data-raw/` 下，文件名为 `svn_trunk_log_20220727.xml`，本书网页版随附。
 
 ```{bash}
 #| eval: false
 
-svn log --xml --verbose -r 6:82626 https://svn.r-project.org/R/trunk > data-raw/svn-trunk-log-2022.xml
+svn log --xml --verbose -r 6:82626 \
+  https://svn.r-project.org/R/trunk > data-raw/svn_trunk_log_2022.xml
 ```
 
 去掉没什么信息的前5次代码提交记录：初始化仓库，上传原始的 R 软件源码等。
 从 Ross Ihaka 在 1997-09-18 提交第 1 次代码改动开始，下载所有的提交日志。截至写作时间，即 2022年7月27日，代码最新版本号为 82626，意味着代码仓库已存在 8 万多次提交。
 
-下载数据后，借助 **xml2**（<https://github.com/r-lib/xml2/>）包预处理这份 XML 格式数据，提取最重要的信息，谁在什么时间做了什么改动。经过一番操作后，将清洗干净的数据，
+下载数据后，借助 [**xml2**](https://github.com/r-lib/xml2/) 包预处理这份 XML 格式数据，提取最重要的信息，谁在什么时间做了什么改动。经过一番操作后，将清洗干净的数据，
 保存到目录 `data/` 下，以 R 软件特有的文件格式保存为 `svn-trunk-log-2022.rds`，同样与书随附。这样下来，原 XML 格式保存的 35 M 文件减少为 1 M 多，极大地减少了存储空间，也极大地方便了后续的数据探索和可视化。下面是这份日志数据开头的两行：
 
 ```{r}
@@ -171,6 +172,8 @@ ggplot(data = trunk_year, aes(x = year, y = revision)) +
 #| label: fig-trunk-hour-line
 #| fig-cap: "提交代码的时段分布"
 #| fig-showtext: true
+#| fig-width: 7
+#| fig-height: 5
 
 aggregate(data = svn_trunk_log, revision ~ year + hour, length) |> 
   ggplot(aes(x = hour, y = revision, group = year)) +
@@ -1499,7 +1502,7 @@ aggregate(data = svn_trunk_log, revision ~ author, FUN = length) |>
 ```{r}
 #| label: fig-trunk-author
 #| fig-cap: "开发者提交量排行榜"
-#| fig-width: 6
+#| fig-width: 5
 #| fig-height: 4
 #| fig-showtext: true
 
@@ -1687,6 +1690,8 @@ https://en.wikipedia.org/wiki/Vilfredo_Pareto
 #| label: fig-pareto-stack
 #| fig-cap: "代码提交量的比例趋势"
 #| fig-showtext: true
+#| fig-width: 7
+#| fig-height: 5
 
 aggregate(data = svn_trunk_log, revision ~ year + author, FUN = length) |> 
   ggplot(aes(x = year, y = revision, fill = author)) +
@@ -1702,6 +1707,8 @@ aggregate(data = svn_trunk_log, revision ~ year + author, FUN = length) |>
 #| label: fig-pareto-fill
 #| fig-cap: "代码提交量的比例趋势"
 #| fig-showtext: true
+#| fig-width: 7
+#| fig-height: 5
 
 aggregate(data = svn_trunk_log, revision ~ year + author, FUN = length) |> 
   ggplot(aes(x = year, y = revision, fill = author)) +
@@ -1870,8 +1877,8 @@ knitr::kable(head(china_raise_illiteracy[order(china_raise_illiteracy$`人口数
 #| fig-height: 4
 #| fig-showtext: true
 
-ggplot(data = china_raise_illiteracy, aes(x = `总抚养比`, y = `文盲人口占15岁及以上人口的比重`)) +
-  geom_point() +
+ggplot(data = china_raise_illiteracy) +
+  geom_point(aes(x = `总抚养比`, y = `文盲人口占15岁及以上人口的比重`)) +
   theme_classic() +
   labs(x = "抚养比（%）", y = "文盲率（%）")
 ```
@@ -2225,7 +2232,7 @@ oneway.test(data = PlantGrowth, weight ~ group)
 #| label: fig-signif
 #| fig-cap: "展示假设检验的结果"
 #| fig-width: 5
-#| fig-height: 4.5
+#| fig-height: 4
 #| fig-showtext: true
 
 library(ggsignif)
@@ -2235,7 +2242,8 @@ ggplot(data = PlantGrowth, aes(x = group, y = weight)) +
   geom_signif(comparisons = list(c("ctrl", "trt1"), c("trt1", "trt2")), 
               map_signif_level = function(p) sprintf("p = %.2g", p), 
               textsize = 6, test = "t.test") +
-  theme_classic()
+  theme_classic() +
+  coord_cartesian(clip = "off")
 ```
 
 
@@ -2299,7 +2307,7 @@ ggplot(data = trunk_year, aes(x = year, y = revision)) +
 <!-- 
 描述模型拟合数据的不确定性，
 Cook 距离、高杠杆值、模型诊断、影响测量
-[ggPMX](https://github.com/ggPMXdevelopment/ggPMX) 'ggplot2' Based Tool to Facilitate Diagnostic Plots for NLME Models
+[ggPMX](https://github.com/ggPMXdevelopment/ggPMX) ggplot2 Based Tool to Facilitate Diagnostic Plots for NLME Models
 -->
 
 ```{r}
@@ -2489,7 +2497,7 @@ p2 <- mcmc_trace(fit_state_x77$draws(c("alpha", "beta[1]", "beta[2]")),
     strip.position = "top",
     ncol = 1
   )
-) + theme_classic()
+) + theme_classic() + theme(legend.title = element_blank())
 # 绘图
 p1 | p2
 ```

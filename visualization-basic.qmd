@@ -357,7 +357,7 @@ cloud(-depth ~ long * lat,
 
 
 
-### 动态交互绘图系统 {#sec-interactive-graphics}
+### 交互作图系统 {#sec-interactive-graphics}
 
 <!-- 
 介绍 echarts4r 和 rgl 绘图的一般模式，而不是事无巨细像 ggplot2 那样详细去介绍
@@ -425,30 +425,40 @@ snapshot3d(
 #| eval: !expr knitr::is_html_output()
 
 library(echarts4r)
+# color 列还原为 mag
 quakes <- within(quakes, {
-  depth2 <- -depth
-  mag2 <- mag - 4
-  lat2 <- -lat
+  color <- mag
 })
-
+# 绘制图形
 quakes |>
-  e_charts(x = lat2) |>
+  e_charts(x = lat) |>
   e_scatter_3d(
-    y = long, z = depth2, 
-    size = mag, color = mag,
+    y = long, z = depth,
+    size = mag,
+    color = mag,
     bind = stations,
     coordinate_system = "cartesian3D",
-    name = "斐济"
-  ) |> 
-  e_x_axis_3d(min = 10, max = 40, name = "纬度") |> 
-  e_y_axis_3d(min = 165, max = 190, name = "经度") |> 
-  e_z_axis_3d(name = "深度") |> 
+    name = "Fiji"
+  ) |>
+  e_x_axis_3d(min = -40, max = -10, name = "纬度") |>
+  e_y_axis_3d(min = 165, max = 190, name = "经度") |>
+  e_z_axis_3d(name = "深度") |>
   e_visual_map(
     serie = mag,
+    type = "continuous",
     inRange = list(color = c('#4B0055', '#009B95', '#FDE333')),
-    dimension = 4
-  ) |> 
-  e_tooltip()
+    dimension = 4, # third dimension x = 0, y = 1, z = 2, color = 3, size = 4
+    top = 20
+  ) |>
+  e_visual_map(
+    serie = mag,
+    type = "continuous",
+    inRange = list(symbolSize = c(5, 15)),
+    dimension = 3,
+    bottom = 10
+  ) |>
+  e_tooltip() |>
+  e_title(text = "斐济及其周边地震活动")
 ```
 
 目标区域在南半球，纬度南纬 0 度至 40 度，经度东经 165 度至 190 度（西经 170 度）。参数 dimension 的取值和实际含义的关系：0 对应 x 轴，1 对应 y 轴，2 对应 z 轴， 3 对应 size 变量（点的大小），4 对应 color 变量（点的颜色）。下 @fig-quakes-echarts4r-screenshots 是两个不同视角下的截图。
@@ -1075,68 +1085,66 @@ ggplot(data = gapminder, aes(x = gdpPercap, y = lifeExp)) +
 
 ### 坐标系统 {#sec-coord}
 
-diamonds 柱状图、条形图、饼图，坐标变换
-
-笛卡尔坐标系
+继续以数据集 gapminder_2007 展示坐标变换在柱状图、条形图、饼图中的作用，首先来看笛卡尔坐标系下的柱状图。
 
 ```{r}
-#| label: fig-diamonds-cut
+#| label: fig-gapminder-2007-income
 #| fig-cap: "笛卡尔坐标系下的柱形图"
 #| fig-width: 4
 #| fig-height: 3
 #| fig-showtext: true
 
-ggplot(diamonds, aes(x = cut)) + 
+ggplot(gapminder_2007, aes(x = income_level)) + 
   geom_bar(stat = "count") +
-  theme_minimal() +
-  labs(x = "切工", y = "数量")
+  theme_classic() +
+  labs(x = "收入水平", y = "国家数量")
 ```
 
 :::{.callout-tip}
 
-@fig-diamonds-cut 等价于 @fig-diamonds-cut-stat
+@fig-gapminder-2007-income 等价于 @fig-gapminder-2007-income-stat
 
 ```{r}
-#| label: fig-diamonds-cut-stat
+#| label: fig-gapminder-2007-income-stat
 #| fig-cap: "笛卡尔坐标系下的柱形图"
 #| fig-width: 4
 #| fig-height: 3
 #| fig-showtext: true
 
-ggplot(diamonds, aes(x = cut, y = after_stat(count))) + 
+ggplot(gapminder_2007, aes(x = income_level, y = after_stat(count))) + 
   geom_bar(stat = "count") +
-  theme_minimal() +
-  labs(x = "切工", y = "数量")
+  theme_classic() +
+  labs(x = "收入水平", y = "国家数量")
 ```
 :::
 
 翻转
 
 ```{r}
-#| label: fig-diamonds-cut-flip
+#| label: fig-gapminder-2007-income-flip
 #| fig-cap: "笛卡尔坐标系下的条形图"
 #| fig-width: 4
 #| fig-height: 3
 #| fig-showtext: true
 
-ggplot(diamonds, aes(x = cut)) + 
+ggplot(gapminder_2007, aes(x = income_level)) + 
   geom_bar(stat = "count") +
   coord_flip() +
-  theme_minimal() +
-  labs(x = "切工", y = "数量")
+  theme_classic() +
+  labs(x = "收入水平", y = "国家数量")
 ```
 
 
 极坐标变换
 
 ```{r}
-#| label: fig-diamonds-cut-polar
+#| label: fig-gapminder-2007-income-polar
 #| fig-cap: "极坐标系下的条形图"
 #| fig-width: 4
 #| fig-height: 3
 #| fig-showtext: true
 
-ggplot(diamonds, aes(x = cut)) + 
+ggplot(gapminder_2007, aes(x = income_level)) + 
   geom_bar(stat = "count") +
   coord_polar() +
   theme_minimal() +
@@ -1146,13 +1154,13 @@ ggplot(diamonds, aes(x = cut)) +
 极坐标变换
 
 ```{r}
-#| label: fig-diamonds-cut-polar-theta
+#| label: fig-gapminder-2007-income-polar-theta
 #| fig-cap: "极坐标系下的柱形图"
 #| fig-width: 4
 #| fig-height: 3
 #| fig-showtext: true
 
-ggplot(diamonds, aes(x = cut)) + 
+ggplot(gapminder_2007, aes(x = income_level)) + 
   geom_bar(stat = "count") +
   coord_polar(theta = "y") +
   theme_minimal() +
@@ -1162,84 +1170,84 @@ ggplot(diamonds, aes(x = cut)) +
 笛卡尔坐标系下的分组堆积柱形图
 
 ```{r}
-#| label: fig-diamonds-clarity
+#| label: fig-gapminder-2007-income-region
 #| fig-cap: "笛卡尔坐标系下的分组堆积柱形图"
-#| fig-width: 5
-#| fig-height: 3
+#| fig-width: 6
+#| fig-height: 4
 #| fig-showtext: true
 
-ggplot(diamonds, aes(x = cut, fill = clarity)) + 
+ggplot(gapminder_2007, aes(x = income_level, fill = region)) + 
   geom_bar(stat = "count") +
-  theme_minimal() +
-  labs(x = "切工", y = "数量", fill = "纯净度")
+  theme_classic() +
+  labs(x = "收入水平", y = "国家数量", fill = "区域")
 ```
 
 笛卡尔坐标系下的分组百分比堆积条形图
 
 ```{r}
-#| label: fig-diamonds-clarity-fill
+#| label: fig-gapminder-2007-income-region-fill
 #| fig-cap: "笛卡尔坐标系下的分组百分比堆积条形图"
-#| fig-width: 5
-#| fig-height: 3
+#| fig-width: 6
+#| fig-height: 4
 #| fig-showtext: true
 
-ggplot(diamonds, aes(x = cut, fill = clarity)) + 
+ggplot(gapminder_2007, aes(x = income_level, fill = region)) + 
   geom_bar(stat = "count", position = "fill") +
   scale_y_continuous(labels = scales::percent) +
-  theme_minimal() +
-  labs(x = "切工", y = "数量", fill = "纯净度")
+  theme_classic() +
+  labs(x = "收入水平", y = "国家数量的占比", fill = "区域")
 ```
 
 
 极坐标系下的分组柱形图
 
 ```{r}
-#| label: fig-diamonds-clarity-polar
+#| label: fig-gapminder-2007-clarity-polar
 #| fig-cap: "极坐标系下的分组柱形图"
 #| fig-width: 5
 #| fig-height: 3
 #| fig-showtext: true
 
-ggplot(diamonds, aes(x = cut, fill = clarity)) +
+ggplot(gapminder_2007, aes(x = income_level, fill = region)) +
   geom_bar(stat = "count") +
   coord_polar() +
   theme_minimal() +
-  labs(x = "切工", y = "数量", fill = "纯净度")
+  labs(x = "收入水平", y = "国家数量", fill = "区域")
 ```
 
 
 极坐标系下的分组柱形图
 
 ```{r}
-#| label: fig-diamonds-clarity-polar-fill
+#| label: fig-gapminder-2007-clarity-polar-fill
 #| fig-cap: "极坐标系下的分组百分比堆积柱形图"
 #| fig-width: 5
 #| fig-height: 3
 #| fig-showtext: true
 
-ggplot(diamonds, aes(x = cut, fill = clarity)) +
+ggplot(gapminder_2007, aes(x = income_level, fill = region)) +
   geom_bar(stat = "count", position = "fill") +
   scale_y_continuous(labels = scales::percent) +
   coord_polar() +
   theme_minimal() +
-  labs(x = "切工", y = "数量", fill = "纯净度")
+  labs(x = "收入水平", y = "国家数量的占比", fill = "区域")
 ```
 
 
 极坐标系下的分组柱形图
 
 ```{r}
-#| label: fig-diamonds-clarity-polar-theta
+#| label: fig-gapminder-2007-clarity-polar-theta
 #| fig-cap: "极坐标系下的分组柱形图"
 #| fig-width: 5
 #| fig-height: 3
 #| fig-showtext: true
 
-ggplot(diamonds, aes(x = cut, fill = clarity)) + 
+ggplot(gapminder_2007, aes(x = income_level, fill = region)) + 
   geom_bar(stat = "count") +
   coord_polar(theta = "y") +
   theme_minimal() +
-  labs(x = NULL, y = NULL, fill = "纯净度")
+  labs(x = NULL, y = NULL, fill = "区域")
 ```
 
 
@@ -1281,12 +1289,19 @@ ggplot() +
   theme_classic() +
   labs(
     x = expression(x), y = expression(f(x)),
-    title = expression(f(x) == frac(Gamma(a + b), Gamma(a) * Gamma(b)) * x^{a - 1} * (1 - x)^{b - 1})
+    title = expression(f(x) == frac(
+      Gamma(a + b),
+      Gamma(a) * Gamma(b)
+    ) * x^{
+      a - 1
+    } * (1 - x)^{
+      b - 1
+    })
   )
 ```
 
 <!-- 
-警告：启用 showtext 包会导致数学公式中的括号 () 倾斜，公式和中文混合的情况还不好处理。不能使用 cairo_pdf 设备
+警告：启用 showtext 包会导致数学公式中的括号 () 倾斜，公式和中文混合的情况还不好处理，还不能使用 cairo_pdf 设备保存图形。
 -->
 
 
@@ -1384,9 +1399,9 @@ to_png <- function(fig_path) {
 #| dev: 'tikz'
 #| fig-cap: "TikZ 渲染的贝塔函数公式"
 #| fig-process: !expr to_png 
-#| cache: true 
-#| fig-width: 4
-#| fig-height: 4
+#| cache: true
+#| fig-width: 5
+#| fig-height: 3.75
 
 library(ggplot2)
 ggplot() +
@@ -1414,7 +1429,7 @@ ggplot() +
 
 library(tikzDevice)
 tf <- file.path(getwd(), "tikz-beta.tex")
-tikz(tf, width = 6, height = 5.5, pointsize = 30, standAlone = TRUE)
+tikz(tf, width = 3, height = 2.5, pointsize = 30, standAlone = TRUE)
 ## 绘图代码 ##
 dev.off()
 # 编译成 PDF 图形
@@ -1847,16 +1862,16 @@ ggplot(iris, aes(x = Sepal.Length, y = Sepal.Width, color = Species)) +
 #| fig-height: 5
 
 library(ggforce)
-ggplot(iris, aes(x = Petal.Length, y = Petal.Width, colour = Species)) +
-  geom_point() +
-  facet_zoom(x = Species == "versicolor")
+ggplot(gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point(aes(colour = income_level)) +
+  facet_zoom(x = income_level == "低收入") +
+  labs(x = "人均 GDP", y = "预期寿命", color = "收入水平")
 ```
 
 
 ### 添加水印 {#sec-watermark}
 
-[**cowplot**](https://github.com/wilkelab/cowplot) 包可以给图片上添加某公司的徽标或水印文字，以示版权归属。
-
+**patchwork** 包的函数 `inset_element()` 可以给图片上添加某公司的徽标或水印文字，以示版权归属。
 
 ```{r}
 #| label: fig-watermark
@@ -1866,21 +1881,25 @@ ggplot(iris, aes(x = Petal.Length, y = Petal.Width, colour = Species)) +
 #| fig-height: 4
 
 # 绘图展示数据
-p <- ggplot(iris, aes(x = Sepal.Length, y = Sepal.Width)) +
-  geom_point(aes(shape = Species, color = Species)) +
-  theme_classic()
+p <- ggplot(gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point(aes(color = income_level)) +
+  scale_x_log10(labels = scales::label_log()) +
+  theme_classic() +
+  labs(x = "人均 GDP", y = "预期寿命", color = "收入水平")
 # 提供水印图片
-logo_file <- system.file("extdata", "logo.png", package = "cowplot")
+logo_file <- system.file("help", "figures", "logo.png",
+                         package = "patchwork")
+# 读取 PNG 图片
+img <- png::readPNG(logo_file, native = TRUE)
 # 添加水印图片
-cowplot::ggdraw() + 
-  cowplot::draw_plot(p) +
-  cowplot::draw_image(
-    image = logo_file, 
-    x = 1, y = 1, 
-    hjust = 1, vjust = 1,
-    halign = 1, valign = 1,
-    width = 0.15
-  )
+p + inset_element(
+  p = img,
+  left = 0.8,
+  bottom = 0.8,
+  right = 1,
+  top = 1,
+  align_to = "full"
+)
 ```
 
 
@@ -1891,7 +1910,7 @@ cowplot::ggdraw() +
 余光创 [ggimage：ggplot2 中愉快地使用图片](https://cosx.org/2017/03/ggimage) 
 -->
 
-描述态度非常形象 [ggChernoff](https://github.com/Selbosh/ggChernoff) 切尔诺夫脸表达多元数据 [@Chernoff1973]
+[**ggChernoff**](https://github.com/Selbosh/ggChernoff) 包受 Chernoff 脸表达多元数据的启发 [@Chernoff1973]，借助 Emoji 表情表达数据指标，比如从低收入到高收入的连续型数据，从非常喜欢到非常不喜欢的有序分类型数据，用表情表达此类数据，显得非常形象。 
 
 ```{r}
 #| label: fig-chernoff
