@@ -1301,6 +1301,7 @@ gt::gt(titanic_data) |>
   )
 ```
 
+
 泰坦尼克号处女航乘客数量按船舱、性别、年龄和存活情况分层，用 [**ggalluvial**](https://github.com/corybrunson/ggalluvial/) 包[@Brunson2020]绘制桑基图展示多维分类数据。
 
 ```{r}
@@ -1327,18 +1328,80 @@ ggplot(
 ```
 
 
-建立逻辑回归模型
+::: {.callout-tip}
+
+```{r}
+#| label: fig-titanic-mosaicplot
+#| fig-cap: "马赛克图展示多维分类数据"
+#| fig-showtext: true
+#| fig-width: 7
+#| fig-height: 5
+
+mosaicplot(~ Class + Sex + Age + Survived,
+  data = Titanic, # shade = TRUE, 
+  color = TRUE, border = "white",
+  xlab = "船舱", ylab = "性别", main = "泰坦尼克号")
+```
+
+**vcd** 包针对分类数据做了很多专门的可视化工作，内置了很多数据集和绘图函数，在 Base R 绘图基础上，整合了许多统计分析功能，提供了一个统一的可视化框架[@Meyer2006;@Zeileis2007]，更多细节见著作《Discrete Data Analysis with R》[@Friendly2016]。
+
+```{r}
+#| label: fig-titanic-mosaic
+#| fig-cap: "马赛克图展示多维分类数据"
+#| fig-showtext: true
+#| fig-width: 7
+#| fig-height: 5
+
+library(vcd)
+mosaic(~ Class + Sex + Age + Survived,
+  data = Titanic, shade = TRUE, legend = TRUE
+)
+```
+
+:::
+
+
+除了从条件独立性检验的角度，下面从逻辑回归模型的角度分析这个高维列联表数据，由此，我们可以知道假设检验和广义线性模型之间的联系，针对复杂高维列联表数据进行关联分析和解释。
+
+响应变量是乘客的状态，存活还是死亡，titanic_data 是按船舱 Class、性别 Sex 和年龄 Age 分类汇总统计的数据，因此，下面的逻辑回归模型是对乘客群体的建模。
 
 ```{r}
 # 建立模型
 fit_titanic <- glm(cbind(Freq_Yes, Freq_No) ~ Class + Sex + Age,
   data = titanic_data, family = binomial(link = "logit")
 )
+```
+
+接着，我们查看模型输出的情况
+
+```{r}
 # 模型输出
 summary(fit_titanic)
 ```
 
+[**titanic**](https://github.com/paulhendricks/titanic) 包整理了来自 kaggle 的 [Titanic](https://www.kaggle.com/c/titanic/data) 数据集，详细记录了 891 位乘客的信息，它比 Base R 内置的 Titanic 数据集更加原始，细节更多，信息更加丰富。原数据集拆分为训练集 `titanic_train` 和测试集 `titanic_test`。首先来预览一下训练数据集 titanic_train 的情况：
 
+```{r}
+data(titanic_train, package = "titanic")
+str(titanic_train)
+```
+
+因为有每个乘客的原始信息，我们可以在个体水平上建模，采用更加复杂的模型分析泰坦尼克号乘客存活率及其影响因素。
+
+
+
+
+
+
+
+
+```{r}
+#| eval: false
+#| echo: false
+
+# 另一个数据源
+data("TitanicSurvival", package = "carData")
+```
 
 ## 分析《红楼梦》的情景描写 {#sec-the-story-of-the-stone}
 
