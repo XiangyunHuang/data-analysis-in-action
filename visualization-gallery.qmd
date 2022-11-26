@@ -2561,14 +2561,57 @@ ggplot() +
 
 1975 年美国各州人口密度，单位每平方英里人口数，人口密度映射为圆的面积
 
+美国的区域划分，东北部、南方、西部、中北部
 
 ```{r}
+#| label: fig-region-map
+#| fig-cap: "美国各州的区域划分"
+#| fig-width: 7
+#| fig-height: 4
+#| fig-showtext: true
 #| echo: true
 
-us_states_df <- within(us_states_df, {
-  geometry_center <- st_centroid(geometry)
-})
+ggplot() +
+  geom_sf(
+    data = us_states_df, fill = NA, aes(color = state_region)
+  ) +
+  labs(
+    title = "1975 年美国各州人口密度",
+    caption = "数据源：美国人口调查局", color = "区域"
+  ) +
+  theme_void() +
+  theme(
+    plot.title = element_text(hjust = 0.5),
+    legend.title = element_blank()
+  )
 ```
+
+美国各州的区域划分
+
+```{r}
+#| label: fig-label-map
+#| fig-cap: "1975 年美国各州"
+#| fig-width: 7
+#| fig-height: 4
+#| fig-showtext: true
+#| echo: true
+
+ggplot() +
+  geom_sf(
+    data = us_states_df, fill = NA, aes(color = state_region)
+  ) +
+  geom_sf_label(data = us_states_df, aes(label = STUSPS)) +
+  labs(
+    title = "1975 年美国各州人口密度", size = "人口密度", 
+    caption = "数据源：美国人口调查局", color = "区域"
+  ) +
+  theme_void() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+
+
+比例符号图
 
 
 ```{r}
@@ -2579,11 +2622,16 @@ us_states_df <- within(us_states_df, {
 #| fig-showtext: true
 #| echo: true
 
+library(ggnewscale)
+us_states_df <- within(us_states_df, {
+  geometry_center <- st_centroid(geometry)
+})
 ggplot() +
   geom_sf(
-    data = us_states_df, fill = NA
+    data = us_states_df, fill = NA, aes(color = state_region)
   ) +
-  geom_sf_label(data = us_states_df, aes(label = STUSPS)) +
+  labs(color = "区域") +
+  new_scale_color() +
   geom_sf(
     data = us_states_df, 
     aes(geometry = geometry_center, color = den, size = den),
@@ -2593,10 +2641,37 @@ ggplot() +
     trans = "log10", option = "plasma", na.value = "white"
   ) +
   labs(
-    size = "人口密度", title = "1975 年美国各州人口密度",
+    title = "1975 年美国各州人口密度", size = "人口密度", 
     caption = "数据源：美国人口调查局"
   ) +
   theme_void() +
   theme(plot.title = element_text(hjust = 0.5))
+```
+
+地区分布图的替代
+
+```{r}
+#| label: fig-column-map
+#| fig-cap: "1975 年美国各州人口密度"
+#| fig-width: 6
+#| fig-height: 7
+#| fig-showtext: true
+#| echo: true
+
+# 分组排序
+us_states_df <- us_states_df[with(us_states_df, order(state_region, -den)), ]
+us_states_df$rowid <- 1:nrow(us_states_df)
+
+ggplot(
+  data = us_states_df,
+  aes(x = den, y = reorder(NAME, rowid, FUN = function(x) 1 / (1 + x)))
+) +
+  geom_col(aes(fill = state_region)) +
+  theme_classic() +
+  labs(
+    x = "人口密度", y = "州名", fill = "区域",
+    title = "1975 年美国各州人口密度",
+    caption = "数据源：美国人口调查局"
+  )
 ```
 
