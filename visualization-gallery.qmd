@@ -2591,10 +2591,7 @@ ggplot() +
   labs(title = "美国各州的区域划分", color = "区域划分", 
        caption = "数据源：美国人口调查局") +
   theme_void() +
-  theme(
-    plot.title = element_text(hjust = 0.5),
-    legend.title = element_blank()
-  )
+  theme(plot.title = element_text(hjust = 0.5))
 ```
 
 在 @fig-region-map 的基础上，添加各州州名的缩写，比如 New York 缩写为 NY，这非常类似于我国对各省的简称，比如湖南省简称为湘。
@@ -2611,7 +2608,7 @@ ggplot() +
   geom_sf(
     data = us_states_df, fill = NA, aes(color = state_region)
   ) +
-  geom_sf_label(data = us_states_df, aes(label = STUSPS)) +
+  geom_sf_label(data = us_states_df, aes(label = STUSPS), size = 3) +
   labs(
     title = "美国各州的区域划分", color = "区域划分", 
     caption = "数据源：美国人口调查局"
@@ -2666,6 +2663,7 @@ ggplot() +
 #| fig-height: 7
 #| fig-showtext: true
 #| echo: true
+#| warning: false
 
 # 按区域分组后按人口密度排序
 us_states_df <- us_states_df[with(us_states_df, order(state_region, -den)), ]
@@ -2734,7 +2732,7 @@ state_x77$Income_break <- cut(state_x77$Income,
 ```{r}
 #| label: fig-state-bins
 #| fig-cap: "1974 年美国各州人均收入分布"
-#| fig-width: 5
+#| fig-width: 6
 #| fig-height: 4
 #| fig-showtext: true
 #| echo: true
@@ -2746,7 +2744,8 @@ ggplot(data = state_x77, aes(state = state_name, fill = Income_break)) +
   scale_fill_brewer(palette = "RdPu") +
   theme_statebins() +
   labs(title = "1974年美国各州人均收入分布", fill = "收入水平") +
-  theme(plot.title = element_text(hjust = 0.5))
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.margin = margin(10, 10, 10, 10))
 ```
 
 
@@ -2801,5 +2800,123 @@ ggplot(volcano_df) +
   labs(x = "东西方向", y = "南北方向", fill = "海拔")
 ```
 
-[GDAL](https://github.com/OSGeo/gdal) 支持大量的栅格和矢量空间数据格式，内建的 EEDAI （Google Earth Engine Data API Image）驱动通过 Google Earth Engine REST API 获取谷歌地球图像。[**terra**](https://github.com/rspatial/terra) 包的函数 `rast()`和 [**stars**](https://github.com/r-spatial/stars) 包的函数 `read_stars()` 封装了 GDAL 的驱动接口，更多详情见 <https://rspatial.org/terra/>。
+三维透视图亦可展示地形图，如 @fig-volcano-lattice 所示，用 **lattice** 包绘制火山地形图。
+
+```{r}
+#| label: fig-volcano-lattice
+#| fig-cap: "lattice 包绘制地形图"
+#| fig-width: 6
+#| fig-height: 5.5
+#| fig-showtext: true
+
+wireframe(volcano,
+  drape = TRUE, colorkey = FALSE, shade = TRUE,
+  xlab = list("东西方向", rot = 20),
+  ylab = list("南北方向", rot = -50),
+  zlab = list("高度", rot = 90),
+  # 减少三维图形的边空
+  lattice.options = list(
+    layout.widths = list(
+      left.padding = list(x = -.6, units = "inches"),
+      right.padding = list(x = -1.0, units = "inches")
+    ),
+    layout.heights = list(
+      bottom.padding = list(x = -.8, units = "inches"),
+      top.padding = list(x = -1.0, units = "inches")
+    )
+  ),
+  # 设置坐标轴字体大小
+  par.settings = list(
+    axis.line = list(col = "transparent"),
+    fontsize = list(text = 15, points = 10)
+  ),
+  # z 轴标签旋转 90 度
+  scales = list(
+    arrows = FALSE, col = "black",
+    z = list(rot = 90)
+  ), 
+  screen = list(z = 30, x = -65, y = 0)
+)
+```
+
+**plotly** 包可以绘制交互的三维透视图来展示地形。
+
+```{css}
+#| label: plotly-modebar
+#| echo: false
+
+.modebar {
+  display: none !important;
+}
+```
+```{r}
+#| label: fig-volcano-plotly
+#| fig-cap: "plotly 绘制地形图"
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+#| echo: true
+
+plotly::plot_ly(z = ~volcano) |> 
+  plotly::add_surface()
+```
+
+**rgl** 包绘制的三维散点图亦可展示数据的空间分布。
+
+```{r}
+#| label: fig-volcano-rgl
+#| fig-cap: "rgl 绘制地形图"
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+#| echo: true
+
+# 设置 WebGL 渲染
+options(rgl.useNULL = TRUE)
+options(rgl.printRglwidget = TRUE)
+library(rgl)
+# 设置视角 
+rgl.viewpoint(
+  theta = 30, phi = 45, fov = 30,
+  zoom = 1, interactive = TRUE
+)
+# 将连续型数据向量转化为颜色向量
+colorize_numeric <- function(x) {
+  scales::col_numeric(palette = "viridis", domain = range(x))(x)
+}
+# 在数据集 quakes 上添加新的数据 color
+volcano_df <- within(volcano_df, {
+  color <- colorize_numeric(z)
+})
+# 绘制图形
+with(volcano_df, {
+  plot3d(x = x, y = y, z = z, col = color)
+})
+```
+
+[GDAL](https://github.com/OSGeo/gdal) 支持大量的栅格和矢量空间数据格式，内建的 [EEDAI （Google Earth Engine Data API Image）](https://gdal.org/drivers/raster/eedai.html)驱动通过 Google Earth Engine REST API 获取谷歌地球图像。[**terra**](https://github.com/rspatial/terra) 包的函数 `rast()`和 [**stars**](https://github.com/r-spatial/stars) 包的函数 `read_stars()` 封装了 GDAL 的驱动接口，更多详情见 <https://rspatial.org/terra/>。申请谷歌应用的访问令牌，保存授权文件到本地，设置环境变量 `GOOGLE_APPLICATION_CREDENTIALS` 指向授权文件所在路径。
+
+```{r}
+#| eval: false
+#| echo: true
+
+# 设置访问令牌
+Sys.setenv(GOOGLE_APPLICATION_CREDENTIALS="/home/rstudio/google/ardent-disk-214911-e2616707dd80.json")
+# 加载 R 包
+library(stars)
+# 设置采样参数
+rasterio <- list(
+  nXOff = 6, nYOff = 6, nXSize = 183, nYSize = 183,
+  nBufXSize = 100, nBufYSize = 100, bands = 3
+)
+# 获取数据
+google_earth <- read_stars(
+  file.path(
+    "EEDAI:projects", "earthengine-public", 
+    "assets", "COPERNICUS", "S2",
+    "20170430T190351_20170430T190351_T10SEG"
+  ),
+  proxy = TRUE, # 对于大型 TIFF 数据非常有效
+  # sub = 3, # 或 2,3,4
+  RasterIO = rasterio # 采样 183x183
+)
+# 绘图
+plot(google_earth)
+```
 
