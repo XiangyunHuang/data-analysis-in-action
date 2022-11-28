@@ -2509,15 +2509,27 @@ p1 | p2
 
 描述数据的空间分布也是很常见的任务，用于展示区域数据的图形有地区分布图、比例符号图和变形地图等。
 
+空间区域数据 Areal data
+:  区域上的聚合，如行政区划、调查区域上的人口计数或男女比率等。
+
+空间点过程数据 Point pattern data
+:  空间位置是随机的，如出租车的出行轨迹，其空间位置是随机出现的。
+
+空间点数据/地统计数据 Point-referenced data
+:  空间位置是固定的，比如乡村、小区污染物浓度分布，疫苗接种率分布。
+
 下面以 R 软件内置的数据集 state.x77 为例展示 1975 年美国**各州**人口密度 --- 每平方英里的人口数。state.x77 数据集的 Population 列代表州人口数，数据来自 1977 年美国人口调查局发布的统计数据，单位是 1000 人，统计的是 1975 年的人口数据，原始数据可以从官网发布的年度报告[Statistical Abstract of the United States: 1977](https://www.census.gov/library/publications/1977/compendia/statab/98ed.html)获取。
 
 
 ```{r}
 library(sf)
+# 美国州级多边形边界地图
 us_states_map <- readRDS(file = "data/us-states-shifted.rds")
+# 将观测数据与地图数据合并
 us_states_df <- merge(us_states_map, state_x77,
   by.x = "NAME", by.y = "state_name", all.x = TRUE
 )
+# 计算人口密度
 us_states_df <- within(us_states_df, {
   den <- 1000 * Population / Area
 })
@@ -2525,13 +2537,6 @@ us_states_df <- within(us_states_df, {
 
 
 ### 地区分布图 {#sec-choropleth-map}
-
-
-<!-- 
-二维地区分布图，预期寿命和人均收入的关系
-寿命的长短、收入的高低，用地图展示
--->
-
 
 基于 **sf** 包，**ggplot2** 包提供图层 `geom_sf()` 专门用于绘制空间矢量数据，可以展示空间点、多边形和线等三类常见几何数据。如图 @fig-choropleth-map 所示，展示 1975 年美国各州人口密度（单位：每平方英里人口数）。
 
@@ -2561,6 +2566,11 @@ ggplot() +
   theme(plot.title = element_text(hjust = 0.5))
 ```
 
+<!-- 
+二维地区分布图，预期寿命和人均收入的关系
+寿命的长短、收入的高低，用地图展示
+-->
+
 
 ### 比例符号图 {#sec-proportional-symbols-map}
 
@@ -2578,10 +2588,8 @@ ggplot() +
   geom_sf(
     data = us_states_df, fill = NA, aes(color = state_region)
   ) +
-  labs(
-    title = "1975 年美国各州人口密度",
-    caption = "数据源：美国人口调查局", color = "区域"
-  ) +
+  labs(title = "美国各州的区域划分", color = "区域划分", 
+       caption = "数据源：美国人口调查局") +
   theme_void() +
   theme(
     plot.title = element_text(hjust = 0.5),
@@ -2593,7 +2601,7 @@ ggplot() +
 
 ```{r}
 #| label: fig-label-map
-#| fig-cap: "1975 年美国各州"
+#| fig-cap: "美国各州的区域划分"
 #| fig-width: 7
 #| fig-height: 4
 #| fig-showtext: true
@@ -2605,8 +2613,8 @@ ggplot() +
   ) +
   geom_sf_label(data = us_states_df, aes(label = STUSPS)) +
   labs(
-    title = "1975 年美国各州人口密度", size = "人口密度", 
-    caption = "数据源：美国人口调查局", color = "区域"
+    title = "美国各州的区域划分", color = "区域划分", 
+    caption = "数据源：美国人口调查局"
   ) +
   theme_void() +
   theme(plot.title = element_text(hjust = 0.5))
@@ -2631,7 +2639,7 @@ ggplot() +
   geom_sf(
     data = us_states_df, fill = NA, aes(color = state_region)
   ) +
-  labs(color = "区域") +
+  labs(color = "区域划分") +
   new_scale_color() +
   geom_sf(
     data = us_states_df, 
@@ -2671,7 +2679,7 @@ ggplot(
   geom_col(aes(fill = state_region)) +
   theme_classic() +
   labs(
-    x = "人口密度", y = "州名", fill = "区域",
+    x = "人口密度", y = "州名", fill = "区域划分",
     title = "1975 年美国各州人口密度",
     caption = "数据源：美国人口调查局"
   )
@@ -2736,7 +2744,6 @@ library(statebins)
 ggplot(data = state_x77, aes(state = state_name, fill = Income_break)) +
   geom_statebins() +
   scale_fill_brewer(palette = "RdPu") +
-  coord_equal() +
   theme_statebins() +
   labs(title = "1974年美国各州人均收入分布", fill = "收入水平") +
   theme(plot.title = element_text(hjust = 0.5))
