@@ -2507,10 +2507,9 @@ p1 | p2
 
 ## 描述空间分布 {#sec-visualize-spatial-data}
 
+描述数据的空间分布也是很常见的任务，用于展示区域数据的图形有地区分布图、比例符号图和变形地图等。
 
-以 R 软件内置的数据集 state.x77 为例展示 1975 年美国**各个州**每平方英里的人口数，即以专题地图形式展示各州人口密度，此处专题的含义是「人口」，显而易见，人口密度只是一方面，还有人口结构，结构又可以分性别、年龄、种族等等。
-
-state.x77 数据集的 Population 列代表州人口数，数据来自 1977 年美国人口调查局发布的统计数据，单位是 1000 人，统计的是 1975 年的人口数据，原始数据可以从官网发布的年度报告[Statistical Abstract of the United States: 1977](https://www.census.gov/library/publications/1977/compendia/statab/98ed.html)获取。
+下面以 R 软件内置的数据集 state.x77 为例展示 1975 年美国**各州**人口密度 --- 每平方英里的人口数。state.x77 数据集的 Population 列代表州人口数，数据来自 1977 年美国人口调查局发布的统计数据，单位是 1000 人，统计的是 1975 年的人口数据，原始数据可以从官网发布的年度报告[Statistical Abstract of the United States: 1977](https://www.census.gov/library/publications/1977/compendia/statab/98ed.html)获取。
 
 
 ```{r}
@@ -2534,7 +2533,7 @@ us_states_df <- within(us_states_df, {
 -->
 
 
-1975 年美国各州人口密度，单位每平方英里人口数
+基于 **sf** 包，**ggplot2** 包提供图层 `geom_sf()` 专门用于绘制空间矢量数据，可以展示空间点、多边形和线等三类常见几何数据。如图 @fig-choropleth-map 所示，展示 1975 年美国各州人口密度（单位：每平方英里人口数）。
 
 
 ```{r}
@@ -2686,8 +2685,8 @@ ggplot(
 ```{r}
 #| label: fig-cartogram-map
 #| fig-cap: "1974 年美国各州人口密度分布"
-#| fig-width: 6
-#| fig-height: 7
+#| fig-width: 7
+#| fig-height: 4
 #| fig-showtext: true
 #| echo: true
 #| message: false
@@ -2695,10 +2694,10 @@ ggplot(
 
 library(cartogram)
 # 构造变形地图
-us_states_carto <- cartogram_cont(us_states_df, "den", itermax = 5)
+us_states_carto <- cartogram_cont(us_states_df, weight = "den", itermax = 5)
 # 绘制变形地图
 ggplot(us_states_carto) +
-  geom_sf(aes(fill = den)) +
+  geom_sf(aes(fill = den), color = "gray80", lwd = 0.25) +
   scale_fill_viridis_c(
     trans = "log10", option = "plasma",
     na.value = "white"
@@ -2727,8 +2726,8 @@ state_x77$Income_break <- cut(state_x77$Income,
 ```{r}
 #| label: fig-state-bins
 #| fig-cap: "1974 年美国各州人均收入分布"
-#| fig-width: 6
-#| fig-height: 7
+#| fig-width: 5
+#| fig-height: 4
 #| fig-showtext: true
 #| echo: true
 
