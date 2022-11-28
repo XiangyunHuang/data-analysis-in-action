@@ -2742,3 +2742,57 @@ ggplot(data = state_x77, aes(state = state_name, fill = Income_break)) +
   theme(plot.title = element_text(hjust = 0.5))
 ```
 
+
+### 地形图 {#sec-raster}
+
+
+地形图用于描述地形地势，则无论山洼、山谷，还是高山、高原，抑或是断崖、峡谷、平原，都一目了然。如 @fig-volcano-lattice 所示，奥克兰 Maunga Whau 火山地形图，图中火山划分为 87 行 61 列的小格子，小格子的长宽都是 10 米，记录格子所处位置的高度，收集整理后形成 volcano 数据集，此所谓的栅格数据。Base R 内置的 volcano 数据集是一个 matrix 类型数据对象。
+
+```{r}
+#| label: fig-volcano-lattice
+#| fig-cap: "奥克兰火山地形图"
+#| fig-width: 6
+#| fig-height: 4
+#| fig-showtext: true
+#| echo: true
+
+library(lattice)
+levelplot(volcano,
+  col.regions = hcl.colors,
+  at = 80 + 10 * 0:12,
+  scales = list(
+    draw = TRUE,
+    # 去掉图形上边、右边多余的刻度线
+    x = list(alternating = 1, tck = c(1, 0)),
+    y = list(alternating = 1, tck = c(1, 0))
+  ),
+  xlab = "东西方向",
+  ylab = "南北方向"
+)
+```
+
+
+**ggplot2** 包提供瓦片图层函数 `geom_tile()` 来可视化栅格数据，而函数 `geom_contour()` 可以根据海拔绘制等高线，如 @fig-volcano-ggplot2 所示，而 [**rayshader**](https://github.com/tylermorganwall/rayshader) 包提供函数 `plot_gg()` 可以将 ggplot2 绘图对象转化为 3D 对象，更多详情见 <https://www.rayshader.com/>。
+
+```{r}
+#| label: fig-volcano-ggplot2
+#| fig-cap: "奥克兰火山地形图"
+#| fig-width: 6
+#| fig-height: 4
+#| fig-showtext: true
+#| echo: true
+
+volcano_df <- expand.grid(x = 1:87, y = 1:61)
+volcano_df$z <- as.vector(volcano)
+
+ggplot(volcano_df) +
+  geom_tile(aes(x = x, y = y, fill = z)) +
+  geom_contour(aes(x = x, y = y, z = z), color = "gray20") +
+  scale_fill_viridis_c() +
+  coord_fixed(expand = FALSE) +
+  theme_classic() +
+  labs(x = "东西方向", y = "南北方向", fill = "海拔")
+```
+
+[GDAL](https://github.com/OSGeo/gdal) 支持大量的栅格和矢量空间数据格式，内建的 EEDAI （Google Earth Engine Data API Image）驱动通过 Google Earth Engine REST API 获取谷歌地球图像。[**terra**](https://github.com/rspatial/terra) 包的函数 `rast()`和 [**stars**](https://github.com/r-spatial/stars) 包的函数 `read_stars()` 封装了 GDAL 的驱动接口，更多详情见 <https://rspatial.org/terra/>。
+
