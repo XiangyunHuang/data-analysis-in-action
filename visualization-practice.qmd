@@ -1323,6 +1323,32 @@ ggplot(
   )
 ```
 
+百分比堆积柱形图展示多维分类数据 [**ggstats**](https://github.com/larmarange/ggstats/)
+
+<!-- 
+ggstats 提供的图层 stat_prop 是 stat_count 的变种
+as.data.frame(Titanic) 中 Age 一列会自动聚合吗？
+by = Class 按 Class 分组聚合，统计 Survived 的比例，提供 prop 计算的变量，传递给 geom_text 以添加注释，position 设置将注释放在柱子的中间
+-->
+
+```{r}
+#| label: fig-titanic-ggstats
+#| fig-cap: "百分比堆积柱形图展示多维分类数据"
+#| fig-showtext: true
+#| fig-width: 7
+#| fig-height: 5
+
+library(ggstats)
+ggplot(as.data.frame(Titanic)) +
+  aes(x = Class, fill = Survived, weight = Freq, by = Class) +
+  geom_bar(position = "fill") +
+  scale_y_continuous(labels = scales::percent) +
+  geom_text(stat = "prop", position = position_fill(.5)) +
+  facet_grid(~Sex) +
+  labs(x = "船舱", y = "比例", fill = "存活")
+```
+
+
 
 ::: {.callout-tip}
 

@@ -2507,18 +2507,29 @@ p1 | p2
 
 ## 描述空间分布 {#sec-visualize-spatial-data}
 
+描述数据的空间分布也是很常见的任务，用于展示区域数据的图形有地区分布图、比例符号图和变形地图等。
 
-以 R 软件内置的数据集 state.x77 为例展示 1975 年美国**各个州**每平方英里的人口数，即以专题地图形式展示各州人口密度，此处专题的含义是「人口」，显而易见，人口密度只是一方面，还有人口结构，结构又可以分性别、年龄、种族等等。
+空间区域数据 Areal data
+:  区域上的聚合，如行政区划、调查区域上的人口计数或男女比率等。
 
-state.x77 数据集中 Population 州人口数据是 1977 年美国人口调查局发布的统计数据，单位是 1000 人，统计的是 1975 年的人口数据，原始数据可以从官网发布的年度报告[Statistical Abstract of the United States: 1977](https://www.census.gov/library/publications/1977/compendia/statab/98ed.html)获取。
+空间点过程数据 Point pattern data
+:  空间位置是随机的，如出租车的出行轨迹，其空间位置是随机出现的。
+
+空间点数据/地统计数据 Point-referenced data
+:  空间位置是固定的，比如乡村、小区污染物浓度分布，疫苗接种率分布。
+
+下面以 R 软件内置的数据集 state.x77 为例展示 1975 年美国**各州**人口密度 --- 每平方英里的人口数。state.x77 数据集的 Population 列代表州人口数，数据来自 1977 年美国人口调查局发布的统计数据，单位是 1000 人，统计的是 1975 年的人口数据，原始数据可以从官网发布的年度报告[Statistical Abstract of the United States: 1977](https://www.census.gov/library/publications/1977/compendia/statab/98ed.html)获取。
 
 
 ```{r}
 library(sf)
+# 美国州级多边形边界地图
 us_states_map <- readRDS(file = "data/us-states-shifted.rds")
+# 将观测数据与地图数据合并
 us_states_df <- merge(us_states_map, state_x77,
   by.x = "NAME", by.y = "state_name", all.x = TRUE
 )
+# 计算人口密度
 us_states_df <- within(us_states_df, {
   den <- 1000 * Population / Area
 })
@@ -2527,8 +2538,7 @@ us_states_df <- within(us_states_df, {
 
 ### 地区分布图 {#sec-choropleth-map}
 
-
-1975 年美国各州人口密度，单位每平方英里人口数
+基于 **sf** 包，**ggplot2** 包提供图层 `geom_sf()` 专门用于绘制空间矢量数据，可以展示空间点、多边形和线等三类常见几何数据。如图 @fig-choropleth-map 所示，展示 1975 年美国各州人口密度（单位：每平方英里人口数）。
 
 
 ```{r}
@@ -2556,12 +2566,15 @@ ggplot() +
   theme(plot.title = element_text(hjust = 0.5))
 ```
 
+<!-- 
+二维地区分布图，预期寿命和人均收入的关系
+寿命的长短、收入的高低，用地图展示
+-->
+
 
 ### 比例符号图 {#sec-proportional-symbols-map}
 
-1975 年美国各州人口密度，单位每平方英里人口数，人口密度映射为圆的面积
-
-美国的区域划分，东北部、南方、西部、中北部
+1975 年美国各州人口密度，单位为每平方英里人口数，人口密度映射为气泡的面积，美国划分为东北部、南方、西部、中北部四个区域，如 @fig-region-map 所示。
 
 ```{r}
 #| label: fig-region-map
@@ -2575,22 +2588,17 @@ ggplot() +
   geom_sf(
     data = us_states_df, fill = NA, aes(color = state_region)
   ) +
-  labs(
-    title = "1975 年美国各州人口密度",
-    caption = "数据源：美国人口调查局", color = "区域"
-  ) +
+  labs(title = "美国各州的区域划分", color = "区域划分", 
+       caption = "数据源：美国人口调查局") +
   theme_void() +
-  theme(
-    plot.title = element_text(hjust = 0.5),
-    legend.title = element_blank()
-  )
+  theme(plot.title = element_text(hjust = 0.5))
 ```
 
-美国各州的区域划分
+在 @fig-region-map 的基础上，添加各州州名的缩写，比如 New York 缩写为 NY，这非常类似于我国对各省的简称，比如湖南省简称为湘。
 
 ```{r}
 #| label: fig-label-map
-#| fig-cap: "1975 年美国各州"
+#| fig-cap: "美国各州的区域划分"
 #| fig-width: 7
 #| fig-height: 4
 #| fig-showtext: true
@@ -2600,19 +2608,16 @@ ggplot() +
   geom_sf(
     data = us_states_df, fill = NA, aes(color = state_region)
   ) +
-  geom_sf_label(data = us_states_df, aes(label = STUSPS)) +
+  geom_sf_label(data = us_states_df, aes(label = STUSPS), size = 3) +
   labs(
-    title = "1975 年美国各州人口密度", size = "人口密度", 
-    caption = "数据源：美国人口调查局", color = "区域"
+    title = "美国各州的区域划分", color = "区域划分", 
+    caption = "数据源：美国人口调查局"
   ) +
   theme_void() +
   theme(plot.title = element_text(hjust = 0.5))
 ```
 
-
-
-比例符号图
-
+对了解美国地图的人来说，在已有各州边界及区域划分的信息下，在图上添加各州名称就会显得多余，而对缺乏了解的人来说，则是有用的。绘图区域是有限的，信息自然可以越堆越多，关键是这个图形想要传递什么信息，应该优先保障重点突出。此例是以比例符号图展示美国各州人口密度的分布，重点便是展示人口密度数据，如 @fig-proportional-symbols-map 所示。
 
 ```{r}
 #| label: fig-proportional-symbols-map
@@ -2622,15 +2627,16 @@ ggplot() +
 #| fig-showtext: true
 #| echo: true
 
-library(ggnewscale)
 us_states_df <- within(us_states_df, {
   geometry_center <- st_centroid(geometry)
 })
+
+library(ggnewscale)
 ggplot() +
   geom_sf(
     data = us_states_df, fill = NA, aes(color = state_region)
   ) +
-  labs(color = "区域") +
+  labs(color = "区域划分") +
   new_scale_color() +
   geom_sf(
     data = us_states_df, 
@@ -2648,7 +2654,7 @@ ggplot() +
   theme(plot.title = element_text(hjust = 0.5))
 ```
 
-地区分布图的替代
+在州名数量有限的情况下，特别是用一页纸可以完全展示的情况，还可以考虑用分组条形图替代地区分布图或比例符号图，好处是人口密度的对比更加突出，也避免美国东北部各州因面积小、人口密度大导致的气泡相互重叠的问题。
 
 ```{r}
 #| label: fig-column-map
@@ -2657,11 +2663,13 @@ ggplot() +
 #| fig-height: 7
 #| fig-showtext: true
 #| echo: true
+#| warning: false
 
-# 分组排序
+# 按区域分组后按人口密度排序
 us_states_df <- us_states_df[with(us_states_df, order(state_region, -den)), ]
+# 添加新列记录排序后的序号
 us_states_df$rowid <- 1:nrow(us_states_df)
-
+# 绘图
 ggplot(
   data = us_states_df,
   aes(x = den, y = reorder(NAME, rowid, FUN = function(x) 1 / (1 + x)))
@@ -2669,9 +2677,246 @@ ggplot(
   geom_col(aes(fill = state_region)) +
   theme_classic() +
   labs(
-    x = "人口密度", y = "州名", fill = "区域",
+    x = "人口密度", y = "州名", fill = "区域划分",
     title = "1975 年美国各州人口密度",
     caption = "数据源：美国人口调查局"
   )
+```
+
+
+### 变形地图 {#sec-cartogram}
+
+变形地图中变形的是多边形地理边界，从而将数据映射到地理区域的面积上。[**cartogram**](https://github.com/sjewo/cartogram) 包提供变形算法构造变形地图，如 @fig-cartogram-map 所示，根据各州的多边形边界地图数据和人口密度数据构造新的多边形边界地图。
+
+```{r}
+#| label: fig-cartogram-map
+#| fig-cap: "1974 年美国各州人口密度分布"
+#| fig-width: 7
+#| fig-height: 4
+#| fig-showtext: true
+#| echo: true
+#| message: false
+#| warning: false
+
+library(cartogram)
+# 构造变形地图
+us_states_carto <- cartogram_cont(us_states_df, weight = "den", itermax = 5)
+# 绘制变形地图
+ggplot(us_states_carto) +
+  geom_sf(aes(fill = den), color = "gray80", lwd = 0.25) +
+  scale_fill_viridis_c(
+    trans = "log10", option = "plasma",
+    na.value = "white"
+  ) +
+  labs(
+    fill = "人口密度", title = "1975 年美国各州人口密度",
+    caption = "数据源：美国人口调查局"
+  ) +
+  theme_void() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+根据 1974 年各州的人均收入，将收入划分为低收入（低于3500）、中低收入（3500-4500）、中高收入 （4500-5500）、高收入（5500 以上）四档。
+
+```{r}
+# 将连续型的收入分段
+state_x77$Income_break <- cut(state_x77$Income,
+  breaks = 4,
+  labels = c("低收入", "中低收入", "中高收入", "高收入")
+)
+```
+
+[**statebins**](https://github.com/hrbrmstr/statebins) 包以小方块表示美国各州，小方块的位置根据各州的相对位置摆放，各州的边界和面积不再有意义，而小方块的填充色表示数值的大小，如 @fig-state-bins 所示，展示 1974 年美国各州人均收入的空间分布。
+
+
+```{r}
+#| label: fig-state-bins
+#| fig-cap: "1974 年美国各州人均收入分布"
+#| fig-width: 6
+#| fig-height: 4
+#| fig-showtext: true
+#| echo: true
+
+library(statebins)
+# 绘制变形地图
+ggplot(data = state_x77, aes(state = state_name, fill = Income_break)) +
+  geom_statebins() +
+  scale_fill_brewer(palette = "RdPu") +
+  theme_statebins() +
+  labs(title = "1974年美国各州人均收入分布", fill = "收入水平") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.margin = margin(10, 10, 10, 10))
+```
+
+
+### 地形图 {#sec-raster}
+
+
+地形图用于描述地形地势，则无论山洼、山谷，还是高山、高原，抑或是断崖、峡谷、平原，都一目了然。如 @fig-volcano-levelplot 所示，奥克兰 Maunga Whau 火山地形图，图中火山划分为 87 行 61 列的小格子，小格子的长宽都是 10 米，记录格子所处位置的高度，收集整理后形成 volcano 数据集，此所谓的栅格数据。Base R 内置的 volcano 数据集是一个 matrix 类型数据对象。
+
+```{r}
+#| label: fig-volcano-levelplot
+#| fig-cap: "奥克兰火山地形图"
+#| fig-width: 6
+#| fig-height: 4
+#| fig-showtext: true
+#| echo: true
+
+library(lattice)
+levelplot(volcano,
+  col.regions = hcl.colors,
+  at = 80 + 10 * 0:12,
+  scales = list(
+    draw = TRUE,
+    # 去掉图形上边、右边多余的刻度线
+    x = list(alternating = 1, tck = c(1, 0)),
+    y = list(alternating = 1, tck = c(1, 0))
+  ),
+  xlab = "东西方向",
+  ylab = "南北方向"
+)
+```
+
+
+**ggplot2** 包提供瓦片图层函数 `geom_tile()` 来可视化栅格数据，而函数 `geom_contour()` 可以根据海拔绘制等高线，如 @fig-volcano-ggplot2 所示，而 [**rayshader**](https://github.com/tylermorganwall/rayshader) 包提供函数 `plot_gg()` 可以将 ggplot2 绘图对象转化为 3D 对象，更多详情见 <https://www.rayshader.com/>。
+
+```{r}
+#| label: fig-volcano-ggplot2
+#| fig-cap: "奥克兰火山地形图"
+#| fig-width: 6
+#| fig-height: 4
+#| fig-showtext: true
+#| echo: true
+
+volcano_df <- expand.grid(x = 1:87, y = 1:61)
+volcano_df$z <- as.vector(volcano)
+
+ggplot(volcano_df) +
+  geom_tile(aes(x = x, y = y, fill = z)) +
+  geom_contour(aes(x = x, y = y, z = z), color = "gray20") +
+  scale_fill_viridis_c() +
+  coord_fixed(expand = FALSE) +
+  theme_classic() +
+  labs(x = "东西方向", y = "南北方向", fill = "海拔")
+```
+
+三维透视图亦可展示地形图，如 @fig-volcano-wireframe 所示，用 **lattice** 包绘制火山地形图。
+
+```{r}
+#| label: fig-volcano-wireframe
+#| fig-cap: "lattice 包绘制地形图"
+#| fig-width: 6
+#| fig-height: 5.5
+#| fig-showtext: true
+
+wireframe(volcano,
+  drape = TRUE, colorkey = FALSE, shade = TRUE,
+  xlab = list("东西方向", rot = 20),
+  ylab = list("南北方向", rot = -50),
+  zlab = list("高度", rot = 90),
+  # 减少三维图形的边空
+  lattice.options = list(
+    layout.widths = list(
+      left.padding = list(x = -.6, units = "inches"),
+      right.padding = list(x = -1.0, units = "inches")
+    ),
+    layout.heights = list(
+      bottom.padding = list(x = -.8, units = "inches"),
+      top.padding = list(x = -1.0, units = "inches")
+    )
+  ),
+  # 设置坐标轴字体大小
+  par.settings = list(
+    axis.line = list(col = "transparent"),
+    fontsize = list(text = 15, points = 10)
+  ),
+  # z 轴标签旋转 90 度
+  scales = list(
+    arrows = FALSE, col = "black",
+    z = list(rot = 90)
+  ), 
+  screen = list(z = 30, x = -65, y = 0)
+)
+```
+
+**plotly** 包可以绘制交互的三维透视图来展示地形。
+
+```{css}
+#| label: plotly-modebar
+#| echo: false
+
+.modebar {
+  display: none !important;
+}
+```
+```{r}
+#| label: fig-volcano-plotly
+#| fig-cap: "plotly 绘制地形图"
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+#| echo: true
+
+plotly::plot_ly(z = ~volcano) |> 
+  plotly::add_surface()
+```
+
+**rgl** 包绘制的三维散点图亦可展示数据的空间分布。
+
+```{r}
+#| label: fig-volcano-rgl
+#| fig-cap: "rgl 绘制地形图"
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+#| echo: true
+
+# 设置 WebGL 渲染
+options(rgl.useNULL = TRUE)
+options(rgl.printRglwidget = TRUE)
+library(rgl)
+# 设置视角 
+rgl.viewpoint(
+  theta = 30, phi = 45, fov = 30,
+  zoom = 1, interactive = TRUE
+)
+# 将连续型数据向量转化为颜色向量
+colorize_numeric <- function(x) {
+  scales::col_numeric(palette = "viridis", domain = range(x))(x)
+}
+# 在数据集 quakes 上添加新的数据 color
+volcano_df <- within(volcano_df, {
+  color <- colorize_numeric(z)
+})
+# 绘制图形
+with(volcano_df, {
+  plot3d(x = x, y = y, z = z, col = color)
+})
+```
+
+[GDAL](https://github.com/OSGeo/gdal) 支持大量的栅格和矢量空间数据格式，内建的 [EEDAI （Google Earth Engine Data API Image）](https://gdal.org/drivers/raster/eedai.html)驱动通过 Google Earth Engine REST API 获取谷歌地球图像。[**terra**](https://github.com/rspatial/terra) 包的函数 `rast()`和 [**stars**](https://github.com/r-spatial/stars) 包的函数 `read_stars()` 封装了 GDAL 的驱动接口，更多详情见 <https://rspatial.org/terra/>。申请谷歌应用的访问令牌，保存授权文件到本地，设置环境变量 `GOOGLE_APPLICATION_CREDENTIALS` 指向授权文件所在路径。
+
+```{r}
+#| eval: false
+#| echo: true
+
+# 设置访问令牌
+Sys.setenv(GOOGLE_APPLICATION_CREDENTIALS="/home/rstudio/google/ardent-disk-214911-e2616707dd80.json")
+# 加载 R 包
+library(stars)
+# 设置采样参数
+rasterio <- list(
+  nXOff = 6, nYOff = 6, nXSize = 183, nYSize = 183,
+  nBufXSize = 100, nBufYSize = 100, bands = 3
+)
+# 获取数据
+google_earth <- read_stars(
+  file.path(
+    "EEDAI:projects", "earthengine-public", 
+    "assets", "COPERNICUS", "S2",
+    "20170430T190351_20170430T190351_T10SEG"
+  ),
+  proxy = TRUE, # 对于大型 TIFF 数据非常有效
+  # sub = 3, # 或 2,3,4
+  RasterIO = rasterio # 采样 183x183
+)
+# 绘图
+plot(google_earth)
 ```
 
