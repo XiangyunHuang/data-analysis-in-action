@@ -2510,7 +2510,7 @@ p1 | p2
 
 以 R 软件内置的数据集 state.x77 为例展示 1975 年美国**各个州**每平方英里的人口数，即以专题地图形式展示各州人口密度，此处专题的含义是「人口」，显而易见，人口密度只是一方面，还有人口结构，结构又可以分性别、年龄、种族等等。
 
-state.x77 数据集中 Population 州人口数据是 1977 年美国人口调查局发布的统计数据，单位是 1000 人，统计的是 1975 年的人口数据，原始数据可以从官网发布的年度报告[Statistical Abstract of the United States: 1977](https://www.census.gov/library/publications/1977/compendia/statab/98ed.html)获取。
+state.x77 数据集的 Population 列代表州人口数，数据来自 1977 年美国人口调查局发布的统计数据，单位是 1000 人，统计的是 1975 年的人口数据，原始数据可以从官网发布的年度报告[Statistical Abstract of the United States: 1977](https://www.census.gov/library/publications/1977/compendia/statab/98ed.html)获取。
 
 
 ```{r}
@@ -2526,6 +2526,12 @@ us_states_df <- within(us_states_df, {
 
 
 ### 地区分布图 {#sec-choropleth-map}
+
+
+<!-- 
+二维地区分布图，预期寿命和人均收入的关系
+寿命的长短、收入的高低，用地图展示
+-->
 
 
 1975 年美国各州人口密度，单位每平方英里人口数
@@ -2559,9 +2565,7 @@ ggplot() +
 
 ### 比例符号图 {#sec-proportional-symbols-map}
 
-1975 年美国各州人口密度，单位每平方英里人口数，人口密度映射为圆的面积
-
-美国的区域划分，东北部、南方、西部、中北部
+1975 年美国各州人口密度，单位为每平方英里人口数，人口密度映射为气泡的面积，美国划分为东北部、南方、西部、中北部四个区域，如 @fig-region-map 所示。
 
 ```{r}
 #| label: fig-region-map
@@ -2586,7 +2590,7 @@ ggplot() +
   )
 ```
 
-美国各州的区域划分
+在 @fig-region-map 的基础上，添加各州州名的缩写，比如 New York 缩写为 NY，这非常类似于我国对各省的简称，比如湖南省简称为湘。
 
 ```{r}
 #| label: fig-label-map
@@ -2609,10 +2613,7 @@ ggplot() +
   theme(plot.title = element_text(hjust = 0.5))
 ```
 
-
-
-比例符号图
-
+对了解美国地图的人来说，在已有各州边界及区域划分的信息下，在图上添加各州名称就会显得多余，而对缺乏了解的人来说，则是有用的。绘图区域是有限的，信息自然可以越堆越多，关键是这个图形想要传递什么信息，应该优先保障重点突出。此例是以比例符号图展示美国各州人口密度的分布，重点便是展示人口密度数据，如 @fig-proportional-symbols-map 所示。
 
 ```{r}
 #| label: fig-proportional-symbols-map
@@ -2622,10 +2623,11 @@ ggplot() +
 #| fig-showtext: true
 #| echo: true
 
-library(ggnewscale)
 us_states_df <- within(us_states_df, {
   geometry_center <- st_centroid(geometry)
 })
+
+library(ggnewscale)
 ggplot() +
   geom_sf(
     data = us_states_df, fill = NA, aes(color = state_region)
@@ -2648,7 +2650,7 @@ ggplot() +
   theme(plot.title = element_text(hjust = 0.5))
 ```
 
-地区分布图的替代
+在州名数量有限的情况下，特别是用一页纸可以完全展示的情况，还可以考虑用分组条形图替代地区分布图或比例符号图，好处是人口密度的对比更加突出，也避免美国东北部各州因面积小、人口密度大导致的气泡相互重叠的问题。
 
 ```{r}
 #| label: fig-column-map
@@ -2658,10 +2660,11 @@ ggplot() +
 #| fig-showtext: true
 #| echo: true
 
-# 分组排序
+# 按区域分组后按人口密度排序
 us_states_df <- us_states_df[with(us_states_df, order(state_region, -den)), ]
+# 添加新列记录排序后的序号
 us_states_df$rowid <- 1:nrow(us_states_df)
-
+# 绘图
 ggplot(
   data = us_states_df,
   aes(x = den, y = reorder(NAME, rowid, FUN = function(x) 1 / (1 + x)))
@@ -2673,5 +2676,70 @@ ggplot(
     title = "1975 年美国各州人口密度",
     caption = "数据源：美国人口调查局"
   )
+```
+
+
+### 变形地图 {#sec-cartogram}
+
+变形地图中变形的是多边形地理边界，从而将数据映射到地理区域的面积上。[**cartogram**](https://github.com/sjewo/cartogram) 包提供变形算法构造变形地图，如 @fig-cartogram-map 所示，根据各州的多边形边界地图数据和人口密度数据构造新的多边形边界地图。
+
+```{r}
+#| label: fig-cartogram-map
+#| fig-cap: "1974 年美国各州人口密度分布"
+#| fig-width: 6
+#| fig-height: 7
+#| fig-showtext: true
+#| echo: true
+#| message: false
+#| warning: false
+
+library(cartogram)
+# 构造变形地图
+us_states_carto <- cartogram_cont(us_states_df, "den", itermax = 5)
+# 绘制变形地图
+ggplot(us_states_carto) +
+  geom_sf(aes(fill = den)) +
+  scale_fill_viridis_c(
+    trans = "log10", option = "plasma",
+    na.value = "white"
+  ) +
+  labs(
+    fill = "人口密度", title = "1975 年美国各州人口密度",
+    caption = "数据源：美国人口调查局"
+  ) +
+  theme_void() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+根据 1974 年各州的人均收入，将收入划分为低收入（低于3500）、中低收入（3500-4500）、中高收入 （4500-5500）、高收入（5500 以上）四档。
+
+```{r}
+# 将连续型的收入分段
+state_x77$Income_break <- cut(state_x77$Income,
+  breaks = 4,
+  labels = c("低收入", "中低收入", "中高收入", "高收入")
+)
+```
+
+[**statebins**](https://github.com/hrbrmstr/statebins) 包以小方块表示美国各州，小方块的位置根据各州的相对位置摆放，各州的边界和面积不再有意义，而小方块的填充色表示数值的大小，如 @fig-state-bins 所示，展示 1974 年美国各州人均收入的空间分布。
+
+
+```{r}
+#| label: fig-state-bins
+#| fig-cap: "1974 年美国各州人均收入分布"
+#| fig-width: 6
+#| fig-height: 7
+#| fig-showtext: true
+#| echo: true
+
+library(statebins)
+# 绘制变形地图
+ggplot(data = state_x77, aes(state = state_name, fill = Income_break)) +
+  geom_statebins() +
+  scale_fill_brewer(palette = "RdPu") +
+  coord_equal() +
+  theme_statebins() +
+  labs(title = "1974年美国各州人均收入分布", fill = "收入水平") +
+  theme(plot.title = element_text(hjust = 0.5))
 ```
 
