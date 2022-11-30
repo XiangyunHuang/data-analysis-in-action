@@ -2524,7 +2524,7 @@ p1 | p2
 ```{r}
 library(sf)
 # 美国州级多边形边界地图
-us_states_map <- readRDS(file = "data/us-states-shifted.rds")
+us_states_map <- readRDS(file = "data/us-state-map.rds")
 # 将观测数据与地图数据合并
 us_states_df <- merge(us_states_map, state_x77,
   by.x = "NAME", by.y = "state_name", all.x = TRUE
@@ -2747,6 +2747,79 @@ ggplot(data = state_x77, aes(state = state_name, fill = Income_break)) +
   theme(plot.title = element_text(hjust = 0.5),
         plot.margin = margin(10, 10, 10, 10))
 ```
+
+
+在 **ggplot2** 包分面函数 `facet_grid()` 的基础上，根据美国各州的相对位置， [**geofacet**](https://github.com/hafen/geofacet) 包提供函数 `facet_geo()` 支持更加丰富的信息展示。下 @fig-us-unemp-geofacet 展示美国各州的失业率分布，每个下方块代表一个州各个郡县的失业率分布。 **geofacet** 包内置的地图不包含 Puerto Rico（波多黎各）地区，因此该地区的失业率数据无法显示。
+
+```{r}
+#| label: fig-us-unemp-geofacet
+#| fig-cap: "2009 年美国各州失业率分布"
+#| fig-width: 8
+#| fig-height: 6
+#| fig-showtext: true
+#| warning: false
+
+library(maps)
+# 失业率数据
+data(unemp)
+# 州、郡县名称及编码
+fips_codes <- tidycensus::fips_codes
+fips_codes$fips <- as.integer(paste0(fips_codes$state_code, fips_codes$county_code))
+unemp_df <- merge(unemp, fips_codes, by = "fips")
+library(geofacet)
+ggplot(unemp_df, aes(x = unemp)) +
+  geom_histogram(aes(fill = after_stat(count)),
+    binwidth = 1, show.legend = FALSE
+  ) +
+  scale_fill_viridis_c(option = "plasma") +
+  facet_geo(~state) +
+  theme_bw() +
+  labs(x = "失业率", y = "郡县数量")
+```
+
+以直方图表示连续数据的分布，这相当于聚合了美国各郡的失业率数据，失业率还可以是更细粒度的数据。
+
+```{r}
+library(maps)
+# 准备地图数据
+us_state_map <- readRDS(file = "data/us-state-map.rds")
+us_county_map <- readRDS(file = "data/us-county-map.rds")
+# GEOID 是地理区域唯一标识
+us_county_map$GEOID <- as.integer(us_county_map$GEOID)
+# 将失业率数据和地图数据合并
+us_county_data <- merge(
+  x = us_county_map, y = unemp,
+  by.x = "GEOID", by.y = "fips", all.x = TRUE
+)
+```
+
+准备好数据后，就可以绘制美国各郡县失业率的分布，如 @fig-us-unemp 所示。
+
+```{r}
+#| label: fig-us-unemp
+#| fig-cap: "2009 年美国各郡县失业率分布"
+#| fig-width: 8
+#| fig-height: 5
+#| fig-showtext: true
+
+ggplot() +
+  geom_sf(
+    data = us_county_data, aes(fill = unemp),
+    colour = "grey80", linewidth = 0.05
+  ) +
+  geom_sf(
+    data = us_state_map,
+    colour = "grey80", fill = NA, linewidth = 0.1
+  ) +
+  scale_fill_viridis_c(
+    option = "plasma", na.value = "white"
+  ) +
+  theme_void() +
+  labs(
+    fill = "失业率", caption = "数据源：美国人口调查局"
+  )
+```
+
 
 
 ### 地形图 {#sec-raster}
