@@ -2944,11 +2944,6 @@ plotly::plot_ly(z = ~volcano) |>
 options(rgl.useNULL = TRUE)
 options(rgl.printRglwidget = TRUE)
 library(rgl)
-# 设置视角 
-rgl.viewpoint(
-  theta = 30, phi = 45, fov = 30,
-  zoom = 1, interactive = TRUE
-)
 # 将连续型数据向量转化为颜色向量
 colorize_numeric <- function(x) {
   scales::col_numeric(palette = "viridis", domain = range(x))(x)
@@ -2991,5 +2986,41 @@ google_earth <- read_stars(
 )
 # 绘图
 plot(google_earth)
+```
+
+除了谷歌提供的地图服务，[SRTM](https://srtm.csi.cgiar.org/)（Shuttle Radar Topography Mission，简称 SRTM）提供 90 米精度的海拔数据，对纬度范围在南纬 60 至北纬 60 度的地区。根据台湾省统计局 2022 年 10 月发布的数据显示，台湾目前有人口 2300 多万。下面获取台湾地区的海拔数据和一级行政区划边界数据。
+
+[**geodata** 包](https://github.com/rspatial/geodata) 获取台湾海拔数据，返回 terra 类型的数据对象：SpatRaster 对象。
+
+```{r}
+# 下载台湾海拔数据
+twn_map_alt <- geodata::elevation_30s(country = "TWN", path = "data/")
+```
+
+获取台湾一级行政区数据，它是一个多边形边界地图数据，也返回 terra 类型的数据对象： SpatVector 对象。
+
+```{r}
+# 下载台湾一级行政区
+twn_map_adm <- geodata::gadm(country = "TWN", level = 1, path = "data/")
+```
+
+[**tidyterra** 包](https://github.com/dieghernan/tidyterra) 基于 [**terra** 包](https://github.com/rspatial/terra) 提供一些专门用于栅格数据可视化的图层，扩展了 **ggplot2** 包的功能，如 @fig-tw-elev 所示台湾海拔地形图。
+
+```{r}
+#| label: fig-tw-elev
+#| fig-cap: "台湾海拔地形图"
+#| fig-showtext: true
+#| fig-width: 6
+#| fig-height: 5
+
+ggplot() +
+  tidyterra::geom_spatraster(data = twn_map_alt) +
+  tidyterra::scale_fill_terrain_c() +
+  tidyterra::geom_spatvector(
+    data = twn_map_adm,
+    fill = NA, colour = "gray40"
+  ) +
+  theme_minimal() +
+  labs(x = "经度", y = "纬度", fill = "海拔")
 ```
 
