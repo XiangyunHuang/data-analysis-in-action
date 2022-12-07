@@ -2566,10 +2566,62 @@ ggplot() +
   theme(plot.title = element_text(hjust = 0.5))
 ```
 
-<!-- 
-二维地区分布图，预期寿命和人均收入的关系
-寿命的长短、收入的高低，用地图展示
--->
+二维地区分布图展示预期寿命和人均 GDP 的空间相关性
+
+```{r}
+#| label: fig-choropleth-map
+#| fig-cap: "预期寿命与人均 GDP 的空间相关性"
+#| fig-width: 7
+#| fig-height: 4
+#| fig-showtext: true
+#| echo: true
+
+library(biscale)
+# 将数据根据分位点分箱
+us_bi_data <- bi_class(us_states_df,
+  x = Income, y = `Life Exp`,
+  style = "quantile", dim = 3
+)
+# 创建主体地图
+us_bi_map <- ggplot() +
+  geom_sf(data = us_bi_data, color = "gray", fill = I("white")) +
+  geom_sf(
+    data = us_bi_data, aes(fill = bi_class),
+    color = "gray80", linewidth = 0.05, show.legend = FALSE
+  ) +
+  bi_scale_fill(pal = "DkViolet2", dim = 3) +
+  theme_void() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+# 创建图例数据
+us_bi_leg_data <- data.frame(expand.grid(x = 3:1, y = 3:1),
+  bi_fill = biscale::bi_pal(pal = "DkViolet2", dim = 3, preview = FALSE)
+)
+# 绘制二元图例的函数 bi_legend 不支持中文，因此改其源代码
+# 创建图例瓦片
+us_bi_leg <- ggplot(
+  data = us_bi_leg_data,
+  aes(x = x, y = y, fill = bi_fill)
+) +
+  geom_tile() +
+  scale_fill_identity() +
+  labs(
+    x = substitute(paste("预期寿命", "" %->% "")),
+    y = substitute(paste("人均 GDP", "" %->% ""))
+  ) +
+  coord_fixed() +
+  theme_void() +
+  theme(
+    axis.title = element_text(size = 12),
+    axis.title.y = element_text(angle = 90)
+  )
+
+# 组合图形
+us_bi_map + inset_element(us_bi_leg,
+  left = 0.85, bottom = 0.1, right = 1, top = 0.35
+)
+```
+
 
 
 ### 比例符号图 {#sec-proportional-symbols-map}
@@ -2682,6 +2734,8 @@ ggplot(
     caption = "数据源：美国人口调查局"
   )
 ```
+
+
 
 
 ### 变形地图 {#sec-cartogram}
