@@ -2524,7 +2524,7 @@ p1 | p2
 ```{r}
 library(sf)
 # 美国州级多边形边界地图
-us_states_map <- readRDS(file = "data/us-state-map.rds")
+us_states_map <- readRDS(file = "data/us-state-map-2010.rds")
 # 将观测数据与地图数据合并
 us_states_df <- merge(us_states_map, state_x77,
   by.x = "NAME", by.y = "state_name", all.x = TRUE
@@ -2659,7 +2659,7 @@ ggplot() +
   geom_sf(
     data = us_states_df, fill = NA, aes(color = state_region)
   ) +
-  geom_sf_label(data = us_states_df, aes(label = STUSPS), size = 3) +
+  geom_sf_label(data = us_states_df, aes(label = NAME), size = 3) +
   labs(
     title = "美国各州的区域划分", color = "区域划分", 
     caption = "数据源：美国人口调查局"
@@ -2886,7 +2886,11 @@ ggplot() +
 # 下载美国各郡县的多边形边界地图数据
 us_county_map <- tigris::counties(cb = TRUE, year = 2010, resolution = "20m", class = "sf")
 # 移动离岸的州和领地
+## 郡县地图
 us_county_map <- tigris::shift_geometry(us_county_map, geoid_column = "STATE", position = "below")
+# 州地图
+us_state_map <- tigris::states(cb = TRUE, year = 2010, resolution = "20m", class = "sf")
+us_state_map <- tigris::shift_geometry(us_state_map, geoid_column = "STATE", position = "below")
 ```
 
 经过数据检查，发现失业率数据仅有三个郡县未关联上地图数据。在真实的数据探查中，往往因为业务过程复杂，数据链路长，人员更迭等一系列原因，导致数据存在一定的缺失。只要能够确定缺失的原因，缺失比例，不影响最终结论的可靠性，那么数据就是可用的。
