@@ -2835,10 +2835,11 @@ ggplot(unemp_df, aes(x = unemp)) +
 ```{r}
 library(maps)
 # 准备地图数据
-us_state_map <- readRDS(file = "data/us-state-map.rds")
-us_county_map <- readRDS(file = "data/us-county-map.rds")
+us_state_map <- readRDS(file = "data/us-state-map-2010.rds")
+# 2010 年的地图数据
+us_county_map <- readRDS(file = "data/us-county-map-2010.rds")
 # GEOID 是地理区域唯一标识
-us_county_map$GEOID <- as.integer(us_county_map$GEOID)
+us_county_map$GEOID <- as.integer(paste0(us_county_map$STATEFP, us_county_map$COUNTYFP))
 # 将失业率数据和地图数据合并
 us_county_data <- merge(
   x = us_county_map, y = unemp,
@@ -2873,6 +2874,23 @@ ggplot() +
   )
 ```
 
+
+::: {.callout-tip}
+
+通过 **tigris** 包可以下载历年美国人口调查局发布的数据，但是 2009 年及以前的地图数据缺失，因此，笔者下载了 2010 年的地图数据，它与失业率数据最近。
+
+```{r}
+#| eval: false
+#| echo: true
+
+# 下载美国各郡县的多边形边界地图数据
+us_county_map <- tigris::counties(cb = TRUE, year = 2010, resolution = "20m", class = "sf")
+# 移动离岸的州和领地
+us_county_map <- tigris::shift_geometry(us_county_map, geoid_column = "STATE", position = "below")
+```
+
+经过数据检查，发现失业率数据仅有三个郡县未关联上地图数据。在真实的数据探查中，往往因为业务过程复杂，数据链路长，人员更迭等一系列原因，导致数据存在一定的缺失。只要能够确定缺失的原因，缺失比例，不影响最终结论的可靠性，那么数据就是可用的。
+:::
 
 
 ### 地形图 {#sec-raster}
