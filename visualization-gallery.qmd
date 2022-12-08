@@ -2321,8 +2321,10 @@ Cook 距离、高杠杆值、模型诊断、影响测量
 state_x77 <- data.frame(state.x77,
   state_name = rownames(state.x77),
   state_region = state.region,
+  state_abb = state.abb,
   check.names = FALSE
 )
+
 # 模型诊断图
 fit <- lm(`Life Exp` ~ Income + Murder, data = state_x77)
 op <- par(mfrow = c(3, 2), mar = c(4, 4, 3, 1))
@@ -2524,13 +2526,13 @@ p1 | p2
 ```{r}
 library(sf)
 # 美国州级多边形边界地图
-us_states_map <- readRDS(file = "data/us-state-map-2010.rds")
+us_state_map <- readRDS(file = "data/us-state-map-2010.rds")
 # 将观测数据与地图数据合并
-us_states_df <- merge(us_states_map, state_x77,
+us_state_df <- merge(us_state_map, state_x77,
   by.x = "NAME", by.y = "state_name", all.x = TRUE
 )
 # 计算人口密度
-us_states_df <- within(us_states_df, {
+us_state_df <- within(us_state_df, {
   den <- 1000 * Population / Area
 })
 ```
@@ -2551,7 +2553,7 @@ us_states_df <- within(us_states_df, {
 
 ggplot() +
   geom_sf(
-    data = us_states_df, aes(fill = den),
+    data = us_state_df, aes(fill = den),
     color = "gray80", lwd = 0.25
   ) +
   scale_fill_viridis_c(
@@ -2578,7 +2580,7 @@ ggplot() +
 
 library(biscale)
 # 将数据根据分位点分箱
-us_bi_data <- bi_class(us_states_df[!is.na(us_states_df$Income),],
+us_bi_data <- bi_class(us_state_df[!is.na(us_state_df$Income),],
   x = Income, y = `Life Exp`,
   style = "quantile", dim = 3
 )
@@ -2611,13 +2613,13 @@ us_bi_leg <- ggplot(
   coord_fixed() +
   theme_void() +
   theme(
-    axis.title = element_text(size = 10),
+    axis.title = element_text(size = 8),
     axis.title.y = element_text(angle = 90)
   )
 
 # 组合图形
 us_bi_map + inset_element(us_bi_leg,
-  left = 0.875, bottom = 0.05, right = 1, top = 0.35
+  left = 0.875, bottom = 0, right = 1, top = 0.35
 )
 ```
 
@@ -2637,7 +2639,7 @@ us_bi_map + inset_element(us_bi_leg,
 
 ggplot() +
   geom_sf(
-    data = us_states_df, fill = NA, aes(color = state_region)
+    data = us_state_df, fill = NA, aes(color = state_region)
   ) +
   labs(title = "美国各州的区域划分", color = "区域划分", 
        caption = "数据源：美国人口调查局") +
@@ -2657,9 +2659,10 @@ ggplot() +
 
 ggplot() +
   geom_sf(
-    data = us_states_df, fill = NA, aes(color = state_region)
+    data = us_state_df, fill = NA, aes(color = state_region)
   ) +
-  geom_sf_label(data = us_states_df, aes(label = NAME), size = 3) +
+  geom_sf_label(data = us_state_df, aes(label = state_abb), 
+                size = 3, na.rm = T) +
   labs(
     title = "美国各州的区域划分", color = "区域划分", 
     caption = "数据源：美国人口调查局"
@@ -2678,19 +2681,19 @@ ggplot() +
 #| fig-showtext: true
 #| echo: true
 
-us_states_df <- within(us_states_df, {
+us_state_df <- within(us_state_df, {
   geometry_center <- st_centroid(geometry)
 })
 
 library(ggnewscale)
 ggplot() +
   geom_sf(
-    data = us_states_df, fill = NA, aes(color = state_region)
+    data = us_state_df, fill = NA, aes(color = state_region)
   ) +
   labs(color = "区域划分") +
   new_scale_color() +
   geom_sf(
-    data = us_states_df, 
+    data = us_state_df, 
     aes(geometry = geometry_center, color = den, size = den),
     show.legend = c(color = FALSE, size = TRUE), na.rm = TRUE
   ) +
@@ -2717,12 +2720,12 @@ ggplot() +
 #| warning: false
 
 # 按区域分组后按人口密度排序
-us_states_df <- us_states_df[with(us_states_df, order(state_region, -den)), ]
+us_state_df <- us_state_df[with(us_state_df, order(state_region, -den)), ]
 # 添加新列记录排序后的序号
-us_states_df$rowid <- 1:nrow(us_states_df)
+us_state_df$rowid <- 1:nrow(us_state_df)
 # 绘图
 ggplot(
-  data = us_states_df,
+  data = us_state_df,
   aes(x = den, y = reorder(NAME, rowid, FUN = function(x) 1 / (1 + x)))
 ) +
   geom_col(aes(fill = state_region)) +
@@ -2753,9 +2756,9 @@ ggplot(
 
 library(cartogram)
 # 构造变形地图
-us_states_carto <- cartogram_cont(us_states_df, weight = "den", itermax = 5)
+us_state_carto <- cartogram_cont(us_state_df, weight = "den", itermax = 5)
 # 绘制变形地图
-ggplot(us_states_carto) +
+ggplot(us_state_carto) +
   geom_sf(aes(fill = den), color = "gray80", lwd = 0.25) +
   scale_fill_viridis_c(
     trans = "log10", option = "plasma",
