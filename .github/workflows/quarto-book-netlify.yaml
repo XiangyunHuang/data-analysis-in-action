@@ -24,6 +24,7 @@ jobs:
       RGL_USE_NULL: true
       LANG: "en_US.UTF-8"
       TZ: "Asia/Shanghai"
+      RETICULATE_PYTHON_ENV: "/opt/.virtualenvs/r-tensorflow"
       CMDSTAN_VERSION: "2.29.2"
       CMDSTAN: "/opt/cmdstan/cmdstan-2.29.2"
       CMDSTANR_NO_VER_CHECK: true
@@ -67,6 +68,21 @@ jobs:
           fc-list | grep 'noto' | sort
           fc-list | sort
           fc-cache -fsv
+
+      - name: Install Python ENV
+        run: |
+          virtualenv -p /usr/bin/python3 $RETICULATE_PYTHON_ENV
+          source $RETICULATE_PYTHON_ENV/bin/activate
+          python -V
+          pip install -r requirements.txt
+          pip list --format=columns
+          deactivate
+
+      - name: Check Python
+        run: |
+          if(!require('reticulate')) install.packages('reticulate')
+          reticulate::py_config()
+        shell: Rscript {0}
 
       - name: Install LaTeX packages
         run: |
