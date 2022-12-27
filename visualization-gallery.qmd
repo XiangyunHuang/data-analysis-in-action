@@ -86,12 +86,12 @@ R 是一个自由的统计计算和统计绘图环境，最初由新西兰奥克
 ```{bash}
 #| eval: false
 
-svn log --xml --verbose -r 6:82626 \
+svn log --xml --verbose -r 6:83502 \
   https://svn.r-project.org/R/trunk > data-raw/svn_trunk_log_2022.xml
 ```
 
 去掉没什么信息的前5次代码提交记录：初始化仓库，上传原始的 R 软件源码等。
-从 Ross Ihaka 在 1997-09-18 提交第 1 次代码改动开始，下载所有的提交日志。截至写作时间，即 2022年7月27日，代码最新版本号为 82626，意味着代码仓库已存在 8 万多次提交。
+从 Ross Ihaka 在 1997-09-18 提交第 1 次代码改动开始，下载所有的提交日志。截至写作时间，即 2022年12月27日，代码最新版本号为 83502，意味着代码仓库已存在 8 万多次提交。
 
 下载数据后，借助 [**xml2**](https://github.com/r-lib/xml2/) 包预处理这份 XML 格式数据，提取最重要的信息，谁在什么时间做了什么改动。经过一番操作后，将清洗干净的数据，
 保存到目录 `data/` 下，以 R 软件特有的文件格式保存为 `svn-trunk-log-2022.rds`，同样与书随附。这样下来，原 XML 格式保存的 35 M 文件减少为 1 M 多，极大地减少了存储空间，也极大地方便了后续的数据探索和可视化。下面是这份日志数据开头的两行：
@@ -307,7 +307,7 @@ ggplot(data = trunk_year, aes(x = year, y = revision)) +
 
 ggplot(data = trunk_year, aes(x = year, y = revision)) +
   geom_point() +
-  geom_smooth(data = subset(trunk_year, year != c(1997,2022))) +
+  geom_smooth(data = subset(trunk_year, year != 1997)) +
   theme_classic() +
   theme(panel.grid.major.y = element_line(colour = "gray90")) +
   labs(x = "年份", y = "提交量")
@@ -317,7 +317,7 @@ ggplot(data = trunk_year, aes(x = year, y = revision)) +
 
 ```{r}
 trunk_year_loess <- loess(revision ~ year,
-  data = subset(trunk_year, year != c(1997,2022)),
+  data = subset(trunk_year, year != 1997),
   span = 0.75, degree = 2, method = "loess",
   family = "symmetric",
   control = loess.control(surface = "direct", iterations = 4)
@@ -337,7 +337,7 @@ ggplot(data = trunk_year, aes(x = year, y = revision)) +
     method.args = list(
       span = 0.75, degree = 2, family = "symmetric",
       control = loess.control(surface = "direct", iterations = 4)
-    ), data = subset(trunk_year, year != c(1997,2022))) +
+    ), data = subset(trunk_year, year != 1997)) +
   theme_classic() +
   theme(panel.grid.major.y = element_line(colour = "gray90")) +
   labs(x = "年份", y = "提交量")
@@ -347,7 +347,7 @@ ggplot(data = trunk_year, aes(x = year, y = revision)) +
 
 ```{r}
 trunk_year_nls <- nls(revision ~ a * (year - 1996)^2 + b,
-  data = subset(trunk_year, year != c(1997,2022)),
+  data = subset(trunk_year, year != 1997),
   start = list(a = -0.1, b = 1000)
 )
 ```
@@ -367,7 +367,7 @@ ggplot(data = trunk_year, aes(x = year, y = revision)) +
     method.args = list(
       start = list(a = -0.1, b = 1000)
     ), se = FALSE, 
-    data = subset(trunk_year, year != c(1997,2022)),
+    data = subset(trunk_year, year != 1997),
   ) +
   theme_classic() +
   theme(panel.grid.major.y = element_line(colour = "gray90")) +
@@ -431,7 +431,7 @@ ggplot(data = trunk_year, aes(x = year, y = revision)) +
   geom_smooth(
     formula = "y~x",
     method = xxspline, se = FALSE,
-    data = subset(trunk_year, year != c(1997,2022))
+    data = subset(trunk_year, year != 1997)
   ) +
   theme_classic() +
   theme(panel.grid.major.y = element_line(colour = "gray90")) +
@@ -454,7 +454,7 @@ ggplot(data = trunk_year, aes(x = year, y = revision)) +
   geom_smooth(
     formula = y ~ s(x, k = 12),
     method = "gam", se = FALSE,
-    data = subset(trunk_year, year != c(1997, 2022))
+    data = subset(trunk_year, year != 1997)
   ) +
   theme_classic() +
   theme(panel.grid.major.y = element_line(colour = "gray90")) +
@@ -476,7 +476,7 @@ ggplot(data = trunk_year, aes(x = year, y = revision)) +
     method = "lm", 
     formula = "y ~ poly((x - 1996), 3)",
     se = FALSE, 
-    data = subset(trunk_year, year != c(1997,2022)),
+    data = subset(trunk_year, year != 1997),
   ) +
   theme_classic() +
   theme(panel.grid.major.y = element_line(colour = "gray90")) +
