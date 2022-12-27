@@ -1,4 +1,4 @@
-Sys.setenv(CMDSTAN="/opt/cmdstan-2.29.2")
+Sys.setenv(CMDSTAN="/opt/cmdstan/cmdstan-2.31.0")
 Sys.setenv(CMDSTANR_NO_VER_CHECK=TRUE)
 
 options(rgl.useNULL = TRUE)
