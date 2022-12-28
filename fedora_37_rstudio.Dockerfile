@@ -10,6 +10,7 @@ LABEL org.label-schema.license="GPL-3.0" \
 
 ARG CMDSTAN=/opt/cmdstan/cmdstan-2.31.0
 ARG CMDSTAN_VERSION=2.31.0
+ARG RETICULATE_PYTHON_ENV=/opt/.virtualenvs/r-tensorflow
 
 # System dependencies required for R packages
 RUN dnf -y upgrade \
@@ -105,6 +106,12 @@ RUN mkdir -p /opt/cmdstan \
 COPY DESCRIPTION DESCRIPTION
 
 RUN Rscript -e "remotes::install_deps('.')"
+
+COPY requirements.txt requirements.txt
+
+RUN virtualenv -p /usr/bin/python3 ${RETICULATE_PYTHON_ENV} \
+ && source ${RETICULATE_PYTHON_ENV}/bin/activate \
+ && pip install -r requirements.txt
 
 # Set locale
 ENV LANG=en_US.UTF-8 \
