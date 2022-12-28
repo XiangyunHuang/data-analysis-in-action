@@ -8,6 +8,10 @@ on:
 jobs:
   docker:
     runs-on: ubuntu-22.04
+    env:
+      RETICULATE_PYTHON_ENV: "/opt/.virtualenvs/r-tensorflow"
+      CMDSTAN_VERSION: "2.31.0"
+      CMDSTAN: "/opt/cmdstan/cmdstan-2.31.0"
     steps:
       -
         name: Set up QEMU
@@ -36,6 +40,10 @@ jobs:
           file: "{context}/fedora_37_rstudio.Dockerfile"
           push: true
           tags: xiangyunhuang/daar:1.0.0
+          build-args: |
+            CMDSTAN=${{ env.CMDSTAN }}
+            CMDSTAN_VERSION=${{ env.CMDSTAN_VERSION }}
+            RETICULATE_PYTHON_ENV=${{ env.RETICULATE_PYTHON_ENV }}
       -
         name: Push image to GHCR
         run: |
