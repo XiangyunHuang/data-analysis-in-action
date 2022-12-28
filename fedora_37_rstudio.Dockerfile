@@ -8,6 +8,9 @@ LABEL org.label-schema.license="GPL-3.0" \
       org.label-schema.vendor="Book Project" \
       maintainer="Xiangyun Huang <xiangyunfaith@outlook.com>"
 
+ARG CMDSTAN=/opt/cmdstan/cmdstan-2.31.0
+ARG CMDSTAN_VERSION=2.31.0
+
 # System dependencies required for R packages
 RUN dnf -y upgrade \
   && dnf -y install dnf-plugins-core \
@@ -78,6 +81,30 @@ RUN dnf -y install rstudio-server \
  && echo 'docker:docker123' | chpasswd \
  # Set group authority
  && chown -R docker:staff /usr/local/lib/R/site-library
+
+# System dependencies required for Extra R packages
+RUN dnf -y install ImageMagick-c++-devel \
+   poppler-cpp-devel \
+   libjpeg-turbo-devel \
+   xorg-x11-server-Xvfb \
+   unixODBC-devel \
+   sqlite-devel \
+   gdal-devel \
+   proj-devel \
+   geos-devel \
+   udunits2-devel \
+   harfbuzz-devel \
+   fribidi-devel
+
+RUN mkdir -p /opt/cmdstan \
+  && curl -fLo cmdstan-${CMDSTAN_VERSION}.tar.gz https://github.com/stan-dev/cmdstan/releases/download/v${CMDSTAN_VERSION}/cmdstan-${CMDSTAN_VERSION}.tar.gz \
+  && tar -xzf cmdstan-${CMDSTAN_VERSION}.tar.gz -C /opt/cmdstan/ \
+  && cd ${CMDSTAN} && make build && cd /home/docker/ \
+  && install2.r -r https://mc-stan.org/r-packages/ cmdstanr
+
+COPY DESCRIPTION DESCRIPTION
+
+RUN Rscript -e "remotes::install_deps('.')"
 
 # Set locale
 ENV LANG=en_US.UTF-8 \
