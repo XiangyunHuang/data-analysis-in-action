@@ -10,6 +10,7 @@ LABEL org.label-schema.license="GPL-3.0" \
 
 ARG CMDSTAN=/opt/cmdstan/cmdstan-2.31.0
 ARG CMDSTAN_VERSION=2.31.0
+ARG QUARTO_VERSION=1.2.280
 ARG RETICULATE_PYTHON_ENV=/opt/.virtualenvs/r-tensorflow
 
 # System dependencies required for R packages
@@ -101,7 +102,7 @@ RUN dnf -y install ImageMagick-c++-devel \
 RUN mkdir -p /opt/cmdstan \
   && curl -fLo cmdstan-${CMDSTAN_VERSION}.tar.gz https://github.com/stan-dev/cmdstan/releases/download/v${CMDSTAN_VERSION}/cmdstan-${CMDSTAN_VERSION}.tar.gz \
   && tar -xzf cmdstan-${CMDSTAN_VERSION}.tar.gz -C /opt/cmdstan/ \
-  && rm cmdstan-${CMDSTAN_VERSION}.tar.gz \
+  && rm -rf cmdstan-${CMDSTAN_VERSION}.tar.gz \
   && cd ${CMDSTAN} && make build && cd /home/docker/ \
   && Rscript -e 'install.packages("cmdstanr", repos = c("https://mc-stan.org/r-packages/", getOption("repos")), type="source")'
 
@@ -114,6 +115,13 @@ COPY requirements.txt requirements.txt
 RUN virtualenv -p /usr/bin/python3 ${RETICULATE_PYTHON_ENV} \
  && source ${RETICULATE_PYTHON_ENV}/bin/activate \
  && pip install -r requirements.txt
+
+# Set Quarto
+RUN curl -fLo quarto.tar.gz https://github.com/quarto-dev/quarto-cli/releases/download/v${QUARTO_VERSION}/quarto-${QUARTO_VERSION}-linux-amd64.tar.gz \
+ && mkdir -p /opt/quarto/ \
+ && tar -xzf quarto.tar.gz -C /opt/quarto/ \
+ && ln -s /opt/quarto/quarto-${QUARTO_VERSION}/bin/quarto /usr/bin/quarto \
+ && rm -rf quarto.tar.gz
 
 # Set locale
 ENV LANG=en_US.UTF-8 \
