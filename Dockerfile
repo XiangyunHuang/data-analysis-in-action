@@ -88,4 +88,4 @@ ENV TZ UTC
 
 WORKDIR /home/docker/
 
-EXPOSE 8787
+EXPOSE 8787/tcp

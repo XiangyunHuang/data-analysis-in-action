@@ -103,7 +103,7 @@ RUN mkdir -p /opt/cmdstan \
   && tar -xzf cmdstan-${CMDSTAN_VERSION}.tar.gz -C /opt/cmdstan/ \
   && rm cmdstan-${CMDSTAN_VERSION}.tar.gz \
   && cd ${CMDSTAN} && make build && cd /home/docker/ \
-  && install2.r -r https://mc-stan.org/r-packages/ cmdstanr
+  && Rscript -e 'install.packages("cmdstanr", repos = c("https://mc-stan.org/r-packages/", getOption("repos")), type="source")'
 
 # Set Extra R Packages
 COPY DESCRIPTION DESCRIPTION
@@ -124,4 +124,4 @@ ENV TZ UTC
 
 WORKDIR /home/docker/
 
-EXPOSE 8787
+EXPOSE 8787/tcp
