@@ -1,4 +1,4 @@
-FROM fedora:37
+FROM fedora:36
 
 RUN groupadd staff \
   && useradd -g staff -d /home/docker docker
@@ -97,18 +97,20 @@ RUN dnf -y install ImageMagick-c++-devel \
    harfbuzz-devel \
    fribidi-devel
 
+# Set CmdStanR
 RUN mkdir -p /opt/cmdstan \
   && curl -fLo cmdstan-${CMDSTAN_VERSION}.tar.gz https://github.com/stan-dev/cmdstan/releases/download/v${CMDSTAN_VERSION}/cmdstan-${CMDSTAN_VERSION}.tar.gz \
   && tar -xzf cmdstan-${CMDSTAN_VERSION}.tar.gz -C /opt/cmdstan/ \
+  && rm cmdstan-${CMDSTAN_VERSION}.tar.gz \
   && cd ${CMDSTAN} && make build && cd /home/docker/ \
   && install2.r -r https://mc-stan.org/r-packages/ cmdstanr
 
+# Set Extra R Packages
 COPY DESCRIPTION DESCRIPTION
-
 RUN Rscript -e "remotes::install_deps('.')"
 
+# Set Python virtualenv
 COPY requirements.txt requirements.txt
-
 RUN virtualenv -p /usr/bin/python3 ${RETICULATE_PYTHON_ENV} \
  && source ${RETICULATE_PYTHON_ENV}/bin/activate \
  && pip install -r requirements.txt
