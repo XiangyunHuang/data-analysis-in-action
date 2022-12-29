@@ -100,7 +100,9 @@ RUN dnf -y install ImageMagick-c++-devel \
    google-noto-cjk-fonts \
    google-noto-sans-fonts \
    google-noto-serif-fonts \
-   texlive-standalone
+   texlive-standalone \
+   texlive-animate \
+   texlive-media9
 
 # Set CmdStanR
 RUN mkdir -p /opt/cmdstan \
