@@ -125,6 +125,8 @@ RUN curl -fLo quarto.tar.gz https://github.com/quarto-dev/quarto-cli/releases/do
  && mkdir -p /opt/quarto/ \
  && tar -xzf quarto.tar.gz -C /opt/quarto/ \
  && ln -s /opt/quarto/quarto-${QUARTO_VERSION}/bin/quarto /usr/bin/quarto \
+ && mv -f /usr/bin/pandoc /usr/bin/pandoc.bak \
+ && ln -s /opt/quarto/quarto-${QUARTO_VERSION}/bin/tools/pandoc /usr/bin/pandoc \
  && rm -rf quarto.tar.gz
 
 # Set locale
@@ -133,6 +135,8 @@ ENV LANG=en_US.UTF-8 \
 
 # Set default timezone
 ENV TZ UTC
+
+ENV CMDSTAN=$CMDSTAN
 
 WORKDIR /home/docker/
 
