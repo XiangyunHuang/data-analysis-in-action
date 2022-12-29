@@ -1,0 +1,50 @@
+on:
+  push:
+    branches: main
+  pull_request:
+    branches: main
+  # to be able to trigger a manual build
+  workflow_dispatch:
+  schedule:
+    # 每周四 早上 7 点
+    - cron: '0 23 * * 3'
+
+name: Fedora-Book
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-22.04
+    container:
+      image: ghcr.io/xiangyunhuang/daar:1.0.0
+      credentials:
+         username: ${{ github.repository_owner }}
+         password: ${{ secrets.GITHUB_TOKEN }}
+      volumes:
+        - /home/docker:.
+      ports:
+        - 8787
+    steps:
+      - 
+        name: Checkout
+        uses: actions/checkout@v3
+        
+      - name: Render Book
+        run: |
+          quarto render
+
+      - name: Deploy to Netlify
+        if: contains(env.isExtPR, 'false')
+        id: netlify-deploy
+        uses: nwtgck/actions-netlify@v2
+        with:
+          publish-dir: './_book'
+          production-branch: main
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          deploy-message:
+            'Deploy from GHA: ${{ github.event.pull_request.title || github.event.head_commit.message }} (${{ github.sha }})'
+          enable-pull-request-comment: true
+          enable-commit-comment: true
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        timeout-minutes: 10
