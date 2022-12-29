@@ -1,4 +1,4 @@
-FROM fedora:36
+FROM fedora:37
 
 RUN groupadd staff \
   && useradd -g staff -d /home/docker docker
@@ -96,7 +96,11 @@ RUN dnf -y install ImageMagick-c++-devel \
    geos-devel \
    udunits2-devel \
    harfbuzz-devel \
-   fribidi-devel
+   fribidi-devel \
+   google-noto-cjk-fonts \
+   google-noto-sans-fonts \
+   google-noto-serif-fonts \
+   texlive-standalone
 
 # Set CmdStanR
 RUN mkdir -p /opt/cmdstan \
@@ -108,7 +112,7 @@ RUN mkdir -p /opt/cmdstan \
 
 # Set Extra R Packages
 COPY DESCRIPTION DESCRIPTION
-RUN Rscript -e "remotes::install_deps('.')"
+RUN Rscript -e "remotes::install_deps('.', dependencies = TRUE)"
 
 # Set Python virtualenv
 COPY requirements.txt requirements.txt
