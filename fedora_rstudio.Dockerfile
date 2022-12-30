@@ -26,6 +26,7 @@ RUN dnf -y upgrade \
    cargo \
    bzip2 \
    passwd \
+   initscripts \
    libcurl-devel \
    openssl-devel \
    libssh2-devel \
@@ -74,6 +75,9 @@ RUN ln -s /usr/lib64/R/library/littler/examples/install.r /usr/bin/install.r \
 
 # Set RStudio Server
 RUN dnf -y install rstudio-server \
+ && cp /usr/lib/systemd/system/rstudio-server.service /etc/init.d/ \
+ && chmod +x /etc/init.d/rstudio-server.service \
+ && systemctl enable rstudio-server \
  # Set passwd
  && echo 'docker:docker123' | chpasswd \
  # Set group authority
@@ -89,3 +93,5 @@ ENV TZ UTC
 WORKDIR /home/docker/
 
 EXPOSE 8787/tcp
+
+CMD [ "/sbin/init" ]

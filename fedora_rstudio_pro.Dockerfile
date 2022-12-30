@@ -31,6 +31,7 @@ RUN dnf -y upgrade \
    cargo \
    bzip2 \
    passwd \
+   initscripts \
    libcurl-devel \
    openssl-devel \
    libssh2-devel \
@@ -79,6 +80,9 @@ RUN ln -s /usr/lib64/R/library/littler/examples/install.r /usr/bin/install.r \
 
 # Set RStudio Server
 RUN dnf -y install rstudio-server \
+ && cp /usr/lib/systemd/system/rstudio-server.service /etc/init.d/ \
+ && chmod +x /etc/init.d/rstudio-server.service \
+ && systemctl enable rstudio-server \
  # Set passwd
  && echo 'docker:docker123' | chpasswd \
  # Set group authority
@@ -100,6 +104,8 @@ RUN dnf -y install ImageMagick-c++-devel \
    google-noto-cjk-fonts \
    google-noto-sans-fonts \
    google-noto-serif-fonts \
+   google-noto-emoji-fonts \
+   google-noto-emoji-color-fonts \
    texlive-standalone \
    texlive-animate \
    texlive-media9
@@ -122,7 +128,7 @@ RUN virtualenv -p /usr/bin/python3 ${RETICULATE_PYTHON_ENV} \
  && source ${RETICULATE_PYTHON_ENV}/bin/activate \
  && pip install -r requirements.txt
 
-# Set Quarto
+# Set Quarto and Pandoc
 RUN curl -fLo quarto.tar.gz https://github.com/quarto-dev/quarto-cli/releases/download/v${QUARTO_VERSION}/quarto-${QUARTO_VERSION}-linux-amd64.tar.gz \
  && mkdir -p /opt/quarto/ \
  && tar -xzf quarto.tar.gz -C /opt/quarto/ \
@@ -143,3 +149,5 @@ ENV CMDSTAN=$CMDSTAN
 WORKDIR /home/docker/
 
 EXPOSE 8787/tcp
+
+CMD [ "/sbin/init" ]
