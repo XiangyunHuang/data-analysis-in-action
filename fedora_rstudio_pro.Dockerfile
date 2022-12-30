@@ -111,6 +111,8 @@ RUN dnf -y install ImageMagick-c++-devel \
    texlive-media9
 
 # Set CmdStanR
+ENV CMDSTAN=$CMDSTAN
+
 RUN mkdir -p /opt/cmdstan \
   && curl -fLo cmdstan-${CMDSTAN_VERSION}.tar.gz https://github.com/stan-dev/cmdstan/releases/download/v${CMDSTAN_VERSION}/cmdstan-${CMDSTAN_VERSION}.tar.gz \
   && tar -xzf cmdstan-${CMDSTAN_VERSION}.tar.gz -C /opt/cmdstan/ \
@@ -120,9 +122,12 @@ RUN mkdir -p /opt/cmdstan \
 
 # Set Extra R Packages
 COPY DESCRIPTION DESCRIPTION
-RUN Rscript -e "remotes::install_deps('.', dependencies = TRUE)"
+RUN export GITHUB_PAT=$GITHUB_PAT && Rscript -e "remotes::install_deps('.', dependencies = TRUE)"
 
 # Set Python virtualenv
+ENV RETICULATE_PYTHON_ENV=$RETICULATE_PYTHON_ENV
+ENV RETICULATE_PYTHON=${RETICULATE_PYTHON_ENV}/bin/python
+
 COPY requirements.txt requirements.txt
 RUN virtualenv -p /usr/bin/python3 ${RETICULATE_PYTHON_ENV} \
  && source ${RETICULATE_PYTHON_ENV}/bin/activate \
@@ -143,8 +148,6 @@ ENV LANG=en_US.UTF-8 \
 
 # Set default timezone
 ENV TZ UTC
-
-ENV CMDSTAN=$CMDSTAN
 
 WORKDIR /home/docker/
 
