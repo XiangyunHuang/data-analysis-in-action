@@ -3002,7 +3002,7 @@ wireframe(volcano,
   drape = TRUE, colorkey = FALSE, shade = TRUE,
   xlab = list("东西方向", rot = 20),
   ylab = list("南北方向", rot = -50),
-  zlab = list("高度", rot = 90),
+  zlab = list("海拔", rot = 90),
   # 减少三维图形的边空
   lattice.options = list(
     layout.widths = list(
@@ -3017,7 +3017,7 @@ wireframe(volcano,
   # 设置坐标轴字体大小
   par.settings = list(
     axis.line = list(col = "transparent"),
-    fontsize = list(text = 15, points = 10)
+    fontsize = list(text = 12, points = 10)
   ),
   # z 轴标签旋转 90 度
   scales = list(
@@ -3028,7 +3028,7 @@ wireframe(volcano,
 )
 ```
 
-**plotly** 包可以绘制交互的三维透视图来展示地形。
+静态的三维图形限制用户只能从一个视角观察，因视角和透视的关系，存在遮挡和视觉错位的情况，比如火山地形 @fig-volcano-wireframe 因坡面遮挡了火山口及其周围地势。而 **plotly** 包可以绘制交互的三维透视图来展示地形，通过拖拽图形，可以从任意视角切入观察火山口及山体的任意位置，还可以拉近看局部细节。
 
 ```{css}
 #| label: plotly-modebar
@@ -3044,11 +3044,16 @@ wireframe(volcano,
 #| eval: !expr knitr::is_html_output(excludes = 'epub')
 #| echo: true
 
-plotly::plot_ly(z = ~volcano) |> 
-  plotly::add_surface()
+plotly::plot_ly(z = ~volcano) |>
+  plotly::add_surface(colorbar = list(title = "海拔")) |>
+  plotly::layout(scene = list(
+    xaxis = list(title = "东西方向"),
+    yaxis = list(title = "南北方向"),
+    zaxis = list(title = "海拔")
+  ))
 ```
 
-**rgl** 包绘制的三维散点图亦可展示数据的空间分布。
+类似地，**rgl** 包绘制的三维散点图亦可展示数据的空间分布。
 
 ```{r}
 #| label: fig-volcano-rgl
@@ -3074,7 +3079,9 @@ volcano_df <- within(volcano_df, {
 })
 # 绘制图形
 with(volcano_df, {
-  plot3d(x = x, y = y, z = z, col = color)
+  plot3d(x = x, y = y, z = z, col = color, 
+         xlab = "东西方向", ylab = "南北方向", 
+         zlab = "海拔")
 })
 ```
 
