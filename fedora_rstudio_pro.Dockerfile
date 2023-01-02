@@ -125,6 +125,7 @@ COPY desc_pkgs.txt desc_pkgs.txt
 RUN dnf -y copr enable iucar/cran \
   && dnf -y install R-CoprManager \
   && dnf -y install $(cat desc_pkgs.txt) \
+  && install2.r showtextdb showtext \
   && Rscript -e 'install.packages("cmdstanr", repos = c("https://mc-stan.org/r-packages/", getOption("repos")), type="source")' \
   && export GITHUB_PAT=${GITHUB_PAT} \
   && Rscript -e "remotes::install_deps('.', dependencies = TRUE)" \
@@ -147,7 +148,7 @@ RUN curl -fLo quarto.tar.gz https://github.com/quarto-dev/quarto-cli/releases/do
  && ln -s /opt/quarto/quarto-${QUARTO_VERSION}/bin/quarto /usr/bin/quarto \
  && mv -f /usr/bin/pandoc /usr/bin/pandoc.bak \
  && ln -s /opt/quarto/quarto-${QUARTO_VERSION}/bin/tools/pandoc /usr/bin/pandoc \
- && rm -rf quarto.tar.gz
+ && rm -f quarto.tar.gz
 
 # Set locale
 ENV LANG=en_US.UTF-8 \
