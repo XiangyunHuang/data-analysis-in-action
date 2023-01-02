@@ -15,6 +15,7 @@ ARG RETICULATE_PYTHON_ENV=/opt/.virtualenvs/r-tensorflow
 
 # System dependencies required for R packages
 RUN dnf -y upgrade \
+  && echo "install_weak_deps=False" >> /etc/dnf/dnf.conf \
   && dnf -y install dnf-plugins-core \
   && dnf -y install pandoc \
    pandoc-pdf \
