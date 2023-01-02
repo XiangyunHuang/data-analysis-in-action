@@ -18,9 +18,7 @@ ARG GITHUB_PAT=abc123
 RUN dnf -y upgrade \
   && echo "install_weak_deps=False" >> /etc/dnf/dnf.conf \
   && dnf -y install dnf-plugins-core \
-  && dnf -y install pandoc \
-   pandoc-pdf \
-   glibc-langpack-en \
+  && dnf -y install glibc-langpack-en \
    NLopt-devel \
    automake \
    R-devel \
@@ -140,7 +138,6 @@ RUN curl -fLo quarto.tar.gz https://github.com/quarto-dev/quarto-cli/releases/do
  && mkdir -p /opt/quarto/ \
  && tar -xzf quarto.tar.gz -C /opt/quarto/ \
  && ln -s /opt/quarto/quarto-${QUARTO_VERSION}/bin/quarto /usr/bin/quarto \
- && mv -f /usr/bin/pandoc /usr/bin/pandoc.bak \
  && ln -s /opt/quarto/quarto-${QUARTO_VERSION}/bin/tools/pandoc /usr/bin/pandoc \
  && rm -rf quarto.tar.gz
 
