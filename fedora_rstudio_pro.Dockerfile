@@ -12,6 +12,7 @@ ARG CMDSTAN=/opt/cmdstan/cmdstan-2.31.0
 ARG CMDSTAN_VERSION=2.31.0
 ARG QUARTO_VERSION=1.2.280
 ARG RETICULATE_PYTHON_ENV=/opt/.virtualenvs/r-tensorflow
+ARG GITHUB_PAT=abc123
 
 # System dependencies required for R packages
 RUN dnf -y upgrade \
@@ -123,7 +124,7 @@ RUN mkdir -p /opt/cmdstan \
 
 # Set Extra R Packages
 COPY DESCRIPTION DESCRIPTION
-RUN export GITHUB_PAT=$GITHUB_PAT && Rscript -e "remotes::install_deps('.', dependencies = TRUE)"
+RUN export GITHUB_PAT=${GITHUB_PAT} && Rscript -e "remotes::install_deps('.', dependencies = TRUE)"
 
 # Set Python virtualenv
 ENV RETICULATE_PYTHON_ENV=$RETICULATE_PYTHON_ENV
