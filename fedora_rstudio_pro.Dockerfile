@@ -31,6 +31,7 @@ RUN dnf -y upgrade \
    passwd \
    initscripts \
    firewalld \
+   v8-devel \
    python3-virtualenv \
    google-noto-cjk-fonts \
    google-noto-sans-fonts \
