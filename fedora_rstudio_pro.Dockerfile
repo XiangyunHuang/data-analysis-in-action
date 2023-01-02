@@ -122,7 +122,13 @@ RUN mkdir -p /opt/cmdstan \
 
 # Set Extra R Packages
 COPY DESCRIPTION DESCRIPTION
-RUN export GITHUB_PAT=${GITHUB_PAT} && Rscript -e "remotes::install_deps('.', dependencies = TRUE)"
+COPY desc_pkgs.txt desc_pkgs.txt
+RUN dnf -y copr enable iucar/cran \
+  && dnf install R-CoprManager \
+  && dnf -y install $(cat desc_pkgs.txt) \
+  && export GITHUB_PAT=${GITHUB_PAT} \
+  && Rscript -e "remotes::install_deps('.', dependencies = TRUE)" \
+  && rm -f DESCRIPTION desc_pkgs.txt
 
 # Set Python virtualenv
 ENV RETICULATE_PYTHON_ENV=$RETICULATE_PYTHON_ENV
@@ -131,7 +137,8 @@ ENV RETICULATE_PYTHON=${RETICULATE_PYTHON_ENV}/bin/python
 COPY requirements.txt requirements.txt
 RUN virtualenv -p /usr/bin/python3 ${RETICULATE_PYTHON_ENV} \
  && source ${RETICULATE_PYTHON_ENV}/bin/activate \
- && pip install -r requirements.txt
+ && pip install -r requirements.txt \
+ && rm -f requirements.txt
 
 # Set Quarto and Pandoc
 RUN curl -fLo quarto.tar.gz https://github.com/quarto-dev/quarto-cli/releases/download/v${QUARTO_VERSION}/quarto-${QUARTO_VERSION}-linux-amd64.tar.gz \
