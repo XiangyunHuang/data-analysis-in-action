@@ -117,15 +117,15 @@ RUN mkdir -p /opt/cmdstan \
   && curl -fLo cmdstan-${CMDSTAN_VERSION}.tar.gz https://github.com/stan-dev/cmdstan/releases/download/v${CMDSTAN_VERSION}/cmdstan-${CMDSTAN_VERSION}.tar.gz \
   && tar -xzf cmdstan-${CMDSTAN_VERSION}.tar.gz -C /opt/cmdstan/ \
   && rm -rf cmdstan-${CMDSTAN_VERSION}.tar.gz \
-  && cd ${CMDSTAN} && make build && cd /home/docker/ \
-  && Rscript -e 'install.packages("cmdstanr", repos = c("https://mc-stan.org/r-packages/", getOption("repos")), type="source")'
+  && cd ${CMDSTAN} && make build && cd /home/docker/
 
 # Set Extra R Packages
 COPY DESCRIPTION DESCRIPTION
 COPY desc_pkgs.txt desc_pkgs.txt
 RUN dnf -y copr enable iucar/cran \
-  && dnf install R-CoprManager \
+  && dnf -y install R-CoprManager \
   && dnf -y install $(cat desc_pkgs.txt) \
+  && Rscript -e 'install.packages("cmdstanr", repos = c("https://mc-stan.org/r-packages/", getOption("repos")), type="source")' \
   && export GITHUB_PAT=${GITHUB_PAT} \
   && Rscript -e "remotes::install_deps('.', dependencies = TRUE)" \
   && rm -f DESCRIPTION desc_pkgs.txt
