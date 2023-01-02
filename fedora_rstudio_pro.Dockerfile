@@ -19,8 +19,6 @@ RUN dnf -y upgrade \
   && echo "install_weak_deps=False" >> /etc/dnf/dnf.conf \
   && dnf -y install dnf-plugins-core \
   && dnf -y install glibc-langpack-en \
-   NLopt-devel \
-   automake \
    R-devel \
    R-littler \
    R-littler-examples \
@@ -32,18 +30,13 @@ RUN dnf -y upgrade \
    bzip2 \
    passwd \
    initscripts \
-   libcurl-devel \
-   openssl-devel \
-   libssh2-devel \
-   libgit2-devel \
-   libxml2-devel \
-   glpk-devel \
-   gmp-devel \
-   cairo-devel \
-   v8-devel \
-   igraph-devel \
    firewalld \
    python3-virtualenv \
+   google-noto-cjk-fonts \
+   google-noto-sans-fonts \
+   google-noto-serif-fonts \
+   google-noto-emoji-fonts \
+   google-noto-emoji-color-fonts \
    texlive-sourceserifpro \
    texlive-sourcecodepro \
    texlive-sourcesanspro \
@@ -61,7 +54,10 @@ RUN dnf -y upgrade \
    texlive-fontawesome5 \
    texlive-fontawesome \
    texlive-newtx \
-   texlive-tcolorbox
+   texlive-tcolorbox \
+   texlive-standalone \
+   texlive-animate \
+   texlive-media9
 
 RUN ln -s /usr/lib64/R/library/littler/examples/install.r /usr/bin/install.r \
  && ln -s /usr/lib64/R/library/littler/examples/install2.r /usr/bin/install2.r \
@@ -87,28 +83,6 @@ RUN dnf -y install rstudio-server \
  && echo 'docker:docker123' | chpasswd \
  # Set group authority
  && chown -R docker:staff /usr/local/lib/R/site-library
-
-# System dependencies required for Extra R packages
-RUN dnf -y install ImageMagick-c++-devel \
-   poppler-cpp-devel \
-   libjpeg-turbo-devel \
-   xorg-x11-server-Xvfb \
-   unixODBC-devel \
-   sqlite-devel \
-   gdal-devel \
-   proj-devel \
-   geos-devel \
-   udunits2-devel \
-   harfbuzz-devel \
-   fribidi-devel \
-   google-noto-cjk-fonts \
-   google-noto-sans-fonts \
-   google-noto-serif-fonts \
-   google-noto-emoji-fonts \
-   google-noto-emoji-color-fonts \
-   texlive-standalone \
-   texlive-animate \
-   texlive-media9
 
 # Set CmdStanR
 ENV CMDSTAN=$CMDSTAN
@@ -152,10 +126,10 @@ RUN curl -fLo quarto.tar.gz https://github.com/quarto-dev/quarto-cli/releases/do
 
 # Set locale
 ENV LANG=en_US.UTF-8 \
-    LANGUAGE=en_US.UTF-8
-
-# Set default timezone
-ENV TZ UTC
+    LANGUAGE=en_US.UTF-8 \
+    LC_ALL=en_US.UTF-8 \
+    # Set default timezone
+    TZ=UTC
 
 WORKDIR /home/docker/
 
