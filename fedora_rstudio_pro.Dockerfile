@@ -12,15 +12,13 @@ ARG CMDSTAN=/opt/cmdstan/cmdstan-2.31.0
 ARG CMDSTAN_VERSION=2.31.0
 ARG QUARTO_VERSION=1.2.280
 ARG RETICULATE_PYTHON_ENV=/opt/.virtualenvs/r-tensorflow
+ARG GITHUB_PAT=abc123
 
 # System dependencies required for R packages
 RUN dnf -y upgrade \
+  && echo "install_weak_deps=False" >> /etc/dnf/dnf.conf \
   && dnf -y install dnf-plugins-core \
-  && dnf -y install pandoc \
-   pandoc-pdf \
-   glibc-langpack-en \
-   NLopt-devel \
-   automake \
+  && dnf -y install glibc-langpack-en \
    R-devel \
    R-littler \
    R-littler-examples \
@@ -32,18 +30,14 @@ RUN dnf -y upgrade \
    bzip2 \
    passwd \
    initscripts \
-   libcurl-devel \
-   openssl-devel \
-   libssh2-devel \
-   libgit2-devel \
-   libxml2-devel \
-   glpk-devel \
-   gmp-devel \
-   cairo-devel \
-   v8-devel \
-   igraph-devel \
    firewalld \
+   v8-devel \
    python3-virtualenv \
+   google-noto-cjk-fonts \
+   google-noto-sans-fonts \
+   google-noto-serif-fonts \
+   google-noto-emoji-fonts \
+   google-noto-emoji-color-fonts \
    texlive-sourceserifpro \
    texlive-sourcecodepro \
    texlive-sourcesanspro \
@@ -61,7 +55,10 @@ RUN dnf -y upgrade \
    texlive-fontawesome5 \
    texlive-fontawesome \
    texlive-newtx \
-   texlive-tcolorbox
+   texlive-tcolorbox \
+   texlive-standalone \
+   texlive-animate \
+   texlive-media9
 
 RUN ln -s /usr/lib64/R/library/littler/examples/install.r /usr/bin/install.r \
  && ln -s /usr/lib64/R/library/littler/examples/install2.r /usr/bin/install2.r \
@@ -88,28 +85,6 @@ RUN dnf -y install rstudio-server \
  # Set group authority
  && chown -R docker:staff /usr/local/lib/R/site-library
 
-# System dependencies required for Extra R packages
-RUN dnf -y install ImageMagick-c++-devel \
-   poppler-cpp-devel \
-   libjpeg-turbo-devel \
-   xorg-x11-server-Xvfb \
-   unixODBC-devel \
-   sqlite-devel \
-   gdal-devel \
-   proj-devel \
-   geos-devel \
-   udunits2-devel \
-   harfbuzz-devel \
-   fribidi-devel \
-   google-noto-cjk-fonts \
-   google-noto-sans-fonts \
-   google-noto-serif-fonts \
-   google-noto-emoji-fonts \
-   google-noto-emoji-color-fonts \
-   texlive-standalone \
-   texlive-animate \
-   texlive-media9
-
 # Set CmdStanR
 ENV CMDSTAN=$CMDSTAN
 
@@ -117,12 +92,19 @@ RUN mkdir -p /opt/cmdstan \
   && curl -fLo cmdstan-${CMDSTAN_VERSION}.tar.gz https://github.com/stan-dev/cmdstan/releases/download/v${CMDSTAN_VERSION}/cmdstan-${CMDSTAN_VERSION}.tar.gz \
   && tar -xzf cmdstan-${CMDSTAN_VERSION}.tar.gz -C /opt/cmdstan/ \
   && rm -rf cmdstan-${CMDSTAN_VERSION}.tar.gz \
-  && cd ${CMDSTAN} && make build && cd /home/docker/ \
-  && Rscript -e 'install.packages("cmdstanr", repos = c("https://mc-stan.org/r-packages/", getOption("repos")), type="source")'
+  && cd ${CMDSTAN} && make build && cd /home/docker/
 
 # Set Extra R Packages
 COPY DESCRIPTION DESCRIPTION
-RUN export GITHUB_PAT=$GITHUB_PAT && Rscript -e "remotes::install_deps('.', dependencies = TRUE)"
+COPY desc_pkgs.txt desc_pkgs.txt
+RUN dnf -y copr enable iucar/cran \
+  && dnf -y install R-CoprManager \
+  && dnf -y install $(cat desc_pkgs.txt) \
+  && install2.r showtextdb showtext \
+  && Rscript -e 'install.packages("cmdstanr", repos = c("https://mc-stan.org/r-packages/", getOption("repos")), type="source")' \
+  && export GITHUB_PAT=${GITHUB_PAT} \
+  && Rscript -e "remotes::install_deps('.', dependencies = TRUE)" \
+  && rm -f DESCRIPTION desc_pkgs.txt
 
 # Set Python virtualenv
 ENV RETICULATE_PYTHON_ENV=$RETICULATE_PYTHON_ENV
@@ -131,7 +113,8 @@ ENV RETICULATE_PYTHON=${RETICULATE_PYTHON_ENV}/bin/python
 COPY requirements.txt requirements.txt
 RUN virtualenv -p /usr/bin/python3 ${RETICULATE_PYTHON_ENV} \
  && source ${RETICULATE_PYTHON_ENV}/bin/activate \
- && pip install -r requirements.txt
+ && pip install -r requirements.txt \
+ && rm -f requirements.txt
 
 # Set Quarto and Pandoc
 RUN curl -fLo quarto.tar.gz https://github.com/quarto-dev/quarto-cli/releases/download/v${QUARTO_VERSION}/quarto-${QUARTO_VERSION}-linux-amd64.tar.gz \
@@ -140,14 +123,14 @@ RUN curl -fLo quarto.tar.gz https://github.com/quarto-dev/quarto-cli/releases/do
  && ln -s /opt/quarto/quarto-${QUARTO_VERSION}/bin/quarto /usr/bin/quarto \
  && mv -f /usr/bin/pandoc /usr/bin/pandoc.bak \
  && ln -s /opt/quarto/quarto-${QUARTO_VERSION}/bin/tools/pandoc /usr/bin/pandoc \
- && rm -rf quarto.tar.gz
+ && rm -f quarto.tar.gz
 
 # Set locale
 ENV LANG=en_US.UTF-8 \
-    LANGUAGE=en_US.UTF-8
-
-# Set default timezone
-ENV TZ UTC
+    LANGUAGE=en_US.UTF-8 \
+    LC_ALL=en_US.UTF-8 \
+    # Set default timezone
+    TZ=UTC
 
 WORKDIR /home/docker/
 
