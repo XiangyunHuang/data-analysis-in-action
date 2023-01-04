@@ -94,7 +94,7 @@ RUN mkdir -p /opt/cmdstan \
   && curl -fLo cmdstan-${CMDSTAN_VERSION}.tar.gz https://github.com/stan-dev/cmdstan/releases/download/v${CMDSTAN_VERSION}/cmdstan-${CMDSTAN_VERSION}.tar.gz \
   && tar -xzf cmdstan-${CMDSTAN_VERSION}.tar.gz -C /opt/cmdstan/ \
   && rm -rf cmdstan-${CMDSTAN_VERSION}.tar.gz \
-  && cd ${CMDSTAN} && make build && cd /home/docker/
+  && make -C ${CMDSTAN} build
 
 # Set Extra R Packages
 COPY DESCRIPTION DESCRIPTION
