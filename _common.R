@@ -74,3 +74,7 @@ sysfonts::font_add(
   italic = "NotoSans-Italic.ttf",
   bolditalic = "NotoSans-BoldItalic.ttf"
 )
+
+# 设置 Web GL 渲染
+options(rgl.useNULL = TRUE)
+options(rgl.printRglwidget = TRUE)
