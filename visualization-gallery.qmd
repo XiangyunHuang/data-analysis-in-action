@@ -1805,20 +1805,12 @@ ggplot(G20, aes(
 
 ### 散点图 {#sec-scatter}
 
+散点图用以描述变量之间的关系，展示原始的数据，点的形态、大小、颜色等都可以随更多变量变化。
 
-<!-- 
-在介绍 ggplot2 的基础知识时，已经介绍过绘制过程，本节是否还有必要介绍，如果介绍应该怎么介绍？
-
-散点图的历史，主要作用
-展示原始的数据，关系
-
-点的形态、大小、颜色等都可以变化
--->
-
-中国国家统计局 2021 年发布的统计年鉴，2020 年 31 个省、直辖市、自治区，抚养比、文盲率、人口数的关系
+中国国家统计局 2021 年发布的统计年鉴，2020 年 31 个省、直辖市、自治区的抚养比、文盲率、人口数的关系。
 
 ```{r}
-#| label: tbl-china-raise-illiteracy
+#| label: tbl-china-raise-illiteracy-scatter
 #| tbl-cap: "2020 年各省、直辖市、自治区，总抚养比和文盲率相关数据（部分）"
 #| echo: false
 
@@ -1850,9 +1842,7 @@ ggplot(data = china_raise_illiteracy) +
 
 ### 气泡图 {#sec-bubble}
 
-<!-- 
-散点图的历史，主要作用
--->
+气泡图在散点图的基础上，添加了散点大小的视觉维度，可以在图上多展示一列数据，下 @fig-china-raise-illiteracy-bubble 新增了人口数变量。此外，在气泡旁边添加地区名称，将气泡填充的颜色也映射给了人口数变量。
 
 
 ```{r}
@@ -1887,42 +1877,30 @@ ggplot(
 
 ### 凹凸图 {#sec-bump}
 
-<!-- 
-凹凸图描述的是一种转化、变化关系，排序的变化
-
-待议是否适合放在描述关系一节
-
-排序位置变化，一段时间到另一段时间，比如话题热度的转变，比如今年国庆与去年国庆
-空间移动，路径移动，强调位置的移动
--->
-
-[ggbump](https://github.com/davidsjoberg/ggbump)
+凹凸图描述位置排序关系随时间的变化，比如前年、去年和今年各省的 GDP 排序变化，春节各旅游景点的人流量变化。[**ggbump**](https://github.com/davidsjoberg/ggbump) 包专门用来绘制凹凸图，如 @fig-bump 所示，展示
 
 ```{r}
 #| label: fig-bump
 #| fig-cap: "凹凸图"
-#| fig-width: 7
-#| fig-height: 3.5
+#| fig-width: 6.5
+#| fig-height: 3
 #| fig-showtext: true
-#| warning: false
 
 library(ggbump)
-
+# 位置排序变化
 df <- data.frame(
   country = c(
-    "India", "India", "India", "Sweden",
-    "Sweden", "Sweden", "Germany", "Germany",
-    "Germany", "Finland", "Finland", "Finland"
+    "印度", "印度", "印度", "瑞典",
+    "瑞典", "瑞典", "德国", "德国",
+    "德国", "芬兰", "芬兰", "芬兰"
   ),
   year = c(
-    2011, 2012, 2013, 2011,
-    2012, 2013, 2011, 2012,
-    2013, 2011, 2012, 2013
+    2018, 2019, 2020, 2018, 2019, 2020,
+    2018, 2019, 2020, 2018, 2019, 2020
   ),
   value = c(
-    492, 246, 246, 369,
-    123, 492, 246, 369,
-    123, 123, 492, 369
+    492, 246, 246, 369, 123, 492,
+    246, 369, 123, 123, 492, 369
   )
 )
 
@@ -1942,23 +1920,16 @@ ggplot(df, aes(year, rank, color = country)) +
   theme_minimal(base_size = 14) +
   theme(legend.position = "none",
         panel.grid.major = element_blank()) +
-  labs(y = "RANK", x = NULL) +
-  scale_y_reverse()
+  labs(x = NULL, y = "排名") +
+  scale_y_reverse() +
+  coord_fixed(ratio = 0.5)
 ```
 
 
 
 ### 韦恩图 {#sec-venn-diagram}
 
-<!-- 
-描述交叉关系
-部分和整体的关系
-https://r-charts.com/part-whole/ggvenndiagram/
--->
-
-[ggVennDiagram](https://github.com/gaospecial/ggVennDiagram/)
-
-A、B、C 三个集合的交叉关系
+韦恩图描述集合、群体的交叉关系，整体和部分的包含关系，[**ggVennDiagram**](https://github.com/gaospecial/ggVennDiagram/) 包展示 A、B、C 三个集合的交叉关系，如 @fig-venn 所示
 
 ```{r}
 #| label: fig-venn
@@ -1975,15 +1946,9 @@ ggVennDiagram::ggVennDiagram(x) +
 
 ### 甘特图 {#sec-gantt}
 
-<!-- 
-描述依赖关系 
 
-项目管理也是数据分析应有的内容，与之相关的图形，了解和应用好也是重要的
-项目依赖关系 
--->
-
-
-[ganttrify](https://github.com/giocomai/ganttrify)
+甘特图常用于项目、流程管理，描述节点之间的依赖关系，展示关键节点。
+[**ganttrify**](https://github.com/giocomai/ganttrify) 包专门用来绘制甘特图，如 @fig-gant 所示。
 
 
 ```{r}
@@ -2014,7 +1979,7 @@ graph <- tidygraph::as_tbl_graph(highschool) |>
 graph
 ```
 
-<!-- ggplot2 升级 3.4.0 导致问题 -->
+
 
 ```{r}
 #| label: fig-graph
