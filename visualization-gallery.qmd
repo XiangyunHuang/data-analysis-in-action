@@ -1,83 +1,9 @@
 # 统计图形 {#sec-gallery}
 
-
 ```{r}
 #| echo: false
 
-knitr::knit_hooks$set(par = function(before, options, envir) {
-  if (before && options$fig.show != "none") {
-    par(
-      mar = c(4, 4, .5, .5)
-    )
-  }
-})
-if (xfun::is_macos()) {
-  # 准备 Noto 中英文字体
-  sysfonts::font_paths(new = "~/Library/Fonts/")
-  ## 宋体
-  sysfonts::font_add(
-    family = "Noto Serif CJK SC",
-    regular = "NotoSerifCJKsc-Regular.otf",
-    bold = "NotoSerifCJKsc-Bold.otf"
-  )
-  ## 黑体
-  sysfonts::font_add(
-    family = "Noto Sans CJK SC",
-    regular = "NotoSansCJKsc-Regular.otf",
-    bold = "NotoSansCJKsc-Bold.otf"
-  )
-} else if (grepl(x = sessionInfo()$running, pattern = "Fedora")) { # Github Action custom Docker Container Based on Fedora
-  sysfonts::font_paths(new = c(
-    "/usr/share/fonts/google-noto/",
-    "/usr/share/fonts/google-noto-cjk/"
-  ))
-  ## 宋体
-  sysfonts::font_add(
-    family = "Noto Serif CJK SC",
-    regular = "NotoSerifCJK-Regular.ttc",
-    bold = "NotoSerifCJK-Bold.ttc"
-  )
-  ## 黑体
-  sysfonts::font_add(
-    family = "Noto Sans CJK SC",
-    regular = "NotoSansCJK-Regular.ttc",
-    bold = "NotoSansCJK-Bold.ttc"
-  )
-} else { # Github Action Ubuntu
-  sysfonts::font_paths(new = c(
-    "/usr/share/fonts/opentype/noto/",
-    "/usr/share/fonts/truetype/noto/"
-  ))
-  ## 宋体
-  sysfonts::font_add(
-    family = "Noto Serif CJK SC",
-    regular = "NotoSerifCJK-Regular.ttc",
-    bold = "NotoSerifCJK-Bold.ttc"
-  )
-  ## 黑体
-  sysfonts::font_add(
-    family = "Noto Sans CJK SC",
-    regular = "NotoSansCJK-Regular.ttc",
-    bold = "NotoSansCJK-Bold.ttc"
-  )
-}
-
-## 衬线字体
-sysfonts::font_add(
-  family = "Noto Serif",
-  regular = "NotoSerif-Regular.ttf",
-  bold = "NotoSerif-Bold.ttf",
-  italic = "NotoSerif-Italic.ttf",
-  bolditalic = "NotoSerif-BoldItalic.ttf"
-)
-## 无衬线字体
-sysfonts::font_add(
-  family = "Noto Sans",
-  regular = "NotoSans-Regular.ttf",
-  bold = "NotoSans-Bold.ttf",
-  italic = "NotoSans-Italic.ttf",
-  bolditalic = "NotoSans-BoldItalic.ttf"
-)
+source("_common.R")
 ```
 
 
@@ -102,12 +28,12 @@ GNU R 是一个自由的统计计算和统计绘图环境，最初由新西兰�
 ```{bash}
 #| eval: false
 
-svn log --xml --verbose -r 6:83502 \
+svn log --xml --verbose -r 6:83528 \
   https://svn.r-project.org/R/trunk > data-raw/svn_trunk_log_2022.xml
 ```
 
 去掉没什么信息的前5次代码提交记录：初始化仓库，上传原始的 R 软件源码等。
-从 Ross Ihaka 在 1997-09-18 提交第 1 次代码改动开始，下载所有的提交日志。截至写作时间，即 2022年12月27日，代码最新版本号为 83502，意味着代码仓库已存在 8 万多次提交。
+从 Ross Ihaka 在 1997-09-18 提交第 1 次代码改动开始，下载所有的提交日志。截至 2022-12-31，代码最新版本号为 83528，意味着代码仓库已存在 8 万多次提交。
 
 下载数据后，借助 [**xml2**](https://github.com/r-lib/xml2/) 包预处理这份 XML 格式数据，提取最重要的信息，谁在什么时间做了什么改动。经过一番操作后，将清洗干净的数据保存到目录 `data/` 下，以 R 软件特有的文件格式保存为 `svn-trunk-log-2022.rds`，同样与书随附。这样下来，原 XML 格式保存的 35 M 文件减少为 1 M 多，极大地减少存储空间，方便后续的数据探索和可视化。下面是这份日志数据最初的两行：
 
@@ -1530,7 +1456,7 @@ aggregate(data = svn_trunk_log, revision ~ author, FUN = length) |>
 ### 简单饼图 {#sec-naive-pie}
 
 
-
+提交量小于 2000 次的贡献者合并为一类 Others，按贡献者分组统计提交量及其占比，如 @fig-pie 所示。
 
 ```{r}
 #| label: fig-pie
@@ -1557,7 +1483,7 @@ aggregate(data = svn_trunk_log, revision ~ author, FUN = length) |>
   labs(x = NULL, y = NULL)
 ```
 
-在分类很多的情况下，占比小的，显得十分拥挤
+当把提交量小于 1000 次的贡献者合并为 Others，则分类较多，占比小的也有一席之地，饼图上显得十分拥挤。
 
 ```{r}
 #| label: fig-pie-bad
@@ -1584,7 +1510,7 @@ aggregate(data = svn_trunk_log, revision ~ author, FUN = length) |>
   labs(x = NULL, y = NULL)
 ```
 
-一种缓解办法是添加注释 
+一种缓解拥挤的办法是通过 ggrepel 包在扇形区域旁边添加注释 
 
 ```{r}
 #| label: fig-pie-repel
@@ -1619,6 +1545,37 @@ ggplot(data = dat2, aes(x = 1, fill = author2, y = value)) +
 
 但是数量很多的情况下，也是无能为力的，当然，是否需要显示那么多，是否可以合并占比小的部分，也是值得考虑的问题。
 
+
+```{r}
+#| echo: false
+#| label: tbl-ctb-list
+#| tbl-cap: "SVN 日志中的贡献者（部分）"
+
+# SVN 开发日志中的贡献者名字及其真实姓名（部分）
+ctb_info <- tibble::tribble(
+  ~svn_name, ~ctb_name, ~comment,
+  "rgentlem", "Robert Gentleman", "R 语言创始人",
+  "ihaka", "Ross Ihaka", "R 语言创始人",
+  "ripley", "Brian Ripley", "R Core Team 中的核心",
+  "murrell", "Paul Murrell", "grid 包及栅格绘图系统",
+  "maechler", "Martin Maechler", "cluster / Matrix 包维护者",
+  "hornik", "Kurt Hornik", "R FAQ 和 CRAN 维护者",
+  "jmc", "John Chambers", "S 语言的创始人之一",
+  "bates", "Douglas Bates", "nlme / lme4 包核心开发者",
+  "pd", "Peter Dalgaard", "《统计导论与 R 语言》作者",
+  "ligges", "Uwe Ligges", "让 BUGS 与 R 同在",
+  "plummer", "Martyn Plummer", "让 JAGS 与 R 携手",
+  "luke", "Luke Tierney", "compiler 包核心开发者",
+  "iacus", "Stefano M. Iacus", "让 CRAN 拥抱 Fedora 系统",
+  "kalibera", "Tomas Kalibera", "编码问题终结者",
+  "deepayan", "Deepayan Sarkar", "lattice 包维护者",
+  "murdoch", "Duncan Murdoch", "R 软件的 Windows 版本维护者",
+  "duncan", "Duncan Temple Lang", "XML / RCurl 包开发者",
+  "urbaneks", "Simon Urbanek", "rJava / Rserve 包维护者"
+)
+
+knitr::kable(ctb_info, col.names = c("SVN 花名", "真实名字", "主要贡献"))
+```
 
 
 
@@ -1684,14 +1641,12 @@ aggregate(data = svn_trunk_log, revision ~ author, FUN = length) |>
 
 <!-- 
 https://en.wikipedia.org/wiki/Vilfredo_Pareto
-描述各个部分的占比，特别是关键要素的占比
-收入服从帕累托分布，这是一个幂率分布
-80% 的财富集中在 20% 的人的手中
+
 构造几何统计图层 geom_pareto
 多边形、点线、双轴
 -->
 
-开发者们的贡献量
+除了饼图，还常用堆积柱形图描述各个部分的数量，柱形图的优势在于简洁，准确，兼顾对比和趋势。下 @fig-pareto-stack 描述各年开发者们的贡献量及其变化趋势，饼图无法表达数量的变化趋势。
 
 ```{r}
 #| label: fig-pareto-stack
@@ -1708,7 +1663,7 @@ aggregate(data = svn_trunk_log, revision ~ year + author, FUN = length) |>
   labs(x = "年份", y = "提交量", fill = "开发者")
 ```
 
-比例趋势图
+百分比堆积柱形图在数量堆积柱形图的基础上，将纵坐标的数量转化为百分比，下 @fig-pareto-fill 展示各年开发者代码提交比例的变化趋势。
 
 ```{r}
 #| label: fig-pareto-fill
@@ -1726,7 +1681,7 @@ aggregate(data = svn_trunk_log, revision ~ year + author, FUN = length) |>
   labs(x = "年份", y = "提交量", fill = "开发者")
 ```
 
-帕累托图
+帕累托图描述各个部分的占比，特别是突出关键要素的占比。收入常服从帕累托分布，这是一个幂率分布，比如 80\% 的财富集中在 20\% 的人的手中。下 @fig-pareto 展示过去 25 年各位开发者的代码累计提交量，提交量小于 1000 的已经合并为一类。不难看出，Ripley 的提交量远高于其他开发者。
 
 ```{r}
 #| label: fig-pareto
@@ -1754,7 +1709,7 @@ ggplot(data = dat, aes(
 
 ### 马赛克图 {#sec-mosic}
 
-<!-- 多个分类变量 -->
+马赛克图常用于展示多个分类数据，如 @fig-mosaic 所示，展示加州伯克利分校院系录取情况。
 
 ```{r}
 #| label: fig-mosaic
@@ -1798,9 +1753,8 @@ mosaicplot(~ Gender + Dept + Admit,
 
 ### 矩阵树图 {#sec-treemap}
 
-<!-- 
-有层次的占比
--->
+
+矩阵树图展示有层次的占比，比如 G20 国家的 GDP 按半球、地域分组。**treemapify** 包专门绘制矩阵树图，下 @fig-treemap 展示南北半球，各地域内各个国家 GDP 的占比。
 
 ```{r}
 #| eval: true
@@ -1816,10 +1770,11 @@ knitr::kable(head(G20), col.names = c(
 ))
 ```
 
+每个瓦片的大小代表国家的 GDP 在所属半球里的比重。
 
 ```{r}
 #| label: fig-treemap
-#| fig-cap: "G20 主要经济体"
+#| fig-cap: "G20 主要经济体的 GDP 占比"
 #| fig-width: 7
 #| fig-height: 6
 #| fig-showtext: true
@@ -1837,7 +1792,7 @@ ggplot(G20, aes(
   labs(title = "G20 主要经济体", fill = "区域")
 ```
 
-每个瓦片的大小代表国家的 GDP 在所属半球里的比重。
+
 
 
 
@@ -1848,20 +1803,12 @@ ggplot(G20, aes(
 
 ### 散点图 {#sec-scatter}
 
+散点图用以描述变量之间的关系，展示原始的数据，点的形态、大小、颜色等都可以随更多变量变化。
 
-<!-- 
-在介绍 ggplot2 的基础知识时，已经介绍过绘制过程，本节是否还有必要介绍，如果介绍应该怎么介绍？
-
-散点图的历史，主要作用
-展示原始的数据，关系
-
-点的形态、大小、颜色等都可以变化
--->
-
-中国国家统计局 2021 年发布的统计年鉴，2020 年 31 个省、直辖市、自治区，抚养比、文盲率、人口数的关系
+中国国家统计局 2021 年发布的统计年鉴，2020 年 31 个省、直辖市、自治区的抚养比、文盲率、人口数的关系。
 
 ```{r}
-#| label: tbl-china-raise-illiteracy
+#| label: tbl-china-raise-illiteracy-scatter
 #| tbl-cap: "2020 年各省、直辖市、自治区，总抚养比和文盲率相关数据（部分）"
 #| echo: false
 
@@ -1893,9 +1840,7 @@ ggplot(data = china_raise_illiteracy) +
 
 ### 气泡图 {#sec-bubble}
 
-<!-- 
-散点图的历史，主要作用
--->
+气泡图在散点图的基础上，添加了散点大小的视觉维度，可以在图上多展示一列数据，下 @fig-china-raise-illiteracy-bubble 新增了人口数变量。此外，在气泡旁边添加地区名称，将气泡填充的颜色也映射给了人口数变量。
 
 
 ```{r}
@@ -1930,16 +1875,7 @@ ggplot(
 
 ### 凹凸图 {#sec-bump}
 
-<!-- 
-凹凸图描述的是一种转化、变化关系，排序的变化
-
-待议是否适合放在描述关系一节
-
-排序位置变化，一段时间到另一段时间，比如话题热度的转变，比如今年国庆与去年国庆
-空间移动，路径移动，强调位置的移动
--->
-
-[ggbump](https://github.com/davidsjoberg/ggbump)
+凹凸图描述位置排序关系随时间的变化，比如前年、去年和今年各省的 GDP 排序变化，春节各旅游景点的人流量变化。[**ggbump**](https://github.com/davidsjoberg/ggbump) 包专门用来绘制凹凸图，如 @fig-bump 所示，展示
 
 ```{r}
 #| label: fig-bump
@@ -1947,25 +1883,22 @@ ggplot(
 #| fig-width: 7
 #| fig-height: 3.5
 #| fig-showtext: true
-#| warning: false
 
 library(ggbump)
-
+# 位置排序变化
 df <- data.frame(
   country = c(
-    "India", "India", "India", "Sweden",
-    "Sweden", "Sweden", "Germany", "Germany",
-    "Germany", "Finland", "Finland", "Finland"
+    "印度", "印度", "印度", "瑞典",
+    "瑞典", "瑞典", "德国", "德国",
+    "德国", "芬兰", "芬兰", "芬兰"
   ),
   year = c(
-    2011, 2012, 2013, 2011,
-    2012, 2013, 2011, 2012,
-    2013, 2011, 2012, 2013
+    2018, 2019, 2020, 2018, 2019, 2020,
+    2018, 2019, 2020, 2018, 2019, 2020
   ),
   value = c(
-    492, 246, 246, 369,
-    123, 492, 246, 369,
-    123, 123, 492, 369
+    492, 246, 246, 369, 123, 492,
+    246, 369, 123, 123, 492, 369
   )
 )
 
@@ -1980,28 +1913,21 @@ ggplot(df, aes(year, rank, color = country)) +
   geom_text(data = df[df$year == max(df$year), ],
             aes(x = year + .1, label = country), size = 5, hjust = 0) +
   geom_bump(linewidth = 2, smooth = 8) +
-  scale_x_continuous(limits = c(2010.6, 2013.4),
-                     breaks = seq(2011, 2013, 1)) +
+  scale_x_continuous(limits = c(2017.6, 2020.4),
+                     breaks = seq(2018, 2020, 1)) +
   theme_minimal(base_size = 14) +
   theme(legend.position = "none",
         panel.grid.major = element_blank()) +
-  labs(y = "RANK", x = NULL) +
-  scale_y_reverse()
+  labs(x = NULL, y = "排名") +
+  scale_y_reverse() +
+  coord_fixed(ratio = 0.5)
 ```
 
 
 
 ### 韦恩图 {#sec-venn-diagram}
 
-<!-- 
-描述交叉关系
-部分和整体的关系
-https://r-charts.com/part-whole/ggvenndiagram/
--->
-
-[ggVennDiagram](https://github.com/gaospecial/ggVennDiagram/)
-
-A、B、C 三个集合的交叉关系
+韦恩图描述集合、群体的交叉关系，整体和部分的包含关系，[**ggVennDiagram**](https://github.com/gaospecial/ggVennDiagram/) 包展示 A、B、C 三个集合的交叉关系，如 @fig-venn 所示
 
 ```{r}
 #| label: fig-venn
@@ -2018,15 +1944,9 @@ ggVennDiagram::ggVennDiagram(x) +
 
 ### 甘特图 {#sec-gantt}
 
-<!-- 
-描述依赖关系 
 
-项目管理也是数据分析应有的内容，与之相关的图形，了解和应用好也是重要的
-项目依赖关系 
--->
-
-
-[ganttrify](https://github.com/giocomai/ganttrify)
+甘特图常用于项目、流程管理，描述节点之间的依赖关系，展示关键节点。
+[**ganttrify**](https://github.com/giocomai/ganttrify) 包专门用来绘制甘特图，如 @fig-gant 所示。
 
 
 ```{r}
@@ -2046,8 +1966,8 @@ ganttrify(project = ganttrify::test_project,
 
 ### 网络图 {#sec-network}
 
-[ggraph](https://github.com/thomasp85/ggraph)
-[tidygraph](https://github.com/thomasp85/tidygraph) 描述依赖关系
+
+[**tidygraph**](https://github.com/thomasp85/tidygraph)包 操作图数据，[**ggraph**](https://github.com/thomasp85/ggraph)包描述网络图中节点重要性及依赖关系。
 
 ```{r}
 library(ggraph)
@@ -2057,7 +1977,7 @@ graph <- tidygraph::as_tbl_graph(highschool) |>
 graph
 ```
 
-<!-- ggplot2 升级 3.4.0 导致问题 -->
+
 
 ```{r}
 #| label: fig-graph
@@ -2960,6 +2880,7 @@ ggplot(volcano_df) +
 
 三维透视图亦可展示地形图，如 @fig-volcano-wireframe 所示，用 **lattice** 包绘制火山地形图。
 
+
 ```{r}
 #| label: fig-volcano-wireframe
 #| fig-cap: "lattice 包绘制地形图"
@@ -2971,7 +2892,7 @@ wireframe(volcano,
   drape = TRUE, colorkey = FALSE, shade = TRUE,
   xlab = list("东西方向", rot = 20),
   ylab = list("南北方向", rot = -50),
-  zlab = list("高度", rot = 90),
+  zlab = list("海拔", rot = 90),
   # 减少三维图形的边空
   lattice.options = list(
     layout.widths = list(
@@ -2986,7 +2907,7 @@ wireframe(volcano,
   # 设置坐标轴字体大小
   par.settings = list(
     axis.line = list(col = "transparent"),
-    fontsize = list(text = 15, points = 10)
+    fontsize = list(text = 12, points = 10)
   ),
   # z 轴标签旋转 90 度
   scales = list(
@@ -2997,7 +2918,47 @@ wireframe(volcano,
 )
 ```
 
-**plotly** 包可以绘制交互的三维透视图来展示地形。
+静态的三维图形限制用户只能从一个视角观察，因视角和透视的关系，存在遮挡和视觉错位的情况，比如火山地形 @fig-volcano-wireframe 因坡面遮挡了火山口及其周围地势，只有调整观察角度，重新绘图方可，如 @fig-volcano-viewport 所示，火山口及其周围地势一目了然。
+
+```{r}
+#| label: fig-volcano-viewport
+#| fig-cap: "lattice 包绘制地形图"
+#| fig-width: 6
+#| fig-height: 5.5
+#| fig-showtext: true
+
+wireframe(volcano,
+  drape = TRUE, colorkey = FALSE, shade = TRUE,
+  xlab = list("东西方向", rot = -40),
+  ylab = list("南北方向", rot = 45),
+  zlab = list("海拔", rot = 90),
+  # 减少三维图形的边空
+  lattice.options = list(
+    layout.widths = list(
+      left.padding = list(x = -.6, units = "inches"),
+      right.padding = list(x = -1.0, units = "inches")
+    ),
+    layout.heights = list(
+      bottom.padding = list(x = -.8, units = "inches"),
+      top.padding = list(x = -1.0, units = "inches")
+    )
+  ),
+  # 设置坐标轴字体大小
+  par.settings = list(
+    axis.line = list(col = "transparent"),
+    fontsize = list(text = 12, points = 10)
+  ),
+  # z 轴标签旋转 90 度
+  scales = list(
+    arrows = FALSE, col = "black",
+    z = list(rot = 90)
+  ), 
+  # 调整视角
+  screen = list(z = -45, x = -50, y = 0)
+)
+```
+
+而 **plotly** 包可以绘制交互的三维透视图来展示地形，通过拖拽图形，可以从任意视角切入观察火山口及山体的任意位置，还可以拉近看局部细节。
 
 ```{css}
 #| label: plotly-modebar
@@ -3013,11 +2974,16 @@ wireframe(volcano,
 #| eval: !expr knitr::is_html_output(excludes = 'epub')
 #| echo: true
 
-plotly::plot_ly(z = ~volcano) |> 
-  plotly::add_surface()
+plotly::plot_ly(z = ~volcano) |>
+  plotly::add_surface(colorbar = list(title = "海拔")) |>
+  plotly::layout(scene = list(
+    xaxis = list(title = "东西方向"),
+    yaxis = list(title = "南北方向"),
+    zaxis = list(title = "海拔")
+  ))
 ```
 
-**rgl** 包绘制的三维散点图亦可展示数据的空间分布。
+类似地，**rgl** 包绘制的三维散点图亦可展示数据的空间分布。
 
 ```{r}
 #| label: fig-volcano-rgl
@@ -3025,9 +2991,6 @@ plotly::plot_ly(z = ~volcano) |>
 #| eval: !expr knitr::is_html_output(excludes = 'epub')
 #| echo: true
 
-# 设置 WebGL 渲染
-options(rgl.useNULL = TRUE)
-options(rgl.printRglwidget = TRUE)
 library(rgl)
 rgl.viewpoint(
   theta = 0, phi = -45, fov = 30,
@@ -3043,7 +3006,9 @@ volcano_df <- within(volcano_df, {
 })
 # 绘制图形
 with(volcano_df, {
-  plot3d(x = x, y = y, z = z, col = color)
+  plot3d(x = x, y = y, z = z, col = color, 
+         xlab = "东西方向", ylab = "南北方向", 
+         zlab = "海拔")
 })
 ```
 

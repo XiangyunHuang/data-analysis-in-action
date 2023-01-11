@@ -58,8 +58,10 @@ RUN dnf -y upgrade \
    texlive-tcolorbox \
    texlive-standalone \
    texlive-animate \
-   texlive-media9
+   texlive-media9 \
+ && dnf clean all
 
+# Set R
 RUN ln -s /usr/lib64/R/library/littler/examples/install.r /usr/bin/install.r \
  && ln -s /usr/lib64/R/library/littler/examples/install2.r /usr/bin/install2.r \
  && ln -s /usr/lib64/R/library/littler/examples/installGithub.r /usr/bin/installGithub.r \
@@ -73,10 +75,10 @@ RUN ln -s /usr/lib64/R/library/littler/examples/install.r /usr/bin/install.r \
  && echo "CXXFLAGS += -Wno-ignored-attributes" >> /usr/lib64/R/etc/Makeconf \
  && Rscript -e 'x <- file.path(R.home("doc"), "html"); if (!file.exists(x)) {dir.create(x, recursive=TRUE); file.copy(system.file("html/R.css", package="stats"), x)}' \
  && install.r docopt \
- && install2.r remotes
-
-# Set RStudio Server
-RUN dnf -y install rstudio-server \
+ && install2.r remotes \
+ # Set RStudio Server
+ && dnf -y install rstudio-server \
+ && dnf clean all \
  && cp /usr/lib/systemd/system/rstudio-server.service /etc/init.d/ \
  && chmod +x /etc/init.d/rstudio-server.service \
  && systemctl enable rstudio-server \
@@ -92,7 +94,7 @@ RUN mkdir -p /opt/cmdstan \
   && curl -fLo cmdstan-${CMDSTAN_VERSION}.tar.gz https://github.com/stan-dev/cmdstan/releases/download/v${CMDSTAN_VERSION}/cmdstan-${CMDSTAN_VERSION}.tar.gz \
   && tar -xzf cmdstan-${CMDSTAN_VERSION}.tar.gz -C /opt/cmdstan/ \
   && rm -rf cmdstan-${CMDSTAN_VERSION}.tar.gz \
-  && cd ${CMDSTAN} && make build && cd /home/docker/
+  && make -C ${CMDSTAN} build
 
 # Set Extra R Packages
 COPY DESCRIPTION DESCRIPTION
@@ -100,6 +102,7 @@ COPY desc_pkgs.txt desc_pkgs.txt
 RUN dnf -y copr enable iucar/cran \
   && dnf -y install R-CoprManager \
   && dnf -y install $(cat desc_pkgs.txt) \
+  && dnf clean all \
   && install2.r showtextdb showtext \
   && Rscript -e 'install.packages("cmdstanr", repos = c("https://mc-stan.org/r-packages/", getOption("repos")), type="source")' \
   && export GITHUB_PAT=${GITHUB_PAT} \
