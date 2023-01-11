@@ -1747,23 +1747,38 @@ p1 / (p4 | p5) +
 
 ### 保存图形 {#sec-save-image}
 
-保存图形 ggsave 
+**ggplot2** 包提供保存图形的函数 `ggsave()`，它可以将 ggplot2 对象导出为各种格式的图片，比如 PNG 位图图片、 SVG 矢量图片等。
 
 ```{r}
 #| eval: false
 #| echo: true
 
-p <- ggplot(iris, aes(x = Sepal.Length, y = Sepal.Width)) +
-  geom_point(aes(shape = Species, color = Species)) +
+p <- ggplot(gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point(aes(color = income_level)) +
+  scale_x_log10(labels = scales::label_log()) +
   theme_classic()
+```
 
-ggsave(filename = "iris.png", plot = p, 
+位图是由像素（Pixel）构成的，单位 units 是 px，分辨率取决于单位面积上像素的数量，参数 dpi 往往根据显示设备而定，出版打印常用 300。
+
+```{r}
+#| eval: false
+#| echo: true
+
+ggsave(filename = "gapminder.png", plot = p, 
        width = 800, height = 600, units = "px",
        device = "png", dpi = 300)
+```
 
-ggsave(filename = "iris.png", plot = p, 
-       width = 1000, height = 750, units = "px",
-       device = "png", dpi = 300)
+矢量图是由点构成的，由点及线，由线构成路径，在一定坐标系统下，每个点都记录了坐标及方向。
+
+```{r}
+#| eval: false
+#| echo: true
+
+ggsave(filename = "gapminder.svg", plot = p, 
+       width = 8, height = 6, units = "in",
+       device = "svg")
 ```
 
 
@@ -1824,7 +1839,7 @@ ggplot(gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
 #| label: fig-watermark
 #| fig-cap: "添加水印图片和文字"
 #| fig-showtext: true
-#| fig-width: 5
+#| fig-width: 6
 #| fig-height: 4
 
 # 绘图展示数据
@@ -1852,30 +1867,27 @@ p + inset_element(
 
 ### 表情符号 {#sec-chernoff}
 
-
-<!-- 
-余光创 [ggimage：ggplot2 中愉快地使用图片](https://cosx.org/2017/03/ggimage) 
--->
-
-[**ggChernoff**](https://github.com/Selbosh/ggChernoff) 包受 Chernoff 脸表达多元数据的启发 [@Chernoff1973]，借助 Emoji 表情表达数据指标，比如从低收入到高收入的连续型数据，从非常喜欢到非常不喜欢的有序分类型数据，用表情表达此类数据，显得非常形象。 
+[**ggChernoff**](https://github.com/Selbosh/ggChernoff) 包受 Chernoff 脸表达多元数据的启发 [@Chernoff1973]，借助 Emoji 表情表达数据指标，比如从低收入到高收入的连续型数据，从非常喜欢到非常不喜欢的有序分类型数据，用表情表达此类数据，显得非常形象。下 @fig-chernoff 以收入水平分类，在每个分类中，将预期寿命与表情结合，越长寿越开心。
 
 ```{r}
 #| label: fig-chernoff
 #| fig-cap: "Chernoff 脸"
 #| fig-showtext: true
-#| fig-width: 5
+#| fig-width: 6
 #| fig-height: 4
 
 library(ggChernoff)
-sub_iris <- iris[iris$Species != "setosa", ]
-sub_iris$smile <- ifelse(sub_iris$Species == "versicolor", 1, 0)
+library(data.table)
+gapminder_2007 <- as.data.table(gapminder_2007)
+gapminder_2007[, smile := scales::rescale(lifeExp), by = "income_level"]
 
-ggplot(sub_iris, aes(x = Petal.Width, y = Petal.Length)) +
-  geom_chernoff(aes(smile = smile, fill = Species),
-    show.legend = c(smile = FALSE, fill = TRUE), color = "white"
-  ) +
+ggplot(gapminder_2007, aes(x = gdpPercap, y = lifeExp)) +
+  geom_chernoff(aes(smile = smile, fill = income_level), alpha = 0.75, 
+                show.legend = c(smile = FALSE, fill = TRUE)) +
+  scale_x_log10(labels = scales::label_log()) +
   scale_fill_brewer(palette = "Set1") +
-  scale_smile_continuous("Smilez", breaks = 0:1, midpoint = .5) +
-  theme_classic()
+  scale_smile_continuous(midpoint = .5) +
+  theme_classic() +
+  labs(x = "人均 GDP", y = "预期寿命", fill = "收入水平")
 ```
 
