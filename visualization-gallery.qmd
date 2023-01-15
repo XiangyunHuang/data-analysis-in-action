@@ -180,7 +180,7 @@ ggplot() +
 ```
 
 
-瀑布图是以数据点作为对角点构造矩形，用对撞型的颜色表示增减，下 @fig-waterfall-point 在 @fig-waterfall 基础上添加了数据点，用以直观说明矩形图层 `geom_rect()` 构造瀑布图的方法。**ggTimeSeries** 包 [@ggTimeSeries2022] (<https://github.com/thecomeonman/ggTimeSeries>) 提供统计图层 `stat_waterfall()` 实现类似的瀑布图。
+瀑布图是以数据点作为对角点构造矩形，用对撞型的颜色表示增减，下 @fig-waterfall-point 在 @fig-waterfall 基础上添加了数据点，用以直观说明矩形图层 `geom_rect()` 构造瀑布图的方法。
 
 ```{r}
 #| label: fig-waterfall-point
@@ -204,12 +204,13 @@ ggplot() +
   labs(x = "年份", y = "提交量")
 ```
 
+**ggTimeSeries** 包 [@ggTimeSeries2022] (<https://github.com/thecomeonman/ggTimeSeries>) 提供统计图层 `stat_waterfall()` 实现类似的瀑布图，如 @fig-waterfall-ggTimeSeries 所示。
 
 ```{r}
-#| echo: false
-#| eval: false
+#| label: fig-waterfall-ggTimeSeries
+#| fig-cap: "矩形图层构造瀑布图"
+#| fig-showtext: true
 
-# ggTimeSeries 包也可制作瀑布图
 library(ggTimeSeries)
 ggplot(data = trunk_year, aes(x = year, y = revision)) +
   stat_waterfall() +
@@ -2830,7 +2831,36 @@ us_state_map <- tigris::shift_geometry(us_state_map, geoid_column = "STATE", pos
 ### 地形图 {#sec-raster}
 
 
-地形图用于描述地形地势，则无论山洼、山谷，还是高山、高原，抑或是断崖、峡谷、平原，都一目了然。如 @fig-volcano-levelplot 所示，奥克兰 Maunga Whau 火山地形图，图中火山划分为 87 行 61 列的小格子，小格子的长宽都是 10 米，记录格子所处位置的高度，收集整理后形成 volcano 数据集，此所谓的栅格数据。Base R 内置的 volcano 数据集是一个 matrix 类型数据对象。
+地形图用于描述地形地势，则无论山洼、山谷，还是高山、高原，抑或是断崖、峡谷、平原，都一目了然。如 @fig-volcano-levelplot 所示，奥克兰 Maunga Whau 火山地形图，图中火山划分为 87 行 61 列的小格子，小格子的长宽都是 10 米，记录格子所处位置的高度，收集整理后形成 volcano 数据集，此所谓的栅格数据。Base R 内置的 volcano 数据集是一个 matrix 类型数据对象。Base R 提供函数 `filled.contour()` 绘制二维栅格图形，如 @fig-volcano-base 所示。
+
+
+```{r}
+#| label: fig-volcano-base
+#| fig-cap: "奥克兰火山地形图"
+#| fig-width: 6
+#| fig-height: 5
+#| fig-showtext: true
+#| echo: true
+
+filled.contour(volcano,
+  x = seq(1, nrow(volcano), length.out = nrow(volcano)),
+  y = seq(1, ncol(volcano), length.out = ncol(volcano)),
+  color.palette = hcl.colors,
+  plot.title = title(
+    main = "奥克兰火山堆地形图",
+    xlab = "南北方向", ylab = "东西方向",
+    family = "Noto Serif CJK SC"
+  ),
+  plot.axes = {
+    axis(side = 1, at = 10 * 1:8)
+    axis(side = 2, at = 10 * 1:6)
+  },
+  key.title = title(main = "高度", family = "Noto Serif CJK SC"),
+  key.axes = axis(side = 4, at = 90 + 20 * 0:5)
+)
+```
+
+**lattice** 包提供函数 `levelplot()` 绘制类似的栅格图形，如 @fig-volcano-levelplot 所示。
 
 ```{r}
 #| label: fig-volcano-levelplot
@@ -2850,8 +2880,7 @@ levelplot(volcano,
     x = list(alternating = 1, tck = c(1, 0)),
     y = list(alternating = 1, tck = c(1, 0))
   ),
-  xlab = "东西方向",
-  ylab = "南北方向"
+  xlab = "南北方向", ylab = "东西方向"
 )
 ```
 
@@ -2875,7 +2904,7 @@ ggplot(volcano_df) +
   scale_fill_viridis_c() +
   coord_fixed(expand = FALSE) +
   theme_classic() +
-  labs(x = "东西方向", y = "南北方向", fill = "海拔")
+  labs(x = "南北方向", y = "东西方向", fill = "高度")
 ```
 
 三维透视图亦可展示地形图，如 @fig-volcano-wireframe 所示，用 **lattice** 包绘制火山地形图。
@@ -2890,9 +2919,9 @@ ggplot(volcano_df) +
 
 wireframe(volcano,
   drape = TRUE, colorkey = FALSE, shade = TRUE,
-  xlab = list("东西方向", rot = 20),
-  ylab = list("南北方向", rot = -50),
-  zlab = list("海拔", rot = 90),
+  xlab = list("南北方向", rot = 20),
+  ylab = list("东西方向", rot = -50),
+  zlab = list("高度", rot = 90),
   # 减少三维图形的边空
   lattice.options = list(
     layout.widths = list(
@@ -2929,9 +2958,9 @@ wireframe(volcano,
 
 wireframe(volcano,
   drape = TRUE, colorkey = FALSE, shade = TRUE,
-  xlab = list("东西方向", rot = -40),
-  ylab = list("南北方向", rot = 45),
-  zlab = list("海拔", rot = 90),
+  xlab = list("南北方向", rot = -40),
+  ylab = list("东西方向", rot = 45),
+  zlab = list("高度", rot = 90),
   # 减少三维图形的边空
   lattice.options = list(
     layout.widths = list(
@@ -2975,11 +3004,11 @@ wireframe(volcano,
 #| echo: true
 
 plotly::plot_ly(z = ~volcano) |>
-  plotly::add_surface(colorbar = list(title = "海拔")) |>
+  plotly::add_surface(colorbar = list(title = "高度")) |>
   plotly::layout(scene = list(
-    xaxis = list(title = "东西方向"),
-    yaxis = list(title = "南北方向"),
-    zaxis = list(title = "海拔")
+    xaxis = list(title = "南北方向"),
+    yaxis = list(title = "东西方向"),
+    zaxis = list(title = "高度")
   ))
 ```
 
@@ -3007,8 +3036,8 @@ volcano_df <- within(volcano_df, {
 # 绘制图形
 with(volcano_df, {
   plot3d(x = x, y = y, z = z, col = color, 
-         xlab = "东西方向", ylab = "南北方向", 
-         zlab = "海拔")
+         xlab = "南北方向", ylab = "东西方向", 
+         zlab = "高度")
 })
 ```
 
