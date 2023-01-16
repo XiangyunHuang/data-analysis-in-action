@@ -484,6 +484,57 @@ wireframe(
 )
 ```
 
+每天的代码提交量受影响因素多，不确定性多，波动表现尖锐高频，上图反而对整体趋势的表达不够简洁清晰。按年、月统计提交量平均掉了每日的波动，反而可以体现更大的周期性和趋势性。下面绘制三维柱形图，三维图形天然给人有更加直观的感觉，毕竟立体。**latticeExtra** 包提供三维柱形图图层 `panel.3dbars()`，如 @fig-trunk-year-3dbarplot 所示。
+
+```{r}
+#| label: fig-trunk-year-3dbarplot
+#| fig-cap: "25 年代码提交量变化趋势图"
+#| fig-width: 7
+#| fig-height: 6
+#| echo: true
+#| fig-showtext: true
+
+# 按年、月分组统计代码提交量
+trunk_year_month <- aggregate(
+  data = svn_trunk_log,
+  revision ~ year + month, FUN = length
+)
+# 数据转化为矩阵类型
+trunk_year_month_m <- matrix(
+  data = trunk_year_month[trunk_year_month$year > 1998, "revision"],
+  ncol = 12, nrow = 24, byrow = FALSE,
+  dimnames = list(
+    1999:2022, # 行
+    1:12 # 列
+  )
+)
+# 绘制三维柱形图
+cloud(trunk_year_month_m,
+  panel.3d.cloud = latticeExtra::panel.3dbars,
+  col.facet = "lightblue", # 柱子的颜色
+  xbase = 0.4, ybase = 0.4, # 柱子的大小
+  # distance 控制标签到轴的距离
+  scales = list(arrows = FALSE, col = "black", distance = 1),
+  xlab = "年份", ylab = "月份",
+  # 旋转 Z 轴标签
+  zlab = list("提交量", rot = 90),
+  # 减少三维图形的边空
+  lattice.options = list(
+    layout.widths = list(
+      left.padding = list(x = -.6, units = "inches"),
+      right.padding = list(x = -1.0, units = "inches")
+    ),
+    layout.heights = list(
+      bottom.padding = list(x = -.8, units = "inches"),
+      top.padding = list(x = -1.0, units = "inches")
+    )
+  ),
+  # 去掉边框
+  par.settings = list(axis.line = list(col = "transparent")),
+  screen = list(z = 45, x = -30, y = 0)
+)
+```
+
 
 ### 热力图 {#sec-heatmap}
 
@@ -2837,7 +2888,7 @@ us_state_map <- tigris::shift_geometry(us_state_map, geoid_column = "STATE", pos
 ```{r}
 #| label: fig-volcano-base
 #| fig-cap: "奥克兰火山地形图"
-#| fig-width: 6
+#| fig-width: 7
 #| fig-height: 5
 #| fig-showtext: true
 #| echo: true
