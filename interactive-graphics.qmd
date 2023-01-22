@@ -1,0 +1,317 @@
+# 交互图形 {#sec-interactive-graphics}
+
+<!-- 
+主要介绍 plotly 还是基于 gapminder 数据集
+https://talks.cpsievert.me/20210624/#1
+
+https://uncharteddata.netlify.app/posts/2022-09-30-interactive-tooltip-tables/
+-->
+
+
+## 作图工具 {#sec-interactive-tools}
+
+
+R 语言社区有很多 R 包可以绘制动态交互图形，有的 R 包功能非常综合，如 **echarts4r** 包、 **plotly** 包等，有的 R 包功能非常专门化，如 **rgl** 包和**leaflet**包。
+
+
+### OpenGL 与 rgl {#sec-opengl-rgl}
+
+[rgl](https://github.com/dmurdoch/rgl) 是制作三维交互图形的专门化 R 包。相比于用函数 `persp()` 制作的三维透视图，**rgl** 算是非常**早**的实现**真**三维图形绘制的 R 包，它在 2004 年就发布在 CRAN 上了，时间一晃，18 年过去了。
+
+[mikefc](https://coolbutuseless.github.io/) 戏称自己造了中看不中用的 [ggrgl](https://github.com/coolbutuseless/ggrgl) 包，其 Github ID 正是 coolbutuseless，按字面意思拆开来就是「cool but useless」，不过，mikefc 的个人博客干货很多，而且非常高产，推荐读者看看。这让我一下想到贾宝玉在假山下和林黛玉一起偷看《西厢记》的场景，宝玉问：银样蜡枪头是什么意思？黛玉回答说：中看不中用。有些图形实在没有必要升维做成立体的，比如条形图或柱形图，一些反面例子可以在[漫谈条形图](https://cosx.org/2017/10/discussion-about-bar-graph)和[你问我答](https://msg2020.pzhao.org/qa/)两篇文章中找到。
+
+[**rayrender**](https://github.com/tylermorganwall/rayrender) 不依赖 rgl 包，主打 3D 建模，渲染复杂场景，没有外部依赖，可制作三维立体感的 **ggplot2** 图形，推荐其替代 **rgl** 制作三维动画。[**rayshader**](https://github.com/tylermorganwall/rayshader) 依赖 **rgl** 和 **rayrender** 等提供阴影特效，适合地形景观图，Tyler Morgan-Wall 也曾在 RStudio 大会上介绍过 **rayshader**，Github 星赞超过 1500，算是比较流行的 R 包了。
+
+[imagemagick](https://imagemagick.org/) 是一个独立的图像后期处理软件，它可以将一系列静态图片合成 GIF 动图，[**magick**](https://github.com/ropensci/magick) 是 Jeroen Ooms 开发的又一 R 接口包，[ffmpeg](https://www.ffmpeg.org/) 是一个独立的视频处理软件。
+
+LaTeX 宏包 [animate](https://ctan.org/pkg/animate)，常用于 [beamer](https://ctan.org/pkg/beamer) 幻灯片或 PDF 文档中，将一系列 PNG/PDF 图片合成动画，就是将一幅幅图片以快速地方式播放，形成动画效果，需要使用 Adobe 阅读器播放才可见效果。
+
+
+```{r}
+#| label: fig-quakes-rgl
+#| fig-cap: "rgl 绘制交互三维图形"
+#| echo: true
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+
+# 将连续型数据向量转化为颜色向量
+colorize_numeric <- function(x) {
+  scales::col_numeric(palette = "viridis", domain = range(x))(x)
+}
+# 在数据集 quakes 上添加新的数据 color
+quakes <- within(quakes, {
+  color <- colorize_numeric(mag)
+})
+# 设置 WebGL 渲染
+options(rgl.useNULL = TRUE)
+options(rgl.printRglwidget = TRUE)
+library(rgl)
+# 设置视角 
+rgl.viewpoint(
+  theta = 30, phi = 45, fov = 30,
+  zoom = 1, interactive = TRUE
+)
+# 绘制图形
+with(quakes, {
+  plot3d(
+    x = long, y = lat, z = -depth,
+    xlab = "经度",
+    ylab = "纬度",
+    zlab = "深度",
+    col = color, size = mag - 4, type = "s"
+  )
+})
+```
+```{r}
+#| echo: false
+#| eval: false
+
+snapshot3d(
+  filename = "screenshots/quakes-rgl.png",
+  webshot = TRUE, width = 700, height = 700
+)
+```
+
+极坐标参考系下， theta 绕垂直轴的旋转角度， phi 绕水平轴旋转的角度，zoom 表示缩放因子，interactive 是否允许旋转图形。下 @fig-quakes-rgl-screenshots 是不同视角下保存的截图。
+
+::: {#fig-quakes-rgl-screenshots layout-ncol=2}
+
+![视角 1](screenshots/quakes-rgl-01.png){#fig-quakes-rgl-01}
+
+![视角 2](screenshots/quakes-rgl-02.png){#fig-quakes-rgl-02}
+
+不同视角下的三维图形
+:::
+
+
+
+
+### WebGL 与 plotly {#sec-webgl-plotly}
+
+
+[WebGL](https://www.khronos.org/webgl/)是一种 JavaScript API，可以使用计算机的 GPU 硬件资源加速 2D 和 3D 图形渲染，2011 年发布 1.0 规范，2017 年完成 2.0 规范，目前，主流浏览器 Safari、Chrome、Edge 和 Firefox 等均已支持。Google 搜索在 2012 年应用了这一技术，只要在搜索框内输入一个函数曲线，比如 `arcsin(x*y)/(x*y)`，那么结果页会展示这个图像。
+
+[plotly.js](https://github.com/plotly/plotly.js) 提供很多图层用于绘制各类图形，见[plotly.js 源码库](https://github.com/plotly/plotly.js/tree/master/src/traces)，其中支持 WebGL 的有热力图 `heatmapgl`、 散点图 `scattergl` 和极坐标系下的散点图 `scatterpolargl`。
+
+[**plotly**](https://github.com/plotly/plotly.R) 可以与 **ggplot2** 紧密结合，提供函数 `ggplotly()` 直接将静态的 ggplot2 图形转化为交互式的 plotly 图形，函数 `plot_ly()` 也提供一致的使用语法。
+
+plotly 包的函数使用起来还是比较复杂的，特别是需要打磨细节以打造数据产品时，此外，其依赖相当重，仅数据处理就包含两套方法 --- dplyr 和 data.table，引起很多函数冲突，可谓「苦其久矣」！因此，准备另起炉灶，开发一个新的 R 包 qplotly，取意 quick plotly，以 `qplot_ly()` 替代 `plot_ly()`。类似简化 API 的工作有 [simplevis](https://github.com/StatisticsNZ/simplevis)、[autoplotly](https://github.com/terrytangyuan/autoplotly)、[ggfortify](https://github.com/sinhrks/ggfortify) 和 [plotme](https://github.com/yogevherz/plotme)。
+
+plotly 团队开发了 [plotly.js](https://github.com/plotly/plotly.js) 库，且维护了 R 接口文档 (<https://plotly.com/r/>)，Carson Sievert 开发了 [plotly](https://github.com/ropensci/plotly) 包，配套书 [Interactive web-based data visualization with R, plotly, and shiny](https://plotly-r.com/)。 Paul C. Bauer 的书 [Applied Data Visualization](https://bookdown.org/paul/applied-data-visualization/) 介绍 plotly <https://bookdown.org/paul/applied-data-visualization/what-is-plotly.html>
+
+学习 [plotly](https://github.com/ropensci/plotly) 和 [highcharter](https://github.com/jbkunst/highcharter) 为代表的基于 JavaScript 的 R 包，共有四重境界：第一重是照着帮助文档的示例，示例有啥我们做啥；第二重是明白帮助文档中 R 函数和 JavaScript 函数的对应关系，能力达到 JS 库的功能边界；第三重是深度自定义一些扩展性的 JS 功能，放飞自我；第四重是重新造轮子，为所欲为。
+
+
+[**leaflet**](https://github.com/rstudio/leaflet) 在开放街道地图服务的基础上，支持矢量数据和栅格数据，支持交互式的空间数据可视化，支持许多空间数据类型，比如 sp 包的 Spatial 类，raster 包的 Raster 类，sf 包的 Simple Feature 类等。
+
+
+[**mapdeck**](https://github.com/SymbolixAU/mapdeck) 提供了 [Deck.gl](https://github.com/visgl/deck.gl) 和 [Mapbox](https://github.com/mapbox/mapbox-gl-js) 的 R 语言接口，Deck.gl 号称是 WebGL 2.0 加持的高性能大规模数据可视化渲染组件，也是以 MIT 协议开源的软件，而后者是商业收费软件。[**rdeck**](https://github.com/anthonynorth/rdeck) 类似 **mapdeck**，但是提供更多实用的功能，优化的数据存储方式，过滤了不可见的数据，更加友好的配色主题，适用于图例和悬浮提示等。 Kyle Walker 开发了 [mapboxapi](https://github.com/walkerke/mapboxapi) 包，提供 [Mapbox Web 服务](https://docs.mapbox.com/api/)的 R 语言接口。
+
+专业动画制作软件有[three.js](https://github.com/mrdoob/three.js)和[Blender](https://www.blender.org/)，都是支持 GPU 渲染的。
+
+
+### echarts4r 等 {#sec-echarts4r}
+
+与 **plotly** 包类似，[**echarts4r**](https://github.com/JohnCoene/echarts4r) 是另一个流行的 JavaScript 绘图库的 R 语言接口，同样支持非常广泛的图形种类。[echarts4r](https://github.com/JohnCoene/echarts4r) 是 Apache Echarts 的 R 语言接口。Apache Echarts 支持 WebGL 的图形有散点图、路径图、矢量场图、网络图，详见官方[示例文档](https://echarts.apache.org/examples/zh/index.html)，大规模的数据可视化需要比较好的硬件资源支持。
+
+[**ggiraph**](https://github.com/davidgohel/ggiraph) 可以与 ggplot2 包 紧密结合，提供一致的使用语法，结合 usmap 包可以制作地图，悬浮提示可以包含文字、链接，与 gt 包结合，悬浮提示还可以包含图片、表格等元素。
+
+除了以上这些制作交互式图形的 R 包，还有[apexcharter](https://github.com/dreamRs/apexcharter) 包、[scatterD3](https://github.com/juba/scatterD3) 包和 [visNetwork](https://github.com/datastorm-open/visNetwork/)包等，一份相对完整的列表见 <https://gallery.htmlwidgets.org/>。
+
+
+[reticulate](https://github.com/rstudio/reticulate) 将 Python 社区的绘图模块引入 R 语言社区，比较流行的交互式绘图模块有 [pyecharts](https://github.com/pyecharts/pyecharts)、 [plotly.py](https://github.com/plotly/plotly.py) 和 [bokeh](https://github.com/bokeh/bokeh) 等。
+
+
+如果读者想进一步了解 **htmlwidgets** 框架，JavaScript 响应式编程，推荐 John Coene 新书 [JavaScript for R](https://book.javascript-for-r.com/)
+
+<!--
+提供一个 R 包和 HTML Widgets 小练习：给 roughViz.js 写个 R 包 [roughviz](https://github.com/XiangyunHuang/roughviz)封装 <https://d.cosx.org/d/421030-r-html-widgets-roughviz-js-r>
+-->
+
+
+```{r}
+#| label: fig-quakes-echarts4r
+#| fig-cap: "echarts4r 绘制交互三维图形"
+#| echo: true
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+
+library(echarts4r)
+# color 列还原为 mag
+quakes <- within(quakes, {
+  color <- mag
+})
+# 绘制图形
+quakes |>
+  e_charts(x = lat) |>
+  e_scatter_3d(
+    y = long, z = depth,
+    size = mag,
+    color = mag,
+    bind = stations,
+    coordinate_system = "cartesian3D",
+    name = "Fiji"
+  ) |>
+  e_x_axis_3d(min = -40, max = -10, name = "纬度") |>
+  e_y_axis_3d(min = 165, max = 190, name = "经度") |>
+  e_z_axis_3d(name = "深度") |>
+  e_visual_map(
+    serie = mag,
+    type = "continuous",
+    inRange = list(color = c('#4B0055', '#009B95', '#FDE333')),
+    dimension = 4, # third dimension x = 0, y = 1, z = 2, color = 3, size = 4
+    top = 20
+  ) |>
+  e_visual_map(
+    serie = mag,
+    type = "continuous",
+    inRange = list(symbolSize = c(5, 15)),
+    dimension = 3,
+    bottom = 10
+  ) |>
+  e_tooltip() |>
+  e_title(text = "斐济及其周边地震活动")
+```
+
+目标区域在南半球，纬度南纬 0 度至 40 度，经度东经 165 度至 190 度（西经 170 度）。参数 dimension 的取值和实际含义的关系：0 对应 x 轴，1 对应 y 轴，2 对应 z 轴， 3 对应 size 变量（点的大小），4 对应 color 变量（点的颜色）。下 @fig-quakes-echarts4r-screenshots 是两个不同视角下的截图。
+
+
+::: {#fig-quakes-echarts4r-screenshots layout="[40,-10,50]" layout-valign="bottom" layout-ncol=2}
+
+![视角 1](screenshots/quakes-echarts4r-01.png){#fig-quakes-echarts4r-01}
+
+![视角 2](screenshots/quakes-echarts4r-02.png){#fig-quakes-echarts4r-02}
+
+不同视角下的三维图形
+:::
+
+
+## 基础元素 {#sec-interactive-elements}
+
+
+
+### 图层 {#sec-layer}
+
+
+### 配色 {#sec-color}
+
+
+### 刻度 {#sec-scale}
+
+
+### 标签 {#sec-label}
+
+
+### 主题 {#sec-theme}
+
+
+### 字体 {#sec-font}
+
+
+### 图例 {#sec-legend}
+
+
+
+## 常用图形 {#sec-common-graphics}
+
+
+### 散点图 {#sec-scatter}
+
+
+```{r}
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+
+plotly::plot_ly(
+  data = quakes,
+  y = ~lat,
+  x = ~long,
+  type = "scatter",
+  mode = "markers"
+)
+```
+
+
+
+### 柱形图 {#sec-bar}
+
+
+### 曲线图 {#sec-line}
+
+
+### 直方图 {#sec-hist}
+
+
+### 箱线图 {#sec-boxplot}
+
+
+### 热力图 {#sec-densitymap}
+
+
+```{r}
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+#| fig-cap: "空间点数据的核密度估计"
+
+plotly::plot_ly(
+  data = quakes,
+  lat = ~lat,
+  lon = ~long,
+  type = "densitymapbox",
+  coloraxis = "coloraxis",
+  radius = 10
+) |>
+  plotly::layout(
+    mapbox = list(
+      style = "stamen-terrain",
+      center = list(lon = 180, lat = -20)
+    ),
+    coloraxis = list(colorscale = "Viridis")
+  )
+```
+
+
+
+### 面量图 {#sec-choropleth-maps}
+
+地区分布图，围栏图
+
+
+
+## 常用技巧 {#sec-common-tricks}
+
+
+### 动静转化 {#sec-ggplotly}
+
+```{r}
+library(ggplot2)
+p <- ggplot(data = quakes, aes(x = long, y = lat)) +
+  geom_point()
+p
+```
+
+将 **ggplot2** 包绘制的散点图转化为交互式的散点图，只需调用 **plotly** 包的函数 `ggplotly()`
+
+```{r}
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+
+plotly::ggplotly(p)
+```
+
+
+
+### 数学公式 {#sec-math}
+
+
+### 坐标系统 {#sec-coord}
+
+
+### 添加水印 {#sec-watermark}
+
+
+### 多图布局 {#sec-subplot}
+
+
+### 图表联动 {#sec-crosstalk}
+
+
+**crosstalk** 包可将 **plotly** 包绘制的图形和 **DT** 包制作的表格联动起来
+
+
+
