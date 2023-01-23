@@ -101,10 +101,10 @@ plotly 团队开发了 [plotly.js](https://github.com/plotly/plotly.js) 库，�
 学习 [plotly](https://github.com/ropensci/plotly) 和 [highcharter](https://github.com/jbkunst/highcharter) 为代表的基于 JavaScript 的 R 包，共有四重境界：第一重是照着帮助文档的示例，示例有啥我们做啥；第二重是明白帮助文档中 R 函数和 JavaScript 函数的对应关系，能力达到 JS 库的功能边界；第三重是深度自定义一些扩展性的 JS 功能，放飞自我；第四重是重新造轮子，为所欲为。
 
 
-[**leaflet**](https://github.com/rstudio/leaflet) 在开放街道地图服务的基础上，支持矢量数据和栅格数据，支持交互式的空间数据可视化，支持许多空间数据类型，比如 sp 包的 Spatial 类，raster 包的 Raster 类，sf 包的 Simple Feature 类等。
+专门展示空间数据的绘图框架也有很多，比如 [**leaflet**](https://github.com/rstudio/leaflet) 在开放街道地图服务的基础上，支持矢量数据和栅格数据，支持交互式的空间数据可视化，支持许多空间数据类型，比如 sp 包的 Spatial 类，raster 包的 Raster 类，sf 包的 Simple Feature 类等。
 
 
-[**mapdeck**](https://github.com/SymbolixAU/mapdeck) 提供了 [Deck.gl](https://github.com/visgl/deck.gl) 和 [Mapbox](https://github.com/mapbox/mapbox-gl-js) 的 R 语言接口，Deck.gl 号称是 WebGL 2.0 加持的高性能大规模数据可视化渲染组件，也是以 MIT 协议开源的软件，而后者是商业收费软件。[**rdeck**](https://github.com/anthonynorth/rdeck) 类似 **mapdeck**，但是提供更多实用的功能，优化的数据存储方式，过滤了不可见的数据，更加友好的配色主题，适用于图例和悬浮提示等。 Kyle Walker 开发了 [mapboxapi](https://github.com/walkerke/mapboxapi) 包，提供 [Mapbox Web 服务](https://docs.mapbox.com/api/)的 R 语言接口。
+[**mapdeck**](https://github.com/SymbolixAU/mapdeck) 提供了 [Deck.gl](https://github.com/visgl/deck.gl) 和 [Mapbox](https://github.com/mapbox/mapbox-gl-js) 的 R 语言接口，Deck.gl 号称是 WebGL 2.0 加持的高性能大规模数据可视化渲染组件，也是以 MIT 协议开源的软件，而后者是商业收费软件。[**rdeck**](https://github.com/anthonynorth/rdeck) 类似 **mapdeck**，但是提供更多实用的功能，优化的数据存储方式，过滤了不可见的数据，更加友好的配色主题，适用于图例和悬浮提示等。 Kyle Walker 开发了 [mapboxapi](https://github.com/walkerke/mapboxapi) 包，也提供 [Mapbox Web 服务](https://docs.mapbox.com/api/)的 R 语言接口。
 
 专业动画制作软件有[three.js](https://github.com/mrdoob/three.js)和[Blender](https://www.blender.org/)，都是支持 GPU 渲染的。
 
@@ -121,7 +121,7 @@ plotly 团队开发了 [plotly.js](https://github.com/plotly/plotly.js) 库，�
 [reticulate](https://github.com/rstudio/reticulate) 将 Python 社区的绘图模块引入 R 语言社区，比较流行的交互式绘图模块有 [pyecharts](https://github.com/pyecharts/pyecharts)、 [plotly.py](https://github.com/plotly/plotly.py) 和 [bokeh](https://github.com/bokeh/bokeh) 等。
 
 
-如果读者想进一步了解 **htmlwidgets** 框架，JavaScript 响应式编程，推荐 John Coene 新书 [JavaScript for R](https://book.javascript-for-r.com/)
+如果读者想进一步了解 **htmlwidgets** 框架，JavaScript 响应式编程，推荐 John Coene 的著作 [JavaScript for R](https://book.javascript-for-r.com/)
 
 <!--
 提供一个 R 包和 HTML Widgets 小练习：给 roughViz.js 写个 R 包 [roughviz](https://github.com/XiangyunHuang/roughviz)封装 <https://d.cosx.org/d/421030-r-html-widgets-roughviz-js-r>
@@ -217,6 +217,7 @@ quakes |>
 
 
 ```{r}
+#| label: fig-scatter
 #| eval: !expr knitr::is_html_output(excludes = 'epub')
 
 plotly::plot_ly(
@@ -244,27 +245,28 @@ plotly::plot_ly(
 
 ### 热力图 {#sec-densitymap}
 
+plotly 整合了开源的 [Mapbox GL JS](https://github.com/mapbox/mapbox-gl-js)，可以使用 Mapbox 提供的瓦片地图服务（Mapbox Tile Maps），对空间点数据做核密度估计，展示热力分布，如 @fig-densitymap 所示。图左上角为所罗门群岛（Solomon Islands）、瓦努阿图（Vanuatu）和新喀里多尼亚（New Caledonia），图下方为新西兰北部的威灵顿（Wellington）和奥克兰（Auckland），图中部为斐济（Fiji）。
 
 ```{r}
+#| label: fig-densitymap
 #| eval: !expr knitr::is_html_output(excludes = 'epub')
 #| fig-cap: "空间点数据的核密度估计"
 
 plotly::plot_ly(
-  data = quakes,
-  lat = ~lat,
-  lon = ~long,
-  type = "densitymapbox",
-  coloraxis = "coloraxis",
-  radius = 10
+  data = quakes, lat = ~lat, lon = ~long, radius = 10,
+  type = "densitymapbox", coloraxis = "coloraxis"
 ) |>
   plotly::layout(
     mapbox = list(
       style = "stamen-terrain",
-      center = list(lon = 180, lat = -20)
+      center = list(lon = 180, lat = -25), 
+      zoom = 3
     ),
     coloraxis = list(colorscale = "Viridis")
   )
 ```
+
+图中设置瓦片地图的风格 `style` 为 `"stamen-terrain"`，还可以使用其他开放的栅格瓦片地图服务，比如 `"open-street-map"` 和 `"carto-positron"`。如果使用 MapBox 提供的矢量瓦片地图服务，则需要访问令牌 Mapbox Access Token。图中设置中心坐标 `center` 以及缩放倍数 `zoom`，目的是突出图片中的数据区域。设置调色板 Viridis 展示热力分布，黄色团块的地方表示地震频次高。
 
 
 
