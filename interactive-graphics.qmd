@@ -552,6 +552,8 @@ plotly::plot_ly(
 
 ### 动静转化 {#sec-ggplotly}
 
+在出版书籍，发表期刊文章，打印纸质文稿等场景中，需要将交互图形导出为静态图形，再插入到正文之中。
+
 ```{r}
 library(ggplot2)
 p <- ggplot(data = quakes, aes(x = long, y = lat)) +
@@ -567,7 +569,27 @@ p
 plotly::ggplotly(p)
 ```
 
-将交互图形导出为 SVG 和 PNG 静态格式
+添加动态点的注释，比如点横纵坐标、坐标文本，整个注释标签的样式（如背景色）
+
+```{r}
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+
+plotly::ggplotly(p, dynamicTicks = "y") |> 
+  plotly::style(hoveron = "points", hoverinfo = "x+y+text", 
+        hoverlabel = list(bgcolor = "white"))
+```
+
+orca (Open-source Report Creator App) 软件针对 plotly.js 库渲染的图形具有很强的导出功能，[安装 orca](https://github.com/plotly/orca#installation) 后，`plotly::orca()` 函数可以将基于 htmlwidgets 的 plotly 图形对象导出为 PNG、PDF 和 SVG 等格式的高质量静态图片。
+
+```{r}
+#| eval: false
+
+# orca
+plotly::orca(p, "plotly-quakes.svg")
+# kaleido
+plotly::save_image(p, "plotly-quakes.svg")
+```
+
 
 ### 数学公式 {#sec-math}
 
