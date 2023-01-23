@@ -12,6 +12,13 @@ https://uncharteddata.netlify.app/posts/2022-09-30-interactive-tooltip-tables/
 用交互图复现前面部分图形，有连续性
 -->
 
+```{css}
+#| echo: false
+
+.modebar {
+  display: none !important;
+}
+```
 
 ## 作图工具 {#sec-interactive-tools}
 
@@ -108,11 +115,10 @@ snapshot3d(
 # 更多详情见 https://plot.ly/r/reference/#scatter3d
 plotly::plot_ly(
   data = quakes, x = ~long, y = ~lat, z = ~depth,
-  type = "scatter3d", mode = "markers", 
+  type = "scatter3d", mode = "markers",
   marker = list(
-    size = ~mag, color = ~mag, 
+    size = ~mag, color = ~mag,
     colorscale = "Viridis",
-    line = list(color = "white", width = .1),
     colorbar = list(title = list(text = "震级"))
   )
 ) |>
@@ -297,7 +303,11 @@ knitr::kable(matrix(grep("add_*", x = ls("package:plotly"), value = T), ncol = 3
 plotly::plot_ly(
   data = quakes, x = ~long, y = ~lat,
   type = "scatter", mode = "markers"
-)
+) |>
+  plotly::layout(
+    xaxis = list(title = "经度"),
+    yaxis = list(title = "纬度")
+  )
 ```
 
 quakes 是一个包含空间位置的数据集，plotly 的 `scattergeo` 图层 针对空间数据提供多边形矢量边界地图数据，支持设定坐标参考系。下 @fig-scattergeo 增加了地震震级维度，在空间坐标参考系下绘制散点。
@@ -347,19 +357,73 @@ plotly::plot_ly(
 ### 柱形图 {#sec-bar}
 
 
+```{r}
+#| echo: false
+
+svn_trunk_log <- readRDS(file = "data/svn-trunk-log-2022.rds")
+svn_trunk_log <- within(svn_trunk_log, {
+  # 提取日期、月份、年份、星期、第几周、第几天等时间成分
+  year <- as.integer(format(stamp, "%Y"))
+  date <- format(stamp, format = "%Y-%m-%d", tz = "UTC")
+  month <- format(stamp, format = "%m", tz = "UTC")
+  hour <- format(stamp, format = "%H", tz = "UTC")
+  week <- format(stamp, format = "%U", tz = "UTC")
+  wday <- format(stamp, format = "%a", tz = "UTC")
+  nday <- format(stamp, format = "%j", tz = "UTC")
+})
+trunk_year <- aggregate(data = svn_trunk_log, revision ~ year, FUN = length)
+```
+
+
+```{r}
+#| label: fig-plotly-bar
+#| fig-cap: "柱形图"
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+
+plotly::plot_ly(
+  data = trunk_year, x = ~year, y = ~revision, type = "bar"
+) |>
+  plotly::layout(
+    xaxis = list(title = "年份"),
+    yaxis = list(title = "代码提交量")
+  )
+```
+
+
 ### 曲线图 {#sec-line}
 
 
+```{r}
+#| label: fig-plotly-curve
+#| fig-cap: "曲线图"
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+
+plotly::plot_ly(
+  data = trunk_year, x = ~year, y = ~revision, type = "scatter",
+  mode = "markers+lines", line = list(shape = "spline")
+) |> 
+  plotly::layout(
+    xaxis = list(title = "年份"),
+    yaxis = list(title = "代码提交量")
+  )
+```
+
+
+
 ### 直方图 {#sec-hist}
+
+地震次数随震级的分布变化
 
 ```{r}
 #| label: fig-quakes-mag
 #| fig-cap: "地震震级的分布"
 #| eval: !expr knitr::is_html_output(excludes = 'epub')
 
-plotly::plot_ly(quakes,
-  x = ~mag, type = "histogram"
-)
+plotly::plot_ly(quakes, x = ~mag, type = "histogram") |> 
+  plotly::layout(
+    xaxis = list(title = "震级"),
+    yaxis = list(title = "次数")
+  )
 ```
 
 
@@ -374,7 +438,11 @@ quakes$depth_bin <- cut(quakes$depth, breaks = 150 * 0:5)
 plotly::plot_ly(quakes,
   x = ~mag, colors = "viridis",
   color = ~depth_bin, type = "histogram"
-)
+) |> 
+  plotly::layout(
+    xaxis = list(title = "震级"),
+    yaxis = list(title = "次数")
+  )
 ```
 
 
@@ -389,7 +457,11 @@ plotly::plot_ly(quakes,
 plotly::plot_ly(quakes,
   x = ~depth_bin, y = ~mag, colors = "viridis",
   color = ~depth_bin, type = "box"
-)
+) |> 
+  plotly::layout(
+    xaxis = list(title = "深度"),
+    yaxis = list(title = "震级")
+  )
 ```
 
 
@@ -400,10 +472,14 @@ plotly::plot_ly(quakes,
 
 plotly::plot_ly(quakes,
   x = ~depth_bin, y = ~mag, split = ~depth_bin,
-  type = "violin",
-  box = list(visible = T),
-  meanline = list(visible = T)
-)
+  type = "violin", color = ~depth_bin, colors = "viridis",
+  box = list(visible = TRUE),
+  meanline = list(visible = TRUE)
+) |> 
+  plotly::layout(
+    xaxis = list(title = "深度"),
+    yaxis = list(title = "震级")
+  )
 ```
 
 
@@ -422,9 +498,8 @@ plotly::plot_ly(
 ) |>
   plotly::layout(
     mapbox = list(
-      style = "stamen-terrain",
-      center = list(lon = 180, lat = -25), 
-      zoom = 3
+      style = "stamen-terrain", zoom = 3,
+      center = list(lon = 180, lat = -25)
     ),
     coloraxis = list(colorscale = "Viridis")
   )
@@ -492,7 +567,7 @@ p
 plotly::ggplotly(p)
 ```
 
-
+将交互图形导出为 SVG 和 PNG 静态格式
 
 ### 数学公式 {#sec-math}
 
