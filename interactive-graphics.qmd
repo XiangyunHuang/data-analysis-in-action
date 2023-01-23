@@ -3,8 +3,13 @@
 <!-- 
 主要介绍 plotly 还是基于 gapminder 数据集
 https://talks.cpsievert.me/20210624/#1
-
+数据可视化案例
 https://uncharteddata.netlify.app/posts/2022-09-30-interactive-tooltip-tables/
+
+本章是站在之前 ggplot2 的章节之上
+除了介绍 plotly，对标 ggplot2 
+基于前面章节中的数据，仍然以一个数据串联尽可能多的小节
+用交互图复现前面部分图形，有连续性
 -->
 
 
@@ -93,6 +98,32 @@ snapshot3d(
 [plotly.js](https://github.com/plotly/plotly.js) 提供很多图层用于绘制各类图形，见[plotly.js 源码库](https://github.com/plotly/plotly.js/tree/master/src/traces)，其中支持 WebGL 的有热力图 `heatmapgl`、 散点图 `scattergl` 和极坐标系下的散点图 `scatterpolargl`。
 
 [**plotly**](https://github.com/plotly/plotly.R) 可以与 **ggplot2** 紧密结合，提供函数 `ggplotly()` 直接将静态的 ggplot2 图形转化为交互式的 plotly 图形，函数 `plot_ly()` 也提供一致的使用语法。
+
+
+```{r}
+#| label: fig-quakes-plotly
+#| fig-cap: "plotly 绘制交互三维图形"
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+
+# 更多详情见 https://plot.ly/r/reference/#scatter3d
+plotly::plot_ly(
+  data = quakes, x = ~long, y = ~lat, z = ~depth,
+  type = "scatter3d", mode = "markers", 
+  marker = list(
+    size = ~mag, color = ~mag, 
+    colorscale = "Viridis",
+    line = list(color = "white", width = .1),
+    colorbar = list(title = list(text = "震级"))
+  )
+) |>
+  plotly::layout(scene = list(
+    xaxis = list(title = "经度"),
+    yaxis = list(title = "纬度"),
+    zaxis = list(title = "深度")
+  ))
+```
+
+
 
 plotly 包的函数使用起来还是比较复杂的，特别是需要打磨细节以打造数据产品时，此外，其依赖相当重，仅数据处理就包含两套方法 --- dplyr 和 data.table，引起很多函数冲突，可谓「苦其久矣」！因此，准备另起炉灶，开发一个新的 R 包 qplotly，取意 quick plotly，以 `qplot_ly()` 替代 `plot_ly()`。类似简化 API 的工作有 [simplevis](https://github.com/StatisticsNZ/simplevis)、[autoplotly](https://github.com/terrytangyuan/autoplotly)、[ggfortify](https://github.com/sinhrks/ggfortify) 和 [plotme](https://github.com/yogevherz/plotme)。
 
@@ -212,23 +243,105 @@ quakes |>
 
 ## 常用图形 {#sec-common-graphics}
 
+```{r}
+#| eval: false
+#| echo: false
+
+library(plotly, warn.conflicts = FALSE)
+knitr::kable(matrix(grep("add_*", x = ls("package:plotly"), value = T), ncol = 3),
+  col.names = c("A", "B", "C"), caption = "图层"
+)
+```
+
+|A               |B                      |C              |
+|:---------------|:----------------------|:--------------|
+|add_annotations |add_histogram          |add_polygons   |
+|add_area        |add_histogram2d        |add_ribbons    |
+|add_bars        |add_histogram2dcontour |add_scattergeo |
+|add_boxplot     |add_image              |add_segments   |
+|add_choropleth  |add_lines              |add_sf         |
+|add_contour     |add_markers            |add_surface    |
+|add_data        |add_mesh               |add_table      |
+|add_fun         |add_paths              |add_text       |
+|add_heatmap     |add_pie                |add_trace      |
+
+: plotly 包可以绘制丰富的统计图形 {#tbl-plotly-layers}
 
 ### 散点图 {#sec-scatter}
 
 
+**plotly** 包支持绘制许多常见的散点图，从直角坐标系 `scatter` 到极坐标系 `scatterpolar` 和地理坐标系 `scattergeo`，从二维平面 `scatter` 到三维空间 `scatter3d`，借助 WebGL 可以渲染大规模的数据点 `scattergl`。
+
+| 类型             | 名称              |
+| :--------------- | :---------------- |
+| `scatter`        | 二位平面散点图    |
+| `scatter3d`      | 三维立体散点图    |
+| `scattergl`      | 散点图（WebGL 版）|
+| `scatterpolar`   | 极坐标下散点图    |
+| `scatterpolargl` | 极坐标下散点图（WebGL 版）  |
+| `scattergeo`     | 地理坐标下散点图  |
+| `scattermapbox`  | 地理坐标下散点（MapBox 版） |
+| `scattercarpet`  | 地毯图            |
+| `scatterternary` | 三元图            |
+
+: plotly 包支持绘制的散点图类型 {#tbl-plotly-scatter}
+
+
+@fig-scatter 展示斐济及其周边的地震分布
+
 ```{r}
 #| label: fig-scatter
 #| eval: !expr knitr::is_html_output(excludes = 'epub')
+#| fig-cap: "普通散点图"
 
 plotly::plot_ly(
-  data = quakes,
-  y = ~lat,
-  x = ~long,
-  type = "scatter",
-  mode = "markers"
+  data = quakes, x = ~long, y = ~lat,
+  type = "scatter", mode = "markers"
 )
 ```
 
+quakes 是一个包含空间位置的数据集，plotly 的 `scattergeo` 图层 针对空间数据提供多边形矢量边界地图数据，支持设定坐标参考系。下 @fig-scattergeo 增加了地震震级维度，在空间坐标参考系下绘制散点。
+
+```{r}
+#| label: fig-scattergeo
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+#| fig-cap: "空间点数据图"
+
+plotly::plot_ly(
+  data = quakes,
+  lon = ~long, lat = ~lat,
+  type = "scattergeo", mode = "markers",
+  text = ~ paste0(
+    "站点：", stations, "<br>",
+    "震级：", mag
+  ),
+  marker = list(
+    color = ~mag, colorscale = "Viridis",
+    size = 10, opacity = 0.8,
+    line = list(color = "white", width = 1)
+  )
+) |>
+  plotly::layout(geo = list(
+    showland = TRUE,
+    landcolor = plotly::toRGB("gray95"),
+    countrycolor = plotly::toRGB("gray85"),
+    subunitcolor = plotly::toRGB("gray85"),
+    countrywidth = 0.5,
+    subunitwidth = 0.5,
+    lonaxis = list(
+      showgrid = TRUE,
+      gridwidth = 0.5,
+      range = c(160, 190),
+      dtick = 5
+    ),
+    lataxis = list(
+      showgrid = TRUE,
+      gridwidth = 0.5,
+      range = c(-40, -10),
+      dtick = 5
+    )
+  ))
+```
 
 
 ### 柱形图 {#sec-bar}
@@ -239,8 +352,59 @@ plotly::plot_ly(
 
 ### 直方图 {#sec-hist}
 
+```{r}
+#| label: fig-quakes-mag
+#| fig-cap: "地震震级的分布"
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+
+plotly::plot_ly(quakes,
+  x = ~mag, type = "histogram"
+)
+```
+
+
+海平面下不同深度的地震震级分布
+
+```{r}
+#| label: fig-quakes-depth-hist
+#| fig-cap: "不同深度下地震震级的分布"
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+
+quakes$depth_bin <- cut(quakes$depth, breaks = 150 * 0:5)
+plotly::plot_ly(quakes,
+  x = ~mag, colors = "viridis",
+  color = ~depth_bin, type = "histogram"
+)
+```
+
 
 ### 箱线图 {#sec-boxplot}
+
+
+```{r}
+#| label: fig-quakes-depth-box
+#| fig-cap: "不同深度下地震震级的分布"
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+
+plotly::plot_ly(quakes,
+  x = ~depth_bin, y = ~mag, colors = "viridis",
+  color = ~depth_bin, type = "box"
+)
+```
+
+
+```{r}
+#| label: fig-quakes-depth-violin
+#| fig-cap: "不同深度下地震震级的分布"
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+
+plotly::plot_ly(quakes,
+  x = ~depth_bin, y = ~mag, split = ~depth_bin,
+  type = "violin",
+  box = list(visible = T),
+  meanline = list(visible = T)
+)
+```
 
 
 ### 热力图 {#sec-densitymap}
@@ -272,7 +436,39 @@ plotly::plot_ly(
 
 ### 面量图 {#sec-choropleth-maps}
 
-地区分布图，围栏图
+在之前我们介绍过用 ggplot2 绘制地区分布图，实际上，地区分布图还有别名，如围栏图、面量图等。本节使用 plotly 绘制交互式的地区分布图，如 @fig-choropleth-map 所示。
+
+```{r}
+#| label: fig-choropleth-map
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+#| fig-cap: "1974 年美国各州的人均收入"
+
+# https://plotly.com/r/reference/choropleth/
+dat <- data.frame(state.x77,
+  stats = rownames(state.x77),
+  stats_abbr = state.abb
+)
+# 绘制图形
+plotly::plot_ly(
+  data = dat,
+  type = "choropleth",
+  locations = ~stats_abbr,
+  locationmode = "USA-states",
+  colorscale = "Viridis",
+  colorbar = list(title = list(text = "人均收入")),
+  z = ~Income
+) |>
+  plotly::layout(
+    geo = list(scope = "usa"),
+    title = "1974年美国各州的人均收入"
+  )
+```
+
+
+
+
+### 动态图 {#sec-animate}
+
 
 
 
