@@ -289,7 +289,7 @@ plotly::plot_ly(
 )
 ```
 
-所以，总的来说， `add_markers()` 与 `add_trace(type = "scatter", mode = "markers")` 和 `plot_ly(type = "scatter", mode = "markers")` 是等价的。
+所以，总的来说， `add_markers()` 、`add_trace(type = "scatter", mode = "markers")` 和 `plot_ly(type = "scatter", mode = "markers")` 是等价的。
 :::
 
 
@@ -500,6 +500,7 @@ trunk_year <- aggregate(data = svn_trunk_log, revision ~ year, FUN = length)
 #| fig-cap: "柱形图"
 #| eval: !expr knitr::is_html_output(excludes = 'epub')
 
+# https://plotly.com/r/reference/bar/
 plotly::plot_ly(
   data = trunk_year, x = ~year, y = ~revision, type = "bar"
 ) |>
@@ -532,13 +533,14 @@ plotly::plot_ly(
 
 ### 直方图 {#sec-plotly-hist}
 
-地震次数随震级的分布变化
+地震次数随震级的分布变化，下 @fig-quakes-mag 为频数分布图
 
 ```{r}
 #| label: fig-quakes-mag
-#| fig-cap: "地震震级的分布"
+#| fig-cap: "地震震级的频数分布图"
 #| eval: !expr knitr::is_html_output(excludes = 'epub')
 
+# https://plotly.com/r/reference/histogram/
 plotly::plot_ly(quakes, x = ~mag, type = "histogram") |> 
   plotly::layout(
     xaxis = list(title = "震级"),
@@ -546,8 +548,28 @@ plotly::plot_ly(quakes, x = ~mag, type = "histogram") |>
   )
 ```
 
+地震震级的概率分布，下 @fig-quakes-mag-prob 为频率分布图
 
-海平面下不同深度的地震震级分布
+```{r}
+#| label: fig-quakes-mag-prob
+#| fig-cap: "地震震级的频率分布图"
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+
+plotly::plot_ly(
+  data = quakes, x = ~mag, type = "histogram",
+  histnorm = "probability",
+  marker = list(
+    color = "lightblue",
+    line = list(color = "white", width = 2)
+  )
+) |>
+  plotly::layout(
+    xaxis = list(title = "震级"),
+    yaxis = list(title = "频率")
+  )
+```
+
+`histnorm = "probability"` 意味着纵轴表示频率，即每个窗宽下地震次数占总地震次数的比例。地震常常发生在地下，不同的深度对应着不同的地质构造、不同的地震成因，下 @fig-quakes-depth-hist 展示海平面下不同深度的地震震级分布。
 
 ```{r}
 #| label: fig-quakes-depth-hist
