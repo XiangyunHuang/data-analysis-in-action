@@ -784,6 +784,10 @@ plotly::plot_ly(quakes,
 将两个图形做上下排列
 
 ```{r}
+#| label: fig-tagList
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+#| fig-cap: "上下布局"
+
 p1 <- plotly::plot_ly(
   data = trunk_year, x = ~year, y = ~revision, type = "bar"
 ) |>
@@ -800,13 +804,6 @@ p2 <- plotly::plot_ly(
     xaxis = list(title = "年份"),
     yaxis = list(title = "代码提交量")
   )
-```
-
-
-```{r}
-#| label: fig-tagList
-#| eval: !expr knitr::is_html_output(excludes = 'epub')
-#| fig-cap: "上下布局"
 
 htmltools::tagList(p1, p2)
 ```
@@ -845,7 +842,22 @@ plotly::subplot(p11,
 ### 图表联动 {#sec-plotly-crosstalk}
 
 
-**crosstalk** 包可将 **plotly** 包绘制的图形和 **DT** 包制作的表格联动起来
+**crosstalk** 包可将 **plotly** 包绘制的图形和 **DT** 包制作的表格联动起来。**plotly** 绘制交互图形，在图形上用套索工具筛选出来的数据显示在表格中。
 
 
+```{r}
+#| label: fig-crosstalk
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+#| fig-cap: "图表联动"
+
+library(crosstalk)
+# quakes 数据变成可共享的
+quakes_sd <- SharedData$new(quakes)
+# 绘制交互图形
+p <- plotly::plot_ly(quakes_sd, x = ~long, y = ~lat) |> 
+  plotly::add_markers() |> 
+  plotly::highlight(on = "plotly_selected", off = "plotly_deselect")
+# 将图表组合一起展示
+bscols(p, DT::datatable(quakes_sd))
+```
 
