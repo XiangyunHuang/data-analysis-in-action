@@ -131,7 +131,7 @@ plotly::plot_ly(
 
 
 
-plotly 包的函数使用起来还是比较复杂的，特别是需要打磨细节以打造数据产品时，此外，其依赖相当重，仅数据处理就包含两套方法 --- dplyr 和 data.table，引起很多函数冲突，可谓「苦其久矣」！因此，准备另起炉灶，开发一个新的 R 包 qplotly，取意 quick plotly，以 `qplot_ly()` 替代 `plot_ly()`。类似简化 API 的工作有 [simplevis](https://github.com/StatisticsNZ/simplevis)、[autoplotly](https://github.com/terrytangyuan/autoplotly)、[ggfortify](https://github.com/sinhrks/ggfortify) 和 [plotme](https://github.com/yogevherz/plotme)。
+<!-- plotly 包的函数使用起来还是比较复杂的，特别是需要打磨细节以打造数据产品时，此外，其依赖相当重，仅数据处理就包含两套方法 --- dplyr 和 data.table，引起很多函数冲突，可谓「苦其久矣」！因此，准备另起炉灶，开发一个新的 R 包 qplotly，取意 quick plotly，以 `qplot_ly()` 替代 `plot_ly()`。类似简化 API 的工作有 [simplevis](https://github.com/StatisticsNZ/simplevis)、[autoplotly](https://github.com/terrytangyuan/autoplotly)、[ggfortify](https://github.com/sinhrks/ggfortify) 和 [plotme](https://github.com/yogevherz/plotme)。 -->
 
 plotly 团队开发了 [plotly.js](https://github.com/plotly/plotly.js) 库，且维护了 R 接口文档 (<https://plotly.com/r/>)，Carson Sievert 开发了 [plotly](https://github.com/ropensci/plotly) 包，配套书 [Interactive web-based data visualization with R, plotly, and shiny](https://plotly-r.com/)。 Paul C. Bauer 的书 [Applied Data Visualization](https://bookdown.org/paul/applied-data-visualization/) 介绍 plotly <https://bookdown.org/paul/applied-data-visualization/what-is-plotly.html>
 
@@ -227,27 +227,7 @@ quakes |>
 
 ### 图层 {#sec-plotly-layer}
 
-
-### 配色 {#sec-plotly-color}
-
-
-### 刻度 {#sec-plotly-scale}
-
-
-### 标签 {#sec-plotly-label}
-
-
-### 主题 {#sec-plotly-theme}
-
-
-### 字体 {#sec-plotly-font}
-
-
-### 图例 {#sec-plotly-legend}
-
-
-
-## 常用图形 {#sec-plotly-common-graphics}
+**plotly** 包封装了许多图层函数，可以绘制各种各样的统计图形，见下 @tbl-plotly-layers 。
 
 ```{r}
 #| eval: false
@@ -259,7 +239,6 @@ knitr::kable(matrix(grep("add_*", x = ls("package:plotly"), value = T), ncol = 3
 )
 ```
 
-|A               |B                      |C              |
 |:---------------|:----------------------|:--------------|
 |add_annotations |add_histogram          |add_polygons   |
 |add_area        |add_histogram2d        |add_ribbons    |
@@ -271,7 +250,147 @@ knitr::kable(matrix(grep("add_*", x = ls("package:plotly"), value = T), ncol = 3
 |add_fun         |add_paths              |add_text       |
 |add_heatmap     |add_pie                |add_trace      |
 
-: plotly 包可以绘制丰富的统计图形 {#tbl-plotly-layers}
+: **plotly** 包可以绘制丰富的统计图形 {#tbl-plotly-layers}
+
+下面以散点图为例，使用方式非常类似 **ggplot2** 包，函数 `plot_ly()` 类似 `ggplot()`，而函数 `add_markers()` 类似 `geom_point()`，效果如 @fig-plotly-markers 所示。
+
+```{r}
+#| label: fig-plotly-markers
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+#| fig-cap: "默认风格的简单散点图"
+
+# https://plotly.com/r/reference/scatter/
+plotly::plot_ly(data = quakes, x = ~long, y = ~lat) |> 
+  plotly::add_markers()
+```
+
+或者使用函数 `add_trace()`，层层添加图形元素，效果和上 @fig-plotly-markers 是一样的。
+
+```{r}
+#| label: fig-plotly-trace
+#| eval: false
+
+plotly::plot_ly(data = quakes, x = ~long, y = ~lat) |> 
+  plotly::add_trace(type = "scatter", mode = "markers")
+```
+
+
+::: {.callout-tip}
+**plotly** 包的函数 `plot_ly()` 又与 **ggplot2** 包中函数 `qplot()` 类似，可以将大部分设置塞进去。
+
+```{r}
+#| label: fig-plotly-qplot
+#| eval: false
+
+plotly::plot_ly(
+  data = quakes, x = ~long, y = ~lat,
+  type = "scatter", mode = "markers"
+)
+```
+
+所以，总的来说， `add_markers()` 与 `add_trace(type = "scatter", mode = "markers")` 和 `plot_ly(type = "scatter", mode = "markers")` 是等价的。
+:::
+
+
+### 配色 {#sec-plotly-color}
+
+在 @fig-plotly-markers 的基础上，将颜色映射到震级变量上。
+
+```{r}
+#| label: fig-plotly-color
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+#| fig-cap: "给散点图配色"
+
+plotly::plot_ly(data = quakes, x = ~long, y = ~lat) |> 
+  plotly::add_markers(color = ~mag)
+```
+
+
+### 刻度 {#sec-plotly-scale}
+
+
+东经和南纬
+
+
+```{r}
+#| label: fig-plotly-scale
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+#| fig-cap: "设置刻度及标签"
+
+plotly::plot_ly(data = quakes, x = ~long, y = ~lat) |> 
+  plotly::add_markers(color = ~mag) |>
+  plotly::layout(
+    xaxis = list(title = "经度", ticksuffix = 'E'),
+    yaxis = list(title = "纬度", ticksuffix = 'S')
+  )
+```
+
+
+### 标签 {#sec-plotly-label}
+
+添加横轴、纵轴以及主副标题
+
+```{r}
+#| label: fig-plotly-label
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+#| fig-cap: "添加各处标题"
+
+plotly::plot_ly(
+  data = quakes, x = ~long, y = ~lat,
+  marker = list(
+    color = ~mag,
+    colorscale = "Viridis",
+    colorbar = list(title = list(text = "震级"))
+  )
+) |>
+  plotly::add_markers() |>
+  plotly::layout(
+    xaxis = list(title = "经度"),
+    yaxis = list(title = "纬度"),
+    title = "斐济及其周边地区的地震活动"
+  )
+```
+
+
+
+### 主题 {#sec-plotly-theme}
+
+plotly 内置了一些主题风格
+
+```{r}
+#| label: fig-plotly-theme
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+#| fig-cap: "设置主题风格"
+
+plotly::plot_ly(
+  data = quakes, x = ~long, y = ~lat,
+  marker = list(
+    color = ~mag,
+    colorscale = "Viridis",
+    colorbar = list(title = list(text = "震级"))
+  )
+) |>
+  plotly::add_markers() |>
+  plotly::layout(
+    xaxis = list(title = "经度"),
+    yaxis = list(title = "纬度"),
+    title = "斐济及其周边地区的地震活动"
+  )
+```
+
+
+### 字体 {#sec-plotly-font}
+
+
+
+### 图例 {#sec-plotly-legend}
+
+
+
+
+## 常用图形 {#sec-plotly-common-graphics}
+
+
 
 ### 散点图 {#sec-plotly-scatter}
 
