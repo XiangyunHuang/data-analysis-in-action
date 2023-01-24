@@ -430,48 +430,6 @@ plotly::plot_ly(
   )
 ```
 
-quakes 是一个包含空间位置的数据集，plotly 的 `scattergeo` 图层 针对空间数据提供多边形矢量边界地图数据，支持设定坐标参考系。下 @fig-scattergeo 增加了地震震级维度，在空间坐标参考系下绘制散点。
-
-```{r}
-#| label: fig-scattergeo
-#| eval: !expr knitr::is_html_output(excludes = 'epub')
-#| fig-cap: "空间点数据图"
-
-plotly::plot_ly(
-  data = quakes,
-  lon = ~long, lat = ~lat,
-  type = "scattergeo", mode = "markers",
-  text = ~ paste0(
-    "站点：", stations, "<br>",
-    "震级：", mag
-  ),
-  marker = list(
-    color = ~mag, colorscale = "Viridis",
-    size = 10, opacity = 0.8,
-    line = list(color = "white", width = 1)
-  )
-) |>
-  plotly::layout(geo = list(
-    showland = TRUE,
-    landcolor = plotly::toRGB("gray95"),
-    countrycolor = plotly::toRGB("gray85"),
-    subunitcolor = plotly::toRGB("gray85"),
-    countrywidth = 0.5,
-    subunitwidth = 0.5,
-    lonaxis = list(
-      showgrid = TRUE,
-      gridwidth = 0.5,
-      range = c(160, 190),
-      dtick = 5
-    ),
-    lataxis = list(
-      showgrid = TRUE,
-      gridwidth = 0.5,
-      range = c(-40, -10),
-      dtick = 5
-    )
-  ))
-```
 
 
 ### 柱形图 {#sec-plotly-bar}
@@ -738,11 +696,114 @@ plotly::save_image(p, "plotly-quakes.svg")
 
 ### 坐标系统 {#sec-plotly-coord}
 
+quakes 是一个包含空间位置的数据集，plotly 的 `scattergeo` 图层 针对空间数据提供多边形矢量边界地图数据，支持设定坐标参考系。下 @fig-scattergeo 增加了地震震级维度，在空间坐标参考系下绘制散点。
+
+```{r}
+#| label: fig-scattergeo
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+#| fig-cap: "空间点数据图"
+
+plotly::plot_ly(
+  data = quakes,
+  lon = ~long, lat = ~lat,
+  type = "scattergeo", mode = "markers",
+  text = ~ paste0(
+    "站点：", stations, "<br>",
+    "震级：", mag
+  ),
+  marker = list(
+    color = ~mag, colorscale = "Viridis",
+    size = 10, opacity = 0.8,
+    line = list(color = "white", width = 1)
+  )
+) |>
+  plotly::layout(geo = list(
+    showland = TRUE,
+    landcolor = plotly::toRGB("gray95"),
+    countrycolor = plotly::toRGB("gray85"),
+    subunitcolor = plotly::toRGB("gray85"),
+    countrywidth = 0.5,
+    subunitwidth = 0.5,
+    lonaxis = list(
+      showgrid = TRUE,
+      gridwidth = 0.5,
+      range = c(160, 190),
+      dtick = 5
+    ),
+    lataxis = list(
+      showgrid = TRUE,
+      gridwidth = 0.5,
+      range = c(-40, -10),
+      dtick = 5
+    )
+  ))
+```
+
 
 ### 添加水印 {#sec-plotly-watermark}
 
 
 ### 多图布局 {#sec-plotly-subplot}
+
+将两个图形做上下排列
+
+```{r}
+p1 <- plotly::plot_ly(
+  data = trunk_year, x = ~year, y = ~revision, type = "bar"
+) |>
+  plotly::layout(
+    xaxis = list(title = "年份"),
+    yaxis = list(title = "代码提交量")
+  )
+
+p2 <- plotly::plot_ly(
+  data = trunk_year, x = ~year, y = ~revision, type = "scatter",
+  mode = "markers+lines", line = list(shape = "spline")
+) |>
+  plotly::layout(
+    xaxis = list(title = "年份"),
+    yaxis = list(title = "代码提交量")
+  )
+```
+
+
+```{r}
+#| label: fig-tagList
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+#| fig-cap: "上下布局"
+
+htmltools::tagList(p1, p2)
+```
+
+plotly 包提供的函数 `subplot()` 专门用于布局排列，下 @fig-subplot 的上下子图共享 x 轴。
+
+```{r}
+#| label: fig-subplot
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+#| fig-cap: "上下布局"
+
+plotly::subplot(plotly::style(p1, showlegend = FALSE), 
+                plotly::style(p2, showlegend = FALSE), 
+                nrows = 2, margin = 0.05, shareX = TRUE, titleY = TRUE)
+```
+
+下 @fig-subplot-2 展示更加灵活的布局形式，嵌套使用布局函数 `subplot()` 实现。
+
+```{r}
+#| label: fig-subplot-2
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+#| fig-cap: "灵活布局"
+
+p11 <- plotly::subplot(plotly::style(p1, showlegend = FALSE),
+  plotly::style(p2, showlegend = FALSE),
+  nrows = 1, margin = 0.05, shareY = TRUE, titleX = TRUE
+)
+
+plotly::subplot(p11,
+  plotly::style(p2, showlegend = FALSE),
+  nrows = 2, margin = 0.05, shareY = FALSE, titleX = FALSE
+)
+```
 
 
 ### 图表联动 {#sec-plotly-crosstalk}
