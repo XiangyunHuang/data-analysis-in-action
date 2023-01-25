@@ -1,0 +1,916 @@
+# 交互图形 {#sec-interactive-graphics}
+
+<!-- 
+主要介绍 plotly 还是基于 gapminder 数据集
+https://talks.cpsievert.me/20210624/#1
+数据可视化案例
+https://uncharteddata.netlify.app/posts/2022-09-30-interactive-tooltip-tables/
+
+本章是站在之前 ggplot2 的章节之上
+除了介绍 plotly，对标 ggplot2 
+基于前面章节中的数据，仍然以一个数据串联尽可能多的小节
+用交互图复现前面部分图形，有连续性
+-->
+
+```{css}
+#| echo: false
+
+.modebar {
+  display: none !important;
+}
+```
+
+## 作图工具 {#sec-interactive-tools}
+
+
+R 语言社区有很多 R 包可以绘制动态交互图形，有的 R 包功能非常综合，如 **echarts4r** 包、 **plotly** 包等，有的 R 包功能非常专门化，如 **rgl** 包和**leaflet**包。
+
+
+### OpenGL 与 rgl {#sec-opengl-rgl}
+
+[rgl](https://github.com/dmurdoch/rgl) 是制作三维交互图形的专门化 R 包。相比于用函数 `persp()` 制作的三维透视图，**rgl** 算是非常**早**的实现**真**三维图形绘制的 R 包，它在 2004 年就发布在 CRAN 上了，时间一晃，18 年过去了。
+
+[mikefc](https://coolbutuseless.github.io/) 戏称自己造了中看不中用的 [ggrgl](https://github.com/coolbutuseless/ggrgl) 包，其 Github ID 正是 coolbutuseless，按字面意思拆开来就是「cool but useless」，不过，mikefc 的个人博客干货很多，而且非常高产，推荐读者看看。这让我一下想到贾宝玉在假山下和林黛玉一起偷看《西厢记》的场景，宝玉问：银样蜡枪头是什么意思？黛玉回答说：中看不中用。有些图形实在没有必要升维做成立体的，比如条形图或柱形图，一些反面例子可以在[漫谈条形图](https://cosx.org/2017/10/discussion-about-bar-graph)和[你问我答](https://msg2020.pzhao.org/qa/)两篇文章中找到。
+
+[**rayrender**](https://github.com/tylermorganwall/rayrender) 不依赖 rgl 包，主打 3D 建模，渲染复杂场景，没有外部依赖，可制作三维立体感的 **ggplot2** 图形，推荐其替代 **rgl** 制作三维动画。[**rayshader**](https://github.com/tylermorganwall/rayshader) 依赖 **rgl** 和 **rayrender** 等提供阴影特效，适合地形景观图，Tyler Morgan-Wall 也曾在 RStudio 大会上介绍过 **rayshader**，Github 星赞超过 1500，算是比较流行的 R 包了。
+
+[imagemagick](https://imagemagick.org/) 是一个独立的图像后期处理软件，它可以将一系列静态图片合成 GIF 动图，[**magick**](https://github.com/ropensci/magick) 是 Jeroen Ooms 开发的又一 R 接口包，[ffmpeg](https://www.ffmpeg.org/) 是一个独立的视频处理软件。
+
+LaTeX 宏包 [animate](https://ctan.org/pkg/animate)，常用于 [beamer](https://ctan.org/pkg/beamer) 幻灯片或 PDF 文档中，将一系列 PNG/PDF 图片合成动画，就是将一幅幅图片以快速地方式播放，形成动画效果，需要使用 Adobe 阅读器播放才可见效果。
+
+
+```{r}
+#| label: fig-quakes-rgl
+#| fig-cap: "rgl 绘制交互三维图形"
+#| echo: true
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+
+# 将连续型数据向量转化为颜色向量
+colorize_numeric <- function(x) {
+  scales::col_numeric(palette = "viridis", domain = range(x))(x)
+}
+# 在数据集 quakes 上添加新的数据 color
+quakes <- within(quakes, {
+  color <- colorize_numeric(mag)
+})
+# 设置 WebGL 渲染
+options(rgl.useNULL = TRUE)
+options(rgl.printRglwidget = TRUE)
+library(rgl)
+# 设置视角 
+rgl.viewpoint(
+  theta = 30, phi = 45, fov = 30,
+  zoom = 1, interactive = TRUE
+)
+# 绘制图形
+with(quakes, {
+  plot3d(
+    x = long, y = lat, z = -depth,
+    xlab = "经度",
+    ylab = "纬度",
+    zlab = "深度",
+    col = color, size = mag - 4, type = "s"
+  )
+})
+```
+```{r}
+#| echo: false
+#| eval: false
+
+snapshot3d(
+  filename = "screenshots/quakes-rgl.png",
+  webshot = TRUE, width = 700, height = 700
+)
+```
+
+极坐标参考系下， theta 绕垂直轴的旋转角度， phi 绕水平轴旋转的角度，zoom 表示缩放因子，interactive 是否允许旋转图形。下 @fig-quakes-rgl-screenshots 是不同视角下保存的截图。
+
+::: {#fig-quakes-rgl-screenshots layout-ncol=2}
+
+![视角 1](screenshots/quakes-rgl-01.png){#fig-quakes-rgl-01}
+
+![视角 2](screenshots/quakes-rgl-02.png){#fig-quakes-rgl-02}
+
+不同视角下的三维图形
+:::
+
+
+
+
+### WebGL 与 plotly {#sec-webgl-plotly}
+
+
+[WebGL](https://www.khronos.org/webgl/)是一种 JavaScript API，可以使用计算机的 GPU 硬件资源加速 2D 和 3D 图形渲染，2011 年发布 1.0 规范，2017 年完成 2.0 规范，目前，主流浏览器 Safari、Chrome、Edge 和 Firefox 等均已支持。Google 搜索在 2012 年应用了这一技术，只要在搜索框内输入一个函数曲线，比如 `arcsin(x*y)/(x*y)`，那么结果页会展示这个图像。
+
+[plotly.js](https://github.com/plotly/plotly.js) 提供很多图层用于绘制各类图形，见[plotly.js 源码库](https://github.com/plotly/plotly.js/tree/master/src/traces)，其中支持 WebGL 的有热力图 `heatmapgl`、 散点图 `scattergl` 和极坐标系下的散点图 `scatterpolargl`。
+
+[**plotly**](https://github.com/plotly/plotly.R) 可以与 **ggplot2** 紧密结合，提供函数 `ggplotly()` 直接将静态的 ggplot2 图形转化为交互式的 plotly 图形，函数 `plot_ly()` 也提供一致的使用语法。
+
+
+```{r}
+#| label: fig-quakes-plotly
+#| fig-cap: "plotly 绘制交互三维图形"
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+
+# 更多详情见 https://plot.ly/r/reference/#scatter3d
+plotly::plot_ly(
+  data = quakes, x = ~long, y = ~lat, z = ~depth,
+  type = "scatter3d", mode = "markers",
+  marker = list(
+    size = ~mag, color = ~mag,
+    colorscale = "Viridis",
+    colorbar = list(title = list(text = "震级"))
+  )
+) |>
+  plotly::layout(scene = list(
+    xaxis = list(title = "经度"),
+    yaxis = list(title = "纬度"),
+    zaxis = list(title = "深度")
+  ))
+```
+
+
+
+<!-- plotly 包的函数使用起来还是比较复杂的，特别是需要打磨细节以打造数据产品时，此外，其依赖相当重，仅数据处理就包含两套方法 --- dplyr 和 data.table，引起很多函数冲突，可谓「苦其久矣」！因此，准备另起炉灶，开发一个新的 R 包 qplotly，取意 quick plotly，以 `qplot_ly()` 替代 `plot_ly()`。类似简化 API 的工作有 [simplevis](https://github.com/StatisticsNZ/simplevis)、[autoplotly](https://github.com/terrytangyuan/autoplotly)、[ggfortify](https://github.com/sinhrks/ggfortify) 和 [plotme](https://github.com/yogevherz/plotme)。 -->
+
+plotly 团队开发了 [plotly.js](https://github.com/plotly/plotly.js) 库，且维护了 R 接口文档 (<https://plotly.com/r/>)，Carson Sievert 开发了 [plotly](https://github.com/ropensci/plotly) 包，配套书 [Interactive web-based data visualization with R, plotly, and shiny](https://plotly-r.com/)。 Paul C. Bauer 的书 [Applied Data Visualization](https://bookdown.org/paul/applied-data-visualization/) 介绍 plotly <https://bookdown.org/paul/applied-data-visualization/what-is-plotly.html>
+
+学习 [plotly](https://github.com/ropensci/plotly) 和 [highcharter](https://github.com/jbkunst/highcharter) 为代表的基于 JavaScript 的 R 包，共有四重境界：第一重是照着帮助文档的示例，示例有啥我们做啥；第二重是明白帮助文档中 R 函数和 JavaScript 函数的对应关系，能力达到 JS 库的功能边界；第三重是深度自定义一些扩展性的 JS 功能，放飞自我；第四重是重新造轮子，为所欲为。
+
+
+专门展示空间数据的绘图框架也有很多，比如 [**leaflet**](https://github.com/rstudio/leaflet) 在开放街道地图服务的基础上，支持矢量数据和栅格数据，支持交互式的空间数据可视化，支持许多空间数据类型，比如 sp 包的 Spatial 类，raster 包的 Raster 类，sf 包的 Simple Feature 类等。
+
+
+[**mapdeck**](https://github.com/SymbolixAU/mapdeck) 提供了 [Deck.gl](https://github.com/visgl/deck.gl) 和 [Mapbox](https://github.com/mapbox/mapbox-gl-js) 的 R 语言接口，Deck.gl 号称是 WebGL 2.0 加持的高性能大规模数据可视化渲染组件，也是以 MIT 协议开源的软件，而后者是商业收费软件。[**rdeck**](https://github.com/anthonynorth/rdeck) 类似 **mapdeck**，但是提供更多实用的功能，优化的数据存储方式，过滤了不可见的数据，更加友好的配色主题，适用于图例和悬浮提示等。 Kyle Walker 开发了 [mapboxapi](https://github.com/walkerke/mapboxapi) 包，也提供 [Mapbox Web 服务](https://docs.mapbox.com/api/)的 R 语言接口。
+
+专业动画制作软件有[three.js](https://github.com/mrdoob/three.js)和[Blender](https://www.blender.org/)，都是支持 GPU 渲染的。
+
+
+### echarts4r 等 {#sec-echarts4r}
+
+与 **plotly** 包类似，[**echarts4r**](https://github.com/JohnCoene/echarts4r) 是另一个流行的 JavaScript 绘图库的 R 语言接口，同样支持非常广泛的图形种类。[echarts4r](https://github.com/JohnCoene/echarts4r) 是 Apache Echarts 的 R 语言接口。Apache Echarts 支持 WebGL 的图形有散点图、路径图、矢量场图、网络图，详见官方[示例文档](https://echarts.apache.org/examples/zh/index.html)，大规模的数据可视化需要比较好的硬件资源支持。
+
+[**ggiraph**](https://github.com/davidgohel/ggiraph) 可以与 ggplot2 包 紧密结合，提供一致的使用语法，结合 usmap 包可以制作地图，悬浮提示可以包含文字、链接，与 gt 包结合，悬浮提示还可以包含图片、表格等元素。
+
+除了以上这些制作交互式图形的 R 包，还有[apexcharter](https://github.com/dreamRs/apexcharter) 包、[scatterD3](https://github.com/juba/scatterD3) 包和 [visNetwork](https://github.com/datastorm-open/visNetwork/)包等，一份相对完整的列表见 <https://gallery.htmlwidgets.org/>。
+
+
+[reticulate](https://github.com/rstudio/reticulate) 将 Python 社区的绘图模块引入 R 语言社区，比较流行的交互式绘图模块有 [pyecharts](https://github.com/pyecharts/pyecharts)、 [plotly.py](https://github.com/plotly/plotly.py) 和 [bokeh](https://github.com/bokeh/bokeh) 等。
+
+
+如果读者想进一步了解 **htmlwidgets** 框架，JavaScript 响应式编程，推荐 John Coene 的著作 [JavaScript for R](https://book.javascript-for-r.com/)
+
+<!--
+提供一个 R 包和 HTML Widgets 小练习：给 roughViz.js 写个 R 包 [roughviz](https://github.com/XiangyunHuang/roughviz)封装 <https://d.cosx.org/d/421030-r-html-widgets-roughviz-js-r>
+-->
+
+
+```{r}
+#| label: fig-quakes-echarts4r
+#| fig-cap: "echarts4r 绘制交互三维图形"
+#| echo: true
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+
+library(echarts4r)
+# color 列还原为 mag
+quakes <- within(quakes, {
+  color <- mag
+})
+# 绘制图形
+quakes |>
+  e_charts(x = lat) |>
+  e_scatter_3d(
+    y = long, z = depth,
+    size = mag,
+    color = mag,
+    bind = stations,
+    coordinate_system = "cartesian3D",
+    name = "Fiji"
+  ) |>
+  e_x_axis_3d(min = -40, max = -10, name = "纬度") |>
+  e_y_axis_3d(min = 165, max = 190, name = "经度") |>
+  e_z_axis_3d(name = "深度") |>
+  e_visual_map(
+    serie = mag,
+    type = "continuous",
+    inRange = list(color = c('#4B0055', '#009B95', '#FDE333')),
+    dimension = 4, # third dimension x = 0, y = 1, z = 2, color = 3, size = 4
+    top = 20
+  ) |>
+  e_visual_map(
+    serie = mag,
+    type = "continuous",
+    inRange = list(symbolSize = c(5, 15)),
+    dimension = 3,
+    bottom = 10
+  ) |>
+  e_tooltip() |>
+  e_title(text = "斐济及其周边地震活动")
+```
+
+目标区域在南半球，纬度南纬 0 度至 40 度，经度东经 165 度至 190 度（西经 170 度）。参数 dimension 的取值和实际含义的关系：0 对应 x 轴，1 对应 y 轴，2 对应 z 轴， 3 对应 size 变量（点的大小），4 对应 color 变量（点的颜色）。下 @fig-quakes-echarts4r-screenshots 是两个不同视角下的截图。
+
+
+::: {#fig-quakes-echarts4r-screenshots layout="[40,-10,50]" layout-valign="bottom" layout-ncol=2}
+
+![视角 1](screenshots/quakes-echarts4r-01.png){#fig-quakes-echarts4r-01}
+
+![视角 2](screenshots/quakes-echarts4r-02.png){#fig-quakes-echarts4r-02}
+
+不同视角下的三维图形
+:::
+
+
+## 基础元素 {#sec-interactive-elements}
+
+
+
+### 图层 {#sec-plotly-layer}
+
+**plotly** 包封装了许多图层函数，可以绘制各种各样的统计图形，见下 @tbl-plotly-layers 。
+
+```{r}
+#| eval: false
+#| echo: false
+
+library(plotly, warn.conflicts = FALSE)
+knitr::kable(matrix(grep("add_*", x = ls("package:plotly"), value = T), ncol = 3),
+  col.names = c("A", "B", "C"), caption = "图层", format = "pipe"
+)
+```
+
+----------------  -----------------------  ---------------  
+add_annotations   add_histogram            add_polygons     
+add_area          add_histogram2d          add_ribbons      
+add_bars          add_histogram2dcontour   add_scattergeo   
+add_boxplot       add_image                add_segments     
+add_choropleth    add_lines                add_sf           
+add_contour       add_markers              add_surface      
+add_data          add_mesh                 add_table        
+add_fun           add_paths                add_text         
+add_heatmap       add_pie                  add_trace        
+----------------  -----------------------  ---------------  
+
+: **plotly** 包可以绘制丰富的统计图形 {#tbl-plotly-layers}
+
+下面以散点图为例，使用方式非常类似 **ggplot2** 包，函数 `plot_ly()` 类似 `ggplot()`，而函数 `add_markers()` 类似 `geom_point()`，效果如 @fig-plotly-markers 所示。
+
+```{r}
+#| label: fig-plotly-markers
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+#| fig-cap: "默认风格的简单散点图"
+
+# https://plotly.com/r/reference/scatter/
+plotly::plot_ly(data = quakes, x = ~long, y = ~lat) |> 
+  plotly::add_markers()
+```
+
+或者使用函数 `add_trace()`，层层添加图形元素，效果和上 @fig-plotly-markers 是一样的。
+
+```{r}
+#| label: fig-plotly-trace
+#| eval: false
+
+plotly::plot_ly(data = quakes, x = ~long, y = ~lat) |> 
+  plotly::add_trace(type = "scatter", mode = "markers")
+```
+
+
+::: {.callout-tip}
+**plotly** 包的函数 `plot_ly()` 又与 **ggplot2** 包中函数 `qplot()` 类似，可以将大部分设置塞进去。
+
+```{r}
+#| label: fig-plotly-qplot
+#| eval: false
+
+plotly::plot_ly(
+  data = quakes, x = ~long, y = ~lat,
+  type = "scatter", mode = "markers"
+)
+```
+
+所以，总的来说， `add_markers()` 、`add_trace(type = "scatter", mode = "markers")` 和 `plot_ly(type = "scatter", mode = "markers")` 是等价的。
+:::
+
+
+### 配色 {#sec-plotly-color}
+
+在 @fig-plotly-markers 的基础上，将颜色映射到震级变量上。
+
+```{r}
+#| label: fig-plotly-color
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+#| fig-cap: "给散点图配色"
+
+plotly::plot_ly(data = quakes, x = ~long, y = ~lat) |> 
+  plotly::add_markers(color = ~mag)
+```
+
+
+### 刻度 {#sec-plotly-scale}
+
+
+东经和南纬
+
+
+```{r}
+#| label: fig-plotly-scale
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+#| fig-cap: "设置刻度及标签"
+
+plotly::plot_ly(data = quakes, x = ~long, y = ~lat) |> 
+  plotly::add_markers(color = ~mag) |>
+  plotly::layout(
+    xaxis = list(title = "经度", ticksuffix = 'E'),
+    yaxis = list(title = "纬度", ticksuffix = 'S')
+  )
+```
+
+
+### 标签 {#sec-plotly-label}
+
+添加横轴、纵轴以及主副标题
+
+```{r}
+#| label: fig-plotly-label
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+#| fig-cap: "添加各处标题"
+
+plotly::plot_ly(
+  data = quakes, x = ~long, y = ~lat,
+  marker = list(
+    color = ~mag,
+    colorscale = "Viridis",
+    colorbar = list(title = list(text = "震级"))
+  )
+) |>
+  plotly::add_markers() |>
+  plotly::layout(
+    xaxis = list(title = "经度"),
+    yaxis = list(title = "纬度"),
+    title = "斐济及其周边地区的地震活动"
+  )
+```
+
+
+
+### 主题 {#sec-plotly-theme}
+
+plotly 内置了一些主题风格
+
+```{r}
+#| label: fig-plotly-theme
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+#| fig-cap: "设置主题风格"
+
+plotly::plot_ly(
+  data = quakes, x = ~long, y = ~lat,
+  marker = list(
+    color = ~mag,
+    colorscale = "Viridis",
+    colorbar = list(title = list(text = "震级"))
+  )
+) |>
+  plotly::add_markers() |>
+  plotly::layout(
+    xaxis = list(title = "经度"),
+    yaxis = list(title = "纬度"),
+    title = "斐济及其周边地区的地震活动"
+  )
+```
+
+
+### 字体 {#sec-plotly-font}
+
+
+
+### 图例 {#sec-plotly-legend}
+
+
+
+
+## 常用图形 {#sec-plotly-common-graphics}
+
+
+
+### 散点图 {#sec-plotly-scatter}
+
+
+**plotly** 包支持绘制许多常见的散点图，从直角坐标系 `scatter` 到极坐标系 `scatterpolar` 和地理坐标系 `scattergeo`，从二维平面 `scatter` 到三维空间 `scatter3d`，借助 WebGL 可以渲染大规模的数据点 `scattergl`。
+
+| 类型             | 名称              |
+| :--------------- | :---------------- |
+| `scatter`        | 二维平面散点图    |
+| `scatter3d`      | 三维立体散点图    |
+| `scattergl`      | 散点图（WebGL 版）|
+| `scatterpolar`   | 极坐标下散点图    |
+| `scatterpolargl` | 极坐标下散点图（WebGL 版）  |
+| `scattergeo`     | 地理坐标下散点图  |
+| `scattermapbox`  | 地理坐标下散点（MapBox 版） |
+| `scattercarpet`  | 地毯图            |
+| `scatterternary` | 三元图            |
+
+: plotly 包支持绘制的散点图类型 {#tbl-plotly-scatter}
+
+
+@fig-scatter 展示斐济及其周边的地震分布
+
+```{r}
+#| label: fig-scatter
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+#| fig-cap: "普通散点图"
+
+plotly::plot_ly(
+  data = quakes, x = ~long, y = ~lat,
+  type = "scatter", mode = "markers"
+) |>
+  plotly::layout(
+    xaxis = list(title = "经度"),
+    yaxis = list(title = "纬度")
+  )
+```
+
+
+
+### 柱形图 {#sec-plotly-bar}
+
+
+```{r}
+#| echo: false
+
+svn_trunk_log <- readRDS(file = "data/svn-trunk-log-2022.rds")
+svn_trunk_log <- within(svn_trunk_log, {
+  # 提取日期、月份、年份、星期、第几周、第几天等时间成分
+  year <- as.integer(format(stamp, "%Y"))
+  date <- format(stamp, format = "%Y-%m-%d", tz = "UTC")
+  month <- format(stamp, format = "%m", tz = "UTC")
+  hour <- format(stamp, format = "%H", tz = "UTC")
+  week <- format(stamp, format = "%U", tz = "UTC")
+  wday <- format(stamp, format = "%a", tz = "UTC")
+  nday <- format(stamp, format = "%j", tz = "UTC")
+})
+trunk_year <- aggregate(data = svn_trunk_log, revision ~ year, FUN = length)
+```
+
+
+```{r}
+#| label: fig-plotly-bar
+#| fig-cap: "柱形图"
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+
+# https://plotly.com/r/reference/bar/
+plotly::plot_ly(
+  data = trunk_year, x = ~year, y = ~revision, type = "bar"
+) |>
+  plotly::layout(
+    xaxis = list(title = "年份"),
+    yaxis = list(title = "代码提交量")
+  )
+```
+
+
+### 曲线图 {#sec-plotly-line}
+
+
+```{r}
+#| label: fig-plotly-curve
+#| fig-cap: "曲线图"
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+
+plotly::plot_ly(
+  data = trunk_year, x = ~year, y = ~revision, type = "scatter",
+  mode = "markers+lines", line = list(shape = "spline")
+) |> 
+  plotly::layout(
+    xaxis = list(title = "年份"),
+    yaxis = list(title = "代码提交量")
+  )
+```
+
+
+
+### 直方图 {#sec-plotly-hist}
+
+地震次数随震级的分布变化，下 @fig-quakes-mag 为频数分布图
+
+```{r}
+#| label: fig-quakes-mag
+#| fig-cap: "地震震级的频数分布图"
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+
+# https://plotly.com/r/reference/histogram/
+plotly::plot_ly(quakes, x = ~mag, type = "histogram") |> 
+  plotly::layout(
+    xaxis = list(title = "震级"),
+    yaxis = list(title = "次数")
+  )
+```
+
+地震震级的概率分布，下 @fig-quakes-mag-prob 为频率分布图
+
+```{r}
+#| label: fig-quakes-mag-prob
+#| fig-cap: "地震震级的频率分布图"
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+
+plotly::plot_ly(
+  data = quakes, x = ~mag, type = "histogram",
+  histnorm = "probability",
+  marker = list(
+    color = "lightblue",
+    line = list(color = "white", width = 2)
+  )
+) |>
+  plotly::layout(
+    xaxis = list(title = "震级"),
+    yaxis = list(title = "频率")
+  )
+```
+
+`histnorm = "probability"` 意味着纵轴表示频率，即每个窗宽下地震次数占总地震次数的比例。地震常常发生在地下，不同的深度对应着不同的地质构造、不同的地震成因，下 @fig-quakes-depth-hist 展示海平面下不同深度的地震震级分布。
+
+```{r}
+#| label: fig-quakes-depth-hist
+#| fig-cap: "不同深度下地震震级的分布"
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+
+quakes$depth_bin <- cut(quakes$depth, breaks = 150 * 0:5)
+plotly::plot_ly(quakes,
+  x = ~mag, colors = "viridis",
+  color = ~depth_bin, type = "histogram"
+) |> 
+  plotly::layout(
+    xaxis = list(title = "震级"),
+    yaxis = list(title = "次数")
+  )
+```
+
+
+### 箱线图 {#sec-plotly-boxplot}
+
+
+```{r}
+#| label: fig-quakes-depth-box
+#| fig-cap: "不同深度下地震震级的分布"
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+
+plotly::plot_ly(quakes,
+  x = ~depth_bin, y = ~mag, colors = "viridis",
+  color = ~depth_bin, type = "box"
+) |> 
+  plotly::layout(
+    xaxis = list(title = "深度"),
+    yaxis = list(title = "震级")
+  )
+```
+
+
+```{r}
+#| label: fig-quakes-depth-violin
+#| fig-cap: "不同深度下地震震级的分布"
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+
+plotly::plot_ly(quakes,
+  x = ~depth_bin, y = ~mag, split = ~depth_bin,
+  type = "violin", color = ~depth_bin, colors = "viridis",
+  box = list(visible = TRUE),
+  meanline = list(visible = TRUE)
+) |> 
+  plotly::layout(
+    xaxis = list(title = "深度"),
+    yaxis = list(title = "震级")
+  )
+```
+
+
+### 热力图 {#sec-plotly-densitymap}
+
+plotly 整合了开源的 [Mapbox GL JS](https://github.com/mapbox/mapbox-gl-js)，可以使用 Mapbox 提供的瓦片地图服务（Mapbox Tile Maps），对空间点数据做核密度估计，展示热力分布，如 @fig-densitymap 所示。图左上角为所罗门群岛（Solomon Islands）、瓦努阿图（Vanuatu）和新喀里多尼亚（New Caledonia），图下方为新西兰北部的威灵顿（Wellington）和奥克兰（Auckland），图中部为斐济（Fiji）。
+
+```{r}
+#| label: fig-densitymap
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+#| fig-cap: "空间点数据的核密度估计"
+
+plotly::plot_ly(
+  data = quakes, lat = ~lat, lon = ~long, radius = 10,
+  type = "densitymapbox", coloraxis = "coloraxis"
+) |>
+  plotly::layout(
+    mapbox = list(
+      style = "stamen-terrain", zoom = 3,
+      center = list(lon = 180, lat = -25)
+    ),
+    coloraxis = list(colorscale = "Viridis")
+  )
+```
+
+图中设置瓦片地图的风格 `style` 为 `"stamen-terrain"`，还可以使用其他开放的栅格瓦片地图服务，比如 `"open-street-map"` 和 `"carto-positron"`。如果使用 MapBox 提供的矢量瓦片地图服务，则需要访问令牌 Mapbox Access Token。图中设置中心坐标 `center` 以及缩放倍数 `zoom`，目的是突出图片中的数据区域。设置调色板 Viridis 展示热力分布，黄色团块的地方表示地震频次高。
+
+
+
+### 面量图 {#sec-plotly-choropleth-maps}
+
+在之前我们介绍过用 ggplot2 绘制地区分布图，实际上，地区分布图还有别名，如围栏图、面量图等。本节使用 plotly 绘制交互式的地区分布图，如 @fig-choropleth-map 所示。
+
+```{r}
+#| label: fig-choropleth-map
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+#| fig-cap: "1974 年美国各州的人均收入"
+
+# https://plotly.com/r/reference/choropleth/
+dat <- data.frame(state.x77,
+  stats = rownames(state.x77),
+  stats_abbr = state.abb
+)
+# 绘制图形
+plotly::plot_ly(
+  data = dat,
+  type = "choropleth",
+  locations = ~stats_abbr,
+  locationmode = "USA-states",
+  colorscale = "Viridis",
+  colorbar = list(title = list(text = "人均收入")),
+  z = ~Income
+) |>
+  plotly::layout(
+    geo = list(scope = "usa"),
+    title = "1974年美国各州的人均收入"
+  )
+```
+
+
+
+
+### 动态图 {#sec-plotly-animation}
+
+本节参考 plotly 包的官方示例[渐变动画](https://plotly.com/r/cumulative-animations/)，数据来自 SVN 代码提交日志，统计 Martin Maechler 和 Brian Ripley 的年度代码提交量，他们是 R Core Team 非常重要的两位成员，长期参与维护 R 软件及社区。下 @fig-plotly-animation 展示 1999-2022 年 Martin Maechler 和 Brian Ripley 的代码提交量变化。
+
+
+<!-- 
+[lazyeval](https://github.com/hadley/lazyeval) 的非标准计算采用 Base R 实现，目前，已经可以被 [rlang](https://github.com/r-lib/rlang/) 替代。 
+-->
+
+
+```{r}
+#| label: fig-plotly-animation
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+#| fig-cap: "1999-2022 年 Martin Maechler 和 Brian Ripley 的代码提交量变化"
+
+# https://plotly.com/r/animations/
+trunk_year_author <- aggregate(data = svn_trunk_log, revision ~ year + author, FUN = length)
+# https://plotly.com/r/cumulative-animations/
+accumulate_by <- function(dat, var) {
+  var <- lazyeval::f_eval(f = var, data = dat)
+  lvls <- plotly:::getLevels(var) 
+  dats <- lapply(seq_along(lvls), function(x) {
+    cbind(dat[var %in% lvls[seq(1, x)], ], frame = lvls[[x]])
+  })
+  dplyr::bind_rows(dats)
+}
+
+subset(trunk_year_author, year >= 1999 & author %in% c("ripley", "maechler")) |>
+  accumulate_by(~year) |>
+  plotly::plot_ly(
+    x = ~year, y = ~revision, split = ~author,
+    frame = ~frame, type = "scatter", mode = "lines",
+    line = list(simplyfy = F)
+  ) |>
+  plotly::layout(
+    xaxis = list(title = "年份"),
+    yaxis = list(title = "代码提交量")
+  ) |>
+  plotly::animation_opts(
+    frame = 100, transition = 0, redraw = FALSE
+  ) |>
+  plotly::animation_button(
+    visible = TRUE, # 显示播放按钮
+    label = "播放", # 按钮文本
+    font = list(color = "gray")# 文本颜色
+  ) |>
+  plotly::animation_slider(
+    currentvalue = list(
+      prefix = "年份 ",
+      xanchor = "right",
+      font = list(color = "gray", size = 30)
+    )
+  )
+```
+
+
+## 常用技巧 {#sec-plotly-common-tricks}
+
+
+### 动静转化 {#sec-plotly-ggplotly}
+
+在出版书籍，发表期刊文章，打印纸质文稿等场景中，需要将交互图形导出为静态图形，再插入到正文之中。
+
+```{r}
+library(ggplot2)
+p <- ggplot(data = quakes, aes(x = long, y = lat)) +
+  geom_point()
+p
+```
+
+将 **ggplot2** 包绘制的散点图转化为交互式的散点图，只需调用 **plotly** 包的函数 `ggplotly()`。
+
+```{r}
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+
+plotly::ggplotly(p)
+```
+
+当使用配置函数 `config()` 设置参数选项 `staticPlot = TRUE`，可将原本交互式的动态图形转为非交互式的静态图形。
+
+```{r}
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+
+plotly::ggplotly(p) |> 
+  plotly::config(staticPlot = TRUE)
+```
+
+::: {.callout-tip}
+函数 `style()` 设置动态点的注释，比如点横纵坐标、坐标文本，以及整个注释标签的样式，如背景色。
+
+```{r}
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+
+plotly::ggplotly(p, dynamicTicks = "y") |> 
+  plotly::style(hoveron = "points", hoverinfo = "x+y+text", 
+        hoverlabel = list(bgcolor = "white"))
+```
+:::
+
+orca (Open-source Report Creator App) 软件针对 plotly.js 库渲染的图形具有很强的导出功能，[安装 orca](https://github.com/plotly/orca#installation) 后，`plotly::orca()` 函数可以将基于 htmlwidgets 的 plotly 图形对象导出为 PNG、PDF 和 SVG 等格式的高质量静态图片。
+
+```{r}
+#| eval: false
+
+# orca
+plotly::orca(p, "plotly-quakes.svg")
+# kaleido
+plotly::save_image(p, "plotly-quakes.svg")
+```
+
+
+### 数学公式 {#sec-plotly-math}
+
+
+### 坐标系统 {#sec-plotly-coord}
+
+quakes 是一个包含空间位置的数据集，plotly 的 `scattergeo` 图层 针对空间数据提供多边形矢量边界地图数据，支持设定坐标参考系。下 @fig-scattergeo 增加了地震震级维度，在空间坐标参考系下绘制散点。
+
+```{r}
+#| label: fig-scattergeo
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+#| fig-cap: "空间点数据图"
+
+plotly::plot_ly(
+  data = quakes,
+  lon = ~long, lat = ~lat,
+  type = "scattergeo", mode = "markers",
+  text = ~ paste0(
+    "站点：", stations, "<br>",
+    "震级：", mag
+  ),
+  marker = list(
+    color = ~mag, colorscale = "Viridis",
+    size = 10, opacity = 0.8,
+    line = list(color = "white", width = 1)
+  )
+) |>
+  plotly::layout(geo = list(
+    showland = TRUE,
+    landcolor = plotly::toRGB("gray95"),
+    countrycolor = plotly::toRGB("gray85"),
+    subunitcolor = plotly::toRGB("gray85"),
+    countrywidth = 0.5,
+    subunitwidth = 0.5,
+    lonaxis = list(
+      showgrid = TRUE,
+      gridwidth = 0.5,
+      range = c(160, 190),
+      dtick = 5
+    ),
+    lataxis = list(
+      showgrid = TRUE,
+      gridwidth = 0.5,
+      range = c(-40, -10),
+      dtick = 5
+    )
+  ))
+```
+
+
+### 添加水印 {#sec-plotly-watermark}
+
+在图片右下角添加水印图片
+
+```{r}
+#| label: fig-watermark
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+#| fig-cap: "添加水印图片"
+
+plotly::plot_ly(quakes,
+  x = ~long, y = ~lat, color = ~mag, 
+  type = "scatter", mode = "markers"
+) |> 
+  plotly::config(staticPlot = TRUE) |> 
+  plotly::layout(
+    images = list( # 水印图片
+      source = "https://images.plot.ly/language-icons/api-home/r-logo.png",
+      xref = "paper", # 页面参考
+      yref = "paper",
+      x = 0.90, # 横坐标
+      y = 0.20, # 纵坐标
+      sizex = 0.2, # 长度
+      sizey = 0.2, # 宽度
+      opacity = 0.5 # 透明度
+    )
+  )
+```
+
+### 多图布局 {#sec-plotly-subplot}
+
+将两个图形做上下排列
+
+```{r}
+#| label: fig-tagList
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+#| fig-cap: "上下布局"
+
+p1 <- plotly::plot_ly(
+  data = trunk_year, x = ~year, y = ~revision, type = "bar"
+) |>
+  plotly::layout(
+    xaxis = list(title = "年份"),
+    yaxis = list(title = "代码提交量")
+  )
+
+p2 <- plotly::plot_ly(
+  data = trunk_year, x = ~year, y = ~revision, type = "scatter",
+  mode = "markers+lines", line = list(shape = "spline")
+) |>
+  plotly::layout(
+    xaxis = list(title = "年份"),
+    yaxis = list(title = "代码提交量")
+  )
+
+htmltools::tagList(p1, p2)
+```
+
+plotly 包提供的函数 `subplot()` 专门用于布局排列，下 @fig-subplot 的上下子图共享 x 轴。
+
+```{r}
+#| label: fig-subplot
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+#| fig-cap: "上下布局"
+
+plotly::subplot(plotly::style(p1, showlegend = FALSE), 
+                plotly::style(p2, showlegend = FALSE), 
+                nrows = 2, margin = 0.05, shareX = TRUE, titleY = TRUE)
+```
+
+下 @fig-subplot-2 展示更加灵活的布局形式，嵌套使用布局函数 `subplot()` 实现。
+
+```{r}
+#| label: fig-subplot-2
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+#| fig-cap: "灵活布局"
+
+p11 <- plotly::subplot(plotly::style(p1, showlegend = FALSE),
+  plotly::style(p2, showlegend = FALSE),
+  nrows = 1, margin = 0.05, shareY = TRUE, titleX = TRUE
+)
+
+plotly::subplot(p11,
+  plotly::style(p2, showlegend = FALSE),
+  nrows = 2, margin = 0.05, shareY = FALSE, titleX = FALSE
+)
+```
+
+
+### 图表联动 {#sec-plotly-crosstalk}
+
+
+**crosstalk** 包可将 **plotly** 包绘制的图形和 **DT** 包制作的表格联动起来。**plotly** 绘制交互图形，在图形上用套索工具筛选出来的数据显示在表格中。
+
+
+```{r}
+#| label: fig-crosstalk
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+#| fig-cap: "图表联动"
+
+library(crosstalk)
+# quakes 数据变成可共享的
+quakes_sd <- SharedData$new(quakes)
+# 绘制交互图形
+p <- plotly::plot_ly(quakes_sd, x = ~long, y = ~lat) |> 
+  plotly::add_markers() |> 
+  plotly::highlight(on = "plotly_selected", off = "plotly_deselect")
+# 制作表格
+d <- DT::datatable(quakes_sd, options = list(dom = "tp"))
+# 将图表组合一起展示
+bscols(list(p, d))
+```
+
