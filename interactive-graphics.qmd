@@ -642,9 +642,60 @@ plotly::plot_ly(
 
 
 
-### 动态图 {#sec-plotly-animate}
+### 动态图 {#sec-plotly-animation}
+
+本节参考 plotly 包的官方示例[渐变动画](https://plotly.com/r/cumulative-animations/)，数据来自 SVN 代码提交日志，统计 Martin Maechler 和 Brian Ripley 的年度代码提交量，他们是 R Core Team 非常重要的两位成员，长期参与维护 R 软件及社区。下 @fig-plotly-animation 展示 1999-2022 年 Martin Maechler 和 Brian Ripley 的代码提交量变化。
 
 
+<!-- 
+[lazyeval](https://github.com/hadley/lazyeval) 的非标准计算采用 Base R 实现，目前，已经可以被 [rlang](https://github.com/r-lib/rlang/) 替代。 
+-->
+
+
+```{r}
+#| label: fig-plotly-animation
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+#| fig-cap: "1999-2022 年 Martin Maechler 和 Brian Ripley 的代码提交量变化"
+
+# https://plotly.com/r/animations/
+trunk_year_author <- aggregate(data = svn_trunk_log, revision ~ year + author, FUN = length)
+# https://plotly.com/r/cumulative-animations/
+accumulate_by <- function(dat, var) {
+  var <- lazyeval::f_eval(f = var, data = dat)
+  lvls <- plotly:::getLevels(var) 
+  dats <- lapply(seq_along(lvls), function(x) {
+    cbind(dat[var %in% lvls[seq(1, x)], ], frame = lvls[[x]])
+  })
+  dplyr::bind_rows(dats)
+}
+
+subset(trunk_year_author, year >= 1999 & author %in% c("ripley", "maechler")) |>
+  accumulate_by(~year) |>
+  plotly::plot_ly(
+    x = ~year, y = ~revision, split = ~author,
+    frame = ~frame, type = "scatter", mode = "lines",
+    line = list(simplyfy = F)
+  ) |>
+  plotly::layout(
+    xaxis = list(title = "年份"),
+    yaxis = list(title = "代码提交量")
+  ) |>
+  plotly::animation_opts(
+    frame = 100, transition = 0, redraw = FALSE
+  ) |>
+  plotly::animation_button(
+    visible = TRUE, # 显示播放按钮
+    label = "播放", # 按钮文本
+    font = list(color = "gray")# 文本颜色
+  ) |>
+  plotly::animation_slider(
+    currentvalue = list(
+      prefix = "年份 ",
+      xanchor = "right",
+      font = list(color = "gray", size = 30)
+    )
+  )
+```
 
 
 ## 常用技巧 {#sec-plotly-common-tricks}
