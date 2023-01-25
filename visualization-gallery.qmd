@@ -2943,7 +2943,7 @@ levelplot(volcano,
 #| fig-showtext: true
 #| echo: true
 
-volcano_df <- expand.grid(x = 1:87, y = 1:61)
+volcano_df <- expand.grid(x = 1:nrow(volcano), y = 1:ncol(volcano))
 volcano_df$z <- as.vector(volcano)
 
 ggplot(volcano_df) +
@@ -3088,6 +3088,60 @@ with(volcano_df, {
          zlab = "高度")
 })
 ```
+
+
+```{r}
+#| eval: false
+#| echo: false
+
+# 可视化 DEM 数字高程模型
+
+z <- 2 * volcano        # Exaggerate the relief
+x <- 10 * (1:nrow(z))   # 10 meter spacing (S to N)
+y <- 10 * (1:ncol(z))   # 10 meter spacing (E to W)
+# Base R
+persp(x, y, z, theta = 135, phi = 30, col = "green3", scale = FALSE,
+      ltheta = -120, shade = 0.75, border = NA, box = FALSE)
+
+# 三维透视图
+x <- 1:nrow(volcano)
+y <- 1:ncol(volcano)
+persp3d(x = x, y = y, z = volcano, col = "lightblue",
+        xlab = "南北方向", ylab = "东西方向", zlab = "高度")
+
+# 透视图是如何制作的？栅格点是如何变成曲面的？差值？
+# 拟合曲面图
+# SVM 回归
+library(kernlab)
+model <- ksvm(z ~ x + y,
+  data = volcano_df, C = 1, kernel = "rbfdot"
+)
+
+mesh_size <- 1
+xrange <- seq(from = min(volcano_df$x), to = max(volcano_df$x), by = mesh_size)
+yrange <- seq(from = min(volcano_df$y), to = max(volcano_df$y), by = mesh_size)
+
+final <- expand.grid(x = xrange, y = yrange)
+final <- as.matrix(final)
+pred <- predict(model, newdata = final)
+
+pred_m <- matrix(pred, ncol = length(xrange), nrow = length(yrange), byrow = TRUE)
+# plotly 绘制
+plotly::plot_ly(volcano_df, x = ~x, y = ~y, z = ~z) |>
+  plotly::add_markers(size = 5) |>
+  plotly::add_surface(
+    x = xrange, y = yrange, z = pred_m, alpha = 0.65,
+    type = "mesh3d", name = "pred_surface"
+  )
+# rgl 绘制
+plot3d(x = volcano_df$x, y = volcano_df$y, z = volcano_df$z, 
+       col = volcano_df$color,
+       xlab = "南北方向", ylab = "东西方向", zlab = "高度")
+# 拟合曲面
+persp3d(x = 1:nrow(volcano), y = 1:ncol(volcano), z = t(pred_m), 
+        col = "lightblue", add = TRUE)
+```
+
 
 [GDAL](https://github.com/OSGeo/gdal) 支持大量的栅格和矢量空间数据格式，内建的 [EEDAI （Google Earth Engine Data API Image）](https://gdal.org/drivers/raster/eedai.html)驱动通过 Google Earth Engine REST API 获取谷歌地球图像。[**terra**](https://github.com/rspatial/terra) 包的函数 `rast()`和 [**stars**](https://github.com/r-spatial/stars) 包的函数 `read_stars()` 封装了 GDAL 的驱动接口，更多详情见 <https://rspatial.org/terra/>。申请谷歌应用的访问令牌，保存授权文件到本地，设置环境变量 `GOOGLE_APPLICATION_CREDENTIALS` 指向授权文件所在路径。
 
