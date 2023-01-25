@@ -17,6 +17,25 @@
 
 ## 本地编译网页书籍
 
+### 方法 1
+
+```bash
+# 拉取镜像
+docker pull xiangyunhuang/daar:1.0.0
+# 进入项目目录
+cd ~/Documents/data-analysis-in-action
+# 启动容器
+docker run -itd -p 8484:8787 --name=daar \
+  --privileged=true -v "/${PWD}:/home/docker" \
+  xiangyunhuang/daar:1.0.0
+# 进入容器
+docker exec -it daar bash
+# 编译书籍
+quarto render
+```
+
+### 方法 2
+
 1.  首先，克隆项目到本地，并进入项目根目录，安装本书依赖的 R 包。
 
     ``` r
