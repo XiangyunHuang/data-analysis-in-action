@@ -1,16 +1,11 @@
 # 交互图形 {#sec-interactive-graphics}
 
-<!-- 
-主要介绍 plotly 还是基于 gapminder 数据集
-https://talks.cpsievert.me/20210624/#1
-数据可视化案例
-https://uncharteddata.netlify.app/posts/2022-09-30-interactive-tooltip-tables/
+```{r}
+#| echo: false
 
-本章是站在之前 ggplot2 的章节之上
-除了介绍 plotly，对标 ggplot2 
-基于前面章节中的数据，仍然以一个数据串联尽可能多的小节
-用交互图复现前面部分图形，有连续性
--->
+source("_common.R")
+```
+
 
 ```{css}
 #| echo: false
@@ -20,10 +15,13 @@ https://uncharteddata.netlify.app/posts/2022-09-30-interactive-tooltip-tables/
 }
 ```
 
+在之前的数据探索章节介绍了 **ggplot2** 包，本章将介绍 **plotly** 包，绘制交互图形，包含基础元素、常用图形和技巧，沿用日志提交数据和 Base R 内置的斐济及周边地震数据。写作上，仍然以一个数据串联尽可能多的小节，从 **ggplot2** 包到 **plotly** 包，将介绍其间的诸多联系，以便读者轻松掌握。
+
+
 ## 作图工具 {#sec-interactive-tools}
 
 
-R 语言社区有很多 R 包可以绘制动态交互图形，有的 R 包功能非常综合，如 **echarts4r** 包、 **plotly** 包等，有的 R 包功能非常专门化，如 **rgl** 包和**leaflet**包。
+R 语言社区有很多 R 包可以绘制动态交互图形，有的 R 包功能非常综合，如 **echarts4r** 包、 **plotly** 包等，有的 R 包功能非常专门化，如 **rgl** 包和 **leaflet**包。
 
 
 ### OpenGL 与 rgl {#sec-opengl-rgl}
@@ -49,10 +47,6 @@ LaTeX 宏包 [animate](https://ctan.org/pkg/animate)，常用于 [beamer](https:
 colorize_numeric <- function(x) {
   scales::col_numeric(palette = "viridis", domain = range(x))(x)
 }
-# 在数据集 quakes 上添加新的数据 color
-quakes <- within(quakes, {
-  color <- colorize_numeric(mag)
-})
 library(rgl)
 # 设置视角 
 view3d(
@@ -61,6 +55,8 @@ view3d(
 )
 # 绘制图形
 with(quakes, {
+  # 在数据集 quakes 上添加新的数据 color
+  color <- colorize_numeric(mag)
   plot3d(
     x = long, y = lat, z = -depth,
     xlab = "经度",
@@ -169,10 +165,9 @@ plotly 团队开发了 [plotly.js](https://github.com/plotly/plotly.js) 库，�
 #| eval: !expr knitr::is_html_output(excludes = 'epub')
 
 library(echarts4r)
-# color 列还原为 mag
-quakes <- within(quakes, {
-  color <- mag
-})
+# 待 echarts4r 发布 0.4.4 版，升级 echarts4r 后
+# 不再需要添加 color 列为 mag 
+quakes$color <- quakes$mag
 # 绘制图形
 quakes |>
   e_charts(x = lat) |>
@@ -182,7 +177,7 @@ quakes |>
     color = mag,
     bind = stations,
     coordinate_system = "cartesian3D",
-    name = "Fiji"
+    name = "斐济"
   ) |>
   e_x_axis_3d(min = -40, max = -10, name = "纬度") |>
   e_y_axis_3d(min = 165, max = 190, name = "经度") |>
