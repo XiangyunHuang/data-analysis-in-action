@@ -131,9 +131,10 @@ RUN curl -fLo quarto.tar.gz https://github.com/quarto-dev/quarto-cli/releases/do
 # Set locale
 ENV LANG=en_US.UTF-8 \
     LANGUAGE=en_US.UTF-8 \
-    LC_ALL=en_US.UTF-8 \
-    # Set default timezone
-    TZ=UTC
+    LC_ALL=en_US.UTF-8
+
+# Set default timezone
+ENV TZ=UTC
 
 WORKDIR /home/docker/
 
