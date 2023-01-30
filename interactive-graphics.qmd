@@ -1,16 +1,11 @@
 # 交互图形 {#sec-interactive-graphics}
 
-<!-- 
-主要介绍 plotly 还是基于 gapminder 数据集
-https://talks.cpsievert.me/20210624/#1
-数据可视化案例
-https://uncharteddata.netlify.app/posts/2022-09-30-interactive-tooltip-tables/
+```{r}
+#| echo: false
 
-本章是站在之前 ggplot2 的章节之上
-除了介绍 plotly，对标 ggplot2 
-基于前面章节中的数据，仍然以一个数据串联尽可能多的小节
-用交互图复现前面部分图形，有连续性
--->
+source("_common.R")
+```
+
 
 ```{css}
 #| echo: false
@@ -20,10 +15,13 @@ https://uncharteddata.netlify.app/posts/2022-09-30-interactive-tooltip-tables/
 }
 ```
 
+在之前的数据探索章节介绍了 **ggplot2** 包，本章将介绍 **plotly** 包，绘制交互图形，包含基础元素、常用图形和技巧，沿用日志提交数据和 Base R 内置的斐济及周边地震数据。写作上，仍然以一个数据串联尽可能多的小节，从 **ggplot2** 包到 **plotly** 包，将介绍其间的诸多联系，以便读者轻松掌握。
+
+
 ## 作图工具 {#sec-interactive-tools}
 
 
-R 语言社区有很多 R 包可以绘制动态交互图形，有的 R 包功能非常综合，如 **echarts4r** 包、 **plotly** 包等，有的 R 包功能非常专门化，如 **rgl** 包和**leaflet**包。
+R 语言社区有很多 R 包可以绘制动态交互图形，有的 R 包功能非常综合，如 **echarts4r** 包、 **plotly** 包等，有的 R 包功能非常专门化，如 **rgl** 包和 **leaflet**包。
 
 
 ### OpenGL 与 rgl {#sec-opengl-rgl}
@@ -49,10 +47,6 @@ LaTeX 宏包 [animate](https://ctan.org/pkg/animate)，常用于 [beamer](https:
 colorize_numeric <- function(x) {
   scales::col_numeric(palette = "viridis", domain = range(x))(x)
 }
-# 在数据集 quakes 上添加新的数据 color
-quakes <- within(quakes, {
-  color <- colorize_numeric(mag)
-})
 library(rgl)
 # 设置视角 
 view3d(
@@ -61,6 +55,8 @@ view3d(
 )
 # 绘制图形
 with(quakes, {
+  # 在数据集 quakes 上添加新的数据 color
+  color <- colorize_numeric(mag)
   plot3d(
     x = long, y = lat, z = -depth,
     xlab = "经度",
@@ -92,7 +88,7 @@ snapshot3d(
 :::
 
 
-
+专业动画制作软件有[three.js](https://github.com/mrdoob/three.js)和[Blender](https://www.blender.org/)，都是支持 GPU 渲染的。
 
 ### WebGL 与 plotly {#sec-webgl-plotly}
 
@@ -126,41 +122,29 @@ plotly::plot_ly(
   ))
 ```
 
+<!-- 
+plotly 包的函数使用起来还是比较复杂的，特别是需要打磨细节以打造数据产品时，此外，其依赖相当重，仅数据处理就包含两套方法 --- dplyr 和 data.table，引起很多函数冲突，可谓「苦其久矣」！因此，准备另起炉灶，开发一个新的 R 包 qplotly，取意 quick plotly，以 `qplot_ly()` 替代 `plot_ly()`。类似简化 API 的工作有 [simplevis](https://github.com/StatisticsNZ/simplevis)、[autoplotly](https://github.com/terrytangyuan/autoplotly)、[ggfortify](https://github.com/sinhrks/ggfortify) 和 [plotme](https://github.com/yogevherz/plotme)。
 
-
-<!-- plotly 包的函数使用起来还是比较复杂的，特别是需要打磨细节以打造数据产品时，此外，其依赖相当重，仅数据处理就包含两套方法 --- dplyr 和 data.table，引起很多函数冲突，可谓「苦其久矣」！因此，准备另起炉灶，开发一个新的 R 包 qplotly，取意 quick plotly，以 `qplot_ly()` 替代 `plot_ly()`。类似简化 API 的工作有 [simplevis](https://github.com/StatisticsNZ/simplevis)、[autoplotly](https://github.com/terrytangyuan/autoplotly)、[ggfortify](https://github.com/sinhrks/ggfortify) 和 [plotme](https://github.com/yogevherz/plotme)。 -->
+学习 [plotly](https://github.com/ropensci/plotly) 和 [highcharter](https://github.com/jbkunst/highcharter) 为代表的基于 JavaScript 的 R 包，共有四重境界：第一重是照着帮助文档的示例，示例有啥我们做啥；第二重是明白帮助文档中 R 函数和 JavaScript 函数的对应关系，能力达到 JS 库的功能边界；第三重是深度自定义一些扩展性的 JS 功能，放飞自我；第四重是重新造轮子，为所欲为。
+-->
 
 plotly 团队开发了 [plotly.js](https://github.com/plotly/plotly.js) 库，且维护了 R 接口文档 (<https://plotly.com/r/>)，Carson Sievert 开发了 [plotly](https://github.com/ropensci/plotly) 包，配套书 [Interactive web-based data visualization with R, plotly, and shiny](https://plotly-r.com/)。 Paul C. Bauer 的书 [Applied Data Visualization](https://bookdown.org/paul/applied-data-visualization/) 介绍 plotly <https://bookdown.org/paul/applied-data-visualization/what-is-plotly.html>
 
-学习 [plotly](https://github.com/ropensci/plotly) 和 [highcharter](https://github.com/jbkunst/highcharter) 为代表的基于 JavaScript 的 R 包，共有四重境界：第一重是照着帮助文档的示例，示例有啥我们做啥；第二重是明白帮助文档中 R 函数和 JavaScript 函数的对应关系，能力达到 JS 库的功能边界；第三重是深度自定义一些扩展性的 JS 功能，放飞自我；第四重是重新造轮子，为所欲为。
-
-
-专门展示空间数据的绘图框架也有很多，比如 [**leaflet**](https://github.com/rstudio/leaflet) 在开放街道地图服务的基础上，支持矢量数据和栅格数据，支持交互式的空间数据可视化，支持许多空间数据类型，比如 sp 包的 Spatial 类，raster 包的 Raster 类，sf 包的 Simple Feature 类等。
-
-
-[**mapdeck**](https://github.com/SymbolixAU/mapdeck) 提供了 [Deck.gl](https://github.com/visgl/deck.gl) 和 [Mapbox](https://github.com/mapbox/mapbox-gl-js) 的 R 语言接口，Deck.gl 号称是 WebGL 2.0 加持的高性能大规模数据可视化渲染组件，也是以 MIT 协议开源的软件，而后者是商业收费软件。[**rdeck**](https://github.com/anthonynorth/rdeck) 类似 **mapdeck**，但是提供更多实用的功能，优化的数据存储方式，过滤了不可见的数据，更加友好的配色主题，适用于图例和悬浮提示等。 Kyle Walker 开发了 [mapboxapi](https://github.com/walkerke/mapboxapi) 包，也提供 [Mapbox Web 服务](https://docs.mapbox.com/api/)的 R 语言接口。
-
-专业动画制作软件有[three.js](https://github.com/mrdoob/three.js)和[Blender](https://www.blender.org/)，都是支持 GPU 渲染的。
 
 
 ### echarts4r 等 {#sec-echarts4r}
 
 与 **plotly** 包类似，[**echarts4r**](https://github.com/JohnCoene/echarts4r) 是另一个流行的 JavaScript 绘图库的 R 语言接口，同样支持非常广泛的图形种类。[echarts4r](https://github.com/JohnCoene/echarts4r) 是 Apache Echarts 的 R 语言接口。Apache Echarts 支持 WebGL 的图形有散点图、路径图、矢量场图、网络图，详见官方[示例文档](https://echarts.apache.org/examples/zh/index.html)，大规模的数据可视化需要比较好的硬件资源支持。
 
-[**ggiraph**](https://github.com/davidgohel/ggiraph) 可以与 ggplot2 包 紧密结合，提供一致的使用语法，结合 usmap 包可以制作地图，悬浮提示可以包含文字、链接，与 gt 包结合，悬浮提示还可以包含图片、表格等元素。
+[**ggiraph**](https://github.com/davidgohel/ggiraph) 可以与 ggplot2 包 紧密结合，提供一致的使用语法，结合 **usmap** 包可以制作地图，悬浮提示可以包含文字、链接，与 **gt** 包结合，悬浮提示还可以包含图片、表格等元素。
 
-除了以上这些制作交互式图形的 R 包，还有[apexcharter](https://github.com/dreamRs/apexcharter) 包、[scatterD3](https://github.com/juba/scatterD3) 包和 [visNetwork](https://github.com/datastorm-open/visNetwork/)包等，一份相对完整的列表见 <https://gallery.htmlwidgets.org/>。
+专门展示空间数据的绘图框架也有很多，比如 [**leaflet**](https://github.com/rstudio/leaflet) 在开放街道地图服务的基础上，支持矢量数据和栅格数据，支持交互式的空间数据可视化，支持许多空间数据类型，比如 **sp** 包的 Spatial 类，**raster** 包的 Raster 类，**sf** 包的 Simple Feature 类等。
 
+[**mapdeck**](https://github.com/SymbolixAU/mapdeck) 提供了 [Deck.gl](https://github.com/visgl/deck.gl) 和 [Mapbox](https://github.com/mapbox/mapbox-gl-js) 的 R 语言接口，Deck.gl 号称是 WebGL 2.0 加持的高性能大规模数据可视化渲染组件，也是以 MIT 协议开源的软件，而后者是商业收费软件。[**rdeck**](https://github.com/anthonynorth/rdeck) 类似 **mapdeck**，但是提供更多实用的功能，优化的数据存储方式，过滤了不可见的数据，更加友好的配色主题，适用于图例和悬浮提示等。 Kyle Walker 开发了 [mapboxapi](https://github.com/walkerke/mapboxapi) 包，也提供 [Mapbox Web 服务](https://docs.mapbox.com/api/)的 R 语言接口。
+
+除了以上这些制作交互式图形的 R 包，还有[apexcharter](https://github.com/dreamRs/apexcharter) 包、[scatterD3](https://github.com/juba/scatterD3) 包和 [visNetwork](https://github.com/datastorm-open/visNetwork/)包等，一份相对完整的列表见 <https://gallery.htmlwidgets.org/>。如果读者想进一步了解 **htmlwidgets** 框架，JavaScript 响应式编程，推荐 John Coene 的著作 《JavaScript for R》[@Coene2021]。
 
 [reticulate](https://github.com/rstudio/reticulate) 将 Python 社区的绘图模块引入 R 语言社区，比较流行的交互式绘图模块有 [pyecharts](https://github.com/pyecharts/pyecharts)、 [plotly.py](https://github.com/plotly/plotly.py) 和 [bokeh](https://github.com/bokeh/bokeh) 等。
-
-
-如果读者想进一步了解 **htmlwidgets** 框架，JavaScript 响应式编程，推荐 John Coene 的著作 [JavaScript for R](https://book.javascript-for-r.com/)
-
-<!--
-提供一个 R 包和 HTML Widgets 小练习：给 roughViz.js 写个 R 包 [roughviz](https://github.com/XiangyunHuang/roughviz)封装 <https://d.cosx.org/d/421030-r-html-widgets-roughviz-js-r>
--->
-
 
 ```{r}
 #| label: fig-quakes-echarts4r
@@ -169,10 +153,9 @@ plotly 团队开发了 [plotly.js](https://github.com/plotly/plotly.js) 库，�
 #| eval: !expr knitr::is_html_output(excludes = 'epub')
 
 library(echarts4r)
-# color 列还原为 mag
-quakes <- within(quakes, {
-  color <- mag
-})
+# 待 echarts4r 发布 0.4.5 版后，升级 echarts4r 
+# 不再需要添加 color 列为 mag 
+quakes$color <- quakes$mag
 # 绘制图形
 quakes |>
   e_charts(x = lat) |>
@@ -182,7 +165,7 @@ quakes |>
     color = mag,
     bind = stations,
     coordinate_system = "cartesian3D",
-    name = "Fiji"
+    name = "斐济"
   ) |>
   e_x_axis_3d(min = -40, max = -10, name = "纬度") |>
   e_y_axis_3d(min = 165, max = 190, name = "经度") |>
@@ -401,9 +384,9 @@ plotly::plot_ly(
 | `scatter3d`      | 三维立体散点图    |
 | `scattergl`      | 散点图（WebGL 版）|
 | `scatterpolar`   | 极坐标下散点图    |
-| `scatterpolargl` | 极坐标下散点图（WebGL 版）  |
+| `scatterpolargl` | 极坐标下散点图（WebGL 版）    |
 | `scattergeo`     | 地理坐标下散点图  |
-| `scattermapbox`  | 地理坐标下散点（MapBox 版） |
+| `scattermapbox`  | 地理坐标下散点图（MapBox 版） |
 | `scattercarpet`  | 地毯图            |
 | `scatterternary` | 三元图            |
 
