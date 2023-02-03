@@ -1,0 +1,113 @@
+# 交互表格 {#sec-interactive-tables}
+
+表格常用来汇总展示数据，交互表格附带更多的功能，可以按列分组、排序、搜索，也可以按行分组、折叠，还可以上下滚动、左右滚动、前后翻页、页面挑转、导出数据等。交互表格是需要放在网页中的，制作这样的表格需要谢益辉开发的 [**DT**](https://github.com/rstudio/DT) 包，它的覆盖测试达到 31\%， 它基于 [jQuery](https://jquery.com/) 框架的衍生品 [DataTables](https://datatables.net/) 库，提供了一个 R 的封装，封装工具和许多其他基于 JS 库的 R 包一样，都依赖于 [**htmlwidgets**](https://github.com/ramnathv/htmlwidgets)。
+
+
+## 基础功能 {#sec-table-basic}
+
+
+
+### 添加标题 {#sec-table-title}
+
+
+### 添加注释 {#sec-table-caption}
+
+
+
+### 水平滚动 {#sec-table-scrollx}
+
+
+### 垂直滚动 {#sec-table-scrolly}
+
+
+### 数据分页 {#sec-table-pagination}
+
+
+
+### 适应宽度 {#sec-table-autofill}
+
+
+### 行列分组 {#sec-rowcolumn-group}
+
+
+
+### 列格式化 {#sec-render-column}
+
+
+
+
+### 数据配色 {#sec-colorize-column}
+
+
+```{r}
+library(tibble)
+
+dat <- tribble(
+  ~name1, ~name2,
+  as.character(htmltools::tags$b("加粗")), as.character(htmltools::a(href = "https://rstudio.com", "超链")), # 支持超链接
+  as.character(htmltools::em("强调")), '<a href="#" onclick="alert(\'Hello World\');">Hello</a>',
+  as.character(htmltools::span(style = "color:red", "正常")), "正常"
+)
+```
+
+根据数据的大小配上颜色
+
+```{r}
+colorize_num <- function(x) {
+  ifelse(x > 0,
+    sprintf("<span style='color:%s'>%s</span>", "green", x),
+    sprintf("<span style='color:%s'>%s</span>", "red", x)
+  )
+}
+colorize_pct <- function(x) {
+  ifelse(x > 0,
+    sprintf("<span style='color:%s'>%s</span>", "green", scales::percent(x, accuracy = 0.01)),
+    sprintf("<span style='color:%s'>%s</span>", "red", scales::percent(x, accuracy = 0.01))
+  )
+}
+
+colorize_pp <- function(x) {
+  ifelse(x > 0,
+    sprintf("<span style='color:%s'>%s</span>", "green", paste0(round(100*x, digits = 2), "PP")),
+    sprintf("<span style='color:%s'>%s</span>", "red", paste0(round(100*x, digits = 2), "PP"))
+  )
+}
+
+colorize_text <- function(x, color = "red") {
+    sprintf("<span style='color:%s'>%s</span>", color, x )
+}
+```
+
+
+```{r}
+#| label: tbl-table-colorize
+#| tbl-cap: "数据配色"
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+
+library(DT)
+datatable(
+  data = dat,
+  escape = F, # 设置 escape = F
+  colnames = c(colorize_text("第1列", "red"), as.character(htmltools::em("第2列"))),
+  caption = htmltools::tags$caption(
+    style = "caption-side: top; text-align: center;",
+    "表格 2: ", htmltools::em("表格标题")
+  ), # 在表格底部显示标题，默认在表格上方显示标题
+  # filter = "top", # 过滤框
+  options = list(
+    pageLength = 5, # 每页显示5行
+    dom = "t"
+  )
+)
+```
+
+
+
+## 扩展功能 {#sec-table-extend}
+
+
+### 汉化表格 {#sec-table-chinese}
+
+
+### 下载数据 {#sec-table-download}
+
