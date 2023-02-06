@@ -81,11 +81,7 @@ RUN ln -s /usr/lib64/R/library/littler/examples/install.r /usr/bin/install.r \
  && dnf clean all \
  && cp /usr/lib/systemd/system/rstudio-server.service /etc/init.d/ \
  && chmod +x /etc/init.d/rstudio-server.service \
- && systemctl enable rstudio-server \
- # Set passwd
- && echo 'docker:docker123' | chpasswd \
- # Set group authority
- && chown -R docker:staff /usr/local/lib/R/site-library
+ && systemctl enable rstudio-server
 
 # Set CmdStanR
 ENV CMDSTAN=$CMDSTAN
@@ -127,6 +123,11 @@ RUN curl -fLo quarto.tar.gz https://github.com/quarto-dev/quarto-cli/releases/do
  && mv -f /usr/bin/pandoc /usr/bin/pandoc.bak \
  && ln -s /opt/quarto/quarto-${QUARTO_VERSION}/bin/tools/pandoc /usr/bin/pandoc \
  && rm -f quarto.tar.gz
+
+# Set passwd
+RUN echo 'docker:docker123' | chpasswd \
+ # Set group authority
+ && chown -R docker:staff /usr/local/lib/R/site-library
 
 # Set locale
 ENV LANG=en_US.UTF-8 \
