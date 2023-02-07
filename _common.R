@@ -7,6 +7,10 @@ knitr::knit_hooks$set(par = function(before, options, envir) {
   }
 })
 
+knitr::opts_chunk$set(
+  comment = "#>"
+)
+
 if (xfun::is_macos()) {
   # 准备 Noto 中英文字体
   sysfonts::font_paths(new = "~/Library/Fonts/")
