@@ -241,6 +241,78 @@ usa_mortality <- within(usa_mortality, {
 })
 ```
 
+@fig-3d-lattice 展示 1933-2020 年美国男性死亡率的变化趋势，是用 **lattice** 包的 `wireframe()` 函数绘制的。
+
+```{r}
+#| label: fig-3d-lattice
+#| fig-cap: "lattice 包制作三维透视图"
+#| fig-width: 7
+#| fig-height: 6
+#| echo: false
+#| fig-showtext: true
+
+# tol_rainbow <- colorRamp(pals::tol.rainbow())
+tol_rainbow <- colorRamp(viridisLite::viridis(25))
+# 默认的调色板 hsv 数学原理，可视化图形，使用示例
+# trellis.par.get("shade.colors")$palette
+# function (irr, ref, height, saturation = 0.9) 
+# {
+#     hsv(h = height, s = 1 - saturation * (1 - (1 - ref)^0.5), 
+#         v = irr)
+# }
+# https://stackoverflow.com/questions/50230598/
+custom_palette <- function(irr, ref, height, ramp_fun = tol_rainbow) {
+  if (height != 1) {
+    ## convert height to color using ramp_fun and map to HSV space
+    h.hsv <- rgb2hsv(t(ramp_fun(height)))
+    ## reduce 'V' (brightness): multiply by irradiance
+    toReturn <- hsv(
+      h = h.hsv["h", ],
+      s = h.hsv["s", ],
+      v = 0.8 * h.hsv["v", ]
+      # v = irr * h.hsv["v", ]
+    )
+  } else {
+    toReturn <- "grey"
+  }
+  return(toReturn)
+}
+
+library(lattice)
+wireframe(
+  data = usa_mortality, Male ~ Year * as.integer(Age),
+  shade = TRUE, drape = FALSE,
+  shade.colors.palette = custom_palette,
+  xlab = "年份", ylab = "年龄",
+  zlab = list("男性死亡率", rot = 90),
+  zlim = c(10^-4, 10^0.1),
+  scales = list(
+    arrows = FALSE, col = "black",
+    z = list(
+      log = 10, at = 10^(-4:0),
+      label = c(
+        expression(10^-4), expression(10^-3), expression(10^-2),
+        expression(10^-1), expression(10^0)
+      )
+    )
+  ),
+  # 减少三维图形的边空
+  lattice.options = list(
+    layout.widths = list(
+      left.padding = list(x = -.6, units = "inches"),
+      right.padding = list(x = -1.0, units = "inches")
+    ),
+    layout.heights = list(
+      bottom.padding = list(x = -.8, units = "inches"),
+      top.padding = list(x = -1.0, units = "inches")
+    )
+  ),
+  par.settings = list(axis.line = list(col = "transparent")),
+  screen = list(z = -60, x = -70, y = 0)
+)
+```
+
+
 @fig-3d-scatterplot3d 采用 [**scatterplot3d**](https://cran.r-project.org/package=scatterplot3d) 包绘制静态的三维散点图。
 
 ```{r}

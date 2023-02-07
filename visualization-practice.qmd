@@ -447,69 +447,6 @@ ggplot(data = usa_mortality, aes(x = Year, y = Age, fill = Male)) +
   labs(x = "年份", y = "年龄", fill = "死亡率")
 ```
 
-@fig-usa-mortality-wireframe 是用 lattice 包的 `wireframe()` 函数绘制三维透视图
-
-```{r}
-#| label: fig-usa-mortality-wireframe
-#| fig-cap: "1933-2020 年美国男性死亡率透视图"
-#| fig-width: 7
-#| fig-height: 6
-#| echo: false
-#| fig-showtext: true
-
-tol_rainbow <- colorRamp(pals::tol.rainbow())
-# 默认的调色板 hsv 数学原理，可视化图形，使用示例
-# trellis.par.get("shade.colors")$palette
-# function (irr, ref, height, saturation = 0.9) 
-# {
-#     hsv(h = height, s = 1 - saturation * (1 - (1 - ref)^0.5), 
-#         v = irr)
-# }
-# https://stackoverflow.com/questions/50230598/
-custom_palette <- function(irr, ref, height, ramp_fun = tol_rainbow) {
-  if (height != 1) {
-    ## convert height to color using ramp_fun and map to HSV space
-    h.hsv <- rgb2hsv(t(ramp_fun(height)))
-    ## reduce 'V' (brightness): multiply by irradiance
-    toReturn <- hsv(
-      h = h.hsv["h", ],
-      s = h.hsv["s", ],
-      v = 0.8 * h.hsv["v", ]
-      # v = irr * h.hsv["v", ]
-    )
-  } else {
-    toReturn <- "grey"
-  }
-  return(toReturn)
-}
-
-library(lattice)
-wireframe(
-  data = usa_mortality, Male ~ Year * as.integer(Age),
-  shade = TRUE, drape = FALSE,
-  shade.colors.palette = custom_palette,
-  xlab = "年份", ylab = "年龄",
-  zlab = list("男性死亡率（对数尺度）", rot = 90),
-  scales = list(
-    arrows = FALSE, col = "black",
-    z = list(log = 10)
-  ),
-  # 减少三维图形的边空
-  lattice.options = list(
-    layout.widths = list(
-      left.padding = list(x = -.6, units = "inches"),
-      right.padding = list(x = -1.0, units = "inches")
-    ),
-    layout.heights = list(
-      bottom.padding = list(x = -.8, units = "inches"),
-      top.padding = list(x = -1.0, units = "inches")
-    )
-  ),
-  par.settings = list(axis.line = list(col = "transparent")),
-  screen = list(z = -60, x = -70, y = 0)
-)
-```
-
 
 更加深入的分析和建模，详见 @Marron2022 的第一章
 
