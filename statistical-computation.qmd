@@ -69,8 +69,8 @@ $$ {#eq-log-lik-norm}
 ```{r}
 #| label: fig-log-likelihood
 #| fig-cap: "正态分布参数的负对数似然函数"
-#| fig-width: 5.5
-#| fig-height: 5
+#| fig-width: 5
+#| fig-height: 4.5
 
 set.seed(2021)
 n <- 20 # 随机数的个数
@@ -115,18 +115,12 @@ wireframe(
 <!-- 
 添加极大值点，除指数分布外，还有正态、二项、泊松分布观察其似然曲面的特点，都是单峰，有唯一极值点，再考虑正态混合模型的似然曲面 
 
-贝叶斯计算软件 Stan 提供一门概率编程语言 Stan
-
-二项逻辑回归模型
-
 [Getting the most out of logistic regression](https://gongcastro.github.io/blog/logistic-regression/logistic-regression.html)
 -->
 
 ## 贝叶斯计算框架 Stan {#sec-bayesian-computation-stan}
 
-<!-- 
-以简单逻辑回归模型为例，介绍贝叶斯计算框架 Stan，并与 Base R 提供的频率计算方法对比。
--->
+[Stan](https://github.com/stan-dev/stan) 是一款贝叶斯计算软件，定义了一套概率编程语言，提供 R、Python、Matlab 语言等众多的编程接口，[CmdStan](https://github.com/stan-dev/cmdstan) 是其命令行编程接口，与 Stan 版本保持同步，[CmdStanR](https://github.com/stan-dev/cmdstanr) 包集成 CmdStan 软件，可以非常方便地分析运行结果。下面以二项逻辑回归模型为例，介绍
 
 响应变量 $Y$ 服从伯努利分布 $\mathrm{Binom}(1, p)$，取值是 0 或 1，对线性预测 $X\beta$ 做 Logistic 变换
 
@@ -140,12 +134,12 @@ $$
 \mathrm{Logistic}^{-1}(p)= \ln\big(\frac{p}{1-p}\big) = X\beta
 $$
 
-从一个逻辑回归模型模拟一组样本，25 万条记录，20 个观测变量，其中只有变量 X1 和 X2 的系数非零，代码如下：
+从一个逻辑回归模型模拟一组样本，2500 条记录，10 个观测变量，其中只有变量 $X_1$ 和 $X_2$ 的系数非零，代码如下：
 
 ```{r}
 set.seed(2023)
-n <- 250000
-k <- 20
+n <- 2500
+k <- 10
 X <- matrix(rnorm(n * k), ncol = k)
 y <- rbinom(n, size = 1, prob = plogis(3 * X[,1] - 2 * X[,2] + 1))
 ```
@@ -185,22 +179,52 @@ Stan 编码的模型代码如下：
 调用 CmdStan 拟合模型
 
 ```{r}
+#| label: compile-logit-model
+#| message: false
+#| results: hide
+
 library(cmdstanr)
 mdata <- list(k = k, n = n, y = y, X = X)
 # 来自 stan-dev/cmdstanr
-mod_cl <- cmdstan_model(
+mod_logit <- cmdstan_model(
   stan_file = "code/bernoulli_logit_glm.stan",
   compile = TRUE,
   cpp_options = list(stan_threads = TRUE)
 )
-fit_cl <- mod_cl$sample(
+fit_logit <- mod_logit$sample(
   data = mdata, 
   chains = 4, 
-  parallel_chains = 4,
+  parallel_chains = 1,
+  iter_warmup = 1000, # 每条链预处理迭代次数
+  iter_sampling = 2000, # 每条链总迭代次数
   threads_per_chain = 1, # 每条链设置一个线程
   seed = 20232023,
   show_messages = FALSE, 
   refresh = 0
 )
-fit_cl
+fit_logit
 ```
+
+
+逻辑回归模型的参数 $\beta_1$ 和 $\beta_2$ 的后验分布图
+
+```{r}
+#| label: fig-post-logit
+#| fig-cap: "参数的后验分布"
+#| fig-showtext: true
+#| fig-width: 5
+#| fig-height: 6
+#| message: false
+
+library(ggplot2)
+library(bayesplot)
+# 参数的后验分布
+mcmc_hist(fit_logit$draws(c("beta[1]", "beta[2]")),
+  facet_args = list(
+    labeller = ggplot2::label_parsed,
+    strip.position = "top",
+    ncol = 1
+  )
+) + theme_classic()
+```
+
