@@ -45,7 +45,7 @@ dat <- tribble(
   ~`作用`, ~`图形`, ~`graphics`, ~`lattice`, ~`ggplot2`,
   "描述关系", "散点图", "plot", "xyplot", "geom_point",
   "描述关系", "三维散点图", "scatterplot3d", "cloud", "-",
-  "描述关系", "矩阵图", "pairs", "splom", "",
+  "描述关系", "矩阵图", "pairs", "splom", "ggpairs",
   "描述关系", "符号图", "symbols", "panel.superpose", "geom_point",
   "描述关系", "二维平滑散点图", "smoothScatter", "panel.smoothScatter", "geom_smooth",
   "描述关系", "向日葵图", "sunflowerplot", "", "",
@@ -63,12 +63,12 @@ dat <- tribble(
   "描述分布", "QQ 图", "qqplot", "qq", "geom_qq",
   "描述分布", "一维散点图", "stripchart", "stripplot", "geom_point",
   "描述分布", "茎叶图", "stem", "", "",
-  "描述分布", "条件密度图", "cdplot", "", "geom_density",
+  "描述分布", "条件密度图", "cdplot", "densityplot", "geom_density",
   "描述分布", "轴须图", "rug", "panel.rug", "geom_rug",
   "描述对比", "条形图", "barplot", "barchart", "geom_bar",
   "描述对比", "克利夫兰点图", "dotchart", "dotplot", "geom_point",
   "描述对比", "星图", "stars", "", "",
-  "描述占比", "饼图", "pie", "", "geom_col",
+  "描述占比", "饼图", "pie", "panel.piechart", "geom_col",
   "描述占比", "堆积图", "spineplot", "barchart", "geom_col",
   "描述占比", "马赛克图", "mosaicplot", "", "geom_mosaic"
 )
@@ -79,8 +79,9 @@ knitr::kable(dat)
 提供 Base R lattice ggplot2 的等价作图代码是一件很难的事
 -->
 
-**ggmosaic** 包提供图层 `geom_mosaic()` 绘制马赛克图。Base R 的函数 `plot()` 是泛型函数，**lattice** 包的 `xyplot()` 也是，以绘制条件图为例，Base R 提供函数 `coplot()`，**lattice** 包也支持公式语法，以竖线 `|` 分割主变量和条件变量，右侧代表条件变量，比如 `~ x | y`。
+[**ggmosaic**](https://github.com/haleyjeppson/ggmosaic) 包提供函数 `geom_mosaic()` 绘制马赛克图，[**ggally**](https://github.com/ggobi/ggally) 包提供函数 `ggpairs()` 绘制矩阵图。[**latticetools**](https://github.com/m-jahn/lattice-tools) 包提供函数 `panel.piechart()` 绘制饼图。
 
+Base R 的函数 `plot()` 是泛型函数，**lattice** 包的 `xyplot()` 也是。以绘制条件图为例，Base R 提供函数 `coplot()`，**lattice** 包也支持公式语法，以竖线 `|` 分割主变量和条件变量，比如 `~ x | y`，右侧符号 y 表示条件变量。
 
 三个作图工具的使用方法截然不同，渲染出来的图片风格迥异。以条件密度图为例，Base R 的作图函数为 `cdplot()`， **lattice** 包的作图函数为 `densityplot()`，**ggplot2** 包的作图函数为 `geom_density()`，代码如下：
 
@@ -100,7 +101,8 @@ knitr::kable(dat)
 
 with(iris, cdplot(x = Sepal.Length, y = Species, bw = .2))
 library(lattice)
-densityplot(~ Sepal.Length, groups = Species, data = iris, bw = .2)
+densityplot(~ Sepal.Length, groups = Species, 
+            data = iris, bw = .2, scales = "free")
 library(ggplot2)
 ggplot(iris, aes(x = Sepal.Length, y = after_stat(count))) +
   geom_density(aes(fill = Species), position = "fill", 
@@ -111,11 +113,11 @@ Base R 扩展包 **scatterplot3d** 可以绘制三维散点图，**lattice** 扩
 
 | R 包 |函数 | 图形 | 作用 |
 |:---|:---|:----|:---|
-|**lattice**  |  `parallelplot`   | 平行坐标图 | 描述数据比较 |
-|**lattice**  |  `tmd`     | Tukey 均值-差异图 | 描述数据比较 |
-|**latticeExtra**  |  `ecdfplot`   | 经验分布图 | 描述数据分布 |
-|**latticeExtra**  |  `rootogram`  | Tukey 悬挂根图 | 描述数据分布 |
-|**latticeExtra**  |  `horizonplot`  | 水平线图   | 描述数据趋势 |
+|**lattice**  |  `parallelplot`   | 平行坐标图 | 描述对比 |
+|**lattice**  |  `tmd`     | Tukey 均值差异图 | 描述对比 |
+|**latticeExtra**  |  `ecdfplot`   | 经验分布图 | 描述分布 |
+|**latticeExtra**  |  `rootogram`  | Tukey 悬挂根图 | 描述分布 |
+|**latticeExtra**  |  `horizonplot`  | 水平线图   | 描述趋势 |
 |**latticeExtra**  |  `mapplot`      | 地区分布图 | 描述空间分布 |
 |**latticeExtra**  |  `tileplot`   | Voronoi 图 | 描述空间分布 |
 |**latticeExtra**  |  `segplot`    | 置信区间图 | 描述不确定性 |
