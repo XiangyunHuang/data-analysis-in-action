@@ -118,6 +118,89 @@ wireframe(
 贝叶斯计算软件 Stan 提供一门概率编程语言 Stan
 
 二项逻辑回归模型
+
+[Getting the most out of logistic regression](https://gongcastro.github.io/blog/logistic-regression/logistic-regression.html)
 -->
 
+## 贝叶斯计算框架 Stan {#sec-bayesian-computation-stan}
 
+<!-- 
+以简单逻辑回归模型为例，介绍贝叶斯计算框架 Stan，并与 Base R 提供的频率计算方法对比。
+-->
+
+响应变量 $Y$ 服从伯努利分布 $\mathrm{Binom}(1, p)$，取值是 0 或 1，对线性预测 $X\beta$ 做 Logistic 变换
+
+$$
+\mathrm{E}Y = p = \mathrm{Logistic}(X\beta) = \frac{1}{1 + e^{-X\beta}}
+$$
+
+Logistic 的逆变换
+
+$$
+\mathrm{Logistic}^{-1}(p)= \ln\big(\frac{p}{1-p}\big) = X\beta
+$$
+
+从一个逻辑回归模型模拟一组样本，25 万条记录，20 个观测变量，其中只有变量 X1 和 X2 的系数非零，代码如下：
+
+```{r}
+set.seed(2023)
+n <- 250000
+k <- 20
+X <- matrix(rnorm(n * k), ncol = k)
+y <- rbinom(n, size = 1, prob = plogis(3 * X[,1] - 2 * X[,2] + 1))
+```
+
+Base R 提供的函数 `glm.fit()` 拟合模型，指定联系函数为 logit 变换
+
+```{r}
+fit_r <- glm.fit(x = X, y = y, family = binomial(link = "logit"))
+coef(fit_r)
+```
+
+调用 **glmnet** 包的函数 `glmnet()` 拟合模型，指定指数族的具体形式为二项分布，伯努利分布是二项分布的特殊形式，也叫两点分布或0-1分布。
+
+```{r}
+library(glmnet)
+fit_glm <- glmnet(x = X, y = y, family = "binomial")
+```
+
+逻辑回归模型的系数在 L1 正则下的解的迭代路径图
+
+```{r}
+#| label: fig-logit-glmnet
+#| fig-cap: "模型系数的路径"
+#| fig-width: 5
+#| fig-height: 4
+
+plot(fit_glm)
+```
+
+从图可见，剩余两个系数是非零的，一个是 3 一个是 -2，其余都压缩为 0 了。
+
+Stan 编码的模型代码如下：
+
+```{verbatim, file="code/bernoulli_logit_glm.stan", lang="stan"}
+```
+
+调用 CmdStan 拟合模型
+
+```{r}
+library(cmdstanr)
+mdata <- list(k = k, n = n, y = y, X = X)
+# 来自 stan-dev/cmdstanr
+mod_cl <- cmdstan_model(
+  stan_file = "code/bernoulli_logit_glm.stan",
+  compile = TRUE,
+  cpp_options = list(stan_threads = TRUE)
+)
+fit_cl <- mod_cl$sample(
+  data = mdata, 
+  chains = 4, 
+  parallel_chains = 4,
+  threads_per_chain = 1, # 每条链设置一个线程
+  seed = 20232023,
+  show_messages = FALSE, 
+  refresh = 0
+)
+fit_cl
+```
