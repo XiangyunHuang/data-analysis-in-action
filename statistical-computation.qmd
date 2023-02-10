@@ -116,6 +116,7 @@ wireframe(
 添加极大值点，除指数分布外，还有正态、二项、泊松分布观察其似然曲面的特点，都是单峰，有唯一极值点，再考虑正态混合模型的似然曲面 
 
 [Getting the most out of logistic regression](https://gongcastro.github.io/blog/logistic-regression/logistic-regression.html)
+[Getting Started with Stan](https://github.com/LuZhangstat/Getting-Started-with-Stan)
 -->
 
 ## 贝叶斯计算框架 Stan {#sec-bayesian-computation-stan}
@@ -154,6 +155,9 @@ coef(fit_r)
 调用 **glmnet** 包的函数 `glmnet()` 拟合模型，指定指数族的具体形式为二项分布，伯努利分布是二项分布的特殊形式，也叫两点分布或0-1分布。
 
 ```{r}
+#| message: false
+
+library(Matrix)
 library(glmnet)
 fit_glm <- glmnet(x = X, y = y, family = "binomial")
 ```
@@ -164,19 +168,19 @@ fit_glm <- glmnet(x = X, y = y, family = "binomial")
 #| label: fig-logit-glmnet
 #| fig-cap: "模型系数的路径"
 #| fig-width: 5
-#| fig-height: 4
+#| fig-height: 5
 
 plot(fit_glm)
 ```
 
-从图可见，剩余两个系数是非零的，一个是 3 一个是 -2，其余都压缩为 0 了。
+从图可见，剩余两个系数是非零的，一个是 3， 一个是 -2，其余都被压缩，而接近为 0 了。
 
-Stan 编码的模型代码如下：
+下面用 Stan 编码逻辑回归模型，模型代码如下：
 
 ```{verbatim, file="code/bernoulli_logit_glm.stan", lang="stan"}
 ```
 
-调用 CmdStan 拟合模型
+CmdStan 已经安装了，接下来，用 **cmdstanr** 包调 CmdStan 拟合模型，有三步：其一根据上面 Stan 代码中数据块的定义准备输入数据，其二编译上面的 Stan 代码获得可执行的模型文件，其三将数据输送到可执行的模型文件进行抽样。
 
 ```{r}
 #| label: compile-logit-model
@@ -184,6 +188,7 @@ Stan 编码的模型代码如下：
 #| results: hide
 
 library(cmdstanr)
+# 准备数据
 mdata <- list(k = k, n = n, y = y, X = X)
 # 来自 stan-dev/cmdstanr
 mod_logit <- cmdstan_model(
@@ -202,11 +207,20 @@ fit_logit <- mod_logit$sample(
   show_messages = FALSE, 
   refresh = 0
 )
-fit_logit
 ```
 
+模型拟合结果存储为一个 R6 类型的数据对象，调用 summary 方法可以获得任意参数的结果，见 @tbl-logit-output 。
 
-逻辑回归模型的参数 $\beta_1$ 和 $\beta_2$ 的后验分布图
+```{r}
+#| label: tbl-logit-output
+#| tbl-cap: "模型参数的贝叶斯估计结果"
+#| echo: false
+
+fit_logit$summary(c("alpha", "beta", "lp__")) |> 
+  knitr::kable(digits = 3)
+```
+
+贝叶斯方法估计模型参数是通过抽样获得的，抽样的过程是参数迭代的过程，如果迭代过程是收敛的，估计值最终会收敛到参数的真值。一般来说，我们希望迭代的效率越高越好，只需要少量的迭代次数和短暂的时间就可以获得很好的效果。通常以可视化的方式检查参数的迭代情况，**bayesplot** 包提供大量的可视化函数检查迭代过程和结果，逻辑回归模型的参数 $\beta_1$ 和 $\beta_2$ 的后验分布图如下：
 
 ```{r}
 #| label: fig-post-logit
@@ -218,7 +232,6 @@ fit_logit
 
 library(ggplot2)
 library(bayesplot)
-# 参数的后验分布
 mcmc_hist(fit_logit$draws(c("beta[1]", "beta[2]")),
   facet_args = list(
     labeller = ggplot2::label_parsed,
@@ -228,3 +241,4 @@ mcmc_hist(fit_logit$draws(c("beta[1]", "beta[2]")),
 ) + theme_classic()
 ```
 
+图检验的其他方法还有轨迹图 `mcmc_trace()`，散点图 `mcmc_scatter()`，密度图 `mcmc_dens()`，直方图 `mcmc_hist()`，自相关图 `mcmc_acf()`，区间图 `mcmc_intervals` 和岭线图 `mcmc_areas_ridges()` 等。
