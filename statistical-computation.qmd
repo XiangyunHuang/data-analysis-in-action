@@ -232,14 +232,23 @@ fit_logit$summary(c("alpha", "beta", "lp__")) |>
 贝叶斯方法估计模型参数是通过抽样获得的，抽样的过程是参数迭代的过程，如果迭代过程是收敛的，估计值最终会收敛到参数的真值。一般来说，我们希望迭代的效率越高越好，只需要少量的迭代次数和短暂的时间就可以获得很好的效果。接下来，看看模型诊断的结果：
 
 ```{r}
+fit_logit$cmdstan_diagnose()
+```
+
+每个参数都有迭代轨迹，有效样本数 effective sample size $n_{eff}$，
+潜在尺度缩减因子 potential scale reduction factor $\hat{R}$，采样效率可以理解为每秒迭代产生有效样本数。
+
+
+```{r}
+# 简化版本
 fit_logit$diagnostic_summary()
 ```
 
-数据是根据给定模型生成的，数据与模型吻合得很好，迭代过程没有任何发散的情况。还可以可视化的方式检查参数的迭代情况，**bayesplot** 包提供大量的可视化函数检查迭代过程和结果，逻辑回归模型的参数 $\beta_1$ 和 $\beta_2$ 的后验分布图如下：
+数据是根据给定模型生成的，数据与模型吻合得很好，迭代过程没有任何发散的情况。还可以可视化的方式检查参数的迭代情况，**bayesplot** 包提供大量的可视化函数检查迭代过程和结果，逻辑回归模型的参数 $\beta_1$ 和 $\beta_2$ 的轨迹图如下：
 
 ```{r}
-#| label: fig-post-logit
-#| fig-cap: "参数的后验分布"
+#| label: fig-post-logit-trace
+#| fig-cap: "参数的迭代轨迹"
 #| fig-showtext: true
 #| fig-width: 5
 #| fig-height: 6
@@ -247,6 +256,25 @@ fit_logit$diagnostic_summary()
 
 library(ggplot2)
 library(bayesplot)
+mcmc_trace(fit_logit$draws(c("beta[1]", "beta[2]")),
+  facet_args = list(
+    labeller = ggplot2::label_parsed,
+    strip.position = "top",
+    ncol = 1
+  )
+) + theme_classic()
+```
+
+马尔科夫链蒙特卡罗采样的后验分布图如下：
+
+```{r}
+#| label: fig-post-logit-hist
+#| fig-cap: "参数的后验分布"
+#| fig-showtext: true
+#| fig-width: 5
+#| fig-height: 6
+#| message: false
+
 mcmc_hist(fit_logit$draws(c("beta[1]", "beta[2]")),
   facet_args = list(
     labeller = ggplot2::label_parsed,
@@ -256,4 +284,56 @@ mcmc_hist(fit_logit$draws(c("beta[1]", "beta[2]")),
 ) + theme_classic()
 ```
 
-图检验的其他方法还有轨迹图 `mcmc_trace()`，散点图 `mcmc_scatter()`，密度图 `mcmc_dens()`，直方图 `mcmc_hist()`，自相关图 `mcmc_acf()`，区间图 `mcmc_intervals` 和岭线图 `mcmc_areas_ridges()` 等。
+图检验的其他方法还有轨迹图 `mcmc_trace()`，散点图 `mcmc_scatter()`，密度图 `mcmc_dens()`，直方图 `mcmc_hist()`，自相关图 `mcmc_acf()`，区间图 `mcmc_intervals()` 和岭线图 `mcmc_areas_ridges()` 等。
+
+
+CmdStanR 的 sample 方法默认的采样器为 NUTS 的 HMC 算法，CmdStanR 的封装导致不能修改采样器，读者若想修改，Stan 的命令行接口 CmdStan 支持修改采样器，不过推荐读者使用默认的 NUTS 采样器，它是根据动态调整来决定 optimal integration time。NUTS 采样器的参数 `max_depth = 10` 是可以调整的，采样的树深度。
+
+除了 sample 方法还有优化 optimize （L-BFGS 算法）和变分推断 variational 两个优化器。
+
+```{r}
+# L-BFGS 算法拟合模型
+fit_optim_logit <- mod_logit$optimize(
+  data = mdata, # 观测数据
+  init = 0, # 所有参数初值设为 0 
+  refresh = 0, # 不显示迭代进程
+  algorithm = "lbfgs", # 优化器
+  threads = 1, # 单线程
+  seed = 20232023 # 随机数种子
+)
+```
+
+模型输出结果如下：
+
+```{r}
+fit_optim_logit$summary()
+```
+
+Stan 实现的 variational 方法调用自动微分变分近似推断优化器（ADVI 算法）获取参数的后验分布。
+
+```{r}
+# 自动微分变分近似推断
+fit_advi_logit <- mod_logit$variational(
+  data = mdata, # 观测数据
+  init = 0, # 所有参数初值设为 0 
+  refresh = 0, # 不显示迭代进程
+  algorithm = "meanfield", # 优化器
+  threads = 1, # 单线程
+  seed = 20232023 # 随机数种子
+)
+```
+
+模型输出结果见下 @tbl-logit-advi 。
+
+```{r}
+#| label: tbl-logit-advi
+#| tbl-cap: "模型参数的 ADVI 结果"
+#| echo: false
+
+fit_advi_logit$summary() |> 
+  knitr::kable(digits = 3)
+```
+
+::: {.callout-tip}
+CmdStanR 始终与 CmdStan 保持同步更新，及时地用上集成到 Stan 当中的学术研究成果。而 RStan 及其衍生包 rstanarm 和 brms 等依赖太重，安装、更新都比较麻烦。入门 CmdStanR 后，可以快速转入对 Stan 底层原理的学习，有利于编码符合实际需要的复杂模型，有利于掌握常用的炼丹技巧，提高科研和工作的效率。
+:::
