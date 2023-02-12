@@ -174,23 +174,25 @@ fit_glm <- glmnet(x = X, y = y, family = "binomial")
 #| fig-cap: "模型系数的路径"
 #| fig-width: 5
 #| fig-height: 5
+#| fig-showtext: true
 
-plot(fit_glm)
+plot(fit_glm, ylab = "回归系数")
 ```
 
 从图可见，剩余两个系数是非零的，一个是 3， 一个是 -2，其余都被压缩，而接近为 0 了。
 
 ```{r}
 #| label: fig-logit-glmnet-lambda
-#| fig-cap: "模型惩罚系数的迭代轨迹"
+#| fig-cap: "惩罚系数的迭代轨迹"
 #| fig-width: 5
-#| fig-height: 4
-#| par: true
+#| fig-height: 5
+#| fig-showtext: true
 
-plot(fit_glm$lambda, ylab = expression(lambda))
+plot(fit_glm$lambda, ylab = expression(lambda), xlab = "迭代次数",
+     main = "惩罚系数的迭代轨迹")
 ```
 
-随着迭代的进行，惩罚系数 $lambda$ 越来越小，接近于 0，这也是符合预期的，因为模型本来就是简单的逻辑回归，不带惩罚项。选择一个迭代趋于稳定时的 $lambda$ 比如 0.0005247159，此时各个参数的取值如下：
+随着迭代的进行，惩罚系数 $\lambda$ 越来越小，接近于 0，这也是符合预期的，因为模型本来就是简单的逻辑回归，不带惩罚项。选择一个迭代趋于稳定时的 $\lambda$ 比如 0.0005247159，此时各个参数的取值如下：
 
 ```{r}
 coef(fit_glm, s = 0.0005247159)
