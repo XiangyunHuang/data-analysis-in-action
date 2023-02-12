@@ -229,7 +229,7 @@ fit_logit$summary(c("alpha", "beta", "lp__")) |>
   knitr::kable(digits = 3)
 ```
 
-贝叶斯方法估计模型参数是通过抽样获得的，抽样的过程是参数迭代的过程，如果迭代过程是收敛的，估计值最终会收敛到参数的真值。一般来说，我们希望迭代的效率越高越好，只需要少量的迭代次数和短暂的时间就可以获得很好的效果。接下来，看看模型诊断的结果：
+贝叶斯方法估计模型参数是通过抽样获得的，抽样的过程是参数迭代的过程，如果迭代过程是收敛的，估计值最终会收敛到参数的真值。一般来说，我们希望迭代的效率越高越好，只需要少量的迭代次数和短暂的时间就可以获得很好的效果。接下来，看看采样过程的诊断结果：
 
 ```{r}
 fit_logit$cmdstan_diagnose()
@@ -237,7 +237,6 @@ fit_logit$cmdstan_diagnose()
 
 每个参数都有迭代轨迹，有效样本数 effective sample size $n_{eff}$，
 潜在尺度缩减因子 potential scale reduction factor $\hat{R}$，采样效率可以理解为每秒迭代产生有效样本数。
-
 
 ```{r}
 # 简化版本
@@ -292,6 +291,7 @@ CmdStanR 的 sample 方法默认的采样器为 NUTS 的 HMC 算法，CmdStanR �
 除了 sample 方法还有优化 optimize （L-BFGS 算法）和变分推断 variational 两个优化器。
 
 ```{r}
+#| message: false
 # L-BFGS 算法拟合模型
 fit_optim_logit <- mod_logit$optimize(
   data = mdata, # 观测数据
@@ -312,6 +312,7 @@ fit_optim_logit$summary()
 Stan 实现的 variational 方法调用自动微分变分近似推断优化器（ADVI 算法）获取参数的后验分布。
 
 ```{r}
+#| message: false
 # 自动微分变分近似推断
 fit_advi_logit <- mod_logit$variational(
   data = mdata, # 观测数据
@@ -336,4 +337,77 @@ fit_advi_logit$summary() |>
 
 ::: {.callout-tip}
 CmdStanR 始终与 CmdStan 保持同步更新，及时地用上集成到 Stan 当中的学术研究成果。而 RStan 及其衍生包 rstanarm 和 brms 等依赖太重，安装、更新都比较麻烦。入门 CmdStanR 后，可以快速转入对 Stan 底层原理的学习，有利于编码符合实际需要的复杂模型，有利于掌握常用的炼丹技巧，提高科研和工作的效率。
+:::
+
+
+## 机器学习框架 tensorflow {#sec-machine-learning-tensorflow}
+
+### 软件配置 {#sec-setup-tensorflow}
+
+推荐读者配置独立的 Python 虚拟环境，在虚拟环境中来做算法开发，下面用 virtualenv 配置一个开发环境。
+
+如果读者是 MacOS 系统，推荐安装命令行工具 Command Line Tools for Xcode，它提供大量常用的开发工具，如 Apple LLVM compiler, linker, and Make，Git，Python 等。安装过程非常简单，只需如下一行命令。
+
+```bash
+xcode-select --install
+```
+
+也可以在网上先下载[工具包](https://developer.apple.com/download/all/)，再离线安装。最近的 MacOS 系统已经自带了 Python 3.9.x，所以，只需在系统中安装 [virtualenv](https://github.com/pypa/virtualenv) 软件。推荐使用软件包管理工具[brew](https://github.com/Homebrew/brew)来安装。
+
+```bash
+brew install virtualenv
+```
+
+用 virtualenv 创建虚拟环境，虚拟环境的存放路径是 `/opt/.virtualenvs/r-tensorflow`，所以名字就是 `r-tensorflow`
+
+```bash
+# 准备虚拟环境萼存放地址
+sudo mkdir -p /opt/.virtualenvs/r-tensorflow
+# 赋予当前用户的读写权限
+sudo chown -R $(whoami):staff /opt/.virtualenvs/r-tensorflow
+# 方便后续复用
+export RETICULATE_PYTHON_ENV=/opt/.virtualenvs/r-tensorflow
+# 创建虚拟环境
+virtualenv -p /usr/bin/python3 $RETICULATE_PYTHON_ENV
+# 激活虚拟环境
+source $RETICULATE_PYTHON_ENV/bin/activate
+```
+
+激活虚拟环境后，进入书籍仓库根目录，从指定文件 requirements.txt 安装 Python 模块。
+
+```bash
+pip install -r requirements.txt
+```
+
+安装完成后，可以在命令行中输入 `deactivate` 退出虚拟环境。至此，所需的 Python 开发环境已经准备好了。
+
+接下来配置 R 环境，使得可以在 R 语言中调用 tensorflow 模块，搭建机器学习模型。在文件 `.Rprofile` 里设置环境变量 `RETICULATE_PYTHON` 和 `RETICULATE_PYTHON_ENV`，这样 [**reticulate**](https://github.com/rstudio/reticulate) 包就能发现和使用它了。
+
+```bash
+Sys.setenv(RETICULATE_PYTHON="/opt/.virtualenvs/r-tensorflow/bin/python")
+Sys.setenv(RETICULATE_PYTHON_ENV="/opt/.virtualenvs/r-tensorflow")
+```
+
+最后，输入命令 `reticulate::py_config()` 检查配置情况，看到如下结果，表示配置成功。
+
+```
+python:         /opt/.virtualenvs/r-tensorflow/bin/python
+libpython:      /Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/config-3.9-darwin/libpython3.9.dylib
+pythonhome:     /opt/.virtualenvs/r-tensorflow:/opt/.virtualenvs/r-tensorflow
+virtualenv:     /opt/.virtualenvs/r-tensorflow/bin/activate_this.py
+version:        3.9.6 (default, Oct 18 2022, 12:41:40)  [Clang 14.0.0 (clang-1400.0.29.202)]
+numpy:          /opt/.virtualenvs/r-tensorflow/lib/python3.9/site-packages/numpy
+numpy_version:  1.24.2
+
+NOTE: Python version was forced by RETICULATE_PYTHON
+```
+
+
+::: {.callout-tip}
+如果希望打开终端就进入虚拟环境，可以在 `~/.zshrc` 文件中添加两行：
+
+```bash
+export RETICULATE_PYTHON_ENV=/opt/.virtualenvs/r-tensorflow
+source $RETICULATE_PYTHON_ENV/bin/activate
+```
 :::
