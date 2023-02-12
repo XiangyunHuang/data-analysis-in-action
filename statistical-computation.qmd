@@ -126,16 +126,16 @@ wireframe(
 响应变量 $Y$ 服从伯努利分布 $\mathrm{Binom}(1, p)$，取值是 0 或 1，对线性预测 $X\beta$ 做 Logistic 变换
 
 $$
-\mathrm{E}Y = p = \mathrm{Logistic}(X\beta) = \frac{1}{1 + e^{-X\beta}}
+\mathrm{E}Y = p = \mathrm{Logistic}(X\beta) = \frac{1}{1 + e^{-(\alpha + X\beta)}}
 $$
 
 Logistic 的逆变换
 
 $$
-\mathrm{Logistic}^{-1}(p)= \ln\big(\frac{p}{1-p}\big) = X\beta
+\mathrm{Logistic}^{-1}(p)= \ln\big(\frac{p}{1-p}\big) = \alpha + X\beta
 $$
 
-从一个逻辑回归模型模拟一组样本，2500 条记录，10 个观测变量，其中只有变量 $X_1$ 和 $X_2$ 的系数非零。模拟数据的代码如下：
+从一个逻辑回归模型模拟一组样本，2500 条记录，10 个观测变量，其中只有变量 $X_1$ 和 $X_2$ 的系数非零，参数设定为 $\alpha = 1,\beta_1=3,\beta_2=-2,\beta_i = 0,i=3,\cdots,10$，模拟数据的代码如下：
 
 ```{r}
 set.seed(2023)
@@ -145,14 +145,12 @@ X <- matrix(rnorm(n * k), ncol = k)
 y <- rbinom(n, size = 1, prob = plogis(3 * X[,1] - 2 * X[,2] + 1))
 ```
 
-
 ### `glm.fit()` {#sec-glm-fit}
-
 
 Base R 提供的函数 `glm.fit()` 拟合模型，指定联系函数为 logit 变换
 
 ```{r}
-fit_r <- glm.fit(x = X, y = y, family = binomial(link = "logit"))
+fit_r <- glm.fit(x = cbind(1, X), y = y, family = binomial(link = "logit"))
 coef(fit_r)
 ```
 
@@ -181,6 +179,24 @@ plot(fit_glm)
 ```
 
 从图可见，剩余两个系数是非零的，一个是 3， 一个是 -2，其余都被压缩，而接近为 0 了。
+
+```{r}
+#| label: fig-logit-glmnet-lambda
+#| fig-cap: "模型惩罚系数的迭代轨迹"
+#| fig-width: 5
+#| fig-height: 4
+#| par: true
+
+plot(fit_glm$lambda, ylab = expression(lambda))
+```
+
+随着迭代的进行，惩罚系数 $lambda$ 越来越小，接近于 0，这也是符合预期的，因为模型本来就是简单的逻辑回归，不带惩罚项。选择一个迭代趋于稳定时的 $lambda$ 比如 0.0005247159，此时各个参数的取值如下：
+
+```{r}
+coef(fit_glm, s = 0.0005247159)
+```
+
+截距 (Intercept) 对应 $\alpha = 0.997741857$，而 $\beta_1 = 3.076358149$ 对应 V1，$\beta_2 = -1.984018387$ 对应 V2，以此类推。
 
 ### CmdStanR {#sec-logit-cmdstanr}
 
