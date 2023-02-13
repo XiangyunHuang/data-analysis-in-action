@@ -123,7 +123,7 @@ wireframe(
 
 [Stan](https://github.com/stan-dev/stan) 是一款贝叶斯计算软件，定义了一套概率编程语言，提供 R、Python、Matlab 语言等众多的编程接口，[CmdStan](https://github.com/stan-dev/cmdstan) 是其命令行编程接口，与 Stan 版本保持同步，[CmdStanR](https://github.com/stan-dev/cmdstanr) 包集成 CmdStan 软件，可以非常方便地分析运行结果。下面以二项逻辑回归模型为例，介绍
 
-响应变量 $Y$ 服从伯努利分布 $\mathrm{Binom}(1, p)$，取值是 0 或 1，对线性预测 $X\beta$ 做 Logistic 变换
+响应变量 $Y$ 服从伯努利分布 $\mathrm{Bernoulli}(p)$，取值是 0 或 1，对线性预测 $X\beta$ 做 Logistic 变换
 
 $$
 \mathrm{E}Y = p = \mathrm{Logistic}(X\beta) = \frac{1}{1 + e^{-(\alpha + X\beta)}}
@@ -135,14 +135,32 @@ $$
 \mathrm{Logistic}^{-1}(p)= \ln\big(\frac{p}{1-p}\big) = \alpha + X\beta
 $$
 
-从一个逻辑回归模型模拟一组样本，2500 条记录，10 个观测变量，其中只有变量 $X_1$ 和 $X_2$ 的系数非零，参数设定为 $\alpha = 1,\beta_1=3,\beta_2=-2,\beta_i = 0,i=3,\cdots,10$，模拟数据的代码如下：
+关于参数 $\alpha,\beta$ 的似然函数如下：
+
+$$
+\begin{aligned}
+L(\alpha,\beta) &= \prod_{i=1}^{n} p_i^{y_i}(1 - p_i)^{1 - y_i} \\ 
+     &= p_i^{\sum_{i=1}^{n} y_i}(1 - p_i)^{n - \sum_{i=1}^{n} y_i} \\ 
+     &= \Big(\frac{e^{\alpha + \sum_{j=1}^{k}x_j\beta_j}}{1 + e^{\alpha + \sum_{j=1}^{k}x_j\beta_j}}\Big)^{\sum_{i=1}^{n}y_i}\Big(\frac{1}{e^{\alpha + \sum_{j=1}^{k}x_j\beta_j}}\Big)^{n - \sum_{i=1}^{n}y_i} \\
+\end{aligned}
+$$
+
+关于参数 $\alpha,\beta$ 的对数似然函数如下：
+
+$$
+\ell(\alpha,\beta) = \log L(\alpha,\beta) = \sum_{i=1}^{n} y_i \log \Big(\frac{e^{\alpha + \sum_{j=1}^{k}x_j\beta_j}}{1 + e^{\alpha + \sum_{j=1}^{k}x_j\beta_j}}\Big) + (n - \sum_{i=1}^{n}y_i) \log\Big(\frac{1}{e^{\alpha + \sum_{j=1}^{k}x_j\beta_j}}\Big)
+$$
+
+其中， $\sum_{i=1}^{n} y_i$ 表示 $y_i = 1$ 的观测值数量，$(n - \sum_{i=1}^{n}y_i) $ 表示 $y_i = 0$ 的观测值数量，通过 IWLS （迭代加权最小二乘）可以求解此优化问题。
+
+从一个逻辑回归模型模拟一组样本，2500 条记录，即 $n = 2500$，10 个观测变量，即 $k=10$，其中，只有变量 $X_1$ 和 $X_2$ 的系数非零，参数设定为 $\alpha = 1,\beta_1=3,\beta_2=-2,\beta_i = 0,i=3,\cdots,10$，模拟数据的代码如下：
 
 ```{r}
 set.seed(2023)
 n <- 2500
 k <- 10
 X <- matrix(rnorm(n * k), ncol = k)
-y <- rbinom(n, size = 1, prob = plogis(3 * X[,1] - 2 * X[,2] + 1))
+y <- rbinom(n, size = 1, prob = plogis(1 + 3 * X[,1] - 2 * X[,2]))
 ```
 
 ### `glm.fit()` {#sec-glm-fit}
