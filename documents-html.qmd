@@ -3,7 +3,7 @@
 从本章开始，接下来的三个章节都围绕数据交流的工具及其案例展开。日常工作中，有的需要产出具有丰富交互内容的网页文档（HTML 文档），有的需要产出排版精美、符合格式要求的、可打印的便携式文档（PDF 文档），有的需要可协作共享、可编辑修改的办公文档（Office 文档）。在 R 语言社区，陆续出现两套解决方案，一个是以 rmarkdown 包为核心的 R Markdown 生态，另一个是以 Quarto 为核心的文档写作和发布系统。继 R Markdown 出现 10 余年后，2022 年 RStudio 公司发布 Quarto 系统，整合 R Markdown 生态，提供统一的语法。截止写作时间，相比于成熟的 R Markdown 生态，Quarto 系统还在路上。因此，不拘泥于 R Markdown 还是 Quarto，根据使用场景、实践经验、工具现状，选择最合适的工具介绍，整体上，以 Quarto 为主，R Markdown 补位的方式介绍。
 
 
-## 基础元素 {#sec-doc-foundation}
+## 文档元素 {#sec-doc-elements}
 
 无论是 R Markdown 还是 Quarto，都是站在巨人 Pandoc 的肩膀上，Pandoc 在普通 Markdown 的基础上提供了许多扩展支持，通过一些简单的标记，大大丰富了文档内容，下面介绍的内容适用于 R Markdown 和 Quarto，无论文档最终的输出格式如何。
 
@@ -13,11 +13,36 @@
 文字样式，如加粗、倾斜、上色、缩小、放大、上下标等
 
 
-### 图表 {#sec-doc-figure}
+### 图片 {#sec-doc-figure}
 
 其一插入代码生成的图片，其二导入外部制作好的现成图片。
 
+```{r}
+#| label: fig-iris-ggplot2
+#| fig-width: 4
+#| fig-height: 3
+#| fig-cap: "一幅简单的 ggplot2 图形"
+
+library(ggplot2)
+ggplot(data = iris, aes(x = Sepal.Length, y = Sepal.Width, color = Species)) +
+  geom_point() +
+  theme_minimal()
+```
+
+**ggiraph** 将 ggplot2 对象转化为网页图形
+
+```{r}
+#| label: fig-iris-ggiraph
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+
+library(ggiraph)
+girafe(code = print(p1), width_svg = 4, height_svg = 3)
+```
+
+### 表格 {#sec-doc-table}
+
 Markdown 表格、knitr 制作的表格
+
 
 ### 列表 {#sec-doc-list}
 
@@ -58,10 +83,6 @@ Markdown 表格、knitr 制作的表格
 
 :   术语 2 的定义
 
-        { 术语 2 的定义包含一些代码 }
-
-    定义内容很长，这是第三段。
-
 
 ### 引用 {#sec-doc-cross-references}
 
@@ -84,6 +105,40 @@ Markdown 表格、knitr 制作的表格
 > --- Paul Murrell
 
 [^lattice-pen]: (on the difference of Lattice (which eventually was called grid) and Trellis) DSC 2001, Wien (March 2001)
+
+
+### 公式 {#sec-doc-math}
+
+行内公式一对美元符号 $\alpha$ ，行间公式 $$\alpha$$ ，如 @eq-likelihood
+
+$$
+L(\beta,\boldsymbol{\theta}) = f(y;\beta,\boldsymbol{\theta}) = \int_{\mathbb{R}^{n}}N(t;D\beta,\Sigma(\boldsymbol{\theta}))f(y|t)dt 
+$$ {#eq-likelihood}
+
+多行公式逐行编号，多行公式中对某一（些）行编号都不支持。多行公式共用一个编号，如 @eq-likelihood2 。
+
+$$
+\begin{aligned}
+L(\beta,\boldsymbol{\theta})
+& = \int_{\mathbb{R}^{n}} \frac{N(t;D\beta,\Sigma(\boldsymbol{\theta}))f(y|t)}{N(t;D\beta_{0},\Sigma(\boldsymbol{\theta}_{0}))f(y|t)}f(y,t)dt\\
+& \varpropto \int_{\mathbb{R}^{n}} \frac{N(t;D\beta,\Sigma(\boldsymbol{\theta}))}{N(t;D\beta_{0},\Sigma(\boldsymbol{\theta}_{0}))}f(t|y)dt \\
+&= E_{T|y}\left[\frac{N(t;D\beta,\Sigma(\boldsymbol{\theta}))}{N(t;D\beta_{0},\Sigma(\boldsymbol{\theta}_{0}))}\right] 
+\end{aligned}
+$$ {#eq-likelihood2}
+
+推荐在 `equation` 公式中，使用 `split` 环境，意思是一个公式很长，需要拆成多行，如 @eq-var-beta 。
+
+$$
+\begin{split}
+\mathrm{Var}(\hat{\beta}) & =\mathrm{Var}((X'X)^{-1}X'y)\\
+ & =(X'X)^{-1}X'\mathrm{Var}(y)((X'X)^{-1}X')'\\
+ & =(X'X)^{-1}X'\mathrm{Var}(y)X(X'X)^{-1}\\
+ & =(X'X)^{-1}X'\sigma^{2}IX(X'X)^{-1}\\
+ & =(X'X)^{-1}\sigma^{2}
+\end{split}
+$$ {#eq-var-beta}
+
+注意，`\mathbf` 只对字母 $a,b,c,A,B,C$ 加粗，mathjax 不支持公式中使用 `\bm` 对 $\theta,\alpha,\beta,\ldots,\gamma$ 加粗，应该使用 `\boldsymbol`
 
 
 ## 制作报告 {#sec-quarto-report}
