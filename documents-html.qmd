@@ -145,6 +145,43 @@ $$ {#eq-var-beta}
 
 Quarto Report 文档
 
+
+### SQL 查询 {#sec-sql-query}
+
+
+```{r}
+library(DBI)
+conn <- DBI::dbConnect(RSQLite::SQLite(),
+  dbname = system.file("db", "datasets.sqlite", package = "RSQLite")
+)
+```
+
+Base R 内置的数据集都整合进 RSQLite 的样例数据库里了，
+
+```{r}
+dbListTables(conn)
+```
+
+随意选择 5 行数据记录，将结果保存到变量 iris_preview
+
+```{sql sql-query, connection=conn, output.var="iris_preview"}
+SELECT * FROM iris LIMIT 5;
+```
+
+查看变量 iris_preview 的内容
+
+```{r}
+iris_preview
+```
+
+结束后关闭连接
+
+```{r}
+dbDisconnect(conn = conn)
+```
+
+
+
 ## 制作演示 {#sec-quarto-presentation}
 
 Quarto Presentation
