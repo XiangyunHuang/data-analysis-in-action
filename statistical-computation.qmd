@@ -121,7 +121,61 @@ wireframe(
 
 ## 贝叶斯计算框架 Stan {#sec-bayesian-computation-stan}
 
-[Stan](https://github.com/stan-dev/stan) 是一款贝叶斯计算软件，定义了一套概率编程语言，提供 R、Python、Matlab 语言等众多的编程接口，[CmdStan](https://github.com/stan-dev/cmdstan) 是其命令行编程接口，与 Stan 版本保持同步，[CmdStanR](https://github.com/stan-dev/cmdstanr) 包集成 CmdStan 软件，可以非常方便地分析运行结果。下面以二项逻辑回归模型为例，介绍
+[Stan](https://github.com/stan-dev/stan) 是一款贝叶斯计算软件，定义了一套概率编程语言，提供 R、Python、Matlab 语言等众多的编程接口，[CmdStan](https://github.com/stan-dev/cmdstan) 是其命令行编程接口，与 Stan 版本保持同步，[CmdStanR](https://github.com/stan-dev/cmdstanr) 包集成 CmdStan 软件，可以非常方便地分析运行结果。
+
+
+```{r}
+#| label: fig-logistic
+#| echo: false
+#| fig-cap: "逻辑斯谛分布"
+#| fig-subcap: 
+#| - 概率密度函数
+#| - 概率分布函数
+#| fig-width: 4
+#| fig-height: 3
+#| fig-ncol: 2
+#| fig-showtext: true
+
+library(ggplot2)
+ggplot() +
+  geom_function(
+    fun = dlogis, args = list(location = 0, scale = 0.5),
+    colour = "#E41A1C", linewidth = 1.2, xlim = c(-6, 6)
+  ) +
+  geom_function(
+    fun = dlogis, args = list(location = 0, scale = 1),
+    colour = "#377EB8", linewidth = 1.2, xlim = c(-6, 6)
+  ) +
+  geom_function(
+    fun = dlogis, args = list(location = 0, scale = 2),
+    colour = "#4DAF4A", linewidth = 1.2, xlim = c(-6, 6)
+  ) +
+  theme_classic() +
+  labs(x = expression(x), y = expression(f(x)))
+
+ggplot() +
+  geom_function(
+    fun = plogis, args = list(location = 0, scale = 0.5),
+    colour = "#E41A1C", linewidth = 1.2, xlim = c(-6, 6)
+  ) +
+  geom_function(
+    fun = plogis, args = list(location = 0, scale = 1),
+    colour = "#377EB8", linewidth = 1.2, xlim = c(-6, 6)
+  ) +
+  geom_function(
+    fun = plogis, args = list(location = 0, scale = 2),
+    colour = "#4DAF4A", linewidth = 1.2, xlim = c(-6, 6)
+  ) +
+  theme_classic() +
+  labs(x = expression(x), y = expression(f(x)))
+```
+
+
+
+下面以二项逻辑回归模型为例，介绍
+
+
+
 
 响应变量 $Y$ 服从伯努利分布 $\mathrm{Bernoulli}(p)$，取值是 0 或 1，对线性预测 $X\beta$ 做 Logistic 变换
 
@@ -151,9 +205,9 @@ $$
 \ell(\alpha,\beta) = \log L(\alpha,\beta) = \sum_{i=1}^{n} y_i \log \Big(\frac{e^{\alpha + \sum_{j=1}^{k}x_j\beta_j}}{1 + e^{\alpha + \sum_{j=1}^{k}x_j\beta_j}}\Big) + (n - \sum_{i=1}^{n}y_i) \log\Big(\frac{1}{e^{\alpha + \sum_{j=1}^{k}x_j\beta_j}}\Big)
 $$
 
-其中， $\sum_{i=1}^{n} y_i$ 表示 $y_i = 1$ 的观测值数量，$(n - \sum_{i=1}^{n}y_i) $ 表示 $y_i = 0$ 的观测值数量，通过 IWLS （迭代加权最小二乘）可以求解此优化问题。
+其中， $\sum_{i=1}^{n} y_i$ 表示 $y_i = 1$ 的观测值数量，$(n - \sum_{i=1}^{n}y_i)$ 表示 $y_i = 0$ 的观测值数量，通过 IWLS （迭代加权最小二乘）可以求解此优化问题。
 
-从一个逻辑回归模型模拟一组样本，2500 条记录，即 $n = 2500$，10 个观测变量，即 $k=10$，其中，只有变量 $X_1$ 和 $X_2$ 的系数非零，参数设定为 $\alpha = 1,\beta_1=3,\beta_2=-2,\beta_i = 0,i=3,\cdots,10$，模拟数据的代码如下：
+从一个逻辑回归模型模拟一组样本，共 2500 条记录，即 $n = 2500$，10 个观测变量，即 $k=10$，其中，只有变量 $X_1$ 和 $X_2$ 的系数非零，参数设定为 $\alpha = 1, \beta_1 = 3,\beta_2 = -2$，而 $\beta_i = 0, i=3,\cdots,10$ 模拟数据的代码如下：
 
 ```{r}
 set.seed(2023)
@@ -172,6 +226,9 @@ fit_r <- glm.fit(x = cbind(1, X), y = y, family = binomial(link = "logit"))
 coef(fit_r)
 ```
 
+```{r}
+
+```
 
 ### glmnet {#sec-logit-glmnet}
 
