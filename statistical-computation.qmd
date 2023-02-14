@@ -200,7 +200,7 @@ X = \begin{bmatrix}
 \end{bmatrix}
 $$
 
-记 $X^{\top} = (x_1, x_2, \cdots, x_n)^{\top}$ ，则 $x_i^{\top}$ 表示数据矩阵 $X^{\top}$ 的第 $i$ 行，一共有 $k$ 列。同理 $\boldsymbol{\beta} = (\beta_1, \beta_2, \cdots, \beta_k)$ ，其中 $j = 1,\cdots,k$ ，对第 $i$ 次观测
+记 $X^{\top} = (x_1, x_2, \cdots, x_n)^{\top}$ 是一个$n \times k$矩阵，则 $x_i^{\top}$ 表示数据矩阵 $X^{\top}$ 的第 $i$ 行，一共有 $k$ 列。同理 $\boldsymbol{\beta} = (\beta_1, \beta_2, \cdots, \beta_k)^{\top}$ ，$\boldsymbol{\beta}$ 是一个 $k \times 1$ 的矩阵，其中 $j = 1, \cdots, k$ ，对第 $i$ 次观测
 
 $$
 \mathrm{Logistic}^{-1}(p_i)= \ln\big(\frac{p_i}{1-p_i}\big) = \alpha + x_i^{\top}\boldsymbol{\beta}
@@ -211,8 +211,7 @@ $$
 $$
 \begin{aligned}
 L(\alpha,\boldsymbol{\beta}) &= \prod_{i=1}^{n} p_i^{y_i}(1 - p_i)^{1 - y_i} \\ 
-     &= p_i^{\sum_{i=1}^{n} y_i}(1 - p_i)^{n - \sum_{i=1}^{n} y_i} \\ 
-     &= \Big(\frac{e^{\alpha + x_i^{\top}\boldsymbol{\beta}}}{1 + e^{\alpha + x_i^{\top}\boldsymbol{\beta}}}\Big)^{\sum_{i=1}^{n}y_i}\Big(\frac{1}{e^{\alpha + x_i^{\top}\boldsymbol{\beta}}}\Big)^{n - \sum_{i=1}^{n}y_i} \\
+     &= \prod_{i=1}^{n} \Big(\frac{e^{\alpha + x_i^{\top}\boldsymbol{\beta}}}{1 + e^{\alpha + x_i^{\top}\boldsymbol{\beta}}}\Big)^{y_i}\Big(\frac{1}{e^{\alpha + x_i^{\top}\boldsymbol{\beta}}}\Big)^{1-y_i} \\
 \end{aligned}
 $$
 
@@ -221,8 +220,8 @@ $$
 $$
 \begin{aligned}
 \ell(\alpha,\boldsymbol{\beta}) &= \log L(\alpha,\boldsymbol{\beta}) \\
-&= \sum_{i=1}^{n} y_i \log \Big(\frac{e^{\alpha + x_i^{\top}\boldsymbol{\beta}}}{1 + e^{\alpha + x_i^{\top}\boldsymbol{\beta}}}\Big) + (n - \sum_{i=1}^{n}y_i) \log\Big(\frac{1}{e^{\alpha + x_i^{\top}\boldsymbol{\beta}}}\Big) \\
-&= (2 \sum_{i=1}^{n} y_i - n)  \Big(\alpha + x_i^{\top}\boldsymbol{\beta}\Big) - \sum_{i=1}^{n} y_i \log\Big(1 + e^{\alpha + x_i^{\top}\boldsymbol{\beta}}\Big)
+&= \sum_{i=1}^{n} \Big[y_i \log \Big(\frac{e^{\alpha + x_i^{\top}\boldsymbol{\beta}}}{1 + e^{\alpha + x_i^{\top}\boldsymbol{\beta}}}\Big) + (1 - y_i) \log\Big(\frac{1}{e^{\alpha + x_i^{\top}\boldsymbol{\beta}}}\Big)\Big] \\
+&= \sum_{i=1}^{n}\Big[(2 y_i - 1) (\alpha + x_i^{\top}\boldsymbol{\beta}) - y_i \log(1 + e^{\alpha + x_i^{\top}\boldsymbol{\beta}}) \Big]
 \end{aligned}
 $$ {#eq-log-logit-lik}
 
@@ -230,14 +229,14 @@ $$ {#eq-log-logit-lik}
 
 $$
 \begin{aligned}
-\frac{\partial \ell(\alpha,\boldsymbol{\beta})}{\partial \alpha}  &= (2\sum_{i}^{n}y_i -n) - \frac{e^{\alpha + x_i^{\top}\boldsymbol{\beta}}}{1 + e^{\alpha + x_i^{\top}\boldsymbol{\beta}}} \sum_{i}^{n}y_i \\
-\frac{\partial \ell(\alpha,\boldsymbol{\beta})}{\partial \beta_j} &= x_j (2\sum_{i}^{n}y_i -n) - x_j  \frac{e^{\alpha + x_i^{\top}\boldsymbol{\beta}}}{1 + e^{\alpha + x_i^{\top}\boldsymbol{\beta}}} \sum_{i}^{n}y_i
+\frac{\partial \ell(\alpha,\boldsymbol{\beta})}{\partial \alpha}  &= \sum_{i=1}^{n}\Big[(2y_i -1) - y_i \frac{e^{\alpha + x_i^{\top}\boldsymbol{\beta}}}{1 + e^{\alpha + x_i^{\top}\boldsymbol{\beta}}} \Big] \\
+\frac{\partial \ell(\alpha,\boldsymbol{\beta})}{\partial \beta} &= \sum_{i=1}^{n}x_i\Big[(2y_i - 1) - y_i \frac{e^{\alpha + x_i^{\top}\boldsymbol{\beta}}}{1 + e^{\alpha + x_i^{\top}\boldsymbol{\beta}}} \Big]
 \end{aligned}
 $$ {#eq-log-logit-lik-partial}
 
-其中， $\sum_{i=1}^{n} y_i$ 表示 $y_i = 1$ 的观测值数量，$(n - \sum_{i=1}^{n}y_i)$ 表示 $y_i = 0$ 的观测值数量，通过 IWLS （迭代加权最小二乘）可以求解此优化问题。
+其中， $\sum_{i=1}^{n} y_i$ 表示 $y_i = 1$ 的观测值数量，$(n - \sum_{i=1}^{n}y_i)$ 表示 $y_i = 0$ 的观测值数量，一般通过拟牛顿法可以求解此优化问题。
 
-从一个逻辑回归模型模拟一组样本，共 2500 条记录，即 $n = 2500$，10 个观测变量，即 $k=10$，其中，只有变量 $X_1$ 和 $X_2$ 的系数非零，参数设定为 $\alpha = 1, \beta_1 = 3,\beta_2 = -2$，而 $\beta_i = 0, i=3,\cdots,10$ 模拟数据的代码如下：
+从一个逻辑回归模型模拟一组样本，共 2500 条记录，即 $n = 2500$，10 个观测变量，即 $k=10$，其中，只有变量 $X_1$ 和 $X_2$ 的系数非零，参数设定为 $\alpha = 1, \beta_1 = 3,\beta_2 = -2$，而 $\beta_i = 0, i=3, \cdots, 10$ 模拟数据的代码如下：
 
 ```{r}
 set.seed(2023)
@@ -247,23 +246,26 @@ X <- matrix(rnorm(n * k), ncol = k)
 y <- rbinom(n, size = 1, prob = plogis(1 + 3 * X[,1] - 2 * X[,2]))
 ```
 
+模拟数据矩阵 X 与上述记号 $X^{\top}$ 是对应的，记号 $x_i^{\top}$ 表示数据矩阵的第 $i$ 行。
+
 极大化对数似然函数 @eq-log-logit-lik ，就是求解一个多维非线性无约束优化问题。
 
 ```{r}
 #| eval: false
 # alpha 是截距
 # beta 是 k 维向量
-# X 是 n x k 维的矩阵
+# X 是 n x k 维的矩阵且 n > k
 # y 是 n 维向量
 log_logit_lik <- function(alpha, beta, X = X, y = y) {
   (2 * sum(y) - length(y)) * (alpha + sum(t(X) %*% beta)) -
     sum(y) * log(1 + exp(alpha + sum(t(X) %*% beta)))
 }
+# x_i 如何用数据矩阵表达 X[i, ]
 log_logit_lik_grad <- function(alpha, beta, X = X, y = y) {
   n <- length(y)
   k <- length(beta)
-  # n > k
-  (2 * sum(y) - n) - exp(alpha + sum(t(X) %*% beta)) / (1 + exp(alpha + sum(t(X) %*% beta))) * sum(y) * c(1, diag(X))
+  
+  (2 * sum(y) - n) - exp(alpha + sum(t(X) %*% beta)) / (1 + exp(alpha + sum(t(X) %*% beta))) * sum(y) * cbind(1, X)
 }
 ```
 
