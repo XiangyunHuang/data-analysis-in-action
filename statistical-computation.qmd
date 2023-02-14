@@ -267,11 +267,13 @@ optim(
 )
 ```
 
+根据目标函数计算其梯度，有了梯度信息，可以使用迭代效率更高的 L-BFGS-B 算法。
+
 ```{r}
-#| eval: false
 # 梯度函数
 log_logit_lik_grad <- function(beta) {
-  - rbind(1, t(X)) %*% ((2 * y - 1) - y * plogis(cbind(1, X) %*% beta) )
+  p <- plogis(cbind(1, X) %*% beta)
+  - t((y / p - (1 - y) / (1 - p)) * p * (1 - p))  %*% cbind(1, X) 
 }
 
 optim(
@@ -280,6 +282,44 @@ optim(
   gr = log_logit_lik_grad, # 目标函数的梯度
   method = "L-BFGS-B"
 )
+```
+
+
+```{r}
+#| eval: false
+#| echo: false
+
+library(nloptr)
+opts <- list(
+  "algorithm" = "NLOPT_LD_LBFGS",
+  "xtol_rel" = 1.0e-8
+)
+nlp <- nloptr(
+  x0 = rep(2, 11),
+  eval_f = log_logit_lik,
+  eval_grad_f = log_logit_lik_grad,
+  opts = opts
+)
+nlp
+
+# 加载 ROI 时不要自动加载插件
+Sys.setenv(ROI_LOAD_PLUGINS = FALSE)
+library(ROI)
+library(ROI.plugin.nloptr)
+op <- OP(
+  objective = F_objective(F = log_logit_lik, n = 11L),
+  types = rep("C", 11), maximum = FALSE,
+  bounds = V_bound(ld = -3, ud = 3, nobj = 11L)
+)
+nlp <- ROI_solve(op, solver = "nloptr.directL")
+nlp$solution
+# L-BFGS
+op <- OP(
+  objective = F_objective(F = log_logit_lik, n = 11L, G = log_logit_lik_grad),
+  bounds = V_bound(ld = -3, ud = 3, nobj = 11L)
+)
+nlp <- ROI_solve(op, solver = "nloptr.lbfgs", start = rep(1,11))
+nlp
 ```
 
 如果对数似然函数是多模态的，一般的求解器容易陷入局部最优解，推荐用 **nloptr** 包的[全局优化求解器](https://nlopt.readthedocs.io/en/latest/NLopt_Algorithms/#global-optimization)。
