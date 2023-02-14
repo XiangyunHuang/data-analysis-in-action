@@ -11,17 +11,18 @@
 
 [nlsr](https://cran.r-project.org/package=nlsr)
 [bestsubset](https://github.com/ryantibs/best-subset/) 最优子集回归
+[abess](https://github.com/abess-team/abess)
 -->
 
 
 
-1996 年出现 Lasso [@lasso1996]，由于缺少高效的求解算法，Lasso 在高维小样本特征选择研究中没有广泛流行，最小角回归(Least Angle Regression, LAR)算法 [@lar2004] 的出现有力促进了Lasso在高维小样本数据中的应用。为了解决Lasso的有偏估计问题，自适应 Lasso、松弛 Lasso， SCAD (Smoothly Clipped Absolute Deviation)[@scad2008]，MCP (Minimax Concave Penalty)[@mcp2010] 陆续出现。经典的普通最小二乘、广义最小二乘、岭回归、逐步回归、Lasso 回归、最优子集回归都可转化为优化问题，一般形式如下
+1996 年出现 Lasso [@lasso1996]，由于缺少高效的求解算法，Lasso 在高维小样本特征选择研究中没有广泛流行，最小角回归(Least Angle Regression, LAR)算法 [@lar2004] 的出现有力促进了Lasso在高维小样本数据中的应用。为了解决Lasso的有偏估计问题，自适应 Lasso、松弛 Lasso， SCAD (Smoothly Clipped Absolute Deviation)[@scad2008]，MCP (Minimax Concave Penalty)[@mcp2010] 陆续出现。经典的普通最小二乘、广义最小二乘、岭回归、逐步回归、Lasso 回归、最优子集回归都可转化为优化问题，一般形式如下：
 
 $$
 \underbrace{\hat{\theta}_{\lambda_n}}_{\text{待估参数}} \in \arg \min_{\theta \in \Omega} \left\{ \underbrace{\mathcal{L}(\theta;Z_{1}^{n})}_{\text{损失函数}} + \lambda_n \underbrace{\mathcal{R}(\theta)}_{\text{正则化项}} \right\}.
 $$
 
-下面尝试以 nloptr 包的优化器来展示求解过程，并与 Base R、**glmnet** 和 **MASS** 实现的回归模型比较。
+下面以 [**nloptr**](https://github.com/astamm/nloptr) 包的优化器来展示求解过程，并与 Base R、[**glmnet**](https://glmnet.stanford.edu/) 和 [**CmdStanR**](https://github.com/stan-dev/cmdstanr) 实现的回归模型比较。
 
 <!-- 向量用小写，矩阵用大写 -->
 
@@ -29,7 +30,7 @@ $$
 \arg \min_{\beta,\lambda} ~~ \frac{1}{2} || \mathbf{y} - \mathbf{X} \beta ||_2^2 +  \lambda ||\beta||_1
 $$
 
-其中，$X \in \mathbb{R}^{m\times n}$， $y \in \mathbb{R}^m$，$\beta \in \mathbb{R}^n$， $0 < \lambda \in \mathbb{R}$
+其中，$X \in \mathbb{R}^{m\times n}$， $y \in \mathbb{R}^m$，$\beta \in \mathbb{R}^n$， $0 < \lambda \in \mathbb{R}$ 。
 
 
 
@@ -37,20 +38,19 @@ $$
 
 随机变量 X 服从参数为 $\lambda > 0$ 的指数分布，密度函数 $p(x)$ 为
 
-\begin{equation*}
+$$
 \begin{array}{l}
  p(x) = \left\{ 
     \begin{array}{l}
-    \lambda\mathrm{e}^{-\lambda x},  x \geq 0\\
+    \lambda\mathrm{e}^{-\lambda x}, ~ x \geq 0 \\
     0, \quad x < 0
     \end{array} \right.
 \end{array}
-\end{equation*}
+$$
 
 其中，$\lambda > 0$，下面给定一系列模拟样本观察值 $x_1, x_2, \cdots, x_n$，估计参数 $\lambda$。对数似然函数 $\ell(\lambda) = \log \prod_{i=1}^{n} f(x_i) = n \log \lambda - \lambda \sum_{i=1}^{n}x_i$。解此方程即可得到 $\lambda$ 的极大似然估计 $\lambda_{mle} = \frac{1}{\bar{X}}$，极大值 $\ell(\lambda_{mle}) = - n(1 + \log \bar{X})$。
 
 根据上述样本，计算样本均值 $(\mu - 1.5*\sigma/\sqrt{n}, \mu + 1.5*\sigma/\sqrt{n})$ 和方差 $(0.8\sigma, 1.5\sigma)$。
-
 
 已知正态分布 $f(x) = \frac{1}{\sqrt{2\pi}\sigma}\mathrm{e}^{- \frac{(x - \mu)^2}{2\sigma^2}}$ 的对数似然形式如下：
 
@@ -71,6 +71,7 @@ $$ {#eq-log-lik-norm}
 #| fig-cap: "正态分布参数的负对数似然函数"
 #| fig-width: 5
 #| fig-height: 4.5
+#| fig-showtext: true
 
 set.seed(2021)
 n <- 20 # 随机数的个数
@@ -115,13 +116,18 @@ wireframe(
 <!-- 
 添加极大值点，除指数分布外，还有正态、二项、泊松分布观察其似然曲面的特点，都是单峰，有唯一极值点，再考虑正态混合模型的似然曲面 
 
+逻辑回归写得很好
 [Getting the most out of logistic regression](https://gongcastro.github.io/blog/logistic-regression/logistic-regression.html)
+频率派+正则 = 贝叶斯+先验
+在极大似然估计的框架下，以线性模型为例，贝叶斯估计和惩罚极大似然估计是等价的，先验分布的形式就是惩罚函数的形式，如正态先验对应于 L2 惩罚。
+
+Stan 入门写得很好
 [Getting Started with Stan](https://github.com/LuZhangstat/Getting-Started-with-Stan)
 -->
 
 ## 贝叶斯计算框架 Stan {#sec-bayesian-computation-stan}
 
-[Stan](https://github.com/stan-dev/stan) 是一款贝叶斯计算软件，定义了一套概率编程语言，提供 R、Python、Matlab 语言等众多的编程接口，[CmdStan](https://github.com/stan-dev/cmdstan) 是其命令行编程接口，与 Stan 版本保持同步，[CmdStanR](https://github.com/stan-dev/cmdstanr) 包集成 CmdStan 软件，可以非常方便地分析运行结果。
+[Stan](https://github.com/stan-dev/stan) 是一款贝叶斯计算软件，定义了一套概率编程语言，提供 R、Python、Matlab 语言等众多的编程接口，[CmdStan](https://github.com/stan-dev/cmdstan) 是其命令行编程接口，与 Stan 版本保持同步，[CmdStanR](https://github.com/stan-dev/cmdstanr) 包集成 CmdStan 软件，可以非常方便地分析运行结果。下面以逻辑回归模型为例，介绍 CmdStan 框架的使用。
 
 
 ```{r}
@@ -170,42 +176,48 @@ ggplot() +
   labs(x = expression(x), y = expression(bolditalic(F)(x)))
 ```
 
-
-
-下面以二项逻辑回归模型为例，介绍
-
-
-
-
-响应变量 $Y$ 服从伯努利分布 $\mathrm{Bernoulli}(p)$，取值是 0 或 1，对线性预测 $X\beta$ 做 Logistic 变换
+响应变量 $Y$ 服从伯努利分布 $\mathrm{Bernoulli}(p)$，取值是 0 或 1，对线性预测 $X\boldsymbol{\beta}$ 做 Logistic 变换
 
 $$
-\mathrm{E}Y = p = \mathrm{Logistic}(X\beta) = \frac{1}{1 + e^{-(\alpha + X\beta)}}
+\mathrm{E}Y = p = \mathrm{Logistic}(X\boldsymbol{\beta}) = \frac{1}{1 + e^{-(\alpha + X\boldsymbol{\beta})}}
 $$
 
 Logistic 的逆变换
 
 $$
-\mathrm{Logistic}^{-1}(p)= \ln\big(\frac{p}{1-p}\big) = \alpha + X\beta
+\mathrm{Logistic}^{-1}(p)= \ln\big(\frac{p}{1-p}\big) = \alpha + X\boldsymbol{\beta}
 $$
 
-关于参数 $\alpha,\beta$ 的似然函数如下：
+关于参数 $\alpha,\boldsymbol{\beta}$ 的似然函数如下：
 
 $$
 \begin{aligned}
-L(\alpha,\beta) &= \prod_{i=1}^{n} p_i^{y_i}(1 - p_i)^{1 - y_i} \\ 
+L(\alpha,\boldsymbol{\beta}) &= \prod_{i=1}^{n} p_i^{y_i}(1 - p_i)^{1 - y_i} \\ 
      &= p_i^{\sum_{i=1}^{n} y_i}(1 - p_i)^{n - \sum_{i=1}^{n} y_i} \\ 
      &= \Big(\frac{e^{\alpha + \sum_{j=1}^{k}x_j\beta_j}}{1 + e^{\alpha + \sum_{j=1}^{k}x_j\beta_j}}\Big)^{\sum_{i=1}^{n}y_i}\Big(\frac{1}{e^{\alpha + \sum_{j=1}^{k}x_j\beta_j}}\Big)^{n - \sum_{i=1}^{n}y_i} \\
 \end{aligned}
 $$
 
-关于参数 $\alpha,\beta$ 的对数似然函数如下：
+关于参数 $\alpha,\boldsymbol{\beta}$ 的对数似然函数如下：
 
 $$
-\ell(\alpha,\beta) = \log L(\alpha,\beta) = \sum_{i=1}^{n} y_i \log \Big(\frac{e^{\alpha + \sum_{j=1}^{k}x_j\beta_j}}{1 + e^{\alpha + \sum_{j=1}^{k}x_j\beta_j}}\Big) + (n - \sum_{i=1}^{n}y_i) \log\Big(\frac{1}{e^{\alpha + \sum_{j=1}^{k}x_j\beta_j}}\Big)
-$$
+\begin{aligned}
+\ell(\alpha,\boldsymbol{\beta}) &= \log L(\alpha,\boldsymbol{\beta}) \\
+&= \sum_{i=1}^{n} y_i \log \Big(\frac{e^{\alpha + \sum_{j=1}^{k}x_j\beta_j}}{1 + e^{\alpha + \sum_{j=1}^{k}x_j\beta_j}}\Big) + (n - \sum_{i=1}^{n}y_i) \log\Big(\frac{1}{e^{\alpha + \sum_{j=1}^{k}x_j\beta_j}}\Big) \\
+&= (2 \sum_{i=1}^{n} y_i - n)  \Big(\alpha + \sum_{j=1}^{k}x_j\beta_j\Big) - \sum_{i=1}^{n} y_i \log\Big(1 + e^{\alpha + \sum_{j=1}^{k}x_j\beta_j}\Big)
+\end{aligned}
+$$ {#eq-log-logit-lik}
 
-其中， $\sum_{i=1}^{n} y_i$ 表示 $y_i = 1$ 的观测值数量，$(n - \sum_{i=1}^{n}y_i)$ 表示 $y_i = 0$ 的观测值数量，通过 IWLS （迭代加权最小二乘）可以求解此优化问题。
+对数似然函数 $\ell(\alpha,\boldsymbol{\beta})$ 关于参数 $\alpha,\boldsymbol{\beta}$ 的偏导数如下：
+
+$$
+\begin{aligned}
+\frac{\partial \ell(\alpha,\boldsymbol{\beta})}{\partial \alpha}  &= (2\sum_{i}^{n}y_i -n) - \frac{e^{\alpha + \sum_{j=1}^{k}x_j\beta_j}}{1 + e^{\alpha + \sum_{j=1}^{k}x_j\beta_j}} \sum_{i}^{n}y_i \\
+\frac{\partial \ell(\alpha,\boldsymbol{\beta})}{\partial \beta_j} &= x_j (2\sum_{i}^{n}y_i -n) - x_j  \frac{e^{\alpha + \sum_{j=1}^{k}x_j\beta_j}}{1 + e^{\alpha + \sum_{j=1}^{k}x_j\beta_j}} \sum_{i}^{n}y_i
+\end{aligned}
+$$ {#eq-log-logit-lik-partial}
+
+其中， $\sum_{i=1}^{n} y_i$ 表示 $y_i = 1$ 的观测值数量，$(n - \sum_{i=1}^{n}y_i)$ 表示 $y_i = 0$ 的观测值数量， $j = 1,\cdots,k$ ，通过 IWLS （迭代加权最小二乘）可以求解此优化问题。
 
 从一个逻辑回归模型模拟一组样本，共 2500 条记录，即 $n = 2500$，10 个观测变量，即 $k=10$，其中，只有变量 $X_1$ 和 $X_2$ 的系数非零，参数设定为 $\alpha = 1, \beta_1 = 3,\beta_2 = -2$，而 $\beta_i = 0, i=3,\cdots,10$ 模拟数据的代码如下：
 
@@ -217,6 +229,40 @@ X <- matrix(rnorm(n * k), ncol = k)
 y <- rbinom(n, size = 1, prob = plogis(1 + 3 * X[,1] - 2 * X[,2]))
 ```
 
+极大化对数似然函数 @eq-log-logit-lik ，就是求解一个多维非线性无约束优化问题。
+
+```{r}
+#| eval: false
+# alpha 是截距
+# beta 是 k 维向量
+# X 是 n x k 维的矩阵
+# y 是 n 维向量
+log_logit_lik <- function(alpha, beta, X = X, y = y) {
+  (2 * sum(y) - length(y)) * (alpha + sum(X * beta)) -
+    sum(y) * log(1 + exp(alpha + sum(X * beta)))
+}
+log_logit_lik_grad <- function(alpha, beta, X = X, y = y){
+  c(
+    (2 * sum(y) - length(y)) - exp(alpha + sum(X * beta)) / (1 + exp(alpha + sum(X * beta))) * sum(y)
+  )
+}
+```
+
+一般情况下，可以用 Base R 内置的函数 `optim()` 或 **nloptr** 包来求解。
+
+```{r}
+#| eval: false
+# 11 维非线性无约束优化
+optim(
+  par = rep(3, 11),   # 初始值
+  fn = log_logit_lik, # 目标函数
+  gr = log_logit_lik_grad, # 目标函数的梯度
+  method = "L-BFGS-B"
+)
+```
+
+如果对数似然函数是多模态的，一般的求解器容易陷入局部最优解，推荐用 **nloptr** 包的[全局优化求解器](https://nlopt.readthedocs.io/en/latest/NLopt_Algorithms/#global-optimization)。
+
 ### `glm.fit()` {#sec-glm-fit}
 
 Base R 提供的函数 `glm.fit()` 拟合模型，指定联系函数为 logit 变换
@@ -226,9 +272,7 @@ fit_r <- glm.fit(x = cbind(1, X), y = y, family = binomial(link = "logit"))
 coef(fit_r)
 ```
 
-```{r}
 
-```
 
 ### glmnet {#sec-logit-glmnet}
 
@@ -242,11 +286,11 @@ library(glmnet)
 fit_glm <- glmnet(x = X, y = y, family = "binomial")
 ```
 
-逻辑回归模型的系数在 L1 正则下的解的迭代路径图
+逻辑回归模型系数在 L1 正则下的迭代路径图
 
 ```{r}
 #| label: fig-logit-glmnet
-#| fig-cap: "模型系数的路径"
+#| fig-cap: "回归系数的迭代路径"
 #| fig-width: 5
 #| fig-height: 5
 #| fig-showtext: true
@@ -258,13 +302,13 @@ plot(fit_glm, ylab = "回归系数")
 
 ```{r}
 #| label: fig-logit-glmnet-lambda
-#| fig-cap: "惩罚系数的迭代轨迹"
+#| fig-cap: "惩罚系数的迭代路径"
 #| fig-width: 5
 #| fig-height: 5
 #| fig-showtext: true
 
 plot(fit_glm$lambda, ylab = expression(lambda), xlab = "迭代次数",
-     main = "惩罚系数的迭代轨迹")
+     main = "惩罚系数的迭代路径")
 ```
 
 随着迭代的进行，惩罚系数 $\lambda$ 越来越小，接近于 0，这也是符合预期的，因为模型本来就是简单的逻辑回归，不带惩罚项。选择一个迭代趋于稳定时的 $\lambda$ 比如 0.0005247159，此时各个参数的取值如下：
@@ -399,7 +443,7 @@ fit_optim_logit <- mod_logit$optimize(
 模型输出结果如下：
 
 ```{r}
-fit_optim_logit$summary()
+fit_optim_logit$summary(c("alpha", "beta", "lp__"))
 ```
 
 Stan 实现的 variational 方法调用自动微分变分近似推断优化器（ADVI 算法）获取参数的后验分布。
@@ -424,7 +468,7 @@ fit_advi_logit <- mod_logit$variational(
 #| tbl-cap: "模型参数的 ADVI 结果"
 #| echo: false
 
-fit_advi_logit$summary() |> 
+fit_advi_logit$summary(c("alpha", "beta", "lp__")) |> 
   knitr::kable(digits = 3)
 ```
 
