@@ -180,7 +180,7 @@ ggplot() +
 响应变量 $Y$ 服从伯努利分布 $\mathrm{Bernoulli}(p)$，取值是 0 或 1，对线性预测 $X^{\top}\boldsymbol{\beta}$ 做 Logistic 变换
 
 $$
-\mathrm{E}Y = p = \mathrm{Logistic}(X\boldsymbol{\beta}) = \frac{1}{1 + e^{-(\alpha + X^{\top}\boldsymbol{\beta})}}
+\mathrm{E}Y = p = \mathrm{Logistic}(X^{\top}\boldsymbol{\beta}) = \frac{1}{1 + e^{-(\alpha + X^{\top}\boldsymbol{\beta})}}
 $$
 
 Logistic 的逆变换
@@ -220,8 +220,8 @@ $$
 $$
 \begin{aligned}
 \ell(\alpha,\boldsymbol{\beta}) &= \log L(\alpha,\boldsymbol{\beta}) \\
-&= \sum_{i=1}^{n} \Big[y_i \log \Big(\frac{e^{\alpha + x_i^{\top}\boldsymbol{\beta}}}{1 + e^{\alpha + x_i^{\top}\boldsymbol{\beta}}}\Big) + (1 - y_i) \log\Big(\frac{1}{e^{\alpha + x_i^{\top}\boldsymbol{\beta}}}\Big)\Big] \\
-&= \sum_{i=1}^{n}\Big[(2 y_i - 1) (\alpha + x_i^{\top}\boldsymbol{\beta}) - y_i \log(1 + e^{\alpha + x_i^{\top}\boldsymbol{\beta}}) \Big]
+& = \sum_{i=1}^{n} \Big[y_i \log (p_i) + (1 - y_i) \log(1-p_i)\Big] \\
+&= \sum_{i=1}^{n} \Big[y_i \log \Big(\frac{e^{\alpha + x_i^{\top}\boldsymbol{\beta}}}{1 + e^{\alpha + x_i^{\top}\boldsymbol{\beta}}}\Big) + (1 - y_i) \log\Big(\frac{1}{e^{\alpha + x_i^{\top}\boldsymbol{\beta}}}\Big)\Big]
 \end{aligned}
 $$ {#eq-log-logit-lik}
 
@@ -230,7 +230,7 @@ $$ {#eq-log-logit-lik}
 $$
 \begin{aligned}
 \frac{\partial \ell(\alpha,\boldsymbol{\beta})}{\partial \alpha}  &= \sum_{i=1}^{n}\Big[(2y_i -1) - y_i \frac{e^{\alpha + x_i^{\top}\boldsymbol{\beta}}}{1 + e^{\alpha + x_i^{\top}\boldsymbol{\beta}}} \Big] \\
-\frac{\partial \ell(\alpha,\boldsymbol{\beta})}{\partial \beta} &= \sum_{i=1}^{n}x_i\Big[(2y_i - 1) - y_i \frac{e^{\alpha + x_i^{\top}\boldsymbol{\beta}}}{1 + e^{\alpha + x_i^{\top}\boldsymbol{\beta}}} \Big]
+\frac{\partial \ell(\alpha,\boldsymbol{\beta})}{\partial \boldsymbol{\beta}} &= \sum_{i=1}^{n}\Big[(2y_i - 1) - y_i \frac{e^{\alpha + x_i^{\top}\boldsymbol{\beta}}}{1 + e^{\alpha + x_i^{\top}\boldsymbol{\beta}}} \Big] x_i
 \end{aligned}
 $$ {#eq-log-logit-lik-partial}
 
@@ -256,26 +256,52 @@ y <- rbinom(n, size = 1, prob = plogis(1 + 3 * X[,1] - 2 * X[,2]))
 # beta 是 k 维向量
 # X 是 n x k 维的矩阵且 n > k
 # y 是 n 维向量
-log_logit_lik <- function(alpha, beta, X = X, y = y) {
-  (2 * sum(y) - length(y)) * (alpha + sum(t(X) %*% beta)) -
-    sum(y) * log(1 + exp(alpha + sum(t(X) %*% beta)))
-}
-# x_i 如何用数据矩阵表达 X[i, ]
-log_logit_lik_grad <- function(alpha, beta, X = X, y = y) {
-  n <- length(y)
-  k <- length(beta)
-  
-  (2 * sum(y) - n) - exp(alpha + sum(t(X) %*% beta)) / (1 + exp(alpha + sum(t(X) %*% beta))) * sum(y) * cbind(1, X)
+# 目标函数
+# optim 求极小，因此对数似然函数前添加负号
+# alpha 合并进 beta 
+log_logit_lik <- function(beta) {
+  -sum(y * plogis(cbind(1, X) %*% beta, log.p = T) - (1 - y) * log(1 - plogis(cbind(1, X) %*% beta)))
 }
 ```
 
-一般情况下，可以用 Base R 内置的函数 `optim()` 或 **nloptr** 包来求解。
+当用 Base R 函数 `optim()` 来求解时，发现陷入局部最优解。
+
+```{r}
+# 11 维非线性无约束优化
+# Nelder-Mead
+optim(
+  par = rep(1, 11),   # 初始值
+  fn = log_logit_lik, # 目标函数
+  method = "Nelder-Mead"
+)
+```
+
+下面用 **nloptr** 包来求解。
 
 ```{r}
 #| eval: false
-# 11 维非线性无约束优化
+# 加载 ROI 时不要自动加载插件
+Sys.setenv(ROI_LOAD_PLUGINS = FALSE)
+library(ROI)
+library(ROI.plugin.nloptr)
+op <- OP(
+  objective = F_objective(F = log_logit_lik, n = 11L),
+  types = rep("C", 11), maximum = FALSE,
+  bounds = V_bound(ld = -3, ud = 3, nobj = 11L)
+)
+nlp <- ROI_solve(op, solver = "nloptr.directL")
+nlp$solution
+```
+
+```{r}
+#| eval: false
+# 梯度函数
+log_logit_lik_grad <- function(beta) {
+  - rbind(1, t(X)) %*% ((2 * y - 1) - y * plogis(cbind(1, X) %*% beta) )
+}
+
 optim(
-  par = rep(3, 11),   # 初始值
+  par = rep(0, 11),   # 初始值
   fn = log_logit_lik, # 目标函数
   gr = log_logit_lik_grad, # 目标函数的梯度
   method = "L-BFGS-B"
