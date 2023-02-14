@@ -246,50 +246,25 @@ X <- matrix(rnorm(n * k), ncol = k)
 y <- rbinom(n, size = 1, prob = plogis(1 + 3 * X[,1] - 2 * X[,2]))
 ```
 
-模拟数据矩阵 X 与上述记号 $X^{\top}$ 是对应的，记号 $x_i^{\top}$ 表示数据矩阵的第 $i$ 行。
-
-极大化对数似然函数 @eq-log-logit-lik ，就是求解一个多维非线性无约束优化问题。
+模拟数据矩阵 X 与上述记号 $X^{\top}$ 是对应的，记号 $x_i^{\top}$ 表示数据矩阵的第 $i$ 行。$\alpha$ 是逻辑回归方程的截距，$\beta$ 是 $k$ 维向量，$X$ 是 $n \times k$ 维的矩阵且 $n > k$，$y$ 是 $n$ 维向量。极大化对数似然函数 @eq-log-logit-lik ，就是求解一个多维非线性无约束优化问题。方便起见，将 $\alpha$ 合并进 $\beta$ 向量，另 函数 `optim()` 默认求极小，因此在对数似然函数前添加负号。
 
 ```{r}
-# alpha 是截距
-# beta 是 k 维向量
-# X 是 n x k 维的矩阵且 n > k
-# y 是 n 维向量
 # 目标函数
-# optim 求极小，因此对数似然函数前添加负号
-# alpha 合并进 beta 
 log_logit_lik <- function(beta) {
-  -sum(y * plogis(cbind(1, X) %*% beta, log.p = T) - (1 - y) * log(1 - plogis(cbind(1, X) %*% beta)))
+  p <- plogis(cbind(1, X) %*% beta)
+  -sum(y * log(p) + (1 - y) * log(1 - p))
 }
 ```
 
-当用 Base R 函数 `optim()` 来求解时，发现陷入局部最优解。
+当用 Base R 函数 `optim()` 来求解时，发现 Nelder-Mead 算法收敛慢，易陷入局部最优解，即使迭代 10000 次，与真值仍然相去甚远。当用 SANN （模拟退火算法）求解此 11 维非线性无约束优化问题时，迭代 10000 次后，比较接近真值。
 
 ```{r}
-# 11 维非线性无约束优化
-# Nelder-Mead
 optim(
   par = rep(1, 11),   # 初始值
   fn = log_logit_lik, # 目标函数
-  method = "Nelder-Mead"
+  method = "SANN",
+  control = list(maxit = 10000)
 )
-```
-
-下面用 **nloptr** 包来求解。
-
-```{r}
-#| eval: false
-# 加载 ROI 时不要自动加载插件
-Sys.setenv(ROI_LOAD_PLUGINS = FALSE)
-library(ROI)
-library(ROI.plugin.nloptr)
-op <- OP(
-  objective = F_objective(F = log_logit_lik, n = 11L),
-  types = rep("C", 11), maximum = FALSE,
-  bounds = V_bound(ld = -3, ud = 3, nobj = 11L)
-)
-nlp <- ROI_solve(op, solver = "nloptr.directL")
-nlp$solution
 ```
 
 ```{r}
@@ -300,7 +275,7 @@ log_logit_lik_grad <- function(beta) {
 }
 
 optim(
-  par = rep(0, 11),   # 初始值
+  par = rep(1, 11),   # 初始值
   fn = log_logit_lik, # 目标函数
   gr = log_logit_lik_grad, # 目标函数的梯度
   method = "L-BFGS-B"
