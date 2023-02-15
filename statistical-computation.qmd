@@ -177,43 +177,43 @@ ggplot() +
   labs(x = expression(x), y = expression(bolditalic(F)(x)))
 ```
 
-响应变量 $Y$ 服从伯努利分布 $\mathrm{Bernoulli}(p)$，取值是 0 或 1，对线性预测 $X^{\top}\boldsymbol{\beta}$ 做 Logistic 变换
+响应变量 $Y$ 服从伯努利分布 $\mathrm{Bernoulli}(p)$，取值是 0 或 1，对线性预测 $X\boldsymbol{\beta}$ 做 Logistic 变换
 
 $$
-\mathrm{E}Y = p = \mathrm{Logistic}(X^{\top}\boldsymbol{\beta}) = \frac{1}{1 + e^{-(\alpha + X^{\top}\boldsymbol{\beta})}}
+p = \mathsf{E}Y = \mathrm{Logistic}(X\boldsymbol{\beta}) = \frac{1}{1 + e^{-(\alpha + X\boldsymbol{\beta})}} = \frac{e^{\alpha + X\boldsymbol{\beta}}}{1 + e^{\alpha + X\boldsymbol{\beta}}}
 $$
 
 Logistic 的逆变换
 
 $$
-\mathrm{Logistic}^{-1}(p)= \ln\big(\frac{p}{1-p}\big) = \alpha + X^{\top}\boldsymbol{\beta}
+\mathrm{Logistic}^{-1}(p)= \ln\big(\frac{p}{1-p}\big) = \alpha + X\boldsymbol{\beta}
 $$
 
 记数据矩阵 $X$ 为
 
 $$
 X = \begin{bmatrix}
-    x_{11} & x_{12} & x_{13} & \dots  & x_{1n} \\
-    x_{21} & x_{22} & x_{23} & \dots  & x_{2n} \\
+    x_{11} & x_{12} & x_{13} & \dots  & x_{1k} \\
+    x_{21} & x_{22} & x_{23} & \dots  & x_{2k} \\
     \vdots & \vdots & \vdots & \ddots & \vdots \\
-    x_{k1} & x_{k2} & x_{k3} & \dots  & x_{kn}
+    x_{n1} & x_{n2} & x_{n3} & \dots  & x_{nk}
 \end{bmatrix}
 $$
 
-记 $X^{\top} = (x_1, x_2, \cdots, x_n)^{\top}$ 是一个$n \times k$矩阵，则 $x_i^{\top}$ 表示数据矩阵 $X^{\top}$ 的第 $i$ 行，一共有 $k$ 列。同理 $\boldsymbol{\beta} = (\beta_1, \beta_2, \cdots, \beta_k)^{\top}$ ，$\boldsymbol{\beta}$ 是一个 $k \times 1$ 的矩阵，其中 $j = 1, \cdots, k$ ，对第 $i$ 次观测
+记 $X = (x_1, x_2, \cdots, x_n)$ 是一个$n \times k$矩阵，则 $x_i$ 表示数据矩阵 $X$ 的第 $i$ 行，一共有 $k$ 列。同理 $\boldsymbol{\beta} = (\beta_1, \beta_2, \cdots, \beta_k)$ ，对第 $i$ 次观测
 
 $$
-\mathrm{Logistic}^{-1}(p_i)= \ln\big(\frac{p_i}{1-p_i}\big) = \alpha + x_i^{\top}\boldsymbol{\beta}
+\mathrm{Logistic}^{-1}(p_i)= \ln\big(\frac{p_i}{1-p_i}\big) = \alpha + x_i\boldsymbol{\beta}
 $$
 
-其中 $x_i^{\top}$ 表示 $1 \times k$ 的矩阵。关于参数 $\alpha,\boldsymbol{\beta}$ 的似然函数如下：
+其中 $x_i$ 是 $1 \times k$ 的矩阵，$\boldsymbol{\beta}$ 是一个 $k \times 1$ 的矩阵。关于参数 $\alpha,\boldsymbol{\beta}$ 的似然函数如下：
 
 $$
 \begin{aligned}
 L(\alpha,\boldsymbol{\beta}) &= \prod_{i=1}^{n} p_i^{y_i}(1 - p_i)^{1 - y_i} \\ 
-     &= \prod_{i=1}^{n} \Big(\frac{e^{\alpha + x_i^{\top}\boldsymbol{\beta}}}{1 + e^{\alpha + x_i^{\top}\boldsymbol{\beta}}}\Big)^{y_i}\Big(\frac{1}{e^{\alpha + x_i^{\top}\boldsymbol{\beta}}}\Big)^{1-y_i} \\
+     &= \prod_{i=1}^{n} \Big(\frac{e^{\alpha + x_i\boldsymbol{\beta}}}{1 + e^{\alpha + x_i\boldsymbol{\beta}}}\Big)^{y_i}\Big(\frac{1}{e^{\alpha + x_i\boldsymbol{\beta}}}\Big)^{1-y_i} \\
 \end{aligned}
-$$
+$$ {#eq-logit-lik}
 
 关于参数 $\alpha,\boldsymbol{\beta}$ 的对数似然函数如下：
 
@@ -221,20 +221,21 @@ $$
 \begin{aligned}
 \ell(\alpha,\boldsymbol{\beta}) &= \log L(\alpha,\boldsymbol{\beta}) \\
 & = \sum_{i=1}^{n} \Big[y_i \log (p_i) + (1 - y_i) \log(1-p_i)\Big] \\
-&= \sum_{i=1}^{n} \Big[y_i \log \Big(\frac{e^{\alpha + x_i^{\top}\boldsymbol{\beta}}}{1 + e^{\alpha + x_i^{\top}\boldsymbol{\beta}}}\Big) + (1 - y_i) \log\Big(\frac{1}{e^{\alpha + x_i^{\top}\boldsymbol{\beta}}}\Big)\Big]
+&= \sum_{i=1}^{n} \Big[y_i \log \Big(\frac{e^{\alpha + x_i\boldsymbol{\beta}}}{1 + e^{\alpha + x_i\boldsymbol{\beta}}}\Big) + (1 - y_i) \log\Big(\frac{1}{e^{\alpha + x_i\boldsymbol{\beta}}}\Big)\Big]
 \end{aligned}
-$$ {#eq-log-logit-lik}
+$$ {#eq-logit-lik-log}
 
 对数似然函数 $\ell(\alpha,\boldsymbol{\beta})$ 关于参数 $\alpha,\boldsymbol{\beta}$ 的偏导数如下：
 
 $$
 \begin{aligned}
-\frac{\partial \ell(\alpha,\boldsymbol{\beta})}{\partial \alpha}  &= \sum_{i=1}^{n}\Big[(2y_i -1) - y_i \frac{e^{\alpha + x_i^{\top}\boldsymbol{\beta}}}{1 + e^{\alpha + x_i^{\top}\boldsymbol{\beta}}} \Big] \\
-\frac{\partial \ell(\alpha,\boldsymbol{\beta})}{\partial \boldsymbol{\beta}} &= \sum_{i=1}^{n}\Big[(2y_i - 1) - y_i \frac{e^{\alpha + x_i^{\top}\boldsymbol{\beta}}}{1 + e^{\alpha + x_i^{\top}\boldsymbol{\beta}}} \Big] x_i
+\frac{\partial \ell(\alpha,\boldsymbol{\beta})}{\partial \alpha}  &= \sum_{i=1}^{n}\Big[ \big(\frac{y_i}{p_i} -  \frac{1- y_i}{1 - p_i}\big) \frac{\partial p_i}{\partial \alpha} \Big] \\
+\frac{\partial \ell(\alpha,\boldsymbol{\beta})}{\partial \boldsymbol{\beta}} &= \sum_{i=1}^{n}\Big[\big(\frac{y_i}{p_i} -  \frac{1- y_i}{1 - p_i}\big) \frac{\partial p_i}{\partial \beta} \Big] \\
+& = \sum_{i=1}^{n}\Big[\big(\frac{y_i}{p_i} -  \frac{1- y_i}{1 - p_i}\big) p_i(1- p_i) x_i \Big] 
 \end{aligned}
-$$ {#eq-log-logit-lik-partial}
+$$ {#eq-logit-lik-log-partial}
 
-其中， $\sum_{i=1}^{n} y_i$ 表示 $y_i = 1$ 的观测值数量，$(n - \sum_{i=1}^{n}y_i)$ 表示 $y_i = 0$ 的观测值数量，一般通过拟牛顿法可以求解此优化问题。
+其中， $p_i = \frac{e^{\alpha + x_i\boldsymbol{\beta}}}{1 + e^{\alpha + x_i\boldsymbol{\beta}}}$ ，一般通过迭代加权最小二乘算法（Iteratively (Re-)Weighted Least Squares，简称 IWLS，可以看作拟牛顿法）求解此优化问题。
 
 从一个逻辑回归模型模拟一组样本，共 2500 条记录，即 $n = 2500$，10 个观测变量，即 $k=10$，其中，只有变量 $X_1$ 和 $X_2$ 的系数非零，参数设定为 $\alpha = 1, \beta_1 = 3,\beta_2 = -2$，而 $\beta_i = 0, i=3, \cdots, 10$ 模拟数据的代码如下：
 
@@ -246,7 +247,7 @@ X <- matrix(rnorm(n * k), ncol = k)
 y <- rbinom(n, size = 1, prob = plogis(1 + 3 * X[,1] - 2 * X[,2]))
 ```
 
-模拟数据矩阵 X 与上述记号 $X^{\top}$ 是对应的，记号 $x_i^{\top}$ 表示数据矩阵的第 $i$ 行。$\alpha$ 是逻辑回归方程的截距，$\beta$ 是 $k$ 维向量，$X$ 是 $n \times k$ 维的矩阵且 $n > k$，$y$ 是 $n$ 维向量。极大化对数似然函数 @eq-log-logit-lik ，就是求解一个多维非线性无约束优化问题。方便起见，将 $\alpha$ 合并进 $\beta$ 向量，另 函数 `optim()` 默认求极小，因此在对数似然函数前添加负号。
+模拟数据矩阵 X 与上述记号 $X$ 是对应的，记号 $x_i$ 表示数据矩阵的第 $i$ 行。$\alpha$ 是逻辑回归方程的截距，$\beta$ 是 $k$ 维向量，$X$ 是 $n \times k$ 维的矩阵且 $n > k$，$y$ 是 $n$ 维向量。极大化对数似然函数 @eq-logit-lik-log ，就是求解一个多维非线性无约束优化问题。方便起见，将 $\alpha$ 合并进 $\beta$ 向量，另 函数 `optim()` 默认求极小，因此在对数似然函数前添加负号。
 
 ```{r}
 # 目标函数
