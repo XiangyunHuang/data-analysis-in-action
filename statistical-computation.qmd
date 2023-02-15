@@ -359,18 +359,64 @@ Stan 入门写得很好 [Getting Started with Stan](https://github.com/LuZhangst
 -->
 
 
-[Stan](https://github.com/stan-dev/stan) 是一款贝叶斯计算软件，定义了一套概率编程语言，提供 R、Python、Matlab 语言等众多的编程接口，[CmdStan](https://github.com/stan-dev/cmdstan) 是其命令行编程接口，与 Stan 版本保持同步，[CmdStanR](https://github.com/stan-dev/cmdstanr) 包集成 CmdStan 软件，可以非常方便地分析运行结果。下面以逻辑回归模型为例，介绍 CmdStan 框架的使用。
+[Stan](https://github.com/stan-dev/stan) 是一款贝叶斯计算软件，定义了一套概率编程语言，提供 R、Python、Matlab 语言等众多的编程接口，[CmdStan](https://github.com/stan-dev/cmdstan) 是其命令行编程接口，与 Stan 版本保持同步，[**CmdStanR**](https://github.com/stan-dev/cmdstanr) 包集成 CmdStan 软件，可以非常方便地分析运行结果。下面以逻辑回归模型为例，介绍 CmdStan 框架的使用。
 
 ### 先验分布与惩罚函数 {#sec-priori-penalty}
 
 在极大似然估计的框架下，以线性模型为例，贝叶斯估计和惩罚极大似然估计是等价的，先验分布的形式对应惩罚函数的形式，如正态先验对应于 L2 惩罚、拉普拉斯先验对应 L1 惩罚。
 
-### CmdStanR {#sec-logit-cmdstanr}
+
+### 安装配置 CmdStanR {#sec-setup-cmdstanr}
+
+CmdStan 是 Stan 的命令行接口，拥有完整的 Stan 功能，版本更新与上游的 Stan 保持同步，**CmdStanR** 是 CmdStan 的 R 语言接口 [**cmdstanr**](https://github.com/stan-dev/cmdstanr) 包，相比于 **rstan** 包更加轻量，可以更快地将 CmdStan 的新功能融入进来，**cmdstanr** 和 CmdStan 是分离的，方便用户滚动升级和版本管理。下面从 GitHub 下载最新版的[源码包](https://github.com/stan-dev/cmdstan/releases/latest)，然后编译二进制版本。
+
+```bash
+# 准备 CmdStan 存放目录
+sudo mkdir -p /opt/cmdstan-2.31.1
+sudo chown -R $(whoami):staff /opt/cmdstan-2.31.1
+# 将压缩文件解压到
+tar -xzf cmdstan-2.31.1.tar.gz -C /opt/
+# 进入 CmdStan 主目录
+cd cmdstan-2.31.1
+# 编译出可执行的二进制文件
+make build
+```
+
+设置环境变量 CMDSTAN 指向 CmdStan 安装路径，这样，加载 **cmdstanr** 包会自动使用相应版本的 CmdStan 库。设置环境变量 `CMDSTANR_NO_VER_CHECK=TRUE`，让 **cmdstanr** 包加载时不要检查 CmdStan 是不是最新版。截止写作时间，本文使用的 CmdStan 版本为 2.31.1。
+
+```r
+Sys.setenv(CMDSTAN="/opt/cmdstan-2.31.1")
+Sys.setenv(CMDSTANR_NO_VER_CHECK=TRUE)
+```
+
+**cmdstanr** 包当前还在 Github 上开发，没有正式发布在 CRAN 上，安装方式如下：
+
+```{r}
+#| eval: false
+#| echo: true
+
+install.packages(
+  pkgs = c("cmdstanr", "rstan", "StanHeaders"),
+  repos = c("https://mc-stan.org/r-packages/", getOption("repos")),
+  dependencies = TRUE
+)
+```
+
+
+### 拟合逻辑回归模型 {#sec-logit-cmdstanr}
 
 下面用 Stan 编码逻辑回归模型，模型代码如下：
 
 ```{verbatim, file="code/bernoulli_logit_glm.stan", lang="stan"}
 ```
+
+Stan 代码主要分三部分：
+
+1. 数据部分：
+
+1. 参数部分：
+
+1. 模型部分：
 
 CmdStan 已经安装了，接下来，用 **cmdstanr** 包调 CmdStan 拟合模型，有三步：其一根据上面 Stan 代码中数据块的定义准备输入数据，其二编译上面的 Stan 代码获得可执行的模型文件，其三将数据输送到可执行的模型文件进行抽样。
 
@@ -412,14 +458,22 @@ fit_logit$summary(c("alpha", "beta", "lp__")) |>
   knitr::kable(digits = 3)
 ```
 
+`lp__` 是后验概率密度函数取对数的值，是负值，而在前面频率派方法中，对数似然函数取了负数，所以是正的。
+
+
 贝叶斯方法估计模型参数是通过抽样获得的，抽样的过程是参数迭代的过程，如果迭代过程是收敛的，估计值最终会收敛到参数的真值。一般来说，我们希望迭代的效率越高越好，只需要少量的迭代次数和短暂的时间就可以获得很好的效果。接下来，看看采样过程的诊断结果：
 
 ```{r}
 fit_logit$cmdstan_diagnose()
 ```
 
-每个参数都有迭代轨迹，有效样本数 effective sample size $n_{eff}$，
-潜在尺度缩减因子 potential scale reduction factor $\hat{R}$，采样效率可以理解为每秒迭代产生有效样本数。
+每个参数都有迭代轨迹，诊断链条的平稳性很重要，有几个指标很关键：
+
+1. 有效样本数 （Effective Sample Size，简称 ESS） $n_{eff}$ 
+
+1. 潜在尺度缩减因子 （Potential Scale Reduction Factor）$\hat{R}$ 
+
+采样效率可以理解为每秒迭代产生有效样本数。
 
 ```{r}
 # 简化版本
@@ -469,7 +523,7 @@ mcmc_hist(fit_logit$draws(c("beta[1]", "beta[2]")),
 图检验的其他方法还有轨迹图 `mcmc_trace()`，散点图 `mcmc_scatter()`，密度图 `mcmc_dens()`，直方图 `mcmc_hist()`，自相关图 `mcmc_acf()`，区间图 `mcmc_intervals()` 和岭线图 `mcmc_areas_ridges()` 等。
 
 
-CmdStanR 的 sample 方法默认的采样器为 NUTS 的 HMC 算法，CmdStanR 的封装导致不能修改采样器，读者若想修改，Stan 的命令行接口 CmdStan 支持修改采样器，不过推荐读者使用默认的 NUTS 采样器，它是根据动态调整来决定 optimal integration time。NUTS 采样器的参数 `max_depth = 10` 是可以调整的，采样的树深度。
+**CmdStanR** 的 sample 方法默认的采样器为 NUTS 的 HMC 算法，**CmdStanR** 的封装导致不能修改采样器，读者若想修改，Stan 的命令行接口 CmdStan 支持修改采样器，不过推荐读者使用默认的 NUTS 采样器，它是根据动态调整来决定 optimal integration time。NUTS 采样器的参数 `max_depth = 10` 是可以调整的，采样的树深度。
 
 除了 sample 方法还有优化 optimize （L-BFGS 算法）和变分推断 variational 两个优化器。
 
@@ -521,6 +575,118 @@ fit_advi_logit$summary(c("alpha", "beta", "lp__")) |>
 ::: {.callout-tip}
 CmdStanR 始终与 CmdStan 保持同步更新，及时地用上集成到 Stan 当中的学术研究成果。而 RStan 及其衍生包 rstanarm 和 brms 等依赖太重，安装、更新都比较麻烦。入门 CmdStanR 后，可以快速转入对 Stan 底层原理的学习，有利于编码符合实际需要的复杂模型，有利于掌握常用的炼丹技巧，提高科研和工作的效率。
 :::
+
+
+### 预测核污染浓度分布 {#sec-nuclear-pollution-concentration}
+
+本小节将基于真实数据的分析和建模，任务是预测核污染浓度在朗格拉普岛上的分布。
+
+二战后，朗格拉普岛成为美国在太平洋的一个领地，1954 年，美国在该岛进行了氢弹核武器测试，核武器测试导致大量的核污染，严重破坏了当地的生态。几十年后，一批科学家登陆该岛研究生态恢复情况，研究当地居民重返家园的可行性，收集了一些数据。数据集 rongelap 记录了 157 个测量点的伽马射线强度，即在时间间隔 `time` 内放射的粒子数目 `counts`，测量站点的横纵坐标分别为 `cX` 和 `cY`。
+
+```{r}
+#| label: fig-rongelap-location
+#| fig-cap: "采样点在岛上的分布"
+#| echo: false
+#| fig-showtext: true
+#| fig-width: 7
+#| fig-height: 5
+
+rongelap <- readRDS(file = "data/rongelap.rds")
+rongelap_coastline <- readRDS(file = "data/rongelap_coastline.rds")
+
+library(lattice)
+
+xyplot(cY ~ cX,
+  data = rongelap, pch = 19, cex = 0.25,
+  xlab = "水平方向",
+  ylab = "垂直方向",
+  scales = list(    
+    # 去掉图形上边、右边多余的刻度线
+    x = list(alternating = 1, tck = c(1, 0)),
+    y = list(alternating = 1, tck = c(1, 0))
+    ),
+  # 减少三维图形的边空
+  lattice.options = list(
+    layout.widths = list(
+      left.padding = list(x = -0.08, units = "inches"),
+      right.padding = list(x = -0.2, units = "inches")
+    ),
+    layout.heights = list(
+      bottom.padding = list(x = -0.2, units = "inches"),
+      top.padding = list(x = -0.25, units = "inches")
+    )
+  ),
+  # 设置坐标轴字体大小
+  par.settings = list(
+    fontsize = list(text = 15, points = 10)
+  ),
+  panel = function(...) {
+    panel.grid(h = -1, v = -1, ...)
+    panel.points(col = "black", ...)
+    panel.lines(rongelap_coastline$cX, rongelap_coastline$cY, col = "black")
+  }
+)
+```
+
+在朗格拉普岛上采样点的位置及观测到的辐射强度，见下图
+
+```{r}
+#| label: fig-rongelap-concentration
+#| fig-cap: "采样点的放射强度在岛上的分布"
+#| echo: false
+#| fig-showtext: true
+#| fig-width: 6
+#| fig-height: 6
+
+cloud(counts / time ~ cX * cY,
+  data = rongelap, col = "black",
+  scales = list(arrows = FALSE, col = "black"),
+  xlab = list("横坐标", rot = 20), 
+  ylab = list("纵坐标", rot = -50),  
+  zlab = list("放射强度", rot = 90),  
+  type = c("p", "h"), pch = 16,
+  # 设置坐标轴字体大小
+  par.settings = list(
+    fontsize = list(text = 15, points = 10)
+  ),
+  # 设置三维图的观察方位
+  screen = list(z = 30, x = -65, y = 0)
+)
+```
+
+核污染是因为辐射元素衰变产生的，辐射代表单位时间释放出来的粒子数目，因此，建立泊松型广义线性模型分析数据。
+
+```{r}
+fit_rongelap_glm <- glm(counts ~ cX + cY,
+  family = poisson(link = "log"),
+  offset = log(time), data = rongelap
+)
+summary(fit_rongelap_glm)
+```
+
+
+
+
+广义线性混合效应模型在地质统计具有重要的地位，除了采矿业，还可应用于卫生统计、 气象统计和空间经济统计等领域，如分析地区范围内的疟疾分布，有限气象站点条件下，预测地区 PM2.5 污染物浓度分布等。
+
+1998 年 Peter J. Diggle 等提出蒙特卡罗极大似然方法估计不带块金效应的响应变量服从泊松分布的空间广义混合效应模型的参数，分析了朗格拉普岛上核污染浓度的空间分布，2004 年 Ole F Christensen 在 Peter J. Diggle 等人的基础上添加了块金效应，同样使用蒙特卡罗极大似然方法估计了模型中的参数。
+
+$$
+\begin{align}
+\log\{\lambda(x_i)\} & =  \beta + S(x_{i}) \\
+\log\{\lambda(x_i)\} & =  \beta + S(x_{i}) + Z_{i}
+\end{align}
+$$
+
+根据 ${}^{137}\mathrm{Cs}$ 放出的伽马射线在 $N=157$ 站点不同时间间隔 $t(x_{i})$ 的放射量，建立泊松广义线性混合效应模型。模型中，截距 $\beta$ 相当于平均水平，放射粒子数作为响应变量服从均值为 $t(x_{i})\lambda(x_i)$ 的泊松分布，即 $Y_{i} \sim \mathrm{Poisson}(t(x_{i})\lambda(x_i))$，$\lambda(x_i)$ 可理解为辐射强度，$S(x_{i})$ 表示位置 $x_i$ 处的空间效应，服从指数型自协方差函数为 
+
+$$
+\mathrm{Cov}( S(x_i), S(x_j) ) = \sigma^2 \exp( -\|x_i -x_j\|_{2} / \phi )
+$$
+
+的平稳空间高斯过程 $S(x),x \in \mathbb{R}^2$，且 $Z_i$ 之间相互独立同正态分布 $\mathcal{N}(0,\tau^2)$ ，$Z_i$ 表示与空间效应无关的块金效应，即非空间的随机效应，可以理解为测量误差或空间变差，这里 $i = 1,\ldots, 157$。
+
+
 
 
 ## 机器学习框架 tensorflow {#sec-machine-learning-tensorflow}
