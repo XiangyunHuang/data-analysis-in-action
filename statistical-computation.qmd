@@ -237,6 +237,8 @@ $$ {#eq-logit-lik-log-partial}
 
 其中， $p_i = \frac{e^{\alpha + x_i\boldsymbol{\beta}}}{1 + e^{\alpha + x_i\boldsymbol{\beta}}}$ ，一般通过迭代加权最小二乘算法（Iteratively (Re-)Weighted Least Squares，简称 IWLS，可以看作拟牛顿法）求解此优化问题。
 
+### `optim()` {#sec-logit-optim}
+
 从一个逻辑回归模型模拟一组样本，共 2500 条记录，即 $n = 2500$，10 个观测变量，即 $k=10$，其中，只有变量 $X_1$ 和 $X_2$ 的系数非零，参数设定为 $\alpha = 1, \beta_1 = 3,\beta_2 = -2$，而 $\beta_i = 0, i=3, \cdots, 10$ 模拟数据的代码如下：
 
 ```{r}
@@ -247,7 +249,7 @@ X <- matrix(rnorm(n * k), ncol = k)
 y <- rbinom(n, size = 1, prob = plogis(1 + 3 * X[,1] - 2 * X[,2]))
 ```
 
-模拟数据矩阵 X 与上述记号 $X$ 是对应的，记号 $x_i$ 表示数据矩阵的第 $i$ 行。$\alpha$ 是逻辑回归方程的截距，$\beta$ 是 $k$ 维向量，$X$ 是 $n \times k$ 维的矩阵且 $n > k$，$y$ 是 $n$ 维向量。极大化对数似然函数 @eq-logit-lik-log ，就是求解一个多维非线性无约束优化问题。方便起见，将 $\alpha$ 合并进 $\beta$ 向量，另 函数 `optim()` 默认求极小，因此在对数似然函数前添加负号。
+模拟数据矩阵 X 与上述记号 $X$ 是对应的，记号 $x_i$ 表示数据矩阵的第 $i$ 行。$\alpha$ 是逻辑回归方程的截距，$\beta$ 是 $k$ 维向量，$X$ 是 $n \times k$ 维的矩阵且 $n > k$，$y$ 是 $n$ 维向量。极大化对数似然函数 @eq-logit-lik-log ，就是求解一个多维非线性无约束优化问题。方便起见，将 $\alpha$ 合并进 $\beta$ 向量，另，函数 `optim()` 默认求极小，因此在对数似然函数前添加负号。
 
 ```{r}
 # 目标函数
@@ -285,24 +287,27 @@ optim(
 )
 ```
 
+相比于函数 `optim()`，R 包 **nloptr** 不但可以提供类似的数值优化功能，而且可以处理各类非线性约束，能力更强。仍然基于上面的优化问题， 调用 **nloptr** 包求解的代码如下：
+
+```{r}
+library(nloptr)
+nlp <- nloptr(
+  x0 = rep(1, 11),
+  eval_f = log_logit_lik,
+  eval_grad_f = log_logit_lik_grad,
+  opts = list(
+    "algorithm" = "NLOPT_LD_LBFGS",
+    "xtol_rel" = 1.0e-8
+  )
+)
+nlp
+```
+
+如果对数似然函数是多模态的，一般的求解器容易陷入局部最优解，推荐用 **nloptr** 包的[全局优化求解器](https://nlopt.readthedocs.io/en/latest/NLopt_Algorithms/#global-optimization)。
 
 ```{r}
 #| eval: false
 #| echo: false
-
-library(nloptr)
-opts <- list(
-  "algorithm" = "NLOPT_LD_LBFGS",
-  "xtol_rel" = 1.0e-8
-)
-nlp <- nloptr(
-  x0 = rep(2, 11),
-  eval_f = log_logit_lik,
-  eval_grad_f = log_logit_lik_grad,
-  opts = opts
-)
-nlp
-
 # 加载 ROI 时不要自动加载插件
 Sys.setenv(ROI_LOAD_PLUGINS = FALSE)
 library(ROI)
@@ -323,9 +328,7 @@ nlp <- ROI_solve(op, solver = "nloptr.lbfgs", start = rep(1,11))
 nlp
 ```
 
-如果对数似然函数是多模态的，一般的求解器容易陷入局部最优解，推荐用 **nloptr** 包的[全局优化求解器](https://nlopt.readthedocs.io/en/latest/NLopt_Algorithms/#global-optimization)。
-
-### `glm()` {#sec-glm-fit}
+### `glm()` {#sec-logit-glm}
 
 Base R 提供的函数 `glm()` 拟合模型，指定联系函数为 logit 变换。
 
