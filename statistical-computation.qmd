@@ -589,7 +589,7 @@ CmdStanR 始终与 CmdStan 保持同步更新，及时地用上集成到 Stan �
 #| echo: false
 #| fig-showtext: true
 #| fig-width: 7
-#| fig-height: 5
+#| fig-height: 4
 
 rongelap <- readRDS(file = "data/rongelap.rds")
 rongelap_coastline <- readRDS(file = "data/rongelap_coastline.rds")
@@ -608,22 +608,20 @@ xyplot(cY ~ cX,
   # 减少三维图形的边空
   lattice.options = list(
     layout.widths = list(
-      left.padding = list(x = -0.08, units = "inches"),
-      right.padding = list(x = -0.2, units = "inches")
+      left.padding = list(x = 0, units = "inches"),
+      right.padding = list(x = -0.15, units = "inches")
     ),
     layout.heights = list(
-      bottom.padding = list(x = -0.2, units = "inches"),
-      top.padding = list(x = -0.25, units = "inches")
+      bottom.padding = list(x = -0.1, units = "inches"),
+      top.padding = list(x = -0.2, units = "inches")
     )
-  ),
-  # 设置坐标轴字体大小
-  par.settings = list(
-    fontsize = list(text = 15, points = 10)
   ),
   panel = function(...) {
     panel.grid(h = -1, v = -1, ...)
     panel.points(col = "black", ...)
-    panel.lines(rongelap_coastline$cX, rongelap_coastline$cY, col = "black")
+    panel.lines(x = rongelap_coastline$cX, 
+                y = rongelap_coastline$cY, 
+                col = "black")
   }
 )
 ```
@@ -645,10 +643,6 @@ cloud(counts / time ~ cX * cY,
   ylab = list("纵坐标", rot = -50),  
   zlab = list("放射强度", rot = 90),  
   type = c("p", "h"), pch = 16,
-  # 设置坐标轴字体大小
-  par.settings = list(
-    fontsize = list(text = 15, points = 10)
-  ),
   # 设置三维图的观察方位
   screen = list(z = 30, x = -65, y = 0)
 )
@@ -663,6 +657,11 @@ fit_rongelap_glm <- glm(counts ~ cX + cY,
 )
 summary(fit_rongelap_glm)
 ```
+
+
+::: {.callout-note}
+当 `family = poisson(link = "log")` 时，响应变量只能放正整数。参数 `offset` 的作用介绍见统计之都[论坛](https://d.cosx.org/d/420881)，counts 放射性粒子的数量和检测时间长度有关。
+:::
 
 广义线性混合效应模型在地质统计具有重要的地位，除了采矿业，还可应用于卫生统计、 气象统计和空间经济统计等领域，如分析地区范围内的疟疾分布，有限气象站点条件下，预测地区 PM2.5 污染物浓度分布等。
 
