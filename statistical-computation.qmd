@@ -36,6 +36,10 @@ $$
 
 ## 对数似然与损失函数 {#sec-log-likelihood}
 
+
+### 线性回归 {#sec-linear-regression}
+
+
 随机变量 X 服从参数为 $\lambda > 0$ 的指数分布，密度函数 $p(x)$ 为
 
 $$
@@ -115,20 +119,10 @@ wireframe(
 
 <!-- 
 添加极大值点，除指数分布外，还有正态、二项、泊松分布观察其似然曲面的特点，都是单峰，有唯一极值点，再考虑正态混合模型的似然曲面 
-
-逻辑回归写得很好
-[Getting the most out of logistic regression](https://gongcastro.github.io/blog/logistic-regression/logistic-regression.html)
-频率派+正则 = 贝叶斯+先验
-在极大似然估计的框架下，以线性模型为例，贝叶斯估计和惩罚极大似然估计是等价的，先验分布的形式就是惩罚函数的形式，如正态先验对应于 L2 惩罚。
-L2 惩罚对应正态先验、L1 惩罚对应拉普拉斯先验
-https://github.com/jgabry/bayes-workflow-book/blob/master/bayesian-estimation.Rmd
-Stan 入门写得很好
-[Getting Started with Stan](https://github.com/LuZhangstat/Getting-Started-with-Stan)
 -->
 
-## 贝叶斯计算框架 Stan {#sec-bayesian-computation-stan}
 
-[Stan](https://github.com/stan-dev/stan) 是一款贝叶斯计算软件，定义了一套概率编程语言，提供 R、Python、Matlab 语言等众多的编程接口，[CmdStan](https://github.com/stan-dev/cmdstan) 是其命令行编程接口，与 Stan 版本保持同步，[CmdStanR](https://github.com/stan-dev/cmdstanr) 包集成 CmdStan 软件，可以非常方便地分析运行结果。下面以逻辑回归模型为例，介绍 CmdStan 框架的使用。
+### 逻辑回归 {#sec-logistic-regression}
 
 
 ```{r}
@@ -236,6 +230,8 @@ $$
 $$ {#eq-logit-lik-log-partial}
 
 其中， $p_i = \frac{e^{\alpha + x_i\boldsymbol{\beta}}}{1 + e^{\alpha + x_i\boldsymbol{\beta}}}$ ，一般通过迭代加权最小二乘算法（Iteratively (Re-)Weighted Least Squares，简称 IWLS，可以看作拟牛顿法）求解此优化问题。
+
+## 数值优化问题求解器 {#sec-solvers}
 
 ### `optim()` {#sec-logit-optim}
 
@@ -391,6 +387,23 @@ coef(fit_glm, s = 0.0005247159)
 ```
 
 截距 (Intercept) 对应 $\alpha = 0.997741857$，而 $\beta_1 = 3.076358149$ 对应 V1，$\beta_2 = -1.984018387$ 对应 V2，以此类推。
+
+## 贝叶斯计算框架 Stan {#sec-bayesian-computation-stan}
+
+<!--
+逻辑回归写得很好
+[Getting the most out of logistic regression](https://gongcastro.github.io/blog/logistic-regression/logistic-regression.html)
+先验分布与惩罚函数
+https://github.com/jgabry/bayes-workflow-book/blob/master/bayesian-estimation.Rmd
+Stan 入门写得很好 [Getting Started with Stan](https://github.com/LuZhangstat/Getting-Started-with-Stan)
+-->
+
+
+[Stan](https://github.com/stan-dev/stan) 是一款贝叶斯计算软件，定义了一套概率编程语言，提供 R、Python、Matlab 语言等众多的编程接口，[CmdStan](https://github.com/stan-dev/cmdstan) 是其命令行编程接口，与 Stan 版本保持同步，[CmdStanR](https://github.com/stan-dev/cmdstanr) 包集成 CmdStan 软件，可以非常方便地分析运行结果。下面以逻辑回归模型为例，介绍 CmdStan 框架的使用。
+
+### 先验分布与惩罚函数 {#sec-priori-penalty}
+
+在极大似然估计的框架下，以线性模型为例，贝叶斯估计和惩罚极大似然估计是等价的，先验分布的形式对应惩罚函数的形式，如正态先验对应于 L2 惩罚、拉普拉斯先验对应 L1 惩罚。
 
 ### CmdStanR {#sec-logit-cmdstanr}
 
