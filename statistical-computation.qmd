@@ -1,6 +1,10 @@
 # 统计计算 {#sec-statistical-computation}
 
+```{r}
+#| echo: false
 
+source("_common.R")
+```
 
 ## 优化问题与回归问题 {#sec-regression-optimization}
 
@@ -170,6 +174,45 @@ log_logit_lik <- function(beta) {
   p <- plogis(cbind(1, X) %*% beta)
   -sum(y * log(p) + (1 - y) * log(1 - p))
 }
+```
+
+高维情形下，没法绘制似然函数图形，退化到二维，如 @fig-log-logit-lik 所示，二维情形下的逻辑回归模型的负对数似然函数曲面。
+
+```{r}
+#| label: fig-log-logit-lik
+#| fig-cap: "二维情形下的逻辑回归模型的负对数似然函数曲面"
+#| fig-width: 6
+#| fig-height: 5.5
+#| fig-showtext: true
+#| echo: false
+
+# 目标函数
+log_logit_lik0 <- function(beta, X0 = X0, y0 = y0) {
+  p <- plogis(cbind(1, X0) %*% beta)
+  -sum(y0 * log(p) + (1 - y0) * log(1 - p))
+}
+
+set.seed(2023)
+n <- 2500
+k0 <- 1
+X0 <- matrix(rnorm(n * k0), ncol = k0)
+y0 <- rbinom(n, size = 1, prob = plogis(1 + 3 * X0[, 1]))
+
+alpha <- seq(0, 2, length.out = 20)
+beta <- seq(2, 4, length.out = 20)
+
+df <- expand.grid(x = alpha, y = beta)
+df$fnxy <- apply(X = df, MARGIN = 1, FUN = log_logit_lik0, X0 = X0, y0 = y0)
+library(lattice)
+wireframe(
+  data = df, fnxy ~ x * y,
+  shade = TRUE, drape = FALSE,
+  xlab = expression(alpha),
+  ylab = expression(beta),
+  zlab = list(expression(-loglik(alpha, beta)), rot = 90),
+  scales = list(arrows = FALSE, col = "black"),
+  screen = list(z = -30, x = -70, y = 0)
+)
 ```
 
 当用 Base R 函数 `optim()` 来求解时，发现 Nelder-Mead 算法收敛慢，易陷入局部最优解，即使迭代 10000 次，与真值仍然相去甚远。当用 SANN （模拟退火算法）求解此 11 维非线性无约束优化问题时，迭代 10000 次后，比较接近真值。
