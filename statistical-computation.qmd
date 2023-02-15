@@ -22,104 +22,21 @@ $$
 \underbrace{\hat{\theta}_{\lambda_n}}_{\text{待估参数}} \in \arg \min_{\theta \in \Omega} \left\{ \underbrace{\mathcal{L}(\theta;Z_{1}^{n})}_{\text{损失函数}} + \lambda_n \underbrace{\mathcal{R}(\theta)}_{\text{正则化项}} \right\}.
 $$
 
-下面以 [**nloptr**](https://github.com/astamm/nloptr) 包的优化器来展示求解过程，并与 Base R、[**glmnet**](https://glmnet.stanford.edu/) 和 [**CmdStanR**](https://github.com/stan-dev/cmdstanr) 实现的回归模型比较。
-
-<!-- 向量用小写，矩阵用大写 -->
+一个带 L1 惩罚项的回归模型的损失函数如下：
 
 $$
-\arg \min_{\beta,\lambda} ~~ \frac{1}{2} || \mathbf{y} - \mathbf{X} \beta ||_2^2 +  \lambda ||\beta||_1
+\arg \min_{\boldsymbol{\beta},\lambda} ~~ \frac{1}{2} || \mathbf{y} - X \boldsymbol{\beta} ||_2^2 +  \lambda ||\boldsymbol{\beta}||_1
 $$
 
 其中，$X \in \mathbb{R}^{m\times n}$， $y \in \mathbb{R}^m$，$\beta \in \mathbb{R}^n$， $0 < \lambda \in \mathbb{R}$ 。
 
-
+下面主要以逻辑回归模型为例，介绍 Base R、[**nloptr**](https://github.com/astamm/nloptr)、 [**glmnet**](https://glmnet.stanford.edu/) 和 [**CmdStanR**](https://github.com/stan-dev/cmdstanr) 等工具包提供的优化器，在求解性能、范围、方法等方面对比总结使用经验。
 
 ## 对数似然与损失函数 {#sec-log-likelihood}
 
 
 ### 线性回归 {#sec-linear-regression}
 
-
-随机变量 X 服从参数为 $\lambda > 0$ 的指数分布，密度函数 $p(x)$ 为
-
-$$
-\begin{array}{l}
- p(x) = \left\{ 
-    \begin{array}{l}
-    \lambda\mathrm{e}^{-\lambda x}, ~ x \geq 0 \\
-    0, \quad x < 0
-    \end{array} \right.
-\end{array}
-$$
-
-其中，$\lambda > 0$，下面给定一系列模拟样本观察值 $x_1, x_2, \cdots, x_n$，估计参数 $\lambda$。对数似然函数 $\ell(\lambda) = \log \prod_{i=1}^{n} f(x_i) = n \log \lambda - \lambda \sum_{i=1}^{n}x_i$。解此方程即可得到 $\lambda$ 的极大似然估计 $\lambda_{mle} = \frac{1}{\bar{X}}$，极大值 $\ell(\lambda_{mle}) = - n(1 + \log \bar{X})$。
-
-根据上述样本，计算样本均值 $(\mu - 1.5*\sigma/\sqrt{n}, \mu + 1.5*\sigma/\sqrt{n})$ 和方差 $(0.8\sigma, 1.5\sigma)$。
-
-已知正态分布 $f(x) = \frac{1}{\sqrt{2\pi}\sigma}\mathrm{e}^{- \frac{(x - \mu)^2}{2\sigma^2}}$ 的对数似然形式如下：
-
-$$
-\ell(\mu,\sigma^2) = \log \prod_{i=1}^{n} f(x_i) = \sum_{i=1}^{n}\log f(x_i)
-$$ {#eq-log-lik-norm}
-
-参数 $\mu$ 和 $\sigma^2$ 的极大似然估计为
-
-在 R 语言中，正态分布的密度函数的对数可用 `dnorm(..., log = TRUE)` 计算。
-
-生成服从指数分布的样本，计算样本的均值和方差，依据均值和方差构造区间，然后将区间网格化，在此网格上绘制正态分布的对数似然函数。即不知道正态分布的参数，将从指数分布模拟出来的样本用正态分布拟合。
-
-<!-- 绕那么大一个圈子，其实就是绘制正态分布的对数似然函数。 -->
-
-```{r}
-#| label: fig-log-likelihood
-#| fig-cap: "正态分布参数的负对数似然函数"
-#| fig-width: 5
-#| fig-height: 4.5
-#| fig-showtext: true
-
-set.seed(2021)
-n <- 20 # 随机数的个数
-x <- rexp(n, rate = 5) # 服从指数分布的随机数
-m <- 40 # 网格数
-mu <- seq(
-  mean(x) - 1.5 * sd(x) / sqrt(n),
-  mean(x) + 1.5 * sd(x) / sqrt(n),
-  length.out = m
-)
-sigma <- seq(0.8 * sd(x), 1.5 * sd(x), length.out = m)
-df <- expand.grid(x = mu, y = sigma)
-# 正态分布的对数似然
-loglik <- function(b, x0) -sum(dnorm(x0, b[1], b[2], log = TRUE))
-
-df$fnxy <- apply(df, 1, loglik, x0 = x)
-library(lattice)
-wireframe(
-  data = df, fnxy ~ x * y,
-  shade = TRUE, drape = FALSE,
-  xlab = expression(mu),
-  ylab = expression(sigma),
-  zlab = list(expression(-loglik(mu, sigma)), rot = 90),
-  scales = list(arrows = FALSE, col = "black"),
-  # 减少三维图形的边空
-  lattice.options = list(
-    layout.widths = list(
-      left.padding = list(x = -.6, units = "inches"),
-      right.padding = list(x = -1.0, units = "inches")
-    ),
-    layout.heights = list(
-      bottom.padding = list(x = -.8, units = "inches"),
-      top.padding = list(x = -1.0, units = "inches")
-    )
-  ),
-  par.settings = list(axis.line = list(col = "transparent")),
-  screen = list(z = 120, x = -70, y = 0)
-)
-```
-
-
-<!-- 
-添加极大值点，除指数分布外，还有正态、二项、泊松分布观察其似然曲面的特点，都是单峰，有唯一极值点，再考虑正态混合模型的似然曲面 
--->
 
 
 ### 逻辑回归 {#sec-logistic-regression}
@@ -229,7 +146,7 @@ $$
 \end{aligned}
 $$ {#eq-logit-lik-log-partial}
 
-其中， $p_i = \frac{e^{\alpha + x_i\boldsymbol{\beta}}}{1 + e^{\alpha + x_i\boldsymbol{\beta}}}$ ，一般通过迭代加权最小二乘算法（Iteratively (Re-)Weighted Least Squares，简称 IWLS，可以看作拟牛顿法）求解此优化问题。
+其中， $p_i = \frac{e^{\alpha + x_i\boldsymbol{\beta}}}{1 + e^{\alpha + x_i\boldsymbol{\beta}}}$ ，一般通过迭代加权最小二乘算法（Iteratively (Re-)Weighted Least Squares，简称 IWLS）求解此优化问题，它可以看作拟牛顿法的一种特殊情况。
 
 ## 数值优化问题求解器 {#sec-solvers}
 

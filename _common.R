@@ -82,3 +82,18 @@ sysfonts::font_add(
 # 设置 Web GL 渲染
 options(rgl.useNULL = TRUE)
 options(rgl.printRglwidget = TRUE)
+
+library(lattice)
+# 减少三维图形的边空
+lattice.options(
+  layout.widths = list(
+    left.padding = list(x = -.6, units = "inches"),
+    right.padding = list(x = -1.0, units = "inches")
+  ),
+  layout.heights = list(
+    bottom.padding = list(x = -.8, units = "inches"),
+    top.padding = list(x = -1.0, units = "inches")
+  )
+)
+
+trellis.par.set(axis.line = list(col = "transparent"))
