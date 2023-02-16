@@ -575,7 +575,7 @@ fit_advi_logit$summary(c("alpha", "beta", "lp__")) |>
 $$
 \begin{aligned}
 \log(\lambda) &= \beta_0 + \beta_1 x_1 + \beta_2 x_2 \\
-Y &\sim \mathrm{Poisson}(\lambda)
+Y &\sim \mathrm{Poisson}(u\lambda)
 \end{aligned}
 $$
 
@@ -597,10 +597,11 @@ set.seed(2023)
 n <- 2500 # 样本量
 beta <- c(0.5, 0.3, 0.2)
 X <- MASS::mvrnorm(n, mu = rep(0, 2), Sigma = matrix(c(1, 0.8, 0.8, 1), 2))
-lambda <- exp(cbind(1, X) %*% beta)
+u <- rep(c(2, 4), each = n / 2)
+lambda <- u * exp(cbind(1, X) %*% beta)
 y <- rpois(n, lambda = lambda)
 # 拟合泊松回归模型
-fit_poisson_glm <- glm(y ~ X, family = poisson(link = "log"))
+fit_poisson_glm <- glm(y ~ X, family = poisson(link = "log"), offset = log(u))
 summary(fit_poisson_glm)
 ```
 
@@ -612,11 +613,50 @@ log_poission_lik <- logLik(fit_poisson_glm)
 ```
 
 ::: {.callout-tip}
-下面用 brms 包的函数 `brm()` 拟合泊松广义线性模型，结果和 Base R 内置的 函数 `glm()` 拟合结果差不多，因编译和抽样的过程比较花费时间，速度不及 Base R。
+下面用 **brms** 包的函数 `brm()` 拟合泊松广义线性模型，结果和 Base R 内置的 函数 `glm()` 拟合结果几乎一致，因编译和抽样的过程比较花费时间，速度不及 Base R。
 
 ```r
-fit_poisson_brm <- brms::brm(y ~ X, family = poisson())
-loo(fit_poisson_brm)
+# brms
+dat <- data.frame(y = y, X = X, u = u)
+colnames(dat) <- c("y", "x1", "x2", "u")
+fit_poisson_brm <- brms::brm(y ~ x1 + x2 + offset(log(u)),
+  data = dat, family = poisson(link = "log"),
+)
+fit_poisson_brm
+```
+```
+ Family: poisson 
+  Links: mu = log 
+Formula: y ~ x1 + x2 + offset(log(u)) 
+   Data: dat (Number of observations: 2500) 
+  Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
+         total post-warmup draws = 4000
+
+Population-Level Effects: 
+          Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+Intercept     0.49      0.01     0.47     0.51 1.00     2509     2171
+x1            0.29      0.01     0.26     0.32 1.00     1771     1645
+x2            0.21      0.01     0.19     0.24 1.00     1727     1847
+
+Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
+and Tail_ESS are effective sample size measures, and Rhat is the potential
+scale reduction factor on split chains (at convergence, Rhat = 1).
+```
+```r
+loo::loo(fit_poisson_brm)
+```
+```
+Computed from 4000 by 2500 log-likelihood matrix
+
+         Estimate   SE
+elpd_loo  -5386.3 37.8
+p_loo         2.9  0.1
+looic     10772.6 75.5
+------
+Monte Carlo SE of elpd_loo is 0.0.
+
+All Pareto k estimates are good (k < 0.5).
+See help('pareto-k-diagnostic') for details.
 ```
 :::
 
@@ -768,19 +808,19 @@ summary(fit_rongelap_glm)
 ```
 
 ::: {.callout-note}
-当 `family = poisson(link = "log")` 时，响应变量只能放正整数。参数 `offset` 的作用介绍见统计之都[论坛](https://d.cosx.org/d/420881)，放射性粒子的数量 `counts` 和检测时间长度有关。
+当 `family = poisson(link = "log")` 时，响应变量只能放正整数。参数 `offset` 的作用介绍见统计之都[论坛](https://d.cosx.org/d/420881)，放射性粒子的数量 `counts` 和积累时长有关，放射强度与位置有关，位置决定放射强度而不是放射粒子数目。
 :::
 
 从这个简单的广义线性模型结果，不难看出，位置变量 `cX` 和 `cY` 是显著的，从实际场景出发，也不难理解，位置信息是非常关键的。进一步，充分利用位置信息，精细建模是很有必要的。相邻位置的核污染浓度是相关的，离得近的比离得远的更相关。简单的广义线性模型并没有考虑距离相关性，它认为各个观测点的数据是相互独立的。因此，考虑采用广义线性混合效应模型，在广义线性模型的基础上添加位置相关的随机效应，用以刻画未能直接观测到的潜在影响。简单起见，假定随机效应之间是相互独立的高斯分布。
 
 $$
 \begin{aligned}
-\log(t_{j}\lambda_{j}) &= \beta_{0j} \\
+\log(\lambda_{j}) &= \beta_{0j} \\
 \beta_{0j} &=\gamma_{00} + U_{0j}
 \end{aligned}
 $$
 
-其中响应变量服从泊松分布，即 $Y_{j} \sim \mathrm{Poisson}(t_{j}\lambda_{j})$ ，随机效应 $\beta_{0j}$ 服从均值为 0，方差为 $\tau_{00}^2$ 的高斯分布，即 $U_{0j} \sim \mathcal{N}(0,\tau_{00}^2)$ ，157 个检测站点的残差服从独立同分布的高斯分布，即 $\epsilon_{j} \sim \mathcal{N}(0,\sigma^2)$，$j=1,2,\cdots,157$ 。
+其中响应变量服从泊松分布，即 $Y_{j} \sim \mathrm{Poisson}(t_{j}\lambda_{j})$ ，$\lambda_{j}$ 表示放射强度，$t_{j}$ 表示时间，随机效应 $\beta_{0j}$ 服从均值为 0，方差为 $\tau_{00}^2$ 的高斯分布，即 $U_{0j} \sim \mathcal{N}(0,\tau_{00}^2)$ ，157 个检测站点的残差服从独立同分布的高斯分布，即 $\epsilon_{j} \sim \mathcal{N}(0,\sigma^2)$，$j=1,2,\cdots,157$ 。
 
 
 ::: {.callout-tip}
@@ -788,7 +828,7 @@ $$
 
 $$
 \begin{aligned}
-\log(t_{ij}\lambda_{ij}) &= \beta_{0j} +\beta_{1j}x_{1ij} \\
+\log(\lambda_{ij}) &= \beta_{0j} +\beta_{1j}x_{1ij} \\
 \beta_{0j} &=\gamma_{00} + U_{0j} \\
 \beta_{1j} &=\gamma_{10} + U_{1j} \\
 \begin{bmatrix}
@@ -806,7 +846,8 @@ $$
     \tau_{00}^2 & \tau_{01} \\
     \tau_{01} & \tau_{10}^2
 \end{bmatrix}
-\right)
+\right)\\
+Y_{ij} &\sim \mathrm{Poisson}(t_{ij}\lambda_{ij})
 \end{aligned}
 $$
 
