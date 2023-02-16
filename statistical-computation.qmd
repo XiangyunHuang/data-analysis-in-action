@@ -587,8 +587,8 @@ library(lattice)
 
 xyplot(cY ~ cX,
   data = rongelap, pch = 19, cex = 0.25,
-  xlab = "水平方向",
-  ylab = "垂直方向",
+  xlab = "横坐标",
+  ylab = "纵坐标",
   scales = list(    
     # 去掉图形上边、右边多余的刻度线
     x = list(alternating = 1, tck = c(1, 0)),
@@ -615,6 +615,42 @@ xyplot(cY ~ cX,
   par.settings = list(axis.line = list(col = "black"))
 )
 ```
+
+朗格拉普岛上各个检测站点的核污染浓度，如 @fig-rongelap-location-zoom 所示，鉴于四个集中检测区密集的采样阵列，通过局部放大，突出展示最左侧的一个检测区。
+
+```{r}
+#| label: fig-rongelap-location-zoom
+#| fig-cap: "岛上各采样点的核辐射强度"
+#| fig-width: 8
+#| fig-height: 4
+#| fig-showtext: true
+#| echo: false
+
+library(ggplot2)
+
+p1 <- ggplot() +
+  geom_path(data = rongelap_coastline, aes(x = cX, y = cY)) +
+  geom_point(data = rongelap, aes(x = cX, y = cY, color = counts / time), size = 0.5) +
+  scale_x_continuous(n.breaks = 7) +
+  scale_color_binned(type = colorspace::scale_color_binned_sequential, palette = "Grays") +
+  geom_segment(
+    data = data.frame(x = -5560, xend = -5000, y = -3000, yend = -2000),
+    aes(x = x, y = y, xend = xend, yend = yend),
+    arrow = arrow(length = unit(0.03, "npc"))
+  ) +
+  theme_bw() +
+  labs(x = "横坐标", y = "纵坐标", color = "放射强度")
+
+p2 <- ggplot() +
+  geom_point(data = rongelap, aes(x = cX, y = cY, color = counts / time), size = 2, show.legend = FALSE) +
+  scale_color_binned(type = colorspace::scale_color_binned_sequential, palette = "Grays") +
+  coord_cartesian(xlim = c(-5700, -5540), ylim = c(-3260, -3100)) +
+  theme_bw() +
+  labs(x = NULL, y = NULL)
+
+p1
+print(p2, vp = grid::viewport(x = .25, y = .725, width = .275, height = .45))
+```  
 
 如 @fig-rongelap-concentration 所示，在朗格拉普岛上采样点的位置及检测到的辐射强度，射线越高表示放射性越强。这是用 **lattice** 包的 `cloud()` 函数绘制的，以点和线构成射线形象地表达伽马射线的放射强度。
 
@@ -713,7 +749,7 @@ logLik(fit_rongelap_glm)
 logLik(fit_rongelap_glmer)
 ```
 
-进一步，放开随机效应相互独立的假设，认为随机效应之间存在相关性结构，这更符合位置效应存在相互影响的实际情况，这就要引入带空间随机效应的广义线性混合效应模型。空间广义线性混合效应模型在统计中具有重要的地位，在地质统计、卫生统计、气象统计和空间计量等领域有广发的应用，如分析地区范围内的疟疾分布，有限气象站点条件下，预测地区 PM2.5 污染物浓度分布等。
+进一步，去掉随机效应相互独立的假设，随机效应之间存在相关性结构，这更符合位置效应存在相互影响的实际情况，也因此要引入带空间随机效应的广义线性混合效应模型。空间广义线性混合效应模型在统计中具有重要的地位，在地质统计、卫生统计、气象统计和空间计量等领域有广泛的应用，如分析地区范围内的疟疾分布，有限气象站点条件下，预测地区 PM2.5 污染物浓度分布等。
 
 1998 年 Peter J. Diggle 等提出蒙特卡罗极大似然方法估计不带块金效应的响应变量服从泊松分布的空间广义混合效应模型的参数，分析了朗格拉普岛上核污染浓度的空间分布，2004 年 Ole F Christensen 在 Peter J. Diggle 等人的基础上添加了块金效应，同样使用蒙特卡罗极大似然方法估计了模型中的参数。
 
