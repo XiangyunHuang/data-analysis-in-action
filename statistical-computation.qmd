@@ -562,15 +562,98 @@ fit_advi_logit$summary(c("alpha", "beta", "lp__")) |>
 ```
 
 ::: {.callout-tip}
-CmdStanR 始终与 CmdStan 保持同步更新，及时地用上集成到 Stan 当中的学术研究成果。而 RStan 及其衍生包 rstanarm 和 brms 等依赖太重，安装、更新都比较麻烦。入门 CmdStanR 后，可以快速转入对 Stan 底层原理的学习，有利于编码符合实际需要的复杂模型，有利于掌握常用的炼丹技巧，提高科研和工作的效率。
+**CmdStanR** 始终与 CmdStan 保持同步更新，及时地用上集成到 Stan 当中的学术研究成果。而 **RStan** 及其衍生包 **rstanarm** 和 **brms** 等依赖太重，安装、更新都比较麻烦。入门 **CmdStanR** 后，可以快速转入对 Stan 底层原理的学习，有利于编码符合实际需要的复杂模型，有利于掌握常用的炼丹技巧，提高科研和工作的效率。
 :::
+
+
+### 拟合泊松回归模型 {#sec-poisson-cmdstanr}
+
+先介绍泊松广义线性模型，包括模拟和计算，并和 Stan 实现的结果比较。
+
+泊松广义线性模型如下：
+
+$$
+\begin{aligned}
+\log(\lambda) &= \beta_0 + \beta_1 x_1 + \beta_2 x_2 \\
+Y &\sim \mathrm{Poisson}(\lambda)
+\end{aligned}
+$$
+
+设定参数向量 $\beta = (\beta_0, \beta_1, \beta_2) = (0.5, 0.3, 0.2)$，观测变量 $X_1$ 和 $X_2$ 的均值都为0，协方差矩阵 $\Sigma$ 为
+
+$$
+\left[
+ \begin{matrix}
+   1.0 & 0.8  \\
+   0.8 & 1.0 
+ \end{matrix}
+\right]
+$$
+
+模拟观测到的响应变量值和协变量值，添加漂移项
+
+```{r}
+set.seed(2023)
+n <- 2500 # 样本量
+beta <- c(0.5, 0.3, 0.2)
+X <- MASS::mvrnorm(n, mu = rep(0, 2), Sigma = matrix(c(1, 0.8, 0.8, 1), 2))
+lambda <- exp(cbind(1, X) %*% beta)
+y <- rpois(n, lambda = lambda)
+# 拟合泊松回归模型
+fit_poisson_glm <- glm(y ~ X, family = poisson(link = "log"))
+summary(fit_poisson_glm)
+```
+
+```{r}
+# 对数似然函数值
+log_poission_lik <- logLik(fit_poisson_glm)
+# 计算 AIC AIC(fit_poisson_glm)
+-2 * c(log_poission_lik) + 2 * attr(log_poission_lik, "df")
+```
+
+::: {.callout-tip}
+下面用 brms 包的函数 `brm()` 拟合泊松广义线性模型，结果和 Base R 内置的 函数 `glm()` 拟合结果差不多，因编译和抽样的过程比较花费时间，速度不及 Base R。
+
+```r
+fit_poisson_brm <- brms::brm(y ~ X, family = poisson())
+loo(fit_poisson_brm)
+```
+:::
+
+以上是简单的泊松型广义线性模型，下面增加一点复杂度，模拟泊松型随机过程模型。
+
+
 
 
 ### 预测核污染浓度分布 {#sec-nuclear-pollution-concentration}
 
 本小节将基于真实数据的分析和建模，任务是预测核污染浓度在朗格拉普岛上的分布。
 
-二战后，朗格拉普岛成为美国在太平洋的一个领地，1954 年，美国在该岛进行了氢弹核武器测试，核武器测试导致大量的核污染，严重破坏了当地的生态。几十年后，一批科学家登陆该岛研究生态恢复情况，评估当地居民重返家园的可行性，收集了一些数据。数据集 rongelap 记录了 157 个测量点的伽马射线强度，即在时间间隔 `time` 内放射的粒子数目 `counts`，测量站点的横纵坐标分别为 `cX` 和 `cY`。采样点在岛上的分布如 @fig-rongelap-location 所示，在岛屿的东北和西南方各有两个密集采样区。
+[朗格拉普环礁（Rongelap Atoll）](https://en.wikipedia.org/wiki/Rongelap_Atoll)是太平洋上的一座包含 61 个大小岛屿的环礁，它是马绍尔群岛的一部分，二战后，其中的朗格拉普岛成为美国在太平洋的一个领地，1954 年，美国在该岛进行了氢弹核武器测试，产生大量的核污染，严重破坏了当地的生态。几十年后，一批科学家登陆该岛研究生态恢复情况，评估当地居民重返家园的可行性，收集了一些数据。数据集 `rongelap` 记录了 157 个测量点的伽马射线强度，即在时间间隔 `time` 内放射的粒子数目 `counts`，测量站点的横纵坐标分别为 `cX` 和 `cY`。下 @tbl-rongelap-nuclear-data 展示部分朗格拉普岛核污染检测数据及海岸线坐标数据。
+
+```{r}
+#| label: tbl-rongelap-nuclear-data
+#| tbl-cap: "朗格拉普岛核污染检测数据及海岸线坐标数据"
+#| tbl-subcap: 
+#|   - "核污染检测数据"
+#|   - "海岸线坐标数据"
+#| layout-ncol: 2
+#| echo: false
+
+library(knitr)
+knitr::kable(head(rongelap, 6),
+  col.names = c("横坐标", "纵坐标", "数目", "时间")
+)
+knitr::kable(head(rongelap_coastline, 6),
+  col.names = c("横坐标", "纵坐标")
+)
+```
+
+::: {.callout-note}
+之前，[Ole F. Christensen](http://gbi.agrsci.dk/~ofch/) 和 Paulo J. Ribeiro Jr 将 rongelap 数据集存放在 **geoRglm** 包内，后来，**geoRglm** 不维护，已从 CRAN 移除了。
+:::
+
+朗格拉普岛呈月牙形，采样点在岛上的分布如 @fig-rongelap-location 所示，在岛屿的东北和西南方各有两个密集采样区。
 
 ```{r}
 #| label: fig-rongelap-location
