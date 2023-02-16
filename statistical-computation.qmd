@@ -8,17 +8,6 @@ source("_common.R")
 
 ## 优化问题与回归问题 {#sec-regression-optimization}
 
-<!-- 
-广义最小二乘拟合 nlme::gls  预测 nlme::predict.gls
-用广义最小二乘拟合线性模型 MASS::lm.gls	
-用广义最小二乘拟合趋势面 spatial::surf.gls
-
-[nlsr](https://cran.r-project.org/package=nlsr)
-[bestsubset](https://github.com/ryantibs/best-subset/) 最优子集回归
-[abess](https://github.com/abess-team/abess)
--->
-
-
 
 1996 年出现 Lasso [@lasso1996]，由于缺少高效的求解算法，Lasso 在高维小样本特征选择研究中没有广泛流行，最小角回归(Least Angle Regression, LAR)算法 [@lar2004] 的出现有力促进了Lasso在高维小样本数据中的应用。为了解决Lasso的有偏估计问题，自适应 Lasso、松弛 Lasso， SCAD (Smoothly Clipped Absolute Deviation)[@scad2008]，MCP (Minimax Concave Penalty)[@mcp2010] 陆续出现。经典的普通最小二乘、广义最小二乘、岭回归、逐步回归、Lasso 回归、最优子集回归都可转化为优化问题，一般形式如下：
 
@@ -663,8 +652,35 @@ summary(fit_rongelap_glm)
 当 `family = poisson(link = "log")` 时，响应变量只能放正整数。参数 `offset` 的作用介绍见统计之都[论坛](https://d.cosx.org/d/420881)，放射性粒子的数量 `counts` 和检测时间长度有关。
 :::
 
+从这个简单的广义线性模型结果，不难看出，位置变量 `cX` 和 `cY` 是显著的，从实际场景出发，也不难理解，位置信息是非常关键的。进一步，充分利用位置信息，精细建模是很有必要的。相邻位置的核污染浓度是相关的，离得近的比离得远的更相关。简单的广义线性模型并没有考虑距离相关性，它认为各个观测点的数据是相互独立的。因此，考虑采用广义线性混合效应模型，在广义线性模型的基础上添加位置相关的随机效应，用以刻画未能直接观测到的潜在影响。简单起见，假定随机效应之间是相互独立的高斯分布。
 
-从这个简单的广义线性模型结果，不难看出，位置变量 `cX` 和 `cY` 是显著的，从实际场景出发，也不难理解，位置信息是非常关键的。进一步，充分利用位置信息，精细建模是很有必要的。因此，考虑采用广义线性混合效应模型，在广义线性模型的基础上添加位置相关的随机效应，用以刻画未能直接观测到的潜在影响。
+```{r}
+library(lme4)
+rongelap$dummary <- 1:157
+fit_rongelap_glmer <- glmer(counts ~ 1 + (1 | dummary),
+  family = poisson(link = "log"),
+  offset = log(time), data = rongelap
+)
+summary(fit_rongelap_glmer)
+```
+
+将每个位置看作单独的一个随机效应，比较两个模型的对数似然，后者变大了，意味着模型拟合效果更好了。
+
+```{r}
+# 广义线性模型
+logLik(fit_rongelap_glm)
+# 广义线性混合效应模型
+logLik(fit_rongelap_glmer)
+```
+
+进一步，放开随机效应相互独立的假设，认为随机效应之间存在相关性结构，这更符合位置效应存在相互影响的实际情况。
+
+```{r}
+
+```
+
+
+
 
 广义线性混合效应模型在统计中具有重要的地位，在地质统计、卫生统计、气象统计和空间计量等领域有广发的应用，如分析地区范围内的疟疾分布，有限气象站点条件下，预测地区 PM2.5 污染物浓度分布等。
 
