@@ -713,16 +713,7 @@ logLik(fit_rongelap_glm)
 logLik(fit_rongelap_glmer)
 ```
 
-进一步，放开随机效应相互独立的假设，认为随机效应之间存在相关性结构，这更符合位置效应存在相互影响的实际情况。
-
-```{r}
-
-```
-
-
-
-
-广义线性混合效应模型在统计中具有重要的地位，在地质统计、卫生统计、气象统计和空间计量等领域有广发的应用，如分析地区范围内的疟疾分布，有限气象站点条件下，预测地区 PM2.5 污染物浓度分布等。
+进一步，放开随机效应相互独立的假设，认为随机效应之间存在相关性结构，这更符合位置效应存在相互影响的实际情况，这就要引入带空间随机效应的广义线性混合效应模型。空间广义线性混合效应模型在统计中具有重要的地位，在地质统计、卫生统计、气象统计和空间计量等领域有广发的应用，如分析地区范围内的疟疾分布，有限气象站点条件下，预测地区 PM2.5 污染物浓度分布等。
 
 1998 年 Peter J. Diggle 等提出蒙特卡罗极大似然方法估计不带块金效应的响应变量服从泊松分布的空间广义混合效应模型的参数，分析了朗格拉普岛上核污染浓度的空间分布，2004 年 Ole F Christensen 在 Peter J. Diggle 等人的基础上添加了块金效应，同样使用蒙特卡罗极大似然方法估计了模型中的参数。
 
@@ -741,7 +732,28 @@ $$
 
 的平稳空间高斯过程 $S(x),x \in \mathbb{R}^2$，且 $Z_i$ 之间相互独立同正态分布 $\mathcal{N}(0,\tau^2)$ ，$Z_i$ 表示与空间效应无关的块金效应，即非空间的随机效应，可以理解为测量误差或空间变差，这里 $i = 1,\ldots, 157$。
 
+[**glmmTMB**](https://github.com/glmmTMB/glmmTMB) 包可以拟合空间广义线性混合效应模型，使用语法和 **lme4** 包一样。
 
+```{r}
+# 位置标准化
+rongelap$loc <- glmmTMB::numFactor(scale(rongelap$cX), scale(rongelap$cY))
+# 位置 ID
+rongelap$ID <- factor(rep(1, nrow(rongelap)))
+# 拟合模型
+fit_rongelap_sglmer <- glmmTMB::glmmTMB(
+  formula = counts ~ 1 + mat(loc + 0 | ID),
+  data = rongelap, family = poisson(link = "log"),
+  offset = log(time)
+)
+```
+
+其中协方差结构由核函数决定，这里采用广泛使用的 Matérn 型，**glmmTMB** 包 还支持指数型`exp` 和高斯型 `gau`，协方差矩阵是 $157 \times 157$ 维的。对数似然函数的值又变大了，拟合效果更好了，相比于从广义线性模型到广义线性混合效应模型，提升不是特别多，一般来说，模型越复杂提升空间也会越小，过于复杂也没有必要。
+
+```{r}
+logLik(fit_rongelap_sglmer)
+```
+
+`summary(fit_rongelap_sglmer)` 输出中包含大型的协方差矩阵，协方差矩阵也可单独抽取见 `ranef(fit_rongelap_sglmer)`，篇幅所限，此处略去。输出结果中，模型的固定效应 `fixef(fit_rongelap_sglmer)` （此处也是截距）为 1.82007，随机效应的方差为 0.2929。
 
 
 ## 机器学习框架 tensorflow {#sec-machine-learning-tensorflow}
