@@ -813,6 +813,8 @@ $$
 其中下标 $i$ 代表重复测量，则 $Y_{ij}$ 表示第 $i$ 次在第 $j$ 个位置检测到的放射量，$x_{1ij}$ 表示第1个协变量第$i$次在第$j$个位置上的观测值，一种非常贴合实际的情形是 $x_{1ij}$ 就代表时间 $T_{ij}$ ，表示科学家每隔 5 年登岛收集数据，此后登岛多次，$T_{ij}$ 意味着第 $i$ 次登岛收集各个检测点的放射数据。变截距 $\beta_{0j}$ 和变系数 $\beta_{1j}$ 同时存在，且二者联合分布为二元正态分布，残差仍然假定独立同高斯分布 $\epsilon_{ij} \sim \mathcal{N}(0,\sigma^2)$ 。
 :::
 
+**lme4** 包[@Bates2015]是拟合广义线性混合效应模型的金标准，模型拟合函数 `glmer()` 的使用非常类似 Base R 提供的函数 `glm()`。
+
 ```{r}
 library(lme4)
 rongelap$dummary <- 1:157
@@ -851,7 +853,7 @@ $$
 
 的平稳空间高斯过程 $S(x),x \in \mathbb{R}^2$，且 $Z_i$ 之间相互独立同正态分布 $\mathcal{N}(0,\tau^2)$ ，$Z_i$ 表示与空间效应无关的块金效应，即非空间的随机效应，可以理解为测量误差或空间变差，这里 $i = 1,\ldots, 157$。
 
-[**glmmTMB**](https://github.com/glmmTMB/glmmTMB) 包可以拟合空间广义线性混合效应模型，使用语法和 **lme4** 包一样。
+[**glmmTMB**](https://github.com/glmmTMB/glmmTMB) 包[@Brooks2017]可以拟合空间广义线性混合效应模型，使用语法和前面介绍的 **lme4** 包一样。
 
 ```{r}
 # 位置标准化
@@ -859,20 +861,33 @@ rongelap$loc <- glmmTMB::numFactor(scale(rongelap$cX), scale(rongelap$cY))
 # 位置 ID
 rongelap$ID <- factor(rep(1, nrow(rongelap)))
 # 拟合模型
-fit_rongelap_sglmer <- glmmTMB::glmmTMB(
+fit_rongelap_glmmtmb <- glmmTMB::glmmTMB(
   formula = counts ~ 1 + mat(loc + 0 | ID),
   data = rongelap, family = poisson(link = "log"),
   offset = log(time)
 )
 ```
 
-其中协方差结构由核函数决定，这里采用广泛使用的 Matérn 型，**glmmTMB** 包 还支持指数型`exp` 和高斯型 `gau`，协方差矩阵是 $157 \times 157$ 维的。对数似然函数的值又变大了，拟合效果更好了，相比于从广义线性模型到广义线性混合效应模型，提升不是特别多，一般来说，模型越复杂提升空间也会越小，过于复杂也没有必要。
+其中协方差结构由核函数决定，这里采用广泛使用的 Matérn 型，**glmmTMB** 包还支持指数型`exp` 和高斯型 `gau`，协方差矩阵是 $157 \times 157$ 维的。对数似然函数的值又变大了，拟合效果更好了，相比于从广义线性模型到广义线性混合效应模型，提升不是特别多，一般来说，模型越复杂提升空间也会越小，过于复杂也没有必要。
 
 ```{r}
-logLik(fit_rongelap_sglmer)
+# 空间广义线性混合效应模型
+logLik(fit_rongelap_glmmtmb)
 ```
 
-`summary(fit_rongelap_sglmer)` 输出中包含大型的协方差矩阵，协方差矩阵也可单独抽取见 `ranef(fit_rongelap_sglmer)`，篇幅所限，此处略去。输出结果中，模型的固定效应 `fixef(fit_rongelap_sglmer)` （此处也是截距）为 1.82007，随机效应的方差为 0.2929。
+`summary(fit_rongelap_glmmtmb)` 输出中包含大型的协方差矩阵，协方差矩阵也可单独抽取见 `ranef(fit_rongelap_glmmtmb)`，篇幅所限，此处略去。输出结果中，模型的固定效应 `fixef(fit_rongelap_glmmtmb)` （此处也是截距）为 1.82007，随机效应的方差为 0.2929。
+
+**spaMM** 包[@Rousset2014]与 **glmmTMB** 包在功能上有很多类似的地方，它也可以拟合空间广义线性混合效应模型，支持非常丰富的统计建模功能，从简单线性模型到相对复杂的空间广义线性混合效应模型，拟合函数 `fitme()` 提供统一的使用语法。
+
+```{r}
+library(spaMM)
+fit_rongelap_spamm <- fitme(counts ~ 1 + Matern(1 | cX + cY) + offset(log(time)),
+  family = poisson(link = "log"), data = rongelap
+)
+summary(fit_rongelap_spamm)
+```
+
+从输出结果来看，与 **glmmTMB** 很接近，模型固定效应的截距项 1.824，随机效应的方差为 0.2973，对数似然函数值为 -1317.551，拟合效果的提升几乎可以忽略。
 
 
 ## 机器学习框架 tensorflow {#sec-machine-learning-tensorflow}
