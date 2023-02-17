@@ -5,6 +5,11 @@
 
 source("_common.R")
 ```
+::: {.hidden}
+$$
+ \def\bm#1{{\boldsymbol #1}}
+$$
+:::
 
 ## 优化问题与回归问题 {#sec-regression-optimization}
 
@@ -18,10 +23,10 @@ $$
 一个带 L1 惩罚项的回归模型的损失函数如下：
 
 $$
-\arg \min_{\boldsymbol{\beta},\lambda} ~~ \frac{1}{2} || \mathbf{y} - X \boldsymbol{\beta} ||_2^2 +  \lambda ||\boldsymbol{\beta}||_1
+\arg \min_{\boldsymbol{\beta},\lambda} ~~ \frac{1}{2} || \bm{y} - X \boldsymbol{\beta} ||_2^2 +  \lambda ||\boldsymbol{\beta}||_1
 $$
 
-其中，$X \in \mathbb{R}^{m\times n}$， $y \in \mathbb{R}^m$，$\beta \in \mathbb{R}^n$， $0 < \lambda \in \mathbb{R}$ 。
+其中，$X \in \mathbb{R}^{m\times n}$， $\bm{y} \in \mathbb{R}^m$，$\beta \in \mathbb{R}^n$， $0 < \lambda \in \mathbb{R}$ 。
 
 下面主要以逻辑回归模型为例，介绍 Base R、[**nloptr**](https://github.com/astamm/nloptr)、 [**glmnet**](https://glmnet.stanford.edu/) 和 [**CmdStanR**](https://github.com/stan-dev/cmdstanr) 等工具包提供的优化器，在求解性能、范围、方法等方面对比总结使用经验。
 
@@ -104,18 +109,18 @@ X = \begin{bmatrix}
 \end{bmatrix}
 $$
 
-记 $X = (x_1, x_2, \cdots, x_n)$ 是一个$n \times k$矩阵，则 $x_i$ 表示数据矩阵 $X$ 的第 $i$ 行，一共有 $k$ 列。同理 $\boldsymbol{\beta} = (\beta_1, \beta_2, \cdots, \beta_k)$ ，对第 $i$ 次观测
+记 $X = (\bm{x}_1, \bm{x}_2, \cdots, \bm{x}_n)$ 是一个$n \times k$矩阵，则 $\bm{x}_i$ 表示数据矩阵 $X$ 的第 $i$ 行，一共有 $k$ 列。同理 $\boldsymbol{\beta} = (\beta_1, \beta_2, \cdots, \beta_k)$ ，对第 $i$ 次观测
 
 $$
-\mathrm{Logistic}^{-1}(p_i)= \ln\big(\frac{p_i}{1-p_i}\big) = \alpha + x_i\boldsymbol{\beta}
+\mathrm{Logistic}^{-1}(p_i)= \ln\big(\frac{p_i}{1-p_i}\big) = \alpha + \bm{x}_i\boldsymbol{\beta}
 $$
 
-其中 $x_i$ 是 $1 \times k$ 的矩阵，$\boldsymbol{\beta}$ 是一个 $k \times 1$ 的矩阵。关于参数 $\alpha,\boldsymbol{\beta}$ 的似然函数如下：
+其中 $\bm{x}_i$ 是 $1 \times k$ 的矩阵，$\boldsymbol{\beta}$ 是一个 $k \times 1$ 的矩阵。关于参数 $\alpha,\boldsymbol{\beta}$ 的似然函数如下：
 
 $$
 \begin{aligned}
 L(\alpha,\boldsymbol{\beta}) &= \prod_{i=1}^{n} p_i^{y_i}(1 - p_i)^{1 - y_i} \\ 
-     &= \prod_{i=1}^{n} \Big(\frac{e^{\alpha + x_i\boldsymbol{\beta}}}{1 + e^{\alpha + x_i\boldsymbol{\beta}}}\Big)^{y_i}\Big(\frac{1}{e^{\alpha + x_i\boldsymbol{\beta}}}\Big)^{1-y_i} \\
+     &= \prod_{i=1}^{n} \Big(\frac{e^{\alpha + \bm{x}_i\boldsymbol{\beta}}}{1 + e^{\alpha + \bm{x}_i\boldsymbol{\beta}}}\Big)^{y_i}\Big(\frac{1}{e^{\alpha + \bm{x}_i\boldsymbol{\beta}}}\Big)^{1-y_i} \\
 \end{aligned}
 $$ {#eq-logit-lik}
 
@@ -125,7 +130,7 @@ $$
 \begin{aligned}
 \ell(\alpha,\boldsymbol{\beta}) &= \log L(\alpha,\boldsymbol{\beta}) \\
 & = \sum_{i=1}^{n} \Big[y_i \log (p_i) + (1 - y_i) \log(1-p_i)\Big] \\
-&= \sum_{i=1}^{n} \Big[y_i \log \Big(\frac{e^{\alpha + x_i\boldsymbol{\beta}}}{1 + e^{\alpha + x_i\boldsymbol{\beta}}}\Big) + (1 - y_i) \log\Big(\frac{1}{e^{\alpha + x_i\boldsymbol{\beta}}}\Big)\Big]
+&= \sum_{i=1}^{n} \Big[y_i \log \Big(\frac{e^{\alpha + \bm{x}_i\boldsymbol{\beta}}}{1 + e^{\alpha + \bm{x}_i\boldsymbol{\beta}}}\Big) + (1 - y_i) \log\Big(\frac{1}{e^{\alpha + \bm{x}_i\boldsymbol{\beta}}}\Big)\Big]
 \end{aligned}
 $$ {#eq-logit-lik-log}
 
@@ -135,11 +140,11 @@ $$
 \begin{aligned}
 \frac{\partial \ell(\alpha,\boldsymbol{\beta})}{\partial \alpha}  &= \sum_{i=1}^{n}\Big[ \big(\frac{y_i}{p_i} -  \frac{1- y_i}{1 - p_i}\big) \frac{\partial p_i}{\partial \alpha} \Big] \\
 \frac{\partial \ell(\alpha,\boldsymbol{\beta})}{\partial \boldsymbol{\beta}} &= \sum_{i=1}^{n}\Big[\big(\frac{y_i}{p_i} -  \frac{1- y_i}{1 - p_i}\big) \frac{\partial p_i}{\partial \beta} \Big] \\
-& = \sum_{i=1}^{n}\Big[\big(\frac{y_i}{p_i} -  \frac{1- y_i}{1 - p_i}\big) p_i(1- p_i) x_i \Big] 
+& = \sum_{i=1}^{n}\Big[\big(\frac{y_i}{p_i} -  \frac{1- y_i}{1 - p_i}\big) p_i(1- p_i) \bm{x}_i \Big] 
 \end{aligned}
 $$ {#eq-logit-lik-log-partial}
 
-其中， $p_i = \frac{e^{\alpha + x_i\boldsymbol{\beta}}}{1 + e^{\alpha + x_i\boldsymbol{\beta}}}$ ，一般通过迭代加权最小二乘算法（Iteratively (Re-)Weighted Least Squares，简称 IWLS）求解此优化问题，它可以看作拟牛顿法的一种特殊情况。
+其中， $p_i = \frac{e^{\alpha + \bm{x}_i\boldsymbol{\beta}}}{1 + e^{\alpha + \bm{x}_i\boldsymbol{\beta}}}$ ，一般通过迭代加权最小二乘算法（Iteratively (Re-)Weighted Least Squares，简称 IWLS）求解此优化问题，它可以看作拟牛顿法的一种特殊情况。
 
 ## 数值优化问题求解器 {#sec-solvers}
 
@@ -613,7 +618,7 @@ log_poission_lik <- logLik(fit_poisson_glm)
 ```
 
 ::: {.callout-tip}
-下面用 **brms** 包的函数 `brm()` 拟合泊松广义线性模型，结果和 Base R 内置的 函数 `glm()` 拟合结果几乎一致，因编译和抽样的过程比较花费时间，速度不及 Base R。
+对于常见的统计模型，**brms** 包[@brms2017]都内置了预编译的 Stan 程序，下面用 **brms** 包的函数 `brm()` 拟合泊松广义线性模型，结果和 Base R 内置的 函数 `glm()` 拟合结果几乎一致，因编译和抽样的过程比较花费时间，速度不及 Base R。
 
 ```r
 # brms
@@ -660,7 +665,38 @@ See help('pareto-k-diagnostic') for details.
 ```
 :::
 
-以上是简单的泊松型广义线性模型，下面增加一点复杂度，模拟泊松型随机过程模型。
+
+以上是简单的泊松型广义线性模型，下面增加一点复杂度，模拟带漂移项的泊松型广义线性混合效应模型。
+
+```{r}
+set.seed(2023)
+n <- 2500 # 样本量
+beta <- c(0.5, 0.3, 0.2)
+X <- MASS::mvrnorm(100 , mu = rep(0, 2), Sigma = matrix(c(1, 0.8, 0.8, 1), 2))
+u <- rep(c(2, 4), each = n / 2)
+g <- factor(rep(1:25, each = 100)) # 25 个组 # 每个组 100 个观察值
+lambda <- u * exp(rep(cbind(1, X) %*% beta, each = 25) )
+y <- rpois(n, lambda = lambda)
+
+simdata <- data.frame(y, X, u, g)
+colnames(simdata) <- c("y", "x1", "x2", "u", "g")
+
+library(lme4)
+fit_sim_poisson_glmer <- glmer(y ~ x1 + x2 + (1 | g),
+  data = simdata,
+  offset = log(u),
+  family = poisson(link = "log")
+)
+
+summary(fit_sim_poisson_glmer)
+```
+
+
+下面继续增加复杂度，随机效应中含随机过程的泊松型广义线性混合效应模型。
+
+设定参数，真实、模拟 重构、Stan 重构的比较
+
+
 
 
 
@@ -669,7 +705,23 @@ See help('pareto-k-diagnostic') for details.
 
 本小节将对真实数据分析和建模，任务是预测核污染浓度在朗格拉普岛上的分布。
 
-[朗格拉普环礁（Rongelap Atoll）](https://en.wikipedia.org/wiki/Rongelap_Atoll)是太平洋上的一座包含 61 个大小岛屿的环礁，它是马绍尔群岛的一部分，二战后，其中的朗格拉普岛成为美国在太平洋的一个领地，1954 年，美国在该岛进行了氢弹核武器测试，产生大量的核污染，严重破坏了当地的生态。几十年后，一批科学家登陆该岛研究生态恢复情况，评估当地居民重返家园的可行性，收集了一些数据。数据集 `rongelap` 记录了 157 个测量点的伽马射线强度，即在时间间隔 `time` 内放射的粒子数目 `counts`，测量站点的横纵坐标分别为 `cX` 和 `cY`。下 @tbl-rongelap-nuclear-data 展示部分朗格拉普岛核污染检测数据及海岸线坐标数据。
+第二次世界大战中，美国在吉尔伯特及马绍尔群岛战事中占领了该群岛。上世纪 50 年代，在该群岛的比基尼环礁中进行了许多核实验，对该群岛造成无法弥补的环境损害。朗格拉普环礁是马绍尔群岛的一部分，被核爆炸后产生的放射性尘埃笼罩了，受到严重的核辐射影响。位于南太平洋的朗格拉普岛是朗格拉普环礁的主岛，从度假胜地变成人间炼狱。即使是 1985 年以后，那里仍然无人居住，居民担心核辐射对身体健康的影响。又几十年后，一批科学家来到该岛研究生态恢复情况，评估当地居民重返家园的可行性。目前该岛仍然不适合人类居住，只有经批准的科学研究人员才能登岛。数据集 `rongelap` 记录了 157 个测量点的伽马射线强度，即在时间 `time` 内放射的粒子数目 `counts`，测量站点的横纵坐标分别为 `cX` 和 `cY`。下 @tbl-rongelap-nuclear-data 展示部分朗格拉普岛核污染检测数据及海岸线坐标数据。
+
+```{r}
+#| label: fig-marshall-islands-rongelap-atoll
+#| fig-cap: "马绍尔群岛和朗格拉普环礁"
+#| eval: false
+#| echo: false
+
+library(terra)
+# 下载边界数据 https://gadm.org/
+# 返回 SpatVector 类型的数据对象
+mhl_map_gadm <- geodata::gadm(country = "MHL", level = 1, path = "data/")
+# 马绍尔群岛
+plot(mhl_map_gadm)
+# 朗格拉普环礁
+plot(mhl_map_gadm, xlim = c(166.82, 166.92), ylim = c(11.14, 11.183))
+```
 
 ```{r}
 #| label: tbl-rongelap-nuclear-data
@@ -696,7 +748,7 @@ knitr::kable(head(rongelap_coastline, 6),
 之前，[Ole F. Christensen](http://gbi.agrsci.dk/~ofch/) 和 Paulo J. Ribeiro Jr 将 rongelap 数据集存放在 **geoRglm** 包内，后来，**geoRglm** 不维护，已从 CRAN 移除了。
 :::
 
-朗格拉普岛呈月牙形，采样点在岛上的分布如 @fig-rongelap-location 所示，在岛屿的东北和西南方各有两个密集采样区。
+朗格拉普岛呈月牙形，有数千米长，但仅几百米宽，十分狭长。采样点在岛上的分布如 @fig-rongelap-location 所示，主网格以约 200 米的间隔采样，在岛屿的东北和西南方各有两个密集采样区，每个网格采样区是 $5 \times 5$ 方式排列的，上下左右间隔均为 40 米。
 
 ```{r}
 #| label: fig-rongelap-location
@@ -796,6 +848,36 @@ cloud(counts / time ~ cX * cY,
   screen = list(z = 30, x = -65, y = 0)
 )
 ```
+```{r}
+#| eval: false
+#| echo: false
+
+# 可选的替代三维图形
+library(scatterplot3d)
+with(rongelap, {
+  scatterplot3d(
+    x = cX, y = cY, z = counts / time,
+    xlab = "X", ylab = "Y", zlab = "Z",
+    type = "h", color = "black", angle = 20, pch = 16
+  )
+})
+
+library(plot3D)
+with(rongelap, {
+  par(mar = c(0.1, 2.5, 0.1, 0.1))
+  scatter3D(
+    x = cX, y = cY, z = counts / time,
+    xlab = "\nX", ylab = "\nY", zlab = "\nZ",
+    pch = 16, type = "h", ticktype = "detailed",
+    phi = 40, theta = -30, r = 50, d = 0.1, 
+    expand = 0.5, box = TRUE,
+    # bty = "u", 
+    bty = "f",
+    col = "black", asp = 1, col.axis = "gray"
+  )
+})
+```
+
 
 核污染是由辐射元素衰变产生的，通常用单位时间释放出来的粒子数目表示辐射强度，也是核污染浓度，因此，建立泊松型广义线性模型分析数据。
 
@@ -820,7 +902,7 @@ $$
 \end{aligned}
 $$
 
-其中响应变量服从泊松分布，即 $Y_{j} \sim \mathrm{Poisson}(t_{j}\lambda_{j})$ ，$\lambda_{j}$ 表示放射强度，$t_{j}$ 表示时间，随机效应 $\beta_{0j}$ 服从均值为 0，方差为 $\tau_{00}^2$ 的高斯分布，即 $U_{0j} \sim \mathcal{N}(0,\tau_{00}^2)$ ，157 个检测站点的残差服从独立同分布的高斯分布，即 $\epsilon_{j} \sim \mathcal{N}(0,\sigma^2)$，$j=1,2,\cdots,157$ 。
+其中响应变量服从泊松分布，即 $Y_{j} \sim \mathrm{Poisson}(t_{j}\lambda_{j})$ ，$\lambda_{j}$ 表示放射强度，$t_{j}$ 表示时间，随机效应 $\beta_{0j}$ 服从均值为 0，方差为 $\tau_{00}^2$ 的高斯分布，即 $U_{0j} \sim \mathcal{N}(0,\tau_{00}^2)$ 。截距项（常数项） $\gamma_{00}$ 可以理解为背景辐射，为简单起见，假定为常数。如果全岛观察到有系统性的背景辐射变化，可以考虑用随机变量来建模背景辐射。157 个检测站点的残差服从独立同分布的高斯分布，即 $\epsilon_{j} \sim \mathcal{N}(0,\sigma^2)$，$j=1,2,\cdots,157$ 。
 
 
 ::: {.callout-tip}
@@ -874,6 +956,33 @@ logLik(fit_rongelap_glm)
 # 广义线性混合效应模型
 logLik(fit_rongelap_glmer)
 ```
+
+::: {.callout-tip}
+
+```{r}
+#| eval: false
+#| echo: false
+
+library(cmdstanr)
+set_cmdstan_path(path = "/opt/cmdstan/cmdstan-2.31.0")
+# 如何设置先验分布
+fit_rongelap_brm <- brms::brm(
+  counts ~ 1 + (1 | dummary) + offset(log(time)),
+  data = rongelap,
+  family = poisson(link = "log"),
+  # silent = 2, # 关闭消息
+  refresh = 0, # 不显示迭代进度
+  seed = 20232023,
+  backend = "cmdstanr" # 选择后端 rstan 或 cmdstanr
+)
+summary(fit_rongelap_brm)
+# 发散很多
+plot(fit_rongelap_brm)
+WAIC(fit_rongelap_brm)
+pp_check(fit_rongelap_brm)
+```
+
+:::
 
 进一步，去掉随机效应相互独立的假设，随机效应之间存在相关性结构，这更符合位置效应存在相互影响的实际情况，也因此要引入带空间随机效应的广义线性混合效应模型。空间广义线性混合效应模型在统计中具有重要的地位，在地质统计、卫生统计、气象统计和空间计量等领域有广泛的应用，如分析地区范围内的疟疾分布，有限气象站点条件下，预测地区 PM2.5 污染物浓度分布等。
 
