@@ -670,6 +670,8 @@ See help('pareto-k-diagnostic') for details.
 looic 指标的作用类似 AIC 指标，所以也几乎相同的。
 :::
 
+### 拟合泊松混合效应模型 {#sec-poisson-glmm}
+
 以上是带漂移项的泊松型广义线性模型，下面在此基础上，再增加一个随机效应。
 
 ```{r}
@@ -694,6 +696,11 @@ y <- rpois(n, lambda = lambda)
 # 模拟的数据集
 sim_data <- data.frame(y, X, u, g)
 colnames(sim_data) <- c("y", "x1", "x2", "u", "g")
+```
+
+**lme4** 包代表频率派方法拟合模型
+
+```{r}
 # 模型拟合
 library(lme4)
 fit_sim_poisson_glmer <- glmer(y ~ x1 + x2 + (1 | g),
@@ -705,6 +712,34 @@ fit_sim_poisson_glmer <- glmer(y ~ x1 + x2 + (1 | g),
 summary(fit_sim_poisson_glmer)
 ```
 
+**brms** 包代表贝叶斯方法拟合模型
+
+```{r}
+#| eval: false
+#| echo: true
+
+# 如何设置先验分布
+fit_sim_poisson_brm <- brms::brm(
+  y ~ x1 + x2 + (1 | g) + offset(log(u)),
+  data = sim_data,
+  family = poisson(link = "log"),
+  # silent = 2, # 关闭消息
+  refresh = 0, # 不显示迭代进度
+  seed = 20232023,
+  backend = "cmdstanr" # 选择后端 rstan 或 cmdstanr
+)
+# 拟合结果
+summary(fit_sim_poisson_brm)
+# 发散很多
+plot(fit_sim_poisson_brm)
+# 模型诊断指标
+WAIC(fit_sim_poisson_brm)
+pp_check(fit_sim_poisson_brm)
+```
+
+
+
+### 拟合泊松空间混合效应模型 {#sec-poisson-sglmm}
 
 下面继续增加复杂度，在泊松型广义线性混合效应模型的随机效应中添加一个二维的高斯随机过程 $\mathcal{S}$ ，具体地，如果 $D$ 代表二维平面坐标，则该模型为泊松型空间广义线性混合效应模型，见 @sec-poisson-sglmm 。
 
@@ -713,7 +748,7 @@ $$
 \log(\lambda(\bm{d})) &= X\boldsymbol{\beta} + S(\bm{d})\\
 Y(\bm{d}) &\sim \mathrm{Poisson}(u(\bm{d})\lambda(\bm{d}))
 \end{aligned}
-$$ {#sec-poisson-sglmm}
+$$ {#eq-poisson-sglmm}
 
 其中，$S(\bm{d}) = \big(S(d_1), S(d_2), \cdots,S(d_N)\big)$ 是随机过程 $\mathcal{S}$ 的一个具体实现，代表一个随机向量。记 $S_i = S(d_i)$ 表示位置 $d_i$ 处的随机效应，是一个随机变量。响应变量 $Y(\bm{d})$ 、漂移项 $u(\bm{d})$ 和强度 $\lambda(\bm{d})$ 都是和位置 $\bm{d}$ 相关的，$\boldsymbol{\beta}$ 是 $k \times 1$ 维的回归向量。通常情况下，位置 $\bm{d}$ 表示一对一对的二维坐标，也可以是三维的。随机过程 $S(\bm{d})$ 服从均值函数为 0，自协方差函数为 $R(h)$ 的二维平稳空间高斯过程，简单起见，自协方差函数为幂二次指数型，如下：
 
@@ -733,7 +768,7 @@ $$
 
 其中 $\mathcal{K}$ 表示贝塞尔函数，$\kappa$ 常取 0.5。
 
-下面设定一组参数，从模型 @sec-poisson-sglmm 模拟一组数据，绘制真实的观测图，然后调用 Stan 拟合模型，将真实参数和估计的结果比较，再预测重构观测图。
+下面设定一组参数，从模型 @eq-poisson-sglmm 模拟一组数据，绘制真实的观测图，然后调用 Stan 拟合模型，将真实参数和估计的结果比较，再预测重构观测图。
 
 
 
