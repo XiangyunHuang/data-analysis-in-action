@@ -731,7 +731,7 @@ $$
 R(h;\sigma^2,\phi,\kappa) = \sigma^2 \frac{(h/\phi)^{\kappa}\mathcal{K}_{\kappa}(h/\phi)}{2^{\kappa-1}\Gamma(\kappa)}
 $$
 
-其中 $\mathcal{K}$ 表示贝塞尔函数， $\kappa$ 常取 0.5。
+其中 $\mathcal{K}$ 表示贝塞尔函数，$\kappa$ 常取 0.5。
 
 下面设定一组参数，从模型 @sec-poisson-sglmm 模拟一组数据，绘制真实的观测图，然后调用 Stan 拟合模型，将真实参数和估计的结果比较，再预测重构观测图。
 
@@ -998,11 +998,12 @@ logLik(fit_rongelap_glm)
 logLik(fit_rongelap_glmer)
 ```
 
-::: {.callout-tip}
+::: {.callout-note}
+对于混合效应模型，使用 Stan 框架来拟合，需要根据数据指定合适的先验分布，否则马尔可夫链不太容易收敛，迭代效率低，结果不太可靠。
 
 ```{r}
 #| eval: false
-#| echo: false
+#| echo: true
 
 library(cmdstanr)
 set_cmdstan_path(path = "/opt/cmdstan/cmdstan-2.31.0")
@@ -1022,7 +1023,6 @@ plot(fit_rongelap_brm)
 WAIC(fit_rongelap_brm)
 pp_check(fit_rongelap_brm)
 ```
-
 :::
 
 进一步，去掉随机效应相互独立的假设，随机效应之间存在相关性结构，这更符合位置效应存在相互影响的实际情况，也因此要引入带空间随机效应的广义线性混合效应模型。空间广义线性混合效应模型在统计中具有重要的地位，在地质统计、卫生统计、气象统计和空间计量等领域有广泛的应用，如分析地区范围内的疟疾分布，有限气象站点条件下，预测地区 PM2.5 污染物浓度分布等。
@@ -1047,6 +1047,8 @@ $$
 [**glmmTMB**](https://github.com/glmmTMB/glmmTMB) 包[@Brooks2017]可以拟合空间广义线性混合效应模型，使用语法和前面介绍的 **lme4** 包一样。
 
 ```{r}
+#| message: false
+#| warning: false
 # 位置标准化
 rongelap$loc <- glmmTMB::numFactor(scale(rongelap$cX), scale(rongelap$cY))
 # 位置 ID
@@ -1071,6 +1073,7 @@ logLik(fit_rongelap_glmmtmb)
 **spaMM** 包[@Rousset2014]与 **glmmTMB** 包在功能上有很多类似的地方，它也可以拟合空间广义线性混合效应模型，支持非常丰富的统计建模功能，从简单线性模型到相对复杂的空间广义线性混合效应模型，拟合函数 `fitme()` 提供统一的使用语法。
 
 ```{r}
+#| message: false
 library(spaMM)
 fit_rongelap_spamm <- fitme(counts ~ 1 + Matern(1 | cX + cY) + offset(log(time)),
   family = poisson(link = "log"), data = rongelap
