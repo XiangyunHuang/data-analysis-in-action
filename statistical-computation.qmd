@@ -41,6 +41,26 @@ $$
 ### 逻辑回归 {#sec-logistic-regression}
 
 
+均值为 $m$ ，方差为 $\frac{\pi^2}{3}s^2$ 的 Logistic 分布函数的形式为
+
+$$
+F(x) = \frac{1}{1 + \exp(-\frac{x - m}{s})}
+$$
+
+密度函数的形式为
+
+$$
+f(x) = \frac{\exp(-\frac{x - m}{s})}{s(1 + \exp(-\frac{x-m}{s}))^2} = \frac{\exp(\frac{x - m}{s})}{s(1 + \exp(\frac{x-m}{s}))^2}
+$$
+
+密度函数与分布函数的关系如下：
+
+$$
+\frac{dF(x)}{dx} = f(x) = sF(x)(1 - F(x))
+$$
+
+也就是说 Logistic 分布是上述微分方程的解。
+
 ```{r}
 #| label: fig-logistic
 #| echo: false
@@ -86,6 +106,18 @@ ggplot() +
   theme_classic() +
   labs(x = expression(x), y = expression(bolditalic(F)(x)))
 ```
+
+R 语言中分别表示逻辑斯谛分布的密度函数、分布函数、分位函数和随机数生成函数如下：
+
+```r
+dlogis(x, location = 0, scale = 1, log = FALSE)
+plogis(q, location = 0, scale = 1, lower.tail = TRUE, log.p = FALSE)
+qlogis(p, location = 0, scale = 1, lower.tail = TRUE, log.p = FALSE)
+rlogis(n, location = 0, scale = 1)
+```
+
+如果函数参数 `location` 或 `scale` 没有指定，则分别取默认值 0 和 1，就是标准的逻辑斯谛分布。位置参数（类似正态分布中的均值 $\mu$）为 `location = m` ，尺度参数（类似正态分布中的标准差 $\sigma$）为 `scale = s`，逻辑斯谛分布是一个长尾分布。
+
 
 响应变量 $Y$ 服从伯努利分布 $\mathrm{Bernoulli}(p)$，取值是 0 或 1，对线性预测 $X\boldsymbol{\beta}$ 做 Logistic 变换
 
@@ -362,6 +394,9 @@ Stan 入门写得很好 [Getting Started with Stan](https://github.com/LuZhangst
 
 在极大似然估计的框架下，以线性模型为例，贝叶斯估计和惩罚极大似然估计是等价的，先验分布的形式对应惩罚函数的形式，如正态先验对应于 L2 惩罚、拉普拉斯先验对应 L1 惩罚。
 
+### 汉密尔顿蒙特卡罗 {#sec-hamiltonian-monte-carlo}
+
+学习汉密尔顿蒙特卡罗算法 [@Thomas2021]
 
 ### 安装配置 CmdStanR {#sec-setup-cmdstanr}
 
@@ -737,6 +772,69 @@ WAIC(fit_sim_poisson_brm)
 pp_check(fit_sim_poisson_brm)
 ```
 
+```{r}
+#| echo: false
+#| eval: false
+# gee GLMMadaptive glmmML geepack 和 lme4 的模型输出结果是接近的
+# 广义估计方程 
+library(gee)
+fit_sim_poisson_gee <- gee(y ~ x1 + x2 + offset(log(u)),
+  id = g,
+  data = sim_data,
+  family = poisson(link = "log"),
+  corstr = "exchangeable"
+)
+# 输出
+fit_sim_poisson_gee
+# [GLMMadaptive](https://github.com/drizopoulos/GLMMadaptive)
+# 对随机效应 adaptive Gauss-Hermite quadrature 积分
+library(GLMMadaptive)
+fit_sim_poisson_adaptive <- mixed_model(
+  fixed = y ~ x1 + x2 + offset(log(u)), 
+  random = ~ 1 | g, data = sim_data,
+  family = poisson(link = "log")
+)
+summary(fit_sim_poisson_adaptive)
+# [glmmML](https://CRAN.R-project.org/package=glmmML)
+# Maximum Likelihood and numerical integration via Gauss-Hermite quadrature.
+library(glmmML)
+fit_sim_poisson_glmmml <- glmmML(
+  formula = y ~ x1 + x2,
+  family = poisson,
+  data = sim_data,
+  offset = log(u),
+  cluster = g
+)
+summary(fit_sim_poisson_glmmml)
+# Generalized Estimating Equation
+# [geepack](https://cran.r-project.org/package=geepack) GEE
+library(geepack)
+fit_sim_poisson_geepack <- geeglm(
+  formula = y ~ x1 + x2,
+  family = poisson(link = "log"),
+  id = g,
+  offset = log(u),
+  data = sim_data,
+  corstr = "exchangeable",
+  scale.fix = FALSE
+)
+summary(fit_sim_poisson_geepack)
+# [glmm](https://github.com/knudson1/glmm)
+# Monte Carlo Likelihood Approximation 近似对随机效应的积分
+library(glmm)
+set.seed(2023)
+# 设置双核并行迭代
+clust <- makeCluster(2) # doParallel
+# 对迭代时间没有给出预估，一旦执行，不知道什么时候会跑完
+fit_sim_poisson_glmm <- glmm(y ~ x1 + x2,
+  random = list(~ 1 + g), # 随机效应
+  varcomps.names = c("G"), # 给随机效应取个名字
+  data = sim_data,
+  family.glmm = poisson.glmm, # 泊松型
+  m = 10^4, debug = TRUE, cluster = clust
+)
+stopCluster(clust)
+```
 
 
 ### 拟合泊松空间混合效应模型 {#sec-poisson-sglmm}
