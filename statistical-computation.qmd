@@ -110,7 +110,7 @@ X = \begin{bmatrix}
 \end{bmatrix}
 $$
 
-记 $X = (\bm{x}_1, \bm{x}_2, \cdots, \bm{x}_n)$ 是一个$n \times k$矩阵，则 $\bm{x}_i$ 表示数据矩阵 $X$ 的第 $i$ 行，一共有 $k$ 列。同理 $\boldsymbol{\beta} = (\beta_1, \beta_2, \cdots, \beta_k)$ ，对第 $i$ 次观测
+记 $X = (\bm{x}_1, \bm{x}_2, \cdots, \bm{x}_n) = (X_1, X_2, \cdots, X_k)$ 是一个$n \times k$ 数据矩阵，其中 $\bm{x}_i$ 表示矩阵 $X$ 的第 $i$ 行，一共有 $n$ 行，$X_j, j = 1,2, \cdots, k$ 表示矩阵 $X$ 的第 $j$ 列，一共有 $k$ 列。类似地， $\boldsymbol{\beta} = (\beta_1, \beta_2, \cdots, \beta_k)$ 是一个列向量，$\beta_j$ 表示第 $j$ 个变量 $X_j$ 的系数。对第 $i$ 次观测
 
 $$
 \mathrm{Logistic}^{-1}(p_i)= \ln\big(\frac{p_i}{1-p_i}\big) = \alpha + \bm{x}_i\boldsymbol{\beta}
@@ -692,12 +692,12 @@ lambda <- u * exp(rep(cbind(1, X) %*% beta, each = 25))
 # 响应变量的值
 y <- rpois(n, lambda = lambda)
 # 模拟的数据集
-simdata <- data.frame(y, X, u, g)
-colnames(simdata) <- c("y", "x1", "x2", "u", "g")
+sim_data <- data.frame(y, X, u, g)
+colnames(sim_data) <- c("y", "x1", "x2", "u", "g")
 # 模型拟合
 library(lme4)
 fit_sim_poisson_glmer <- glmer(y ~ x1 + x2 + (1 | g),
-  data = simdata,
+  data = sim_data,
   offset = log(u),
   family = poisson(link = "log")
 )
@@ -706,9 +706,34 @@ summary(fit_sim_poisson_glmer)
 ```
 
 
-下面继续增加复杂度，随机效应中含随机过程的泊松型广义线性混合效应模型。
+下面继续增加复杂度，在泊松型广义线性混合效应模型的随机效应中添加一个二维的高斯随机过程 $\mathcal{S}$ ，具体地，如果 $D$ 代表二维平面坐标，则该模型为泊松型空间广义线性混合效应模型，见 @sec-poisson-sglmm 。
 
-设定参数，真实、模拟 重构、Stan 重构的比较
+$$
+\begin{aligned}
+\log(\lambda(\bm{d})) &= X\boldsymbol{\beta} + S(\bm{d})\\
+Y(\bm{d}) &\sim \mathrm{Poisson}(u(\bm{d})\lambda(\bm{d}))
+\end{aligned}
+$$ {#sec-poisson-sglmm}
+
+其中，$S(\bm{d}) = \big(S(d_1), S(d_2), \cdots,S(d_N)\big)$ 是随机过程 $\mathcal{S}$ 的一个具体实现，代表一个随机向量。记 $S_i = S(d_i)$ 表示位置 $d_i$ 处的随机效应，是一个随机变量。响应变量 $Y(\bm{d})$ 、漂移项 $u(\bm{d})$ 和强度 $\lambda(\bm{d})$ 都是和位置 $\bm{d}$ 相关的，$\boldsymbol{\beta}$ 是 $k \times 1$ 维的回归向量。通常情况下，位置 $\bm{d}$ 表示一对一对的二维坐标，也可以是三维的。随机过程 $S(\bm{d})$ 服从均值函数为 0，自协方差函数为 $R(h)$ 的二维平稳空间高斯过程，简单起见，自协方差函数为幂二次指数型，如下：
+
+$$
+\begin{aligned}
+R(h;\sigma^2,\phi) &= \mathsf{Cov}\big(S(d_i), S(d_j)\big) \\
+     &= \sigma^2\exp(-||d_i - d_j||_2 / \phi) \\
+     &= \sigma^2\exp(-h / \phi)
+\end{aligned}
+$$
+
+其中 $h$ 表示位置 $d_i$ 与 $d_j$ 之间的距离，常用的距离度量是欧氏距离。另一个常用的自协方差函数为 Matern 型，带有 3 个参数，如下：
+
+$$
+R(h;\sigma^2,\phi,\kappa) = \sigma^2 \frac{(h/\phi)^{\kappa}\mathcal{K}_{\kappa}(h/\phi)}{2^{\kappa-1}\Gamma(\kappa)}
+$$
+
+其中 $\mathcal{K}$ 表示贝塞尔函数， $\kappa$ 常取 0.5。
+
+下面设定一组参数，从模型 @sec-poisson-sglmm 模拟一组数据，绘制真实的观测图，然后调用 Stan 拟合模型，将真实参数和估计的结果比较，再预测重构观测图。
 
 
 
@@ -1006,18 +1031,18 @@ pp_check(fit_rongelap_brm)
 
 $$
 \begin{aligned}
-\log\{\lambda(x_i)\} & =  \beta + S(x_{i}) \\
-\log\{\lambda(x_i)\} & =  \beta + S(x_{i}) + Z_{i}
+\log\{\lambda(d_i)\} & =  \beta + S(d_{i}) \\
+\log\{\lambda(d_i)\} & =  \beta + S(d_{i}) + Z_{i}
 \end{aligned}
 $$
 
-根据 ${}^{137}\mathrm{Cs}$ 放出的伽马射线在 $N=157$ 站点不同时间间隔 $t(x_{i})$ 的放射量，建立泊松广义线性混合效应模型。模型中，截距 $\beta$ 相当于平均水平，放射粒子数作为响应变量服从均值为 $t(x_{i})\lambda(x_i)$ 的泊松分布，即 $Y_{i} \sim \mathrm{Poisson}(t(x_{i})\lambda(x_i))$，$\lambda(x_i)$ 可理解为辐射强度，$S(x_{i})$ 表示位置 $x_i$ 处的空间效应，服从指数型自协方差函数为 
+根据 ${}^{137}\mathrm{Cs}$ 放出的伽马射线在 $N=157$ 站点不同时间间隔 $t(d_{i})$ 的放射量，建立泊松广义线性混合效应模型。模型中，截距 $\beta$ 相当于平均水平，放射粒子数作为响应变量服从均值为 $t(d_{i})\lambda(d_i)$ 的泊松分布，即 $Y_{i} \sim \mathrm{Poisson}(t(d_{i})\lambda(d_i))$，$\lambda(d_i)$ 可理解为辐射强度，$S(d_{i})$ 表示位置 $d_i$ 处的空间效应，服从指数型自协方差函数为 
 
 $$
-\mathrm{Cov}( S(x_i), S(x_j) ) = \sigma^2 \exp( -\|x_i -x_j\|_{2} / \phi )
+\mathrm{Cov}( S(d_i), S(d_j) ) = \sigma^2 \exp( -\|d_i -d_j\|_{2} / \phi )
 $$
 
-的平稳空间高斯过程 $S(x),x \in \mathbb{R}^2$，且 $Z_i$ 之间相互独立同正态分布 $\mathcal{N}(0,\tau^2)$ ，$Z_i$ 表示与空间效应无关的块金效应，即非空间的随机效应，可以理解为测量误差或空间变差，这里 $i = 1,\ldots, 157$。
+的平稳空间高斯过程 $S(d),d \in \mathbb{R}^2$，且 $Z_i$ 之间相互独立同正态分布 $\mathcal{N}(0,\tau^2)$ ，$Z_i$ 表示与空间效应无关的块金效应，即非空间的随机效应，可以理解为测量误差或空间变差，这里 $i = 1,\ldots, 157$。
 
 [**glmmTMB**](https://github.com/glmmTMB/glmmTMB) 包[@Brooks2017]可以拟合空间广义线性混合效应模型，使用语法和前面介绍的 **lme4** 包一样。
 
