@@ -756,7 +756,7 @@ $$
 \begin{aligned}
 R(h;\sigma^2,\phi) &= \mathsf{Cov}\big(S(d_i), S(d_j)\big) \\
      &= \sigma^2\exp(-||d_i - d_j||_2 / \phi) \\
-     &= \sigma^2\exp(-h / \phi)
+     &= \sigma^2\exp(-h^2 / \phi)
 \end{aligned}
 $$
 
@@ -1067,17 +1067,18 @@ pp_check(fit_rongelap_brm)
 $$
 \begin{aligned}
 \log\{\lambda(d_i)\} & =  \beta + S(d_{i}) \\
-\log\{\lambda(d_i)\} & =  \beta + S(d_{i}) + Z_{i}
+\log\{\lambda(d_i)\} & =  \beta + S(d_{i}) + Z_{i} \\
+Y_{i} &\sim \mathrm{Poisson}(t(d_{i})\lambda(d_i))
 \end{aligned}
 $$
 
-根据 ${}^{137}\mathrm{Cs}$ 放出的伽马射线在 $N=157$ 站点不同时间间隔 $t(d_{i})$ 的放射量，建立泊松广义线性混合效应模型。模型中，截距 $\beta$ 相当于平均水平，放射粒子数作为响应变量服从均值为 $t(d_{i})\lambda(d_i)$ 的泊松分布，即 $Y_{i} \sim \mathrm{Poisson}(t(d_{i})\lambda(d_i))$，$\lambda(d_i)$ 可理解为辐射强度，$S(d_{i})$ 表示位置 $d_i$ 处的空间效应，服从指数型自协方差函数为 
+根据 ${}^{137}\mathrm{Cs}$ 放出的伽马射线在 $N=157$ 站点不同时间间隔 $t(d_{i})$ 的放射量，建立泊松广义线性混合效应模型。模型中，截距 $\beta$ 相当于平均水平，放射粒子数$Y_{i}$作为响应变量服从均值为 $t(d_{i})\lambda(d_i)$ 的泊松分布，$\lambda(d_i)$ 可理解为辐射强度，$S(d_{i})$ 表示位置 $d_i$ 处的空间效应，随机过程 $S(d)$ 的自协方差函数为幂二次指数型，如下：
 
 $$
 \mathrm{Cov}( S(d_i), S(d_j) ) = \sigma^2 \exp( -\|d_i -d_j\|_{2} / \phi )
 $$
 
-的平稳空间高斯过程 $S(d),d \in \mathbb{R}^2$，且 $Z_i$ 之间相互独立同正态分布 $\mathcal{N}(0,\tau^2)$ ，$Z_i$ 表示与空间效应无关的块金效应，即非空间的随机效应，可以理解为测量误差或空间变差，这里 $i = 1,\ldots, 157$。
+$S(d),d \in \mathbb{R}^2$ 是平稳空间高斯过程，且 $Z_i$ 之间相互独立同正态分布 $\mathcal{N}(0,\tau^2)$ ，$Z_i$ 表示与空间效应无关的块金效应，即非空间的随机效应，可以理解为测量误差、空间变差或背景辐射，这里 $i = 1,\ldots, 157$。
 
 [**glmmTMB**](https://github.com/glmmTMB/glmmTMB) 包[@Brooks2017]可以拟合空间广义线性混合效应模型，使用语法和前面介绍的 **lme4** 包一样。
 
