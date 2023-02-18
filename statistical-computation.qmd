@@ -44,7 +44,7 @@ $$
 #| label: fig-logistic
 #| echo: false
 #| fig-cap: "逻辑斯谛分布"
-#| fig-subcap: 
+#| fig-subcap:
 #| - 概率密度函数
 #| - 概率分布函数
 #| fig-width: 4
@@ -157,7 +157,7 @@ set.seed(2023)
 n <- 2500
 k <- 10
 X <- matrix(rnorm(n * k), ncol = k)
-y <- rbinom(n, size = 1, prob = plogis(1 + 3 * X[,1] - 2 * X[,2]))
+y <- rbinom(n, size = 1, prob = plogis(1 + 3 * X[, 1] - 2 * X[, 2]))
 ```
 
 模拟数据矩阵 X 与上述记号 $X$ 是对应的，记号 $x_i$ 表示数据矩阵的第 $i$ 行。$\alpha$ 是逻辑回归方程的截距，$\beta$ 是 $k$ 维向量，$X$ 是 $n \times k$ 维的矩阵且 $n > k$，$y$ 是 $n$ 维向量。极大化对数似然函数 @eq-logit-lik-log ，就是求解一个多维非线性无约束优化问题。方便起见，将 $\alpha$ 合并进 $\beta$ 向量，另，函数 `optim()` 默认求极小，因此在对数似然函数前添加负号。
@@ -213,7 +213,7 @@ wireframe(
 
 ```{r}
 optim(
-  par = rep(1, 11),   # 初始值
+  par = rep(1, 11), # 初始值
   fn = log_logit_lik, # 目标函数
   method = "SANN",
   control = list(maxit = 10000)
@@ -226,11 +226,11 @@ optim(
 # 梯度函数
 log_logit_lik_grad <- function(beta) {
   p <- plogis(cbind(1, X) %*% beta)
-  - t((y / p - (1 - y) / (1 - p)) * p * (1 - p))  %*% cbind(1, X) 
+  -t((y / p - (1 - y) / (1 - p)) * p * (1 - p)) %*% cbind(1, X)
 }
 
 optim(
-  par = rep(1, 11),   # 初始值
+  par = rep(1, 11), # 初始值
   fn = log_logit_lik, # 目标函数
   gr = log_logit_lik_grad, # 目标函数的梯度
   method = "L-BFGS-B"
@@ -274,7 +274,7 @@ op <- OP(
   objective = F_objective(F = log_logit_lik, n = 11L, G = log_logit_lik_grad),
   bounds = V_bound(ld = -3, ud = 3, nobj = 11L)
 )
-nlp <- ROI_solve(op, solver = "nloptr.lbfgs", start = rep(1,11))
+nlp <- ROI_solve(op, solver = "nloptr.lbfgs", start = rep(1, 11))
 nlp
 ```
 
@@ -330,8 +330,10 @@ plot(fit_glm, ylab = "回归系数")
 #| fig-height: 5
 #| fig-showtext: true
 
-plot(fit_glm$lambda, ylab = expression(lambda), xlab = "迭代次数",
-     main = "惩罚系数的迭代路径")
+plot(fit_glm$lambda,
+  ylab = expression(lambda), xlab = "迭代次数",
+  main = "惩罚系数的迭代路径"
+)
 ```
 
 随着迭代的进行，惩罚系数 $\lambda$ 越来越小，接近于 0，这也是符合预期的，因为模型本来就是简单的逻辑回归，不带惩罚项。选择一个迭代趋于稳定时的 $\lambda$ 比如 0.0005247159，此时各个参数的取值如下：
@@ -429,14 +431,14 @@ mod_logit <- cmdstan_model(
   cpp_options = list(stan_threads = TRUE)
 )
 fit_logit <- mod_logit$sample(
-  data = mdata, 
-  chains = 4, 
+  data = mdata,
+  chains = 4,
   parallel_chains = 1,
   iter_warmup = 1000, # 每条链预处理迭代次数
   iter_sampling = 2000, # 每条链总迭代次数
   threads_per_chain = 1, # 每条链设置一个线程
   seed = 20232023,
-  show_messages = FALSE, 
+  show_messages = FALSE,
   refresh = 0
 )
 ```
@@ -448,7 +450,7 @@ fit_logit <- mod_logit$sample(
 #| tbl-cap: "模型参数的贝叶斯估计结果"
 #| echo: false
 
-fit_logit$summary(c("alpha", "beta", "lp__")) |> 
+fit_logit$summary(c("alpha", "beta", "lp__")) |>
   knitr::kable(digits = 3)
 ```
 
@@ -526,7 +528,7 @@ mcmc_hist(fit_logit$draws(c("beta[1]", "beta[2]")),
 # L-BFGS 算法拟合模型
 fit_optim_logit <- mod_logit$optimize(
   data = mdata, # 观测数据
-  init = 0, # 所有参数初值设为 0 
+  init = 0, # 所有参数初值设为 0
   refresh = 0, # 不显示迭代进程
   algorithm = "lbfgs", # 优化器
   threads = 1, # 单线程
@@ -547,7 +549,7 @@ Stan 实现的 variational 方法调用自动微分变分近似推断优化器�
 # 自动微分变分近似推断
 fit_advi_logit <- mod_logit$variational(
   data = mdata, # 观测数据
-  init = 0, # 所有参数初值设为 0 
+  init = 0, # 所有参数初值设为 0
   refresh = 0, # 不显示迭代进程
   algorithm = "meanfield", # 优化器
   threads = 1, # 单线程
@@ -562,7 +564,7 @@ fit_advi_logit <- mod_logit$variational(
 #| tbl-cap: "模型参数的 ADVI 结果"
 #| echo: false
 
-fit_advi_logit$summary(c("alpha", "beta", "lp__")) |> 
+fit_advi_logit$summary(c("alpha", "beta", "lp__")) |>
   knitr::kable(digits = 3)
 ```
 
@@ -618,7 +620,7 @@ log_poission_lik <- logLik(fit_poisson_glm)
 ```
 
 ::: {.callout-tip}
-对于常见的统计模型，**brms** 包[@brms2017]都内置了预编译的 Stan 程序，下面用 **brms** 包的函数 `brm()` 拟合泊松广义线性模型，结果和 Base R 内置的 函数 `glm()` 拟合结果几乎一致，因编译和抽样的过程比较花费时间，速度不及 Base R。
+对于常见的统计模型，**brms** 包[@brms2017]都内置了预编译的 Stan 程序，下面用 **brms** 包的函数 `brm()` 拟合带上述漂移项的泊松广义线性模型，参数估计结果和 Base R 函数 `glm()` 的几乎一致，因编译和抽样的过程比较花费时间，速度不及 Base R。
 
 ```r
 # brms
@@ -663,31 +665,42 @@ Monte Carlo SE of elpd_loo is 0.0.
 All Pareto k estimates are good (k < 0.5).
 See help('pareto-k-diagnostic') for details.
 ```
+
+looic 指标的作用类似 AIC 指标，所以也几乎相同的。
 :::
 
-
-以上是简单的泊松型广义线性模型，下面增加一点复杂度，模拟带漂移项的泊松型广义线性混合效应模型。
+以上是带漂移项的泊松型广义线性模型，下面在此基础上，再增加一个随机效应。
 
 ```{r}
 set.seed(2023)
-n <- 2500 # 样本量
+# 样本量
+n <- 2500
+# 截距和两个协变量的系数
 beta <- c(0.5, 0.3, 0.2)
-X <- MASS::mvrnorm(100 , mu = rep(0, 2), Sigma = matrix(c(1, 0.8, 0.8, 1), 2))
+# 两个协变量
+X <- MASS::mvrnorm(100,
+  mu = rep(0, 2),
+  Sigma = matrix(c(1, 0.8, 0.8, 1), 2)
+)
+# 漂移项
 u <- rep(c(2, 4), each = n / 2)
-g <- factor(rep(1:25, each = 100)) # 25 个组 # 每个组 100 个观察值
-lambda <- u * exp(rep(cbind(1, X) %*% beta, each = 25) )
+# 分 25 个组 每个组 100 个观察值
+g <- factor(rep(1:25, each = 100))
+# 泊松分布的期望
+lambda <- u * exp(rep(cbind(1, X) %*% beta, each = 25))
+# 响应变量的值
 y <- rpois(n, lambda = lambda)
-
+# 模拟的数据集
 simdata <- data.frame(y, X, u, g)
 colnames(simdata) <- c("y", "x1", "x2", "u", "g")
-
+# 模型拟合
 library(lme4)
 fit_sim_poisson_glmer <- glmer(y ~ x1 + x2 + (1 | g),
   data = simdata,
   offset = log(u),
   family = poisson(link = "log")
 )
-
+# 模型输出
 summary(fit_sim_poisson_glmer)
 ```
 
@@ -726,7 +739,7 @@ plot(mhl_map_gadm, xlim = c(166.82, 166.92), ylim = c(11.14, 11.183))
 ```{r}
 #| label: tbl-rongelap-nuclear-data
 #| tbl-cap: "朗格拉普岛核污染检测数据及海岸线坐标数据"
-#| tbl-subcap: 
+#| tbl-subcap:
 #|   - "核污染检测数据"
 #|   - "海岸线坐标数据"
 #| layout-ncol: 2
@@ -764,11 +777,11 @@ xyplot(cY ~ cX,
   data = rongelap, pch = 19, cex = 0.25,
   xlab = "横坐标",
   ylab = "纵坐标",
-  scales = list(    
+  scales = list(
     # 去掉图形上边、右边多余的刻度线
     x = list(alternating = 1, tck = c(1, 0)),
     y = list(alternating = 1, tck = c(1, 0))
-    ),
+  ),
   # 减少三维图形的边空
   lattice.options = list(
     layout.widths = list(
@@ -783,9 +796,11 @@ xyplot(cY ~ cX,
   panel = function(...) {
     panel.grid(h = -1, v = -1, ...)
     panel.points(col = "black", ...)
-    panel.lines(x = rongelap_coastline$cX, 
-                y = rongelap_coastline$cY, 
-                col = "black")
+    panel.lines(
+      x = rongelap_coastline$cX,
+      y = rongelap_coastline$cY,
+      col = "black"
+    )
   },
   par.settings = list(axis.line = list(col = "black"))
 )
@@ -840,9 +855,9 @@ print(p2, vp = grid::viewport(x = .25, y = .725, width = .275, height = .45))
 cloud(counts / time ~ cX * cY,
   data = rongelap, col = "black",
   scales = list(arrows = FALSE, col = "black"),
-  xlab = list("横坐标", rot = 20), 
-  ylab = list("纵坐标", rot = -50),  
-  zlab = list("放射强度", rot = 90),  
+  xlab = list("横坐标", rot = 20),
+  ylab = list("纵坐标", rot = -50),
+  zlab = list("放射强度", rot = 90),
   type = c("p", "h"), pch = 16, lwd = 0.5,
   # 设置三维图的观察方位
   screen = list(z = 30, x = -65, y = 0)
@@ -869,9 +884,9 @@ with(rongelap, {
     x = cX, y = cY, z = counts / time,
     xlab = "\nX", ylab = "\nY", zlab = "\nZ",
     pch = 16, type = "h", ticktype = "detailed",
-    phi = 40, theta = -30, r = 50, d = 0.1, 
+    phi = 40, theta = -30, r = 50, d = 0.1,
     expand = 0.5, box = TRUE,
-    # bty = "u", 
+    # bty = "u",
     bty = "f",
     col = "black", asp = 1, col.axis = "gray"
   )
