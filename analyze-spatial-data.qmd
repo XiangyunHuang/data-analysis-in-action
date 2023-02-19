@@ -380,7 +380,7 @@ rongelap_coastline_sfp <- st_cast(st_combine(st_geometry(rongelap_coastline_sf))
 ```{r}
 #| label: fig-point-to-polygon
 #| fig-cap: "海岸线"
-#| fig-subcap: 
+#| fig-subcap:
 #| - 点数据
 #| - 多边形数据
 #| layout-ncol: 1
@@ -445,7 +445,7 @@ ggplot() +
   theme_void()
 ```
 
-**sf** 包的函数 `st_within()` 可以将小网格落在缓冲区以内的筛选出来，再用函数 `st_centroid()` 计算余下小网格的中心点。
+**sf** 包的函数 `st_intersects()` 可以将小网格落在缓冲区以内的筛选出来，再用函数 `st_centroid()` 计算余下小网格的中心点。
 
 ```{r}
 rongelap_coastline_grid <- st_as_sf(rongelap_coastline_grid)
@@ -465,9 +465,81 @@ rongelap_grid_centroid <- st_centroid(rongelap_grid)
 #| echo: false
 
 ggplot() +
-  geom_sf(data = rongelap_coastline_sfp, fill = NA, color = "gray30", linewidth = 0.5) +
+  geom_sf(data = rongelap_coastline_sfp, 
+          fill = NA, color = "gray30", linewidth = 0.5) +
   geom_sf(data = rongelap_grid, fill = NA, color = "gray30") +
   geom_sf(data = rongelap_grid_centroid, size = 0.75) +
   theme_void()
 ```
 
+抽取网格中心点的坐标并存储为 data.frame 类型，以便输入模型中。
+
+```{r}
+rongelap_grid_df <- as.data.frame(st_coordinates(rongelap_grid_centroid))
+colnames(rongelap_grid_df) <- c("cX", "cY")
+rongelap_grid_df$time <- 300
+```
+
+将数据输入 **spaMM** 包拟合的模型，将模型返回的结果整理成数据框，并与采样点数据合并。
+
+```{r}
+rongelap_grid_pred <- predict(fit_rongelap_spamm,
+  newdata = rongelap_grid_df, type = "response"
+)
+rongelap_grid_df$pred <- as.vector(rongelap_grid_pred)
+```
+
+将预测结果展示到图上。
+
+```{r}
+#| label: fig-rongelap-pred-point
+#| fig-cap: "网格中心点的核污染浓度预测值"
+#| fig-width: 7
+#| fig-height: 4
+#| fig-showtext: true
+
+rongelap_grid_sf <- st_as_sf(rongelap_grid_df, coords = c("cX", "cY"), dim = "XY")
+
+ggplot() +
+  geom_sf(data = rongelap_grid_sf, aes(color = pred / time), show.legend = FALSE) +
+  geom_sf(
+    data = rongelap_coastline_sfp,
+    fill = NA, color = "gray30", linewidth = 0.5
+  ) +
+  scale_color_continuous_sequential(palette = "Grays") +
+  theme_void() +
+  coord_sf(expand = F)
+```
+
+为了绘制热图，利用 **stars** 包将数据框整理、转化成栅格对象。
+
+```{r}
+library(abind)
+library(stars)
+rongelap_grid_stars <- st_rasterize(rongelap_grid_sf, nx = 50, ny = 25)
+```
+
+使用 **ggplot2** 包绘制放射强度的热力分布图。
+
+```{r}
+#| label: fig-rongelap-pred-stars
+#| fig-cap: "网格中心点的核污染浓度预测值"
+#| fig-width: 7
+#| fig-height: 4
+#| fig-showtext: true
+
+library(colorspace)
+ggplot() +
+  geom_stars(
+    data = rongelap_grid_stars,
+    aes(fill = pred / time), show.legend = FALSE,
+    na.action = na.omit
+  ) +
+  geom_sf(
+    data = rongelap_coastline_sfp,
+    fill = NA, color = "gray30", linewidth = 0.5
+  ) +
+  scale_fill_continuous_sequential(palette = "Grays") +
+  theme_void() +
+  coord_sf(expand = F)
+```
