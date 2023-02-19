@@ -43,7 +43,7 @@ rongelap_coastline <- readRDS(file = "data/rongelap_coastline.rds")
 
 library(knitr)
 knitr::kable(head(rongelap, 6),
-  col.names = c("横坐标", "纵坐标", "数目", "时间")
+  col.names = c("横坐标", "纵坐标", "数目", "时间（秒）")
 )
 knitr::kable(head(rongelap_coastline, 6),
   col.names = c("横坐标", "纵坐标")
@@ -352,4 +352,43 @@ summary(fit_rongelap_spamm)
 ```
 
 从输出结果来看，与 **glmmTMB** 很接近，模型固定效应的截距项 1.824，随机效应的方差为 0.2973，对数似然函数值为 -1317.551，拟合效果的提升几乎可以忽略。
+
+接下来，预测给定的边界（海岸线）内的任意位置的核污染浓度，展示全岛的污染图景。先从点构造多边形数据，再将多边形做网格划分，继而将格点作为模型输入获得预测，预测各个格点处的辐射强度。
+
+海岸线上取一些点，点的数量越多，对海岸线的刻画越精确，这在转弯处体现得非常明显。海岸线的数据是以成对的坐标构成，导入 R 语言中，是以数据框的形式存储，为了方便后续的操作，引入空间数据操作的 **sf** 包[@Pebesma2018]。将海岸线数据转化为空间点数据 POINT。
+
+```{r}
+library(sf)
+rongelap_coastline_sf <- st_as_sf(rongelap_coastline, coords = c("cX", "cY"), dim = "XY")
+```
+
+sf 包提供了大量空间操作函数，比如用 `st_bbox()` 获得东西南北的边界点。
+
+```{r}
+st_bbox(rongelap_coastline_sf)
+```
+
+连接点 POINT 构造多边形 POLYGON 对象。
+
+```{r}
+rongelap_coastline_sfp <- st_cast(st_combine(st_geometry(rongelap_coastline_sf)), "POLYGON")
+```
+
+@fig-point-to-polygon 上下两个子图分别展示点和线。上图是原始的点数据，下图是以点带线，串联 POINT 构造 POLYGON 后的多边形。
+
+```{r}
+#| label: fig-point-to-polygon
+#| fig-cap: "海岸线"
+#| fig-subcap: 
+#| - 点数据
+#| - 多边形数据
+#| layout-ncol: 1
+#| fig-width: 5.14
+#| fig-height: 3
+#| fig-showtext: true
+#| par: true
+
+plot(rongelap_coastline_sf)
+plot(rongelap_coastline_sfp)
+```
 
