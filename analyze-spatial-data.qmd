@@ -363,7 +363,7 @@ rongelap_sf <- st_as_sf(rongelap, coords = c("cX", "cY"), dim = "XY")
 rongelap_coastline_sf <- st_as_sf(rongelap_coastline, coords = c("cX", "cY"), dim = "XY")
 ```
 
-sf 包提供了大量空间操作函数，比如用 `st_bbox()` 获得东西南北的边界点。
+**sf** 包提供了大量空间操作函数，比如用 `st_bbox()` 获得东西南北的边界点。
 
 ```{r}
 st_bbox(rongelap_coastline_sf)
@@ -416,8 +416,51 @@ rongelap_coastline_buffer <- st_buffer(rongelap_coastline_sfp, dist = 50)
 #| echo: false
 
 ggplot() +
-  geom_sf(data = rongelap_sf ) +
+  geom_sf(data = rongelap_sf, size = 0.5) +
   geom_sf(data = rongelap_coastline_sfp, fill = NA, color = "gray30") +
   geom_sf(data = rongelap_coastline_buffer, fill = NA, color = "black") +
   theme_void()
 ```
+
+接下来，利用函数 `st_make_grid()` 根据海岸缓冲线的边界打网格，朗格拉普到是狭长的，因此，网格是 $25\times 50 $ 的，意味着水平方向 25 行，垂直方向 50 列，细密程度是可以调整的，越密岛内的格点越多，核污染浓度计算越精确，同时也越耗时。
+
+```{r}
+rongelap_coastline_grid <- st_make_grid(rongelap_coastline_buffer, n = c(50, 25))
+```
+
+区域网格化后的效果如 @fig-rongelap-grid 所示。
+
+```{r}
+#| label: fig-rongelap-coastline-grid
+#| fig-cap: "朗格拉普岛网格化"
+#| fig-width: 7
+#| fig-height: 4
+#| fig-showtext: true
+#| echo: false
+
+ggplot() +
+  geom_sf(data = rongelap_coastline_grid, fill = NA, color = "gray") +
+  geom_sf(data = rongelap_coastline_sfp, fill = NA, color = "gray30") +
+  geom_sf(data = rongelap_coastline_buffer, fill = NA, color = "black") +
+  theme_void()
+```
+
+然后，去掉和岛屿没有交集的网格，留下缓冲区以内的网格。**sf** 包的函数 `st_intersection()` 可以将两个多边形相交的部分取出来，全岛网格化后，如 @fig-rongelap-grid 所示。
+
+```{r}
+rongelap_grid <- st_intersection(rongelap_coastline_grid, rongelap_coastline_buffer)
+```
+
+```{r}
+#| label: fig-rongelap-grid
+#| fig-cap: "朗格拉普岛网格化"
+#| fig-width: 7
+#| fig-height: 4
+#| fig-showtext: true
+#| echo: false
+
+ggplot() +
+  geom_sf(data = rongelap_grid, fill = NA, color = "gray30") +
+  theme_void()
+```
+
