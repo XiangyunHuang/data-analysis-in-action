@@ -4,8 +4,112 @@
 1. 重抽样法
 1. 自助法
 1. MCMC 方法
+
+以一个线性模型引入
 -->
- 
+
+
+## 线性模型 {#sec-plant-growth}
+
+
+```{r}
+#| label: compile-plant-growth
+#| message: false
+#| results: hide
+
+library(cmdstanr)
+# 编译模型
+mod_plant_growth <- cmdstan_model(
+  stan_file = "code/plant_growth.stan",
+  compile = TRUE,
+  cpp_options = list(stan_threads = TRUE)
+)
+# 准备数据
+plant_growth_d <- list(
+  N = nrow(PlantGrowth), # 观测记录的条数
+  K = 2, # 协变量个数
+  x = model.matrix(weight ~ group, data = PlantGrowth)[,2:3], # N x 2 矩阵
+  y = PlantGrowth[, "weight"] # N 向量
+)
+nchains <- 4 # 4 条迭代链
+# 给每条链设置不同的参数初始值
+inits_data <- lapply(1:nchains, function(i) {
+  list(
+    alpha = runif(1, 0, 1),
+    beta = runif(2, 1, 10),
+    sigma = runif(1, 1, 10)
+  )
+})
+# 采样拟合模型
+fit_plant_growth <- mod_plant_growth$sample(
+  data = plant_growth_d, # 观测数据
+  init = inits_data, # 迭代初值
+  iter_warmup = 1000, # 每条链预处理迭代次数
+  iter_sampling = 2000, # 每条链总迭代次数
+  chains = nchains, # 马尔科夫链的数目
+  parallel_chains = 1, # 指定 CPU 核心数，可以给每条链分配一个
+  threads_per_chain = 1, # 每条链设置一个线程
+  show_messages = FALSE, # 不显示迭代的中间过程
+  refresh = 0, # 不显示采样的进度
+  seed = 20190425 # 设置随机数种子，不要使用 set.seed() 函数
+)
+```
+
+模型参数估计结果如下：
+
+```{r}
+#| label: tbl-plant-growth-output
+#| tbl-cap: "贝叶斯线性模型参数估计结果"
+#| echo: false
+
+fit_plant_growth$summary(c("alpha", "beta[1]", "beta[2]", "sigma", "lp__")) |> 
+  knitr::kable(digits = 3)
+```
+
+
+:::{.callout-tip}
+[**brms**](https://github.com/paul-buerkner/brms) 由 [Paul-Christian Bürkner](https://paul-buerkner.github.io/) 开发，提供了 Stan 的 R 接口，求解统计模型的接口调用方式和 R 的公式语法基本一致，相比于 [**rstan**](https://github.com/stan-dev/rstan) 和 [**rstanarm**](https://github.com/stan-dev/rstanarm) 使用更加方便，因为它内置了大量的统计模型的实现，将公式语法翻译成 Stan 编码的模型，然后调用 **rstan** 或 **cmdstanr** 翻译成 C++ 最后编译成动态链接库。
+
+```{r}
+#| eval: false
+#| echo: true
+
+fit_plant_growth <- brms::brm(weight ~ group,
+  data = PlantGrowth,
+  family = gaussian(),
+  backend = "cmdstanr", algorithm = "sampling",
+  refresh = 0, seed = 2022, cores = 1,
+  chains = 4, iter = 2000, threads = 1
+)
+```
+```r
+fit_plant_growth
+```
+```
+ Family: gaussian 
+  Links: mu = identity; sigma = identity 
+Formula: weight ~ group 
+   Data: PlantGrowth (Number of observations: 30) 
+  Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
+         total post-warmup draws = 4000
+
+Population-Level Effects: 
+          Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+Intercept     5.03      0.21     4.62     5.44 1.00     2736     2602
+grouptrt1    -0.37      0.29    -0.94     0.18 1.00     3132     2885
+grouptrt2     0.50      0.30    -0.07     1.08 1.00     3155     2672
+
+Family Specific Parameters: 
+      Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+sigma     0.65      0.10     0.50     0.87 1.00     3263     2644
+
+Draws were sampled using sample(hmc). For each parameter, Bulk_ESS
+and Tail_ESS are effective sample size measures, and Rhat is the potential
+scale reduction factor on split chains (at convergence, Rhat = 1).
+```
+:::
+
+
 ## 泊松回归模型 {#sec-poisson-cmdstanr}
 
 先介绍泊松广义线性模型，包括模拟和计算，并和 Stan 实现的结果比较。
