@@ -1,0 +1,141 @@
+# 混合效应模型 {#sec-mixed-effects-models}
+
+## 线性混合效应模型 {#sec-linear-mixed-effects-models}
+
+```{r}
+library(Matrix)
+library(lme4)   # lme 线性混合效应模型
+```
+
+
+## 广义线性混合效应模型 {#sec-generalized-linear-mixed-effects-models}
+
+带漂移项的泊松型广义线性混合效应模型。
+
+```{r}
+set.seed(2023)
+# 样本量
+n <- 2500
+# 截距和两个协变量的系数
+beta <- c(0.5, 0.3, 0.2)
+# 两个协变量
+X <- MASS::mvrnorm(100,
+  mu = rep(0, 2),
+  Sigma = matrix(c(1, 0.8, 0.8, 1), 2)
+)
+# 漂移项
+u <- rep(c(2, 4), each = n / 2)
+# 分 25 个组 每个组 100 个观察值
+g <- factor(rep(1:25, each = 100))
+# 泊松分布的期望
+lambda <- u * exp(rep(cbind(1, X) %*% beta, each = 25))
+# 响应变量的值
+y <- rpois(n, lambda = lambda)
+# 模拟的数据集
+sim_data <- data.frame(y, X, u, g)
+colnames(sim_data) <- c("y", "x1", "x2", "u", "g")
+```
+
+**lme4** 包代表频率派方法拟合模型
+
+```{r}
+# 模型拟合
+library(lme4)
+fit_sim_poisson_glmer <- glmer(y ~ x1 + x2 + (1 | g),
+  data = sim_data,
+  offset = log(u),
+  family = poisson(link = "log")
+)
+# 模型输出
+summary(fit_sim_poisson_glmer)
+```
+
+**brms** 包代表贝叶斯方法拟合模型
+
+```{r}
+#| eval: false
+#| echo: true
+
+# 如何设置先验分布
+fit_sim_poisson_brm <- brms::brm(
+  y ~ x1 + x2 + (1 | g) + offset(log(u)),
+  data = sim_data,
+  family = poisson(link = "log"),
+  # silent = 2, # 关闭消息
+  refresh = 0, # 不显示迭代进度
+  seed = 20232023,
+  backend = "cmdstanr" # 选择后端 rstan 或 cmdstanr
+)
+# 拟合结果
+summary(fit_sim_poisson_brm)
+# 发散很多
+plot(fit_sim_poisson_brm)
+# 模型诊断指标
+brms::WAIC(fit_sim_poisson_brm)
+brms::pp_check(fit_sim_poisson_brm)
+```
+
+```{r}
+#| echo: true
+#| eval: false
+# gee GLMMadaptive glmmML geepack 和 lme4 的模型输出结果是接近的
+# 广义估计方程 
+library(gee)
+fit_sim_poisson_gee <- gee(y ~ x1 + x2 + offset(log(u)),
+  id = g,
+  data = sim_data,
+  family = poisson(link = "log"),
+  corstr = "exchangeable"
+)
+# 输出
+fit_sim_poisson_gee
+# [GLMMadaptive](https://github.com/drizopoulos/GLMMadaptive)
+# 对随机效应 adaptive Gauss-Hermite quadrature 积分
+library(GLMMadaptive)
+fit_sim_poisson_adaptive <- mixed_model(
+  fixed = y ~ x1 + x2 + offset(log(u)), 
+  random = ~ 1 | g, data = sim_data,
+  family = poisson(link = "log")
+)
+summary(fit_sim_poisson_adaptive)
+# [glmmML](https://CRAN.R-project.org/package=glmmML)
+# Maximum Likelihood and numerical integration via Gauss-Hermite quadrature.
+library(glmmML)
+fit_sim_poisson_glmmml <- glmmML(
+  formula = y ~ x1 + x2,
+  family = poisson,
+  data = sim_data,
+  offset = log(u),
+  cluster = g
+)
+summary(fit_sim_poisson_glmmml)
+# Generalized Estimating Equation
+# [geepack](https://cran.r-project.org/package=geepack) GEE
+library(geepack)
+fit_sim_poisson_geepack <- geeglm(
+  formula = y ~ x1 + x2,
+  family = poisson(link = "log"),
+  id = g,
+  offset = log(u),
+  data = sim_data,
+  corstr = "exchangeable",
+  scale.fix = FALSE
+)
+summary(fit_sim_poisson_geepack)
+# [glmm](https://github.com/knudson1/glmm)
+# Monte Carlo Likelihood Approximation 近似对随机效应的积分
+library(glmm)
+set.seed(2023)
+# 设置双核并行迭代
+clust <- makeCluster(2) # doParallel
+# 对迭代时间没有给出预估，一旦执行，不知道什么时候会跑完
+fit_sim_poisson_glmm <- glmm(y ~ x1 + x2,
+  random = list(~ 1 + g), # 随机效应
+  varcomps.names = c("G"), # 给随机效应取个名字
+  data = sim_data,
+  family.glmm = poisson.glmm, # 泊松型
+  m = 10^4, debug = TRUE, cluster = clust
+)
+stopCluster(clust)
+```
+

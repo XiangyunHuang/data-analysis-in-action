@@ -6,18 +6,13 @@
 source("_common.R")
 ```
 
+::: {.hidden}
+$$
+ \def\bm#1{{\boldsymbol #1}}
+$$
+:::
+
 ## 优化问题与回归问题 {#sec-regression-optimization}
-
-<!-- 
-广义最小二乘拟合 nlme::gls  预测 nlme::predict.gls
-用广义最小二乘拟合线性模型 MASS::lm.gls	
-用广义最小二乘拟合趋势面 spatial::surf.gls
-
-[nlsr](https://cran.r-project.org/package=nlsr)
-[bestsubset](https://github.com/ryantibs/best-subset/) 最优子集回归
-[abess](https://github.com/abess-team/abess)
--->
-
 
 
 1996 年出现 Lasso [@lasso1996]，由于缺少高效的求解算法，Lasso 在高维小样本特征选择研究中没有广泛流行，最小角回归(Least Angle Regression, LAR)算法 [@lar2004] 的出现有力促进了Lasso在高维小样本数据中的应用。为了解决Lasso的有偏估计问题，自适应 Lasso、松弛 Lasso， SCAD (Smoothly Clipped Absolute Deviation)[@scad2008]，MCP (Minimax Concave Penalty)[@mcp2010] 陆续出现。经典的普通最小二乘、广义最小二乘、岭回归、逐步回归、Lasso 回归、最优子集回归都可转化为优化问题，一般形式如下：
@@ -29,10 +24,10 @@ $$
 一个带 L1 惩罚项的回归模型的损失函数如下：
 
 $$
-\arg \min_{\boldsymbol{\beta},\lambda} ~~ \frac{1}{2} || \mathbf{y} - X \boldsymbol{\beta} ||_2^2 +  \lambda ||\boldsymbol{\beta}||_1
+\arg \min_{\boldsymbol{\beta},\lambda} ~~ \frac{1}{2} || \bm{y} - X \boldsymbol{\beta} ||_2^2 +  \lambda ||\boldsymbol{\beta}||_1
 $$
 
-其中，$X \in \mathbb{R}^{m\times n}$， $y \in \mathbb{R}^m$，$\beta \in \mathbb{R}^n$， $0 < \lambda \in \mathbb{R}$ 。
+其中，$X \in \mathbb{R}^{m\times n}$， $\bm{y} \in \mathbb{R}^m$，$\boldsymbol{\beta} \in \mathbb{R}^n$， $0 < \lambda \in \mathbb{R}$ 。
 
 下面主要以逻辑回归模型为例，介绍 Base R、[**nloptr**](https://github.com/astamm/nloptr)、 [**glmnet**](https://glmnet.stanford.edu/) 和 [**CmdStanR**](https://github.com/stan-dev/cmdstanr) 等工具包提供的优化器，在求解性能、范围、方法等方面对比总结使用经验。
 
@@ -46,11 +41,31 @@ $$
 ### 逻辑回归 {#sec-logistic-regression}
 
 
+均值为 $m$ ，方差为 $\frac{\pi^2}{3}s^2$ 的 Logistic 分布函数的形式为
+
+$$
+F(x) = \frac{1}{1 + \exp(-\frac{x - m}{s})}
+$$
+
+密度函数的形式为
+
+$$
+f(x) = \frac{\exp(-\frac{x - m}{s})}{s(1 + \exp(-\frac{x-m}{s}))^2} = \frac{\exp(\frac{x - m}{s})}{s(1 + \exp(\frac{x-m}{s}))^2}
+$$
+
+密度函数与分布函数的关系如下：
+
+$$
+\frac{dF(x)}{dx} = f(x) = sF(x)(1 - F(x))
+$$
+
+也就是说 Logistic 分布是上述微分方程的解。
+
 ```{r}
 #| label: fig-logistic
 #| echo: false
 #| fig-cap: "逻辑斯谛分布"
-#| fig-subcap: 
+#| fig-subcap:
 #| - 概率密度函数
 #| - 概率分布函数
 #| fig-width: 4
@@ -92,6 +107,18 @@ ggplot() +
   labs(x = expression(x), y = expression(bolditalic(F)(x)))
 ```
 
+R 语言中分别表示逻辑斯谛分布的密度函数、分布函数、分位函数和随机数生成函数如下：
+
+```r
+dlogis(x, location = 0, scale = 1, log = FALSE)
+plogis(q, location = 0, scale = 1, lower.tail = TRUE, log.p = FALSE)
+qlogis(p, location = 0, scale = 1, lower.tail = TRUE, log.p = FALSE)
+rlogis(n, location = 0, scale = 1)
+```
+
+如果函数参数 `location` 或 `scale` 没有指定，则分别取默认值 0 和 1，就是标准的逻辑斯谛分布。位置参数（类似正态分布中的均值 $\mu$）为 `location = m` ，尺度参数（类似正态分布中的标准差 $\sigma$）为 `scale = s`，逻辑斯谛分布是一个长尾分布。
+
+
 响应变量 $Y$ 服从伯努利分布 $\mathrm{Bernoulli}(p)$，取值是 0 或 1，对线性预测 $X\boldsymbol{\beta}$ 做 Logistic 变换
 
 $$
@@ -115,18 +142,18 @@ X = \begin{bmatrix}
 \end{bmatrix}
 $$
 
-记 $X = (x_1, x_2, \cdots, x_n)$ 是一个$n \times k$矩阵，则 $x_i$ 表示数据矩阵 $X$ 的第 $i$ 行，一共有 $k$ 列。同理 $\boldsymbol{\beta} = (\beta_1, \beta_2, \cdots, \beta_k)$ ，对第 $i$ 次观测
+记 $X = (\bm{x}_1, \bm{x}_2, \cdots, \bm{x}_n) = (X_1, X_2, \cdots, X_k)$ 是一个$n \times k$ 数据矩阵，其中 $\bm{x}_i$ 表示矩阵 $X$ 的第 $i$ 行，一共有 $n$ 行，$X_j, j = 1,2, \cdots, k$ 表示矩阵 $X$ 的第 $j$ 列，一共有 $k$ 列。类似地， $\boldsymbol{\beta} = (\beta_1, \beta_2, \cdots, \beta_k)$ 是一个列向量，$\beta_j$ 表示第 $j$ 个变量 $X_j$ 的系数。对第 $i$ 次观测
 
 $$
-\mathrm{Logistic}^{-1}(p_i)= \ln\big(\frac{p_i}{1-p_i}\big) = \alpha + x_i\boldsymbol{\beta}
+\mathrm{Logistic}^{-1}(p_i)= \ln\big(\frac{p_i}{1-p_i}\big) = \alpha + \bm{x}_i\boldsymbol{\beta}
 $$
 
-其中 $x_i$ 是 $1 \times k$ 的矩阵，$\boldsymbol{\beta}$ 是一个 $k \times 1$ 的矩阵。关于参数 $\alpha,\boldsymbol{\beta}$ 的似然函数如下：
+其中 $\bm{x}_i$ 是 $1 \times k$ 的矩阵，$\boldsymbol{\beta}$ 是一个 $k \times 1$ 的矩阵。关于参数 $\alpha,\boldsymbol{\beta}$ 的似然函数如下：
 
 $$
 \begin{aligned}
 L(\alpha,\boldsymbol{\beta}) &= \prod_{i=1}^{n} p_i^{y_i}(1 - p_i)^{1 - y_i} \\ 
-     &= \prod_{i=1}^{n} \Big(\frac{e^{\alpha + x_i\boldsymbol{\beta}}}{1 + e^{\alpha + x_i\boldsymbol{\beta}}}\Big)^{y_i}\Big(\frac{1}{e^{\alpha + x_i\boldsymbol{\beta}}}\Big)^{1-y_i} \\
+     &= \prod_{i=1}^{n} \Big(\frac{e^{\alpha + \bm{x}_i\boldsymbol{\beta}}}{1 + e^{\alpha + \bm{x}_i\boldsymbol{\beta}}}\Big)^{y_i}\Big(\frac{1}{e^{\alpha + \bm{x}_i\boldsymbol{\beta}}}\Big)^{1-y_i} \\
 \end{aligned}
 $$ {#eq-logit-lik}
 
@@ -136,7 +163,7 @@ $$
 \begin{aligned}
 \ell(\alpha,\boldsymbol{\beta}) &= \log L(\alpha,\boldsymbol{\beta}) \\
 & = \sum_{i=1}^{n} \Big[y_i \log (p_i) + (1 - y_i) \log(1-p_i)\Big] \\
-&= \sum_{i=1}^{n} \Big[y_i \log \Big(\frac{e^{\alpha + x_i\boldsymbol{\beta}}}{1 + e^{\alpha + x_i\boldsymbol{\beta}}}\Big) + (1 - y_i) \log\Big(\frac{1}{e^{\alpha + x_i\boldsymbol{\beta}}}\Big)\Big]
+&= \sum_{i=1}^{n} \Big[y_i \log \Big(\frac{e^{\alpha + \bm{x}_i\boldsymbol{\beta}}}{1 + e^{\alpha + \bm{x}_i\boldsymbol{\beta}}}\Big) + (1 - y_i) \log\Big(\frac{1}{e^{\alpha + \bm{x}_i\boldsymbol{\beta}}}\Big)\Big]
 \end{aligned}
 $$ {#eq-logit-lik-log}
 
@@ -146,11 +173,11 @@ $$
 \begin{aligned}
 \frac{\partial \ell(\alpha,\boldsymbol{\beta})}{\partial \alpha}  &= \sum_{i=1}^{n}\Big[ \big(\frac{y_i}{p_i} -  \frac{1- y_i}{1 - p_i}\big) \frac{\partial p_i}{\partial \alpha} \Big] \\
 \frac{\partial \ell(\alpha,\boldsymbol{\beta})}{\partial \boldsymbol{\beta}} &= \sum_{i=1}^{n}\Big[\big(\frac{y_i}{p_i} -  \frac{1- y_i}{1 - p_i}\big) \frac{\partial p_i}{\partial \beta} \Big] \\
-& = \sum_{i=1}^{n}\Big[\big(\frac{y_i}{p_i} -  \frac{1- y_i}{1 - p_i}\big) p_i(1- p_i) x_i \Big] 
+& = \sum_{i=1}^{n}\Big[\big(\frac{y_i}{p_i} -  \frac{1- y_i}{1 - p_i}\big) p_i(1- p_i) \bm{x}_i \Big] 
 \end{aligned}
 $$ {#eq-logit-lik-log-partial}
 
-其中， $p_i = \frac{e^{\alpha + x_i\boldsymbol{\beta}}}{1 + e^{\alpha + x_i\boldsymbol{\beta}}}$ ，一般通过迭代加权最小二乘算法（Iteratively (Re-)Weighted Least Squares，简称 IWLS）求解此优化问题，它可以看作拟牛顿法的一种特殊情况。
+其中， $p_i = \frac{e^{\alpha + \bm{x}_i\boldsymbol{\beta}}}{1 + e^{\alpha + \bm{x}_i\boldsymbol{\beta}}}$ ，一般通过迭代加权最小二乘算法（Iteratively (Re-)Weighted Least Squares，简称 IWLS）求解此优化问题，它可以看作拟牛顿法的一种特殊情况。
 
 ## 数值优化问题求解器 {#sec-solvers}
 
@@ -163,7 +190,7 @@ set.seed(2023)
 n <- 2500
 k <- 10
 X <- matrix(rnorm(n * k), ncol = k)
-y <- rbinom(n, size = 1, prob = plogis(1 + 3 * X[,1] - 2 * X[,2]))
+y <- rbinom(n, size = 1, prob = plogis(1 + 3 * X[, 1] - 2 * X[, 2]))
 ```
 
 模拟数据矩阵 X 与上述记号 $X$ 是对应的，记号 $x_i$ 表示数据矩阵的第 $i$ 行。$\alpha$ 是逻辑回归方程的截距，$\beta$ 是 $k$ 维向量，$X$ 是 $n \times k$ 维的矩阵且 $n > k$，$y$ 是 $n$ 维向量。极大化对数似然函数 @eq-logit-lik-log ，就是求解一个多维非线性无约束优化问题。方便起见，将 $\alpha$ 合并进 $\beta$ 向量，另，函数 `optim()` 默认求极小，因此在对数似然函数前添加负号。
@@ -182,7 +209,7 @@ log_logit_lik <- function(beta) {
 #| label: fig-log-logit-lik
 #| fig-cap: "二维情形下的逻辑回归模型的负对数似然函数曲面"
 #| fig-width: 6
-#| fig-height: 5.5
+#| fig-height: 5
 #| fig-showtext: true
 #| echo: false
 
@@ -219,7 +246,7 @@ wireframe(
 
 ```{r}
 optim(
-  par = rep(1, 11),   # 初始值
+  par = rep(1, 11), # 初始值
   fn = log_logit_lik, # 目标函数
   method = "SANN",
   control = list(maxit = 10000)
@@ -232,11 +259,11 @@ optim(
 # 梯度函数
 log_logit_lik_grad <- function(beta) {
   p <- plogis(cbind(1, X) %*% beta)
-  - t((y / p - (1 - y) / (1 - p)) * p * (1 - p))  %*% cbind(1, X) 
+  -t((y / p - (1 - y) / (1 - p)) * p * (1 - p)) %*% cbind(1, X)
 }
 
 optim(
-  par = rep(1, 11),   # 初始值
+  par = rep(1, 11), # 初始值
   fn = log_logit_lik, # 目标函数
   gr = log_logit_lik_grad, # 目标函数的梯度
   method = "L-BFGS-B"
@@ -280,7 +307,7 @@ op <- OP(
   objective = F_objective(F = log_logit_lik, n = 11L, G = log_logit_lik_grad),
   bounds = V_bound(ld = -3, ud = 3, nobj = 11L)
 )
-nlp <- ROI_solve(op, solver = "nloptr.lbfgs", start = rep(1,11))
+nlp <- ROI_solve(op, solver = "nloptr.lbfgs", start = rep(1, 11))
 nlp
 ```
 
@@ -336,8 +363,10 @@ plot(fit_glm, ylab = "回归系数")
 #| fig-height: 5
 #| fig-showtext: true
 
-plot(fit_glm$lambda, ylab = expression(lambda), xlab = "迭代次数",
-     main = "惩罚系数的迭代路径")
+plot(fit_glm$lambda,
+  ylab = expression(lambda), xlab = "迭代次数",
+  main = "惩罚系数的迭代路径"
+)
 ```
 
 随着迭代的进行，惩罚系数 $\lambda$ 越来越小，接近于 0，这也是符合预期的，因为模型本来就是简单的逻辑回归，不带惩罚项。选择一个迭代趋于稳定时的 $\lambda$ 比如 0.0005247159，此时各个参数的取值如下：
@@ -359,18 +388,75 @@ Stan 入门写得很好 [Getting Started with Stan](https://github.com/LuZhangst
 -->
 
 
-[Stan](https://github.com/stan-dev/stan) 是一款贝叶斯计算软件，定义了一套概率编程语言，提供 R、Python、Matlab 语言等众多的编程接口，[CmdStan](https://github.com/stan-dev/cmdstan) 是其命令行编程接口，与 Stan 版本保持同步，[CmdStanR](https://github.com/stan-dev/cmdstanr) 包集成 CmdStan 软件，可以非常方便地分析运行结果。下面以逻辑回归模型为例，介绍 CmdStan 框架的使用。
+[Stan](https://github.com/stan-dev/stan) 是一款贝叶斯计算软件，定义了一套概率编程语言，提供 R、Python、Matlab 语言等众多的编程接口，[CmdStan](https://github.com/stan-dev/cmdstan) 是其命令行编程接口，与 Stan 版本保持同步，[**CmdStanR**](https://github.com/stan-dev/cmdstanr) 包集成 CmdStan 软件，可以非常方便地分析运行结果。下面以逻辑回归模型为例，介绍 CmdStan 框架的使用。
 
 ### 先验分布与惩罚函数 {#sec-priori-penalty}
 
 在极大似然估计的框架下，以线性模型为例，贝叶斯估计和惩罚极大似然估计是等价的，先验分布的形式对应惩罚函数的形式，如正态先验对应于 L2 惩罚、拉普拉斯先验对应 L1 惩罚。
 
-### CmdStanR {#sec-logit-cmdstanr}
+### 汉密尔顿蒙特卡罗 {#sec-hamiltonian-monte-carlo}
+
+学习汉密尔顿蒙特卡罗算法 [@Thomas2021]
+
+
+### 自动微分与变分推断 {#sec-automatic-differentiation-variational-inference}
+
+<!-- ADMB Tensorflow -->
+Stan 计算框架包含自动微分组件，在似然函数非常复杂的情况下，手动推导已不可能，必须使用自动微分。
+
+
+
+### 安装配置 CmdStanR {#sec-setup-cmdstanr}
+
+CmdStan 是 Stan 的命令行接口，拥有完整的 Stan 功能，版本更新与上游的 Stan 保持同步，**CmdStanR** 是 CmdStan 的 R 语言接口 [**cmdstanr**](https://github.com/stan-dev/cmdstanr) 包，相比于 **rstan** 包更加轻量，可以更快地将 CmdStan 的新功能融入进来，**cmdstanr** 和 CmdStan 是分离的，方便用户滚动升级和版本管理。下面从 GitHub 下载最新版的[源码包](https://github.com/stan-dev/cmdstan/releases/latest)，然后编译二进制版本。
+
+```bash
+# 准备 CmdStan 存放目录
+sudo mkdir -p /opt/cmdstan-2.31.1
+sudo chown -R $(whoami):staff /opt/cmdstan-2.31.1
+# 将压缩文件解压到
+tar -xzf cmdstan-2.31.1.tar.gz -C /opt/
+# 进入 CmdStan 主目录
+cd cmdstan-2.31.1
+# 编译出可执行的二进制文件
+make build
+```
+
+设置环境变量 CMDSTAN 指向 CmdStan 安装路径，这样，加载 **cmdstanr** 包会自动使用相应版本的 CmdStan 库。设置环境变量 `CMDSTANR_NO_VER_CHECK=TRUE`，让 **cmdstanr** 包加载时不要检查 CmdStan 是不是最新版。截止写作时间，本文使用的 CmdStan 版本为 2.31.1。
+
+```r
+Sys.setenv(CMDSTAN="/opt/cmdstan-2.31.1")
+Sys.setenv(CMDSTANR_NO_VER_CHECK=TRUE)
+```
+
+**cmdstanr** 包当前还在 Github 上开发，没有正式发布在 CRAN 上，安装方式如下：
+
+```{r}
+#| eval: false
+#| echo: true
+
+install.packages(
+  pkgs = c("cmdstanr", "rstan", "StanHeaders"),
+  repos = c("https://mc-stan.org/r-packages/", getOption("repos")),
+  dependencies = TRUE
+)
+```
+
+
+### 拟合逻辑回归模型 {#sec-logit-cmdstanr}
 
 下面用 Stan 编码逻辑回归模型，模型代码如下：
 
 ```{verbatim, file="code/bernoulli_logit_glm.stan", lang="stan"}
 ```
+
+Stan 代码主要分三部分：
+
+1. 数据部分：
+
+1. 参数部分：
+
+1. 模型部分：
 
 CmdStan 已经安装了，接下来，用 **cmdstanr** 包调 CmdStan 拟合模型，有三步：其一根据上面 Stan 代码中数据块的定义准备输入数据，其二编译上面的 Stan 代码获得可执行的模型文件，其三将数据输送到可执行的模型文件进行抽样。
 
@@ -389,14 +475,14 @@ mod_logit <- cmdstan_model(
   cpp_options = list(stan_threads = TRUE)
 )
 fit_logit <- mod_logit$sample(
-  data = mdata, 
-  chains = 4, 
+  data = mdata,
+  chains = 4,
   parallel_chains = 1,
   iter_warmup = 1000, # 每条链预处理迭代次数
   iter_sampling = 2000, # 每条链总迭代次数
   threads_per_chain = 1, # 每条链设置一个线程
   seed = 20232023,
-  show_messages = FALSE, 
+  show_messages = FALSE,
   refresh = 0
 )
 ```
@@ -408,9 +494,12 @@ fit_logit <- mod_logit$sample(
 #| tbl-cap: "模型参数的贝叶斯估计结果"
 #| echo: false
 
-fit_logit$summary(c("alpha", "beta", "lp__")) |> 
+fit_logit$summary(c("alpha", "beta", "lp__")) |>
   knitr::kable(digits = 3)
 ```
+
+`lp__` 是后验概率密度函数取对数的值，是负值，而在前面频率派方法中，对数似然函数取了负数，所以是正的。
+
 
 贝叶斯方法估计模型参数是通过抽样获得的，抽样的过程是参数迭代的过程，如果迭代过程是收敛的，估计值最终会收敛到参数的真值。一般来说，我们希望迭代的效率越高越好，只需要少量的迭代次数和短暂的时间就可以获得很好的效果。接下来，看看采样过程的诊断结果：
 
@@ -418,15 +507,20 @@ fit_logit$summary(c("alpha", "beta", "lp__")) |>
 fit_logit$cmdstan_diagnose()
 ```
 
-每个参数都有迭代轨迹，有效样本数 effective sample size $n_{eff}$，
-潜在尺度缩减因子 potential scale reduction factor $\hat{R}$，采样效率可以理解为每秒迭代产生有效样本数。
+每个参数都有迭代轨迹，诊断链条的平稳性很重要，有几个指标很关键：
+
+1. 有效样本数 （Effective Sample Size，简称 ESS） $n_{eff}$ 
+
+1. 潜在尺度缩减因子 （Potential Scale Reduction Factor）$\hat{R}$ 
+
+采样效率可以理解为每秒迭代产生有效样本数。
 
 ```{r}
 # 简化版本
 fit_logit$diagnostic_summary()
 ```
 
-数据是根据给定模型生成的，数据与模型吻合得很好，迭代过程没有任何发散的情况。还可以可视化的方式检查参数的迭代情况，**bayesplot** 包提供大量的可视化函数检查迭代过程和结果，逻辑回归模型的参数 $\beta_1$ 和 $\beta_2$ 的轨迹图如下：
+数据是根据给定模型生成的，数据与模型吻合得很好，迭代过程没有任何发散的情况。还可以可视化的方式检查参数的迭代情况，**bayesplot** 包[@Gabry2019]提供大量的可视化函数检查迭代过程和结果，逻辑回归模型的参数 $\beta_1$ 和 $\beta_2$ 的轨迹图如下：
 
 ```{r}
 #| label: fig-post-logit-trace
@@ -469,7 +563,7 @@ mcmc_hist(fit_logit$draws(c("beta[1]", "beta[2]")),
 图检验的其他方法还有轨迹图 `mcmc_trace()`，散点图 `mcmc_scatter()`，密度图 `mcmc_dens()`，直方图 `mcmc_hist()`，自相关图 `mcmc_acf()`，区间图 `mcmc_intervals()` 和岭线图 `mcmc_areas_ridges()` 等。
 
 
-CmdStanR 的 sample 方法默认的采样器为 NUTS 的 HMC 算法，CmdStanR 的封装导致不能修改采样器，读者若想修改，Stan 的命令行接口 CmdStan 支持修改采样器，不过推荐读者使用默认的 NUTS 采样器，它是根据动态调整来决定 optimal integration time。NUTS 采样器的参数 `max_depth = 10` 是可以调整的，采样的树深度。
+**CmdStanR** 的 sample 方法默认的采样器为 NUTS 的 HMC 算法，**CmdStanR** 的封装导致不能修改采样器，读者若想修改，Stan 的命令行接口 CmdStan 支持修改采样器，不过推荐读者使用默认的 NUTS 采样器，它是根据动态调整来决定 optimal integration time。NUTS 采样器的参数 `max_depth = 10` 是可以调整的，采样的树深度。
 
 除了 sample 方法还有优化 optimize （L-BFGS 算法）和变分推断 variational 两个优化器。
 
@@ -478,7 +572,7 @@ CmdStanR 的 sample 方法默认的采样器为 NUTS 的 HMC 算法，CmdStanR �
 # L-BFGS 算法拟合模型
 fit_optim_logit <- mod_logit$optimize(
   data = mdata, # 观测数据
-  init = 0, # 所有参数初值设为 0 
+  init = 0, # 所有参数初值设为 0
   refresh = 0, # 不显示迭代进程
   algorithm = "lbfgs", # 优化器
   threads = 1, # 单线程
@@ -499,7 +593,7 @@ Stan 实现的 variational 方法调用自动微分变分近似推断优化器�
 # 自动微分变分近似推断
 fit_advi_logit <- mod_logit$variational(
   data = mdata, # 观测数据
-  init = 0, # 所有参数初值设为 0 
+  init = 0, # 所有参数初值设为 0
   refresh = 0, # 不显示迭代进程
   algorithm = "meanfield", # 优化器
   threads = 1, # 单线程
@@ -514,13 +608,19 @@ fit_advi_logit <- mod_logit$variational(
 #| tbl-cap: "模型参数的 ADVI 结果"
 #| echo: false
 
-fit_advi_logit$summary(c("alpha", "beta", "lp__")) |> 
+fit_advi_logit$summary(c("alpha", "beta", "lp__")) |>
   knitr::kable(digits = 3)
 ```
 
 ::: {.callout-tip}
-CmdStanR 始终与 CmdStan 保持同步更新，及时地用上集成到 Stan 当中的学术研究成果。而 RStan 及其衍生包 rstanarm 和 brms 等依赖太重，安装、更新都比较麻烦。入门 CmdStanR 后，可以快速转入对 Stan 底层原理的学习，有利于编码符合实际需要的复杂模型，有利于掌握常用的炼丹技巧，提高科研和工作的效率。
+**CmdStanR** 始终与 CmdStan 保持同步更新，及时地用上集成到 Stan 当中的学术研究成果。而 **RStan** 及其衍生包 **rstanarm** 和 **brms** 等依赖太重，安装、更新都比较麻烦。入门 **CmdStanR** 后，可以快速转入对 Stan 底层原理的学习，有利于编码符合实际需要的复杂模型，有利于掌握常用的炼丹技巧，提高科研和工作的效率。
 :::
+
+
+
+
+
+
 
 
 ## 机器学习框架 tensorflow {#sec-machine-learning-tensorflow}
