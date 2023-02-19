@@ -359,6 +359,7 @@ summary(fit_rongelap_spamm)
 
 ```{r}
 library(sf)
+rongelap_sf <- st_as_sf(rongelap, coords = c("cX", "cY"), dim = "XY")
 rongelap_coastline_sf <- st_as_sf(rongelap_coastline, coords = c("cX", "cY"), dim = "XY")
 ```
 
@@ -383,12 +384,40 @@ rongelap_coastline_sfp <- st_cast(st_combine(st_geometry(rongelap_coastline_sf))
 #| - 点数据
 #| - 多边形数据
 #| layout-ncol: 1
-#| fig-width: 5.14
+#| fig-width: 5
 #| fig-height: 3
 #| fig-showtext: true
-#| par: true
+#| echo: false
 
-plot(rongelap_coastline_sf)
-plot(rongelap_coastline_sfp)
+library(ggplot2)
+ggplot(rongelap_coastline_sf) +
+  geom_sf(size = 0.5) +
+  theme_void()
+
+ggplot(rongelap_coastline_sfp) +
+  geom_sf(fill = "white", linewidth = 0.5) +
+  theme_void()
 ```
 
+为了确保覆盖整个岛，还需要一点缓冲空间，就是说在给定的边界线外围再画一个多边形，这可以用 函数 `st_buffer()` 根据海岸线构造 POLYGON 的缓冲区，缓冲距离选择 50 米。
+
+```{r}
+rongelap_coastline_buffer <- st_buffer(rongelap_coastline_sfp, dist = 50)
+```
+
+下 @fig-rongelap-buffer 将采样点、海岸线和缓冲区都展示出来了。
+
+```{r}
+#| label: fig-rongelap-buffer
+#| fig-cap: "朗格拉普岛海岸线及其缓冲区"
+#| fig-width: 7
+#| fig-height: 4
+#| fig-showtext: true
+#| echo: false
+
+ggplot() +
+  geom_sf(data = rongelap_sf ) +
+  geom_sf(data = rongelap_coastline_sfp, fill = NA, color = "gray30") +
+  geom_sf(data = rongelap_coastline_buffer, fill = NA, color = "black") +
+  theme_void()
+```
