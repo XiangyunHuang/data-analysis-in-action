@@ -445,39 +445,29 @@ ggplot() +
   theme_void()
 ```
 
-然后，去掉和岛屿没有交集的网格，留下缓冲区以内的网格。**sf** 包的函数 `st_intersection()` 可以将两个多边形相交的部分取出来，全岛网格化后，如 @fig-rongelap-grid 所示。
+**sf** 包的函数 `st_within()` 可以将小网格落在缓冲区以内的筛选出来，再用函数 `st_centroid()` 计算余下小网格的中心点。
 
 ```{r}
-rongelap_grid <- st_intersection(rongelap_coastline_grid, rongelap_coastline_buffer)
+rongelap_coastline_grid <- st_as_sf(rongelap_coastline_grid)
+rongelap_coastline_buffer <- st_as_sf(rongelap_coastline_buffer)
+rongelap_grid <- rongelap_coastline_grid[rongelap_coastline_buffer, op = st_within]
+rongelap_grid_centroid <- st_centroid(rongelap_grid)
 ```
+
+网格的中心点将作为新的采样点，要在这些新的采样点上预测核污染浓度。全岛网格化后，将朗格拉普岛海岸线、网格、网格中心点都展示出来，如 @fig-rongelap-grid 所示。
 
 ```{r}
 #| label: fig-rongelap-grid
-#| fig-cap: "朗格拉普岛网格化"
+#| fig-cap: "网格化采样点的分布"
 #| fig-width: 7
 #| fig-height: 4
 #| fig-showtext: true
 #| echo: false
 
 ggplot() +
+  geom_sf(data = rongelap_coastline_sfp, fill = NA, color = "gray30") +
   geom_sf(data = rongelap_grid, fill = NA, color = "gray30") +
+  geom_sf(data = rongelap_grid_centroid) +
   theme_void()
 ```
-
-全岛一共划分为 268 个小网格，网格的中心点作为新的采样点，在这些新的采样点上预测核污染浓度。利用函数 `st_centroid()` 可以获取网格的中心位置，下 @fig-rongelap-centroid 新的采样点在全岛的分布。
-
-```{r}
-#| label: fig-rongelap-centroid
-#| fig-cap: "朗格拉普岛的采样点"
-#| fig-width: 7
-#| fig-height: 4
-#| fig-showtext: true
-#| echo: false
-
-ggplot() +
-  geom_sf(data = rongelap_grid, fill = NA, color = "gray30") +
-  geom_sf(data = st_centroid(rongelap_grid)) +
-  theme_void()
-```
-
 
