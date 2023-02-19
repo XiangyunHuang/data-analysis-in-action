@@ -1,2 +1,349 @@
 # 空间分析 {#sec-analysis-spatial-data}
 
+
+
+## 预测核污染的分布 {#sec-nuclear-pollution-concentration}
+
+本小节将对真实数据分析和建模，任务是预测核污染浓度在朗格拉普岛上的分布。
+
+第二次世界大战中，美国在吉尔伯特及马绍尔群岛战事中占领了该群岛。上世纪 50 年代，在该群岛的比基尼环礁中进行了许多核实验，对该群岛造成无法弥补的环境损害。朗格拉普环礁是马绍尔群岛的一部分，被核爆炸后产生的放射性尘埃笼罩了，受到严重的核辐射影响。位于南太平洋的朗格拉普岛是朗格拉普环礁的主岛，从度假胜地变成人间炼狱。即使是 1985 年以后，那里仍然无人居住，居民担心核辐射对身体健康的影响。又几十年后，一批科学家来到该岛研究生态恢复情况，评估当地居民重返家园的可行性。目前该岛仍然不适合人类居住，只有经批准的科学研究人员才能登岛。数据集 `rongelap` 记录了 157 个测量点的伽马射线强度，即在时间 `time` 内放射的粒子数目 `counts`，测量站点的横纵坐标分别为 `cX` 和 `cY`。下 @tbl-rongelap-nuclear-data 展示部分朗格拉普岛核污染检测数据及海岸线坐标数据。
+
+```{r}
+#| label: fig-marshall-islands-rongelap-atoll
+#| fig-cap: "马绍尔群岛和朗格拉普环礁"
+#| eval: false
+#| echo: false
+
+library(terra)
+# 下载边界数据 https://gadm.org/
+# 返回 SpatVector 类型的数据对象
+mhl_map_gadm <- geodata::gadm(country = "MHL", level = 1, path = "data/")
+# 马绍尔群岛
+plot(mhl_map_gadm)
+# 朗格拉普环礁
+plot(mhl_map_gadm, xlim = c(166.82, 166.92), ylim = c(11.14, 11.183))
+```
+
+```{r}
+#| label: tbl-rongelap-nuclear-data
+#| tbl-cap: "朗格拉普岛核污染检测数据及海岸线坐标数据"
+#| tbl-subcap:
+#|   - "核污染检测数据"
+#|   - "海岸线坐标数据"
+#| layout-ncol: 2
+#| echo: false
+
+rongelap <- readRDS(file = "data/rongelap.rds")
+rongelap_coastline <- readRDS(file = "data/rongelap_coastline.rds")
+
+library(knitr)
+knitr::kable(head(rongelap, 6),
+  col.names = c("横坐标", "纵坐标", "数目", "时间")
+)
+knitr::kable(head(rongelap_coastline, 6),
+  col.names = c("横坐标", "纵坐标")
+)
+```
+
+::: {.callout-note}
+之前，[Ole F. Christensen](http://gbi.agrsci.dk/~ofch/) 和 Paulo J. Ribeiro Jr 将 rongelap 数据集存放在 **geoRglm** 包内，后来，**geoRglm** 不维护，已从 CRAN 移除了。
+:::
+
+朗格拉普岛呈月牙形，有数千米长，但仅几百米宽，十分狭长。采样点在岛上的分布如 @fig-rongelap-location 所示，主网格以约 200 米的间隔采样，在岛屿的东北和西南方各有两个密集采样区，每个网格采样区是 $5 \times 5$ 方式排列的，上下左右间隔均为 40 米。
+
+```{r}
+#| label: fig-rongelap-location
+#| fig-cap: "采样点在岛上的分布"
+#| echo: false
+#| fig-showtext: true
+#| fig-width: 7
+#| fig-height: 4
+
+library(lattice)
+
+xyplot(cY ~ cX,
+  data = rongelap, pch = 19, cex = 0.25,
+  xlab = "横坐标",
+  ylab = "纵坐标",
+  scales = list(
+    # 去掉图形上边、右边多余的刻度线
+    x = list(alternating = 1, tck = c(1, 0)),
+    y = list(alternating = 1, tck = c(1, 0))
+  ),
+  # 减少三维图形的边空
+  lattice.options = list(
+    layout.widths = list(
+      left.padding = list(x = 0, units = "inches"),
+      right.padding = list(x = -0.15, units = "inches")
+    ),
+    layout.heights = list(
+      bottom.padding = list(x = -0.1, units = "inches"),
+      top.padding = list(x = -0.2, units = "inches")
+    )
+  ),
+  panel = function(...) {
+    panel.grid(h = -1, v = -1, ...)
+    panel.points(col = "black", ...)
+    panel.lines(
+      x = rongelap_coastline$cX,
+      y = rongelap_coastline$cY,
+      col = "black"
+    )
+  },
+  par.settings = list(axis.line = list(col = "black"))
+)
+```
+
+朗格拉普岛上各个检测站点的核污染浓度，如 @fig-rongelap-location-zoom 所示，鉴于四个集中检测区密集的采样阵列，通过局部放大，突出展示最左侧的一个检测区。
+
+```{r}
+#| label: fig-rongelap-location-zoom
+#| fig-cap: "岛上各采样点的核辐射强度"
+#| fig-width: 8
+#| fig-height: 4
+#| fig-showtext: true
+#| echo: false
+
+library(ggplot2)
+
+p1 <- ggplot() +
+  geom_path(data = rongelap_coastline, aes(x = cX, y = cY)) +
+  geom_point(data = rongelap, aes(x = cX, y = cY, color = counts / time), size = 0.5) +
+  scale_x_continuous(n.breaks = 7) +
+  scale_color_binned(type = colorspace::scale_color_binned_sequential, palette = "Grays") +
+  geom_segment(
+    data = data.frame(x = -5560, xend = -5000, y = -3000, yend = -2000),
+    aes(x = x, y = y, xend = xend, yend = yend),
+    arrow = arrow(length = unit(0.03, "npc"))
+  ) +
+  theme_bw() +
+  labs(x = "横坐标", y = "纵坐标", color = "放射强度")
+
+p2 <- ggplot() +
+  geom_point(data = rongelap, aes(x = cX, y = cY, color = counts / time), size = 2, show.legend = FALSE) +
+  scale_color_binned(type = colorspace::scale_color_binned_sequential, palette = "Grays") +
+  coord_cartesian(xlim = c(-5700, -5540), ylim = c(-3260, -3100)) +
+  theme_bw() +
+  labs(x = NULL, y = NULL)
+
+p1
+print(p2, vp = grid::viewport(x = .25, y = .725, width = .275, height = .45))
+```  
+
+@fig-rongelap-concentration 展示朗格拉普岛上采样点的位置及检测到的辐射强度，线越长表示放射性越强。这是用 **lattice** 包的 `cloud()` 函数绘制的，组合点和线两种基本几何元素。
+
+```{r}
+#| label: fig-rongelap-concentration
+#| fig-cap: "岛上各采样点的放射强度"
+#| echo: false
+#| fig-showtext: true
+#| fig-width: 6
+#| fig-height: 5
+
+cloud(counts / time ~ cX * cY,
+  data = rongelap, col = "black",
+  scales = list(arrows = FALSE, col = "black"),
+  xlab = list("横坐标", rot = 20),
+  ylab = list("纵坐标", rot = -50),
+  zlab = list("放射强度", rot = 90),
+  type = c("p", "h"), pch = 16, lwd = 0.5,
+  # 设置三维图的观察方位
+  screen = list(z = 30, x = -65, y = 0)
+)
+```
+```{r}
+#| eval: false
+#| echo: false
+
+# 可选的替代三维图形
+library(scatterplot3d)
+with(rongelap, {
+  scatterplot3d(
+    x = cX, y = cY, z = counts / time,
+    xlab = "X", ylab = "Y", zlab = "Z",
+    type = "h", color = "black", angle = 20, pch = 16
+  )
+})
+
+library(plot3D)
+with(rongelap, {
+  par(mar = c(0.1, 2.5, 0.1, 0.1))
+  scatter3D(
+    x = cX, y = cY, z = counts / time,
+    xlab = "\nX", ylab = "\nY", zlab = "\nZ",
+    pch = 16, type = "h", ticktype = "detailed",
+    phi = 40, theta = -30, r = 50, d = 0.1,
+    expand = 0.5, box = TRUE,
+    # bty = "u",
+    bty = "f",
+    col = "black", asp = 1, col.axis = "gray"
+  )
+})
+```
+
+
+核污染是由辐射元素衰变产生的，通常用单位时间释放出来的粒子数目表示辐射强度，也是核污染浓度，因此，建立泊松型广义线性模型分析数据。
+
+```{r}
+fit_rongelap_glm <- glm(counts ~ cX + cY,
+  family = poisson(link = "log"),
+  offset = log(time), data = rongelap
+)
+summary(fit_rongelap_glm)
+```
+
+::: {.callout-note}
+当 `family = poisson(link = "log")` 时，响应变量只能放正整数。参数 `offset` 的作用介绍见统计之都[论坛](https://d.cosx.org/d/420881)，放射性粒子的数量 `counts` 和积累时长有关，放射强度与位置有关，位置决定放射强度而不是放射粒子数目。
+:::
+
+从这个简单的广义线性模型结果，不难看出，位置变量 `cX` 和 `cY` 是显著的，从实际场景出发，也不难理解，位置信息是非常关键的。进一步，充分利用位置信息，精细建模是很有必要的。相邻位置的核污染浓度是相关的，离得近的比离得远的更相关。简单的广义线性模型并没有考虑距离相关性，它认为各个观测点的数据是相互独立的。因此，考虑采用广义线性混合效应模型，在广义线性模型的基础上添加位置相关的随机效应，用以刻画未能直接观测到的潜在影响。简单起见，假定随机效应之间是相互独立的高斯分布。
+
+$$
+\begin{aligned}
+\log(\lambda_{j}) &= \beta_{0j} \\
+\beta_{0j} &=\gamma_{00} + U_{0j}
+\end{aligned}
+$$
+
+其中响应变量服从泊松分布，即 $Y_{j} \sim \mathrm{Poisson}(t_{j}\lambda_{j})$ ，$\lambda_{j}$ 表示放射强度，$t_{j}$ 表示时间，随机效应 $\beta_{0j}$ 服从均值为 0，方差为 $\tau_{00}^2$ 的高斯分布，即 $U_{0j} \sim \mathcal{N}(0,\tau_{00}^2)$ 。截距项（常数项） $\gamma_{00}$ 可以理解为背景辐射，为简单起见，假定为常数。如果全岛观察到有系统性的背景辐射变化，可以考虑用随机变量来建模背景辐射。157 个检测站点的残差服从独立同分布的高斯分布，即 $\epsilon_{j} \sim \mathcal{N}(0,\sigma^2)$，$j=1,2,\cdots,157$ 。
+
+
+::: {.callout-tip}
+根据目前已有的数据，没有收集影响放射强度的其它因素，模型中也就没有加其它观测变量，所以，只有截距项是变化的。如果有其他因素，可以在 $\beta_{0j}$ 后加入，比如 $\beta_{1j}x_{j}$。进一步，如果在 157 个位置处反复测量多次放射数据，则模型又可变为重复测量模型。
+
+$$
+\begin{aligned}
+\log(\lambda_{ij}) &= \beta_{0j} +\beta_{1j}x_{1ij} \\
+\beta_{0j} &=\gamma_{00} + U_{0j} \\
+\beta_{1j} &=\gamma_{10} + U_{1j} \\
+\begin{bmatrix}
+    U_{0j} \\
+    U_{1j}
+\end{bmatrix}
+&\sim \mathcal{N}
+\left(
+\begin{bmatrix}
+    0  \\
+    0 
+\end{bmatrix}
+,
+\begin{bmatrix}
+    \tau_{00}^2 & \tau_{01} \\
+    \tau_{01} & \tau_{10}^2
+\end{bmatrix}
+\right)\\
+Y_{ij} &\sim \mathrm{Poisson}(t_{ij}\lambda_{ij})
+\end{aligned}
+$$
+
+其中下标 $i$ 代表重复测量，则 $Y_{ij}$ 表示第 $i$ 次在第 $j$ 个位置检测到的放射量，$x_{1ij}$ 表示第1个协变量第$i$次在第$j$个位置上的观测值，一种非常贴合实际的情形是 $x_{1ij}$ 就代表时间 $T_{ij}$ ，表示科学家每隔 5 年登岛收集数据，此后登岛多次，$T_{ij}$ 意味着第 $i$ 次登岛收集各个检测点的放射数据。变截距 $\beta_{0j}$ 和变系数 $\beta_{1j}$ 同时存在，且二者联合分布为二元正态分布，残差仍然假定独立同高斯分布 $\epsilon_{ij} \sim \mathcal{N}(0,\sigma^2)$ 。
+:::
+
+**lme4** 包[@Bates2015]是拟合广义线性混合效应模型的金标准，模型拟合函数 `glmer()` 的使用非常类似 Base R 提供的函数 `glm()`。
+
+```{r}
+library(lme4)
+rongelap$dummary <- 1:157
+fit_rongelap_glmer <- glmer(counts ~ 1 + (1 | dummary),
+  family = poisson(link = "log"),
+  offset = log(time), data = rongelap
+)
+summary(fit_rongelap_glmer)
+```
+
+从拟合模型的结果来看，参数 $\gamma_{00} = 1.94405, \tau_{00}^2 = 0.2223$ 。将每个位置看作单独的一个随机效应，比较两个模型的对数似然，后者变大了，这意味着模型拟合效果更好了。
+
+```{r}
+# 广义线性模型
+logLik(fit_rongelap_glm)
+# 广义线性混合效应模型
+logLik(fit_rongelap_glmer)
+```
+
+::: {.callout-note}
+对于混合效应模型，使用 Stan 框架来拟合，需要根据数据指定合适的先验分布，否则马尔可夫链不太容易收敛，迭代效率低，结果不太可靠。
+
+```{r}
+#| eval: false
+#| echo: true
+
+library(cmdstanr)
+set_cmdstan_path(path = "/opt/cmdstan/cmdstan-2.31.0")
+# 如何设置先验分布
+fit_rongelap_brm <- brms::brm(
+  counts ~ 1 + (1 | dummary) + offset(log(time)),
+  data = rongelap,
+  family = poisson(link = "log"),
+  # silent = 2, # 关闭消息
+  refresh = 0, # 不显示迭代进度
+  seed = 20232023,
+  backend = "cmdstanr" # 选择后端 rstan 或 cmdstanr
+)
+summary(fit_rongelap_brm)
+# 发散很多
+plot(fit_rongelap_brm)
+WAIC(fit_rongelap_brm)
+pp_check(fit_rongelap_brm)
+```
+:::
+
+进一步，去掉随机效应相互独立的假设，随机效应之间存在相关性结构，这更符合位置效应存在相互影响的实际情况，也因此要引入带空间随机效应的广义线性混合效应模型。空间广义线性混合效应模型在统计中具有重要的地位，在地质统计、卫生统计、气象统计和空间计量等领域有广泛的应用，如分析地区范围内的疟疾分布，有限气象站点条件下，预测地区 PM2.5 污染物浓度分布等。
+
+1998 年 Peter J. Diggle 等提出蒙特卡罗极大似然方法估计不带块金效应的响应变量服从泊松分布的空间广义混合效应模型的参数，分析了朗格拉普岛上核污染浓度的空间分布[@Diggle1998]。2004 年 Ole F Christensen 在 Peter J. Diggle 等人的基础上添加了块金效应，同样使用蒙特卡罗极大似然方法估计了模型中的参数[@Christensen2004]。
+
+$$
+\begin{aligned}
+\log\{\lambda(d_i)\} & =  \beta + S(d_{i}) \\
+\log\{\lambda(d_i)\} & =  \beta + S(d_{i}) + Z_{i} \\
+Y_{i} &\sim \mathrm{Poisson}(t(d_{i})\lambda(d_i))
+\end{aligned}
+$$
+
+根据 ${}^{137}\mathrm{Cs}$ 放出的伽马射线在 $N=157$ 站点不同时间间隔 $t(d_{i})$ 的放射量，建立泊松广义线性混合效应模型。模型中，截距 $\beta$ 相当于平均水平，放射粒子数$Y_{i}$作为响应变量服从均值为 $t(d_{i})\lambda(d_i)$ 的泊松分布，$\lambda(d_i)$ 可理解为辐射强度，$S(d_{i})$ 表示位置 $d_i$ 处的空间效应，随机过程 $S(d)$ 的自协方差函数为幂二次指数型，如下：
+
+$$
+\mathrm{Cov}( S(d_i), S(d_j) ) = \sigma^2 \exp( -\|d_i -d_j\|_{2} / \phi )
+$$
+
+$S(d),d \in \mathbb{R}^2$ 是平稳空间高斯过程，且 $Z_i$ 之间相互独立同正态分布 $\mathcal{N}(0,\tau^2)$ ，$Z_i$ 表示与空间效应无关的块金效应，即非空间的随机效应，可以理解为测量误差、空间变差或背景辐射，这里 $i = 1,\ldots, 157$。
+
+[**glmmTMB**](https://github.com/glmmTMB/glmmTMB) 包[@Brooks2017]可以拟合空间广义线性混合效应模型，使用语法和前面介绍的 **lme4** 包一样。[**glmmTMB**](https://github.com/glmmTMB) 基于 [**TMB**](https://github.com/kaskr/adcomp) 框架可以拟合线性和广义线性混合效应模型及其扩展，包括零过多（零膨胀）zero-inflation 模型，估计方法是极大似然，实现工具是 TMB。随机效应假定是高斯分布，拉普拉斯方法近似随机效应的高维积分，自动微分的方式计算梯度。
+
+
+```{r}
+#| message: false
+#| warning: false
+# 位置标准化
+rongelap$loc <- glmmTMB::numFactor(scale(rongelap$cX), scale(rongelap$cY))
+# 位置 ID
+rongelap$ID <- factor(rep(1, nrow(rongelap)))
+# 拟合模型
+fit_rongelap_glmmtmb <- glmmTMB::glmmTMB(
+  formula = counts ~ 1 + mat(loc + 0 | ID),
+  data = rongelap, family = poisson(link = "log"),
+  offset = log(time)
+)
+```
+
+其中协方差结构由核函数决定，这里采用广泛使用的 Matérn 型，**glmmTMB** 包还支持指数型`exp` 和高斯型 `gau`，协方差矩阵是 $157 \times 157$ 维的。对数似然函数的值又变大了，拟合效果更好了，相比于从广义线性模型到广义线性混合效应模型，提升不是特别多，一般来说，模型越复杂提升空间也会越小，过于复杂也没有必要。
+
+```{r}
+# 空间广义线性混合效应模型
+logLik(fit_rongelap_glmmtmb)
+```
+
+`summary(fit_rongelap_glmmtmb)` 输出中包含大型的协方差矩阵，协方差矩阵也可单独抽取见 `ranef(fit_rongelap_glmmtmb)`，篇幅所限，此处略去。输出结果中，模型的固定效应 `fixef(fit_rongelap_glmmtmb)` （此处也是截距）为 1.82007，随机效应的方差为 0.2929。
+
+**spaMM** 包[@Rousset2014]与 **glmmTMB** 包在功能上有很多类似的地方，它也可以拟合空间广义线性混合效应模型，支持非常丰富的统计建模功能，从简单线性模型到相对复杂的空间广义线性混合效应模型，拟合函数 `fitme()` 提供统一的使用语法。
+
+```{r}
+#| message: false
+library(spaMM)
+fit_rongelap_spamm <- fitme(counts ~ 1 + Matern(1 | cX + cY) + offset(log(time)),
+  family = poisson(link = "log"), data = rongelap
+)
+summary(fit_rongelap_spamm)
+```
+
+从输出结果来看，与 **glmmTMB** 很接近，模型固定效应的截距项 1.824，随机效应的方差为 0.2973，对数似然函数值为 -1317.551，拟合效果的提升几乎可以忽略。
+
