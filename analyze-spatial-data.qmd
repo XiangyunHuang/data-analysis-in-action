@@ -353,7 +353,7 @@ summary(fit_rongelap_spamm)
 
 从输出结果来看，与 **glmmTMB** 很接近，模型固定效应的截距项 1.824，随机效应的方差为 0.2973，对数似然函数值为 -1317.551，拟合效果的提升几乎可以忽略。
 
-接下来，预测给定的边界（海岸线）内的任意位置的核污染浓度，展示全岛的污染图景。先从点构造多边形数据，再将多边形做网格划分，继而将格点作为模型输入获得预测，预测各个格点处的辐射强度。
+接下来，预测给定的边界（海岸线）内的任意位置的核污染浓度，展示全岛的污染图景。先从点构造多边形数据，再将多边形做网格划分，继而将网格中心点作为模型输入获得辐射强度的预测值。
 
 海岸线上取一些点，点的数量越多，对海岸线的刻画越精确，这在转弯处体现得非常明显。海岸线的数据是以成对的坐标构成，导入 R 语言中，是以数据框的形式存储，为了方便后续的操作，引入空间数据操作的 **sf** 包[@Pebesma2018]。将海岸线数据转化为空间点数据 POINT。
 
@@ -399,7 +399,7 @@ ggplot(rongelap_coastline_sfp) +
   theme_void()
 ```
 
-为了确保覆盖整个岛，还需要一点缓冲空间，就是说在给定的边界线外围再画一个多边形，这可以用 函数 `st_buffer()` 根据海岸线构造 POLYGON 的缓冲区，缓冲距离选择 50 米。
+为了确保覆盖整个岛，还需要一点缓冲空间，就是说在给定的边界线外围再画一个多边形，这可以用函数 `st_buffer()` 根据海岸线构造 POLYGON 的缓冲区，缓冲距离选择 50 米。
 
 ```{r}
 rongelap_coastline_buffer <- st_buffer(rongelap_coastline_sfp, dist = 50)
@@ -463,4 +463,21 @@ ggplot() +
   geom_sf(data = rongelap_grid, fill = NA, color = "gray30") +
   theme_void()
 ```
+
+全岛一共划分为 268 个小网格，网格的中心点作为新的采样点，在这些新的采样点上预测核污染浓度。利用函数 `st_centroid()` 可以获取网格的中心位置，下 @fig-rongelap-centroid 新的采样点在全岛的分布。
+
+```{r}
+#| label: fig-rongelap-centroid
+#| fig-cap: "朗格拉普岛的采样点"
+#| fig-width: 7
+#| fig-height: 4
+#| fig-showtext: true
+#| echo: false
+
+ggplot() +
+  geom_sf(data = rongelap_grid, fill = NA, color = "gray30") +
+  geom_sf(data = st_centroid(rongelap_grid)) +
+  theme_void()
+```
+
 
