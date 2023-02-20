@@ -11,6 +11,8 @@ source("_common.R")
 
 本小节将对真实数据分析和建模，任务是预测核污染浓度在朗格拉普岛上的分布。
 
+### 数据说明 {#sec-rongelap-data}
+
 第二次世界大战中，美国在吉尔伯特及马绍尔群岛战事中占领了该群岛。上世纪 50 年代，在该群岛的比基尼环礁中进行了许多核实验，对该群岛造成无法弥补的环境损害。朗格拉普环礁是马绍尔群岛的一部分，被核爆炸后产生的放射性尘埃笼罩了，受到严重的核辐射影响。位于南太平洋的朗格拉普岛是朗格拉普环礁的主岛，从度假胜地变成人间炼狱。即使是 1985 年以后，那里仍然无人居住，居民担心核辐射对身体健康的影响。又几十年后，一批科学家来到该岛研究生态恢复情况，评估当地居民重返家园的可行性。目前该岛仍然不适合人类居住，只有经批准的科学研究人员才能登岛。数据集 `rongelap` 记录了 157 个测量点的伽马射线强度，即在时间间隔 `time` （秒）内放射的粒子数目 `counts`（个），测量站点的横纵坐标分别为 `cX` （米）和 `cY`（米），坐标参考原点在岛的东北，图中右上角的位置。下 @tbl-rongelap-nuclear-data 展示部分朗格拉普岛核污染检测数据及海岸线坐标数据。
 
 ```{r}
@@ -53,6 +55,8 @@ knitr::kable(head(rongelap_coastline, 6),
 ::: {.callout-note}
 之前，[Ole F. Christensen](http://gbi.agrsci.dk/~ofch/) 和 Paulo J. Ribeiro Jr 将 rongelap 数据集存放在 **geoRglm** 包内，后来，**geoRglm** 不维护，已从 CRAN 移除了。
 :::
+
+### 数据探索 {#sec-rongelap-exploration}
 
 朗格拉普岛呈月牙形，有数千米长，但仅几百米宽，十分狭长。采样点在岛上的分布如 @fig-rongelap-location 所示，主网格以约 200 米的间隔采样，在岛屿的东北和西南方各有两个密集采样区，每个网格采样区是 $5 \times 5$ 方式排列的，上下左右间隔均为 40 米。
 
@@ -186,6 +190,7 @@ with(rongelap, {
 })
 ```
 
+### 数据建模 {#sec-rongelap-modeling}
 
 核污染是由辐射元素衰变产生的，通常用单位时间释放出来的粒子数目表示辐射强度，也是核污染浓度，因此，建立泊松型广义线性模型分析数据。
 
@@ -353,6 +358,8 @@ summary(fit_rongelap_spamm)
 
 从输出结果来看，与 **glmmTMB** 很接近，模型固定效应的截距项 1.824，随机效应的方差为 0.2973，对数似然函数值为 -1317.551，拟合效果的提升几乎可以忽略。
 
+### 模型预测 {#sec-rongelap-predict}
+
 接下来，预测给定的边界（海岸线）内的任意位置的核污染浓度，展示全岛的污染图景。先从点构造多边形数据，再将多边形做网格划分，继而将网格中心点作为模型输入获得辐射强度的预测值。
 
 海岸线上取一些点，点的数量越多，对海岸线的刻画越精确，这在转弯处体现得非常明显。海岸线的数据是以成对的坐标构成，导入 R 语言中，是以数据框的形式存储，为了方便后续的操作，引入空间数据操作的 **sf** 包[@Pebesma2018]。将海岸线数据转化为空间点数据 POINT。
@@ -375,7 +382,7 @@ st_bbox(rongelap_coastline_sf)
 rongelap_coastline_sfp <- st_cast(st_combine(st_geometry(rongelap_coastline_sf)), "POLYGON")
 ```
 
-@fig-point-to-polygon 上下两个子图分别展示点和线。上图是原始的点数据，下图是以点带线，串联 POINT 构造 POLYGON 后的多边形。
+@fig-point-to-polygon 上下两个子图分别展示点和线。上图是原始的采样点数据，下图是以点带线，串联 POINT 构造 POLYGON 后的多边形。
 
 ```{r}
 #| label: fig-point-to-polygon
@@ -399,7 +406,7 @@ ggplot(rongelap_coastline_sfp) +
   theme_void()
 ```
 
-为了确保覆盖整个岛，还需要一点缓冲空间，就是说在给定的边界线外围再画一个多边形，这可以用函数 `st_buffer()` 根据海岸线构造 POLYGON 的缓冲区，缓冲距离选择 50 米。
+为了确保覆盖整个岛，还需要一点缓冲空间，就是说在给定的边界线外围再画一个多边形，这可以用函数 `st_buffer()` 根据海岸线构造缓冲区，一个 POLYGON 类型的几何数据对象，缓冲距离选择 50 米。
 
 ```{r}
 rongelap_coastline_buffer <- st_buffer(rongelap_coastline_sfp, dist = 50)
@@ -422,7 +429,7 @@ ggplot() +
   theme_void()
 ```
 
-接下来，利用函数 `st_make_grid()` 根据海岸缓冲线的边界打网格，朗格拉普到是狭长的，因此，网格是 $100\times 200 $ 的，意味着水平方向 100 行，垂直方向 200 列，细密程度是可以调整的，越密岛内的格点越多，核污染浓度计算越精确，同时也越耗时。
+接下来，利用函数 `st_make_grid()` 根据海岸缓冲线的边界打网格，朗格拉普到是狭长的，因此，网格是 $75\times 150$ 的，意味着水平方向 75 行，垂直方向 150 列，细密程度是可以调整的，越密岛内的格点越多，核污染浓度计算越精确，同时也越耗时。
 
 ```{r}
 rongelap_coastline_grid <- st_make_grid(rongelap_coastline_buffer, n = c(150, 75))
@@ -468,11 +475,11 @@ ggplot() +
   geom_sf(data = rongelap_coastline_sfp, 
           fill = NA, color = "gray30", linewidth = 0.5) +
   geom_sf(data = rongelap_grid, fill = NA, color = "gray30") +
-  geom_sf(data = rongelap_grid_centroid, size = 0.75) +
+  geom_sf(data = rongelap_grid_centroid, size = 0.1) +
   theme_void()
 ```
 
-抽取网格中心点的坐标并存储为 data.frame 类型，以便输入模型中。
+抽取网格中心点的坐标并转化为数据框类型，以便输入模型中，新数据的列名需要和训练数据保持一致，最后补充漂移项。
 
 ```{r}
 rongelap_grid_df <- as.data.frame(st_coordinates(rongelap_grid_centroid))
@@ -480,7 +487,7 @@ colnames(rongelap_grid_df) <- c("cX", "cY")
 rongelap_grid_df$time <- 300
 ```
 
-将数据输入 **spaMM** 包拟合的模型，将模型返回的结果整理成数据框，并与采样点数据合并。
+将数据输入 **spaMM** 包拟合的模型，并将模型返回的结果整理成数据框，并与采样点数据合并。
 
 ```{r}
 rongelap_grid_pred <- predict(fit_rongelap_spamm,
@@ -489,7 +496,7 @@ rongelap_grid_pred <- predict(fit_rongelap_spamm,
 rongelap_grid_df$pred <- as.vector(rongelap_grid_pred)
 ```
 
-将预测结果展示到图上。
+将预测结果以散点图的形式展示到图上。
 
 ```{r}
 #| label: fig-rongelap-pred-point
@@ -501,38 +508,38 @@ rongelap_grid_df$pred <- as.vector(rongelap_grid_pred)
 rongelap_grid_sf <- st_as_sf(rongelap_grid_df, coords = c("cX", "cY"), dim = "XY")
 library(colorspace)
 ggplot() +
-  geom_sf(data = rongelap_grid_sf, aes(color = pred / time), show.legend = FALSE) +
+  geom_sf(data = rongelap_grid_sf, aes(color = pred / time), 
+          show.legend = FALSE, size = 0.5) +
   geom_sf(
     data = rongelap_coastline_sfp,
     fill = NA, color = "gray30", linewidth = 0.5
   ) +
   scale_color_continuous_sequential(palette = "Grays") +
-  theme_void() +
-  coord_sf(expand = F)
+  theme_void()
 ```
 
-为了绘制热图，利用 **stars** 包将数据框整理、转化成栅格对象。
+为了绘制热图，利用 **stars** 包将预测数据按原网格化的精度转化成栅格对象，裁减超出朗格拉普岛海岸线以外的内容。
 
 ```{r}
 library(abind)
 library(stars)
 rongelap_grid_stars <- st_rasterize(rongelap_grid_sf, nx = 150, ny = 75)
+rongelap_stars <- st_crop(x = rongelap_grid_stars, y = rongelap_coastline_sfp)
 ```
 
-使用 **ggplot2** 包绘制放射强度的热力分布图。
+除了矢量栅格化函数 `st_rasterize()` 和栅格剪裁函数 `st_crop()` ，**stars** 包还提供栅格数据图层 `geom_stars()`，这可以和 ggplot2 内置的图层搭配使用，下 @fig-rongelap-pred-stars 是 **ggplot2** 包绘制的放射强度的热力分布图。
 
 ```{r}
 #| label: fig-rongelap-pred-stars
-#| fig-cap: "网格中心点的核污染浓度预测值"
+#| fig-cap: "朗格拉普岛核污染分布"
 #| fig-width: 7
 #| fig-height: 4
 #| fig-showtext: true
 
 ggplot() +
   geom_stars(
-    data = rongelap_grid_stars,
-    aes(fill = pred / time), show.legend = FALSE,
-    na.action = na.omit
+    data = rongelap_stars, na.action = na.omit,
+    aes(fill = pred / time), show.legend = FALSE
   ) +
   geom_sf(
     data = rongelap_coastline_sfp,
@@ -540,5 +547,8 @@ ggplot() +
   ) +
   scale_fill_continuous_sequential(palette = "Grays") +
   theme_void() +
-  coord_sf(expand = F)
+  coord_sf(expand = FALSE)
 ```
+
+
+
