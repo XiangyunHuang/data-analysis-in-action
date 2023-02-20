@@ -126,7 +126,7 @@ p1 <- ggplot() +
     arrow = arrow(length = unit(0.03, "npc"))
   ) +
   theme_bw() +
-  labs(x = "横坐标", y = "纵坐标", color = "放射强度")
+  labs(x = "横坐标", y = "纵坐标", color = "辐射强度")
 
 p2 <- ggplot() +
   geom_point(data = rongelap, aes(x = cX, y = cY, color = counts / time), size = 2, show.legend = FALSE) +
@@ -143,7 +143,7 @@ print(p2, vp = grid::viewport(x = .25, y = .725, width = .275, height = .45))
 
 ```{r}
 #| label: fig-rongelap-concentration
-#| fig-cap: "岛上各采样点的放射强度"
+#| fig-cap: "岛上各采样点的辐射强度"
 #| echo: false
 #| fig-showtext: true
 #| fig-width: 6
@@ -154,7 +154,7 @@ cloud(counts / time ~ cX * cY,
   scales = list(arrows = FALSE, col = "black"),
   xlab = list("横坐标", rot = 20),
   ylab = list("纵坐标", rot = -50),
-  zlab = list("放射强度", rot = 90),
+  zlab = list("辐射强度", rot = 90),
   type = c("p", "h"), pch = 16, lwd = 0.5,
   # 设置三维图的观察方位
   screen = list(z = 30, x = -65, y = 0)
@@ -203,7 +203,7 @@ summary(fit_rongelap_glm)
 ```
 
 ::: {.callout-note}
-当 `family = poisson(link = "log")` 时，响应变量只能放正整数。放射强度与位置有关，影响放射粒子数目的除了放射强度还有时间。参数 `offset` 是时间间隔，放射性粒子数量 `counts` 和时间间隔有关。
+当 `family = poisson(link = "log")` 时，响应变量只能放正整数。辐射强度与位置有关，影响放射粒子数目的除了辐射强度还有时间。参数 `offset` 是时间间隔，放射性粒子数量 `counts` 和时间间隔有关。
 :::
 
 从这个简单的广义线性模型结果，不难看出，位置变量 `cX` 和 `cY` 是显著的，从实际场景出发，也不难理解，位置信息是非常关键的。进一步，充分利用位置信息，精细建模是很有必要的。相邻位置的核污染浓度是相关的，离得近的比离得远的更相关。简单的广义线性模型并没有考虑距离相关性，它认为各个观测点的数据是相互独立的。因此，考虑采用广义线性混合效应模型，在广义线性模型的基础上添加位置相关的随机效应，用以刻画未能直接观测到的潜在影响。简单起见，假定随机效应之间是相互独立的高斯分布。
@@ -215,11 +215,11 @@ $$
 \end{aligned}
 $$
 
-其中响应变量服从泊松分布，即 $Y_{j} \sim \mathrm{Poisson}(t_{j}\lambda_{j})$ ，$\lambda_{j}$ 表示放射强度，$t_{j}$ 表示时间，随机效应 $\beta_{0j}$ 服从均值为 0，方差为 $\tau_{00}^2$ 的高斯分布，即 $U_{0j} \sim \mathcal{N}(0,\tau_{00}^2)$ 。截距项（常数项） $\gamma_{00}$ 可以理解为背景辐射，为简单起见，假定为常数。如果全岛观察到有系统性的背景辐射变化，可以考虑用随机变量来建模背景辐射。157 个检测站点的残差服从独立同分布的高斯分布，即 $\epsilon_{j} \sim \mathcal{N}(0,\sigma^2)$，$j=1,2,\cdots,157$ 。
+其中响应变量服从泊松分布，即 $Y_{j} \sim \mathrm{Poisson}(t_{j}\lambda_{j})$ ，$\lambda_{j}$ 表示辐射强度，$t_{j}$ 表示时间，随机效应 $\beta_{0j}$ 服从均值为 0，方差为 $\tau_{00}^2$ 的高斯分布，即 $U_{0j} \sim \mathcal{N}(0,\tau_{00}^2)$ 。截距项（常数项） $\gamma_{00}$ 可以理解为背景辐射，为简单起见，假定为常数。如果全岛观察到有系统性的背景辐射变化，可以考虑用随机变量来建模背景辐射。157 个检测站点的残差服从独立同分布的高斯分布，即 $\epsilon_{j} \sim \mathcal{N}(0,\sigma^2)$，$j=1,2,\cdots,157$ 。
 
 
 ::: {.callout-tip}
-根据目前已有的数据，没有收集影响放射强度的其它因素，模型中也就没有加其它观测变量，所以，只有截距项是变化的。如果有其他因素，可以在 $\beta_{0j}$ 后加入，比如 $\beta_{1j}x_{j}$。进一步，如果在 157 个位置处反复测量多次放射数据，则模型又可变为重复测量模型。
+根据目前已有的数据，没有收集影响辐射强度的其它因素，模型中也就没有加其它观测变量，所以，只有截距项是变化的。如果有其他因素，可以在 $\beta_{0j}$ 后加入，比如 $\beta_{1j}x_{j}$。进一步，如果在 157 个位置处反复测量多次放射数据，则模型又可变为重复测量模型。
 
 $$
 \begin{aligned}
@@ -246,7 +246,7 @@ Y_{ij} &\sim \mathrm{Poisson}(t_{ij}\lambda_{ij})
 \end{aligned}
 $$
 
-其中下标 $i$ 代表重复测量，则 $Y_{ij}$ 表示第 $i$ 次在第 $j$ 个位置检测到的放射量，$x_{1ij}$ 表示第1个协变量第$i$次在第$j$个位置上的观测值，一种非常贴合实际的情形是 $x_{1ij}$ 就代表时间 $T_{ij}$ ，表示科学家每隔 5 年登岛收集数据，此后登岛多次，$T_{ij}$ 意味着第 $i$ 次登岛收集各个检测点的放射数据。变截距 $\beta_{0j}$ 和变系数 $\beta_{1j}$ 同时存在，且二者联合分布为二元正态分布，残差仍然假定独立同高斯分布 $\epsilon_{ij} \sim \mathcal{N}(0,\sigma^2)$ 。
+其中下标 $i$ 代表重复测量，则 $Y_{ij}$ 表示第 $i$ 次在第 $j$ 个位置检测到的辐射量，$x_{1ij}$ 表示第1个协变量第$i$次在第$j$个位置上的观测值，一种非常贴合实际的情形是 $x_{1ij}$ 就代表时间 $T_{ij}$ ，表示科学家每隔 5 年登岛收集数据，此后登岛多次，$T_{ij}$ 意味着第 $i$ 次登岛收集各个检测点的辐射数据。变截距 $\beta_{0j}$ 和变系数 $\beta_{1j}$ 同时存在，且二者联合分布为二元正态分布，残差仍然假定独立同高斯分布 $\epsilon_{ij} \sim \mathcal{N}(0,\sigma^2)$ 。
 :::
 
 **lme4** 包[@Bates2015]是拟合广义线性混合效应模型的金标准，模型拟合函数 `glmer()` 的使用非常类似 Base R 提供的函数 `glm()`。
@@ -310,7 +310,7 @@ Y_{i} &\sim \mathrm{Poisson}(t(d_{i})\lambda(d_i))
 \end{aligned}
 $$ {#eq-rongelap-poisson-sglmmm}
 
-根据 ${}^{137}\mathrm{Cs}$ 放出的伽马射线在 $N=157$ 站点不同时间间隔 $t(d_{i})$ 的放射量，建立泊松广义线性混合效应模型。模型中，截距 $\beta$ 相当于平均水平，放射粒子数$Y_{i}$作为响应变量服从均值为 $t(d_{i})\lambda(d_i)$ 的泊松分布，$\lambda(d_i)$ 可理解为辐射强度，$S(d_{i})$ 表示位置 $d_i$ 处的空间效应，随机过程 $S(d)$ 的自协方差函数为幂二次指数型，如下：
+根据 ${}^{137}\mathrm{Cs}$ 放出的伽马射线在 $N=157$ 站点不同时间间隔 $t(d_{i})$ 的辐射量，建立泊松广义线性混合效应模型。模型中，截距 $\beta$ 相当于平均水平，放射粒子数$Y_{i}$作为响应变量服从均值为 $t(d_{i})\lambda(d_i)$ 的泊松分布，$\lambda(d_i)$ 可理解为辐射强度，$S(d_{i})$ 表示位置 $d_i$ 处的空间效应，随机过程 $S(d)$ 的自协方差函数为幂二次指数型，如下：
 
 $$
 \mathrm{Cov}( S(d_i), S(d_j) ) = \sigma^2 \exp( -\|d_i -d_j\|_{2} / \phi )
@@ -437,7 +437,7 @@ ggplot() +
   theme_void()
 ```
 
-接下来，利用函数 `st_make_grid()` 根据海岸缓冲线的边界打网格，朗格拉普到是狭长的，因此，网格是 $75\times 150$ 的，意味着水平方向 75 行，垂直方向 150 列，细密程度是可以调整的，越密岛内的格点越多，核污染浓度计算越精确，同时也越耗时。
+接下来，利用函数 `st_make_grid()` 根据海岸缓冲线打网格，朗格拉普岛是狭长的，因此，网格是 $75\times 150$ 的，意味着水平方向 75 行，垂直方向 150 列，细密程度是可以调整的，越密岛内的格点越多，核污染浓度计算越精确，同时也越耗时。
 
 ```{r}
 rongelap_coastline_grid <- st_make_grid(rongelap_coastline_buffer, n = c(150, 75))
@@ -495,7 +495,7 @@ colnames(rongelap_grid_df) <- c("cX", "cY")
 rongelap_grid_df$time <- 300
 ```
 
-将数据输入 **spaMM** 包拟合的模型，并将模型返回的结果整理成数据框，并与采样点数据合并。`predict()` 是一个泛型函数，**spaMM** 包为模型对象提供了相应的预测方法。
+将数据输入 **spaMM** 包拟合的模型，并将模型返回的结果整理成数据框，再与采样点数据合并。`predict()` 是一个泛型函数，**spaMM** 包为模型对象提供了相应的预测方法。
 
 ```{r}
 rongelap_grid_pred <- predict(fit_rongelap_spamm,
@@ -504,7 +504,7 @@ rongelap_grid_pred <- predict(fit_rongelap_spamm,
 rongelap_grid_df$pred <- as.vector(rongelap_grid_pred)
 ```
 
-将预测结果以散点图的形式展示到图上，考虑到核污染在全岛的分布应当是连续性的，接下来要绘制热力图。
+将预测结果以散点图的形式呈现到图上，考虑到核污染在全岛的分布应当是连续性的，接下来要绘制热力图。
 
 ```{r}
 #| label: fig-rongelap-pred-point
@@ -526,7 +526,7 @@ ggplot() +
   theme_void()
 ```
 
-为了绘制热力图，利用 **stars** 包将预测数据按原网格化的精度转化成栅格对象，裁减超出朗格拉普岛海岸线以外的内容。
+为了绘制热力图，利用 **stars** 包[@stars2022]将预测数据按原网格化的精度转化成栅格对象，裁减超出朗格拉普岛海岸线以外的内容。
 
 ```{r}
 library(abind)
@@ -535,7 +535,7 @@ rongelap_grid_stars <- st_rasterize(rongelap_grid_sf, nx = 150, ny = 75)
 rongelap_stars <- st_crop(x = rongelap_grid_stars, y = rongelap_coastline_sfp)
 ```
 
-除了矢量栅格化函数 `st_rasterize()` 和栅格剪裁函数 `st_crop()` ，**stars** 包还提供栅格数据图层 `geom_stars()`，这可以和 **ggplot2** 内置的图层搭配使用，下 @fig-rongelap-pred-stars 是 **ggplot2** 包绘制的放射强度的热力分布图。
+除了矢量栅格化函数 `st_rasterize()` 和栅格剪裁函数 `st_crop()` ，**stars** 包还提供栅格数据图层 `geom_stars()`，这可以和 **ggplot2** 内置的图层搭配使用，下 @fig-rongelap-pred-stars 是 **ggplot2** 包绘制的辐射强度的热力分布图。
 
 ```{r}
 #| label: fig-rongelap-pred-stars
@@ -557,13 +557,11 @@ ggplot() +
     palette = "Grays", 
     guide = guide_colourbar(
       barwidth = 25, barheight = 0.8,
-      # 图例标题位于图例上方
       title.position = "left" 
     )
   ) +
   theme_void() +
   labs(fill = "辐射强度") +
-  # 图例位置图形下方
   theme(legend.position = "top") + 
   coord_sf(expand = FALSE)
 ```
