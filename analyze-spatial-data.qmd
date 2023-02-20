@@ -318,8 +318,7 @@ $$
 
 $S(d),d \in \mathbb{R}^2$ 是平稳空间高斯过程，且 $Z_i$ 之间相互独立同正态分布 $\mathcal{N}(0,\tau^2)$ ，$Z_i$ 表示与空间效应无关的块金效应，即非空间的随机效应，可以理解为测量误差、空间变差或背景辐射，这里 $i = 1,\ldots, 157$。
 
-[**glmmTMB**](https://github.com/glmmTMB/glmmTMB) 包[@Brooks2017]可以拟合空间广义线性混合效应模型，使用语法和前面介绍的 **lme4** 包一样。[**glmmTMB**](https://github.com/glmmTMB) 基于 [**TMB**](https://github.com/kaskr/adcomp) 框架可以拟合线性和广义线性混合效应模型及其扩展，包括零过多（零膨胀）zero-inflation 模型，估计方法是极大似然，实现工具是 TMB。随机效应假定是高斯分布，拉普拉斯方法近似随机效应的高维积分，自动微分的方式计算梯度。
-
+[**glmmTMB**](https://github.com/glmmTMB/glmmTMB) 包 [@Brooks2017] 基于 [TMB](https://github.com/kaskr/adcomp)框架可以拟合空间广义线性混合效应模型，使用语法和前面介绍的 **lme4** 包一样。**glmmTMB** 包还可以拟合线性和广义线性混合效应模型及其扩展，包括零过多（零膨胀）zero-inflation 模型，估计方法是极大似然，实现工具是 TMB。随机效应假定是高斯分布，拉普拉斯方法近似随机效应的高维积分，自动微分的方式计算对数似然函数的梯度。
 
 ```{r}
 #| message: false
@@ -345,7 +344,7 @@ logLik(fit_rongelap_glmmtmb)
 
 `summary(fit_rongelap_glmmtmb)` 输出中包含大型的协方差矩阵，协方差矩阵也可单独抽取见 `ranef(fit_rongelap_glmmtmb)`，篇幅所限，此处略去。输出结果中，模型的固定效应 `fixef(fit_rongelap_glmmtmb)` （此处也是截距）为 1.82007，随机效应的方差为 0.2929。
 
-**spaMM** 包[@Rousset2014]与 **glmmTMB** 包在功能上有很多类似的地方，它也可以拟合空间广义线性混合效应模型，支持非常丰富的统计建模功能，从简单线性模型到相对复杂的空间广义线性混合效应模型，拟合函数 `fitme()` 提供统一的使用语法。
+**spaMM** 包[@Rousset2014]与 **glmmTMB** 包在功能上有很多类似的地方，它也可以拟合空间广义线性混合效应模型，支持非常丰富的统计建模功能，从简单线性模型到相对复杂的空间广义线性混合效应模型，拟合函数 `fitme()` 提供统一的使用语法，输出一个 **spaMM** 包内建的 HLfit 类型的数据对象。
 
 ```{r}
 #| message: false
@@ -370,13 +369,13 @@ rongelap_sf <- st_as_sf(rongelap, coords = c("cX", "cY"), dim = "XY")
 rongelap_coastline_sf <- st_as_sf(rongelap_coastline, coords = c("cX", "cY"), dim = "XY")
 ```
 
-**sf** 包提供了大量空间操作函数，比如用 `st_bbox()` 获得东西南北的边界点。
+**sf** 包提供了大量空间数据操作函数，比如用 `st_bbox()` 获得东西南北的边界点，下面还会陆续涉及其它空间数据操作。
 
 ```{r}
 st_bbox(rongelap_coastline_sf)
 ```
 
-连接点 POINT 构造多边形 POLYGON 对象。
+连接点 POINT 构造多边形 POLYGON 对象。POINT 和 POLYGON 是 **sf** 包内建的基础的几何类型，其它复杂的空间类型是由它们衍生而来。
 
 ```{r}
 rongelap_coastline_sfp <- st_cast(st_combine(st_geometry(rongelap_coastline_sf)), "POLYGON")
@@ -487,7 +486,7 @@ colnames(rongelap_grid_df) <- c("cX", "cY")
 rongelap_grid_df$time <- 300
 ```
 
-将数据输入 **spaMM** 包拟合的模型，并将模型返回的结果整理成数据框，并与采样点数据合并。
+将数据输入 **spaMM** 包拟合的模型，并将模型返回的结果整理成数据框，并与采样点数据合并。`predict()` 是一个泛型函数，**spaMM** 包为模型对象提供了相应的预测方法。
 
 ```{r}
 rongelap_grid_pred <- predict(fit_rongelap_spamm,
@@ -496,7 +495,7 @@ rongelap_grid_pred <- predict(fit_rongelap_spamm,
 rongelap_grid_df$pred <- as.vector(rongelap_grid_pred)
 ```
 
-将预测结果以散点图的形式展示到图上。
+将预测结果以散点图的形式展示到图上，考虑到核污染在全岛的分布应当是连续性的，接下来要绘制热力图。
 
 ```{r}
 #| label: fig-rongelap-pred-point
@@ -527,7 +526,7 @@ rongelap_grid_stars <- st_rasterize(rongelap_grid_sf, nx = 150, ny = 75)
 rongelap_stars <- st_crop(x = rongelap_grid_stars, y = rongelap_coastline_sfp)
 ```
 
-除了矢量栅格化函数 `st_rasterize()` 和栅格剪裁函数 `st_crop()` ，**stars** 包还提供栅格数据图层 `geom_stars()`，这可以和 ggplot2 内置的图层搭配使用，下 @fig-rongelap-pred-stars 是 **ggplot2** 包绘制的放射强度的热力分布图。
+除了矢量栅格化函数 `st_rasterize()` 和栅格剪裁函数 `st_crop()` ，**stars** 包还提供栅格数据图层 `geom_stars()`，这可以和 **ggplot2** 内置的图层搭配使用，下 @fig-rongelap-pred-stars 是 **ggplot2** 包绘制的放射强度的热力分布图。
 
 ```{r}
 #| label: fig-rongelap-pred-stars
