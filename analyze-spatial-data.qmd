@@ -203,7 +203,7 @@ summary(fit_rongelap_glm)
 ```
 
 ::: {.callout-note}
-当 `family = poisson(link = "log")` 时，响应变量只能放正整数。辐射强度与位置有关，影响放射粒子数目的除了辐射强度还有时间。参数 `offset` 是时间间隔，放射性粒子数量 `counts` 和时间间隔有关。
+当 `family = poisson(link = "log")` 时，响应变量只能放正整数。辐射强度与位置有关，影响放射粒子数目 `counts`  的除了辐射强度还有时间，参数 `offset` 是与放射粒子数目相对应的时间间隔。
 :::
 
 从这个简单的广义线性模型结果，不难看出，位置变量 `cX` 和 `cY` 是显著的，从实际场景出发，也不难理解，位置信息是非常关键的。进一步，充分利用位置信息，精细建模是很有必要的。相邻位置的核污染浓度是相关的，离得近的比离得远的更相关。简单的广义线性模型并没有考虑距离相关性，它认为各个观测点的数据是相互独立的。因此，考虑采用广义线性混合效应模型，在广义线性模型的基础上添加位置相关的随机效应，用以刻画未能直接观测到的潜在影响。简单起见，假定随机效应之间是相互独立的高斯分布。
@@ -318,7 +318,7 @@ $$
 
 $S(d),d \in \mathbb{R}^2$ 是平稳空间高斯过程，且 $Z_i$ 之间相互独立同正态分布 $\mathcal{N}(0,\tau^2)$ ，$Z_i$ 表示与空间效应无关的块金效应，即非空间的随机效应，可以理解为测量误差、空间变差或背景辐射，这里 $i = 1,\ldots, 157$。
 
-[**glmmTMB**](https://github.com/glmmTMB/glmmTMB) 包 [@Brooks2017] 基于 [TMB](https://github.com/kaskr/adcomp)框架可以拟合空间广义线性混合效应模型，使用语法和前面介绍的 **lme4** 包一样。**glmmTMB** 包还可以拟合线性和广义线性混合效应模型及其扩展，包括零过多（零膨胀）zero-inflation 模型，估计方法是极大似然，实现工具是 TMB。随机效应假定是高斯分布，拉普拉斯方法近似随机效应的高维积分，自动微分的方式计算对数似然函数的梯度。
+[**glmmTMB**](https://github.com/glmmTMB/glmmTMB) 包 [@Brooks2017] 基于 [TMB](https://github.com/kaskr/adcomp)[@TMB2016]框架可以拟合空间广义线性混合效应模型，使用语法和前面介绍的 **lme4** 包一样。**glmmTMB** 包还可以拟合线性和广义线性混合效应模型及其扩展，包括零过多（零膨胀）zero-inflation 模型，估计方法是极大似然，实现工具是 TMB。随机效应假定是高斯分布，拉普拉斯方法近似随机效应的高维积分，自动微分的方式计算对数似然函数的梯度。
 
 ```{r}
 #| message: false
@@ -358,9 +358,9 @@ summary(fit_rongelap_spamm)
 从输出结果来看，与 **glmmTMB** 很接近，模型固定效应的截距项 1.824，随机效应的方差为 0.2973，对数似然函数值为 -1317.551，拟合效果的提升几乎可以忽略。
 
 ::: {.callout-tip}
-2002 年张首次提出蒙特卡洛极大似然算法给出空间广义线性混合效应模型的估计与预测[@Zhang2002]，因混合模型的多样性，参数计算的复杂性，后续学者们分别从贝叶斯和频率方法的视角提出精确和近似的算法。贝叶斯方法主流的有拉普拉斯近似和全贝叶斯推断，频率方法主流的有基于似然的拉普拉斯近似和高斯-埃尔米特近似。值得一提，**INLA** 包[@Rue2009]、**glmmfields** 包[@glmmfields2018]和 **sdmTMB** 包[@Anderson2022]也可以用来拟合模型 @eq-rongelap-poisson-sglmmm 。
+2002 年张首次提出蒙特卡洛极大似然算法给出空间广义线性混合效应模型的估计与预测[@Zhang2002]，因混合模型的多样性，参数计算的复杂性，后续学者们分别从贝叶斯和频率方法的视角提出精确和近似的算法。近似算法的想法是找了一个近似函数替换其中的部分或者全部，使得随着迭代次数增加的情况下，估计的参数值可以趋于真值。精确算法的想法是通过模拟计算的方式硬积一个高维积分，不断增加采样的次数逼近目标函数，比如基于 MCMC 及其改进型 HMC 和 NUTS 硬积参数的联合后验分布中的高维积分做参数的全贝叶斯推断。贝叶斯方法主流的有拉普拉斯近似和全贝叶斯推断，频率方法主流的有基于似然的拉普拉斯近似和自适应高斯-埃尔米特算法。值得一提，**INLA** 包[@Rue2009;@Lindgren2015]、**glmmfields** 包[@glmmfields2018]和 **sdmTMB** 包[@Anderson2022]也可以用来拟合模型 @eq-rongelap-poisson-sglmmm 。
 
-- **INLA** 包采用 SPDE 方法将目标区域划分成三角网格，以拉普拉斯集成嵌套计算方法逼近参数的后验分布。预测精度和速度主要由网格的细密程度决定，对于大规模空间数据集，比如数以千计的采样点，可以将网格划分得稀疏一些，总是可以计算。内部采用了并行迭代和英特尔 MKL 矩阵优化工具库。
+- **INLA** 包采用 SPDE 方法将目标区域划分成三角网格，以拉普拉斯集成嵌套计算方法逼近参数的后验分布[@Virgilio2018]。预测精度和速度主要由网格的细密程度决定，对于大规模空间数据集，比如数以千计的采样点，可以将网格划分得稀疏一些，总是可以计算。内部采用了并行迭代和英特尔 MKL 矩阵优化工具库。
 - **glmmfields** 包以多元 t 分布替代多元高斯分布表示高斯马尔可夫随机场拟合带极端事件的时空模型，所以它不局限于本文涉及的空间模型。**glmmfields** 包内建的空间和时空模型是基于 Stan 的，因此，采用全贝叶斯精确推断方式，一般以 NUTS 采样的方式获取参数后验分布，主要算法是汉密尔顿蒙特卡洛 HMC， 对自动微分变分推断方式有试验性支持。
 - **sdmTMB** 包与 **glmmTMB** 包源自一脉，内部的计算框架都来自 TMB，相比而言，支持的模型更多，特别是生态学领域的空间和时空模型。
 - **hglm** 包对于具有分层结构的混合效应模型，提出 H-Likelihood 方法 拟合分层广义线性模型、自回归空间模型 [@Ronnegard2010;@Alam2015]。
@@ -535,7 +535,7 @@ rongelap_grid_stars <- st_rasterize(rongelap_grid_sf, nx = 150, ny = 75)
 rongelap_stars <- st_crop(x = rongelap_grid_stars, y = rongelap_coastline_sfp)
 ```
 
-除了矢量栅格化函数 `st_rasterize()` 和栅格剪裁函数 `st_crop()` ，**stars** 包还提供栅格数据图层 `geom_stars()`，这可以和 **ggplot2** 内置的图层搭配使用，下 @fig-rongelap-pred-stars 是 **ggplot2** 包绘制的辐射强度的热力分布图。
+除了矢量栅格化函数 `st_rasterize()` 和栅格剪裁函数 `st_crop()` ，**stars** 包还提供栅格数据图层 `geom_stars()`，这可以和 **ggplot2** 内置的图层搭配使用，下 @fig-rongelap-pred-stars 是 **ggplot2** 包绘制的辐射强度的热力分布图。图左侧一小一大两个虚线框是放大前后的部分区域，展示朗格拉普岛核辐射强度的局部变化。
 
 ```{r}
 #| label: fig-rongelap-pred-stars
@@ -543,27 +543,65 @@ rongelap_stars <- st_crop(x = rongelap_grid_stars, y = rongelap_coastline_sfp)
 #| fig-width: 7
 #| fig-height: 4
 #| fig-showtext: true
+#| echo: true
 
-ggplot() +
+# 虚线框数据
+dash_sfp <- st_polygon(x = list(rbind(
+  c(-6000, -3600),
+  c(-6000, -2600),
+  c(-5000, -2600),
+  c(-5000, -3600),
+  c(-6000, -3600)
+)), dim = "XY")
+
+p3 <- ggplot() +
   geom_stars(
     data = rongelap_stars, na.action = na.omit,
-    aes(fill = pred / time)#, show.legend = FALSE
+    aes(fill = pred / time)
   ) +
+  # 海岸线
   geom_sf(
     data = rongelap_coastline_sfp,
     fill = NA, color = "gray30", linewidth = 0.5
   ) +
+  # 图例
   scale_fill_continuous_sequential(
     palette = "Grays", 
     guide = guide_colourbar(
-      barwidth = 25, barheight = 0.8,
-      title.position = "left" 
+      barwidth = 15, barheight = 1,
+      nbin = 10, label.position = "top",
+      title.position = "right" 
     )
+  ) +
+  # 虚线框
+  geom_sf(data = dash_sfp, fill = NA, linewidth = 0.75, lty = 2) +
+  # 箭头
+  geom_segment(
+    data = data.frame(x = -5500, xend = -5000, y = -2600, yend = -2000),
+    aes(x = x, y = y, xend = xend, yend = yend),
+    arrow = arrow(length = unit(0.03, "npc"))
   ) +
   theme_void() +
   labs(fill = "辐射强度") +
-  theme(legend.position = "top") + 
-  coord_sf(expand = FALSE)
+  theme(legend.position = "top")
+
+p4 <- ggplot() +
+  geom_stars(
+    data = rongelap_stars, na.action = na.omit,
+    aes(fill = pred / time), show.legend = FALSE
+  ) +
+  geom_sf(
+    data = rongelap_coastline_sfp,
+    fill = NA, color = "gray30", linewidth = 0.75
+  ) +
+  scale_fill_continuous_sequential(palette = "Grays") +
+  # 虚线框
+  geom_sf(data = dash_sfp, fill = NA, linewidth = 0.75, lty = 2) +
+  theme_void() +
+  coord_sf(expand = FALSE, xlim = c(-6000, -5000), ylim = c(-3600, -2600))
+# 叠加图形
+p3
+print(p4, vp = grid::viewport(x = .25, y = .625, width = .45, height = .45))
 ```
 
 美国当年是在比基尼环礁做的氢弹核试验，试验地与朗格拉普岛相距 100 多英里，核辐射羽流受大气、海洋环流等影响，漂流到朗格拉普岛，受当地水文、地理环境影响，核污染在全岛的分布是不均匀的，颜色越深表示核污染越严重。

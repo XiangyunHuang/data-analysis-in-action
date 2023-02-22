@@ -79,7 +79,39 @@ ggplot(data = province_sex_ratio, aes(x = `区域`, y = `性别比（女=100）`
   theme_classic()
 ```
 
+## 善用尺度变换 {#sec-scale-transform}
 
+在过去 25 年里，R 语言的维护和开发工作由一个核心团队负责，期间团队陆续加入新人，有的截止到 2022 年，还一直在持续维护和开发，实为不易。下图将他们筛选出来，并将他们提交的代码量做年度趋势图。
+
+```{r}
+#| label: fig-scale-transform
+#| fig-cap: "对数变换的效果"
+#| fig-subcap: 
+#|   - 对数变换前
+#|   - 对数变换后
+#| fig-ncol: 2
+#| fig-width: 4.5
+#| fig-height: 3.5
+#| echo: false
+#| fig-showtext: true
+
+svn_trunk_log <- readRDS(file = "data/svn-trunk-log-2022.rds")
+svn_trunk_log$year <- as.integer(format(svn_trunk_log$stamp, "%Y"))
+trunk_year_author <- aggregate(data = svn_trunk_log, revision ~ year + author, FUN = length)
+library(geomtextpath)
+trunk_year_author_sub <- trunk_year_author[trunk_year_author$author %in% trunk_year_author[trunk_year_author$year == 2022, "author"], ]
+ggplot(data = trunk_year_author_sub, aes(x = year, y = revision)) +
+  geom_textline(aes(color = author, label = author), show.legend = F) +
+  theme_classic() +
+  labs(x = "年份", y = "代码提交量")
+ggplot(data = trunk_year_author_sub, aes(x = year, y = revision)) +
+  geom_textline(aes(color = author, label = author), show.legend = F) +
+  scale_y_log10() +
+  theme_classic() +
+  labs(x = "年份", y = "代码提交量（取对数）")
+```
+
+@fig-scale-transform 的左子图可以看出，只有 ripley（Brian Ripley）、maechler（Martin Maechler）、hornik（Kurt Hornik） 和 kalibera（Tomas Kalibera） 明显较多，尤其是 Brian Ripley，相对而言，一些开发者的代码提交次数就很少，趋势线挤在一起，无法区分。通过对数变换，可以将相近的曲线分离，放大细节。当然，是否需要采用对数变换取决于图形目的，当想重点突出 Brian Ripley 等四人的贡献时，就不需要对数变换。
 
 ## 适当添加注释 {#sec-add-annotate}
 
