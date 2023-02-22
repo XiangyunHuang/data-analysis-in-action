@@ -1,5 +1,12 @@
 # 混合效应模型 {#sec-mixed-effects-models}
 
+在介绍理论的同时给出 R 语言或 S 语言实现
+
+- 《Mixed-Effects Models in S and S-PLUS》[@Pinheiro2000]
+- 《Mixed Models: Theory and Applications with R》[@Demidenko2013]
+- 《Linear and Generalized Linear Mixed Models and Their Applications》[@Jiang2021]
+
+
 ## 线性混合效应模型 {#sec-linear-mixed-effects-models}
 
 ```{r}
@@ -79,6 +86,32 @@ brms::pp_check(fit_sim_poisson_brm)
 #| echo: true
 #| eval: false
 # gee GLMMadaptive glmmML geepack 和 lme4 的模型输出结果是接近的
+# blme 基于 lme4 的贝叶斯估计
+library(blme)
+fit_sim_poisson_bglmer <- bglmer(
+  formula = y ~ x1 + x2 + (1 | g),
+  data = sim_data,
+  offset = log(u),
+  family = poisson(link = "log")
+)
+summary(fit_sim_poisson_bglmer)
+# MCMCglmm 包 贝叶斯估计
+fit_sim_poisson_mcmcglmm <- MCMCglmm::MCMCglmm(
+  fixed = y ~ x1 + x2 + offset(log(u)),
+  random = ~g, family = "poisson", 
+  data = sim_data, verbose = FALSE
+)
+summary(fit_sim_poisson_mcmcglmm)
+## hglm 包 Hierarchical Generalized Linear Models
+# extended quasi likelihood (EQL) method
+fit_sim_poisson_hglm <- hglm::hglm(
+  fixed =  y ~ x1 + x2,
+  random = ~ 1 | g,
+  family = poisson(link = "log"), 
+  offset = log(u) ,
+  data = sim_data
+)
+summary(fit_sim_poisson_hglm)
 # 广义估计方程 
 library(gee)
 fit_sim_poisson_gee <- gee(y ~ x1 + x2 + offset(log(u)),
