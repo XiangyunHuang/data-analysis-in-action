@@ -1,0 +1,1200 @@
+# 高级图形 {#sec-advanced}
+
+```{r}
+#| echo: false
+
+source("_common.R")
+```
+
+-  @sec-visualize-data-uncertainty 探索、展示数据中隐含的不确定性，统计中描述不确定性有很多概念，比如置信区间、假设检验中的 P 值，统计模型中的预测值及其预测区间，模型残差隐含的分布，模型参数分量的边际分布及其效应，贝叶斯视角下的模型参数的后验分布。
+-  @sec-visualize-spatial-data 探索、展示空间数据中隐含的分布信息。对于空间区域数据，介绍地区分布图、比例符号图和扭曲变形图，而对于栅格数据，介绍地形轮廓图，包括二维的和三维的，静态的和交互的。
+
+
+## 描述不确定性 {#sec-visualize-data-uncertainty}
+
+
+<!-- 
+可视化不确定性，这属于高级篇内容，阐述一些常用、常见的统计概念
+https://github.com/wilkelab/ungeviz
+https://wilkelab.org/SDS375/schedule.html
+
+Psychology of Data Visualization 2021 Michael Friendly
+http://euclid.psych.yorku.ca/www/psy6135/
+
+Visualizing the uncertainty of point estimates.
+Uncertainty is expressed as standard error, confidence interval, or credible interval
+https://wilkelab.org/SDS375/slides/visualizing-uncertainty.html#1
+
+[ggdist](https://github.com/mjskay/ggdist) Visualizations of distributions and uncertainty [@ggdist2022]
+-->
+
+
+
+### 置信区间 {#sec-confidence-interval}
+
+<!-- 
+描述点估计的不确定性
+二项分布参数 p 的点估计与区间估计，与后续覆盖概率联系起来
+-->
+
+
+
+| 0 | 1 | 2 | $\cdots$ | n |
+|:--|:---|:---|:---|:---|
+| $p_0$ | $p_1$ | $p_2$ | $\cdots$ | $p_n$ |
+
+: 二项分布的分布列 {#tbl-binom}
+
+
+
+二项分布 $\mathrm{Bin}(n,p)$ 的参数 $p$ 的精确区间估计如下：
+
+$$
+(B(\frac{\alpha}{2}; x, n-x+1), B(1-\frac{\alpha}{2}; x+1, n-x))
+$$ {#eq-clopper-ci}
+
+$x$ 是成功次数，$n$ 是实验次数，$B(p;v,w)$ 是形状参数为 v 和 w 的 Beta 分布的 p 分位数，p 的置信区间的上下限 $P_L,P_U$ 满足
+
+
+\begin{align}
+\frac{\Gamma(n+1)}{\Gamma(x)\Gamma(n-x+1)}\int_{0}^{P_L}t^{x-1}(1-t)^{n-x}\mathrm{dt} &= \frac{\alpha}{2} \\
+\frac{\Gamma(n+1)}{\Gamma(x+1)\Gamma(n-x)}\int_{0}^{P_U}t^{x}(1-t)^{n-x-1}\mathrm{dt} &= 1-\frac{\alpha}{2}
+\end{align}
+
+
+$p_x$ 表示二项分布 $\mathrm{Bin}(n,p)$ 第 $x$ 项的概率，$x$ 的取值为 $0,1,\cdots,n$
+
+$$p_x = \binom{n}{x}p^x(1-p)^{n-x}, \quad x = 0,1,\cdots,n$$
+
+二项分布的累积分布函数和 $S_k$ 表示前 $k$ 项概率之和
+
+$$S_k = \sum_{x=0}^{k} p_x$$
+
+$S_k$ 服从形状参数为 $n-k,k+1$ 的贝塔分布 $I_x(a,b)$，对应于 R 函数 `pbeta(x,a,b)`。 $S_k$ 看作贝塔分布的随机变量 $X$
+
+\begin{align}
+B_x(a,b) &=\int_{0}^{x}t^{a-1}(1-t)^{b-1}\mathrm{dt} \\
+I_x(a,b) &= \frac{B_x(a,b)}{B(a,b)}, \quad B(a,b) = B_1(a,b)
+\end{align}
+
+考虑二项总体的参数 $p=0.7$，重复模拟 50 次，每次模拟获得的比例 $\hat{p}$ 及其置信区间，如 @fig-clopper-pearson-ci 所示，置信区间覆盖真值的情况用不同颜色表示，覆盖用 TRUE 表示，没有覆盖用 FALSE 表示
+
+```{r}
+#| label: fig-clopper-pearson-ci
+#| fig-cap: "Clopper-Pearson 置信区间"
+#| fig-width: 7
+#| fig-height: 4
+#| fig-showtext: true
+
+library(ggplot2)
+# Clopper and Pearson (1934)
+# 与 binom.test() 计算结果一致
+clopper_pearson <- function(p = 0.1, n = 10, nsim = 100) {
+  set.seed(2022)
+  nd <- rbinom(nsim, prob = p, size = n)
+  ll <- qbeta(p = 0.05 / 2, shape1 = nd, shape2 = n - nd + 1)
+  ul <- qbeta(p = 1 - 0.05 / 2, shape1 = nd + 1, shape2 = n - nd)
+  data.frame(nd = nd, ll = ll, ul = ul, cover = ul > p & ll < p)
+}
+# 二项分布的参数 p = 0.7
+dat <- clopper_pearson(p = 0.7, n = 10, nsim = 50)
+# 二项分布的参数的置信区间覆盖真值的情况
+ggplot(data = dat, aes(x = 1:50, y = nd / 10, colour = cover)) +
+  geom_hline(yintercept = 0.7, lty = 2, linewidth = 1.2, color = "gray") +
+  geom_pointrange(aes(ymin = ll, ymax = ul)) +
+  theme_classic() +
+  labs(x = "第几次模拟", y = "置信区间上下限", color = "覆盖")
+```
+
+
+
+
+
+
+### 假设检验 {#sec-hypothesis-tests}
+
+<!-- 
+描述检验统计假设的不确定性  P 值和功效
+对一个统计假设，我有一套方法来检验其正确性，但结论具有不确定性（小概率原理，P 值和风险联系），同一个统计假设，同一组数据，不同的检验方法有不同的 P 值，是检验方法的功效不同。
+
+[ggpubr](https://github.com/kassambara/ggpubr) 制作出版级统计图形，两样本均值的比较
+-->
+
+[**ggpval**](https://github.com/s6juncheng/ggpval) 在图上添加检验的 P 值结果，[**ggsignif**](https://github.com/const-ae/ggsignif) [@ggsignif2021] 在图上添加显著性注释。[**ggstatsplot**](https://github.com/IndrajeetPatil/ggstatsplot) [@Indrajeet2021] 可视化统计检验、模型的结果，描述功效变化。
+
+
+```{r}
+#| label: fig-plant-growth
+#| echo: true
+#| fig-cap: "植物生长"
+#| fig-width: 5
+#| fig-height: 3.5
+#| fig-showtext: true
+
+with(
+  aggregate(
+    data = PlantGrowth, weight ~ group,
+    FUN = function(x) c(dist_mean = mean(x), dist_sd = sd(x))
+  ),
+  cbind.data.frame(weight, group)
+) |>
+  ggplot(aes(x = group, y = dist_mean)) +
+  geom_col(
+    position = position_dodge(0.4), width = 0.4, fill = "gray"
+  ) +
+  geom_errorbar(aes(
+    ymin = dist_mean - dist_sd,
+    ymax = dist_mean + dist_sd
+  ),
+  position = position_dodge(0.4), width = 0.2
+  ) +
+  theme_classic() +
+  labs(x = "组别", y = "植物干重")
+```
+
+::: {.callout-note}
+R 3.5.0 以后，函数 `aggregate()` 的参数 `drop` 默认值为 `TRUE`， 表示扔掉未用来分组的变量，聚合返回的是一个矩阵类型的数据对象。
+:::
+
+
+单因素方差分析
+
+```{r}
+oneway.test(data = PlantGrowth, weight ~ group)
+```
+
+
+@fig-signif 展示假设检验的结果
+
+```{r}
+#| label: fig-signif
+#| fig-cap: "展示假设检验的结果"
+#| fig-width: 5
+#| fig-height: 4
+#| fig-showtext: true
+
+library(ggsignif)
+ggplot(data = PlantGrowth, aes(x = group, y = weight)) +
+  geom_boxplot(width = 0.25) +
+  geom_jitter(width = 0.15) +
+  geom_signif(comparisons = list(c("ctrl", "trt1"), c("trt1", "trt2")), 
+              map_signif_level = function(p) sprintf("p = %.2g", p), 
+              textsize = 6, test = "t.test") +
+  theme_classic() +
+  coord_cartesian(clip = "off")
+```
+
+
+### 模型预测 {#sec-model-predictions}
+
+<!-- 
+描述模型预测/曲线拟合的不确定性
+趋势拟合和描述关系中添加回归线及置信带
+
+rgl 广义可加模型可视化
+https://menugget.blogspot.com/2016/02/visualizing-model-predictions-in-3d.html
+
+[mgcViz](https://github.com/mfasiolo/mgcViz)
+
+Scalable visualisation methods for modern Generalized Additive Models
+https://arxiv.org/abs/1809.10632
+-->
+
+代码提交量的趋势拟合
+
+```{r}
+#| label: fig-smooth
+#| fig-cap: "趋势拟合、预测和推断"
+#| fig-width: 7
+#| fig-height: 4.5
+#| fig-showtext: true
+
+ggplot(data = trunk_year, aes(x = year, y = revision)) +
+  geom_point() +
+  geom_smooth(aes(color = "LOESS", fill = "LOESS"),
+    method = "loess", formula = "y~x",
+    method.args = list(
+      span = 0.75, degree = 2, family = "symmetric",
+      control = loess.control(surface = "direct", iterations = 4)
+    ), data = subset(trunk_year, year != c(1997, 2022))
+  ) +
+  geom_smooth(aes(color = "GAM", fill = "GAM"),
+    formula = y ~ s(x, k = 12),
+    method = "gam", se = T,
+    data = subset(trunk_year, year != c(1997, 2022))
+  ) +
+  geom_smooth(aes(color = "Cubic Spline", fill = "Cubic Spline"),
+                method = "lm", formula = y ~ splines::bs(x, 3), se = T,
+              data = subset(trunk_year, year != c(1997, 2022))) +
+  scale_color_brewer(name = "模型", palette = "Set1") +
+  scale_fill_brewer(name = "模型", palette = "Set1") +
+  theme_classic() +
+  theme(panel.grid.major.y = element_line(colour = "gray90")) +
+  labs(x = "年份", y = "提交量")
+```
+
+
+
+### 模型诊断 {#sec-model-diagnostics}
+
+
+> 所有模型都是错误的，但有些是有用的。
+>
+> --- 乔治·博克斯
+
+<!-- 
+描述模型拟合数据的不确定性，
+Cook 距离、高杠杆值、模型诊断、影响测量
+[ggPMX](https://github.com/ggPMXdevelopment/ggPMX) ggplot2 Based Tool to Facilitate Diagnostic Plots for NLME Models
+-->
+
+```{r}
+#| label: fig-lm-diagnostics
+#| fig-cap: "线性模型的诊断图"
+#| fig-showtext: true
+#| collapse: true
+#| fig-width: 7
+#| fig-height: 8
+
+state_x77 <- data.frame(state.x77,
+  state_name = rownames(state.x77),
+  state_region = state.region,
+  state_abb = state.abb,
+  check.names = FALSE
+)
+
+# 模型诊断图
+fit <- lm(`Life Exp` ~ Income + Murder, data = state_x77)
+op <- par(mfrow = c(3, 2), mar = c(4, 4, 3, 1))
+plot(fit,
+  ask = FALSE, which = c(1, 2, 3, 4, 5, 6),
+  caption = list(
+    "残差和拟合值", "正态 Q-Q 图",
+    "尺度-位置", "Cook 距离", "残差和杠杆值",
+    expression("Cook 距离 vs 杠杆值" * h[ii] / (1 - h[ii]))
+  )
+)
+par(op)
+```
+
+
+
+### 边际效应 {#sec-marginal-effects}
+
+继续 state_x77 数据集，以预期寿命（1969-1971 年统计）为因变量，Income 人均收入（1974 年）和 Murder 谋杀和非过失杀人率（单位：十万分之一，1976 年统计）为自变量，建立线性模型如下：
+
+$$
+\text{Life Exp} = \alpha + \beta_1  \text{Income} + \beta_2 \text{Murder} + \epsilon
+$$ {#eq-lm-state-x77}
+
+在 R 语言中，可以用函数 `lm()` 拟合上述模型，
+
+```{r}
+fit <- lm(`Life Exp` ~ Income + Murder, data = state_x77)
+```
+
+模型拟合结果输出如下：
+
+```{r}
+summary(fit)
+```
+
+[ggeffects](https://github.com/strengejacke/ggeffects) 描述单个自变量的作用，人均收入对预期寿命的边际效应
+
+```{r}
+#| label: fig-marginal-effects
+#| fig-cap: "边际效应"
+#| fig-width: 5
+#| fig-height: 4
+#| fig-showtext: true
+
+library(ggeffects)
+income_pred <- ggpredict(fit, terms = "Income")
+ggplot(income_pred, aes(x, predicted)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.1) +
+  theme_classic() +
+  labs(x = "人均收入", y = "预期寿命")
+```
+
+
+
+### 后验分布 {#sec-posterior-distributions}
+
+<!-- 
+描述参数先验分布的不确定性
+先验分布与后验分布
+描述分布的不确定性 
+
+先验分布 参数的分布
+观测分布 给定参数的情况下，数据的分布
+后验分布 给定数据的情况下，参数的分布
+
+条件分布、累积分布 [pgog](https://github.com/MUCollective/pgog)
+-->
+
+
+```{r}
+#| label: setup-cmdstan
+#| echo: false
+#| eval: false
+
+# Github Action 已经设置
+# Sys.setenv(CMDSTAN="/opt/cmdstan/cmdstan-2.31.0")
+# Sys.setenv(CMDSTANR_NO_VER_CHECK=TRUE)
+```
+
+以一个最简单的贝叶斯线性模型为例，介绍贝叶斯统计中的后验分布。继续以 state_x77 数据为例，以贝叶斯线性模型拟合数据，获得参数的后验分布。
+
+[Stan](https://github.com/stan-dev) 是一个统计建模和高性能统计计算的平台，广泛应用于社会、生物、物理、工程、商业等领域，提供统计建模、数据分析和预测能力[@Gelman2015]。它提供一套成熟的概率编程语言[@Carpenter2017]，Stan 语言编码的贝叶斯线性模型如下：
+
+```{verbatim, file="code/state_x77.stan", lang="stan"}
+```
+
+这里采用汉密尔顿蒙特卡洛算法（HMC）做全贝叶斯推断，下面依次编译模型、准备数据、参数初值和迭代设置。Stan 的 R 语言接口 [**cmdstanr**](https://github.com/stan-dev/cmdstanr) 包可以让这一切在 R 语言环境里做起来比较顺畅。
+
+```{r}
+#| label: compile-stan-model
+#| message: false
+#| results: hide
+
+library(cmdstanr)
+# 编译模型
+mod_state_x77 <- cmdstan_model(
+  stan_file = "code/state_x77.stan",
+  compile = TRUE,
+  cpp_options = list(stan_threads = TRUE)
+)
+# 准备数据
+state_x77_d <- list(
+  N = nrow(state_x77), # 观测记录的条数
+  K = 2, # 协变量个数
+  x = state_x77[, c("Income", "Murder")], # N x 2 矩阵
+  y = state_x77[, "Life Exp"] # N 向量
+)
+nchains <- 4 # 4 条迭代链
+# 给每条链设置不同的参数初始值
+inits_data <- lapply(1:nchains, function(i) {
+  list(
+    alpha = runif(1, 0, 1),
+    beta = runif(2, 1, 10),
+    sigma = runif(1, 1, 10)
+  )
+})
+# 采样拟合模型
+fit_state_x77 <- mod_state_x77$sample(
+  data = state_x77_d, # 观测数据
+  init = inits_data, # 迭代初值
+  iter_warmup = 1000, # 每条链预处理迭代次数
+  iter_sampling = 2000, # 每条链总迭代次数
+  chains = nchains, # 马尔科夫链的数目
+  parallel_chains = 1, # 指定 CPU 核心数，可以给每条链分配一个
+  threads_per_chain = 1, # 每条链设置一个线程
+  show_messages = FALSE, # 不显示迭代的中间过程
+  refresh = 0, # 不显示采样的进度
+  seed = 20190425 # 设置随机数种子，不要使用 set.seed() 函数
+)
+```
+
+:::{.callout-tip}
+Stan 还提供自动微分变分推断（ADVI）算法做近似贝叶斯推断获取参数的后验分布，以及拟牛顿法（L-BFGS）优化算法获取参数的惩罚极大似然估计。
+:::
+
+模型参数估计结果如下：
+
+```{r}
+#| label: tbl-state-x77-output
+#| tbl-cap: "贝叶斯线性模型参数估计结果"
+#| echo: false
+
+fit_state_x77$summary(c("alpha", "beta[1]", "beta[2]", "sigma", "lp__")) |> 
+  knitr::kable(digits = 3)
+```
+
+参数的 $\alpha,\beta_1,\beta_2$ 后验均值估计与普通线性模型的拟合结果非常一致。采样结果可以直接传递给 **bayesplot** 包[@Gabry2019]，绘制参数迭代的轨迹图和后验分布图。
+
+```{r}
+#| label: fig-post-dists
+#| fig-cap: "参数的后验分布和迭代轨迹"
+#| fig-showtext: true
+#| fig-width: 7
+#| fig-height: 8.5
+#| message: false
+
+library(bayesplot)
+# 参数的后验分布
+p1 <- mcmc_hist(fit_state_x77$draws(c("alpha", "beta[1]", "beta[2]")),
+  facet_args = list(
+    labeller = ggplot2::label_parsed,
+    strip.position = "top",
+    ncol = 1
+  )
+) + theme_classic()
+# 参数的迭代轨迹
+p2 <- mcmc_trace(fit_state_x77$draws(c("alpha", "beta[1]", "beta[2]")),
+  facet_args = list(
+    labeller = ggplot2::label_parsed,
+    strip.position = "top",
+    ncol = 1
+  )
+) + theme_classic() + theme(legend.title = element_blank())
+# 绘图
+p1 | p2
+```
+
+从参数的迭代轨迹可以看出四条马尔可夫链混合得很好，后验分布图主要用来描述参数的迭代结果，后验分布图可以是直方图或密度图的形式，可以和 @tbl-state-x77-output 一道检验模型的拟合情况。
+
+
+## 描述空间分布 {#sec-visualize-spatial-data}
+
+描述数据的空间分布也是很常见的任务，用于展示区域数据的图形有地区分布图、比例符号图和变形地图等。
+
+空间区域数据 Areal data
+:  区域上的聚合，如行政区划、调查区域上的人口计数或男女比率等。
+
+空间点过程数据 Point pattern data
+:  空间位置是随机的，如出租车的出行轨迹，其空间位置是随机出现的。
+
+空间点数据/地统计数据 Point-referenced data
+:  空间位置是固定的，比如乡村、小区污染物浓度分布，疫苗接种率分布。
+
+下面以 R 软件内置的数据集 state.x77 为例展示 1975 年美国**各州**人口密度 --- 每平方英里的人口数。state.x77 数据集的 Population 列代表州人口数，数据来自 1977 年美国人口调查局发布的统计数据，单位是 1000 人，统计的是 1975 年的人口数据，原始数据可以从官网发布的年度报告[Statistical Abstract of the United States: 1977](https://www.census.gov/library/publications/1977/compendia/statab/98ed.html)获取。
+
+
+```{r}
+library(sf)
+# 美国州级多边形边界地图
+us_state_map <- readRDS(file = "data/us-state-map-2010.rds")
+# 将观测数据与地图数据合并
+us_state_df <- merge(us_state_map, state_x77,
+  by.x = "NAME", by.y = "state_name", all.x = TRUE
+)
+# 计算人口密度
+us_state_df <- within(us_state_df, {
+  den <- 1000 * Population / Area
+})
+```
+
+
+### 地区分布图 {#sec-choropleth-map}
+
+基于 **sf** 包，**ggplot2** 包提供图层 `geom_sf()` 专门用于绘制空间矢量数据，可以展示空间点、多边形和线等三类常见几何数据。如图 @fig-choropleth-map 所示，展示 1975 年美国各州人口密度（单位：每平方英里人口数）。
+
+
+```{r}
+#| label: fig-choropleth-map
+#| fig-cap: "1975 年美国各州人口密度"
+#| fig-width: 7
+#| fig-height: 4
+#| fig-showtext: true
+#| echo: true
+
+ggplot() +
+  geom_sf(
+    data = us_state_df, aes(fill = den),
+    color = "gray80", lwd = 0.25
+  ) +
+  scale_fill_viridis_c(
+    trans = "log10", option = "plasma",
+    na.value = "white"
+  ) +
+  labs(
+    fill = "人口密度", title = "1975 年美国各州人口密度",
+    caption = "数据源：美国人口调查局"
+  ) +
+  theme_void() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+将人均 GDP 和预期寿命分段，借助 [**biscale**](https://github.com/chris-prener/biscale/) 包构造二维的图例，以二维地区分布图展示预期寿命和人均 GDP 的空间相关性。
+
+```{r}
+#| label: fig-bi-choropleth-map
+#| fig-cap: "预期寿命与人均 GDP 的空间相关性"
+#| fig-width: 7
+#| fig-height: 4
+#| fig-showtext: true
+#| echo: true
+
+library(biscale)
+# 将数据根据分位点分箱
+us_bi_data <- bi_class(us_state_df[!is.na(us_state_df$Income),],
+  x = Income, y = `Life Exp`,
+  style = "quantile", dim = 3
+)
+# 创建主体地图
+us_bi_map <- ggplot() +
+  geom_sf(data = us_state_df, color = "gray80", fill = I("white")) +
+  geom_sf(
+    data = us_bi_data, aes(fill = bi_class),
+    color = "white", linewidth = 0.05, show.legend = FALSE
+  ) +
+  bi_scale_fill(pal = "DkViolet2", dim = 3) +
+  theme_void() +
+  theme(plot.title = element_text(hjust = 0.5))
+# 创建图例数据
+us_bi_leg_data <- data.frame(expand.grid(x = 1:3, y = 1:3),
+  bi_fill = biscale::bi_pal(pal = "DkViolet2", dim = 3, preview = FALSE)
+)
+# 绘制二元图例的函数 bi_legend 不支持中文，因此改其源代码
+# 创建图例瓦片
+us_bi_leg <- ggplot(
+  data = us_bi_leg_data,
+  aes(x = x, y = y, fill = bi_fill)
+) +
+  geom_tile() +
+  scale_fill_identity() +
+  labs(
+    x = substitute(paste("人均 GDP", "" %->% "")),
+    y = substitute(paste("预期寿命", "" %->% ""))
+  ) +
+  coord_fixed() +
+  theme_void() +
+  theme(
+    axis.title = element_text(size = 8),
+    axis.title.y = element_text(angle = 90)
+  )
+
+# 组合图形
+us_bi_map + inset_element(us_bi_leg,
+  left = 0.875, bottom = 0, right = 1, top = 0.35
+)
+```
+
+
+
+### 比例符号图 {#sec-proportional-symbols-map}
+
+1975 年美国各州人口密度，单位为每平方英里人口数，人口密度映射为气泡的面积，美国划分为东北部、南方、西部、中北部四个区域，如 @fig-region-map 所示。
+
+```{r}
+#| label: fig-region-map
+#| fig-cap: "美国各州的区域划分"
+#| fig-width: 7
+#| fig-height: 4
+#| fig-showtext: true
+#| echo: true
+
+ggplot() +
+  geom_sf(
+    data = us_state_df, fill = NA, aes(color = state_region)
+  ) +
+  labs(title = "美国各州的区域划分", color = "区域划分", 
+       caption = "数据源：美国人口调查局") +
+  theme_void() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+在 @fig-region-map 的基础上，添加各州州名的缩写，比如 New York 缩写为 NY，这非常类似于我国对各省的简称，比如湖南省简称为湘。
+
+```{r}
+#| label: fig-label-map
+#| fig-cap: "美国各州的区域划分"
+#| fig-width: 7
+#| fig-height: 4
+#| fig-showtext: true
+#| echo: true
+
+ggplot() +
+  geom_sf(
+    data = us_state_df, fill = NA, aes(color = state_region)
+  ) +
+  geom_sf_label(data = us_state_df, aes(label = state_abb), 
+                size = 3, na.rm = T) +
+  labs(
+    title = "美国各州的区域划分", color = "区域划分", 
+    caption = "数据源：美国人口调查局"
+  ) +
+  theme_void() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+对了解美国地图的人来说，在已有各州边界及区域划分的信息下，在图上添加各州名称就会显得多余，而对缺乏了解的人来说，则是有用的。绘图区域是有限的，信息自然可以越堆越多，关键是这个图形想要传递什么信息，应该优先保障重点突出。此例是以比例符号图展示美国各州人口密度的分布，重点便是展示人口密度数据，如 @fig-proportional-symbols-map 所示。
+
+```{r}
+#| label: fig-proportional-symbols-map
+#| fig-cap: "1975 年美国各州人口密度"
+#| fig-width: 7
+#| fig-height: 4
+#| fig-showtext: true
+#| echo: true
+
+us_state_df <- within(us_state_df, {
+  geometry_center <- st_centroid(geometry)
+})
+
+library(ggnewscale)
+ggplot() +
+  geom_sf(
+    data = us_state_df, fill = NA, aes(color = state_region)
+  ) +
+  labs(color = "区域划分") +
+  new_scale_color() +
+  geom_sf(
+    data = us_state_df, 
+    aes(geometry = geometry_center, color = den, size = den),
+    show.legend = c(color = FALSE, size = TRUE), na.rm = TRUE
+  ) +
+  scale_color_viridis_c(
+    trans = "log10", option = "plasma", na.value = "white"
+  ) +
+  labs(
+    title = "1975 年美国各州人口密度", size = "人口密度", 
+    caption = "数据源：美国人口调查局"
+  ) +
+  theme_void() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+在州名数量有限的情况下，特别是用一页纸可以完全展示的情况，还可以考虑用分组条形图替代地区分布图或比例符号图，好处是人口密度的对比更加突出，也避免美国东北部各州因面积小、人口密度大导致的气泡相互重叠的问题。
+
+```{r}
+#| label: fig-column-map
+#| fig-cap: "1975 年美国各州人口密度"
+#| fig-width: 6
+#| fig-height: 7
+#| fig-showtext: true
+#| echo: true
+#| warning: false
+
+# 按区域分组后按人口密度排序
+us_state_df <- us_state_df[with(us_state_df, order(state_region, -den)), ]
+# 添加新列记录排序后的序号
+us_state_df$rowid <- 1:nrow(us_state_df)
+# 绘图
+ggplot(
+  data = us_state_df,
+  aes(x = den, y = reorder(NAME, rowid, FUN = function(x) 1 / (1 + x)))
+) +
+  geom_col(aes(fill = state_region)) +
+  theme_classic() +
+  labs(
+    x = "人口密度", y = "州名", fill = "区域划分",
+    title = "1975 年美国各州人口密度",
+    caption = "数据源：美国人口调查局"
+  )
+```
+
+
+
+
+### 扭曲变形图 {#sec-cartogram}
+
+变形地图中变形的是多边形地理边界，从而将数据映射到地理区域的面积上。[**cartogram**](https://github.com/sjewo/cartogram) 包提供变形算法构造变形地图，如 @fig-cartogram-map 所示，根据各州的多边形边界地图数据和人口密度数据构造新的多边形边界地图。
+
+```{r}
+#| label: fig-cartogram-map
+#| fig-cap: "1974 年美国各州人口密度分布"
+#| fig-width: 7
+#| fig-height: 4
+#| fig-showtext: true
+#| echo: true
+#| message: false
+#| warning: false
+
+library(cartogram)
+# 构造变形地图
+us_state_carto <- cartogram_cont(us_state_df, weight = "den", itermax = 5)
+# 绘制变形地图
+ggplot(us_state_carto) +
+  geom_sf(aes(fill = den), color = "gray80", lwd = 0.25) +
+  scale_fill_viridis_c(
+    trans = "log10", option = "plasma",
+    na.value = "white"
+  ) +
+  labs(
+    fill = "人口密度", title = "1975 年美国各州人口密度",
+    caption = "数据源：美国人口调查局"
+  ) +
+  theme_void() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+根据 1974 年各州的人均收入，将收入划分为低收入（低于3500）、中低收入（3500-4500）、中高收入 （4500-5500）、高收入（5500 以上）四档。
+
+```{r}
+# 将连续型的收入分段
+state_x77$Income_break <- cut(state_x77$Income,
+  breaks = 4,
+  labels = c("低收入", "中低收入", "中高收入", "高收入")
+)
+```
+
+[**statebins**](https://github.com/hrbrmstr/statebins) 包以小方块表示美国各州，小方块的位置根据各州的相对位置摆放，各州的边界和面积不再有意义，而小方块的填充色表示数值的大小，如 @fig-state-bins 所示，展示 1974 年美国各州人均收入的空间分布。
+
+
+```{r}
+#| label: fig-state-bins
+#| fig-cap: "1974 年美国各州人均收入分布"
+#| fig-width: 6
+#| fig-height: 4
+#| fig-showtext: true
+#| echo: true
+
+library(statebins)
+# 绘制变形地图
+ggplot(data = state_x77, aes(state = state_name, fill = Income_break)) +
+  geom_statebins() +
+  scale_fill_brewer(palette = "RdPu") +
+  theme_statebins() +
+  labs(title = "1974年美国各州人均收入分布", fill = "收入水平") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.margin = margin(10, 10, 10, 10))
+```
+
+
+在 **ggplot2** 包分面函数 `facet_grid()` 的基础上，根据美国各州的相对位置， [**geofacet**](https://github.com/hafen/geofacet) 包提供函数 `facet_geo()` 支持更加丰富的信息展示。下 @fig-us-unemp-geofacet 展示美国各州的失业率分布，每个下方块代表一个州各个郡县的失业率分布。 **geofacet** 包内置的地图不包含 Puerto Rico（波多黎各）地区，因此该地区的失业率数据无法显示。
+
+```{r}
+#| label: fig-us-unemp-geofacet
+#| fig-cap: "2009 年美国各州失业率分布"
+#| fig-width: 8
+#| fig-height: 6
+#| fig-showtext: true
+#| warning: false
+
+library(maps)
+# 失业率数据
+data(unemp)
+# 州、郡县名称及编码
+fips_codes <- tidycensus::fips_codes
+fips_codes$fips <- as.integer(paste0(fips_codes$state_code, fips_codes$county_code))
+unemp_df <- merge(unemp, fips_codes, by = "fips")
+library(geofacet)
+ggplot(unemp_df, aes(x = unemp)) +
+  geom_histogram(aes(fill = after_stat(count)),
+    binwidth = 1, show.legend = FALSE
+  ) +
+  scale_fill_viridis_c(option = "plasma") +
+  facet_geo(~state) +
+  theme_bw() +
+  labs(x = "失业率", y = "郡县数量")
+```
+
+以直方图表示连续数据的分布，这相当于聚合了美国各郡的失业率数据，失业率还可以是更细粒度的数据。
+
+```{r}
+library(maps)
+# 准备地图数据
+us_state_map <- readRDS(file = "data/us-state-map-2010.rds")
+# 2010 年的地图数据
+us_county_map <- readRDS(file = "data/us-county-map-2010.rds")
+# GEOID 是地理区域唯一标识
+us_county_map$GEOID <- as.integer(paste0(us_county_map$STATEFP, us_county_map$COUNTYFP))
+# 将失业率数据和地图数据合并
+us_county_data <- merge(
+  x = us_county_map, y = unemp,
+  by.x = "GEOID", by.y = "fips", all.x = TRUE
+)
+```
+
+准备好数据后，就可以绘制美国各郡县失业率的分布，如 @fig-us-unemp 所示。
+
+```{r}
+#| label: fig-us-unemp
+#| fig-cap: "2009 年美国各郡县失业率分布"
+#| fig-width: 8
+#| fig-height: 5
+#| fig-showtext: true
+
+ggplot() +
+  geom_sf(
+    data = us_county_data, aes(fill = unemp),
+    colour = "grey80", linewidth = 0.05
+  ) +
+  geom_sf(
+    data = us_state_map,
+    colour = "grey80", fill = NA, linewidth = 0.1
+  ) +
+  scale_fill_viridis_c(
+    option = "plasma", na.value = "white"
+  ) +
+  theme_void() +
+  labs(
+    fill = "失业率", caption = "数据源：美国人口调查局"
+  )
+```
+
+
+::: {.callout-tip}
+
+通过 **tigris** 包可以下载历年美国人口调查局发布的数据，但是 2009 年及以前的地图数据缺失，因此，笔者下载了 2010 年的地图数据，它与失业率数据最近。
+
+```{r}
+#| eval: false
+#| echo: true
+
+# 下载美国各郡县的多边形边界地图数据
+us_county_map <- tigris::counties(cb = TRUE, year = 2010, resolution = "20m", class = "sf")
+# 移动离岸的州和领地
+## 郡县地图
+us_county_map <- tigris::shift_geometry(us_county_map, geoid_column = "STATE", position = "below")
+# 州地图
+us_state_map <- tigris::states(cb = TRUE, year = 2010, resolution = "20m", class = "sf")
+us_state_map <- tigris::shift_geometry(us_state_map, geoid_column = "STATE", position = "below")
+```
+
+经过数据检查，发现失业率数据仅有三个郡县未关联上地图数据。在真实的数据探查中，往往因为业务过程复杂，数据链路长，人员更迭等一系列原因，导致数据存在一定的缺失。只要能够确定缺失的原因，缺失比例，不影响最终结论的可靠性，那么数据就是可用的。
+:::
+
+
+### 地形轮廓图 {#sec-raster}
+
+
+地形图用于描述地形地势，则无论山洼、山谷，还是高山、高原，抑或是断崖、峡谷、平原，都一目了然。如 @fig-volcano-levelplot 所示，奥克兰 Maunga Whau 火山地形图，图中火山划分为 87 行 61 列的小格子，小格子的长宽都是 10 米，记录格子所处位置的高度，收集整理后形成 volcano 数据集，此所谓的栅格数据。Base R 内置的 volcano 数据集是一个 matrix 类型数据对象。Base R 提供函数 `filled.contour()` 绘制二维栅格图形，如 @fig-volcano-base 所示。
+
+
+```{r}
+#| label: fig-volcano-base
+#| fig-cap: "奥克兰火山地形图"
+#| fig-width: 7
+#| fig-height: 5
+#| fig-showtext: true
+#| echo: true
+
+filled.contour(volcano,
+  x = seq(1, nrow(volcano), length.out = nrow(volcano)),
+  y = seq(1, ncol(volcano), length.out = ncol(volcano)),
+  color.palette = hcl.colors,
+  plot.title = title(
+    main = "奥克兰火山堆地形图",
+    xlab = "南北方向", ylab = "东西方向",
+    family = "Noto Serif CJK SC"
+  ),
+  plot.axes = {
+    axis(side = 1, at = 10 * 1:8)
+    axis(side = 2, at = 10 * 1:6)
+  },
+  key.title = title(main = "高度", family = "Noto Serif CJK SC"),
+  key.axes = axis(side = 4, at = 90 + 20 * 0:5)
+)
+```
+
+**lattice** 包提供函数 `levelplot()` 绘制类似的栅格图形，如 @fig-volcano-levelplot 所示。
+
+```{r}
+#| label: fig-volcano-levelplot
+#| fig-cap: "奥克兰火山地形图"
+#| fig-width: 7
+#| fig-height: 4
+#| fig-showtext: true
+#| echo: true
+
+library(lattice)
+levelplot(volcano,
+  col.regions = hcl.colors,
+  at = 80 + 10 * 0:12,
+  scales = list(
+    draw = TRUE,
+    # 去掉图形上边、右边多余的刻度线
+    x = list(alternating = 1, tck = c(1, 0)),
+    y = list(alternating = 1, tck = c(1, 0))
+  ),
+  # 减少三维图形的边空
+  lattice.options = list(
+    layout.widths = list(
+      left.padding = list(x = 0, units = "inches"),
+      right.padding = list(x = 0, units = "inches")
+    ),
+    layout.heights = list(
+      bottom.padding = list(x = -1.0, units = "inches"),
+      top.padding = list(x = -1.0, units = "inches")
+    )
+  ),
+  xlab = "南北方向", ylab = "东西方向"
+)
+```
+
+
+**ggplot2** 包提供瓦片图层函数 `geom_tile()` 来可视化栅格数据，而函数 `geom_contour()` 可以根据海拔绘制等高线，如 @fig-volcano-ggplot2 所示。
+
+```{r}
+#| label: fig-volcano-ggplot2
+#| fig-cap: "奥克兰火山地形图"
+#| fig-width: 6
+#| fig-height: 4
+#| fig-showtext: true
+#| echo: true
+
+volcano_df <- expand.grid(x = 1:nrow(volcano), y = 1:ncol(volcano))
+volcano_df$z <- as.vector(volcano)
+
+ggplot(volcano_df) +
+  geom_tile(aes(x = x, y = y, fill = z)) +
+  geom_contour(aes(x = x, y = y, z = z), color = "gray20") +
+  scale_fill_viridis_c() +
+  coord_fixed(expand = FALSE) +
+  theme_classic() +
+  labs(x = "南北方向", y = "东西方向", fill = "高度")
+```
+
+而 [**rayshader**](https://github.com/tylermorganwall/rayshader) 包提供函数 `plot_gg()` 可以将 ggplot2 绘图对象转化为 3D 对象。对于栅格化的地形数据，函数 `sphere_shade()` 可以提供很好的阴影特效，更多案例见 <https://www.rayshader.com/>。
+
+```{r}
+#| label: fig-volcano-rayshader
+#| fig-cap: "奥克兰火山地形图"
+#| fig-width: 6
+#| fig-height: 4
+#| fig-showtext: true
+#| echo: true
+
+library(rayshader)
+volcano |> 
+  sphere_shade(texture = "imhof1") |> 
+  plot_map()
+```
+
+三维透视图亦可展示地形图，如 @fig-volcano-wireframe 所示，用 **lattice** 包绘制火山地形图。
+
+
+```{r}
+#| label: fig-volcano-wireframe
+#| fig-cap: "lattice 包绘制地形图"
+#| fig-width: 6
+#| fig-height: 5.5
+#| fig-showtext: true
+
+wireframe(volcano,
+  drape = TRUE, colorkey = FALSE, shade = TRUE,
+  xlab = list("南北方向", rot = 20),
+  ylab = list("东西方向", rot = -50),
+  zlab = list("高度", rot = 90),
+  # 减少三维图形的边空
+  lattice.options = list(
+    layout.widths = list(
+      left.padding = list(x = -.6, units = "inches"),
+      right.padding = list(x = -1.0, units = "inches")
+    ),
+    layout.heights = list(
+      bottom.padding = list(x = -.8, units = "inches"),
+      top.padding = list(x = -1.0, units = "inches")
+    )
+  ),
+  # 设置坐标轴字体大小
+  par.settings = list(
+    axis.line = list(col = "transparent"),
+    fontsize = list(text = 12, points = 10)
+  ),
+  # z 轴标签旋转 90 度
+  scales = list(
+    arrows = FALSE, col = "black",
+    z = list(rot = 90)
+  ), 
+  screen = list(z = 30, x = -65, y = 0)
+)
+```
+
+静态的三维图形限制用户只能从一个视角观察，因视角和透视的关系，存在遮挡和视觉错位的情况，比如火山地形 @fig-volcano-wireframe 因坡面遮挡了火山口及其周围地势，只有调整观察角度，重新绘图方可，如 @fig-volcano-viewport 所示，火山口及其周围地势一目了然。
+
+```{r}
+#| label: fig-volcano-viewport
+#| fig-cap: "lattice 包绘制地形图"
+#| fig-width: 6
+#| fig-height: 5.5
+#| fig-showtext: true
+
+wireframe(volcano,
+  drape = TRUE, colorkey = FALSE, shade = TRUE,
+  xlab = list("南北方向", rot = -40),
+  ylab = list("东西方向", rot = 45),
+  zlab = list("高度", rot = 90),
+  # 减少三维图形的边空
+  lattice.options = list(
+    layout.widths = list(
+      left.padding = list(x = -.6, units = "inches"),
+      right.padding = list(x = -1.0, units = "inches")
+    ),
+    layout.heights = list(
+      bottom.padding = list(x = -.8, units = "inches"),
+      top.padding = list(x = -1.0, units = "inches")
+    )
+  ),
+  # 设置坐标轴字体大小
+  par.settings = list(
+    axis.line = list(col = "transparent"),
+    fontsize = list(text = 12, points = 10)
+  ),
+  # z 轴标签旋转 90 度
+  scales = list(
+    arrows = FALSE, col = "black",
+    z = list(rot = 90)
+  ), 
+  # 调整视角
+  screen = list(z = -45, x = -50, y = 0)
+)
+```
+
+而 **plotly** 包可以绘制交互的三维透视图来展示地形，通过拖拽图形，可以从任意视角切入观察火山口及山体的任意位置，还可以拉近看局部细节。
+
+```{css}
+#| label: plotly-modebar
+#| echo: false
+
+.modebar {
+  display: none !important;
+}
+```
+```{r}
+#| label: fig-volcano-plotly
+#| fig-cap: "plotly 绘制地形图"
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+#| echo: true
+
+plotly::plot_ly(z = ~volcano) |>
+  plotly::add_surface(colorbar = list(title = "高度")) |>
+  plotly::layout(scene = list(
+    xaxis = list(title = "南北方向"),
+    yaxis = list(title = "东西方向"),
+    zaxis = list(title = "高度")
+  ))
+```
+
+类似地，**rgl** 包绘制的三维散点图亦可展示数据的空间分布。
+
+```{r}
+#| label: fig-volcano-rgl
+#| fig-cap: "rgl 绘制地形图"
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+#| echo: true
+
+library(rgl)
+view3d(
+  theta = 0, phi = -45, fov = 30,
+  zoom = 1, interactive = TRUE
+)
+# 将连续型数据向量转化为颜色向量
+colorize_numeric <- function(x) {
+  scales::col_numeric(palette = "viridis", domain = range(x))(x)
+}
+# 在数据集 quakes 上添加新的数据 color
+volcano_df <- within(volcano_df, {
+  color <- colorize_numeric(z)
+})
+# 绘制图形
+with(volcano_df, {
+  plot3d(x = x, y = y, z = z, col = color, 
+         xlab = "南北方向", ylab = "东西方向", 
+         zlab = "高度")
+})
+```
+
+
+```{r}
+#| eval: false
+#| echo: false
+
+# 可视化 DEM 数字高程模型
+
+z <- 2 * volcano        # Exaggerate the relief
+x <- 10 * (1:nrow(z))   # 10 meter spacing (S to N)
+y <- 10 * (1:ncol(z))   # 10 meter spacing (E to W)
+# Base R
+persp(x, y, z, theta = 135, phi = 30, col = "green3", scale = FALSE,
+      ltheta = -120, shade = 0.75, border = NA, box = FALSE)
+
+# 三维透视图
+x <- 1:nrow(volcano)
+y <- 1:ncol(volcano)
+persp3d(x = x, y = y, z = volcano, col = "lightblue",
+        xlab = "南北方向", ylab = "东西方向", zlab = "高度")
+
+# 透视图是如何制作的？栅格点是如何变成曲面的？差值？
+# 拟合曲面图
+# SVM 回归
+library(kernlab)
+model <- ksvm(z ~ x + y,
+  data = volcano_df, C = 1, kernel = "rbfdot"
+)
+
+mesh_size <- 1
+xrange <- seq(from = min(volcano_df$x), to = max(volcano_df$x), by = mesh_size)
+yrange <- seq(from = min(volcano_df$y), to = max(volcano_df$y), by = mesh_size)
+
+final <- expand.grid(x = xrange, y = yrange)
+final <- as.matrix(final)
+pred <- predict(model, newdata = final)
+
+pred_m <- matrix(pred, ncol = length(xrange), nrow = length(yrange), byrow = TRUE)
+# plotly 绘制
+plotly::plot_ly(volcano_df, x = ~x, y = ~y, z = ~z) |>
+  plotly::add_markers(size = 5) |>
+  plotly::add_surface(
+    x = xrange, y = yrange, z = pred_m, alpha = 0.65,
+    type = "mesh3d", name = "pred_surface"
+  )
+# rgl 绘制
+plot3d(x = volcano_df$x, y = volcano_df$y, z = volcano_df$z, 
+       col = volcano_df$color,
+       xlab = "南北方向", ylab = "东西方向", zlab = "高度")
+# 拟合曲面
+persp3d(x = 1:nrow(volcano), y = 1:ncol(volcano), z = t(pred_m), 
+        col = "lightblue", add = TRUE)
+```
+
+
+[GDAL](https://github.com/OSGeo/gdal) 支持大量的栅格和矢量空间数据格式，内建的 [EEDAI （Google Earth Engine Data API Image）](https://gdal.org/drivers/raster/eedai.html)驱动通过 Google Earth Engine REST API 获取谷歌地球图像。[**terra**](https://github.com/rspatial/terra) 包的函数 `rast()`和 [**stars**](https://github.com/r-spatial/stars) 包的函数 `read_stars()` 封装了 GDAL 的驱动接口，更多详情见 <https://rspatial.org/terra/>。申请谷歌应用的访问令牌，保存授权文件到本地，设置环境变量 `GOOGLE_APPLICATION_CREDENTIALS` 指向授权文件所在路径。
+
+```{r}
+#| eval: false
+#| echo: true
+
+# 设置访问令牌
+Sys.setenv(GOOGLE_APPLICATION_CREDENTIALS="/home/rstudio/google/ardent-disk-214911-e2616707dd80.json")
+# 加载 R 包
+library(stars)
+# 设置采样参数
+rasterio <- list(
+  nXOff = 6, nYOff = 6, nXSize = 183, nYSize = 183,
+  nBufXSize = 100, nBufYSize = 100, bands = 3
+)
+# 获取数据
+google_earth <- read_stars(
+  file.path(
+    "EEDAI:projects", "earthengine-public", 
+    "assets", "COPERNICUS", "S2",
+    "20170430T190351_20170430T190351_T10SEG"
+  ),
+  proxy = TRUE, # 对于大型 TIFF 数据非常有效
+  # sub = 3, # 或 2,3,4
+  RasterIO = rasterio # 采样 183x183
+)
+# 绘图
+plot(google_earth)
+```
+
+除了谷歌提供的地图服务，[SRTM](https://srtm.csi.cgiar.org/)（Shuttle Radar Topography Mission，简称 SRTM）提供 90 米精度的海拔数据，对纬度范围在南纬 60 至北纬 60 度的地区。根据台湾省统计局 2022 年 10 月发布的数据显示，台湾目前有人口 2300 多万。下面获取台湾地区的海拔数据和一级行政区划边界数据。
+
+[**geodata** 包](https://github.com/rspatial/geodata) 获取台湾海拔数据，返回 terra 类型的数据对象：SpatRaster 对象。
+
+```{r}
+# 下载台湾海拔数据
+twn_map_alt <- geodata::elevation_30s(country = "TWN", path = "data/")
+```
+
+获取台湾一级行政区数据，它是一个多边形边界地图数据，也返回 terra 类型的数据对象： SpatVector 对象。
+
+```{r}
+# 下载台湾一级行政区
+twn_map_adm <- geodata::gadm(country = "TWN", level = 1, path = "data/")
+```
+
+[**tidyterra** 包](https://github.com/dieghernan/tidyterra) 基于 [**terra** 包](https://github.com/rspatial/terra) 提供一些专门用于栅格数据可视化的图层，扩展了 **ggplot2** 包的功能，如 @fig-tw-elev 所示台湾海拔地形图。
+
+```{r}
+#| label: fig-tw-elev
+#| fig-cap: "台湾海拔地形图"
+#| fig-showtext: true
+#| fig-width: 6
+#| fig-height: 5
+
+ggplot() +
+  tidyterra::geom_spatraster(data = twn_map_alt) +
+  tidyterra::scale_fill_terrain_c() +
+  tidyterra::geom_spatvector(
+    data = twn_map_adm,
+    fill = NA, colour = "gray40"
+  ) +
+  theme_minimal() +
+  labs(x = "经度", y = "纬度", fill = "海拔")
+```
+
