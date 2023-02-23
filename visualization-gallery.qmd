@@ -2913,7 +2913,7 @@ filled.contour(volcano,
 ```{r}
 #| label: fig-volcano-levelplot
 #| fig-cap: "奥克兰火山地形图"
-#| fig-width: 6
+#| fig-width: 7
 #| fig-height: 4
 #| fig-showtext: true
 #| echo: true
@@ -2928,12 +2928,23 @@ levelplot(volcano,
     x = list(alternating = 1, tck = c(1, 0)),
     y = list(alternating = 1, tck = c(1, 0))
   ),
+  # 减少三维图形的边空
+  lattice.options = list(
+    layout.widths = list(
+      left.padding = list(x = 0, units = "inches"),
+      right.padding = list(x = 0, units = "inches")
+    ),
+    layout.heights = list(
+      bottom.padding = list(x = -1.0, units = "inches"),
+      top.padding = list(x = -1.0, units = "inches")
+    )
+  ),
   xlab = "南北方向", ylab = "东西方向"
 )
 ```
 
 
-**ggplot2** 包提供瓦片图层函数 `geom_tile()` 来可视化栅格数据，而函数 `geom_contour()` 可以根据海拔绘制等高线，如 @fig-volcano-ggplot2 所示，而 [**rayshader**](https://github.com/tylermorganwall/rayshader) 包提供函数 `plot_gg()` 可以将 ggplot2 绘图对象转化为 3D 对象，更多详情见 <https://www.rayshader.com/>。
+**ggplot2** 包提供瓦片图层函数 `geom_tile()` 来可视化栅格数据，而函数 `geom_contour()` 可以根据海拔绘制等高线，如 @fig-volcano-ggplot2 所示。
 
 ```{r}
 #| label: fig-volcano-ggplot2
@@ -2953,6 +2964,22 @@ ggplot(volcano_df) +
   coord_fixed(expand = FALSE) +
   theme_classic() +
   labs(x = "南北方向", y = "东西方向", fill = "高度")
+```
+
+而 [**rayshader**](https://github.com/tylermorganwall/rayshader) 包提供函数 `plot_gg()` 可以将 ggplot2 绘图对象转化为 3D 对象。对于栅格化的地形数据，函数 `sphere_shade()` 可以提供很好的阴影特效，更多案例见 <https://www.rayshader.com/>。
+
+```{r}
+#| label: fig-volcano-rayshader
+#| fig-cap: "奥克兰火山地形图"
+#| fig-width: 6
+#| fig-height: 4
+#| fig-showtext: true
+#| echo: true
+
+library(rayshader)
+volcano |> 
+  sphere_shade(texture = "imhof1") |> 
+  plot_map()
 ```
 
 三维透视图亦可展示地形图，如 @fig-volcano-wireframe 所示，用 **lattice** 包绘制火山地形图。
