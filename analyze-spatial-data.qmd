@@ -203,6 +203,39 @@ with(rongelap, {
     col = "black", asp = 1, col.axis = "gray"
   )
 })
+
+library(rgl)
+view3d(
+  theta = 0, phi = -45, fov = 30,
+  zoom = 1, interactive = TRUE
+)
+# 将连续型数据向量转化为颜色向量
+colorize_numeric <- function(x) {
+  scales::col_numeric(palette = "viridis", domain = range(x))(x)
+}
+# 在数据集 quakes 上添加新的数据 color
+rongelap <- within(rongelap, {
+  lambda <- counts / time
+  color <- colorize_numeric(lambda)
+})
+# 绘制图形
+with(rongelap, {
+  plot3d(
+    x = cX, y = cY, z = lambda, col = color,
+    type = "h",
+    xlab = "南北方向", ylab = "东西方向",
+    zlab = "辐射强度"
+  )
+  points3d(x = cX, y = cY, z = lambda,
+           col = color, size = 5)
+})
+
+# 绘制图形
+with(rongelap, {
+  open3d()
+  spheres3d(x = cX, y = cY, z = lambda, 
+            radius = lambda, color = color)
+})
 ```
 
 ### 数据建模 {#sec-rongelap-modeling}
