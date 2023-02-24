@@ -1,0 +1,352 @@
+# 探索工具 {#sec-basic}
+
+```{r}
+#| echo: false
+
+source("_common.R")
+```
+
+
+[**cranlogs**](https://github.com/r-hub/cranlogs) 获取 **ggplot2**、**rgl**、**plotly**、**lattice** 和 **echarts4r** 包的每日的下载量，下 @fig-cranlogs 展示 2020-01-01 至 2022-12-31 的下载量趋势。
+
+```{r}
+#| label: fig-cranlogs
+#| fig-cap: "2020-2022 年下载量的趋势变化"
+#| fig-showtext: true
+#| fig-width: 6
+#| fig-height: 4
+#| echo: false
+
+cran_downloads_pkgs <- readRDS(file = "data/cran_downloads_pkgs.rds")
+library(ggplot2)
+ggplot(data = cran_downloads_pkgs, aes(x = date, y = count, color = package)) +
+  geom_line() +
+  scale_color_discrete(breaks = c("ggplot2", "rgl", "plotly", "lattice", "echarts4r")) +
+  scale_y_continuous(n.breaks = 7,
+                     labels = scales::label_number(scale_cut = scales::cut_short_scale())) +
+  scale_x_date(limits = as.Date(c("2020-01-01", "2023-01-01")), date_labels = "%B\n%Y") +
+  theme_classic()  + 
+  coord_cartesian(expand = FALSE) +
+  labs(x = "日期", y = "下载次数", color = "R 包")
+```
+
+Base R、**lattice** 和 **ggplot2** 三个作图工具已经提供了许多函数，支持的图形种类是不同的，如 @tbl-graphics-system 。
+
+```{r}
+#| label: tbl-graphics-system
+#| tbl-cap: "R 语言三大作图工具的部分函数对比"
+#| echo: false
+
+library(tibble)
+dat <- tribble(
+  ~`作用`, ~`图形`, ~`graphics`, ~`lattice`, ~`ggplot2`,
+  "描述关系", "散点图", "plot", "xyplot", "geom_point",
+  "描述关系", "三维散点图", "scatterplot3d", "cloud", "-",
+  "描述关系", "矩阵图", "pairs", "splom", "ggpairs",
+  "描述关系", "符号图", "symbols", "panel.superpose", "geom_point",
+  "描述关系", "二维平滑散点图", "smoothScatter", "panel.smoothScatter", "geom_smooth",
+  "描述关系", "向日葵图", "sunflowerplot", "", "",
+  "描述关系", "四瓣图", "fourfoldplot", "", "",
+  "描述关系", "关联图", "assocplot", "", "",
+  "描述趋势", "轮廓图", "contour", "contourplot", "geom_contour",
+  "描述趋势", "栅格图", "image", "levelplot", "geom_raster",
+  "描述趋势", "曲线图", "curve", "panel.curve", "geom_curve",
+  "描述趋势", "三维透视图", "persp", "wireframe", "-",
+  "描述趋势", "条件图", "coplot", "xyplot", "geom_point",
+  "描述趋势", "折线图", "lines", "panel.lines", "geom_line",
+  "描述分布", "直方图", "hist", "histogram", "geom_histogram",
+  "描述分布", "箱线图", "boxplot", "bwplot", "geom_boxplot",
+  "描述分布", "密度图", "plot.density", "densityplot", "geom_density",
+  "描述分布", "QQ 图", "qqplot", "qq", "geom_qq",
+  "描述分布", "一维散点图", "stripchart", "stripplot", "geom_point",
+  "描述分布", "茎叶图", "stem", "", "",
+  "描述分布", "条件密度图", "cdplot", "densityplot", "geom_density",
+  "描述分布", "轴须图", "rug", "panel.rug", "geom_rug",
+  "描述对比", "条形图", "barplot", "barchart", "geom_bar",
+  "描述对比", "克利夫兰点图", "dotchart", "dotplot", "geom_point",
+  "描述对比", "星图", "stars", "", "",
+  "描述占比", "饼图", "pie", "panel.piechart", "geom_col",
+  "描述占比", "堆积图", "spineplot", "barchart", "geom_col",
+  "描述占比", "马赛克图", "mosaicplot", "", "geom_mosaic"
+)
+knitr::kable(dat)
+```
+
+<!-- 
+提供 Base R lattice ggplot2 的等价作图代码是一件很难的事
+-->
+
+[**ggmosaic**](https://github.com/haleyjeppson/ggmosaic) 包提供函数 `geom_mosaic()` 绘制马赛克图，[**ggally**](https://github.com/ggobi/ggally) 包提供函数 `ggpairs()` 绘制矩阵图。[**latticetools**](https://github.com/m-jahn/lattice-tools) 包提供函数 `panel.piechart()` 绘制饼图。
+
+Base R 的函数 `plot()` 是泛型函数，**lattice** 包的 `xyplot()` 也是。以绘制条件图为例，Base R 提供函数 `coplot()`，**lattice** 包也支持公式语法，以竖线 `|` 分割主变量和条件变量，比如 `~ x | y`，右侧符号 y 表示条件变量。
+
+三个作图工具的使用方法截然不同，渲染出来的图片风格迥异。以条件密度图为例，Base R 的作图函数为 `cdplot()`， **lattice** 包的作图函数为 `densityplot()`，**ggplot2** 包的作图函数为 `geom_density()`，代码如下：
+
+```{r}
+#| label: fig-cdplot
+#| fig-cap: "条件密度图"
+#| fig-subcap: 
+#| - Base R 版
+#| - lattice 版
+#| - ggplot2 版
+#| fig-width: 4
+#| fig-height: 4
+#| layout: "[[1,1], [1]]"
+#| fig-showtext: true
+#| echo: true
+#| par: false
+
+with(iris, cdplot(x = Sepal.Length, y = Species, bw = .2))
+library(lattice)
+densityplot(~ Sepal.Length, groups = Species, 
+            data = iris, bw = .2, scales = "free")
+library(ggplot2)
+ggplot(iris, aes(x = Sepal.Length, y = after_stat(count))) +
+  geom_density(aes(fill = Species), position = "fill", 
+               show.legend = FALSE, bw = .2)
+```
+
+Base R 扩展包 **scatterplot3d** 可以绘制三维散点图，**lattice** 扩展包 **latticeExtra** 补充了很多绘图函数，见下 @tbl-lattice 。[**sp**](https://github.com/edzer/sp/) 包和 [**rasterVis**](https://github.com/oscarperpinan/rastervis/) 包 分别针对空间点和栅格数据，大大扩充了 **lattice** 在空间数据可视化方面的功能。
+
+| R 包 |函数 | 图形 | 作用 |
+|:---|:---|:----|:---|
+|**lattice**  |  `parallelplot`   | 平行坐标图 | 描述对比 |
+|**lattice**  |  `tmd`     | Tukey 均值差异图 | 描述对比 |
+|**latticeExtra**  |  `ecdfplot`   | 经验分布图 | 描述分布 |
+|**latticeExtra**  |  `rootogram`  | Tukey 悬挂根图 | 描述分布 |
+|**latticeExtra**  |  `horizonplot`  | 水平线图   | 描述趋势 |
+|**latticeExtra**  |  `mapplot`      | 地区分布图 | 描述空间分布 |
+|**latticeExtra**  |  `tileplot`   | Voronoi 图 | 描述空间分布 |
+|**latticeExtra**  |  `segplot`    | 置信区间图 | 描述不确定性 |
+
+: **lattice** 和 **latticeExtra** 包的一些函数 {#tbl-lattice}
+
+
+## Base R {#sec-base-graphics}
+
+尽管 **ggplot2** 非常流行，但并不意味着它比前辈们如 Base R 或 **lattice** [@Deepayan2008] 更加优秀，它们只是各领风骚。知晓各自的优缺点，更加有助于你选择合适的工具应用到合适的场景中。
+
+这里以 Base R 内置的地震数据集 quakes 为例，如 @fig-quakes 所示，展示太平洋岛国斐济及其周边的地震分布，左图是一行 **ggplot2** 绘图代码生成的图形，如果你的目的是看看数据情况，那到此结束。甚至还可以更快、更简单点，直接调用 Base R 的函数 `plot()`，这是探索数据，而不是表达洞见。
+
+```{r}
+#| eval: false
+#| echo: true
+#| label: quakes-quick
+
+# ggplot2 绘图
+library(ggplot2)
+ggplot(data = quakes, aes(x = long, y = lat)) + geom_point()
+# Base R 绘图
+plot(data = quakes, lat ~ long)
+```
+
+
+```{r}
+#| label: fig-quakes
+#| echo: false
+#| fig-cap: "太平洋岛国斐济及其周边的地震分布"
+#| fig-width: 4
+#| fig-height: 3
+#| fig-subcap: 
+#|  - "ggplot2 默认设置"
+#|  - "Base R 默认设置"
+#| layout-ncol: 2
+#| fig-showtext: true
+#| par: true
+
+# ggplot2 绘图
+library(ggplot2)
+ggplot(data = quakes, aes(x = long, y = lat)) + geom_point()
+# Base R 绘图
+plot(data = quakes, lat ~ long)
+```
+
+
+所以，若以出版级的要求， **ggplot2** 绘图并不简单，那比 Base R 又如何呢？以 Base R 内置的 pressure 数据集为例，展示汞蒸气的压力随温度的变化趋势，如 @fig-pressure 所示，左子图用区区 3 行 Base R 代码就搞定了，而右子图用 15 行 **ggplot2** 代码才勉强达到相似的效果。类似的情况绝不仅限于描述趋势的点线图，归根结底，是刻画图形细节的要素都差不多，只是表达方式不同罢了。比如示例(<https://stackoverflow.com/questions/27934840/>)用 Base R 复现一张直方图，示例(<https://stackoverflow.com/questions/3932038/>)给 Base R 图形添加图例，网站(<http://motioninsocial.com/tufte/>)更是用 Base R、**ggplot2** 和 **lattice** 分别绘制了 9 种常见统计图形。反之，用 Base R 实现 **ggplot2** 风格图形，也不那么简单，以分类散点图为例，详见博客 [Styling plots in base R graphics to match ggplot2 classic theme](https://www.tenderisthebyte.com/blog/2021/05/09/pretty-plots-with-base-r-grahpics/)。 
+
+
+```{r}
+#| label: fig-pressure
+#| fig-cap: "汞蒸气的压力随温度的指数级变化"
+#| fig-subcap: 
+#|  - Base R 图形
+#|  - ggplot2 图形
+#| fig-width: 4.5
+#| fig-height: 3.5
+#| fig-showtext: true
+#| fig-ncol: 2
+#| par: true
+#| echo: false
+
+# Base R 图形
+plot(pressure, type = "b", pch = 19, ann = FALSE)
+title(xlab = "温度", ylab = "压力")
+# ggplot2 图形
+library(ggplot2)
+ggplot(data = pressure, aes(x = temperature, y = pressure)) +
+  geom_line() +
+  geom_point(size = 2) +
+  labs(x = "温度", y = "压力") +
+  scale_x_continuous(breaks = seq(0, 400, by = 50)) +
+  theme_bw(base_size = 13) +
+  theme(
+    axis.title = element_text(),
+    axis.title.x = element_text(
+      margin = margin(b = 0, l = 0, t = 20, r = 0)
+    ),
+    axis.title.y = element_text(
+      margin = margin(b = 0, l = 0, t = 0, r = 20)
+    ),
+    panel.border = element_rect(color = "black"),
+    panel.grid = element_blank(),
+    axis.ticks.length = unit(0.25, "cm"),
+    axis.text.x = element_text(
+      color = "black",
+      vjust = -1.5, size = rel(1.25)
+    ),
+    axis.text.y = element_text(
+      color = "black",
+      angle = 90, vjust = 1.5, hjust = 0.5,
+      size = rel(1.25)
+    )
+  )
+```
+
+
+@fig-pressure 所用数据集 pressure 来自 Base R 自带的 **datasets** 包，描述汞蒸气压力（以毫米计）随温度（以摄氏度计）的变化。为美观起见，除了设置字体外，右图以黑白主题替换了默认的灰色主题，调整了横、纵坐标轴标题到坐标轴的距离，面板边界线从灰色调为黑色，取消背景网格线，轴须增加至0.25厘米，适当增加了刻度标签的大小和位置。再和原始的 ggplot2 的图形对比，@fig-pressure-ugly 所示，美颜前后已不可同日而语，能解决最重要的 20% 细节问题就能让整个档次显著提升，达到让大多数人认可的水准。当然，一味地追求统一 Base R 风格或 ggplot2 风格是没有必要的，举此例也无意宣扬 Base R 绘图的简便，展示 ggplot2 绘图的复杂，简便和复杂往往不是由工具决定的，而是数据本身和工具使用的场景。将错误的工具放在错误的数据上，除了能带来实现上的技术挑战，造出一堆难以理解的图形垃圾，还可能误导受众。
+
+```{r}
+#| label: fig-pressure-ugly
+#| fig-cap: "ggplot2 默认的风格"
+#| echo: false
+#| fig-width: 4.5
+#| fig-height: 3.5
+#| fig-showtext: true
+
+# https://github.com/Mikata-Project/ggthemr
+# 书籍就绪后，考虑统一颜色主题
+ggplot(data = pressure, aes(x = temperature, y = pressure)) +
+  geom_line() +
+  geom_point() +
+  labs(x = "温度", y = "压力") +
+  theme(
+    axis.title = element_text(family = "Noto Serif CJK SC"),
+    axis.text = element_text(family = "Noto Sans")
+  )
+```
+
+
+既然这样，为什么我仍然选择介绍 **ggplot2** 呢？对新手来说比较友好，有一套紧凑、一致的语法，掌握规律后，学习曲线比较低，可以非常高效地绘制中等质量的图形。此外，衍生包 **gganimate** [@gganimate2020] 可以与 ggplot2 如丝般顺滑衔接，以成本极低的方式绘制动态图形，而且，**ggplot2** 的绘图语法已经出圈到交互式可视化领域，举例来说，R 包 **plotly** [@Carson2020] 和 **leaflet** [@leaflet2022] 等都提供一套相似度极高的管道语法，学习成本进一步摊薄了。总而言之，软件成熟，生态庞大，社区活跃。
+
+地震发生的位置（包括纬度、经度和深度），地震的震级和检测地震的站点编号。
+
+```{r}
+#| label: tbl-quakes
+#| tbl-cap: "斐济地震数据集"
+#| echo: false
+
+knitr::kable(head(quakes), col.names = c("纬度", "经度", "深度", "震级", "站点"))
+```
+
+scatterplot3d 包 [@Uwe2003] 是基于 Base R 基础绘图系统的，专门用于三维可视化。
+
+```{r}
+#| label: fig-quakes-scatterplot3d
+#| fig-cap: "Base R 图形"
+#| fig-width: 6
+#| fig-height: 5.5
+#| fig-showtext: true
+
+# 将连续型数据向量转化为颜色向量
+colorize_numeric <- function(x) {
+  scales::col_numeric(palette = "viridis", domain = range(x))(x)
+}
+# 在数据集 quakes 上添加新的数据 color
+quakes <- within(quakes, {
+  color <- colorize_numeric(mag)
+})
+# 三维散点图
+library(scatterplot3d)
+with(quakes, {
+  scatterplot3d(
+    x = long, y = lat, z = - depth,
+    color = color, pch = 20,
+    mar = c(3, 3, 0, 3) + 0.1, 
+    xlab = "经度", ylab = "纬度", zlab = "深度"
+  )
+})
+```
+
+
+
+
+## lattice {#sec-trellis-graphics}
+
+<!-- 
+基于斐济地震数据集，以三维气泡图为例，
+介绍 lattice 绘图的一般模式，而不是事无巨细地详细介绍
+-->
+
+**lattice** 包 [@Deepayan2008] 是继承自 **grid** 包的栅格绘图系统。
+
+
+
+```{r}
+#| label: fig-quakes-lattice
+#| fig-cap: "lattice 图形"
+#| fig-width: 6
+#| fig-height: 5.5
+#| fig-showtext: true
+
+library(lattice)
+# 三维气泡图
+cloud(-depth ~ long * lat,
+  data = quakes, pch = 19,
+  col = quakes$color, # 气泡颜色映射震级
+  cex = quakes$mag - 4, # 气泡大小映射震级
+  xlab = "经度",
+  ylab = "纬度",
+  zlab = list("深度", rot = 90),
+  # z 轴标签旋转 90 度
+  scales = list(
+    arrows = FALSE, col = "black",
+    z = list(rot = 90)
+  ),
+  # 减少三维图形的边空
+  lattice.options = list(
+    layout.widths = list(
+      left.padding = list(x = -.6, units = "inches"),
+      right.padding = list(x = -1.0, units = "inches")
+    ),
+    layout.heights = list(
+      bottom.padding = list(x = -.8, units = "inches"),
+      top.padding = list(x = -1.0, units = "inches")
+    )
+  ),
+  # 设置坐标轴字体大小
+  par.settings = list(
+    axis.line = list(col = "transparent"),
+    fontsize = list(text = 15, points = 10)
+  ),
+  # 设置三维图的观察方位
+  screen = list(z = 30, x = -65, y = 0)
+)
+```
+
+- `lattice.options` 全局控制选项，比如绘图区域的边空布局等。
+- `par.settings` 设置图形参数，比如轴线颜色，字体大小等。
+- `screen` 设置三维图的观察方位，参数 `x` 、`y` 和 `z` 分别设置数据绕 x 轴、y 轴和 z 轴旋转的角度，负数表示按逆时针旋转。
+- `scales` 设置坐标轴上的刻度，如刻度线的颜色，刻度标签位置。
+
+
+
+## ggplot2 {#sec-grammar-of-graphics}
+
+**ggplot2** [@Hadley2016] 是一个 R 语言扩展包，专用于绘制各种各样的统计图形，是数据探索和可视化的利器。
+2007 年 6 月 1 日 **ggplot2** 在 CRAN 上发布第一个正式版本 0.5，截止写作时间，**ggplot2** 已经持续迭代 10 多年了，发布了 40 多个版本，形成了一个非常庞大的生态，直接依赖 **ggplot2** 的 R 包接近 3000 个。从如下三个地方，可以窥见 **ggplot2** 生态的一角，感受其魅力。
+
+- Daniel Emaasit 收集了 110 多个 **ggplot2** 衍生包，维护了一个 [网站](https://exts.ggplot2.tidyverse.org/gallery/)，统一组织、展示这些 R 包。本文会精心挑选一些高质量的 R 包予以介绍。
+
+- Tom Mock 发起的 [tidytuesday](https://github.com/rfordatascience/tidytuesday/) 项目吸引了数以千计的数据科学爱好者参与数据分析、探索和可视化项目，涌现了一批批优秀的基于 **ggplot2** 的可视化作品，极大地提升了 **ggplot2** 生态的影响力。本文也会基于真实的数据介绍每一个统计图形。
+
+- Yan Holtz 整理了数以百计的统计图形，分门别类地在[网站](https://r-graph-gallery.com/)上展示，方便读者预览效果、选择合适的图形。也是受该网站启发，本文在介绍完 **ggplot2** 绘图的基础要素后，从统计图形的作用出发，按照趋势、关系、占比、对比、分布和不确定性等六大方面予以介绍。
