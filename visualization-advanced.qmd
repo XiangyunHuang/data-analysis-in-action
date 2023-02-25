@@ -6,8 +6,210 @@
 source("_common.R")
 ```
 
+-  @sec-visualize-data-relation 探索、展示数据中隐含的相关信息，这种相关具有一般性，比如线性和非线性相关，位序关系、包含关系、依赖关系等，具体有散点图、气泡图、凹凸图、韦恩图、甘特图和网络图。
 -  @sec-visualize-data-uncertainty 探索、展示数据中隐含的不确定性，统计中描述不确定性有很多概念，比如置信区间、假设检验中的 P 值，统计模型中的预测值及其预测区间，模型残差隐含的分布，模型参数分量的边际分布及其效应，贝叶斯视角下的模型参数的后验分布。
 -  @sec-visualize-spatial-data 探索、展示空间数据中隐含的分布信息。对于空间区域数据，介绍地区分布图、比例符号图和扭曲变形图，而对于栅格数据，介绍地形轮廓图，包括二维的和三维的，静态的和交互的。
+
+
+## 描述关系 {#sec-visualize-data-relation}
+
+
+### 散点图 {#sec-scatter}
+
+散点图用以描述变量之间的关系，展示原始的数据，点的形态、大小、颜色等都可以随更多变量变化。
+
+中国国家统计局 2021 年发布的统计年鉴，2020 年 31 个省、直辖市、自治区的抚养比、文盲率、人口数的关系。
+
+```{r}
+#| label: tbl-china-raise-illiteracy-scatter
+#| tbl-cap: "2020 年各省、直辖市、自治区，总抚养比和文盲率相关数据（部分）"
+#| echo: false
+
+china_raise_illiteracy <- readRDS(file = "data/china-raise-illiteracy-2020.rds")
+knitr::kable(head(china_raise_illiteracy[order(china_raise_illiteracy$`人口数`, decreasing = TRUE), ]),
+  col.names = c(
+    "地区", "人口数", "15-64岁", "抚养比",
+    "15岁及以上人口", "文盲人口", "文盲率"
+  ),
+  row.names = FALSE
+)
+```
+
+其中，文盲人口是指15岁及以上不识字及识字很少人口，文盲率 = 文盲人口 / 15岁及以上人口，抚养比 = (0-14岁 + 65岁及以上) / 15-64岁人口数。
+
+```{r}
+#| label: fig-china-raise-illiteracy
+#| fig-cap: "文盲率与抚养比的关系"
+#| fig-width: 6
+#| fig-height: 4
+#| fig-showtext: true
+
+library(ggplot2)
+ggplot(data = china_raise_illiteracy) +
+  geom_point(aes(x = `总抚养比`, y = `文盲人口占15岁及以上人口的比重`)) +
+  theme_classic() +
+  labs(x = "抚养比（%）", y = "文盲率（%）")
+```
+
+
+### 气泡图 {#sec-bubble}
+
+气泡图在散点图的基础上，添加了散点大小的视觉维度，可以在图上多展示一列数据，下 @fig-china-raise-illiteracy-bubble 新增了人口数变量。此外，在气泡旁边添加地区名称，将气泡填充的颜色也映射给了人口数变量。
+
+
+```{r}
+#| label: fig-china-raise-illiteracy-bubble
+#| fig-cap: "文盲率和抚养比数据"
+#| fig-width: 6
+#| fig-height: 4.5
+#| fig-showtext: true
+
+library(ggrepel)
+library(scales)
+ggplot(
+  data = china_raise_illiteracy,
+  aes(x = `总抚养比`, y = `文盲人口占15岁及以上人口的比重`)
+) +
+  geom_point(aes(size = `人口数`, color = `人口数`),
+    alpha = 0.85, pch = 16,
+    show.legend = c(color = FALSE, size = TRUE)
+  ) +
+  scale_size(labels = label_number(scale_cut = cut_short_scale())) +
+  scale_color_viridis_c(option = "C") +
+  geom_text_repel(
+    aes(label = `地区`),
+    size = 3, max.overlaps = 50,
+    segment.colour = "gray", seed = 2022, show.legend = FALSE
+  ) +
+  coord_cartesian(xlim = c(30, 60), ylim = c(0, 10.5), expand = FALSE) +
+  theme_classic() +
+  labs(x = "抚养比（%）", y = "文盲率（%）")
+```
+
+
+### 凹凸图 {#sec-bump}
+
+凹凸图描述位置排序关系随时间的变化，比如前年、去年和今年各省的 GDP 排序变化，春节各旅游景点的人流量变化。[**ggbump**](https://github.com/davidsjoberg/ggbump) 包专门用来绘制凹凸图，如 @fig-bump 所示，展示
+
+```{r}
+#| label: fig-bump
+#| fig-cap: "凹凸图"
+#| fig-width: 7
+#| fig-height: 3.5
+#| fig-showtext: true
+
+library(ggbump)
+# 位置排序变化
+df <- data.frame(
+  country = c(
+    "印度", "印度", "印度", "瑞典",
+    "瑞典", "瑞典", "德国", "德国",
+    "德国", "芬兰", "芬兰", "芬兰"
+  ),
+  year = c(
+    2018, 2019, 2020, 2018, 2019, 2020,
+    2018, 2019, 2020, 2018, 2019, 2020
+  ),
+  value = c(
+    492, 246, 246, 369, 123, 492,
+    246, 369, 123, 123, 492, 369
+  )
+)
+
+library(data.table)
+df <- as.data.table(df)
+df[, rank := rank(value, ties.method = "random"), by = "year"]
+
+ggplot(df, aes(year, rank, color = country)) +
+  geom_point(size = 7) +
+  geom_text(data = df[df$year == min(df$year), ],
+            aes(x = year - .1, label = country), size = 5, hjust = 1) +
+  geom_text(data = df[df$year == max(df$year), ],
+            aes(x = year + .1, label = country), size = 5, hjust = 0) +
+  geom_bump(linewidth = 2, smooth = 8) +
+  scale_x_continuous(limits = c(2017.6, 2020.4),
+                     breaks = seq(2018, 2020, 1)) +
+  theme_minimal(base_size = 14) +
+  theme(legend.position = "none",
+        panel.grid.major = element_blank()) +
+  labs(x = NULL, y = "排名") +
+  scale_y_reverse() +
+  coord_fixed(ratio = 0.5)
+```
+
+
+
+### 韦恩图 {#sec-venn-diagram}
+
+韦恩图描述集合、群体的交叉关系，整体和部分的包含关系，[**ggVennDiagram**](https://github.com/gaospecial/ggVennDiagram/) 包展示 A、B、C 三个集合的交叉关系，如 @fig-venn 所示
+
+```{r}
+#| label: fig-venn
+#| fig-cap: "A、B、C 三个集合的交叉关系"
+#| fig-width: 5
+#| fig-height: 4.5
+#| fig-showtext: true
+
+x <- list(A = 1:5, B = 2:7, C = 5:10)
+ggVennDiagram::ggVennDiagram(x) +
+  scale_fill_gradient(low = "#F4FAFE", high = "#4981BF")
+```
+
+
+### 甘特图 {#sec-gantt}
+
+
+甘特图常用于项目、流程管理，描述节点之间的依赖关系，展示关键节点。
+[**ganttrify**](https://github.com/giocomai/ganttrify) 包专门用来绘制甘特图，如 @fig-gant 所示。
+
+
+```{r}
+#| label: fig-gant
+#| fig-cap: "项目和任务进展"
+#| fig-width: 7
+#| fig-height: 4.5
+#| fig-showtext: true
+
+library(ganttrify)
+ganttrify(project = ganttrify::test_project,
+          project_start_date = "2021-03",
+          font_family = "sans")
+```
+
+
+
+### 网络图 {#sec-network}
+
+
+[**tidygraph**](https://github.com/thomasp85/tidygraph)包 操作图数据，[**ggraph**](https://github.com/thomasp85/ggraph)包描述网络图中节点重要性及依赖关系。
+
+```{r}
+library(ggraph)
+graph <- tidygraph::as_tbl_graph(highschool) |> 
+    dplyr::mutate(Popularity = tidygraph::centrality_degree(mode = 'in'))
+
+graph
+```
+
+
+
+```{r}
+#| label: fig-graph
+#| fig-cap: "学校关系"
+#| fig-width: 7
+#| fig-height: 4.5
+#| fig-showtext: true
+
+ggraph(graph, layout = "kk") +
+  geom_edge_fan(aes(alpha = after_stat(index)), show.legend = FALSE) +
+  geom_node_point(aes(size = Popularity)) +
+  facet_edges(~year) +
+  theme_graph(
+    base_family = "sans",
+    foreground = "steelblue",
+    fg_text_colour = "white"
+  )
+```
 
 
 ## 描述不确定性 {#sec-visualize-data-uncertainty}
