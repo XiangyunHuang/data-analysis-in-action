@@ -53,7 +53,7 @@ knitr::kable(head(rongelap_coastline, 6),
 ```
 
 ::: {.callout-note}
-之前，[Ole F. Christensen](https://orcid.org/0000-0002-8230-8062) 和 Paulo J. Ribeiro Jr 将 rongelap 数据集存放在 [**geoRglm**](https://cran.r-project.org/package=geoRglm) 包内，后来，**geoRglm** 不维护，已从 CRAN 移除了。
+之前，[Ole F. Christensen](https://orcid.org/0000-0002-8230-8062) 和 Paulo J. Ribeiro Jr 将 rongelap 数据集存放在 [**geoRglm**](https://cran.r-project.org/package=geoRglm)[@Christensen2002] 包内，后来，**geoRglm** 不维护，已从 CRAN 移除了。
 :::
 
 ### 数据探索 {#sec-rongelap-exploration}
@@ -348,7 +348,7 @@ pp_check(fit_rongelap_brm)
 
 进一步，去掉随机效应相互独立的假设，随机效应之间存在相关性结构，这更符合位置效应存在相互影响的实际情况，也因此要引入带空间随机效应的广义线性混合效应模型。空间广义线性混合效应模型在统计中具有重要的地位，在地质统计、卫生统计、气象统计和空间计量等领域有广泛的应用，如分析地区范围内的疟疾分布，有限气象站点条件下，预测地区 PM2.5 污染物浓度分布等。
 
-1998 年 Peter J. Diggle 等提出蒙特卡罗极大似然方法估计不带块金效应的响应变量服从泊松分布的空间广义混合效应模型的参数，分析了朗格拉普岛上核污染浓度的空间分布[@Diggle1998]。2004 年 Ole F Christensen 在 Peter J. Diggle 等人的基础上添加了块金效应，同样使用蒙特卡罗极大似然方法估计了模型中的参数[@Christensen2004]。
+1998 年 Peter J. Diggle 等提出蒙特卡罗极大似然方法估计不带块金效应的响应变量服从泊松分布的空间广义混合效应模型的参数，分析了朗格拉普岛上核污染浓度的空间分布[@Diggle1998]。2004 年 Ole F Christensen 在 Peter J. Diggle 等人的基础上添加了块金效应，同样使用蒙特卡罗极大似然方法估计了模型中的参数[@Christensen2004]。由于现有算法表现受真实数据影响比较大，随后，2006 年 Ole F Christensen 等又提出更加稳健的 Langevin-Metropolis 算法，辅以重参数化技术提升算法性能，可以在马尔可夫链混合和收敛方面独立于数据，并在朗格拉普岛核污染数据中做了实验，体现出预期效果[@Christensen2006]。2015 年 Wagner Hugo Bonat 等在朗格拉普岛核污染数据和蚕豆根腐病数据中比较了 MCMC 算法，MCEM 算法和修正的拉普拉斯近似算法，发现拉普拉斯近似可以提供类似的结果，基于剖面似然可以获得模型参数的置信区间，相比于模拟算法，不需要算法调参和收敛分析 [@Wagner2015]。2016 年 Erlis Ruli 等提出改进的拉普拉斯近似算法，用于边际似然函数，处理高维随机效应的积分，比较了现有的一些基于似然函数的推断方法，体现出渐进误差更小，在朗格拉普岛核污染浓度预测中更加精确[@Erlis2016]。
 
 $$
 \begin{aligned}
@@ -653,4 +653,167 @@ print(p4, vp = grid::viewport(x = .25, y = .625, width = .45, height = .45))
 ```
 
 美国当年是在比基尼环礁做的氢弹核试验，试验地与朗格拉普岛相距 100 多英里，核辐射羽流受大气、海洋环流等影响，漂流到朗格拉普岛，受当地水文、地理环境影响，核污染在全岛的分布是不均匀的，颜色越深表示核污染越严重。
+
+
+## 疟疾流行度的分析 {#sec-gambia-children-malaria}
+
+本节任务是基于 **geoR** 包内置的 gambia 数据集，通过分析 5 岁以下儿童在非洲冈比亚 65 个村庄的疟疾感染情况，建模预测疟疾流行度。
+
+::: {.callout-note}
+[Paulo J. Ribeiro Jr](http://www.leg.ufpr.br/~paulojus/) 和 [Peter J. Diggle](https://www.lancaster.ac.uk/staff/diggle/) 将 Gambia 数据集内置在 **geoR** 包内，[Barry Rowlingson](https://barry.rowlingson.com/research.html) 也分析过 Gambia 数据集 [@Thomson1999;@Diggle2002]。2019 年 Paula Moraga 在书《Geospatial Health Data: Modeling and Visualization with R-INLA and Shiny》中[第八章](https://www.paulamoraga.com/book-geospatial/sec-geostatisticaldataexamplespatial.html) 借助 **INLA** 包分析 Gambia 数据集。
+:::
+
+
+### 数据说明 {#sec-gambia-data}
+
+首先借助 **geodata** 包下载冈比亚的海拔和二级行政边界数据。
+
+```{r}
+# Gambia 海拔数据
+gmb_alt <- geodata::elevation_30s(country = "GMB", mask = TRUE, path = "data/")
+# Gambia 市级行政边界数据
+gmb_map <- geodata::gadm(country = "GMB", level = 2, path = "data/")
+# Gambia 儿童疟疾感染数据
+data(gambia, package = "geoR")
+```
+
+gambia 数据集记录了冈比亚地区 65 个村庄 5 岁以下儿童是否感染疟疾的情况，一共收集了 2035 个样本，见下 @tbl-gambia-data 。横、纵坐标记录村庄的位置，是否感染是响应变量，年龄以天计，是否有蚊帐以及是否对蚊帐杀虫是非常重要的变量，植被覆盖度与蚊虫有关系，是否有医院对疟疾的治疗很关键。
+
+```{r}
+#| label: tbl-gambia-data
+#| tbl-cap: "各村庄儿童是否感染疟疾的统计数据（部分）"
+#| echo: false
+
+knitr::kable(head(gambia), row.names = F,
+  col.names = c(
+    "横坐标", "纵坐标", "是否感染", "年龄",
+    "是否有蚊帐", "是否杀虫",
+    "植被覆盖度", "是否有医院"
+  )
+)
+```
+
+接着，统计各个村庄的儿童感染率。
+
+```{r}
+# 按各个村庄分组统计儿童的感染率
+gambia_agg <- aggregate(
+  x = cbind(pos, netuse, treated) ~ x + y + green + phc,
+  data = gambia, FUN = function(x) sum(x) / length(x)
+)
+```
+
+数据集 gambia 中变量 `x` 和 `y` 分别为调查的村庄的横、纵坐标，参考系是 UTM。将 UTM 坐标系转化为 WGS 84 坐标系，以便将疟疾观测数据和冈比亚地形数据绘制在一幅图上。
+
+```{r}
+library(sf)
+# 转化为 sf 对象
+gambia_agg <- st_as_sf(gambia_agg, coords = c("x", "y"))
+st_crs(gambia_agg) <- st_crs(sp::CRS("+proj=utm +zone=28"))
+# 转化坐标系
+gambia_agg <- st_transform(gambia_agg, crs = 4326)
+```
+
+很多非洲国家基础设施建设落后，医疗卫生条件比较差，越靠近河流的地方，水草越多，蚊虫也越多，疟疾容易通过蚊虫叮咬感染和传播。如 @fig-observed-prevalence 所示，冈比亚国家整体上，海拔比较低，沿着冈比亚河，各个村庄分布在南、北岸。
+
+```{r}
+#| label: fig-observed-prevalence
+#| fig-cap: "各村庄的 5 岁以下儿童感染疟疾的比例"
+#| fig-width: 8
+#| fig-height: 3.5
+#| fig-showtext: true
+
+ggplot() +
+  tidyterra::geom_spatraster(data = gmb_alt) +
+  tidyterra::scale_fill_terrain_c(direction = -1) +
+  tidyterra::geom_spatvector(
+    data = gmb_map, fill = NA, colour = "gray40"
+  ) +
+  geom_sf(data = gambia_agg, aes(color = pos)) +
+  scale_color_viridis_c(option = "plasma", direction = -1, labels = scales::percent) +
+  theme_minimal() +
+  labs(x = "经度", y = "纬度", fill = "海拔", color = "感染率")
+```
+
+图中的点为村庄位置，点的颜色越深表示感染比例越高。根据冈比亚狭长的地形和横穿东西全境的冈比亚河，可将其看作东、中和西三个部分，东部是河流上游，西部是河流下游，村庄分为 5 个区域，西部两个，南岸和北岸各一个，中游一个在南岸，东部两个，也是南岸和北岸各有一个。
+
+
+### 数据模型 {#sec-gambia-model}
+
+- 个体水平下的建模
+
+$$
+Y_{ij} \sim \mathrm{Bernoulli}(1,p_{ij})
+$$ 
+
+$Y_{ij}$ 表示第 $i$ 个村庄的第 $j$ 个儿童是否感染疟疾的响应变量，对应每个人检验结果，感染记为 1，没有感染记为 0。$p_{ij}$ 表示第 $i$ 个村庄的第 $j$ 个儿童的感染率。其中，$i = 1,2,\cdots, 65$ 。 每个儿童感染可能性与很多因素相关，既有环境因素，也有个体因素。
+
+- 村庄水平下的建模
+
+$$
+Y_{i} \sim \mathrm{Binomial}(N_i,p_{i})
+$$ 
+
+$Y_{i}$ 表示第 $i$ 个村庄感染疟疾的儿童数量，是响应变量，对应整个村子的情况。$N_i$ 表示第 $i$ 个村庄的样本量，$p_{i}$ 表示第 $i$ 个村庄的感染率，其中，$i = 1,2,\cdots, 65$ 。
+
+@Diggle2002 建立如下空间广义线性混合效应模型
+
+$$
+\begin{align}
+\log\{p_{ij}/(1-p_{ij})\} &= \alpha + \boldsymbol{\beta}^{\top}z_{ij} + S(x_i) \\
+\log\{p_{ij}/(1-p_{ij})\} &= \alpha + \boldsymbol{\beta}^{\top}z_{ij} + S(x_i) + U_{i}
+\end{align}
+$$
+
+$\alpha$ 是截距，回归系数向量 $\boldsymbol{\beta}^{\top} = (\beta_1,\beta_2,\beta_3,\beta_4,\beta_5,\beta_6,\beta_7,\beta_8,\beta_9)$ 各个参数的含义如下表
+
+参数           | 实际意义
+:------------- | :-------------
+$\alpha$     | 截距项
+$\beta_1$    | 儿童年龄(age)，以天计
+$\beta_2$    | 蚊帐没有消毒(untreated)
+$\beta_3$    | 蚊帐消毒(treated)
+$\beta_4$    | 村庄周围绿植覆盖度(greenness)
+$\beta_5$    | 村庄是否有医疗中心(PHC)
+$\beta_6$    | 村庄在2号区域(1号区域作为参考)
+$\beta_7$    | 村庄在3号区域
+$\beta_8$    | 村庄在4号区域
+$\beta_9$    | 村庄在5号区域
+ 
+$S(x)$ 是平稳空间高斯过程，自协方差函数 $\mathsf{Cov}(S(x_i),S(x_j)) = \sigma^2\rho(u), u = \|x_i -x_j \|_2$，自相关函数 $\rho(u) = \{2^{\kappa -1}\Gamma(\kappa)\}^{-1}(u/\phi)^{\kappa}\mathcal{K}_{\kappa}(u/\phi),u > 0$ 为 Matérn 型，$Y_{ij} \sim \mathrm{Bernoulli}(p_{ij})$ ，其中 $Y_{ij}$ 表示在第 $i$ 个村庄的第 $j$ 个儿童血液中是否含有疟原虫，有就取 1，没有就取0， $p_{ij}$ 是伯努利分布的成功概率，实际含义是儿童携带疟原虫的可能性。
+
+@Diggle2002 使用贝叶斯 MCMC 算法计算模型参数后验估计值，并主要依赖 **geoRglm** 包实现，计算结果见下表。模型参数的贝叶斯估计，估计的 95\% 的置信区间端点分别来自后验 2.5\% 和97.5\% 分位点，第3列和第4列分别是后验均值和中位数
+
+| 参数                  |   2.5%分位点   |   97.5%分位点  |   均值 (mean)  |  中位数 (median)  |
+| :-------------------- | :-------------: | :-------------: | :------------: | :---------------: |
+| $\alpha$              |    -2.966473    |     2.624348    |   -0.131214    |   -0.077961       |
+| $\beta_1$(age)        |     0.000455    |     0.000933    |    0.000689    |    0.000685       |
+| $\beta_2$(untreated)  |    -0.673143    |    -0.042011    |   -0.357825    |   -0.359426       |
+| $\beta_3$(treated)    |    -0.753803    |     0.088418    |   -0.32954     |   -0.325853       |
+| $\beta_4$(greenness)  |    -0.085675    |     0.047924    |   -0.020068    |   -0.020834       |
+| $\beta_5$(PHC)        |    -0.787913    |     0.129883    |   -0.344846    |   -0.349915       |
+| $\beta_6$(area 2)     |    -1.14419     |     0.51023     |   -0.324665    |   -0.331634       |
+| $\beta_7$(area 3)     |    -1.40862     |     0.558616    |   -0.5321      |   -0.559229       |
+| $\beta_8$(area 4)     |    -0.109472    |     2.425342    |    1.049441    |    1.016969       |
+| $\beta_9$(area 5)     |     0.164828    |     2.606357    |    1.309553    |    1.325129       |
+| $\sigma^2$            |     0.311756    |     1.050227    |    0.585592    |    0.553477       |
+| $\phi$                |     0.915789    |     10.20069    |    2.522294    |    1.422975       |
+| $\kappa$              |     0.079522    |     2.784646    |    1.084108    |    0.937436       |
+
+作为对比，在上述模型的基础上添加块金效应 $U_{i}$，其中 $U_{i} \sim \mathcal{N}(0,\nu^2)$，其它符号含义不变。再用 Stan 实现贝叶斯 MCMC 算法估计模型中的各个参数值，计算结果见下表。观察到块金效应占比 $\nu^2 = \tau^2/\sigma^2 = 0.000002$，是一个很小的值，在实际应用中应该可以忽略。 与模型一不同的是模型二的回归系数向量 $\boldsymbol{\beta}$ 不包含 $\beta_6,\ldots,\beta_9$ 四个回归系数，这是因为 geoR 包内的 gambia 数据集缺失与区域有关的标记信息，因此不能复现 @Diggle2002 的结果，但是这里考虑了块金效应。模型参数的贝叶斯估计值和 95\% 的置信区间，第1至4列依次是后验2.5\%、97.5\%分位点、后验均值以及后验中位数
+
+| 参数                  |   2.5%分位点   |   97.5%分位点  |   均值 (mean)  |  中位数 (median)  |
+| :-------------------- | :-------------: | :-------------: | :------------: | :---------------: |
+| $\alpha$              |    -4.232073    |     1.114734    |   -1.664353    |   -1.696228       |
+| $\beta_1$(age)        |     0.000442    |     0.000918    |    0.000677    |    0.000676       |
+| $\beta_2$(untreated)  |    -0.684407    |    -0.083811    |   -0.383750    |   -0.385772       |
+| $\beta_3$(treated)    |    -0.778149    |     0.054543    |   -0.355655    |   -0.355632       |
+| $\beta_4$(greenness)  |    -0.039706    |     0.071505    |   -0.018833    |    0.020079       |
+| $\beta_5$(PHC)        |    -0.791741    |     0.180737    |   -0.324738    |   -0.322760       |
+| $\nu^2$               |     0.000002    |     0.515847    |    0.117876    |    0.018630       |
+| $\sigma^2$            |     0.240826    |     1.662284    |    0.793031    |    0.740790       |
+| $\phi$                |     1.242164    |     53.351207   |   11.653717    |    7.032258       |
+| $\kappa$              |     0.150735    |     1.955524    |    0.935064    |    0.830548       |
+
+由于年龄在模型中以天计，所以会发现回归系数 $\beta_1$ 在两个模型中都很小，
 
