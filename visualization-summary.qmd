@@ -113,6 +113,27 @@ ggplot(data = trunk_year_author_sub, aes(x = year, y = revision)) +
 
 @fig-scale-transform 的左子图可以看出，只有 ripley（Brian Ripley）、maechler（Martin Maechler）、hornik（Kurt Hornik） 和 kalibera（Tomas Kalibera） 明显较多，尤其是 Brian Ripley，相对而言，一些开发者的代码提交次数就很少，趋势线挤在一起，无法区分。通过对数变换，可以将相近的曲线分离，放大细节。当然，是否需要采用对数变换取决于图形目的，当想重点突出 Brian Ripley 等四人的贡献时，就不需要对数变换。
 
+考虑到折线相互缠绕带来的不便，而栅格图不仅可以避免折线相互缠绕的现象，还可以更好地刻画时间节点，如开发者何时开始贡献代码，何时不再维护代码，哪些又一直活跃着，通过 @fig-scale-tile ，这些情况一目了然。图中代码提交量是根据贡献者按月统计的，图例刻度同样使用了对数变换，以便展现层次感。
+
+```{r}
+#| label: fig-scale-tile
+#| fig-cap: "开发者贡献代码的趋势"
+#| fig-width: 7
+#| fig-height: 5
+#| echo: false
+#| fig-showtext: true
+
+svn_trunk_log$date <- as.Date(format(svn_trunk_log$stamp, "%Y-%m-01")) 
+trunk_year_author <- aggregate(data = svn_trunk_log, revision ~ date + author, FUN = length)
+ggplot(data = trunk_year_author, aes(x = date, y = author)) +
+  geom_tile(aes(fill = revision)) +
+  scale_fill_viridis_c(trans = "log10") +
+  coord_cartesian(expand = FALSE) +
+  theme_classic() +
+  labs(x = "月份", y = "贡献者", fill = "代码提交量")
+```
+
+
 ## 适当添加注释 {#sec-add-annotate}
 
 在 @fig-show-raw-data 的基础上，我们想了解哪些离群的点都代表哪些地方，这就需要添加注释。下 @fig-add-annotate 的左子图在散点周围添加了地区名称，由于数据的非均匀分布，重叠文本有很多。而且，图中想要重点突出的是离群的地区，而不是将所有点都注释上。在图中，注释可以看作是一种强调，处处强调也就无所谓强调，强调的要求是有起伏对比。因此，@fig-add-annotate 的右子图，只对离群的散点添加了注释，对离群值的定义可根据具体数据情况而定，此处从简。
