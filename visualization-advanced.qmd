@@ -1262,7 +1262,7 @@ plotly::plot_ly(z = ~volcano) |>
 类似地，**rgl** 包绘制的三维散点图亦可展示数据的空间分布。
 
 ```{r}
-#| label: fig-volcano-rgl
+#| label: fig-volcano-plot3d
 #| fig-cap: "rgl 绘制地形图"
 #| eval: !expr knitr::is_html_output(excludes = 'epub')
 #| echo: true
@@ -1288,87 +1288,59 @@ with(volcano_df, {
 })
 ```
 
+Base R 提供函数 `persp()` 绘制三维透视图。
 
 ```{r}
-#| eval: false
-#| echo: false
-
-# 可视化 DEM 数字高程模型
-
-z <- 2 * volcano        # Exaggerate the relief
-x <- 10 * (1:nrow(z))   # 10 meter spacing (S to N)
-y <- 10 * (1:ncol(z))   # 10 meter spacing (E to W)
-# Base R
-persp(x, y, z, theta = 135, phi = 30, col = "green3", scale = FALSE,
-      ltheta = -120, shade = 0.75, border = NA, box = FALSE)
-
-# 三维透视图
-x <- 1:nrow(volcano)
-y <- 1:ncol(volcano)
-persp3d(x = x, y = y, z = volcano, col = "lightblue",
-        xlab = "南北方向", ylab = "东西方向", zlab = "高度")
-
-# 透视图是如何制作的？栅格点是如何变成曲面的？差值？
-# 拟合曲面图
-# SVM 回归
-library(kernlab)
-model <- ksvm(z ~ x + y,
-  data = volcano_df, C = 1, kernel = "rbfdot"
-)
-
-mesh_size <- 1
-xrange <- seq(from = min(volcano_df$x), to = max(volcano_df$x), by = mesh_size)
-yrange <- seq(from = min(volcano_df$y), to = max(volcano_df$y), by = mesh_size)
-
-final <- expand.grid(x = xrange, y = yrange)
-final <- as.matrix(final)
-pred <- predict(model, newdata = final)
-
-pred_m <- matrix(pred, ncol = length(xrange), nrow = length(yrange), byrow = TRUE)
-# plotly 绘制
-plotly::plot_ly(volcano_df, x = ~x, y = ~y, z = ~z) |>
-  plotly::add_markers(size = 5) |>
-  plotly::add_surface(
-    x = xrange, y = yrange, z = pred_m, alpha = 0.65,
-    type = "mesh3d", name = "pred_surface"
-  )
-# rgl 绘制
-plot3d(x = volcano_df$x, y = volcano_df$y, z = volcano_df$z, 
-       col = volcano_df$color,
-       xlab = "南北方向", ylab = "东西方向", zlab = "高度")
-# 拟合曲面
-persp3d(x = 1:nrow(volcano), y = 1:ncol(volcano), z = t(pred_m), 
-        col = "lightblue", add = TRUE)
-```
-
-
-[GDAL](https://github.com/OSGeo/gdal) 支持大量的栅格和矢量空间数据格式，内建的 [EEDAI （Google Earth Engine Data API Image）](https://gdal.org/drivers/raster/eedai.html)驱动通过 Google Earth Engine REST API 获取谷歌地球图像。[**terra**](https://github.com/rspatial/terra) 包的函数 `rast()`和 [**stars**](https://github.com/r-spatial/stars) 包的函数 `read_stars()` 封装了 GDAL 的驱动接口，更多详情见 <https://rspatial.org/terra/>。申请谷歌应用的访问令牌，保存授权文件到本地，设置环境变量 `GOOGLE_APPLICATION_CREDENTIALS` 指向授权文件所在路径。
-
-```{r}
-#| eval: false
+#| label: fig-volcano-persp
+#| fig-cap: "persp 函数绘制地形图"
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
 #| echo: true
 
-# 设置访问令牌
-Sys.setenv(GOOGLE_APPLICATION_CREDENTIALS="/home/rstudio/google/ardent-disk-214911-e2616707dd80.json")
-# 加载 R 包
-library(stars)
-# 设置采样参数
-rasterio <- list(
-  nXOff = 6, nYOff = 6, nXSize = 183, nYSize = 183,
-  nBufXSize = 100, nBufYSize = 100, bands = 3
-)
-# 获取数据
-google_earth <- read_stars(
-  file.path(
-    "EEDAI:projects", "earthengine-public", 
-    "assets", "COPERNICUS", "S2",
-    "20170430T190351_20170430T190351_T10SEG"
-  ),
-  proxy = TRUE, # 对于大型 TIFF 数据非常有效
-  # sub = 3, # 或 2,3,4
-  RasterIO = rasterio # 采样 183x183
-)
-# 绘图
-plot(google_earth)
+# 可视化 DEM 数字高程模型
+z <- 2 * volcano        # Exaggerate the relief
+x <- 10 * (1:nrow(z))   # 10 米间距 (S to N)
+y <- 10 * (1:ncol(z))   # 10 米间距 (E to W)
+
+nrz <- nrow(z)
+ncz <- ncol(z)
+# Generate the desired number of colors from this palette
+nbcol <- 100
+color <- hcl.colors(nbcol)
+# Compute the z-value at the facet centres
+zfacet <- z[-1, -1] + z[-1, -ncz] + z[-nrz, -1] + z[-nrz, -ncz]
+# 编码 Recode facet z-values into color indices
+facetcol <- cut(zfacet, nbcol)
+# Base R
+persp(x, y, z, theta = 135, phi = 30, col = color[facetcol], scale = FALSE,
+      ltheta = -120, shade = 0.75, border = NA, box = FALSE)
 ```
 
+**rgl** 包提供函数 `persp3d()` 绘制交互式的真三维透视图形。
+
+```{r}
+#| label: fig-volcano-persp3d
+#| fig-cap: "persp3d 函数绘制地形图"
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+#| echo: true
+
+# 三维透视图
+zlim <- range(z)
+zlen <- zlim[2] - zlim[1] + 1
+colorlut <- hcl.colors(zlen) # height color lookup table
+col <- colorlut[ z - zlim[1] + 1 ] # assign colors to heights for each point
+open3d()
+persp3d(x = x, y = y, z = z, col = col,
+        xlab = "南北方向", ylab = "东西方向", zlab = "高度")
+```
+
+另一个函数 `surface3d()` 也可以绘制三维曲面图。
+
+```{r}
+#| label: fig-volcano-surface3d
+#| fig-cap: "surface3d 函数绘制地形图"
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+#| echo: true
+
+open3d()
+surface3d(x, y, z, color = col, back = "lines")
+```
