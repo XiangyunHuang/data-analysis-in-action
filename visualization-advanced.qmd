@@ -1044,7 +1044,7 @@ us_state_map <- tigris::shift_geometry(us_state_map, geoid_column = "STATE", pos
 :::
 
 
-### 地形轮廓图 {#sec-raster}
+### 地形轮廓图 {#sec-contour}
 
 
 地形图用于描述地形地势，则无论山洼、山谷，还是高山、高原，抑或是断崖、峡谷、平原，都一目了然。如 @fig-volcano-levelplot 所示，奥克兰 Maunga Whau 火山地形图，图中火山划分为 87 行 61 列的小格子，小格子的长宽都是 10 米，记录格子所处位置的高度，收集整理后形成 volcano 数据集，此所谓的栅格数据。Base R 内置的 volcano 数据集是一个 matrix 类型数据对象。Base R 提供函数 `filled.contour()` 绘制二维栅格图形，如 @fig-volcano-base 所示。
@@ -1134,6 +1134,9 @@ ggplot(volcano_df) +
   labs(x = "南北方向", y = "东西方向", fill = "高度")
 ```
 
+
+### 三维地形图 {#sec-wireframe}
+
 而 [**rayshader**](https://github.com/tylermorganwall/rayshader) 包提供函数 `plot_gg()` 可以将 ggplot2 绘图对象转化为 3D 对象。对于栅格化的地形数据，函数 `sphere_shade()` 可以提供很好的阴影特效，更多案例见 <https://www.rayshader.com/>。
 
 ```{r}
@@ -1190,7 +1193,7 @@ wireframe(volcano,
 )
 ```
 
-静态的三维图形限制用户只能从一个视角观察，因视角和透视的关系，存在遮挡和视觉错位的情况，比如火山地形 @fig-volcano-wireframe 因坡面遮挡了火山口及其周围地势，只有调整观察角度，重新绘图方可，如 @fig-volcano-viewport 所示，火山口及其周围地势一目了然。
+静态的三维图形限制用户只能从一个视角观察，因视角和透视的关系，存在遮挡和视觉错位的情况，比如火山地形 @fig-volcano-wireframe 因坡面遮挡了火山口及其周围地势。调整观察角度，经过探索设置 `screen = list(z = -45, x = -50, y = 0)`，重新绘图，如 @fig-volcano-viewport 所示，火山口及其周围地势一目了然。
 
 ```{r}
 #| label: fig-volcano-viewport
@@ -1198,6 +1201,7 @@ wireframe(volcano,
 #| fig-width: 6
 #| fig-height: 5.5
 #| fig-showtext: true
+#| echo: false
 
 wireframe(volcano,
   drape = TRUE, colorkey = FALSE, shade = TRUE,
@@ -1366,41 +1370,5 @@ google_earth <- read_stars(
 )
 # 绘图
 plot(google_earth)
-```
-
-除了谷歌提供的地图服务，[SRTM](https://srtm.csi.cgiar.org/)（Shuttle Radar Topography Mission，简称 SRTM）提供 90 米精度的海拔数据，对纬度范围在南纬 60 至北纬 60 度的地区。根据台湾省统计局 2022 年 10 月发布的数据显示，台湾目前有人口 2300 多万。下面获取台湾地区的海拔数据和一级行政区划边界数据。
-
-[**geodata** 包](https://github.com/rspatial/geodata) 获取台湾海拔数据，返回 terra 类型的数据对象：SpatRaster 对象。
-
-```{r}
-# 下载台湾海拔数据
-twn_map_alt <- geodata::elevation_30s(country = "TWN", path = "data/")
-```
-
-获取台湾一级行政区数据，它是一个多边形边界地图数据，也返回 terra 类型的数据对象： SpatVector 对象。
-
-```{r}
-# 下载台湾一级行政区
-twn_map_adm <- geodata::gadm(country = "TWN", level = 1, path = "data/")
-```
-
-[**tidyterra** 包](https://github.com/dieghernan/tidyterra) 基于 [**terra** 包](https://github.com/rspatial/terra) 提供一些专门用于栅格数据可视化的图层，扩展了 **ggplot2** 包的功能，如 @fig-tw-elev 所示台湾海拔地形图。
-
-```{r}
-#| label: fig-tw-elev
-#| fig-cap: "台湾海拔地形图"
-#| fig-showtext: true
-#| fig-width: 6
-#| fig-height: 5
-
-ggplot() +
-  tidyterra::geom_spatraster(data = twn_map_alt) +
-  tidyterra::scale_fill_terrain_c() +
-  tidyterra::geom_spatvector(
-    data = twn_map_adm,
-    fill = NA, colour = "gray40"
-  ) +
-  theme_minimal() +
-  labs(x = "经度", y = "纬度", fill = "海拔")
 ```
 
