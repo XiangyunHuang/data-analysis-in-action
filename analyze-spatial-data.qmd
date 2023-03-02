@@ -671,18 +671,48 @@ print(p4, vp = grid::viewport(x = .25, y = .625, width = .45, height = .45))
 
 ### 数据说明 {#sec-gambia-data}
 
-除了谷歌提供的地图服务，对纬度范围在南纬 60 至北纬 60 度的地区，[SRTM](https://srtm.csi.cgiar.org/)（Shuttle Radar Topography Mission，简称 SRTM）提供 90 米精度的海拔数据。首先借助 **geodata** 包下载冈比亚的海拔和二级行政边界数据。[**geodata** 包](https://github.com/rspatial/geodata) 获取的冈比亚海拔数据，返回 **terra** 类型的数据对象：SpatRaster 对象。获取冈比亚的二级级行政区数据，它是一个多边形边界地图数据，也返回 **terra** 类型的数据对象：SpatVector 对象。
+数据集来自对冈比亚一些村庄的调查，根据儿童血液样本中是否含有疟原虫确定是否感染疟疾。冈比亚是位于非洲西部的一个小国家。下面借助[**geodata** 包](https://github.com/rspatial/geodata)包获取[SRTM](https://srtm.csi.cgiar.org/)（Shuttle Radar Topography Mission，简称 SRTM）和 [GADM](https://gadm.org/)（Database of Global Administrative Areas，简称 GADM）开放的地形和行政区划数据，绘制冈比亚地图。SRTM 对纬度范围在南纬 60 至北纬 60 度的地区，提供 90 米精度的海拔数据，GADM 开放全球各国的各级行政区划数据。**geodata** 获取的冈比亚海拔数据，返回 SpatRaster 类型的 **terra** 数据对象，它是一个栅格数据。**geodata** 获取的冈比亚二级级行政区数据，返回 SpatVector 类型的 **terra** 数据对象，它是一个多边形边界地图数据。**geodata** 包下载数据的代码如下：
 
 ```{r}
 # Gambia 海拔数据
 gmb_alt <- geodata::elevation_30s(country = "GMB", mask = TRUE, path = "data/")
 # Gambia 市级行政边界数据
 gmb_map <- geodata::gadm(country = "GMB", level = 2, path = "data/")
-# Gambia 儿童疟疾感染数据
-data(gambia, package = "geoR")
 ```
 
-gambia 数据集记录了冈比亚地区 65 个村庄 5 岁以下儿童是否感染疟疾的情况，一共收集了 2035 个样本，见下 @tbl-gambia-data 。横、纵坐标记录村庄的位置，是否感染是响应变量，年龄以天计，是否有蚊帐以及是否对蚊帐杀虫是非常重要的变量，植被覆盖度与蚊虫有关系，是否有医院对疟疾的治疗很关键。
+下 @fig-gambia-map 是用 **ggplot2** 包和**tidyterra**包绘制的，[**tidyterra**](https://github.com/dieghernan/tidyterra) 包基于 [**terra**](https://github.com/rspatial/terra) 包提供一些专门用于栅格数据可视化的图层，扩展了 **ggplot2** 包的功能。很多非洲国家基础设施建设落后，医疗卫生条件比较差，越靠近河流的地方，水草越多，蚊虫也越多，疟疾容易通过蚊虫叮咬感染和传播。如 @fig-gambia-map 所示，冈比亚国家整体上海拔比较低，最高的地方不超过 100 米，沿着冈比亚河，各个村庄分布在南、北岸。
+
+```{r}
+#| label: fig-gambia-map
+#| fig-cap: "冈比亚地形图"
+#| fig-width: 8
+#| fig-height: 4
+#| fig-showtext: true
+
+ggplot() +
+  tidyterra::geom_spatraster(data = gmb_alt) +
+  tidyterra::scale_fill_terrain_c(direction = -1) +
+  tidyterra::geom_spatvector(
+    data = gmb_map, fill = NA, colour = "gray40"
+  ) +
+  theme_minimal() +
+  labs(x = "经度", y = "纬度", fill = "海拔")
+```
+
+Paulo J. Ribeiro Jr 将疟疾调查数据、冈比亚地区边界数据打包在 **geoR** 包内，加载和查看调查数据的代码如下：
+
+```{r}
+# Gambia 儿童疟疾感染数据
+data(gambia, package = "geoR")
+# Gambia 地区边界数据
+data(gambia.borders, package = "geoR")
+# 查看 gambia.borders 数据集
+str(gambia.borders)
+# 查看 gambia 数据集
+str(gambia)
+```
+
+横坐标`x`、纵坐标`y`（单位：米）是村庄的位置，是否感染`pos`是响应变量，儿童年龄`age`（单位：天），是否使用蚊帐`netuse`，以及是否对蚊帐杀虫`treated`，植被覆盖度`green`，是否有医院`phc`。不难理解，蚊帐可以阻挡蚊虫，对蚊帐杀虫可以增强蚊帐的隔离效果，植被越多往往蚊虫越多，有医院可以治疗疟疾。gambia 数据集记录了冈比亚地区 65 个村庄 5 岁以下儿童是否感染疟疾的情况，一共收集了 2035 个样本，见下 @tbl-gambia-data 。
 
 ```{r}
 #| label: tbl-gambia-data
@@ -698,49 +728,54 @@ knitr::kable(head(gambia), row.names = F,
 )
 ```
 
-接着，统计各个村庄的儿童感染率。
+
+### 数据探索 {#sec-gambia-exploration}
+
+数据探索主要是统计各个村庄的儿童感染疟疾的比率，以及环境因素（医院、植被）、个人因素（年龄、蚊帐）对疟疾流行度的影响，为了对数据。首先按各个村庄分组统计儿童的感染率，如下：
 
 ```{r}
-# 按各个村庄分组统计儿童的感染率
 gambia_agg <- aggregate(
   x = cbind(pos, netuse, treated) ~ x + y + green + phc,
   data = gambia, FUN = function(x) sum(x) / length(x)
 )
 ```
 
-数据集 gambia 中变量 `x` 和 `y` 分别为调查的村庄的横、纵坐标，参考系是 UTM。将 UTM 坐标系转化为 WGS 84 坐标系，以便将疟疾观测数据和冈比亚地形数据绘制在一幅图上。
+数据集 gambia 中变量 `x` 和 `y` 分别为村庄的横、纵坐标，参考系是 UTM。下面将 UTM 坐标系转化为 WGS 84 坐标系，以便将疟疾观测数据和冈比亚地形数据绘制在一幅图上。
 
 ```{r}
 library(sf)
 # 转化为 sf 对象
 gambia_agg <- st_as_sf(gambia_agg, coords = c("x", "y"))
+# 设置调查数据的坐标参考系
 st_crs(gambia_agg) <- st_crs(sp::CRS("+proj=utm +zone=28"))
-# 转化坐标系
+# 转化为 WGS 84 坐标系
 gambia_agg <- st_transform(gambia_agg, crs = 4326)
+# 将 gmb_map 数据从 SpatVector 类型转为 MULTIPOLYGON 类型
+gambia_borders <- st_as_sf(gmb_map)
 ```
 
-[**tidyterra**](https://github.com/dieghernan/tidyterra) 包基于 [**terra**](https://github.com/rspatial/terra) 包提供一些专门用于栅格数据可视化的图层，扩展了 **ggplot2** 包的功能。
+远离河流，蚊虫相对会少一些，海拔应该也是重要的变量，因此，根据冈比亚海拔数据获取各个村子的海拔高度，以便后续放入模型。下面根据 gambia_agg 从 gmb_alt 中抽取海拔数据，并将获得的海拔数据添加到 gmb_alt 数据集上，代码如下：
+
+```{r}
+gambia_agg$alt <- terra::extract(gmb_alt, gambia_agg, ID = FALSE)
+```
+
+如 @fig-observed-prevalence 所示，图中的点为村庄位置，感染比例越高点越亮，反之，点越暗。根据冈比亚狭长的地形和横穿东西全境的冈比亚河，可将其看作东、中和西三个部分，东部是河流上游，西部是河流下游，村庄分为 5 个区域，西部两个，南岸和北岸各一个，中游一个在南岸，东部两个，也是南岸和北岸各有一个。
 
 ```{r}
 #| label: fig-observed-prevalence
 #| fig-cap: "各村庄的 5 岁以下儿童感染疟疾的比例"
 #| fig-width: 8
-#| fig-height: 3.5
+#| fig-height: 4
 #| fig-showtext: true
 
 ggplot() +
-  tidyterra::geom_spatraster(data = gmb_alt) +
-  tidyterra::scale_fill_terrain_c(direction = -1) +
-  tidyterra::geom_spatvector(
-    data = gmb_map, fill = NA, colour = "gray40"
-  ) +
+  geom_sf(data = gambia_borders, fill = NA) +
   geom_sf(data = gambia_agg, aes(color = pos)) +
-  scale_color_viridis_c(option = "plasma", direction = -1, labels = scales::percent) +
+  scale_color_viridis_c(option = "plasma", labels = scales::percent) +
   theme_minimal() +
-  labs(x = "经度", y = "纬度", fill = "海拔", color = "感染率")
+  labs(x = "经度", y = "纬度", color = "感染率")
 ```
-
-很多非洲国家基础设施建设落后，医疗卫生条件比较差，越靠近河流的地方，水草越多，蚊虫也越多，疟疾容易通过蚊虫叮咬感染和传播。如 @fig-observed-prevalence 所示，冈比亚国家整体上，海拔比较低，沿着冈比亚河，各个村庄分布在南、北岸。图中的点为村庄位置，点的颜色越深表示感染比例越高。根据冈比亚狭长的地形和横穿东西全境的冈比亚河，可将其看作东、中和西三个部分，东部是河流上游，西部是河流下游，村庄分为 5 个区域，西部两个，南岸和北岸各一个，中游一个在南岸，东部两个，也是南岸和北岸各有一个。
 
 gambia 数据集记录了医院、蚊帐、年龄等变量，下面统计医院和蚊帐对疟疾感染的影响。医院对疟疾感染的影响是积极的，有医院相比于没有医院的地方，感染比例从 40.99\% 下降至 33.29\% 。
 
@@ -838,5 +873,4 @@ $S(x)$ 是平稳空间高斯过程，自协方差函数 $\mathsf{Cov}(S(x_i),S(x
 
 
 ### 模型预测 {#sec-gambia-predict}
-
 
