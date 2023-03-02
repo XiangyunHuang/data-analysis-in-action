@@ -371,11 +371,56 @@ Y_{i} &\sim \mathrm{Poisson}(t(d_{i})\lambda(d_i))
 \end{aligned}
 $$ {#eq-rongelap-poisson-sglmmm}
 
-模型中，截距 $\beta$ 相当于平均水平，放射粒子数$Y_{i}$作为响应变量服从均值为 $t(d_{i})\lambda(d_i)$ 的泊松分布，$\lambda(d_i)$ 可理解为辐射强度，$S(d_{i})$ 表示位置 $d_i$ 处的空间效应，随机过程 $S(d)$ 的自协方差函数为幂二次指数型，如下：
+模型中，截距 $\beta$ 相当于平均水平，放射粒子数$Y_{i}$作为响应变量服从均值为 $t(d_{i})\lambda(d_i)$ 的泊松分布，$\lambda(d_i)$ 可理解为辐射强度，$S(d_{i})$ 表示位置 $d_i$ 处的空间效应，随机过程 $S(d)$ 的自协方差函数常用的有幂二次指数型和 Matérn 型，形式如下：
 
 $$
-\mathrm{Cov}( S(d_i), S(d_j) ) = \sigma^2 \exp( -\|d_i -d_j\|_{2} / \phi )
+\begin{aligned}
+\mathrm{Cov}( S(d_i), S(d_j) ) &= \sigma^2 \exp( -\|d_i -d_j\|_{2} / \phi ) \\
+\mathrm{Cov}( S(d_i), S(d_j) ) &= \sigma^2 \frac{2^{1 - \nu}}{\Gamma(\nu)}
+\left(\sqrt{2\nu}\frac{\|d_i -d_j\|_{2}}{\rho}\right)^{\nu}
+K_{\nu}\left(\sqrt{2\nu}\frac{\|d_i -d_j\|_{2}}{\rho}\right)
+\end{aligned}
 $$
+
+其中，$K_{\nu}$ 表示阶数为 $\nu$ 的修正的第二类贝塞尔函数，$\Gamma(\cdot)$ 表示伽马函数。如 @fig-matern-fun 所示，不难看出，$\nu$ 影响协方差函数的平滑性，控制点与点之间相关性的变化，$\nu$ 越大，意味着相关性越迅速地递减。$\rho$ 控制协方差函数的范围，$\rho$ 越大，相关性辐射距离越远。
+
+```{r}
+#| label: fig-matern-fun
+#| fig-cap: "Matérn 型协方差函数曲线"
+#| echo: false
+#| fig-showtext: true
+
+# 参数 x 两点之间的距离，要求 x 大于 0
+# 参数 sigma nu rho 分别与前述公式参数对应
+cov_matern_nu <- function(x, sigma = 1, nu = 3 / 2, rho = 5) {
+  phi <- sqrt(2 * nu) * x / rho
+  sigma^2 * 2^(1 - nu) / gamma(nu) * phi^nu * besselK(x = phi, nu = nu)
+}
+library(ggplot2)
+mesh_matern <- expand.grid(
+  x = seq(from = 0.01, to = 20, by = 0.04),
+  sigma = 1, nu = c(5 / 2, 3 / 2, 1 / 2), rho = c(5, 2.5)
+)
+
+mesh_matern$fv <- cov_matern_nu(
+  x = mesh_matern$x, sigma = mesh_matern$sigma,
+  nu = mesh_matern$nu, rho = mesh_matern$rho
+)
+
+mesh_matern$nu_math <- paste("nu==", mesh_matern$nu, sep = "")
+mesh_matern$rho_math <- paste("rho==", mesh_matern$rho, sep = "")
+
+ggplot(data = mesh_matern, aes(x = x, y = fv)) +
+  geom_line(aes(color = nu_math)) +
+  facet_wrap(vars(rho_math), ncol = 1, labeller = ggplot2::label_parsed) +
+  scale_color_manual(
+    values = c("#E41A1C", "#377EB8", "#4DAF4A"),
+    labels = expression(nu == 0.5, nu == 1.5, nu == 2.5)
+  ) +
+  theme_minimal() +
+  labs(x = "距离", y = "相关性", color = expression(nu))
+```
+
 
 $S(d),d \in \mathbb{R}^2$ 是平稳空间高斯过程，且 $Z_i$ 之间相互独立同正态分布 $\mathcal{N}(0,\tau^2)$ ，$Z_i$ 表示与空间效应无关的块金效应，即非空间的随机效应，可以理解为测量误差、空间变差或背景辐射，这里 $i = 1,\ldots, 157$。
 
@@ -686,7 +731,7 @@ gmb_map <- geodata::gadm(country = "GMB", level = 2, path = "data/")
 #| label: fig-gambia-map
 #| fig-cap: "冈比亚地形图"
 #| fig-width: 8
-#| fig-height: 4
+#| fig-height: 3
 #| fig-showtext: true
 
 ggplot() +
@@ -766,7 +811,7 @@ gambia_agg$alt <- terra::extract(gmb_alt, gambia_agg, ID = FALSE)
 #| label: fig-observed-prevalence
 #| fig-cap: "各村庄的 5 岁以下儿童感染疟疾的比例"
 #| fig-width: 8
-#| fig-height: 4
+#| fig-height: 3
 #| fig-showtext: true
 
 ggplot() +
