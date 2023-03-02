@@ -789,16 +789,18 @@ library(sf)
 gambia_agg <- st_as_sf(gambia_agg, coords = c("x", "y"))
 # 设置调查数据的坐标参考系
 st_crs(gambia_agg) <- st_crs(sp::CRS("+proj=utm +zone=28"))
-# 转化为 WGS 84 坐标系
-gambia_agg <- st_transform(gambia_agg, crs = 4326)
 # 将 gmb_map 数据从 SpatVector 类型转为 MULTIPOLYGON 类型
 gambia_borders <- st_as_sf(gmb_map)
+gambia_borders <- st_transform(gambia_borders, crs = sp::CRS("+proj=utm +zone=28"))
 ```
 
 远离河流，蚊虫相对会少一些，海拔应该也是重要的变量，因此，根据冈比亚海拔数据获取各个村子的海拔高度，以便后续放入模型。下面根据 gambia_agg 从 gmb_alt 中抽取海拔数据，并将获得的海拔数据添加到 gmb_alt 数据集上，代码如下：
 
 ```{r}
-gambia_agg$alt <- terra::extract(gmb_alt, gambia_agg, ID = FALSE)
+# 转化为 WGS 84 坐标系
+gambia_agg2 <- st_transform(gambia_agg, crs = 4326)
+# 提取海拔数据
+gambia_agg$alt <- terra::extract(gmb_alt, gambia_agg2, ID = FALSE)
 ```
 
 如 @fig-observed-prevalence 所示，图中的点为村庄位置，感染比例越高点越亮，反之，点越暗。根据冈比亚狭长的地形和横穿东西全境的冈比亚河，可将其看作东、中和西三个部分，东部是河流上游，西部是河流下游，村庄分为 5 个区域，西部两个，南岸和北岸各一个，中游一个在南岸，东部两个，也是南岸和北岸各有一个。
@@ -806,16 +808,32 @@ gambia_agg$alt <- terra::extract(gmb_alt, gambia_agg, ID = FALSE)
 ```{r}
 #| label: fig-observed-prevalence
 #| fig-cap: "各村庄的 5 岁以下儿童感染疟疾的比例"
-#| fig-width: 8
-#| fig-height: 2.75
+#| fig-width: 7
+#| fig-height: 6
 #| fig-showtext: true
 
-ggplot() +
+p <- ggplot() +
   geom_sf(data = gambia_borders, fill = NA) +
   geom_sf(data = gambia_agg, aes(color = pos)) +
-  scale_color_viridis_c(option = "plasma", labels = scales::percent) +
+  scale_color_viridis_c(option = "plasma", labels = scales::percent) 
+
+p1 <- p +
   theme_minimal() +
   labs(x = "经度", y = "纬度", color = "感染率")
+p2 <- p + coord_sf(xlim = c(340000, 410000)) +
+  theme_void() +
+  theme(legend.position = "none")
+p3 <- p + coord_sf(xlim = c(480000, 530000)) +
+  theme_void() +
+  theme(legend.position = "none")
+p4 <- p + coord_sf(xlim = c(570000, 630000)) +
+  theme_void() +
+  theme(legend.position = "none")
+
+p1
+print(p2, vp = grid::viewport(x = .25, y = .225, width = .45, height = .45))
+print(p3, vp = grid::viewport(x = .55, y = .725, width = .45, height = .45))
+print(p4, vp = grid::viewport(x = .75, y = .225, width = .45, height = .45))
 ```
 
 gambia 数据集记录了医院、蚊帐、年龄等变量，下面统计医院和蚊帐对疟疾感染的影响。医院对疟疾感染的影响是积极的，有医院相比于没有医院的地方，感染比例从 40.99\% 下降至 33.29\% 。
