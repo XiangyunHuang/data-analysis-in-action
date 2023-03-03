@@ -379,7 +379,7 @@ $$
 \left(\sqrt{2\nu}\frac{\|d_i -d_j\|_{2}}{\rho}\right)^{\nu}
 K_{\nu}\left(\sqrt{2\nu}\frac{\|d_i -d_j\|_{2}}{\rho}\right)
 \end{aligned}
-$$
+$$ {#eq-matern-formula}
 
 其中，$K_{\nu}$ 表示阶数为 $\nu$ 的修正的第二类贝塞尔函数，$\Gamma(\cdot)$ 表示伽马函数，当 $\nu = 1/2$ ，Matérn 型将简化为指数型。固定 $\sigma = 1$，自协方差函数图像如 @fig-matern-fun 所示，不难看出，$\nu$ 影响自协方差函数的平滑性，控制点与点之间相关性的变化，$\nu$ 越大相关性越迅速地递减。$\rho$ 控制协方差函数的范围，$\rho$ 越大相关性辐射距离越远。
 
@@ -460,7 +460,7 @@ fit_rongelap_spamm <- fitme(counts ~ 1 + Matern(1 | cX + cY) + offset(log(time))
 summary(fit_rongelap_spamm)
 ```
 
-从输出结果来看，与 **glmmTMB** 很接近，模型固定效应的截距项 1.824，随机效应的方差为 0.2973，自协方差函数中参数 $\nu = 0.3642$，$\rho = \sqrt{2 \times 0.364211759} / 0.0061486 = 138.8079$（对模型来说，它们是超参数），对数似然函数值为 -1317.551，拟合效果的提升几乎可以忽略。
+从输出结果来看，与 **glmmTMB** 很接近，模型固定效应的截距项 1.824，随机效应的方差为 0.2973，自协方差函数中参数 $\nu = 0.3642$，对比 **spaMM** 包的函数 `Matern()` 实现的 Matérn 型自相关函数公式与 @eq-matern-formula ，输出结果需要转化一下，以符合 @eq-matern-formula ，则 $\rho = \sqrt{2 \times 0.364211759} / 0.0061486 = 138.8079$（对模型来说，它们是超参数），对数似然函数值为 -1317.551，拟合效果的提升几乎可以忽略。
 
 
 ### 模型预测 {#sec-rongelap-predict}
@@ -900,6 +900,7 @@ fit_gambia_glm <- glm(pos ~ age + netuse + treated + green + phc,
   data = gambia, family = binomial(link = "logit")
 )
 summary(fit_gambia_glm)
+logLik(fit_gambia_glm)
 ```
 
 <!-- 残差，变差图，从而确认存在空间结构 -->
@@ -913,10 +914,10 @@ fit_gambia_spamm <- fitme(pos ~ age + netuse + treated +
 summary(fit_gambia_spamm)
 ```
 
-从输出结果来看，自协方差函数中参数 $\nu = 0.196$，$\rho = \sqrt{2 \times 0.196} / 3.0419 \times 10^5 = 20582.5$。随着距离增加，相关性递减，近邻相关性辐射最远为 20.5825 千米。
+从输出结果来看，自协方差函数中参数 $\rho = \sqrt{2 \times 0.196} / 3.0419 \times 10^5 = 20582.5$，$\nu = 0.196$。随着距离增加，相关性递减，近邻相关性辐射最远为 20.5825 千米。
 
 ::: {.callout-tip}
-设置梅隆型自协方差函数中超参数 $\nu = 0.5$， 则模型中的自协方差函数退化为指数型，代码如下：
+设置梅隆型自协方差函数中超参数 $\nu = 0.5$， 则模型中的自协方差函数退化为指数型，在函数 `fitme()` 中设置参数 `fixed`，代码如下：
 
 ```{r}
 #| echo: true
