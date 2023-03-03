@@ -6,9 +6,8 @@
 source("_common.R")
 ```
 
-空间分析的内容十分广泛，本章仅以一个模型和两个数据简略介绍。
+空间分析的内容十分广泛，本章仅以一个模型和两个数据简略介绍。一个模型是空间广义线性混合效应模型，空间广义线性混合效应模型在卫生统计、气象统计等领域有广泛的应用，如预测某地区内的疟疾流行度分布，预测某地区 PM 2.5 污染物浓度分布等。两个数据分别来自生态环境和流行病学领域，数据集所含样本量都不大，但每个样本收集成本不小，采集样本前也都有实验设计，收集数据的地点是固定的。
 
-空间广义线性混合效应模型在统计中具有重要的地位，在地质统计、卫生统计、气象统计和空间计量等领域有广泛的应用，如分析地区范围内的疟疾分布，有限气象站点条件下，预测地区 PM2.5 污染物浓度分布等。
 
 2002 年张首次提出蒙特卡洛极大似然算法给出空间广义线性混合效应模型的估计与预测[@Zhang2002]，因混合模型的多样性，参数计算的复杂性，后续学者们分别从贝叶斯和频率方法的视角提出精确和近似的算法。近似算法的想法是找了一个近似函数替换其中的部分或者全部，使得随着迭代次数增加的情况下，估计的参数值可以趋于真值。精确算法的想法是通过模拟计算的方式硬积一个高维积分，不断增加采样的次数逼近目标函数，比如基于 MCMC 及其改进型 HMC 和 NUTS 硬积参数的联合后验分布中的高维积分做参数的全贝叶斯推断。贝叶斯方法主流的有拉普拉斯近似和全贝叶斯推断，频率方法主流的有基于似然的拉普拉斯近似和自适应高斯-埃尔米特算法。值得一提，**INLA** 包[@Rue2009;@Lindgren2015]、**glmmfields** 包[@glmmfields2018]和 **sdmTMB** 包[@Anderson2022]也可以用来拟合模型。
 
@@ -371,11 +370,56 @@ Y_{i} &\sim \mathrm{Poisson}(t(d_{i})\lambda(d_i))
 \end{aligned}
 $$ {#eq-rongelap-poisson-sglmmm}
 
-模型中，截距 $\beta$ 相当于平均水平，放射粒子数$Y_{i}$作为响应变量服从均值为 $t(d_{i})\lambda(d_i)$ 的泊松分布，$\lambda(d_i)$ 可理解为辐射强度，$S(d_{i})$ 表示位置 $d_i$ 处的空间效应，随机过程 $S(d)$ 的自协方差函数为幂二次指数型，如下：
+模型中，截距 $\beta$ 相当于平均水平，放射粒子数$Y_{i}$作为响应变量服从均值为 $t(d_{i})\lambda(d_i)$ 的泊松分布，$\lambda(d_i)$ 可理解为辐射强度，$S(d_{i})$ 表示位置 $d_i$ 处的空间效应，随机过程 $S(d)$ 的自协方差函数常用的有指数型和 Matérn 型，形式如下：
 
 $$
-\mathrm{Cov}( S(d_i), S(d_j) ) = \sigma^2 \exp( -\|d_i -d_j\|_{2} / \phi )
-$$
+\begin{aligned}
+\mathrm{Cov}( S(d_i), S(d_j) ) &= \sigma^2 \exp( -\|d_i -d_j\|_{2} / \phi ) \\
+\mathrm{Cov}( S(d_i), S(d_j) ) &= \sigma^2 \frac{2^{1 - \nu}}{\Gamma(\nu)}
+\left(\sqrt{2\nu}\frac{\|d_i -d_j\|_{2}}{\rho}\right)^{\nu}
+K_{\nu}\left(\sqrt{2\nu}\frac{\|d_i -d_j\|_{2}}{\rho}\right)
+\end{aligned}
+$$ {#eq-matern-formula}
+
+其中，$K_{\nu}$ 表示阶数为 $\nu$ 的修正的第二类贝塞尔函数，$\Gamma(\cdot)$ 表示伽马函数，当 $\nu = 1/2$ ，Matérn 型将简化为指数型。固定 $\sigma = 1$，自协方差函数图像如 @fig-matern-fun 所示，不难看出，$\nu$ 影响自协方差函数的平滑性，控制点与点之间相关性的变化，$\nu$ 越大相关性越迅速地递减。$\rho$ 控制协方差函数的范围，$\rho$ 越大相关性辐射距离越远。
+
+```{r}
+#| label: fig-matern-fun
+#| fig-cap: "Matérn 型协方差函数曲线"
+#| echo: false
+#| fig-showtext: true
+
+# 参数 x 两点之间的距离，要求 x 大于 0
+# 参数 sigma nu rho 分别与前述公式参数对应
+cov_matern_nu <- function(x, sigma = 1, nu = 3 / 2, rho = 5) {
+  phi <- sqrt(2 * nu) * x / rho
+  sigma^2 * 2^(1 - nu) / gamma(nu) * phi^nu * besselK(x = phi, nu = nu)
+}
+library(ggplot2)
+mesh_matern <- expand.grid(
+  x = seq(from = 0.01, to = 20, by = 0.04),
+  sigma = 1, nu = c(5 / 2, 3 / 2, 1 / 2), rho = c(5, 2.5)
+)
+
+mesh_matern$fv <- cov_matern_nu(
+  x = mesh_matern$x, sigma = mesh_matern$sigma,
+  nu = mesh_matern$nu, rho = mesh_matern$rho
+)
+
+mesh_matern$nu_math <- paste("nu==", mesh_matern$nu, sep = "")
+mesh_matern$rho_math <- paste("rho==", mesh_matern$rho, sep = "")
+
+ggplot(data = mesh_matern, aes(x = x, y = fv)) +
+  geom_line(aes(color = nu_math)) +
+  facet_wrap(vars(rho_math), ncol = 1, labeller = ggplot2::label_parsed) +
+  scale_color_manual(
+    values = c("#E41A1C", "#377EB8", "#4DAF4A"),
+    labels = expression(nu == 0.5, nu == 1.5, nu == 2.5)
+  ) +
+  theme_minimal() +
+  labs(x = "距离", y = "相关性", color = expression(nu))
+```
+
 
 $S(d),d \in \mathbb{R}^2$ 是平稳空间高斯过程，且 $Z_i$ 之间相互独立同正态分布 $\mathcal{N}(0,\tau^2)$ ，$Z_i$ 表示与空间效应无关的块金效应，即非空间的随机效应，可以理解为测量误差、空间变差或背景辐射，这里 $i = 1,\ldots, 157$。
 
@@ -416,7 +460,7 @@ fit_rongelap_spamm <- fitme(counts ~ 1 + Matern(1 | cX + cY) + offset(log(time))
 summary(fit_rongelap_spamm)
 ```
 
-从输出结果来看，与 **glmmTMB** 很接近，模型固定效应的截距项 1.824，随机效应的方差为 0.2973，对数似然函数值为 -1317.551，拟合效果的提升几乎可以忽略。
+从输出结果来看，与 **glmmTMB** 很接近，模型固定效应的截距项 1.824，随机效应的方差为 0.2973，自协方差函数中参数 $\nu = 0.3642$，对比 **spaMM** 包的函数 `Matern()` 实现的 Matérn 型自相关函数公式与 @eq-matern-formula ，输出结果需要转化一下，以符合 @eq-matern-formula ，则 $\rho = \sqrt{2 \times 0.364211759} / 0.0061486 = 138.8079$（对模型来说，它们是超参数），对数似然函数值为 -1317.551，拟合效果的提升几乎可以忽略。
 
 
 ### 模型预测 {#sec-rongelap-predict}
@@ -671,7 +715,7 @@ print(p4, vp = grid::viewport(x = .25, y = .625, width = .45, height = .45))
 
 ### 数据说明 {#sec-gambia-data}
 
-数据集来自对冈比亚一些村庄的调查，根据儿童血液样本中是否含有疟原虫确定是否感染疟疾。冈比亚是位于非洲西部的一个小国家。下面借助[**geodata** 包](https://github.com/rspatial/geodata)包获取[SRTM](https://srtm.csi.cgiar.org/)（Shuttle Radar Topography Mission，简称 SRTM）和 [GADM](https://gadm.org/)（Database of Global Administrative Areas，简称 GADM）开放的地形和行政区划数据，绘制冈比亚地图。SRTM 对纬度范围在南纬 60 至北纬 60 度的地区，提供 90 米精度的海拔数据，GADM 开放全球各国的各级行政区划数据。**geodata** 获取的冈比亚海拔数据，返回 SpatRaster 类型的 **terra** 数据对象，它是一个栅格数据。**geodata** 获取的冈比亚二级级行政区数据，返回 SpatVector 类型的 **terra** 数据对象，它是一个多边形边界地图数据。**geodata** 包下载数据的代码如下：
+冈比亚国家发起基础健康服务（Primary Health Care，简称 PHC）项目 ，在 2-3 年内建立覆盖全国各个村庄的服务站点，向村民们发放蚊帐，而后，国家蚊帐杀虫项目对各村庄展开调查，收集蚊帐发放、使用情况，对发放的蚊帐杀虫，根据儿童血液样本中是否含有疟原虫确定是否感染疟疾，调查疟疾的流行度，调查在 1992 年雨季前完成，记录了 65 个村庄 5 岁以下儿童是否感染疟疾的情况，一共收集了 2035 个样本。冈比亚是非洲西部的一个贫穷小国家，国内冈比亚河横穿全国，流入大西洋，当地属热带气候，水网密布。下面借助 [**geodata**](https://github.com/rspatial/geodata)包获取[SRTM](https://srtm.csi.cgiar.org/)（Shuttle Radar Topography Mission，简称 SRTM）和 [GADM](https://gadm.org/)（Database of Global Administrative Areas，简称 GADM）开放的地形和行政区划数据，绘制冈比亚地图。SRTM 对纬度范围在南纬 60 至北纬 60 度的地区，提供 90 米精度的海拔数据，GADM 开放全球各国的各级行政区划数据。**geodata** 获取的海拔数据，返回 SpatRaster 类型的 **terra** 数据对象，它是一个栅格数据。**geodata** 获取的二级级行政区数据，返回 SpatVector 类型的 **terra** 数据对象，它是一个多边形边界地图数据。**geodata** 包下载数据的代码如下：
 
 ```{r}
 # Gambia 海拔数据
@@ -680,13 +724,13 @@ gmb_alt <- geodata::elevation_30s(country = "GMB", mask = TRUE, path = "data/")
 gmb_map <- geodata::gadm(country = "GMB", level = 2, path = "data/")
 ```
 
-下 @fig-gambia-map 是用 **ggplot2** 包和**tidyterra**包绘制的，[**tidyterra**](https://github.com/dieghernan/tidyterra) 包基于 [**terra**](https://github.com/rspatial/terra) 包提供一些专门用于栅格数据可视化的图层，扩展了 **ggplot2** 包的功能。很多非洲国家基础设施建设落后，医疗卫生条件比较差，越靠近河流的地方，水草越多，蚊虫也越多，疟疾容易通过蚊虫叮咬感染和传播。如 @fig-gambia-map 所示，冈比亚国家整体上海拔比较低，最高的地方不超过 100 米，沿着冈比亚河，各个村庄分布在南、北岸。
+下 @fig-gambia-map 是用 **ggplot2** 包和**tidyterra**包绘制的，[**tidyterra**](https://github.com/dieghernan/tidyterra) 包基于 [**terra**](https://github.com/rspatial/terra) 包提供一些专门用于栅格数据可视化的图层，扩展了 **ggplot2** 包的功能。国家基础设施建设落后，医疗卫生条件比较差，越靠近河流的地方，水草越多，蚊虫也越多，疟疾容易通过蚊虫叮咬感染和传播。如 @fig-gambia-map 所示，冈比亚国家整体上海拔比较低，最高的地方不超过 100 米，沿着冈比亚河，各个村庄分布在南、北岸。
 
 ```{r}
 #| label: fig-gambia-map
 #| fig-cap: "冈比亚地形图"
 #| fig-width: 8
-#| fig-height: 4
+#| fig-height: 2.75
 #| fig-showtext: true
 
 ggplot() +
@@ -704,15 +748,11 @@ Paulo J. Ribeiro Jr 将疟疾调查数据、冈比亚地区边界数据打包在
 ```{r}
 # Gambia 儿童疟疾感染数据
 data(gambia, package = "geoR")
-# Gambia 地区边界数据
-data(gambia.borders, package = "geoR")
-# 查看 gambia.borders 数据集
-str(gambia.borders)
 # 查看 gambia 数据集
 str(gambia)
 ```
 
-横坐标`x`、纵坐标`y`（单位：米）是村庄的位置，是否感染`pos`是响应变量，儿童年龄`age`（单位：天），是否使用蚊帐`netuse`，以及是否对蚊帐杀虫`treated`，植被覆盖度`green`，是否有医院`phc`。不难理解，蚊帐可以阻挡蚊虫，对蚊帐杀虫可以增强蚊帐的隔离效果，植被越多往往蚊虫越多，有医院可以治疗疟疾。gambia 数据集记录了冈比亚地区 65 个村庄 5 岁以下儿童是否感染疟疾的情况，一共收集了 2035 个样本，见下 @tbl-gambia-data 。
+横坐标`x`、纵坐标`y`（单位：米）是村庄的位置，是否感染`pos`是响应变量，儿童年龄`age`（单位：天），是否使用蚊帐`netuse`，以及是否对蚊帐杀虫`treated`，植被覆盖度`green`，是否有医院`phc`（National Primary Health Care，简称 PHC）。不难理解，蚊帐可以阻挡蚊虫，对蚊帐杀虫可以增强蚊帐的隔离效果，植被越多往往蚊虫越多，有医院可以治疗疟疾。gambia 数据集见下 @tbl-gambia-data 。
 
 ```{r}
 #| label: tbl-gambia-data
@@ -748,16 +788,18 @@ library(sf)
 gambia_agg <- st_as_sf(gambia_agg, coords = c("x", "y"))
 # 设置调查数据的坐标参考系
 st_crs(gambia_agg) <- st_crs(sp::CRS("+proj=utm +zone=28"))
-# 转化为 WGS 84 坐标系
-gambia_agg <- st_transform(gambia_agg, crs = 4326)
 # 将 gmb_map 数据从 SpatVector 类型转为 MULTIPOLYGON 类型
 gambia_borders <- st_as_sf(gmb_map)
+gambia_borders <- st_transform(gambia_borders, crs = sp::CRS("+proj=utm +zone=28"))
 ```
 
 远离河流，蚊虫相对会少一些，海拔应该也是重要的变量，因此，根据冈比亚海拔数据获取各个村子的海拔高度，以便后续放入模型。下面根据 gambia_agg 从 gmb_alt 中抽取海拔数据，并将获得的海拔数据添加到 gmb_alt 数据集上，代码如下：
 
 ```{r}
-gambia_agg$alt <- terra::extract(gmb_alt, gambia_agg, ID = FALSE)
+# 转化为 WGS 84 坐标系
+gambia_agg2 <- st_transform(gambia_agg, crs = 4326)
+# 提取海拔数据
+gambia_agg$alt <- terra::extract(gmb_alt, gambia_agg2, ID = FALSE)
 ```
 
 如 @fig-observed-prevalence 所示，图中的点为村庄位置，感染比例越高点越亮，反之，点越暗。根据冈比亚狭长的地形和横穿东西全境的冈比亚河，可将其看作东、中和西三个部分，东部是河流上游，西部是河流下游，村庄分为 5 个区域，西部两个，南岸和北岸各一个，中游一个在南岸，东部两个，也是南岸和北岸各有一个。
@@ -765,16 +807,32 @@ gambia_agg$alt <- terra::extract(gmb_alt, gambia_agg, ID = FALSE)
 ```{r}
 #| label: fig-observed-prevalence
 #| fig-cap: "各村庄的 5 岁以下儿童感染疟疾的比例"
-#| fig-width: 8
-#| fig-height: 4
+#| fig-width: 7
+#| fig-height: 5.5
 #| fig-showtext: true
 
-ggplot() +
+p <- ggplot() +
   geom_sf(data = gambia_borders, fill = NA) +
   geom_sf(data = gambia_agg, aes(color = pos)) +
-  scale_color_viridis_c(option = "plasma", labels = scales::percent) +
+  scale_color_viridis_c(option = "plasma", labels = scales::percent) 
+
+p1 <- p +
   theme_minimal() +
   labs(x = "经度", y = "纬度", color = "感染率")
+p2 <- p + coord_sf(xlim = c(340000, 410000)) +
+  theme_void() +
+  theme(legend.position = "none")
+p3 <- p + coord_sf(xlim = c(480000, 530000)) +
+  theme_void() +
+  theme(legend.position = "none")
+p4 <- p + coord_sf(xlim = c(570000, 630000)) +
+  theme_void() +
+  theme(legend.position = "none")
+
+p1
+print(p2, vp = grid::viewport(x = .25, y = .225, width = .45, height = .45))
+print(p3, vp = grid::viewport(x = .55, y = .725, width = .45, height = .45))
+print(p4, vp = grid::viewport(x = .75, y = .225, width = .45, height = .45))
 ```
 
 gambia 数据集记录了医院、蚊帐、年龄等变量，下面统计医院和蚊帐对疟疾感染的影响。医院对疟疾感染的影响是积极的，有医院相比于没有医院的地方，感染比例从 40.99\% 下降至 33.29\% 。
@@ -810,7 +868,8 @@ $$
 
 $Y_{i}$ 表示第 $i$ 个村庄感染疟疾的儿童数量，是响应变量，对应整个村子的情况。$N_i$ 表示第 $i$ 个村庄的样本量，$p_{i}$ 表示第 $i$ 个村庄的感染率，其中，$i = 1,2,\cdots, 65$ 。
 
-@Diggle2002 建立如下空间广义线性混合效应模型。
+
+建立如下空间广义线性混合效应模型。
 
 $$
 \begin{aligned}
@@ -819,26 +878,63 @@ $$
 \end{aligned}
 $$
 
-$\alpha$ 是截距，回归系数向量 $\boldsymbol{\beta}^{\top} = (\beta_1,\beta_2,\beta_3,\beta_4,\beta_5,\beta_6,\beta_7,\beta_8,\beta_9)$ 各个参数的含义如下表。
+$\alpha$ 是截距， $\boldsymbol{\beta}^{\top}$ 是回归系数向量，各个分量的含义如下表。
 
-参数           | 实际意义
+参数           | 含义
 :------------- | :-------------
 $\alpha$     | 截距项
 $\beta_1$    | 儿童年龄(age)，以天计
-$\beta_2$    | 蚊帐没有消毒(untreated)
-$\beta_3$    | 蚊帐消毒(treated)
+$\beta_2$    | 蚊帐没有杀虫(untreated)
+$\beta_3$    | 蚊帐有杀虫(treated)
 $\beta_4$    | 村庄周围绿植覆盖度(greenness)
-$\beta_5$    | 村庄是否有医疗中心(PHC)
+$\beta_5$    | 村庄是否被医疗中心覆盖(PHC)
 $\beta_6$    | 村庄在2号区域(1号区域作为参考)
 $\beta_7$    | 村庄在3号区域
 $\beta_8$    | 村庄在4号区域
 $\beta_9$    | 村庄在5号区域
  
-$S(x)$ 是平稳空间高斯过程，自协方差函数 $\mathsf{Cov}(S(x_i),S(x_j)) = \sigma^2\rho(u), u = \|x_i -x_j \|_2$，自相关函数 $\rho(u) = \{2^{\kappa -1}\Gamma(\kappa)\}^{-1}(u/\phi)^{\kappa}\mathcal{K}_{\kappa}(u/\phi),u > 0$ 为 Matérn 型，$Y_{ij} \sim \mathrm{Bernoulli}(p_{ij})$ ，其中 $Y_{ij}$ 表示在第 $i$ 个村庄的第 $j$ 个儿童血液中是否含有疟原虫，有就取 1，没有就取0， $p_{ij}$ 是伯努利分布的成功概率，实际含义是儿童携带疟原虫的可能性。
+$S(x)$ 是平稳空间高斯过程，自协方差函数 $\mathsf{Cov}(S(x_i),S(x_j)) = \sigma^2\rho(u), u = \|x_i -x_j \|_2$，自相关函数 $\rho(u) = \{2^{\kappa -1}\Gamma(\kappa)\}^{-1}(u/\phi)^{\kappa}\mathcal{K}_{\kappa}(u/\phi),u > 0$ 为 Matérn 型，$Y_{ij} \sim \mathrm{Bernoulli}(p_{ij})$ ，其中 $Y_{ij}$ 表示在第 $i$ 个村庄的第 $j$ 个儿童血液中是否含有疟原虫，有就取 1，没有就取 0， $p_{ij}$ 是伯努利分布的成功概率，实际含义是儿童携带疟原虫的可能性。
 
-@Diggle2002 使用贝叶斯 MCMC 算法计算模型参数后验估计值，并主要依赖 **geoRglm** 包实现，计算结果见下表。模型参数的贝叶斯估计，估计的 95\% 的置信区间端点分别来自后验 2.5\% 和97.5\% 分位点，第3列和第4列分别是后验均值和中位数。
+```{r}
+fit_gambia_glm <- glm(pos ~ age + netuse + treated + green + phc,
+  data = gambia, family = binomial(link = "logit")
+)
+summary(fit_gambia_glm)
+logLik(fit_gambia_glm)
+```
 
-| 参数                  |   2.5%分位点   |   97.5%分位点  |   均值 (mean)  |  中位数 (median)  |
+<!-- 残差，变差图，从而确认存在空间结构 -->
+
+```{r}
+library(spaMM)
+fit_gambia_spamm <- fitme(pos ~ age + netuse + treated + 
+                            green + phc + Matern(1 | x + y),
+  family = binomial(link = "logit"), data = gambia
+)
+summary(fit_gambia_spamm)
+```
+
+从输出结果来看，自协方差函数中参数 $\rho = \sqrt{2 \times 0.196} / 3.0419 \times 10^5 = 20582.5$，$\nu = 0.196$。随着距离增加，相关性递减，近邻相关性辐射最远为 20.5825 千米。
+
+::: {.callout-tip}
+设置梅隆型自协方差函数中超参数 $\nu = 0.5$， 则模型中的自协方差函数退化为指数型，在函数 `fitme()` 中设置参数 `fixed`，代码如下：
+
+```{r}
+#| echo: true
+#| eval: false
+
+fit_gambia_spamm <- fitme(pos ~ age + netuse + treated + 
+                            green + phc + Matern(1 | x + y),
+  family = binomial(link = "logit"), data = gambia,
+  fixed = list(nu = 0.5)
+)
+summary(fit_gambia_spamm)
+```
+:::
+
+@Diggle2002 使用贝叶斯方法来推断，采用模糊先验和马尔可夫蒙特卡洛算法获得模型参数后验估计值，并主要依赖 **geoRglm** 包实现。结果显示随着儿童年龄增长感染的可能性增加，蚊帐有保护作用但杀虫效果不显著，来自环境作用的空间效应是存在的，村庄是否被基础健康系统覆盖和周围的植被覆盖度对疟疾的流行度影响很小，至少是不显著的。模型参数的贝叶斯估计结果见下表，估计的 95\% 的置信区间端点分别来自后验 2.5\% 和97.5\% 分位点，第3列和第4列分别是后验均值和中位数。
+
+| 参数                  |   2.5\%分位点   |   97.5\%分位点  |   均值 (mean)  |  中位数 (median)  |
 | :-------------------- | :-------------: | :-------------: | :------------: | :---------------: |
 | $\alpha$              |    -2.966473    |     2.624348    |   -0.131214    |   -0.077961       |
 | $\beta_1$(age)        |     0.000455    |     0.000933    |    0.000689    |    0.000685       |
@@ -853,6 +949,7 @@ $S(x)$ 是平稳空间高斯过程，自协方差函数 $\mathsf{Cov}(S(x_i),S(x
 | $\sigma^2$            |     0.311756    |     1.050227    |    0.585592    |    0.553477       |
 | $\phi$                |     0.915789    |     10.20069    |    2.522294    |    1.422975       |
 | $\kappa$              |     0.079522    |     2.784646    |    1.084108    |    0.937436       |
+
 
 作为对比，在上述模型的基础上添加块金效应 $U_{i}$，其中 $U_{i} \sim \mathcal{N}(0,\nu^2)$，其它符号含义不变。再用 Stan 实现贝叶斯 MCMC 算法估计模型中的各个参数值，计算结果见下表。观察到块金效应占比 $\nu^2 = \tau^2/\sigma^2 = 0.000002$，是一个很小的值，在实际应用中应该可以忽略。 与模型一不同的是模型二的回归系数向量 $\boldsymbol{\beta}$ 不包含 $\beta_6,\ldots,\beta_9$ 四个回归系数，这是因为 geoR 包内的 gambia 数据集缺失与区域有关的标记信息，因此不能复现 @Diggle2002 的结果，但是这里考虑了块金效应。模型参数的贝叶斯估计值和 95\% 的置信区间，第1至4列依次是后验2.5\%、97.5\%分位点、后验均值以及后验中位数。
 
