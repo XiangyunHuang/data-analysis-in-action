@@ -460,7 +460,7 @@ fit_rongelap_spamm <- fitme(counts ~ 1 + Matern(1 | cX + cY) + offset(log(time))
 summary(fit_rongelap_spamm)
 ```
 
-从输出结果来看，与 **glmmTMB** 很接近，模型固定效应的截距项 1.824，随机效应的方差为 0.2973，自协方差函数中参数 $\nu = 0.3642$，$\rho = \sqrt{0.364211759 * 2} / 0.0061486 = 138.8079$（对模型来说，它们是超参数），对数似然函数值为 -1317.551，拟合效果的提升几乎可以忽略。
+从输出结果来看，与 **glmmTMB** 很接近，模型固定效应的截距项 1.824，随机效应的方差为 0.2973，自协方差函数中参数 $\nu = 0.3642$，$\rho = \sqrt{2 \times 0.364211759} / 0.0061486 = 138.8079$（对模型来说，它们是超参数），对数似然函数值为 -1317.551，拟合效果的提升几乎可以忽略。
 
 
 ### 模型预测 {#sec-rongelap-predict}
@@ -895,11 +895,11 @@ $\beta_9$    | 村庄在5号区域
  
 $S(x)$ 是平稳空间高斯过程，自协方差函数 $\mathsf{Cov}(S(x_i),S(x_j)) = \sigma^2\rho(u), u = \|x_i -x_j \|_2$，自相关函数 $\rho(u) = \{2^{\kappa -1}\Gamma(\kappa)\}^{-1}(u/\phi)^{\kappa}\mathcal{K}_{\kappa}(u/\phi),u > 0$ 为 Matérn 型，$Y_{ij} \sim \mathrm{Bernoulli}(p_{ij})$ ，其中 $Y_{ij}$ 表示在第 $i$ 个村庄的第 $j$ 个儿童血液中是否含有疟原虫，有就取 1，没有就取 0， $p_{ij}$ 是伯努利分布的成功概率，实际含义是儿童携带疟原虫的可能性。
 
-
 ```{r}
 fit_gambia_glm <- glm(pos ~ age + netuse + treated + green + phc,
   data = gambia, family = binomial(link = "logit")
 )
+summary(fit_gambia_glm)
 ```
 
 <!-- 残差，变差图，从而确认存在空间结构 -->
@@ -913,8 +913,23 @@ fit_gambia_spamm <- fitme(pos ~ age + netuse + treated +
 summary(fit_gambia_spamm)
 ```
 
-<!-- spaMM 输出结果的说明，与模型参数的对应关系 -->
+从输出结果来看，自协方差函数中参数 $\nu = 0.196$，$\rho = \sqrt{2 \times 0.196} / 3.0419 \times 10^5 = 20582.5$。随着距离增加，相关性递减，近邻相关性辐射最远为 20.5825 千米。
 
+::: {.callout-tip}
+设置梅隆型自协方差函数中超参数 $\nu = 0.5$， 则模型中的自协方差函数退化为指数型，代码如下：
+
+```{r}
+#| echo: true
+#| eval: false
+
+fit_gambia_spamm <- fitme(pos ~ age + netuse + treated + 
+                            green + phc + Matern(1 | x + y),
+  family = binomial(link = "logit"), data = gambia,
+  fixed = list(nu = 0.5)
+)
+summary(fit_gambia_spamm)
+```
+:::
 
 @Diggle2002 使用贝叶斯方法来推断，采用模糊先验和马尔可夫蒙特卡洛算法获得模型参数后验估计值，并主要依赖 **geoRglm** 包实现。结果显示随着儿童年龄增长感染的可能性增加，蚊帐有保护作用但杀虫效果不显著，来自环境作用的空间效应是存在的，村庄是否被基础健康系统覆盖和周围的植被覆盖度对疟疾的流行度影响很小，至少是不显著的。模型参数的贝叶斯估计结果见下表，估计的 95\% 的置信区间端点分别来自后验 2.5\% 和97.5\% 分位点，第3列和第4列分别是后验均值和中位数。
 
