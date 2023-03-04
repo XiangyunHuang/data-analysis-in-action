@@ -909,7 +909,7 @@ $Y_{i}$ 表示第 $i$ 个村庄感染疟疾的儿童数量，是响应变量，�
 作为对比的基础，首先考虑不含空间效应 $S(x_i)$ 和随机效应 $U_i$ 的广义线性模型
 
 ```{r}
-fit_gambia_glm <- glm(pos ~ age + netuse + treated + green + phc + area,
+fit_gambia_glm <- glm(pos ~ age + netuse + treated + green + phc, # + area,
   data = gambia, family = binomial(link = "logit")
 )
 summary(fit_gambia_glm)
@@ -921,42 +921,68 @@ summary(fit_gambia_glm)
 logLik(fit_gambia_glm)
 ```
 
-<!-- 残差，变差图，从而确认存在空间结构 -->
+根据广义线性模型的结果，$\hat{p}_{ij}$ 是 $Y_{ij}$ 的期望，可以提取预测偏差 $Y_{ij}-\hat{p}_{ij}$ 。
 
 ```{r}
-#| eval: false
-#| echo: true
+# gambia$residuals <- fit_gambia_glm$residuals
+gambia$residuals <- residuals(fit_gambia_glm, type = "deviance")
+```
 
-# 残差
-gambia$residuals <- fit_gambia_glm$residuals
-# 预测儿童疟疾感染率
+以及根据儿童的数据，拟合出来的感染疟疾的概率 $\hat{p}_{ij}$ 。
+
+```{r}
 gambia$pred_prob <- predict(fit_gambia_glm, type = "response")
-# 统计各村庄的情况
-gambia_village <- aggregate(data = gambia, cbind("total" = 1, pos, pred_prob, sigmasq = pred_prob * (1 - pred_prob)) ~ x + y + green + phc, FUN = sum)
-gambia_village$residuals <- (gambia_village$pos - gambia_village$pred_prob) / sqrt(gambia_village$sigmasq)
+```
 
-# 从这残差图来看，空间相关性已经没有了
-plot(gambia_village$residuals)
+根据村庄每个儿童的预测感染概率，得到村庄水平下的感染概率 $p_i$ 和残差 $(Y_{i} - p_{i}) / \sigma_i$，其中 $Y_i = \sum_{j=1}^{n_i} Y_{ij}$，而 $n_i$ 表示第 $i$ 个村庄的儿童数，则 $Y_i$ 表示第 $i$ 个村庄感染的人数。$p_i = \sum_{j=1}^{n_i}\hat{p}_{ij}$ 对应于 $Y_i$ 的期望，$\sigma_i^2 = \sum_{j=1}^{n_i}\hat{p}_{ij}(1-\hat{p}_{ij})$ 对应于 $Y_i$ 的方差。
+
+```{r}
+# 统计各村庄的感染情况
+gambia_village <- aggregate(
+  data = gambia,
+  cbind(
+    total = 1, pos, pred_prob,
+    sigmasq = pred_prob * (1 - pred_prob)
+  ) ~ x + y + green + phc, FUN = sum
+)
+gambia_village <- within(gambia_village, {
+  residuals <- (pos - pred_prob) / sqrt(sigmasq)
+  fitted <- pred_prob / total
+})
+```
+```{r}
+#| echo: false
+#| eval: false
+
+# 根据村庄水平下的预测值和拟合误差
+plot(residuals ~ fitted, data = gambia_village)
 # 残差的空间分布
 ggplot(data = gambia_village) +
   geom_point(aes(x = x, y = y, color = residuals)) +
   colorspace::scale_color_continuous_diverging(palette = "Blue-Red") +
   theme_minimal()
-
-# 检查是否存在空间相关性
-library(nlme)
-fit_gambia_village <- gls(residuals ~ 1, data = gambia_village)
-# 残差的变差图
-fit_gambia_village_vario <- Variogram(fit_gambia_village, form = ~ x + y, data = gambia_village, resType = "normalized")
-plot(fit_gambia_village_vario)
-# 相关性最大距离限制 30 公里
-fit_gambia_village_vario2 <- Variogram(fit_gambia_village, form = ~ x + y, data = gambia_village, resType = "normalized", maxDist = 30000)
-plot(fit_gambia_village_vario2)
-
-fit_gambia_village_vario3 <- Variogram(fit_gambia_village, form = ~ x + y, data = gambia_village, resType = "response")
-plot(fit_gambia_village_vario3)
 ```
 
+剔除村庄相关的随机效应（非空间的），拟合残差趋势，得到变差函数。
+
+```{r}
+library(nlme)
+fit_gambia_village <- gls(residuals ~ 1, data = gambia_village)
+fit_gambia_village_vario <- Variogram(fit_gambia_village,
+  form = ~ x + y, data = gambia_village, resType = "response"
+)
+```
+
+根据经验半变差图检查残差中是否存在空间相关性，如果残差的半变差图呈现一条水平线，随着距离的增加，半变差函数值没有变化，则意味着没有空间相关性，否则，存在相关性空间结构。
+
+```{r}
+#| label: fig-gambia-village-vario
+#| fig-cap: "残差的半变差图"
+
+plot(fit_gambia_village_vario)
+```
+
+此时，可以在模型中添加空间效应 $S(x_i)$ ，下面拟合带空间效应的广义线性混合效应模型：
 
 ```{r}
 library(spaMM)
@@ -1001,24 +1027,6 @@ fit_gambia_spamm <- fitme(pos ~ age + netuse + treated +
 | $\sigma^2$            |     0.311756    |     1.050227    |    0.585592    |    0.553477       |
 | $\phi$                |     0.915789    |     10.20069    |    2.522294    |    1.422975       |
 | $\kappa$              |     0.079522    |     2.784646    |    1.084108    |    0.937436       |
-
-
-作为对比，在上述模型的基础上添加块金效应 $U_{i}$，其中 $U_{i} \sim \mathcal{N}(0,\nu^2)$，其它符号含义不变。再用 Stan 实现贝叶斯 MCMC 算法估计模型中的各个参数值，计算结果见下表。观察到块金效应占比 $\nu^2 = \tau^2/\sigma^2 = 0.000002$，是一个很小的值，在实际应用中应该可以忽略。 与模型一不同的是模型二的回归系数向量 $\boldsymbol{\beta}$ 不包含 $\beta_6,\ldots,\beta_9$ 四个回归系数，这是因为 geoR 包内的 gambia 数据集缺失与区域有关的标记信息，因此不能复现 @Diggle2002 的结果，但是这里考虑了块金效应。模型参数的贝叶斯估计值和 95\% 的置信区间，第1至4列依次是后验2.5\%、97.5\%分位点、后验均值以及后验中位数。
-
-| 参数                  |   2.5%分位点   |   97.5%分位点  |   均值 (mean)  |  中位数 (median)  |
-| :-------------------- | :-------------: | :-------------: | :------------: | :---------------: |
-| $\alpha$              |    -4.232073    |     1.114734    |   -1.664353    |   -1.696228       |
-| $\beta_1$(age)        |     0.000442    |     0.000918    |    0.000677    |    0.000676       |
-| $\beta_2$(untreated)  |    -0.684407    |    -0.083811    |   -0.383750    |   -0.385772       |
-| $\beta_3$(treated)    |    -0.778149    |     0.054543    |   -0.355655    |   -0.355632       |
-| $\beta_4$(greenness)  |    -0.039706    |     0.071505    |   -0.018833    |    0.020079       |
-| $\beta_5$(PHC)        |    -0.791741    |     0.180737    |   -0.324738    |   -0.322760       |
-| $\nu^2$               |     0.000002    |     0.515847    |    0.117876    |    0.018630       |
-| $\sigma^2$            |     0.240826    |     1.662284    |    0.793031    |    0.740790       |
-| $\phi$                |     1.242164    |     53.351207   |   11.653717    |    7.032258       |
-| $\kappa$              |     0.150735    |     1.955524    |    0.935064    |    0.830548       |
-
-由于年龄在模型中以天计，所以会发现回归系数 $\beta_1$ 在两个模型中都很小。
 
 
 ### 模型预测 {#sec-gambia-predict}
