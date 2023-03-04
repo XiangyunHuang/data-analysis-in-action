@@ -966,9 +966,8 @@ ggplot(data = gambia_village) +
 剔除村庄相关的随机效应（非空间的），拟合残差趋势，得到变差函数。
 
 ```{r}
-library(nlme)
-fit_gambia_village <- gls(residuals ~ 1, data = gambia_village)
-fit_gambia_village_vario <- Variogram(fit_gambia_village,
+fit_gambia_village <- nlme::gls(residuals ~ 1, data = gambia_village)
+fit_gambia_village_vario <- nlme::Variogram(fit_gambia_village,
   form = ~ x + y, data = gambia_village, resType = "response"
 )
 ```
@@ -978,8 +977,11 @@ fit_gambia_village_vario <- Variogram(fit_gambia_village,
 ```{r}
 #| label: fig-gambia-village-vario
 #| fig-cap: "残差的半变差图"
+#| fig-showtext: true
+#| fig-width: 4
+#| fig-height: 3
 
-plot(fit_gambia_village_vario)
+plot(fit_gambia_village_vario, xlab = "距离（千米）", ylab = "半变差函数值")
 ```
 
 此时，可以在模型中添加空间效应 $S(x_i)$ ，下面拟合带空间效应的广义线性混合效应模型：
