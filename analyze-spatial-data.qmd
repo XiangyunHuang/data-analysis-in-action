@@ -756,7 +756,7 @@ gambia <- readRDS(file = "data/gambia.rds")
 str(gambia)
 ```
 
-横坐标`x`、纵坐标`y`（单位：米）是村庄的位置，是否感染`pos`是响应变量，儿童年龄`age`（单位：天），是否使用蚊帐`netuse`，以及是否对蚊帐杀虫`treated`，植被覆盖度`green`，是否有医院`phc`（National Primary Health Care，简称 PHC），所属调查区域 `area`。不难理解，蚊帐可以阻挡蚊虫，对蚊帐杀虫可以增强蚊帐的隔离效果，植被越多往往蚊虫越多，有医院可以治疗疟疾。gambia 数据集见下 @tbl-gambia-data 。
+横坐标`x`、纵坐标`y`（单位：米）是村庄的位置，是否感染`pos`是响应变量，儿童年龄`age`（单位：天），是否使用蚊帐`netuse`，以及是否对蚊帐杀虫`treated`，植被覆盖度`green`，是否有医院`phc`（National Primary Health Care，简称 PHC），所属调查区域 `area`。不难理解，蚊帐可以阻挡蚊虫，对蚊帐杀虫可以增强蚊帐的隔离效果，植被越多往往蚊虫越多，有医院可以治疗疟疾。`gambia` 数据集见下 @tbl-gambia-data 。
 
 ```{r}
 #| label: tbl-gambia-data
@@ -874,7 +874,29 @@ $$
 Y_{ij} \sim \mathrm{Bernoulli}(1,p_{ij})
 $$ 
 
-$Y_{ij}$ 表示第 $i$ 个村庄的第 $j$ 个儿童是否感染疟疾的响应变量，对应每个人检验结果，感染记为 1，没有感染记为 0。$p_{ij}$ 表示第 $i$ 个村庄的第 $j$ 个儿童的感染率。其中，$i = 1,2,\cdots, 65$ 。 每个儿童感染可能性与很多因素相关，既有环境因素，也有个体因素。
+$Y_{ij}$ 表示第 $i$ 个村庄的第 $j$ 个儿童是否感染疟疾的响应变量，对应每个人血液检验的结果，如果血液中含有疟原虫，表示感染记为 1，否则，没有感染记为 0。$p_{ij}$ 表示第 $i$ 个村庄的第 $j$ 个儿童的感染率，是伯努利分布的成功概率，实际含义是儿童血液中携带疟原虫的可能性。其中，$i = 1,2,\cdots, 65$ 。每个儿童感染可能性与很多因素相关，既有环境因素（周围植被，基础医疗），也有个体因素（年龄、使用蚊帐的情况），建立如下空间广义线性混合效应模型。
+
+$$
+\begin{aligned}
+\log\{p_{ij}/(1-p_{ij})\} &= \alpha + \boldsymbol{\beta}^{\top}z_{ij} + S(x_i) \\
+\log\{p_{ij}/(1-p_{ij})\} &= \alpha + \boldsymbol{\beta}^{\top}z_{ij} + S(x_i) + U_{i}
+\end{aligned}
+$$
+
+如果同一村庄内儿童感染疟疾不是条件独立的，则可以考虑添加随机效应 $U_i$，即认为给定 $U_i$ 和 $S(x_i)$ 的情况下，儿童感染疟疾是独立的。上式中 $\alpha$ 是截距， $\boldsymbol{\beta}^{\top}$ 是回归参数向量，各个分量的含义如下表，$S(x_i)$ 和 $U_i$ 的含义同 @eq-matern-formula 。
+
+参数           | 含义
+:------------- | :-------------
+$\alpha$     | 截距项
+$\beta_1$    | 儿童年龄(age)，以天计
+$\beta_2$    | 使用蚊帐(bednet)
+$\beta_3$    | 蚊帐有杀虫(treated)
+$\beta_4$    | 村庄周围植被覆盖度(greenness)
+$\beta_5$    | 村庄是否被医疗中心覆盖(phc)
+$\beta_6$    | 村庄在2号区域(1号区域作为参考)
+$\beta_7$    | 村庄在3号区域
+$\beta_8$    | 村庄在4号区域
+$\beta_9$    | 村庄在5号区域
 
 - 村庄水平下的建模
 
@@ -884,42 +906,57 @@ $$
 
 $Y_{i}$ 表示第 $i$ 个村庄感染疟疾的儿童数量，是响应变量，对应整个村子的情况。$N_i$ 表示第 $i$ 个村庄的样本量，$p_{i}$ 表示第 $i$ 个村庄的感染率，其中，$i = 1,2,\cdots, 65$ 。
 
-
-建立如下空间广义线性混合效应模型。
-
-$$
-\begin{aligned}
-\log\{p_{ij}/(1-p_{ij})\} &= \alpha + \boldsymbol{\beta}^{\top}z_{ij} + S(x_i) \\
-\log\{p_{ij}/(1-p_{ij})\} &= \alpha + \boldsymbol{\beta}^{\top}z_{ij} + S(x_i) + U_{i}
-\end{aligned}
-$$
-
-$\alpha$ 是截距， $\boldsymbol{\beta}^{\top}$ 是回归系数向量，各个分量的含义如下表。
-
-参数           | 含义
-:------------- | :-------------
-$\alpha$     | 截距项
-$\beta_1$    | 儿童年龄(age)，以天计
-$\beta_2$    | 蚊帐没有杀虫(untreated)
-$\beta_3$    | 蚊帐有杀虫(treated)
-$\beta_4$    | 村庄周围绿植覆盖度(greenness)
-$\beta_5$    | 村庄是否被医疗中心覆盖(PHC)
-$\beta_6$    | 村庄在2号区域(1号区域作为参考)
-$\beta_7$    | 村庄在3号区域
-$\beta_8$    | 村庄在4号区域
-$\beta_9$    | 村庄在5号区域
- 
-$S(x)$ 是平稳空间高斯过程，自协方差函数 $\mathsf{Cov}(S(x_i),S(x_j)) = \sigma^2\rho(u), u = \|x_i -x_j \|_2$，自相关函数 $\rho(u) = \{2^{\kappa -1}\Gamma(\kappa)\}^{-1}(u/\phi)^{\kappa}\mathcal{K}_{\kappa}(u/\phi),u > 0$ 为 Matérn 型，$Y_{ij} \sim \mathrm{Bernoulli}(p_{ij})$ ，其中 $Y_{ij}$ 表示在第 $i$ 个村庄的第 $j$ 个儿童血液中是否含有疟原虫，有就取 1，没有就取 0， $p_{ij}$ 是伯努利分布的成功概率，实际含义是儿童携带疟原虫的可能性。
+作为对比的基础，首先考虑不含空间效应 $S(x_i)$ 和随机效应 $U_i$ 的广义线性模型
 
 ```{r}
 fit_gambia_glm <- glm(pos ~ age + netuse + treated + green + phc + area,
   data = gambia, family = binomial(link = "logit")
 )
 summary(fit_gambia_glm)
+```
+
+年龄越大越易感染疟疾，蚊帐和基础医疗的保护作用都是显著的，相对于区域 1，区域 2 和区域 3 的感染率贡献更低，而区域 5 对感染率的贡献明显更高。杀虫对降低感染率是有正向作用的，植被覆盖越高感染疟疾可能性会增加，但杀虫效果和植被覆盖度都没有达到统计上的显著性。模型的对数似然如下：
+
+```{r}
 logLik(fit_gambia_glm)
 ```
 
 <!-- 残差，变差图，从而确认存在空间结构 -->
+
+```{r}
+#| eval: false
+#| echo: true
+
+# 残差
+gambia$residuals <- fit_gambia_glm$residuals
+# 预测儿童疟疾感染率
+gambia$pred_prob <- predict(fit_gambia_glm, type = "response")
+# 统计各村庄的情况
+gambia_village <- aggregate(data = gambia, cbind("total" = 1, pos, pred_prob, sigmasq = pred_prob * (1 - pred_prob)) ~ x + y + green + phc, FUN = sum)
+gambia_village$residuals <- (gambia_village$pos - gambia_village$pred_prob) / sqrt(gambia_village$sigmasq)
+
+# 从这残差图来看，空间相关性已经没有了
+plot(gambia_village$residuals)
+# 残差的空间分布
+ggplot(data = gambia_village) +
+  geom_point(aes(x = x, y = y, color = residuals)) +
+  colorspace::scale_color_continuous_diverging(palette = "Blue-Red") +
+  theme_minimal()
+
+# 检查是否存在空间相关性
+library(nlme)
+fit_gambia_village <- gls(residuals ~ 1, data = gambia_village)
+# 残差的变差图
+fit_gambia_village_vario <- Variogram(fit_gambia_village, form = ~ x + y, data = gambia_village, resType = "normalized")
+plot(fit_gambia_village_vario)
+# 相关性最大距离限制 30 公里
+fit_gambia_village_vario2 <- Variogram(fit_gambia_village, form = ~ x + y, data = gambia_village, resType = "normalized", maxDist = 30000)
+plot(fit_gambia_village_vario2)
+
+fit_gambia_village_vario3 <- Variogram(fit_gambia_village, form = ~ x + y, data = gambia_village, resType = "response")
+plot(fit_gambia_village_vario3)
+```
+
 
 ```{r}
 library(spaMM)
