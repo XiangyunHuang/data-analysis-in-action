@@ -781,17 +781,13 @@ gambia_agg <- aggregate(
 )
 ```
 
-数据集 gambia 中变量 `x` 和 `y` 分别为村庄的横、纵坐标，参考系是 UTM。下面将 UTM 坐标系转化为 WGS 84 坐标系，以便将疟疾观测数据和冈比亚地形数据绘制在一幅图上。
+数据集 gambia 中变量 `x` 和 `y` 分别为村庄的横、纵坐标，参考系是 [UTM zone 28N](https://epsg.io/32628)，EPSG 代码是 32628。下面将数据集 gambia 从 data.frame 类型转化为 POINT 类型，并设置坐标参考系 `EPSG:32628`，接着将 `gmb_map` 数据从 SpatVector 类型转为 MULTIPOLYGON 类型，再将其参考系从 WGS 84 转为 UTM zone 28N，以便将疟疾观测数据和冈比亚行政区划数据绘制在一幅图上。
 
 ```{r}
 library(sf)
-# 转化为 sf 对象
-gambia_agg <- st_as_sf(gambia_agg, coords = c("x", "y"))
-# 设置调查数据的坐标参考系
-st_crs(gambia_agg) <- st_crs(sp::CRS("+proj=utm +zone=28"))
-# 将 gmb_map 数据从 SpatVector 类型转为 MULTIPOLYGON 类型
+gambia_agg <- st_as_sf(gambia_agg, coords = c("x", "y"), crs = 32628)
 gambia_borders <- st_as_sf(gmb_map)
-gambia_borders <- st_transform(gambia_borders, crs = sp::CRS("+proj=utm +zone=28"))
+gambia_borders <- st_transform(gambia_borders, crs = 32628)
 ```
 
 远离河流，蚊虫相对会少一些，海拔应该也是重要的变量，因此，根据冈比亚海拔数据获取各个村子的海拔高度，以便后续放入模型。下面根据 gambia_agg 从 gmb_alt 中抽取海拔数据，并将获得的海拔数据添加到 gmb_alt 数据集上，代码如下：
