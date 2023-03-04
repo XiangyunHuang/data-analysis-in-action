@@ -742,30 +742,31 @@ ggplot() +
   theme_minimal() +
   labs(x = "经度", y = "纬度", fill = "海拔")
 ```
+```{r}
+#| eval: false
+#| echo: false
 
-Paulo J. Ribeiro Jr 将疟疾调查数据、冈比亚地区边界数据打包在 **geoR** 包内，加载和查看调查数据的代码如下：
+library(terra)
+plot(gmb_alt, fun = function() lines(gmb_map), col = hcl.colors(50))
+```
+
+Paulo J. Ribeiro Jr 将疟疾调查数据、冈比亚地区边界数据打包在 **geoR** 包内，在数据集上添加了区域标记后，加载和查看调查数据的代码如下：
 
 ```{r}
 # Gambia 儿童疟疾感染数据
-data(gambia, package = "geoR")
+gambia <- readRDS(file = "data/gambia.rds")
 # 查看 gambia 数据集
 str(gambia)
 ```
 
-横坐标`x`、纵坐标`y`（单位：米）是村庄的位置，是否感染`pos`是响应变量，儿童年龄`age`（单位：天），是否使用蚊帐`netuse`，以及是否对蚊帐杀虫`treated`，植被覆盖度`green`，是否有医院`phc`（National Primary Health Care，简称 PHC）。不难理解，蚊帐可以阻挡蚊虫，对蚊帐杀虫可以增强蚊帐的隔离效果，植被越多往往蚊虫越多，有医院可以治疗疟疾。gambia 数据集见下 @tbl-gambia-data 。
+横坐标`x`、纵坐标`y`（单位：米）是村庄的位置，是否感染`pos`是响应变量，儿童年龄`age`（单位：天），是否使用蚊帐`netuse`，以及是否对蚊帐杀虫`treated`，植被覆盖度`green`，是否有医院`phc`（National Primary Health Care，简称 PHC），所属调查区域 `area`。不难理解，蚊帐可以阻挡蚊虫，对蚊帐杀虫可以增强蚊帐的隔离效果，植被越多往往蚊虫越多，有医院可以治疗疟疾。gambia 数据集见下 @tbl-gambia-data 。
 
 ```{r}
 #| label: tbl-gambia-data
 #| tbl-cap: "各村庄儿童是否感染疟疾的统计数据（部分）"
 #| echo: false
 
-knitr::kable(head(gambia), row.names = F,
-  col.names = c(
-    "横坐标", "纵坐标", "是否感染", "年龄",
-    "是否有蚊帐", "是否杀虫",
-    "植被覆盖度", "是否有医院"
-  )
-)
+knitr::kable(head(gambia), row.names = F)
 ```
 
 
@@ -775,8 +776,8 @@ knitr::kable(head(gambia), row.names = F,
 
 ```{r}
 gambia_agg <- aggregate(
-  x = cbind(pos, netuse, treated) ~ x + y + green + phc,
-  data = gambia, FUN = function(x) sum(x) / length(x)
+  pos ~ x + y + green + phc, data = gambia, 
+  FUN = function(x) sum(x) / length(x)
 )
 ```
 
@@ -811,9 +812,20 @@ gambia_agg$alt <- terra::extract(gmb_alt, gambia_agg2, ID = FALSE)
 #| fig-height: 5.5
 #| fig-showtext: true
 
+# 调查区域标记
+geom <- st_sfc(
+  st_point(c(-16, 13.7)),
+  st_point(c(-16.2, 13.1)),
+  st_point(c(-15, 13.4)),
+  st_point(c(-14, 13.7)),
+  st_point(c(-14, 13.2))
+)
+sf_area = st_sf(area = 1:5, geometry = geom, crs = 4326)
+# 主要部分
 p <- ggplot() +
   geom_sf(data = gambia_borders, fill = NA) +
   geom_sf(data = gambia_agg, aes(color = pos)) +
+  geom_sf_label(data = sf_area, aes(label = area)) +
   scale_color_viridis_c(option = "plasma", labels = scales::percent) 
 
 p1 <- p +
@@ -845,6 +857,12 @@ prop.table(xtabs( ~ phc + pos, data = gambia), margin = 1)
 
 ```{r}
 prop.table(xtabs( ~ netuse + pos, data = gambia), margin = 1)
+```
+
+各个调查区域的感染情况差异也很大，推测和地区发展水平有关。
+
+```{r}
+prop.table(xtabs( ~ area + pos, data = gambia), margin = 1)
 ```
 
 医院、蚊帐的影响都是非常积极且显著的，符合大家的认知。
@@ -896,7 +914,7 @@ $\beta_9$    | 村庄在5号区域
 $S(x)$ 是平稳空间高斯过程，自协方差函数 $\mathsf{Cov}(S(x_i),S(x_j)) = \sigma^2\rho(u), u = \|x_i -x_j \|_2$，自相关函数 $\rho(u) = \{2^{\kappa -1}\Gamma(\kappa)\}^{-1}(u/\phi)^{\kappa}\mathcal{K}_{\kappa}(u/\phi),u > 0$ 为 Matérn 型，$Y_{ij} \sim \mathrm{Bernoulli}(p_{ij})$ ，其中 $Y_{ij}$ 表示在第 $i$ 个村庄的第 $j$ 个儿童血液中是否含有疟原虫，有就取 1，没有就取 0， $p_{ij}$ 是伯努利分布的成功概率，实际含义是儿童携带疟原虫的可能性。
 
 ```{r}
-fit_gambia_glm <- glm(pos ~ age + netuse + treated + green + phc,
+fit_gambia_glm <- glm(pos ~ age + netuse + treated + green + phc + area,
   data = gambia, family = binomial(link = "logit")
 )
 summary(fit_gambia_glm)
@@ -908,13 +926,13 @@ logLik(fit_gambia_glm)
 ```{r}
 library(spaMM)
 fit_gambia_spamm <- fitme(pos ~ age + netuse + treated + 
-                            green + phc + Matern(1 | x + y),
+                            green + phc + area + Matern(1 | x + y),
   family = binomial(link = "logit"), data = gambia
 )
 summary(fit_gambia_spamm)
 ```
 
-从输出结果来看，自协方差函数中参数 $\rho = \sqrt{2 \times 0.196} / 3.0419 \times 10^5 = 20582.5$，$\nu = 0.196$。随着距离增加，相关性递减，近邻相关性辐射最远为 20.5825 千米。
+从输出结果来看，自协方差函数中参数 $\rho = \sqrt{2 \times 0.2587} / 3.154 \times 10^4 = 2280.613$，$\nu = 0.2587$。随着距离增加，相关性递减，近邻相关性辐射最远为 2280.613 米。
 
 ::: {.callout-tip}
 设置梅隆型自协方差函数中超参数 $\nu = 0.5$， 则模型中的自协方差函数退化为指数型，在函数 `fitme()` 中设置参数 `fixed`，代码如下：
@@ -924,11 +942,10 @@ summary(fit_gambia_spamm)
 #| eval: false
 
 fit_gambia_spamm <- fitme(pos ~ age + netuse + treated + 
-                            green + phc + Matern(1 | x + y),
+                            green + phc + area + Matern(1 | x + y),
   family = binomial(link = "logit"), data = gambia,
   fixed = list(nu = 0.5)
 )
-summary(fit_gambia_spamm)
 ```
 :::
 
