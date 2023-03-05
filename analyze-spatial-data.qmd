@@ -909,7 +909,7 @@ $Y_{i}$ 表示第 $i$ 个村庄感染疟疾的儿童数量，是响应变量，�
 作为对比的基础，首先考虑不含空间效应 $S(x_i)$ 和随机效应 $U_i$ 的广义线性模型
 
 ```{r}
-fit_gambia_glm <- glm(pos ~ age + netuse + treated + green + phc, # + area,
+fit_gambia_glm <- glm(pos ~ age + netuse + treated + green + phc + area,
   data = gambia, family = binomial(link = "logit")
 )
 summary(fit_gambia_glm)
@@ -946,7 +946,6 @@ gambia_village <- aggregate(
 )
 gambia_village <- within(gambia_village, {
   residuals <- (pos - pred_prob) / sqrt(sigmasq)
-  fitted <- pred_prob / total
 })
 ```
 ```{r}
@@ -980,7 +979,11 @@ fit_gambia_village_vario <- nlme::Variogram(fit_gambia_village,
 #| fig-width: 5
 #| fig-height: 4
 
-plot(fit_gambia_village_vario, xlab = "距离", ylab = "半变差函数值")
+plot(fit_gambia_village_vario, scales = list(
+    # 去掉图形上边、右边多余的刻度线
+    x = list(alternating = 1, tck = c(1, 0)),
+    y = list(alternating = 1, tck = c(1, 0))
+  ), xlab = "距离", ylab = "半变差函数值")
 ```
 
 此时，可以在模型中添加空间效应 $S(x_i)$ ，下面拟合带空间效应的广义线性混合效应模型：
