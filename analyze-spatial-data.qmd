@@ -412,10 +412,7 @@ mesh_matern$rho_math <- paste("rho==", mesh_matern$rho, sep = "")
 ggplot(data = mesh_matern, aes(x = x, y = fv)) +
   geom_line(aes(color = nu_math)) +
   facet_wrap(vars(rho_math), ncol = 1, labeller = ggplot2::label_parsed) +
-  scale_color_manual(
-    values = c("#E41A1C", "#377EB8", "#4DAF4A"),
-    labels = expression(nu == 0.5, nu == 1.5, nu == 2.5)
-  ) +
+  scale_color_grey(labels = expression(nu == 0.5, nu == 1.5, nu == 2.5)) +
   theme_minimal() +
   labs(x = "距离", y = "相关性", color = expression(nu))
 ```
@@ -742,30 +739,31 @@ ggplot() +
   theme_minimal() +
   labs(x = "经度", y = "纬度", fill = "海拔")
 ```
+```{r}
+#| eval: false
+#| echo: false
 
-Paulo J. Ribeiro Jr 将疟疾调查数据、冈比亚地区边界数据打包在 **geoR** 包内，加载和查看调查数据的代码如下：
+library(terra)
+plot(gmb_alt, fun = function() lines(gmb_map), col = hcl.colors(50))
+```
+
+Paulo J. Ribeiro Jr 将疟疾调查数据、冈比亚地区边界数据打包在 **geoR** 包内，在数据集上添加了区域标记后，加载和查看调查数据的代码如下：
 
 ```{r}
 # Gambia 儿童疟疾感染数据
-data(gambia, package = "geoR")
+gambia <- readRDS(file = "data/gambia.rds")
 # 查看 gambia 数据集
 str(gambia)
 ```
 
-横坐标`x`、纵坐标`y`（单位：米）是村庄的位置，是否感染`pos`是响应变量，儿童年龄`age`（单位：天），是否使用蚊帐`netuse`，以及是否对蚊帐杀虫`treated`，植被覆盖度`green`，是否有医院`phc`（National Primary Health Care，简称 PHC）。不难理解，蚊帐可以阻挡蚊虫，对蚊帐杀虫可以增强蚊帐的隔离效果，植被越多往往蚊虫越多，有医院可以治疗疟疾。gambia 数据集见下 @tbl-gambia-data 。
+横坐标`x`、纵坐标`y`（单位：米）是村庄的位置，是否感染`pos`是响应变量，儿童年龄`age`（单位：天），是否使用蚊帐`netuse`，以及是否对蚊帐杀虫`treated`，植被覆盖度`green`，是否有医院`phc`（National Primary Health Care，简称 PHC），所属调查区域 `area`。不难理解，蚊帐可以阻挡蚊虫，对蚊帐杀虫可以增强蚊帐的隔离效果，植被越多往往蚊虫越多，有医院可以治疗疟疾。`gambia` 数据集见下 @tbl-gambia-data 。
 
 ```{r}
 #| label: tbl-gambia-data
 #| tbl-cap: "各村庄儿童是否感染疟疾的统计数据（部分）"
 #| echo: false
 
-knitr::kable(head(gambia), row.names = F,
-  col.names = c(
-    "横坐标", "纵坐标", "是否感染", "年龄",
-    "是否有蚊帐", "是否杀虫",
-    "植被覆盖度", "是否有医院"
-  )
-)
+knitr::kable(head(gambia), row.names = F)
 ```
 
 
@@ -775,22 +773,18 @@ knitr::kable(head(gambia), row.names = F,
 
 ```{r}
 gambia_agg <- aggregate(
-  x = cbind(pos, netuse, treated) ~ x + y + green + phc,
-  data = gambia, FUN = function(x) sum(x) / length(x)
+  pos ~ x + y + green + phc, data = gambia, 
+  FUN = function(x) sum(x) / length(x)
 )
 ```
 
-数据集 gambia 中变量 `x` 和 `y` 分别为村庄的横、纵坐标，参考系是 UTM。下面将 UTM 坐标系转化为 WGS 84 坐标系，以便将疟疾观测数据和冈比亚地形数据绘制在一幅图上。
+数据集 gambia 中变量 `x` 和 `y` 分别为村庄的横、纵坐标，参考系是 [UTM zone 28N](https://epsg.io/32628)，EPSG 代码是 32628。下面将数据集 gambia 从 data.frame 类型转化为 POINT 类型，并设置坐标参考系 `EPSG:32628`，接着将 `gmb_map` 数据从 SpatVector 类型转为 MULTIPOLYGON 类型，再将其参考系从 WGS 84 转为 UTM zone 28N，以便将疟疾观测数据和冈比亚行政区划数据绘制在一幅图上。
 
 ```{r}
 library(sf)
-# 转化为 sf 对象
-gambia_agg <- st_as_sf(gambia_agg, coords = c("x", "y"))
-# 设置调查数据的坐标参考系
-st_crs(gambia_agg) <- st_crs(sp::CRS("+proj=utm +zone=28"))
-# 将 gmb_map 数据从 SpatVector 类型转为 MULTIPOLYGON 类型
+gambia_agg <- st_as_sf(gambia_agg, coords = c("x", "y"), crs = 32628)
 gambia_borders <- st_as_sf(gmb_map)
-gambia_borders <- st_transform(gambia_borders, crs = sp::CRS("+proj=utm +zone=28"))
+gambia_borders <- st_transform(gambia_borders, crs = 32628)
 ```
 
 远离河流，蚊虫相对会少一些，海拔应该也是重要的变量，因此，根据冈比亚海拔数据获取各个村子的海拔高度，以便后续放入模型。下面根据 gambia_agg 从 gmb_alt 中抽取海拔数据，并将获得的海拔数据添加到 gmb_alt 数据集上，代码如下：
@@ -811,6 +805,16 @@ gambia_agg$alt <- terra::extract(gmb_alt, gambia_agg2, ID = FALSE)
 #| fig-height: 5.5
 #| fig-showtext: true
 
+# 调查区域标记
+geom <- st_sfc(
+  st_point(c(-16.2, 13.1)),
+  st_point(c(-16.1, 13.65)),
+  st_point(c(-15, 13.42)),
+  st_point(c(-14, 13.62)),
+  st_point(c(-14, 13.25))
+)
+sf_area <- st_sf(area = 1:5, geometry = geom, crs = 4326)
+# 主要部分
 p <- ggplot() +
   geom_sf(data = gambia_borders, fill = NA) +
   geom_sf(data = gambia_agg, aes(color = pos)) +
@@ -819,13 +823,19 @@ p <- ggplot() +
 p1 <- p +
   theme_minimal() +
   labs(x = "经度", y = "纬度", color = "感染率")
-p2 <- p + coord_sf(xlim = c(340000, 410000)) +
+p2 <- p + 
+  geom_sf_label(data = sf_area, aes(label = area)) +
+  coord_sf(xlim = c(340000, 410000)) +
   theme_void() +
   theme(legend.position = "none")
-p3 <- p + coord_sf(xlim = c(480000, 530000)) +
+p3 <- p + 
+  geom_sf_label(data = sf_area, aes(label = area)) +
+  coord_sf(xlim = c(480000, 530000)) +
   theme_void() +
   theme(legend.position = "none")
-p4 <- p + coord_sf(xlim = c(570000, 630000)) +
+p4 <- p + 
+  geom_sf_label(data = sf_area, aes(label = area)) +
+  coord_sf(xlim = c(570000, 630000)) +
   theme_void() +
   theme(legend.position = "none")
 
@@ -847,6 +857,12 @@ prop.table(xtabs( ~ phc + pos, data = gambia), margin = 1)
 prop.table(xtabs( ~ netuse + pos, data = gambia), margin = 1)
 ```
 
+各个调查区域的感染情况差异也很大，推测和地区发展水平有关。
+
+```{r}
+prop.table(xtabs( ~ area + pos, data = gambia), margin = 1)
+```
+
 医院、蚊帐的影响都是非常积极且显著的，符合大家的认知。
 
 
@@ -858,7 +874,29 @@ $$
 Y_{ij} \sim \mathrm{Bernoulli}(1,p_{ij})
 $$ 
 
-$Y_{ij}$ 表示第 $i$ 个村庄的第 $j$ 个儿童是否感染疟疾的响应变量，对应每个人检验结果，感染记为 1，没有感染记为 0。$p_{ij}$ 表示第 $i$ 个村庄的第 $j$ 个儿童的感染率。其中，$i = 1,2,\cdots, 65$ 。 每个儿童感染可能性与很多因素相关，既有环境因素，也有个体因素。
+$Y_{ij}$ 表示第 $i$ 个村庄的第 $j$ 个儿童是否感染疟疾的响应变量，对应每个人血液检验的结果，如果血液中含有疟原虫，表示感染记为 1，否则，没有感染记为 0。$p_{ij}$ 表示第 $i$ 个村庄的第 $j$ 个儿童的感染率，是伯努利分布的成功概率，实际含义是儿童血液中携带疟原虫的可能性。其中，$i = 1,2,\cdots, 65$ 。每个儿童感染可能性与很多因素相关，既有环境因素（周围植被，基础医疗），也有个体因素（年龄、使用蚊帐的情况），建立如下空间广义线性混合效应模型。
+
+$$
+\begin{aligned}
+\log\{p_{ij}/(1-p_{ij})\} &= \alpha + \boldsymbol{\beta}^{\top}z_{ij} + S(x_i) \\
+\log\{p_{ij}/(1-p_{ij})\} &= \alpha + \boldsymbol{\beta}^{\top}z_{ij} + S(x_i) + U_{i}
+\end{aligned}
+$$
+
+如果同一村庄内儿童感染疟疾不是条件独立的，则可以考虑添加随机效应 $U_i$，即认为给定 $U_i$ 和 $S(x_i)$ 的情况下，儿童感染疟疾是独立的。上式中 $\alpha$ 是截距， $\boldsymbol{\beta}^{\top}$ 是回归参数向量，各个分量的含义如下表，$S(x_i)$ 和 $U_i$ 的含义同 @eq-matern-formula 。
+
+参数           | 含义
+:------------- | :-------------
+$\alpha$     | 截距项
+$\beta_1$    | 儿童年龄(age)，以天计
+$\beta_2$    | 使用蚊帐(bednet)
+$\beta_3$    | 蚊帐有杀虫(treated)
+$\beta_4$    | 村庄周围植被覆盖度(greenness)
+$\beta_5$    | 村庄是否被医疗中心覆盖(phc)
+$\beta_6$    | 村庄在2号区域(1号区域作为参考)
+$\beta_7$    | 村庄在3号区域
+$\beta_8$    | 村庄在4号区域
+$\beta_9$    | 村庄在5号区域
 
 - 村庄水平下的建模
 
@@ -868,53 +906,98 @@ $$
 
 $Y_{i}$ 表示第 $i$ 个村庄感染疟疾的儿童数量，是响应变量，对应整个村子的情况。$N_i$ 表示第 $i$ 个村庄的样本量，$p_{i}$ 表示第 $i$ 个村庄的感染率，其中，$i = 1,2,\cdots, 65$ 。
 
-
-建立如下空间广义线性混合效应模型。
-
-$$
-\begin{aligned}
-\log\{p_{ij}/(1-p_{ij})\} &= \alpha + \boldsymbol{\beta}^{\top}z_{ij} + S(x_i) \\
-\log\{p_{ij}/(1-p_{ij})\} &= \alpha + \boldsymbol{\beta}^{\top}z_{ij} + S(x_i) + U_{i}
-\end{aligned}
-$$
-
-$\alpha$ 是截距， $\boldsymbol{\beta}^{\top}$ 是回归系数向量，各个分量的含义如下表。
-
-参数           | 含义
-:------------- | :-------------
-$\alpha$     | 截距项
-$\beta_1$    | 儿童年龄(age)，以天计
-$\beta_2$    | 蚊帐没有杀虫(untreated)
-$\beta_3$    | 蚊帐有杀虫(treated)
-$\beta_4$    | 村庄周围绿植覆盖度(greenness)
-$\beta_5$    | 村庄是否被医疗中心覆盖(PHC)
-$\beta_6$    | 村庄在2号区域(1号区域作为参考)
-$\beta_7$    | 村庄在3号区域
-$\beta_8$    | 村庄在4号区域
-$\beta_9$    | 村庄在5号区域
- 
-$S(x)$ 是平稳空间高斯过程，自协方差函数 $\mathsf{Cov}(S(x_i),S(x_j)) = \sigma^2\rho(u), u = \|x_i -x_j \|_2$，自相关函数 $\rho(u) = \{2^{\kappa -1}\Gamma(\kappa)\}^{-1}(u/\phi)^{\kappa}\mathcal{K}_{\kappa}(u/\phi),u > 0$ 为 Matérn 型，$Y_{ij} \sim \mathrm{Bernoulli}(p_{ij})$ ，其中 $Y_{ij}$ 表示在第 $i$ 个村庄的第 $j$ 个儿童血液中是否含有疟原虫，有就取 1，没有就取 0， $p_{ij}$ 是伯努利分布的成功概率，实际含义是儿童携带疟原虫的可能性。
+作为对比的基础，首先考虑不含空间效应 $S(x_i)$ 和随机效应 $U_i$ 的广义线性模型
 
 ```{r}
-fit_gambia_glm <- glm(pos ~ age + netuse + treated + green + phc,
+fit_gambia_glm <- glm(pos ~ age + netuse + treated + green + phc + area,
   data = gambia, family = binomial(link = "logit")
 )
 summary(fit_gambia_glm)
+```
+
+年龄越大越易感染疟疾，蚊帐和基础医疗的保护作用都是显著的，相对于区域 1，区域 2 和区域 3 的感染率贡献更低，而区域 5 对感染率的贡献明显更高。杀虫对降低感染率是有正向作用的，植被覆盖越高感染疟疾可能性会增加，但杀虫效果和植被覆盖度都没有达到统计上的显著性。模型的对数似然如下：
+
+```{r}
 logLik(fit_gambia_glm)
 ```
 
-<!-- 残差，变差图，从而确认存在空间结构 -->
+根据广义线性模型的结果，$\hat{p}_{ij}$ 是 $Y_{ij}$ 的期望，可以提取预测偏差 $Y_{ij}-\hat{p}_{ij}$ 。
+
+```{r}
+gambia$residuals <- residuals(fit_gambia_glm, type = "deviance")
+```
+
+以及根据儿童的数据，拟合出来的感染疟疾的概率 $\hat{p}_{ij}$ 。
+
+```{r}
+gambia$pred_prob <- predict(fit_gambia_glm, type = "response")
+```
+
+根据村庄每个儿童的预测感染概率，得到村庄水平下的感染概率 $p_i$ 和残差 $(Y_{i} - p_{i}) / \sigma_i$，其中 $Y_i = \sum_{j=1}^{n_i} Y_{ij}$，而 $n_i$ 表示第 $i$ 个村庄的儿童数，则 $Y_i$ 表示第 $i$ 个村庄感染的人数。$p_i = \sum_{j=1}^{n_i}\hat{p}_{ij}$ 对应于 $Y_i$ 的期望，$\sigma_i^2 = \sum_{j=1}^{n_i}\hat{p}_{ij}(1-\hat{p}_{ij})$ 对应于 $Y_i$ 的方差。
+
+```{r}
+# 统计各村庄的感染情况
+gambia_village <- aggregate(
+  data = gambia,
+  cbind(
+    total = 1, pos, pred_prob,
+    sigmasq = pred_prob * (1 - pred_prob)
+  ) ~ x + y + green + phc, FUN = sum
+)
+gambia_village <- within(gambia_village, {
+  residuals <- (pos - pred_prob) / sqrt(sigmasq)
+})
+```
+```{r}
+#| echo: false
+#| eval: false
+
+# 根据村庄水平下的预测值和拟合误差
+plot(residuals ~ fitted, data = gambia_village)
+# 残差的空间分布
+ggplot(data = gambia_village) +
+  geom_point(aes(x = x, y = y, color = residuals)) +
+  colorspace::scale_color_continuous_diverging(palette = "Blue-Red") +
+  theme_minimal()
+```
+
+剔除村庄相关的随机效应（非空间的），拟合残差趋势，得到变差函数。
+
+```{r}
+fit_gambia_village <- nlme::gls(residuals ~ 1, data = gambia_village)
+fit_gambia_village_vario <- nlme::Variogram(fit_gambia_village,
+  form = ~ x + y, data = gambia_village, resType = "response"
+)
+```
+
+根据经验半变差图检查残差中是否存在空间相关性。如果残差的半变差图呈现一条水平线，随着距离的增加，半变差函数值没有变化，则意味着没有空间相关性，否则，存在相关性空间结构。
+
+```{r}
+#| label: fig-gambia-village-vario
+#| fig-cap: "残差的半变差图"
+#| fig-showtext: true
+#| fig-width: 5
+#| fig-height: 4
+
+plot(fit_gambia_village_vario, scales = list(
+    # 去掉图形上边、右边多余的刻度线
+    x = list(alternating = 1, tck = c(1, 0)),
+    y = list(alternating = 1, tck = c(1, 0))
+  ), xlab = "距离", ylab = "半变差函数值")
+```
+
+此时，可以在模型中添加空间效应 $S(x_i)$ ，下面拟合带空间效应的广义线性混合效应模型：
 
 ```{r}
 library(spaMM)
 fit_gambia_spamm <- fitme(pos ~ age + netuse + treated + 
-                            green + phc + Matern(1 | x + y),
+                            green + phc + area + Matern(1 | x + y),
   family = binomial(link = "logit"), data = gambia
 )
 summary(fit_gambia_spamm)
 ```
 
-从输出结果来看，自协方差函数中参数 $\rho = \sqrt{2 \times 0.196} / 3.0419 \times 10^5 = 20582.5$，$\nu = 0.196$。随着距离增加，相关性递减，近邻相关性辐射最远为 20.5825 千米。
+从输出结果来看，自协方差函数中参数 $\rho = \sqrt{2 \times 0.2587} / 3.154 \times 10^4 = 2280.613$，$\nu = 0.2587$。随着距离增加，相关性递减，近邻相关性辐射最远为 2280.613 米。
 
 ::: {.callout-tip}
 设置梅隆型自协方差函数中超参数 $\nu = 0.5$， 则模型中的自协方差函数退化为指数型，在函数 `fitme()` 中设置参数 `fixed`，代码如下：
@@ -924,11 +1007,10 @@ summary(fit_gambia_spamm)
 #| eval: false
 
 fit_gambia_spamm <- fitme(pos ~ age + netuse + treated + 
-                            green + phc + Matern(1 | x + y),
+                            green + phc + area + Matern(1 | x + y),
   family = binomial(link = "logit"), data = gambia,
   fixed = list(nu = 0.5)
 )
-summary(fit_gambia_spamm)
 ```
 :::
 
@@ -949,24 +1031,6 @@ summary(fit_gambia_spamm)
 | $\sigma^2$            |     0.311756    |     1.050227    |    0.585592    |    0.553477       |
 | $\phi$                |     0.915789    |     10.20069    |    2.522294    |    1.422975       |
 | $\kappa$              |     0.079522    |     2.784646    |    1.084108    |    0.937436       |
-
-
-作为对比，在上述模型的基础上添加块金效应 $U_{i}$，其中 $U_{i} \sim \mathcal{N}(0,\nu^2)$，其它符号含义不变。再用 Stan 实现贝叶斯 MCMC 算法估计模型中的各个参数值，计算结果见下表。观察到块金效应占比 $\nu^2 = \tau^2/\sigma^2 = 0.000002$，是一个很小的值，在实际应用中应该可以忽略。 与模型一不同的是模型二的回归系数向量 $\boldsymbol{\beta}$ 不包含 $\beta_6,\ldots,\beta_9$ 四个回归系数，这是因为 geoR 包内的 gambia 数据集缺失与区域有关的标记信息，因此不能复现 @Diggle2002 的结果，但是这里考虑了块金效应。模型参数的贝叶斯估计值和 95\% 的置信区间，第1至4列依次是后验2.5\%、97.5\%分位点、后验均值以及后验中位数。
-
-| 参数                  |   2.5%分位点   |   97.5%分位点  |   均值 (mean)  |  中位数 (median)  |
-| :-------------------- | :-------------: | :-------------: | :------------: | :---------------: |
-| $\alpha$              |    -4.232073    |     1.114734    |   -1.664353    |   -1.696228       |
-| $\beta_1$(age)        |     0.000442    |     0.000918    |    0.000677    |    0.000676       |
-| $\beta_2$(untreated)  |    -0.684407    |    -0.083811    |   -0.383750    |   -0.385772       |
-| $\beta_3$(treated)    |    -0.778149    |     0.054543    |   -0.355655    |   -0.355632       |
-| $\beta_4$(greenness)  |    -0.039706    |     0.071505    |   -0.018833    |    0.020079       |
-| $\beta_5$(PHC)        |    -0.791741    |     0.180737    |   -0.324738    |   -0.322760       |
-| $\nu^2$               |     0.000002    |     0.515847    |    0.117876    |    0.018630       |
-| $\sigma^2$            |     0.240826    |     1.662284    |    0.793031    |    0.740790       |
-| $\phi$                |     1.242164    |     53.351207   |   11.653717    |    7.032258       |
-| $\kappa$              |     0.150735    |     1.955524    |    0.935064    |    0.830548       |
-
-由于年龄在模型中以天计，所以会发现回归系数 $\beta_1$ 在两个模型中都很小。
 
 
 ### 模型预测 {#sec-gambia-predict}
