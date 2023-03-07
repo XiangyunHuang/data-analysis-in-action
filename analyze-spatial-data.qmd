@@ -19,9 +19,9 @@ source("_common.R")
 1998 年 Peter J. Diggle 等提出蒙特卡罗极大似然方法估计不带块金效应的响应变量服从泊松分布的空间广义混合效应模型的参数，分析了朗格拉普岛上核污染浓度的空间分布[@Diggle1998]。2004 年 Ole F Christensen 在 Peter J. Diggle 等人的基础上添加了块金效应，同样使用蒙特卡罗极大似然方法估计了模型中的参数[@Christensen2004]。由于现有算法表现受真实数据影响比较大，随后，2006 年 Ole F Christensen 等又提出更加稳健的 Langevin-Metropolis 算法，辅以重参数化技术提升算法性能，可以在马尔可夫链混合和收敛方面独立于数据，并在朗格拉普岛核污染数据中做了实验，体现出预期效果[@Christensen2006]。2015 年 Wagner Hugo Bonat 等在朗格拉普岛核污染数据和蚕豆根腐病数据中比较了 MCMC 算法，MCEM 算法和修正的拉普拉斯近似算法，发现拉普拉斯近似可以提供类似的结果，基于剖面似然可以获得模型参数的置信区间，相比于模拟算法，不需要算法调参和收敛分析 [@Wagner2015]。2016 年 Erlis Ruli 等提出改进的拉普拉斯近似算法，用于边际似然函数，处理高维随机效应的积分，比较了现有的一些基于似然函数的推断方法，体现出渐进误差更小，在朗格拉普岛核污染浓度预测中更加精确[@Erlis2016]。
 
 
-## 预测核污染的分布 {#sec-nuclear-pollution-concentration}
+## 预测核辐射的分布 {#sec-nuclear-pollution-concentration}
 
-本小节将对真实数据分析和建模，任务是预测核污染浓度在朗格拉普岛上的分布。
+本小节将对真实数据分析和建模，任务是预测核辐射强度在朗格拉普岛上的分布。
 
 ### 数据说明 {#sec-rongelap-data}
 
@@ -33,6 +33,7 @@ source("_common.R")
 #| fig-cap: "朗格拉普环礁和朗格拉普岛"
 #| echo: false
 #| fig-showtext: true
+#| message: false
 
 # 下载边界数据 https://gadm.org/
 # 返回 SpatVector 类型的数据对象
@@ -57,7 +58,7 @@ ggplot() +
   labs(x = "经度", y = "纬度")
 ```
 
-之前，[Ole F. Christensen](https://orcid.org/0000-0002-8230-8062) 和 Paulo J. Ribeiro Jr 将 `rongelap` 数据集存放在 [**geoRglm**](https://cran.r-project.org/package=geoRglm)[@Christensen2002] 包内，后来，**geoRglm** 不维护，已从 CRAN 移除了，笔者从他们主页下载了。数据集 `rongelap` 记录了 157 个测量点的伽马射线强度，即在时间间隔 `time` （秒）内放射的粒子数目 `counts`（个），测量站点的横纵坐标分别为 `cX` （米）和 `cY`（米），坐标参考原点在岛的东北， @fig-rongelap-location 中右上角的位置。下 @tbl-rongelap-nuclear-data 展示部分朗格拉普岛核污染检测数据及海岸线坐标数据。
+[Ole F. Christensen](https://orcid.org/0000-0002-8230-8062) 和 Paulo J. Ribeiro Jr 将 `rongelap` 数据集存放在 [**geoRglm**](https://cran.r-project.org/package=geoRglm)[@Christensen2002] 包内，后来，**geoRglm** 不维护，已从 CRAN 移除了，笔者从他们主页下载了。数据集 `rongelap` 记录了 157 个测量点的伽马射线强度，即在时间间隔 `time` （秒）内放射的粒子数目 `counts`（个），测量站点的横纵坐标分别为 `cX` （米）和 `cY`（米），坐标参考原点在岛的东北， @fig-rongelap-location 中右上角的位置。下 @tbl-rongelap-nuclear-data 展示部分朗格拉普岛核污染检测数据及海岸线坐标数据。
 
 ```{r}
 #| label: tbl-rongelap-nuclear-data
@@ -126,7 +127,7 @@ xyplot(cY ~ cX,
 
 ### 数据探索 {#sec-rongelap-exploration}
 
-朗格拉普岛呈月牙形，有数千米长，但仅几百米宽，十分狭长。采样点在岛上的分布如 @fig-rongelap-location 所示，主网格以约 200 米的间隔采样，在岛屿的东北和西南方各有两个密集采样区，每个网格采样区是 $5 \times 5$ 方式排列的，上下左右间隔均为 40 米。朗格拉普岛上各个检测站点的核污染浓度，如 @fig-rongelap-location-zoom 所示，鉴于四个集中检测区密集的采样阵列，通过局部放大，突出展示了最左侧的一个检测区。
+朗格拉普岛呈月牙形，有数千米长，但仅几百米宽，十分狭长。采样点在岛上的分布如 @fig-rongelap-location 所示，主网格以约 200 米的间隔采样，在岛屿的东北和西南方各有两个密集采样区，每个网格采样区是 $5 \times 5$ 方式排列的，上下左右间隔均为 40 米。朗格拉普岛上各个检测站点的核辐射强度如 @fig-rongelap-location-zoom 所示，颜色越深表示辐射越强，四个检测区的采样阵列非常密集，通过局部放大展示了最左侧的一个检测区，它将作为后续模型比较的参照区域。
 
 ```{r}
 #| label: fig-rongelap-location-zoom
@@ -162,7 +163,7 @@ p1
 print(p2, vp = grid::viewport(x = .25, y = .725, width = .275, height = .45))
 ```  
 
-@fig-rongelap-concentration 展示朗格拉普岛上采样点的位置及检测到的辐射强度，线越长表示放射性越强。这是用 **lattice** 包的 `cloud()` 函数绘制的，组合点和线两种基本几何元素。
+**ggplot2** 包只能在二维平面上展示数据，对于空间数据，立体图形似乎更加符合数据背景。**lattice** 包的函数 `cloud()` 可以绘制三维的散点图，组合点和线两种绘图元素构造出射线，线越长表示放射性越强，以射线搭配放射状的粒子辐射，似乎也更加贴切，如 @fig-rongelap-concentration 所示，展示朗格拉普岛上采样点的位置及检测到的辐射强度。
 
 ```{r}
 #| label: fig-rongelap-concentration
