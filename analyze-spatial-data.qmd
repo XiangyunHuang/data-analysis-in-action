@@ -358,7 +358,30 @@ pp_check(fit_rongelap_brm)
 ```
 :::
 
-进一步，去掉随机效应相互独立的假设，随机效应之间存在相关性结构，这更符合位置效应存在相互影响的实际情况，也因此要引入带空间随机效应的广义线性混合效应模型。
+进一步，去掉随机效应相互独立的假设，随机效应之间存在相关性结构，这更符合位置效应存在相互影响的实际情况，结合 @fig-rongelap-vario ， 核辐射强度的经验变差图呈现的空间相关性，也因此要引入带空间随机效应的广义线性混合效应模型。
+
+```{r}
+#| label: fig-rongelap-vario
+#| echo: true
+#| fig-cap: "核辐射强度的经验变差图"
+#| fig-width: 5
+#| fig-height: 4
+#| fig-showtext: true
+
+# 拟合允许异方差存在的一般线性模型
+fit_rongelap_gls <- nlme::gls(counts / time ~ 1, data = rongelap)
+# 残差的空间相关性
+fit_rongelap_vario <- nlme::Variogram(fit_rongelap_gls,
+  form = ~ cX + cY, data = rongelap, resType = "response"
+)
+# 经验半变差图
+plot(fit_rongelap_vario, scales = list(
+  # 去掉图形上边、右边多余的刻度线
+  x = list(alternating = 1, tck = c(1, 0)),
+  y = list(alternating = 1, tck = c(1, 0))
+), xlab = "距离", ylab = "半变差函数值")
+```
+
 
 根据 ${}^{137}\mathrm{Cs}$ 放出的伽马射线在 $N=157$ 站点不同时间间隔 $t(d_{i})$ 的辐射量，建立泊松型空间广义线性混合效应模型。
 
