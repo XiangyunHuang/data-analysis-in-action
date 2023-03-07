@@ -81,8 +81,8 @@ knitr::kable(head(rongelap_coastline, 6),
 library(lattice)
 xyplot(cY ~ cX,
   data = rongelap, pch = 19, cex = 0.25,
-  xlab = "横坐标",
-  ylab = "纵坐标",
+  xlab = "横坐标（米）",
+  ylab = "纵坐标（米）",
   scales = list(
     # 去掉图形上边、右边多余的刻度线
     x = list(alternating = 1, tck = c(1, 0)),
@@ -160,8 +160,8 @@ print(p2, vp = grid::viewport(x = .25, y = .725, width = .275, height = .45))
 cloud(counts / time ~ cX * cY,
   data = rongelap, col = "black",
   scales = list(arrows = FALSE, col = "black"),
-  xlab = list("横坐标", rot = 20),
-  ylab = list("纵坐标", rot = -50),
+  xlab = list("横坐标（米）", rot = 20),
+  ylab = list("纵坐标（米）", rot = -50),
   zlab = list("辐射强度", rot = 90),
   type = c("p", "h"), pch = 16, lwd = 0.5,
   # 减少三维图形的边空
@@ -380,7 +380,7 @@ plot(fit_rongelap_vario,
     plot.symbol = list(pch = 19, col = "black"),
     plot.line = list(lwd = 2)
   ),
-  xlab = "距离", ylab = "半变差函数值"
+  xlab = "距离（米）", ylab = "半变差函数值"
 )
 ```
 
@@ -405,7 +405,7 @@ K_{\nu}\left(\sqrt{2\nu}\frac{\|d_i -d_j\|_{2}}{\rho}\right)
 \end{aligned}
 $$ {#eq-matern-formula}
 
-其中，$K_{\nu}$ 表示阶数为 $\nu$ 的修正的第二类贝塞尔函数，$\Gamma(\cdot)$ 表示伽马函数，当 $\nu = 1/2$ ，Matérn 型将简化为指数型。固定 $\sigma = 1$，自协方差函数图像如 @fig-matern-fun 所示，不难看出，$\nu$ 影响自协方差函数的平滑性，控制点与点之间相关性的变化，$\nu$ 越大相关性越迅速地递减。$\rho$ 控制协方差函数的范围，$\rho$ 越大相关性辐射距离越远。
+其中，$K_{\nu}$ 表示阶数为 $\nu$ 的修正的第二类贝塞尔函数，$\Gamma(\cdot)$ 表示伽马函数，当 $\nu = 1/2$ ，Matérn 型将简化为指数型。固定 $\sigma = 1$，自协方差函数图像如 @fig-matern-fun 所示，不难看出，$\nu$ 影响自协方差函数的平滑性，控制点与点之间相关性的变化，$\nu$ 越大相关性越迅速地递减。$\rho$ 控制协方差函数的范围，$\rho$ 越大相关性辐射距离越远。对模型来说，它们都是超参数。
 
 ```{r}
 #| label: fig-matern-fun
@@ -436,7 +436,7 @@ ggplot(data = mesh_matern, aes(x = x, y = fv)) +
   geom_line(aes(color = nu_math)) +
   facet_wrap(vars(rho_math), ncol = 1, labeller = ggplot2::label_parsed) +
   scale_color_grey(labels = expression(nu == 0.5, nu == 1.5, nu == 2.5)) +
-  theme_minimal() +
+  theme_minimal(base_size = 13) +
   labs(x = "距离", y = "相关性", color = expression(nu))
 ```
 
@@ -480,7 +480,7 @@ fit_rongelap_spamm <- fitme(counts ~ 1 + Matern(1 | cX + cY) + offset(log(time))
 summary(fit_rongelap_spamm)
 ```
 
-从输出结果来看，与 **glmmTMB** 很接近，模型固定效应的截距项 1.824，随机效应的方差为 0.2973，自协方差函数中参数 $\nu = 0.3642$，对比 **spaMM** 包的函数 `Matern()` 实现的 Matérn 型自相关函数公式与 @eq-matern-formula ，输出结果需要转化一下，以符合 @eq-matern-formula ，则 $\rho = \sqrt{2 \times 0.364211759} / 0.0061486 = 138.8079$（对模型来说，它们是超参数），对数似然函数值为 -1317.551，拟合效果的提升几乎可以忽略。
+从输出结果来看，与 **glmmTMB** 很接近，模型固定效应的截距项 1.824，随机效应的方差为 0.2973，自协方差函数中参数 $\nu = 0.3642$，对比 **spaMM** 包的函数 `Matern()` 实现的 Matérn 型自相关函数公式与 @eq-matern-formula ，输出结果需要转化一下，以符合 @eq-matern-formula ，则 $\rho = \sqrt{2 \times 0.364211759} / 0.0061486 = 138.8079$ ，即空间相关性的最大影响距离为 138.8 米，对数似然函数值为 -1317.551，拟合效果的提升几乎可以忽略。
 
 
 ### 模型预测 {#sec-rongelap-predict}
@@ -519,7 +519,6 @@ rongelap_coastline_sfp <- st_cast(st_combine(st_geometry(rongelap_coastline_sf))
 #| fig-width: 5
 #| fig-height: 3
 #| fig-showtext: true
-#| echo: false
 
 library(ggplot2)
 ggplot(rongelap_coastline_sf) +
@@ -545,7 +544,6 @@ rongelap_coastline_buffer <- st_buffer(rongelap_coastline_sfp, dist = 50)
 #| fig-width: 7
 #| fig-height: 4
 #| fig-showtext: true
-#| echo: false
 
 ggplot() +
   geom_sf(data = rongelap_sf, size = 0.5) +
@@ -568,7 +566,6 @@ rongelap_coastline_grid <- st_make_grid(rongelap_coastline_buffer, n = c(150, 75
 #| fig-width: 7
 #| fig-height: 4
 #| fig-showtext: true
-#| echo: false
 
 ggplot() +
   geom_sf(data = rongelap_coastline_grid, fill = NA, color = "gray") +
@@ -586,7 +583,7 @@ rongelap_grid <- rongelap_coastline_grid[rongelap_coastline_buffer, op = st_inte
 rongelap_grid_centroid <- st_centroid(rongelap_grid)
 ```
 
-网格的中心点将作为新的采样点，要在这些新的采样点上预测核污染浓度。全岛网格化后，将朗格拉普岛海岸线、网格、网格中心点都展示出来，如 @fig-rongelap-grid 所示。
+网格的中心点将作为新的采样点，要在这些新的采样点上预测核污染浓度。全岛网格化后，将朗格拉普岛海岸线、网格都展示出来，如 @fig-rongelap-grid 所示。
 
 ```{r}
 #| label: fig-rongelap-grid
@@ -594,13 +591,11 @@ rongelap_grid_centroid <- st_centroid(rongelap_grid)
 #| fig-width: 7
 #| fig-height: 4
 #| fig-showtext: true
-#| echo: false
 
 ggplot() +
   geom_sf(data = rongelap_coastline_sfp, 
           fill = NA, color = "gray30", linewidth = 0.5) +
   geom_sf(data = rongelap_grid, fill = NA, color = "gray30") +
-  geom_sf(data = rongelap_grid_centroid, size = 0.1) +
   theme_void()
 ```
 
@@ -691,7 +686,8 @@ p3 <- ggplot() +
     arrow = arrow(length = unit(0.03, "npc"))
   ) +
   theme_void() +
-  labs(fill = "辐射强度")
+  labs(fill = "辐射强度") +
+  theme(legend.position = c(0.9, 0.2))
 
 p4 <- ggplot() +
   geom_stars(
@@ -712,7 +708,7 @@ p3
 print(p4, vp = grid::viewport(x = .25, y = .625, width = .45, height = .45))
 ```
 
-美国当年是在比基尼环礁做的氢弹核试验，试验地与朗格拉普岛相距 100 多英里，核辐射羽流受大气、海洋环流等影响，漂流到朗格拉普岛，受当地水文、地理环境影响，核污染在全岛的分布是不均匀的，颜色越深表示核污染越严重。
+美国当年是在比基尼环礁做的氢弹核试验，试验地与朗格拉普岛相距 100 多英里，核辐射羽流受大气、海洋环流等影响，漂流到朗格拉普岛，又受朗格拉普岛周围水文、地理环境影响，核污染在全岛的分布是不均匀的，颜色越深表示核污染越严重。
 
 
 ## 疟疾流行度的分析 {#sec-gambia-children-malaria}
@@ -993,11 +989,17 @@ fit_gambia_village_vario <- nlme::Variogram(fit_gambia_village,
 #| fig-width: 5
 #| fig-height: 4
 
-plot(fit_gambia_village_vario, scales = list(
+plot(fit_gambia_village_vario,
+  col.line = "black", scales = list(
     # 去掉图形上边、右边多余的刻度线
     x = list(alternating = 1, tck = c(1, 0)),
     y = list(alternating = 1, tck = c(1, 0))
-  ), xlab = "距离", ylab = "半变差函数值")
+  ), par.settings = list(
+    plot.symbol = list(pch = 19, col = "black"),
+    plot.line = list(lwd = 2)
+  ),
+  xlab = "距离（米）", ylab = "半变差函数值"
+)
 ```
 
 此时，可以在模型中添加空间效应 $S(x_i)$ ，下面拟合带空间效应的广义线性混合效应模型：
