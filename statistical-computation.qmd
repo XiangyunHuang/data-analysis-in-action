@@ -21,27 +21,21 @@ $$
 \underbrace{\hat{\theta}_{\lambda_n}}_{\text{待估参数}} \in \arg \min_{\theta \in \Omega} \left\{ \underbrace{\mathcal{L}(\theta;Z_{1}^{n})}_{\text{损失函数}} + \lambda_n \underbrace{\mathcal{R}(\theta)}_{\text{正则化项}} \right\}.
 $$
 
-一个带 L1 惩罚项的回归模型的损失函数如下：
+具体地，一个带 L1 惩罚项的回归模型，其损失函数如下：
 
 $$
 \arg \min_{\boldsymbol{\beta},\lambda} ~~ \frac{1}{2} || \bm{y} - X \boldsymbol{\beta} ||_2^2 +  \lambda ||\boldsymbol{\beta}||_1
 $$
 
-其中，$X \in \mathbb{R}^{m\times n}$， $\bm{y} \in \mathbb{R}^m$，$\boldsymbol{\beta} \in \mathbb{R}^n$， $0 < \lambda \in \mathbb{R}$ 。
+其中，$X \in \mathbb{R}^{n\times k}$， $\bm{y} \in \mathbb{R}^n$，$\boldsymbol{\beta} \in \mathbb{R}^k$， $0 < \lambda \in \mathbb{R}$ 。
 
-下面主要以逻辑回归模型为例，介绍 Base R、[**nloptr**](https://github.com/astamm/nloptr)、 [**glmnet**](https://glmnet.stanford.edu/) 和 [**CmdStanR**](https://github.com/stan-dev/cmdstanr) 等工具包提供的优化器，在求解性能、范围、方法等方面对比总结使用经验。
+下面以逻辑回归模型为例，介绍求解此优化问题的一些办法：R 语言内置函数 `optim()`，以及 R 社区的 [**nloptr**](https://github.com/astamm/nloptr) 包、 [**glmnet**](https://glmnet.stanford.edu/) 包和 [**CmdStanR**](https://github.com/stan-dev/cmdstanr) 包。
 
 ## 对数似然与损失函数 {#sec-log-likelihood}
 
+### Logistic 分布 {#sec-logistic-distribution}
 
-### 线性回归 {#sec-linear-regression}
-
-
-
-### 逻辑回归 {#sec-logistic-regression}
-
-
-均值为 $m$ ，方差为 $\frac{\pi^2}{3}s^2$ 的 Logistic 分布函数的形式为
+在介绍逻辑回归之前，先了解一下 Logistic 分布。一个均值为 $m$ ，方差为 $\frac{\pi^2}{3}s^2$ 的 Logistic 分布函数的形式为
 
 $$
 F(x) = \frac{1}{1 + \exp(-\frac{x - m}{s})}
@@ -118,6 +112,7 @@ rlogis(n, location = 0, scale = 1)
 
 如果函数参数 `location` 或 `scale` 没有指定，则分别取默认值 0 和 1，就是标准的逻辑斯谛分布。位置参数（类似正态分布中的均值 $\mu$）为 `location = m` ，尺度参数（类似正态分布中的标准差 $\sigma$）为 `scale = s`，逻辑斯谛分布是一个长尾分布。
 
+### 逻辑回归 {#sec-logistic-regression}
 
 响应变量 $Y$ 服从伯努利分布 $\mathrm{Bernoulli}(p)$，取值是 0 或 1，对线性预测 $X\boldsymbol{\beta}$ 做 Logistic 变换
 
@@ -142,13 +137,13 @@ X = \begin{bmatrix}
 \end{bmatrix}
 $$
 
-记 $X = (\bm{x}_1, \bm{x}_2, \cdots, \bm{x}_n) = (X_1, X_2, \cdots, X_k)$ 是一个$n \times k$ 数据矩阵，其中 $\bm{x}_i$ 表示矩阵 $X$ 的第 $i$ 行，一共有 $n$ 行，$X_j, j = 1,2, \cdots, k$ 表示矩阵 $X$ 的第 $j$ 列，一共有 $k$ 列。类似地， $\boldsymbol{\beta} = (\beta_1, \beta_2, \cdots, \beta_k)$ 是一个列向量，$\beta_j$ 表示第 $j$ 个变量 $X_j$ 的系数。对第 $i$ 次观测
+每一行表示一次观测，每一列表示一个变量的 $n$ 次观测，记 $X = (\bm{x}_1, \bm{x}_2, \cdots, \bm{x}_n)^{\top} = (X_1, X_2, \cdots, X_k)$ 是一个$n \times k$ 数据矩阵，其中 $\bm{x}_i$ 表示矩阵 $X$ 的第 $i$ 行，一共有 $n$ 行，可以看作是 $1 \times k$ 的矩阵，$X_j, j = 1,2, \cdots, k$ 表示矩阵 $X$ 的第 $j$ 列，一共有 $k$ 列。类似地， $\boldsymbol{\beta} = (\beta_1, \beta_2, \cdots, \beta_k)^{\top}$ 是一个列向量，可以看作是 $k \times 1$ 的矩阵，$\beta_j$ 表示第 $j$ 个变量 $X_j$ 的系数。对第 $i$ 次观测
 
 $$
 \mathrm{Logistic}^{-1}(p_i)= \ln\big(\frac{p_i}{1-p_i}\big) = \alpha + \bm{x}_i\boldsymbol{\beta}
 $$
 
-其中 $\bm{x}_i$ 是 $1 \times k$ 的矩阵，$\boldsymbol{\beta}$ 是一个 $k \times 1$ 的矩阵。关于参数 $\alpha,\boldsymbol{\beta}$ 的似然函数如下：
+关于参数 $\alpha,\boldsymbol{\beta}$ 的似然函数如下：
 
 $$
 \begin{aligned}
@@ -177,7 +172,7 @@ $$
 \end{aligned}
 $$ {#eq-logit-lik-log-partial}
 
-其中， $p_i = \frac{e^{\alpha + \bm{x}_i\boldsymbol{\beta}}}{1 + e^{\alpha + \bm{x}_i\boldsymbol{\beta}}}$ ，一般通过迭代加权最小二乘算法（Iteratively (Re-)Weighted Least Squares，简称 IWLS）求解此优化问题，它可以看作拟牛顿法的一种特殊情况。
+其中， $p_i = \frac{e^{\alpha + \bm{x}_i\boldsymbol{\beta}}}{1 + e^{\alpha + \bm{x}_i\boldsymbol{\beta}}}$ ，要使 $\ell(\alpha,\boldsymbol{\beta})$ 取极大值，一般通过迭代加权最小二乘算法（Iteratively (Re-)Weighted Least Squares，简称 IWLS）求解此优化问题，它可以看作拟牛顿法的一种特殊情况，在 R 语言中，函数 `glm()` 是求解此类问题的办法。
 
 ## 数值优化问题求解器 {#sec-solvers}
 
