@@ -25,23 +25,39 @@ source("_common.R")
 
 ### 数据说明 {#sec-rongelap-data}
 
-第二次世界大战中，美国在吉尔伯特及马绍尔群岛战事中占领了该群岛。上世纪 50 年代，在该群岛的比基尼环礁中进行了许多核实验，对该群岛造成无法弥补的环境损害。位于南太平洋的朗格拉普环礁是马绍尔群岛的一部分，朗格拉普岛是朗格拉普环礁的主岛，被核爆炸后产生的放射性尘埃笼罩了，受到严重的核辐射影响，从度假胜地变成人间炼狱，居民出现上吐下泻、皮肤灼烧、脱发等。即使是 1985 年以后，那里仍然无人居住，居民担心核辐射对身体健康的影响。又几十年后，一批科学家来到该岛研究生态恢复情况，评估当地居民重返家园的可行性，实际上，该岛目前仍然不适合人类居住，只有经批准的科学研究人员才能登岛。数据集 `rongelap` 记录了 157 个测量点的伽马射线强度，即在时间间隔 `time` （秒）内放射的粒子数目 `counts`（个），测量站点的横纵坐标分别为 `cX` （米）和 `cY`（米），坐标参考原点在岛的东北，图中右上角的位置。下 @tbl-rongelap-nuclear-data 展示部分朗格拉普岛核污染检测数据及海岸线坐标数据。
+第二次世界大战中，美国在吉尔伯特及马绍尔群岛战事中占领了该群岛。上世纪 50 年代，在该群岛的比基尼环礁中进行了许多核实验，对该群岛造成无法弥补的环境损害。位于南太平洋的朗格拉普环礁是马绍尔群岛的一部分，朗格拉普岛是朗格拉普环礁的主岛，被核爆炸后产生的放射性尘埃笼罩了，受到严重的核辐射影响，从度假胜地变成人间炼狱，居民出现上吐下泻、皮肤灼烧、脱发等。即使是 1985 年以后，那里仍然无人居住，居民担心核辐射对身体健康的影响。又几十年后，一批科学家来到该岛研究生态恢复情况，评估当地居民重返家园的可行性，实际上，该岛目前仍然不适合人类居住，只有经批准的科学研究人员才能登岛。
+
 
 ```{r}
-#| label: fig-marshall-islands-rongelap-atoll
-#| fig-cap: "马绍尔群岛和朗格拉普环礁"
-#| eval: false
+#| label: fig-rongelap-atoll
+#| fig-cap: "朗格拉普环礁和朗格拉普岛"
 #| echo: false
+#| fig-showtext: true
 
-library(terra)
 # 下载边界数据 https://gadm.org/
 # 返回 SpatVector 类型的数据对象
 mhl_map_gadm <- geodata::gadm(country = "MHL", level = 1, path = "data/")
-# 马绍尔群岛
-plot(mhl_map_gadm)
+library(sf)
+mhl_map_gadm <- st_as_sf(mhl_map_gadm)
+library(ggplot2)
+# 虚线框是朗格拉普岛
+rongelap_sfp <- st_sfc(st_polygon(x = list(rbind(
+  c(166.82, 11.14),
+  c(166.82, 11.183),
+  c(166.92, 11.183),
+  c(166.92, 11.14),
+  c(166.82, 11.14)
+)), dim = "XY"), crs = 4326)
 # 朗格拉普环礁
-plot(mhl_map_gadm, xlim = c(166.82, 166.92), ylim = c(11.14, 11.183))
+ggplot() +
+  geom_sf(data = mhl_map_gadm) +
+  geom_sf(data = rongelap_sfp, fill = NA, linewidth = 0.75, lty = 2) +
+  coord_sf(xlim = c(166.6, 167.1), ylim = c(11.14, 11.5)) +
+  theme_minimal() +
+  labs(x = "经度", y = "纬度")
 ```
+
+之前，[Ole F. Christensen](https://orcid.org/0000-0002-8230-8062) 和 Paulo J. Ribeiro Jr 将 `rongelap` 数据集存放在 [**geoRglm**](https://cran.r-project.org/package=geoRglm)[@Christensen2002] 包内，后来，**geoRglm** 不维护，已从 CRAN 移除了，笔者从他们主页下载了。数据集 `rongelap` 记录了 157 个测量点的伽马射线强度，即在时间间隔 `time` （秒）内放射的粒子数目 `counts`（个），测量站点的横纵坐标分别为 `cX` （米）和 `cY`（米），坐标参考原点在岛的东北， @fig-rongelap-location 中右上角的位置。下 @tbl-rongelap-nuclear-data 展示部分朗格拉普岛核污染检测数据及海岸线坐标数据。
 
 ```{r}
 #| label: tbl-rongelap-nuclear-data
@@ -50,7 +66,9 @@ plot(mhl_map_gadm, xlim = c(166.82, 166.92), ylim = c(11.14, 11.183))
 #|   - "核污染检测数据"
 #|   - "海岸线坐标数据"
 #| layout-ncol: 2
+#| echo: false
 
+# 加载数据
 rongelap <- readRDS(file = "data/rongelap.rds")
 rongelap_coastline <- readRDS(file = "data/rongelap_coastline.rds")
 
@@ -63,13 +81,6 @@ knitr::kable(head(rongelap_coastline, 6),
 )
 ```
 
-::: {.callout-note}
-之前，[Ole F. Christensen](https://orcid.org/0000-0002-8230-8062) 和 Paulo J. Ribeiro Jr 将 rongelap 数据集存放在 [**geoRglm**](https://cran.r-project.org/package=geoRglm)[@Christensen2002] 包内，后来，**geoRglm** 不维护，已从 CRAN 移除了。
-:::
-
-### 数据探索 {#sec-rongelap-exploration}
-
-朗格拉普岛呈月牙形，有数千米长，但仅几百米宽，十分狭长。采样点在岛上的分布如 @fig-rongelap-location 所示，主网格以约 200 米的间隔采样，在岛屿的东北和西南方各有两个密集采样区，每个网格采样区是 $5 \times 5$ 方式排列的，上下左右间隔均为 40 米。
 
 ```{r}
 #| label: fig-rongelap-location
@@ -77,6 +88,7 @@ knitr::kable(head(rongelap_coastline, 6),
 #| fig-showtext: true
 #| fig-width: 7
 #| fig-height: 4
+#| echo: false
 
 library(lattice)
 xyplot(cY ~ cX,
@@ -112,7 +124,9 @@ xyplot(cY ~ cX,
 )
 ```
 
-朗格拉普岛上各个检测站点的核污染浓度，如 @fig-rongelap-location-zoom 所示，鉴于四个集中检测区密集的采样阵列，通过局部放大，突出展示最左侧的一个检测区。
+### 数据探索 {#sec-rongelap-exploration}
+
+朗格拉普岛呈月牙形，有数千米长，但仅几百米宽，十分狭长。采样点在岛上的分布如 @fig-rongelap-location 所示，主网格以约 200 米的间隔采样，在岛屿的东北和西南方各有两个密集采样区，每个网格采样区是 $5 \times 5$ 方式排列的，上下左右间隔均为 40 米。朗格拉普岛上各个检测站点的核污染浓度，如 @fig-rongelap-location-zoom 所示，鉴于四个集中检测区密集的采样阵列，通过局部放大，突出展示了最左侧的一个检测区。
 
 ```{r}
 #| label: fig-rongelap-location-zoom
@@ -377,8 +391,8 @@ plot(fit_rongelap_vario,
     x = list(alternating = 1, tck = c(1, 0)),
     y = list(alternating = 1, tck = c(1, 0))
   ), par.settings = list(
-    plot.symbol = list(pch = 19, col = "black"),
-    plot.line = list(lwd = 2)
+    plot.symbol = list(pch = 20, col = "black"),
+    plot.line = list(lwd = 1)
   ),
   xlab = "距离（米）", ylab = "半变差函数值"
 )
@@ -652,7 +666,7 @@ rongelap_stars <- st_crop(x = rongelap_grid_stars, y = rongelap_coastline_sfp)
 #| label: fig-rongelap-pred-stars
 #| fig-cap: "朗格拉普岛核污染分布"
 #| fig-width: 7
-#| fig-height: 4
+#| fig-height: 4.5
 #| fig-showtext: true
 #| echo: true
 
@@ -687,7 +701,7 @@ p3 <- ggplot() +
   ) +
   theme_void() +
   labs(fill = "辐射强度") +
-  theme(legend.position = c(0.9, 0.2))
+  theme(legend.position = c(0.95, 0.2))
 
 p4 <- ggplot() +
   geom_stars(
