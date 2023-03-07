@@ -50,7 +50,6 @@ plot(mhl_map_gadm, xlim = c(166.82, 166.92), ylim = c(11.14, 11.183))
 #|   - "核污染检测数据"
 #|   - "海岸线坐标数据"
 #| layout-ncol: 2
-#| echo: false
 
 rongelap <- readRDS(file = "data/rongelap.rds")
 rongelap_coastline <- readRDS(file = "data/rongelap_coastline.rds")
@@ -75,13 +74,11 @@ knitr::kable(head(rongelap_coastline, 6),
 ```{r}
 #| label: fig-rongelap-location
 #| fig-cap: "采样点在岛上的分布"
-#| echo: false
 #| fig-showtext: true
 #| fig-width: 7
 #| fig-height: 4
 
 library(lattice)
-
 xyplot(cY ~ cX,
   data = rongelap, pch = 19, cex = 0.25,
   xlab = "横坐标",
@@ -123,7 +120,6 @@ xyplot(cY ~ cX,
 #| fig-width: 8
 #| fig-height: 4
 #| fig-showtext: true
-#| echo: false
 
 library(ggplot2)
 
@@ -131,18 +127,19 @@ p1 <- ggplot() +
   geom_path(data = rongelap_coastline, aes(x = cX, y = cY)) +
   geom_point(data = rongelap, aes(x = cX, y = cY, color = counts / time), size = 0.5) +
   scale_x_continuous(n.breaks = 7) +
-  scale_color_binned(type = colorspace::scale_color_binned_sequential, palette = "Grays") +
+  scale_color_distiller(palette = "Greys", direction = 1) +
   geom_segment(
     data = data.frame(x = -5560, xend = -5000, y = -3000, yend = -2000),
     aes(x = x, y = y, xend = xend, yend = yend),
     arrow = arrow(length = unit(0.03, "npc"))
   ) +
   theme_bw() +
-  labs(x = "横坐标", y = "纵坐标", color = "辐射强度")
+  labs(x = "横坐标（米）", y = "纵坐标（米）", color = "辐射强度")
 
 p2 <- ggplot() +
-  geom_point(data = rongelap, aes(x = cX, y = cY, color = counts / time), size = 2, show.legend = FALSE) +
-  scale_color_binned(type = colorspace::scale_color_binned_sequential, palette = "Grays") +
+  geom_point(data = rongelap, aes(x = cX, y = cY, color = counts / time), 
+             size = 2, show.legend = FALSE) +
+  scale_color_distiller(palette = "Greys", direction = 1) +
   coord_cartesian(xlim = c(-5700, -5540), ylim = c(-3260, -3100)) +
   theme_bw() +
   labs(x = NULL, y = NULL)
@@ -156,7 +153,6 @@ print(p2, vp = grid::viewport(x = .25, y = .725, width = .275, height = .45))
 ```{r}
 #| label: fig-rongelap-concentration
 #| fig-cap: "岛上各采样点的辐射强度"
-#| echo: false
 #| fig-showtext: true
 #| fig-width: 6
 #| fig-height: 5
@@ -368,20 +364,25 @@ pp_check(fit_rongelap_brm)
 #| fig-height: 4
 #| fig-showtext: true
 
-# 拟合允许异方差存在的一般线性模型
+# 拟合存在异方差的一般线性模型
 fit_rongelap_gls <- nlme::gls(counts / time ~ 1, data = rongelap)
 # 残差的空间相关性
 fit_rongelap_vario <- nlme::Variogram(fit_rongelap_gls,
   form = ~ cX + cY, data = rongelap, resType = "response"
 )
 # 经验半变差图
-plot(fit_rongelap_vario, scales = list(
-  # 去掉图形上边、右边多余的刻度线
-  x = list(alternating = 1, tck = c(1, 0)),
-  y = list(alternating = 1, tck = c(1, 0))
-), xlab = "距离", ylab = "半变差函数值")
+plot(fit_rongelap_vario,
+  col.line = "black", scales = list(
+    # 去掉图形上边、右边多余的刻度线
+    x = list(alternating = 1, tck = c(1, 0)),
+    y = list(alternating = 1, tck = c(1, 0))
+  ), par.settings = list(
+    plot.symbol = list(pch = 19, col = "black"),
+    plot.line = list(lwd = 2)
+  ),
+  xlab = "距离", ylab = "半变差函数值"
+)
 ```
-
 
 根据 ${}^{137}\mathrm{Cs}$ 放出的伽马射线在 $N=157$ 站点不同时间间隔 $t(d_{i})$ 的辐射量，建立泊松型空间广义线性混合效应模型。
 
@@ -409,7 +410,6 @@ $$ {#eq-matern-formula}
 ```{r}
 #| label: fig-matern-fun
 #| fig-cap: "Matérn 型协方差函数曲线"
-#| echo: false
 #| fig-showtext: true
 
 # 参数 x 两点之间的距离，要求 x 大于 0
@@ -531,7 +531,7 @@ ggplot(rongelap_coastline_sfp) +
   theme_void()
 ```
 
-为了确保覆盖整个岛，还需要一点缓冲空间，就是说在给定的边界线外围再画一个多边形，这可以用函数 `st_buffer()` 根据海岸线构造缓冲区，一个 POLYGON 类型的几何数据对象，缓冲距离选择 50 米。
+为了确保覆盖整个岛，处理好边界问题，还需要一点缓冲空间，就是说在给定的边界线外围再画一个多边形，这可以用函数 `st_buffer()` 根据海岸线构造缓冲区，一个 POLYGON 类型的几何数据对象，缓冲距离选择 50 米。
 
 ```{r}
 rongelap_coastline_buffer <- st_buffer(rongelap_coastline_sfp, dist = 50)
@@ -631,7 +631,6 @@ rongelap_grid_df$pred <- as.vector(rongelap_grid_pred)
 #| fig-showtext: true
 
 rongelap_grid_sf <- st_as_sf(rongelap_grid_df, coords = c("cX", "cY"), dim = "XY")
-library(colorspace)
 ggplot() +
   geom_sf(data = rongelap_grid_sf, aes(color = pred / time), 
           show.legend = FALSE, size = 0.5) +
@@ -639,7 +638,7 @@ ggplot() +
     data = rongelap_coastline_sfp,
     fill = NA, color = "gray30", linewidth = 0.5
   ) +
-  scale_color_continuous_sequential(palette = "Grays") +
+  scale_color_distiller(palette = "Greys", direction = 1) +
   theme_void()
 ```
 
@@ -682,14 +681,7 @@ p3 <- ggplot() +
     fill = NA, color = "gray30", linewidth = 0.5
   ) +
   # 图例
-  scale_fill_continuous_sequential(
-    palette = "Grays", 
-    guide = guide_colourbar(
-      barwidth = 15, barheight = 1,
-      nbin = 10, label.position = "top",
-      title.position = "right" 
-    )
-  ) +
+  scale_fill_distiller(palette = "Greys", direction = 1) +
   # 虚线框
   geom_sf(data = dash_sfp, fill = NA, linewidth = 0.75, lty = 2) +
   # 箭头
@@ -699,8 +691,7 @@ p3 <- ggplot() +
     arrow = arrow(length = unit(0.03, "npc"))
   ) +
   theme_void() +
-  labs(fill = "辐射强度") +
-  theme(legend.position = "top")
+  labs(fill = "辐射强度")
 
 p4 <- ggplot() +
   geom_stars(
@@ -711,7 +702,7 @@ p4 <- ggplot() +
     data = rongelap_coastline_sfp,
     fill = NA, color = "gray30", linewidth = 0.75
   ) +
-  scale_fill_continuous_sequential(palette = "Grays") +
+  scale_fill_distiller(palette = "Greys", direction = 1) +
   # 虚线框
   geom_sf(data = dash_sfp, fill = NA, linewidth = 0.75, lty = 2) +
   theme_void() +
