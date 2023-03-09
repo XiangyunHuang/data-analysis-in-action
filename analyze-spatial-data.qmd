@@ -799,9 +799,11 @@ knitr::kable(head(gambia), row.names = F)
 数据探索主要是统计各个村庄的儿童感染疟疾的比率，以及环境因素（医院、植被）、个人因素（年龄、蚊帐）对疟疾流行度的影响。首先按各个村庄分组统计儿童的感染率，如下：
 
 ```{r}
-gambia_agg <- aggregate(
-  pos ~ x + y + green + phc, data = gambia, 
-  FUN = function(x) sum(x) / length(x)
+# 统计各村庄的感染情况
+gambia_village <- aggregate(
+  data = gambia,
+  cbind(ncases = pos, ncontrols = 1 - pos) ~ x + y + green + phc,
+  FUN = sum
 )
 ```
 
@@ -809,18 +811,18 @@ gambia_agg <- aggregate(
 
 ```{r}
 library(sf)
-gambia_agg <- st_as_sf(gambia_agg, coords = c("x", "y"), crs = 32628)
+gambia_village <- st_as_sf(gambia_village, coords = c("x", "y"), crs = 32628)
 gambia_borders <- st_as_sf(gmb_map)
 gambia_borders <- st_transform(gambia_borders, crs = 32628)
 ```
 
-远离河流，蚊虫相对会少一些，海拔应该也是重要的变量，因此，根据冈比亚海拔数据获取各个村子的海拔高度，以便后续放入模型。下面根据 `gambia_agg` 从 `gmb_alt` 中抽取海拔数据，并将获得的海拔数据添加到 `gmb_alt` 数据集上，代码如下：
+远离河流，蚊虫相对会少一些，海拔应该也是重要的变量，因此，根据冈比亚海拔数据获取各个村子的海拔高度，以便后续放入模型。下面根据 `gambia_village` 从 `gmb_alt` 中抽取海拔数据，并将获得的海拔数据添加到 `gmb_alt` 数据集上。在模型中，建议坐标的单位转为米，所以输入模型的观测数据的坐标参考系为 `EPSG:32628`，由于 **geodata** 包下载的海拔数据坐标参考系为 `EPSG:4326` ，所以需要转化一下再提取各个村庄的海拔。代码如下：
 
 ```{r}
 # 转化为 WGS 84 坐标系
-gambia_agg2 <- st_transform(gambia_agg, crs = 4326)
+gambia_agg2 <- st_transform(gambia_village, crs = 4326)
 # 提取各个村庄的海拔数据
-gambia_agg$alt <- terra::extract(gmb_alt, gambia_agg2, ID = FALSE)
+gambia_village$alt <- terra::extract(gmb_alt, gambia_agg2, ID = FALSE)
 ```
 
 如 @fig-observed-prevalence 所示，图中的点为村庄位置，感染比例越高点越亮，反之，点越暗。根据冈比亚狭长的地形和横穿东西全境的冈比亚河，可将其看作东、中和西三个部分，东部是河流上游，西部是河流下游，村庄分为 5 个区域，西部两个，南岸和北岸各一个，中游一个在南岸，东部两个，也是南岸和北岸各有一个。
@@ -846,7 +848,7 @@ sf_area <- st_sf(area = 1:5, geometry = geom, crs = 4326)
 # 主要部分
 p <- ggplot() +
   geom_sf(data = gambia_borders, fill = NA) +
-  geom_sf(data = gambia_agg, aes(color = pos)) +
+  geom_sf(data = gambia_village, aes(color = ncases / (ncases + ncontrols))) +
   scale_color_viridis_c(labels = scales::percent) 
 
 p1 <- p +
@@ -911,7 +913,7 @@ $$
 \log\{p_{ij}/(1-p_{ij})\} &= \alpha + \boldsymbol{\beta}^{\top}z_{ij} + S(x_i) \\
 \log\{p_{ij}/(1-p_{ij})\} &= \alpha + \boldsymbol{\beta}^{\top}z_{ij} + S(x_i) + U_{i}
 \end{aligned}
-$$
+$$ {#eq-gambia-children}
 
 如果同一村庄内儿童感染疟疾不是条件独立的，则可以考虑添加随机效应 $U_i$，即认为给定 $U_i$ 和 $S(x_i)$ 的情况下，儿童感染疟疾是独立的。上式中 $\alpha$ 是截距， $\boldsymbol{\beta}^{\top}$ 是回归参数向量，各个分量的含义如下表，$S(x_i)$ 和 $U_i$ 的含义同 @eq-matern-formula 。
 
@@ -934,9 +936,26 @@ $$
 Y_{i} \sim \mathrm{Binomial}(N_i,p_{i})
 $$
 
-$Y_{i}$ 表示第 $i$ 个村庄感染疟疾的儿童数量，是响应变量，对应整个村子的情况。$N_i$ 表示第 $i$ 个村庄的样本量，$p_{i}$ 表示第 $i$ 个村庄的感染率，其中，$i = 1,2,\cdots, 65$ 。
+$Y_{i}$ 表示第 $i$ 个村庄感染疟疾的儿童数量，是响应变量，对应整个村子的情况。$N_i$ 表示第 $i$ 个村庄的样本量，$p_{i}$ 表示第 $i$ 个村庄的感染率，其中，$i = 1,2,\cdots, 65$ 。$\boldsymbol{\beta}^{\top}$ 表示村庄的绿色植被覆盖度 `green`、是否被基础健康保障覆盖 `phc`、所属调查区域 `area` 等影响因素的回归系数。
+
+$$
+\begin{aligned}
+\log\{p_{i}/(1-p_{i})\} &= \alpha + \boldsymbol{\beta}^{\top}z_{i} + S(x_i) \\
+\log\{p_{i}/(1-p_{i})\} &= \alpha + \boldsymbol{\beta}^{\top}z_{i} + S(x_i) + U_{i}
+\end{aligned}
+$$ {#eq-gambia-village}
+
+个体水平下的模型可以在五个调查区域内提供个体水平下（单个儿童）感染疟疾的可能性预估，村庄水平下的模型可以在冈比亚全国提供村庄水平下（整个村庄）疟疾感染率的预估，由于有限的观测变量和数据，如缺乏覆盖全国的 `green` 和 `phc` 等数据，对全国范围内的预测变量只有海拔高度 `alt`。
+
+$$
+\log\{p_{i}/(1-p_{i})\} = \alpha + \mathrm{alt}_i*z_{i} + S(x_i) + U_{i}
+$$ {#eq-gambia-predict}
 
 作为对比的基础，首先考虑不含空间效应 $S(x_i)$ 和随机效应 $U_i$ 的广义线性模型
+
+$$
+\log\{p_{ij}/(1-p_{ij})\} = \alpha + \boldsymbol{\beta}^{\top}z_{ij}
+$$ {#eq-gambia-baseline}
 
 ```{r}
 fit_gambia_glm <- glm(pos ~ age + netuse + treated + green + phc + area,
@@ -967,14 +986,14 @@ gambia$pred_prob <- predict(fit_gambia_glm, type = "response")
 
 ```{r}
 # 统计各村庄的感染情况
-gambia_village <- aggregate(
+gambia_village2 <- aggregate(
   data = gambia,
   cbind(
     total = 1, pos, pred_prob,
     sigmasq = pred_prob * (1 - pred_prob)
   ) ~ x + y + green + phc, FUN = sum
 )
-gambia_village <- within(gambia_village, {
+gambia_village2 <- within(gambia_village2, {
   residuals <- (pos - pred_prob) / sqrt(sigmasq)
 })
 ```
@@ -984,9 +1003,9 @@ gambia_village <- within(gambia_village, {
 #| eval: false
 
 # 根据村庄水平下的预测值和拟合误差
-plot(residuals ~ fitted, data = gambia_village)
+plot(residuals ~ fitted, data = gambia_village2)
 # 残差的空间分布
-ggplot(data = gambia_village) +
+ggplot(data = gambia_village2) +
   geom_point(aes(x = x, y = y, color = residuals)) +
   colorspace::scale_color_continuous_diverging(palette = "Blue-Red") +
   theme_minimal()
@@ -995,9 +1014,9 @@ ggplot(data = gambia_village) +
 剔除村庄相关的随机效应（非空间的），拟合残差趋势，得到变差函数。
 
 ```{r}
-fit_gambia_village <- nlme::gls(residuals ~ 1, data = gambia_village)
+fit_gambia_village <- nlme::gls(residuals ~ 1, data = gambia_village2)
 fit_gambia_village_vario <- nlme::Variogram(fit_gambia_village,
-  form = ~ x + y, data = gambia_village, resType = "response"
+  form = ~ x + y, data = gambia_village2, resType = "response"
 )
 ```
 
@@ -1070,3 +1089,10 @@ fit_gambia_spamm <- fitme(pos ~ age + netuse + treated +
 | $\delta$             |  0.079522  |  2.784646   |  1.084108   |    0.937436     |
 
 ### 模型预测 {#sec-gambia-predict}
+
+接下来的过程与上一个示例基本相同了。在有限的数据情况下，下面基于模型 @eq-gambia-predict 给出预测。首先，看下数据情况
+
+```{r}
+gambia_village
+```
+
