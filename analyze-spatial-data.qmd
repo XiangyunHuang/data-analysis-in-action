@@ -133,6 +133,8 @@ xyplot(cY ~ cX,
 #| fig-width: 8
 #| fig-height: 4
 #| fig-showtext: true
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
 
 library(ggplot2)
 
@@ -894,6 +896,8 @@ prop.table(xtabs( ~ area + pos, data = gambia), margin = 1)
 
 ### 数据建模 {#sec-gambia-model}
 
+数据集包含个体水平和村庄水平的变量，因此有两个模型可供选择：
+
 -   个体水平下的建模
 
 $$
@@ -1019,7 +1023,7 @@ plot(fit_gambia_village_vario,
 )
 ```
 
-此时，可以在模型中添加空间效应 $S(x_i)$ ，下面拟合带空间效应的广义线性混合效应模型：
+从上图可以看出空间相关性不是很强了，之前已在模型中添加空间区域变量，解释了大部分空间因素，此时，若在模型中添加空间效应 $S(x_i)$ ，预计效果提升不会很多。下面拟合带空间效应的广义线性混合效应模型：
 
 ```{r}
 library(spaMM)
@@ -1030,7 +1034,7 @@ fit_gambia_spamm <- fitme(pos ~ age + netuse + treated +
 summary(fit_gambia_spamm)
 ```
 
-从输出结果来看，自协方差函数中参数 $\rho = \sqrt{2 \times 0.2587} / 3.154 \times 10^4 = 2280.613$，$\nu = 0.2587$。随着距离增加，相关性递减，近邻相关性辐射最远为 2280.613 米。
+从输出结果来看，对数似然从 -1214.828 提升至 -1174.951，提升不是特别大，自协方差函数中参数 $\rho = \sqrt{2 \times 0.2587} / 3.154 \times 10^4 = 2280.613$，$\nu = 0.2587$。随着距离增加，相关性递减，近邻相关性辐射最远为 2280.613 米，即约2.3公里。
 
 ::: callout-tip
 设置梅隆型自协方差函数中超参数 $\nu = 0.5$， 则模型中的自协方差函数退化为指数型，在函数 `fitme()` 中设置参数 `fixed`，代码如下：
