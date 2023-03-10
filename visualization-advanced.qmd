@@ -1,4 +1,4 @@
-# 高级篇 {#sec-advanced}
+# 统计图形 {#sec-advanced}
 
 ```{r}
 #| echo: false
@@ -6,9 +6,9 @@
 source("_common.R")
 ```
 
--  @sec-visualize-data-distribution 探索、展示数据中隐含的分布信息，具体有箱线图、提琴图、直方图、密度图、岭线图和抖动图。
--  @sec-visualize-data-relation 探索、展示数据中隐含的相关信息，这种相关具有一般性，比如线性和非线性相关，位序关系、包含关系、依赖关系等，具体有散点图、气泡图、凹凸图、韦恩图、甘特图和网络图。
--  @sec-visualize-data-uncertainty 探索、展示数据中隐含的不确定性，统计中描述不确定性有很多概念，比如置信区间、假设检验中的 P 值，统计模型中的预测值及其预测区间，模型残差隐含的分布，模型参数分量的边际分布及其效应，贝叶斯视角下的模型参数的后验分布。
+-   @sec-visualize-data-distribution 探索、展示数据中隐含的分布信息，具体有箱线图、提琴图、直方图、密度图、岭线图和抖动图。
+-   @sec-visualize-data-relation 探索、展示数据中隐含的相关信息，这种相关具有一般性，比如线性和非线性相关，位序关系、包含关系、依赖关系等，具体有散点图、气泡图、凹凸图、韦恩图、甘特图和网络图。
+-   @sec-visualize-data-uncertainty 探索、展示数据中隐含的不确定性，统计中描述不确定性有很多概念，比如置信区间、假设检验中的 P 值，统计模型中的预测值及其预测区间，模型残差隐含的分布，模型参数分量的边际分布及其效应，贝叶斯视角下的模型参数的后验分布。
 
 ## 描述分布 {#sec-visualize-data-distribution}
 
@@ -23,11 +23,7 @@ province_sex_ratio <- readRDS(file = "data/china-sex-ratio-2020.rds")
 knitr::kable(head(province_sex_ratio))
 ```
 
-
-
 ### 箱线图 {#sec-boxplot}
-
-
 
 ```{r}
 #| label: fig-boxplot-gg
@@ -57,9 +53,6 @@ ggplot(data = province_sex_ratio, aes(x = `区域`, y = `性别比（女=100）`
   theme_classic()
 ```
 
-
-
-
 箱线图的历史有 50 多年了，它的变体也有很多。
 
 ```{r}
@@ -73,11 +66,7 @@ ggplot(data = province_sex_ratio, aes(x = `区域`, y = `性别比（女=100）`
 boxplot(`性别比（女=100）` ~ `区域` , data = province_sex_ratio)
 ```
 
-
-
-
 ### 提琴图 {#sec-violin}
-
 
 ```{r}
 #| label: fig-violin-gg
@@ -90,8 +79,6 @@ ggplot(data = province_sex_ratio, aes(x = `区域`, y = `性别比（女=100）`
   geom_violin(fill = "lightgray", draw_quantiles = c(0.25, 0.5, 0.75)) +
   theme_classic()
 ```
-
-
 
 ```{r}
 #| label: fig-violin-vioplot
@@ -108,7 +95,6 @@ vioplot::vioplot(`性别比（女=100）` ~ `区域`,
 
 beanplot 的名字是根据图形的外观取的，豌豆，rug 用须线表示数据
 
-
 ```{r}
 #| label: fig-violin-beanplot
 #| fig-cap: "提琴图"
@@ -123,10 +109,7 @@ beanplot::beanplot(`性别比（女=100）` ~ `区域`,
 )
 ```
 
-
-
 ### 直方图 {#sec-histogram}
-
 
 ```{r}
 #| label: fig-histogram
@@ -140,7 +123,6 @@ ggplot(data = province_sex_ratio, aes(x = `性别比（女=100）`, fill = `区�
   theme_classic()
 ```
 
-
 ```{r}
 #| label: fig-freqpoly
 #| fig-cap: "直方图"
@@ -152,7 +134,6 @@ ggplot(data = province_sex_ratio, aes(x = `性别比（女=100）`, color = `区
   geom_freqpoly(binwidth = 5, stat = "bin") +
   theme_classic()
 ```
-
 
 ### 密度图 {#sec-density}
 
@@ -170,7 +151,6 @@ ggplot(data = province_sex_ratio, aes(x = `性别比（女=100）`)) +
   theme_classic()
 ```
 
-
 @fig-density-stack 丢失边际密度
 
 ```{r}
@@ -185,10 +165,9 @@ ggplot(data = province_sex_ratio, aes(x = `性别比（女=100）`, y = after_st
   theme_classic()
 ```
 
-:::{.callout-caution}
-Stacked density plots: if you want to create a stacked density plot, you probably want to 'count' (density * n) variable instead of the default density
+::: callout-caution
+Stacked density plots: if you want to create a stacked density plot, you probably want to 'count' (density \* n) variable instead of the default density
 :::
-
 
 @fig-density-count 保护边际密度
 
@@ -205,7 +184,6 @@ ggplot(data = province_sex_ratio, aes(x = `性别比（女=100）`, y = after_st
 ```
 
 什么原因导致 @fig-density-count 和 @fig-density-stack 看起来没什么差别呢？而换一组数据，就可以看出明显的差别，条件密度曲线 @fig-density-count
-
 
 ```{r}
 #| label: fig-density-diamonds
@@ -302,7 +280,6 @@ ggplot(data = state_x77, aes(x = Income, y = `Life Exp`)) +
 
 相比于 **ggplot2** 内置的二维核密度估计，[**ggdensity**](https://github.com/jamesotto852/ggdensity/) [@ggdensity2022] 有一些优势，根据数据密度将目标区域划分，更加突出层次和边界。[gghdr](https://github.com/Sayani07/gghdr) 与 ggdensity 类似，展示 highest density regions (HDR)
 
-
 ```{r}
 #| label: fig-density-hdr
 #| fig-cap: "二维密度图"
@@ -322,11 +299,9 @@ ggplot(data = state_x77, aes(x = Income, y = `Life Exp`)) +
   )
 ```
 
-
 ### 岭线图 {#sec-ridge-line}
 
 叠嶂图，还有些其它名字，如峰峦图、岭线图等，详情参考统计之都主站[《叠嶂图的前世今生》](https://cosx.org/2018/04/ridgeline-story/)，主要用来描述数据的分布情况，在展示分布的对比上效果非常好。
-
 
 @fig-ridge-line 设置窗宽为 1.5 个百分点
 
@@ -365,21 +340,17 @@ ggplot(data = province_sex_ratio, aes(x = `性别比（女=100）`, y = `区域`
   theme_classic()
 ```
 
-:::{.callout-tip}
+::: callout-tip
 除了中国国家统计年鉴，各省、自治区、直辖市及各级统计局每年都会发布一些统计年鉴、公告等数据，读者可以在此基础上继续收集更多数据，来分析诸多有意思的问题：
 
-1. 城市、镇和乡村男女性别比呈现差异化分布的成因。
-1. 城市、镇和乡村男女年龄构成。
-1. 将上述问题从省级下钻到市、县级来分析。
+1.  城市、镇和乡村男女性别比呈现差异化分布的成因。
+2.  城市、镇和乡村男女年龄构成。
+3.  将上述问题从省级下钻到市、县级来分析。
 :::
-
-
-
 
 ### 抖动图 {#sec-jitter}
 
 散点图展示原始数据
-
 
 ```{r}
 #| label: fig-point
@@ -393,7 +364,7 @@ ggplot(data = province_sex_ratio, aes(x = `区域`, y = `性别比（女=100）`
   theme_classic()
 ```
 
-:::{.callout-tip}
+::: callout-tip
 Base R 函数 `stripchart()` 可以实现类似 @fig-point 的效果。
 
 ```{r}
@@ -411,7 +382,6 @@ stripchart(`性别比（女=100）` ~ `区域`,
 )
 ```
 :::
-
 
 抖动图展示原始数据
 
@@ -498,10 +468,7 @@ ggplot(data = province_sex_ratio, aes(x = `区域`, y = `性别比（女=100）`
   theme_classic()
 ```
 
-
-
 ## 描述关系 {#sec-visualize-data-relation}
-
 
 ### 散点图 {#sec-scatter}
 
@@ -540,11 +507,9 @@ ggplot(data = china_raise_illiteracy) +
   labs(x = "抚养比（%）", y = "文盲率（%）")
 ```
 
-
 ### 气泡图 {#sec-bubble}
 
 气泡图在散点图的基础上，添加了散点大小的视觉维度，可以在图上多展示一列数据，下 @fig-china-raise-illiteracy-bubble 新增了人口数变量。此外，在气泡旁边添加地区名称，将气泡填充的颜色也映射给了人口数变量。
-
 
 ```{r}
 #| label: fig-china-raise-illiteracy-bubble
@@ -574,7 +539,6 @@ ggplot(
   theme_classic() +
   labs(x = "抚养比（%）", y = "文盲率（%）")
 ```
-
 
 ### 凹凸图 {#sec-bump}
 
@@ -626,8 +590,6 @@ ggplot(df, aes(year, rank, color = country)) +
   coord_fixed(ratio = 0.5)
 ```
 
-
-
 ### 韦恩图 {#sec-venn-diagram}
 
 韦恩图描述集合、群体的交叉关系，整体和部分的包含关系，[**ggVennDiagram**](https://github.com/gaospecial/ggVennDiagram/) 包展示 A、B、C 三个集合的交叉关系，如 @fig-venn 所示
@@ -644,13 +606,9 @@ ggVennDiagram::ggVennDiagram(x) +
   scale_fill_gradient(low = "#F4FAFE", high = "#4981BF")
 ```
 
-
 ### 甘特图 {#sec-gantt}
 
-
-甘特图常用于项目、流程管理，描述节点之间的依赖关系，展示关键节点。
-[**ganttrify**](https://github.com/giocomai/ganttrify) 包专门用来绘制甘特图，如 @fig-gant 所示。
-
+甘特图常用于项目、流程管理，描述节点之间的依赖关系，展示关键节点。 [**ganttrify**](https://github.com/giocomai/ganttrify) 包专门用来绘制甘特图，如 @fig-gant 所示。
 
 ```{r}
 #| label: fig-gant
@@ -665,10 +623,7 @@ ganttrify(project = ganttrify::test_project,
           font_family = "sans")
 ```
 
-
-
 ### 网络图 {#sec-network}
-
 
 [**tidygraph**](https://github.com/thomasp85/tidygraph)包 操作图数据，[**ggraph**](https://github.com/thomasp85/ggraph)包描述网络图中节点重要性及依赖关系。
 
@@ -679,8 +634,6 @@ graph <- tidygraph::as_tbl_graph(highschool) |>
 
 graph
 ```
-
-
 
 ```{r}
 #| label: fig-graph
@@ -700,10 +653,9 @@ ggraph(graph, layout = "kk") +
   )
 ```
 
-
 ## 描述不确定性 {#sec-visualize-data-uncertainty}
 
-
+```{=html}
 <!-- 
 可视化不确定性，这属于高级篇内容，阐述一些常用、常见的统计概念
 https://github.com/wilkelab/ungeviz
@@ -718,25 +670,20 @@ https://wilkelab.org/SDS375/slides/visualizing-uncertainty.html#1
 
 [ggdist](https://github.com/mjskay/ggdist) Visualizations of distributions and uncertainty [@ggdist2022]
 -->
-
-
-
+```
 ### 置信区间 {#sec-confidence-interval}
 
+```{=html}
 <!-- 
 描述点估计的不确定性
 二项分布参数 p 的点估计与区间估计，与后续覆盖概率联系起来
 -->
-
-
-
-| 0 | 1 | 2 | $\cdots$ | n |
-|:--|:---|:---|:---|:---|
+```
+| 0     | 1     | 2     | $\cdots$ | n     |
+|:------|:------|:------|:---------|:------|
 | $p_0$ | $p_1$ | $p_2$ | $\cdots$ | $p_n$ |
 
 : 二项分布的分布列 {#tbl-binom}
-
-
 
 二项分布 $\mathrm{Bin}(n,p)$ 的参数 $p$ 的精确区间估计如下：
 
@@ -746,13 +693,12 @@ $$ {#eq-clopper-ci}
 
 $x$ 是成功次数，$n$ 是实验次数，$B(p;v,w)$ 是形状参数为 v 和 w 的 Beta 分布的 p 分位数，p 的置信区间的上下限 $P_L,P_U$ 满足
 
-
+```{=tex}
 \begin{align}
 \frac{\Gamma(n+1)}{\Gamma(x)\Gamma(n-x+1)}\int_{0}^{P_L}t^{x-1}(1-t)^{n-x}\mathrm{dt} &= \frac{\alpha}{2} \\
 \frac{\Gamma(n+1)}{\Gamma(x+1)\Gamma(n-x)}\int_{0}^{P_U}t^{x}(1-t)^{n-x-1}\mathrm{dt} &= 1-\frac{\alpha}{2}
 \end{align}
-
-
+```
 $p_x$ 表示二项分布 $\mathrm{Bin}(n,p)$ 第 $x$ 项的概率，$x$ 的取值为 $0,1,\cdots,n$
 
 $$p_x = \binom{n}{x}p^x(1-p)^{n-x}, \quad x = 0,1,\cdots,n$$
@@ -763,11 +709,12 @@ $$S_k = \sum_{x=0}^{k} p_x$$
 
 $S_k$ 服从形状参数为 $n-k,k+1$ 的贝塔分布 $I_x(a,b)$，对应于 R 函数 `pbeta(x,a,b)`。 $S_k$ 看作贝塔分布的随机变量 $X$
 
+```{=tex}
 \begin{align}
 B_x(a,b) &=\int_{0}^{x}t^{a-1}(1-t)^{b-1}\mathrm{dt} \\
 I_x(a,b) &= \frac{B_x(a,b)}{B(a,b)}, \quad B(a,b) = B_1(a,b)
 \end{align}
-
+```
 考虑二项总体的参数 $p=0.7$，重复模拟 50 次，每次模拟获得的比例 $\hat{p}$ 及其置信区间，如 @fig-clopper-pearson-ci 所示，置信区间覆盖真值的情况用不同颜色表示，覆盖用 TRUE 表示，没有覆盖用 FALSE 表示
 
 ```{r}
@@ -797,22 +744,17 @@ ggplot(data = dat, aes(x = 1:50, y = nd / 10, colour = cover)) +
   labs(x = "第几次模拟", y = "置信区间上下限", color = "覆盖")
 ```
 
-
-
-
-
-
 ### 假设检验 {#sec-hypothesis-tests}
 
+```{=html}
 <!-- 
 描述检验统计假设的不确定性  P 值和功效
 对一个统计假设，我有一套方法来检验其正确性，但结论具有不确定性（小概率原理，P 值和风险联系），同一个统计假设，同一组数据，不同的检验方法有不同的 P 值，是检验方法的功效不同。
 
 [ggpubr](https://github.com/kassambara/ggpubr) 制作出版级统计图形，两样本均值的比较
 -->
-
+```
 [**ggpval**](https://github.com/s6juncheng/ggpval) 在图上添加检验的 P 值结果，[**ggsignif**](https://github.com/const-ae/ggsignif) [@ggsignif2021] 在图上添加显著性注释。[**ggstatsplot**](https://github.com/IndrajeetPatil/ggstatsplot) [@Indrajeet2021] 可视化统计检验、模型的结果，描述功效变化。
-
 
 ```{r}
 #| label: fig-plant-growth
@@ -843,17 +785,15 @@ with(
   labs(x = "组别", y = "植物干重")
 ```
 
-::: {.callout-note}
+::: callout-note
 R 3.5.0 以后，函数 `aggregate()` 的参数 `drop` 默认值为 `TRUE`， 表示扔掉未用来分组的变量，聚合返回的是一个矩阵类型的数据对象。
 :::
-
 
 单因素方差分析
 
 ```{r}
 oneway.test(data = PlantGrowth, weight ~ group)
 ```
-
 
 @fig-signif 展示假设检验的结果
 
@@ -875,9 +815,9 @@ ggplot(data = PlantGrowth, aes(x = group, y = weight)) +
   coord_cartesian(clip = "off")
 ```
 
-
 ### 模型预测 {#sec-model-predictions}
 
+```{=html}
 <!-- 
 描述模型预测/曲线拟合的不确定性
 趋势拟合和描述关系中添加回归线及置信带
@@ -890,7 +830,7 @@ https://menugget.blogspot.com/2016/02/visualizing-model-predictions-in-3d.html
 Scalable visualisation methods for modern Generalized Additive Models
 https://arxiv.org/abs/1809.10632
 -->
-
+```
 代码提交量的趋势拟合
 
 ```{r}
@@ -927,21 +867,19 @@ ggplot(data = trunk_year, aes(x = year, y = revision)) +
   labs(x = "年份", y = "提交量")
 ```
 
-
-
 ### 模型诊断 {#sec-model-diagnostics}
-
 
 > 所有模型都是错误的，但有些是有用的。
 >
 > --- 乔治·博克斯
 
+```{=html}
 <!-- 
 描述模型拟合数据的不确定性，
 Cook 距离、高杠杆值、模型诊断、影响测量
 [ggPMX](https://github.com/ggPMXdevelopment/ggPMX) ggplot2 Based Tool to Facilitate Diagnostic Plots for NLME Models
 -->
-
+```
 ```{r}
 #| label: fig-lm-diagnostics
 #| fig-cap: "线性模型的诊断图"
@@ -970,8 +908,6 @@ plot(fit,
 )
 par(op)
 ```
-
-
 
 ### 边际效应 {#sec-marginal-effects}
 
@@ -1011,10 +947,9 @@ ggplot(income_pred, aes(x, predicted)) +
   labs(x = "人均收入", y = "预期寿命")
 ```
 
-
-
 ### 后验分布 {#sec-posterior-distributions}
 
+```{=html}
 <!-- 
 描述参数先验分布的不确定性
 先验分布与后验分布
@@ -1026,8 +961,7 @@ ggplot(income_pred, aes(x, predicted)) +
 
 条件分布、累积分布 [pgog](https://github.com/MUCollective/pgog)
 -->
-
-
+```
 ```{r}
 #| label: setup-cmdstan
 #| echo: false
@@ -1090,7 +1024,7 @@ fit_state_x77 <- mod_state_x77$sample(
 )
 ```
 
-:::{.callout-tip}
+::: callout-tip
 Stan 还提供自动微分变分推断（ADVI）算法做近似贝叶斯推断获取参数的后验分布，以及拟牛顿法（L-BFGS）优化算法获取参数的惩罚极大似然估计。
 :::
 
@@ -1138,5 +1072,3 @@ p1 | p2
 ```
 
 从参数的迭代轨迹可以看出四条马尔可夫链混合得很好，后验分布图主要用来描述参数的迭代结果，后验分布图可以是直方图或密度图的形式，可以和 @tbl-state-x77-output 一道检验模型的拟合情况。
-
-
