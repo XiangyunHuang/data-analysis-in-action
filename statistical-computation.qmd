@@ -6,14 +6,13 @@
 source("_common.R")
 ```
 
-::: {.hidden}
+::: hidden
 $$
  \def\bm#1{{\boldsymbol #1}}
 $$
 :::
 
 ## 优化问题与回归问题 {#sec-regression-optimization}
-
 
 1996 年出现 Lasso [@lasso1996]，由于缺少高效的求解算法，Lasso 在高维小样本特征选择研究中没有广泛流行，最小角回归(Least Angle Regression, LAR)算法 [@lar2004] 的出现有力促进了Lasso在高维小样本数据中的应用。为了解决Lasso的有偏估计问题，自适应 Lasso、松弛 Lasso， SCAD (Smoothly Clipped Absolute Deviation)[@scad2008]，MCP (Minimax Concave Penalty)[@mcp2010] 陆续出现。经典的普通最小二乘、广义最小二乘、岭回归、逐步回归、Lasso 回归、最优子集回归都可转化为优化问题，一般形式如下：
 
@@ -103,7 +102,7 @@ ggplot() +
 
 R 语言中分别表示逻辑斯谛分布的密度函数、分布函数、分位函数和随机数生成函数如下：
 
-```r
+``` r
 dlogis(x, location = 0, scale = 1, log = FALSE)
 plogis(q, location = 0, scale = 1, lower.tail = TRUE, log.p = FALSE)
 qlogis(p, location = 0, scale = 1, lower.tail = TRUE, log.p = FALSE)
@@ -339,7 +338,7 @@ coef(fit_r2)
 
 函数 `glm()` 的参数是一个公式，函数 `glm.fit()` 的参数是矩阵、向量，用函数 `glm()` 拟合模型，其内部调用的就是函数 `glm.fit()`。
 
-::: {.callout-tip}
+::: callout-tip
 逻辑回归模型也是最简单的二分类模型，评估模型的分类效果，可以用 AUC 指标或者 ROC 曲线刻画，**pROC** 包提供了非常高效的计算。
 
 ```{r}
@@ -416,7 +415,6 @@ comp_auc <- function(dat, show_roc = TRUE) {
 sim_dat = cbind.data.frame(pred = dat_test$pred, label =  dat_test$y) 
 comp_auc(dat = sim_dat, show_roc = FALSE)
 ```
-
 :::
 
 ### glmnet {#sec-logit-glmnet}
@@ -466,255 +464,6 @@ coef(fit_glm, s = 0.0005247159)
 
 截距 (Intercept) 对应 $\alpha = 0.997741857$，而 $\beta_1 = 3.076358149$ 对应 V1，$\beta_2 = -1.984018387$ 对应 V2，以此类推。
 
-## 贝叶斯计算框架 Stan {#sec-bayesian-computation-stan}
-
-<!--
-逻辑回归写得很好
-[Getting the most out of logistic regression](https://gongcastro.github.io/blog/logistic-regression/logistic-regression.html)
-先验分布与惩罚函数
-https://github.com/jgabry/bayes-workflow-book/blob/master/bayesian-estimation.Rmd
-Stan 入门写得很好 [Getting Started with Stan](https://github.com/LuZhangstat/Getting-Started-with-Stan)
--->
-
-
-[Stan](https://github.com/stan-dev/stan) 是一款贝叶斯计算软件，定义了一套概率编程语言，提供 R、Python、Matlab 语言等众多的编程接口，[CmdStan](https://github.com/stan-dev/cmdstan) 是其命令行编程接口，与 Stan 版本保持同步，[**CmdStanR**](https://github.com/stan-dev/cmdstanr) 包集成 CmdStan 软件，可以非常方便地分析运行结果。下面以逻辑回归模型为例，介绍 CmdStan 框架的使用。
-
-### 先验分布与惩罚函数 {#sec-priori-penalty}
-
-在极大似然估计的框架下，以线性模型为例，贝叶斯估计和惩罚极大似然估计是等价的，先验分布的形式对应惩罚函数的形式，如正态先验对应于 L2 惩罚、拉普拉斯先验对应 L1 惩罚。
-
-### 汉密尔顿蒙特卡罗 {#sec-hamiltonian-monte-carlo}
-
-学习汉密尔顿蒙特卡罗算法 [@Thomas2021]
-
-NUTS 是一个采样器，在汉密尔顿蒙特卡罗算法中实现自适应调整步长，有利于提高采样效率 [@Hoffman2014]，NUTS 采样算法已应用于 TMB 和 ADMB [@Fournier2012]框架中 [@Monnahan2018]。
-
-
-### 自动微分与变分推断 {#sec-automatic-differentiation-variational-inference}
-
-<!-- ADMB Tensorflow 自动微分广泛应用于现代统计计算软件-->
-
-Stan 计算框架包含自动微分组件，在似然函数非常复杂的情况下，手动推导已不可能，必须使用自动微分[@Kucukelbir2015]。
-
-
-
-### 安装配置 CmdStanR {#sec-setup-cmdstanr}
-
-CmdStan 是 Stan 的命令行接口，拥有完整的 Stan 功能，版本更新与上游的 Stan 保持同步，**CmdStanR** 是 CmdStan 的 R 语言接口 [**cmdstanr**](https://github.com/stan-dev/cmdstanr) 包，相比于 **rstan** 包更加轻量，可以更快地将 CmdStan 的新功能融入进来，**cmdstanr** 和 CmdStan 是分离的，方便用户滚动升级和版本管理。下面从 GitHub 下载最新版的[源码包](https://github.com/stan-dev/cmdstan/releases/latest)，然后编译二进制版本。
-
-```bash
-# 准备 CmdStan 存放目录
-sudo mkdir -p /opt/cmdstan-2.31.1
-sudo chown -R $(whoami):staff /opt/cmdstan-2.31.1
-# 将压缩文件解压到
-tar -xzf cmdstan-2.31.1.tar.gz -C /opt/
-# 进入 CmdStan 主目录
-cd cmdstan-2.31.1
-# 编译出可执行的二进制文件
-make build
-```
-
-设置环境变量 CMDSTAN 指向 CmdStan 安装路径，这样，加载 **cmdstanr** 包会自动使用相应版本的 CmdStan 库。设置环境变量 `CMDSTANR_NO_VER_CHECK=TRUE`，让 **cmdstanr** 包加载时不要检查 CmdStan 是不是最新版。截止写作时间，本文使用的 CmdStan 版本为 2.31.1。
-
-```r
-Sys.setenv(CMDSTAN="/opt/cmdstan-2.31.1")
-Sys.setenv(CMDSTANR_NO_VER_CHECK=TRUE)
-```
-
-**cmdstanr** 包当前还在 Github 上开发，没有正式发布在 CRAN 上，安装方式如下：
-
-```{r}
-#| eval: false
-#| echo: true
-
-install.packages(
-  pkgs = c("cmdstanr", "rstan", "StanHeaders"),
-  repos = c("https://mc-stan.org/r-packages/", getOption("repos")),
-  dependencies = TRUE
-)
-```
-
-
-### 拟合逻辑回归模型 {#sec-logit-cmdstanr}
-
-下面用 Stan 编码逻辑回归模型，模型代码如下：
-
-```{verbatim, file="code/bernoulli_logit_glm.stan", lang="stan"}
-```
-
-Stan 代码主要分三部分：
-
-1. 数据部分：
-
-1. 参数部分：
-
-1. 模型部分：
-
-CmdStan 已经安装了，接下来，用 **cmdstanr** 包调 CmdStan 拟合模型，有三步：其一根据上面 Stan 代码中数据块的定义准备输入数据，其二编译上面的 Stan 代码获得可执行的模型文件，其三将数据输送到可执行的模型文件进行抽样。
-
-```{r}
-#| label: compile-logit-model
-#| message: false
-#| results: hide
-
-library(cmdstanr)
-# 准备数据
-mdata <- list(k = k, n = n, y = y, X = X)
-# 来自 stan-dev/cmdstanr
-mod_logit <- cmdstan_model(
-  stan_file = "code/bernoulli_logit_glm.stan",
-  compile = TRUE,
-  cpp_options = list(stan_threads = TRUE)
-)
-fit_logit <- mod_logit$sample(
-  data = mdata,
-  chains = 4,
-  parallel_chains = 1,
-  iter_warmup = 1000, # 每条链预处理迭代次数
-  iter_sampling = 2000, # 每条链总迭代次数
-  threads_per_chain = 1, # 每条链设置一个线程
-  seed = 20232023,
-  show_messages = FALSE,
-  refresh = 0
-)
-```
-
-模型拟合结果存储为一个 [**R6**](https://github.com/r-lib/R6) 类型的数据对象，调用 summary 方法可以获得任意参数的结果，见 @tbl-logit-output 。
-
-```{r}
-#| label: tbl-logit-output
-#| tbl-cap: "模型参数的贝叶斯估计结果"
-#| echo: false
-
-fit_logit$summary(c("alpha", "beta", "lp__")) |>
-  knitr::kable(digits = 3)
-```
-
-`lp__` 是后验概率密度函数取对数的值，是负值，而在前面频率派方法中，对数似然函数取了负数，所以是正的。
-
-
-贝叶斯方法估计模型参数是通过抽样获得的，抽样的过程是参数迭代的过程，如果迭代过程是收敛的，估计值最终会收敛到参数的真值。一般来说，我们希望迭代的效率越高越好，只需要少量的迭代次数和短暂的时间就可以获得很好的效果。接下来，看看采样过程的诊断结果：
-
-```{r}
-fit_logit$cmdstan_diagnose()
-```
-
-每个参数都有迭代轨迹，诊断链条的平稳性很重要，有几个指标很关键：
-
-1. 有效样本数 （Effective Sample Size，简称 ESS） $n_{eff}$ 
-
-1. 潜在尺度缩减因子 （Potential Scale Reduction Factor）$\hat{R}$ 
-
-采样效率可以理解为每秒迭代产生有效样本数。
-
-```{r}
-# 简化版本
-fit_logit$diagnostic_summary()
-```
-
-数据是根据给定模型生成的，数据与模型吻合得很好，迭代过程没有任何发散的情况。还可以可视化的方式检查参数的迭代情况，**bayesplot** 包[@Gabry2019]提供大量的可视化函数检查迭代过程和结果，逻辑回归模型的参数 $\beta_1$ 和 $\beta_2$ 的轨迹图如下：
-
-```{r}
-#| label: fig-post-logit-trace
-#| fig-cap: "参数的迭代轨迹"
-#| fig-showtext: true
-#| fig-width: 5
-#| fig-height: 6
-#| message: false
-
-library(ggplot2)
-library(bayesplot)
-mcmc_trace(fit_logit$draws(c("beta[1]", "beta[2]")),
-  facet_args = list(
-    labeller = ggplot2::label_parsed,
-    strip.position = "top",
-    ncol = 1
-  )
-) + theme_classic()
-```
-
-马尔科夫链蒙特卡罗采样的后验分布图如下：
-
-```{r}
-#| label: fig-post-logit-hist
-#| fig-cap: "参数的后验分布"
-#| fig-showtext: true
-#| fig-width: 5
-#| fig-height: 6
-#| message: false
-
-mcmc_hist(fit_logit$draws(c("beta[1]", "beta[2]")),
-  facet_args = list(
-    labeller = ggplot2::label_parsed,
-    strip.position = "top",
-    ncol = 1
-  )
-) + theme_classic()
-```
-
-图检验的其他方法还有轨迹图 `mcmc_trace()`，散点图 `mcmc_scatter()`，密度图 `mcmc_dens()`，直方图 `mcmc_hist()`，自相关图 `mcmc_acf()`，区间图 `mcmc_intervals()` 和岭线图 `mcmc_areas_ridges()` 等。
-
-
-**CmdStanR** 的 sample 方法默认的采样器为 NUTS 的 HMC 算法，**CmdStanR** 的封装导致不能修改采样器，读者若想修改，Stan 的命令行接口 CmdStan 支持修改采样器，不过推荐读者使用默认的 NUTS 采样器，它是根据动态调整来决定 optimal integration time。NUTS 采样器的参数 `max_depth = 10` 是可以调整的，采样的树深度。
-
-除了 sample 方法还有优化 optimize （L-BFGS 算法）和变分推断 variational 两个优化器。
-
-```{r}
-#| results: false
-# L-BFGS 算法拟合模型
-fit_optim_logit <- mod_logit$optimize(
-  data = mdata, # 观测数据
-  init = 0, # 所有参数初值设为 0
-  refresh = 0, # 不显示迭代进程
-  algorithm = "lbfgs", # 优化器
-  threads = 1, # 单线程
-  seed = 20232023 # 随机数种子
-)
-```
-
-模型输出结果如下：
-
-```{r}
-fit_optim_logit$summary(c("alpha", "beta", "lp__"))
-```
-
-Stan 实现的 variational 方法调用自动微分变分近似推断优化器（ADVI 算法）获取参数的后验分布。
-
-```{r}
-#| results: false
-# 自动微分变分近似推断
-fit_advi_logit <- mod_logit$variational(
-  data = mdata, # 观测数据
-  init = 0, # 所有参数初值设为 0
-  refresh = 0, # 不显示迭代进程
-  algorithm = "meanfield", # 优化器
-  threads = 1, # 单线程
-  seed = 20232023 # 随机数种子
-)
-```
-
-模型输出结果见下 @tbl-logit-advi 。
-
-```{r}
-#| label: tbl-logit-advi
-#| tbl-cap: "模型参数的 ADVI 结果"
-#| echo: false
-
-fit_advi_logit$summary(c("alpha", "beta", "lp__")) |>
-  knitr::kable(digits = 3)
-```
-
-::: {.callout-tip}
-**CmdStanR** 始终与 CmdStan 保持同步更新，及时地用上集成到 Stan 当中的学术研究成果。而 **RStan** 及其衍生包 **rstanarm** 和 **brms** 等依赖太重，安装、更新都比较麻烦。入门 **CmdStanR** 后，可以快速转入对 Stan 底层原理的学习，有利于编码符合实际需要的复杂模型，有利于掌握常用的炼丹技巧，提高科研和工作的效率。
-:::
-
-
-
-
-
-
-
-
 ## 机器学习框架 tensorflow {#sec-machine-learning-tensorflow}
 
 ### 软件配置 {#sec-setup-tensorflow}
@@ -723,19 +472,19 @@ fit_advi_logit$summary(c("alpha", "beta", "lp__")) |>
 
 如果读者是 MacOS 系统，推荐安装命令行工具 Command Line Tools for Xcode，它提供大量常用的开发工具，如 Apple LLVM compiler, linker, and Make，Git，Python 等。安装过程非常简单，只需如下一行命令。
 
-```bash
+``` bash
 xcode-select --install
 ```
 
 也可以在网上先下载[工具包](https://developer.apple.com/download/all/)，再离线安装。最近的 MacOS 系统已经自带了 Python 3.9.x，所以，只需在系统中安装 [virtualenv](https://github.com/pypa/virtualenv) 软件。推荐使用软件包管理工具[brew](https://github.com/Homebrew/brew)来安装。
 
-```bash
+``` bash
 brew install virtualenv
 ```
 
 用 virtualenv 创建虚拟环境，虚拟环境的存放路径是 `/opt/.virtualenvs/r-tensorflow`，所以名字就是 `r-tensorflow`
 
-```bash
+``` bash
 # 准备虚拟环境萼存放地址
 sudo mkdir -p /opt/.virtualenvs/r-tensorflow
 # 赋予当前用户的读写权限
@@ -750,7 +499,7 @@ source $RETICULATE_PYTHON_ENV/bin/activate
 
 激活虚拟环境后，进入书籍仓库根目录，从指定文件 requirements.txt 安装 Python 模块。
 
-```bash
+``` bash
 pip install -r requirements.txt
 ```
 
@@ -758,14 +507,14 @@ pip install -r requirements.txt
 
 接下来配置 R 环境，使得可以在 R 语言中调用 tensorflow 模块，搭建机器学习模型。在文件 `.Rprofile` 里设置环境变量 `RETICULATE_PYTHON` 和 `RETICULATE_PYTHON_ENV`，这样 [**reticulate**](https://github.com/rstudio/reticulate) 包就能发现和使用它了。
 
-```bash
+``` bash
 Sys.setenv(RETICULATE_PYTHON="/opt/.virtualenvs/r-tensorflow/bin/python")
 Sys.setenv(RETICULATE_PYTHON_ENV="/opt/.virtualenvs/r-tensorflow")
 ```
 
 最后，输入命令 `reticulate::py_config()` 检查配置情况，看到如下结果，表示配置成功。
 
-```
+```         
 python:         /opt/.virtualenvs/r-tensorflow/bin/python
 libpython:      /Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/config-3.9-darwin/libpython3.9.dylib
 pythonhome:     /opt/.virtualenvs/r-tensorflow:/opt/.virtualenvs/r-tensorflow
@@ -777,11 +526,10 @@ numpy_version:  1.24.2
 NOTE: Python version was forced by RETICULATE_PYTHON
 ```
 
-
-::: {.callout-tip}
+::: callout-tip
 如果希望打开终端就进入虚拟环境，可以在 `~/.zshrc` 文件中添加两行：
 
-```bash
+``` bash
 export RETICULATE_PYTHON_ENV=/opt/.virtualenvs/r-tensorflow
 source $RETICULATE_PYTHON_ENV/bin/activate
 ```
