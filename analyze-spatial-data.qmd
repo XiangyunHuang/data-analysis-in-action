@@ -343,34 +343,6 @@ logLik(fit_rongelap_glm)
 logLik(fit_rongelap_glmer)
 ```
 
-::: callout-note
-对于混合效应模型，使用 Stan 框架来拟合，需要根据数据指定合适的先验分布，否则马尔可夫链不太容易收敛，迭代效率低，结果不太可靠。
-
-```{r}
-#| eval: false
-#| code-fold: true
-#| echo: !expr knitr::is_html_output()
-
-library(cmdstanr)
-set_cmdstan_path(path = "/opt/cmdstan/cmdstan-2.31.0")
-# 如何设置先验分布
-fit_rongelap_brm <- brms::brm(
-  counts ~ 1 + (1 | dummary) + offset(log(time)),
-  data = rongelap,
-  family = poisson(link = "log"),
-  # silent = 2, # 关闭消息
-  refresh = 0, # 不显示迭代进度
-  seed = 20232023,
-  backend = "cmdstanr" # 选择后端 rstan 或 cmdstanr
-)
-summary(fit_rongelap_brm)
-# 发散很多
-plot(fit_rongelap_brm)
-WAIC(fit_rongelap_brm)
-pp_check(fit_rongelap_brm)
-```
-:::
-
 进一步，去掉随机效应相互独立的假设，随机效应之间存在相关性结构，这更符合位置效应存在相互影响的实际情况，结合 @fig-rongelap-vario ， 核辐射强度的经验变差图呈现的空间相关性，也因此要引入带空间随机效应的广义线性混合效应模型。
 
 ```{r}
