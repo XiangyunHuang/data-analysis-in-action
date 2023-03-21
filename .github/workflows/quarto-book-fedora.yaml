@@ -36,6 +36,14 @@ jobs:
         run: |
           quarto render
 
+      - name: Deploy book to bookdown.org
+        if: github.event_name == 'push'
+        env:
+          CONNECT_API_KEY: ${{ secrets.RSC_BOOKDOWN_TOKEN }}
+          CONTENT_ID: ${{ secrets.RSC_BOOKDOWN_APP_ID }}
+        run: |
+          Rscript '_deploy.R'
+
       - name: Deploy to Netlify
         if: contains(env.isExtPR, 'false')
         id: netlify-deploy
@@ -52,3 +60,10 @@ jobs:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
         timeout-minutes: 10
+
+      - name: Upload book folder for debug
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: Upload Book
+          path: _book
