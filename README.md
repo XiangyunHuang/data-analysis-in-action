@@ -2,7 +2,18 @@
 
 # R 语言数据分析实战
 
-本仓库作为《R 语言数据分析实战》书稿源码的托管地址。
+本仓库作为《R 语言数据分析实战》书稿源码的托管地址。目前完成度较高的章节有
+
+-   数据探索
+    -   ggplot2 入门
+    -   基础图形
+    -   统计图形
+-   数据交流
+    -   交互图形
+-   数据建模
+    -   预测核辐射强度的分布
+-   附录
+    -   统计计算
 
 ## 在线编译网页书籍
 
@@ -14,20 +25,19 @@
 
 2.  然后，即可在 RStudio IDE 内运行书籍内任意代码和示例，甚至编译整本书籍。
 
-
 ## 本地编译网页书籍
 
 ### 方法 1
 
-```bash
+``` bash
 # 拉取镜像
-docker pull xiangyunhuang/daar:1.0.0
+docker pull ghcr.io/xiangyunhuang/daar:latest
 # 进入项目目录
 cd ~/Documents/data-analysis-in-action
 # 启动容器
 docker run -itd -p 8484:8787 --name=daar \
   --privileged=true -v "/${PWD}:/home/docker" \
-  xiangyunhuang/daar:1.0.0
+  ghcr.io/xiangyunhuang/daar:latest
 # 进入容器
 docker exec -it daar bash
 # 编译书籍
@@ -52,4 +62,3 @@ quarto render
     或者，点击 Build 窗口内的工具按钮 `Build All`，就可以看到编译书籍的过程了，等待编译完成。
 
 3.  最后，进入项目根目录下的文件夹 `_book/`，点击网页文件 `index.html`，即可在线浏览书籍。
-
