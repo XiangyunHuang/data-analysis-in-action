@@ -480,7 +480,7 @@ fit_rongelap_spamm <- fitme(counts ~ 1 + Matern(1 | cX + cY) + offset(log(time))
 summary(fit_rongelap_spamm)
 ```
 
-从输出结果来看，与 **glmmTMB** 很接近，模型固定效应的截距项 1.824，随机效应的方差为 0.2973，自协方差函数中参数 $\nu = 0.3642$，对比 **spaMM** 包的函数 `Matern()` 实现的 Matérn 型自相关函数公式与 @eq-matern-formula ，输出结果需要转化一下，以符合 @eq-matern-formula ，则 $\rho = \sqrt{2 \times 0.364211759} / 0.0061486 = 138.8079$ ，即空间相关性的最大影响距离为 138.8 米，对数似然函数值为 -1317.551，可见拟合效果的提升几乎可以忽略。
+从输出结果来看，与 **glmmTMB** 很接近，模型固定效应的截距项 1.824，随机效应的方差为 0.2973，自协方差函数中参数 $\nu = 0.3642$，对比 **spaMM** 包的函数 `Matern()` 实现的 Matérn 型自相关函数公式与 @eq-matern-formula ，输出结果需要转化一下，以符合 @eq-matern-formula ，则 $\rho = \sqrt{2 \times 0.364211759} / 0.0061486 = 138.81$ ，即空间相关性的最大影响距离为 138.8 米，对数似然函数值为 -1317.551，可见拟合效果的提升几乎可以忽略。
 
 ## 模型预测 {#sec-rongelap-predict}
 
@@ -503,7 +503,7 @@ st_bbox(rongelap_coastline_sf)
 `rongelap_coastline_sf` 数据集是朗格拉普岛海岸线的采样点坐标，是一个 POINT 类型的数据，为了以海岸线为边界生成规则网格，首先连接点 POINT 构造多边形 POLYGON 对象。POINT 和 POLYGON 是 **sf** 包内建的基础的几何类型，其它复杂的空间类型是由它们衍生而来。函数 `st_geometry` 提取空间点数据中的几何元素，再用函数 `st_combine` 将点组合起来，最后用函数 `st_cast` 转换成 POLYGON 多边形类型。
 
 ```{r}
-rongelap_coastline_sfp <- st_cast(st_combine(st_geometry(rongelap_coastline_sf)), to = "POLYGON")
+rongelap_coastline_sfp <- st_cast(st_combine(st_geometry(rongelap_coastline_sf)), "POLYGON")
 ```
 
 @fig-point-to-polygon 上下两个子图分别展示空间点集和多边形。上图是原始的采样点数据，下图是以点带线，串联 POINT 数据构造 POLYGON 数据后的多边形。后续的数据操作将围绕这个多边形展开。
@@ -551,9 +551,10 @@ ggplot() +
   theme_void()
 ```
 
-接下来，利用函数 `st_make_grid()` 根据海岸缓冲线打网格，朗格拉普岛是狭长的，因此，网格是 $75\times 150$ 的，意味着水平方向 75 行，垂直方向 150 列。网格的疏密程度是可以调整的，网格越密，格点越多，核辐射强度分布越精确，计算也越耗时。
+接下来，利用函数 `st_make_grid()` 根据朗格拉普岛海岸缓冲线构造网格，朗格拉普岛是狭长的，因此，网格是 $75\times 150$ 的，意味着水平方向 75 行，垂直方向 150 列。网格的疏密程度是可以调整的，网格越密，格点越多，核辐射强度分布越精确，计算也越耗时。
 
 ```{r}
+# 构造带边界约束的网格
 rongelap_coastline_grid <- st_make_grid(rongelap_coastline_buffer, n = c(150, 75))
 ```
 
@@ -573,13 +574,14 @@ ggplot() +
   theme_void()
 ```
 
-接下来，调用 **sf** 包函数 `st_intersects()` 将小网格落在缓冲区和岛内的筛选出来，一共 1612 个小网格，再用函数 `st_centroid()` 计算这些网格的中心点坐标。函数 `st_intersects()` 的作用是对多边形和网格取交集，包含与边界线交叉的网格，默认返回值是一个稀疏矩阵，与索引函数\`\[.sf\` 搭配可以非常方便地过滤出目标网格。与之相关的函数 `st_crosses()` 可以获得与边界线交叉的网格。
+接下来，调用 **sf** 包函数 `st_intersects()` 将小网格落在缓冲区和岛内的筛选出来，一共 1612 个小网格，再用函数 `st_centroid()` 计算这些网格的中心点坐标。函数 `st_intersects()` 的作用是对多边形和网格取交集，包含与边界线交叉的网格，默认返回值是一个稀疏矩阵，与索引函数 `[.sf` （这是 **sf** 包扩展 `[` 函数的一个例子）搭配可以非常方便地过滤出目标网格。与之相关的函数 `st_crosses()` 可以获得与边界线交叉的网格。
 
 ```{r}
 # 将 sfc 类型转化为 sf 类型
 rongelap_coastline_grid <- st_as_sf(rongelap_coastline_grid)
 rongelap_coastline_buffer <- st_as_sf(rongelap_coastline_buffer)
 rongelap_grid <- rongelap_coastline_grid[rongelap_coastline_buffer, op = st_intersects]
+# 计算网格中心点坐标
 rongelap_grid_centroid <- st_centroid(rongelap_grid)
 ```
 
