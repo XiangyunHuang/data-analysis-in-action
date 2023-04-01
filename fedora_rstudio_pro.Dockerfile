@@ -31,7 +31,12 @@ RUN dnf -y upgrade \
    passwd \
    initscripts \
    firewalld \
-   v8-devel \
+ # Setup password use passwd
+ && echo 'docker:docker123' | chpasswd \
+ && dnf clean all
+   
+# System dependencies required for Quarto Book project
+RUN dnf -y install v8-devel \
    python3-virtualenv \
    google-noto-cjk-fonts \
    google-noto-sans-fonts \
@@ -61,12 +66,14 @@ RUN dnf -y upgrade \
    texlive-media9 \
  && dnf clean all
 
-# Set R
+# Setup R and RStudio Server Open Source
 RUN ln -s /usr/lib64/R/library/littler/examples/install.r /usr/bin/install.r \
  && ln -s /usr/lib64/R/library/littler/examples/install2.r /usr/bin/install2.r \
  && ln -s /usr/lib64/R/library/littler/examples/installGithub.r /usr/bin/installGithub.r \
  && ln -s /usr/lib64/R/library/littler/examples/testInstalled.r /usr/bin/testInstalled.r \
  && mkdir -p /usr/local/lib/R/site-library \
+ # Set group authority
+ && chown -R docker:staff /usr/local/lib/R/site-library \
  && echo "options(repos = c(CRAN = 'https://cran.r-project.org/'))" | tee -a /usr/lib64/R/etc/Rprofile.site \
  && chmod a+r /usr/lib64/R/etc/Rprofile.site \
  && echo "LANG=en_US.UTF-8" >> /usr/lib64/R/etc/Renviron.site \
@@ -76,12 +83,11 @@ RUN ln -s /usr/lib64/R/library/littler/examples/install.r /usr/bin/install.r \
  && Rscript -e 'x <- file.path(R.home("doc"), "html"); if (!file.exists(x)) {dir.create(x, recursive=TRUE); file.copy(system.file("html/R.css", package="stats"), x)}' \
  && install.r docopt \
  && install2.r remotes \
- # Set RStudio Server
  && dnf -y install rstudio-server \
- && dnf clean all \
  && cp /usr/lib/systemd/system/rstudio-server.service /etc/init.d/ \
  && chmod +x /etc/init.d/rstudio-server.service \
- && systemctl enable rstudio-server
+ && systemctl enable rstudio-server \
+ && dnf clean all
 
 # Set CmdStanR
 ENV CMDSTAN=$CMDSTAN
@@ -89,8 +95,8 @@ ENV CMDSTAN=$CMDSTAN
 RUN mkdir -p /opt/cmdstan \
   && curl -fLo cmdstan-${CMDSTAN_VERSION}.tar.gz https://github.com/stan-dev/cmdstan/releases/download/v${CMDSTAN_VERSION}/cmdstan-${CMDSTAN_VERSION}.tar.gz \
   && tar -xzf cmdstan-${CMDSTAN_VERSION}.tar.gz -C /opt/cmdstan/ \
-  && rm -rf cmdstan-${CMDSTAN_VERSION}.tar.gz \
-  && make -C ${CMDSTAN} build
+  && make -C ${CMDSTAN} build \
+  && rm -rf cmdstan-${CMDSTAN_VERSION}.tar.gz
 
 # Set Extra R Packages
 COPY DESCRIPTION DESCRIPTION
@@ -123,11 +129,6 @@ RUN curl -fLo quarto.tar.gz https://github.com/quarto-dev/quarto-cli/releases/do
  && mv -f /usr/bin/pandoc /usr/bin/pandoc.bak \
  && ln -s /opt/quarto/quarto-${QUARTO_VERSION}/bin/tools/pandoc /usr/bin/pandoc \
  && rm -f quarto.tar.gz
-
-# Set passwd
-RUN echo 'docker:docker123' | chpasswd \
- # Set group authority
- && chown -R docker:staff /usr/local/lib/R/site-library
 
 # Set locale
 ENV LANG=en_US.UTF-8 \
