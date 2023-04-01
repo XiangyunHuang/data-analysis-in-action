@@ -498,6 +498,8 @@ summary(fit_rongelap_spamm)
 
 接下来，预测给定的边界（海岸线）内任意位置的核辐射强度，展示全岛的核辐射强度分布。先从点构造多边形数据，再将多边形做网格划分，继而将网格中心点作为模型输入获得核辐射强度的预测值。
 
+### 海岸线数据 {#sec-rongelap-coastline}
+
 海岸线上取一些点，点的数量越多，对海岸线的刻画越精确，这在转弯处体现得非常明显。海岸线的数据是以成对的坐标构成，导入 R 语言中，是以数据框的形式存储，为了方便后续的操作，引入空间数据操作的 **sf** 包[@Pebesma2018]，将核辐射数据和海岸线数据转化为 POINT 类型的空间点数据。
 
 ```{r}
@@ -544,6 +546,8 @@ ggplot(rongelap_coastline_sfp) +
   theme_void()
 ```
 
+### 边界处理 {#sec-rongelap-border}
+
 为了确保覆盖整个岛，处理好边界问题，需要一点缓冲空间，就是说在给定的边界线外围再延伸一段距离，构造一个更大的多边形，这可以用函数 `st_buffer()` 实现，根据海岸线构造缓冲区，得到一个 POLYGON 类型的几何数据对象。考虑到朗格拉普岛的实际大小，缓冲距离选择 50 米。
 
 ```{r}
@@ -567,6 +571,8 @@ ggplot() +
   geom_sf(data = rongelap_coastline_buffer, fill = NA, color = "black") +
   theme_void()
 ```
+
+### 构造网格 {#sec-rongelap-grid}
 
 接下来，利用函数 `st_make_grid()` 根据朗格拉普岛海岸缓冲线构造网格，朗格拉普岛是狭长的，因此，网格是 $75\times 150$ 的，意味着水平方向 75 行，垂直方向 150 列。网格的疏密程度是可以调整的，网格越密，格点越多，核辐射强度分布越精确，计算也越耗时。
 
@@ -622,6 +628,8 @@ ggplot() +
   theme_void()
 ```
 
+### 整理数据 {#sec-rongelap-pred}
+
 函数 `st_coordinates()` 抽取网格中心点的坐标并用函数 `as.data.frame()` 转化为数据框类型，新数据的列名需要和训练数据保持一致，最后补充漂移项 `time`，以便输入模型中。漂移项并不影响核辐射强度，指定为 300 或 400 都可以。
 
 ```{r}
@@ -638,6 +646,8 @@ rongelap_grid_pred <- predict(fit_rongelap_spamm,
 )
 rongelap_grid_df$pred <- as.vector(rongelap_grid_pred)
 ```
+
+### 展示结果 {#sec-rongelap-image}
 
 将预测结果以散点图的形式呈现到图上，考虑到核辐射在全岛的分布应当是连续性的，空间连续性也是这类模型的假设，接下来要绘制热力图。
 
