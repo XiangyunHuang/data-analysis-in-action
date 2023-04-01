@@ -271,8 +271,7 @@ with(rongelap, {
 
 ```{r}
 fit_rongelap_glm <- glm(counts ~ 1,
-  family = poisson(link = "log"),
-  offset = log(time), data = rongelap
+  family = poisson(link = "log"), offset = log(time), data = rongelap
 )
 summary(fit_rongelap_glm)
 ```
@@ -284,15 +283,18 @@ summary(fit_rongelap_glm)
 从 @fig-rongelap-glm-residuals 不难看出，颜色深和颜色浅的点分别聚集在一起，且与周围点的颜色呈现层次变化，拟合残差存在明显的空间相关性。如果将位置变量 `cX` 和 `cY` 加入广义线性模型，也会达到统计意义上的显著。
 
 ```{r}
+rongelap$glm_residuals <- residuals(fit_rongelap_glm)
+```
+
+```{r}
 #| label: fig-rongelap-glm-residuals
 #| fig-cap: "辐射强度的拟合残差的空间分布"
 #| fig-width: 7
 #| fig-height: 3.5
 #| fig-showtext: true
-#| echo: true
+#| echo: !expr knitr::is_html_output()
 #| code-fold: true
 
-rongelap$glm_residuals <- residuals(fit_rongelap_glm)
 ggplot(rongelap, aes(x = cX, y = cY)) +
   geom_point(aes(colour = glm_residuals / time), size = 0.5) +
   scale_color_distiller(palette = "Greys", direction = 1) +
@@ -367,19 +369,23 @@ logLik(fit_rongelap_glmer)
 进一步，去掉随机效应相互独立的假设，随机效应之间存在相关性结构，这更符合位置效应存在相互影响的实际情况。核辐射强度的空间分布
 
 ```{r}
+# 拟合存在异方差的一般线性模型
+fit_rongelap_gls <- nlme::gls(counts / time ~ 1, data = rongelap)
+# 拟合残差的半变差函数
+fit_rongelap_vario <- nlme::Variogram(fit_rongelap_gls,
+  form = ~ cX + cY, data = rongelap, resType = "response"
+)
+```
+
+```{r}
 #| label: fig-rongelap-vario
-#| echo: true
+#| echo: !expr knitr::is_html_output()
 #| fig-cap: "核辐射强度的经验变差图"
 #| fig-width: 5
 #| fig-height: 4
 #| fig-showtext: true
+#| code-fold: true
 
-# 拟合存在异方差的一般线性模型
-fit_rongelap_gls <- nlme::gls(counts / time ~ 1, data = rongelap)
-# 残差的空间相关性
-fit_rongelap_vario <- nlme::Variogram(fit_rongelap_gls,
-  form = ~ cX + cY, data = rongelap, resType = "response"
-)
 # 经验半变差图
 plot(fit_rongelap_vario,
   col.line = "black", scales = list(
@@ -435,6 +441,7 @@ $$ {#eq-matern-formula}
 #| fig-showtext: true
 #| code-fold: true
 #| echo: !expr knitr::is_html_output()
+
 # 参数 x 两点之间的距离，要求 x 大于 0
 # 参数 sigma nu rho 分别与前述公式参数对应
 cov_matern_nu <- function(x, sigma = 1, nu = 3 / 2, rho = 5) {
@@ -515,6 +522,9 @@ rongelap_coastline_sfp <- st_cast(st_combine(st_geometry(rongelap_coastline_sf))
 #| fig-width: 5
 #| fig-height: 3
 #| fig-showtext: true
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
+
 # 点集
 library(ggplot2)
 ggplot(rongelap_coastline_sf) +
@@ -540,6 +550,8 @@ rongelap_coastline_buffer <- st_buffer(rongelap_coastline_sfp, dist = 50)
 #| fig-width: 7
 #| fig-height: 4
 #| fig-showtext: true
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
 
 ggplot() +
   geom_sf(data = rongelap_sf, size = 0.5) +
@@ -563,6 +575,8 @@ rongelap_coastline_grid <- st_make_grid(rongelap_coastline_buffer, n = c(150, 75
 #| fig-width: 7
 #| fig-height: 4
 #| fig-showtext: true
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
 
 ggplot() +
   geom_sf(data = rongelap_coastline_grid, fill = NA, color = "gray") +
@@ -590,6 +604,8 @@ rongelap_grid_centroid <- st_centroid(rongelap_grid)
 #| fig-width: 7
 #| fig-height: 4
 #| fig-showtext: true
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
 
 ggplot() +
   geom_sf(data = rongelap_coastline_sfp, 
@@ -623,6 +639,8 @@ rongelap_grid_df$pred <- as.vector(rongelap_grid_pred)
 #| fig-width: 7
 #| fig-height: 4
 #| fig-showtext: true
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
 
 rongelap_grid_sf <- st_as_sf(rongelap_grid_df, coords = c("cX", "cY"), dim = "XY")
 ggplot() +
