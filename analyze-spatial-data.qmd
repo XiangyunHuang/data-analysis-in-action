@@ -289,7 +289,6 @@ ggplot(rongelap, aes(x = cX, y = cY)) +
   labs(color = "残差")
 ```
 
-
 ### 空间线性混合效应模型 {#sec-rongelap-slmm}
 
 从另一个角度入手，直接对辐射强度建模，去掉随机效应相互独立的假设，假定随机效应之间存在相关性结构，这更符合位置效应存在相互影响的实际情况。
@@ -304,6 +303,22 @@ $$
 \rho(u; \phi, \tau_{rel}^2 ) = \tau_{rel}^2 + (1 - \tau_{rel}^2) \big(1 - \exp(- \frac{u}{\phi}) \big)
 $$
 
+理解函数 `corExp()` 的参数，设定 $\phi = 1, \tau_{rel}^2 = 0.2$，则由距离矩阵和相关函数构造的方差协方差矩阵如下：
+
+```{r}
+library(nlme)
+spatDat <- data.frame(x = (1:4) / 4, y = (1:4) / 4)
+cs3Exp <- corExp(c(1, 0.2), form = ~ x + y, nugget = TRUE)
+cs3Exp <- Initialize(cs3Exp, spatDat)
+corMatrix(cs3Exp)
+```
+
+相关性矩阵的初始化结果等价于如下矩阵
+
+```{r}
+diag(0.2, 4) + (1 - 0.2) * exp(-as.matrix(dist(spatDat)))
+```
+
 **nlme** 包的函数 `corExp()` 表示自相关结构是指数型的，带块金效应的方差-协方差结构为
 
 $$
@@ -315,8 +330,7 @@ $$
 
 当 $u$ 趋于 0，则 $\rho(u; \phi, \tau_{rel}^2 ) = \tau_{rel}^2$
 
-$\phi$ 只能取正值，$\tau_{rel}^2$ 的取值介于 0-1 之间，nlme
-包的默认设置下，$\phi$ 的初始值为 $0.9 \times \min_{i,j \in A} u_{ij}$，所有点之间距离的最小值的 90%，$\tau_{rel}^2$ 为 0.1
+$\phi$ 只能取正值，$\tau_{rel}^2$ 的取值介于 0-1 之间，nlme 包的默认设置下，$\phi$ 的初始值为 $0.9 \times \min_{i,j \in A} u_{ij}$，所有点之间距离的最小值的 90%，$\tau_{rel}^2$ 为 0.1
 
 ```{r}
 # 拟合存在异方差的一般线性模型
@@ -331,7 +345,6 @@ summary(fit_rongelap_gls)
 
 **nlme** 包给出 $\tau_{rel}^2$ 和 $\sigma_{tol}^2$ 的估计，从而可以得到 $\tau^2$ 和 $\sigma^2$ 的估计。
 
-
 $$
 \begin{aligned}
 \tau_{rel}^2   &= 0.6537518 \\
@@ -344,7 +357,7 @@ $$
 $$
 
 ::: callout-tip
-`gls()` 的 `lme()` 等价表示，结果与 `gls()` 是一样的
+`gls()` 的 `lme()` 等价表示，结果与 `gls()` 是一样的。
 
 ```{r}
 #| eval: false
@@ -397,8 +410,7 @@ plot(fit_rongelap_vario,
 )
 ```
 
-
-除了指数型，还可以用其它模型来拟合空间相关性，从标准化半变差 @fig-rongelap-vario-norm 来看，存在非均匀的波动，如果空间相关性提取得很充分，则标准化半变差图中的数据点应是毫无趋势的，拟合线也应该是一条直线。
+如果空间相关性提取得很充分，则标准化半变差图中的数据点应是毫无趋势的，拟合线也应该是一条直线。除了指数型，还可以用其它模型来拟合空间相关性，从标准化半变差 @fig-rongelap-vario-norm 来看，存在非均匀的波动，不过模型提升空间不大了。
 
 ```{r}
 #| label: fig-rongelap-vario-norm
@@ -425,7 +437,6 @@ plot(fit_rongelap_vario_norm,
   xlab = "距离（米）", ylab = "半变差函数值"
 )
 ```
-
 
 ### 空间广义线性混合效应模型 {#sec-rongelap-sglmm}
 
