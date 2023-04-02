@@ -216,21 +216,6 @@ cloud(counts / time ~ cX * cY,
 #| echo: !expr knitr::is_html_output()
 
 # 可选的替代三维图形
-library(plot3D)
-with(rongelap, {
-  par(mar = c(0.1, 2.5, 0.1, 0.1))
-  scatter3D(
-    x = cX, y = cY, z = counts / time,
-    xlab = "\nX", ylab = "\nY", zlab = "\nZ",
-    pch = 16, type = "h", ticktype = "detailed",
-    phi = 40, theta = -30, r = 50, d = 0.1,
-    expand = 0.5, box = TRUE,
-    # bty = "u",
-    bty = "f",
-    col = "black", asp = 1, col.axis = "gray"
-  )
-})
-
 library(rgl)
 view3d(
   theta = 0, phi = -45, fov = 30,
@@ -372,11 +357,17 @@ logLik(fit_rongelap_glmer)
 
 ### 空间线性混合效应模型 {#sec-rongelap-slmm}
 
-进一步，去掉随机效应相互独立的假设，随机效应之间存在相关性结构，这更符合位置效应存在相互影响的实际情况。核辐射强度的空间分布
+进一步，去掉随机效应相互独立的假设，随机效应之间存在相关性结构，这更符合位置效应存在相互影响的实际情况。
 
 ```{r}
 # 拟合存在异方差的一般线性模型
-fit_rongelap_gls <- nlme::gls(counts / time ~ 1, data = rongelap)
+fit_rongelap_gls <- nlme::gls(
+  counts / time ~ 1, data = rongelap,
+  correlation = corExp(
+    value = c(200, 0.1), form = ~ cX + cY, nugget = TRUE
+  )
+)
+summary(fit_rongelap_gls)
 # 拟合残差的半变差函数
 fit_rongelap_vario <- nlme::Variogram(fit_rongelap_gls,
   form = ~ cX + cY, data = rongelap, resType = "response"
@@ -406,15 +397,7 @@ plot(fit_rongelap_vario,
 )
 ```
 
-结合 @fig-rongelap-vario ， 核辐射强度的经验变差图呈现的空间相关性，也因此要引入带空间随机效应的广义线性混合效应模型。克里金插值方法
-
-```{r}
-fit_rongelap_krige <- nlme::gls(
-  model = counts / time ~ 1, data = rongelap,
-  correlation = nlme::corExp(form = ~ cX + cY, nugget = TRUE)
-)
-summary(fit_rongelap_krige)
-```
+结合 @fig-rongelap-vario ， 核辐射强度的经验变差图呈现的空间相关性，也因此要引入带空间随机效应的广义线性混合效应模型。
 
 ### 空间广义线性混合效应模型 {#sec-rongelap-sglmm}
 
