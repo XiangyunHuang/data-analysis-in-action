@@ -289,75 +289,34 @@ ggplot(rongelap, aes(x = cX, y = cY)) +
   labs(color = "残差")
 ```
 
-### 广义线性混合效应模型 {#sec-rongelap-glmm}
-
-从实际场景出发，也不难理解，位置信息是非常关键的。进一步，充分利用位置信息，精细建模是很有必要的。相邻位置的核辐射强度是相关的，离得近的比离得远的更相关。简单的广义线性模型并没有考虑距离相关性，它认为各个观测点的数据是相互独立的。因此，考虑采用广义线性混合效应模型，在广义线性模型的基础上添加位置相关的随机效应，用以刻画未能直接观测到的潜在影响。简单起见，假定随机效应之间是相互独立的正态分布。
-
-$$
-\begin{aligned}
-\log(\lambda_{j}) &= \beta_{0j} \\
-\beta_{0j} &=\gamma_{00} + U_{0j}
-\end{aligned}
-$$
-
-其中响应变量服从泊松分布，即 $Y_{j} \sim \mathrm{Poisson}(t_{j}\lambda_{j})$ ，$\lambda_{j}$ 表示辐射强度，$t_{j}$ 表示时间，随机效应 $\beta_{0j}$ 服从均值为 0，方差为 $\tau_{00}^2$ 的正态分布，即 $U_{0j} \sim \mathcal{N}(0,\tau_{00}^2)$ 。截距项（常数项） $\gamma_{00}$ 可以理解为背景辐射，为简单起见，假定为常数。如果全岛观察到有系统性的背景辐射变化，可以考虑用随机变量来建模背景辐射。157 个检测站点的残差服从独立同分布的正态分布，即 $\epsilon_{j} \sim \mathcal{N}(0,\sigma^2)$，$j=1,2,\cdots,157$ 。
-
-::: callout-tip
-根据目前已有的数据，没有收集影响辐射强度的其它因素，模型中也就没有加其它观测变量，所以，只有截距项是变化的。如果有其他因素，可以在 $\beta_{0j}$ 后加入，比如 $\beta_{1j}x_{j}$。进一步，如果在 157 个位置处反复测量多次放射数据，则模型又可变为重复测量模型。
-
-$$
-\begin{aligned}
-\log(\lambda_{ij}) &= \beta_{0j} +\beta_{1j}x_{1ij} \\
-\beta_{0j} &=\gamma_{00} + U_{0j} \\
-\beta_{1j} &=\gamma_{10} + U_{1j} \\
-\begin{bmatrix}
-    U_{0j} \\
-    U_{1j}
-\end{bmatrix}
-&\sim \mathcal{N}
-\left(
-\begin{bmatrix}
-    0  \\
-    0 
-\end{bmatrix}
-,
-\begin{bmatrix}
-    \tau_{00}^2 & \tau_{01} \\
-    \tau_{01} & \tau_{10}^2
-\end{bmatrix}
-\right)\\
-Y_{ij} &\sim \mathrm{Poisson}(t_{ij}\lambda_{ij})
-\end{aligned}
-$$
-
-其中下标 $i$ 代表重复测量，则 $Y_{ij}$ 表示第 $i$ 次在第 $j$ 个位置检测到的辐射量，$x_{1ij}$ 表示第1个协变量第$i$次在第$j$个位置上的观测值，一种非常贴合实际的情形是 $x_{1ij}$ 就代表时间 $T_{ij}$ ，表示科学家每隔 5 年登岛收集数据，此后登岛多次，$T_{ij}$ 意味着第 $i$ 次登岛收集各个检测点的辐射数据。变截距 $\beta_{0j}$ 和变系数 $\beta_{1j}$ 同时存在，且二者联合分布为二元正态分布，残差仍然假定独立同正态分布 $\epsilon_{ij} \sim \mathcal{N}(0,\sigma^2)$ 。
-:::
-
-**lme4** 包[@Bates2015]是拟合广义线性混合效应模型的金标准，模型拟合函数 `glmer()` 的使用非常类似 Base R 提供的函数 `glm()`。
-
-```{r}
-library(Matrix)
-library(lme4)
-rongelap$dummary <- 1:157
-fit_rongelap_glmer <- glmer(counts ~ 1 + (1 | dummary),
-  family = poisson(link = "log"),
-  offset = log(time), data = rongelap
-)
-summary(fit_rongelap_glmer)
-```
-
-从拟合模型的结果来看，参数 $\gamma_{00} = 1.94405, \tau_{00}^2 = 0.2223$ 。将每个位置看作单独的一个随机效应，比较两个模型的对数似然，后者变大了，这意味着模型拟合效果更好了。
-
-```{r}
-# 广义线性模型
-logLik(fit_rongelap_glm)
-# 广义线性混合效应模型
-logLik(fit_rongelap_glmer)
-```
 
 ### 空间线性混合效应模型 {#sec-rongelap-slmm}
 
-进一步，去掉随机效应相互独立的假设，随机效应之间存在相关性结构，这更符合位置效应存在相互影响的实际情况。
+从另一个角度入手，直接对辐射强度建模，去掉随机效应相互独立的假设，假定随机效应之间存在相关性结构，这更符合位置效应存在相互影响的实际情况。
+
+$$
+\lambda(d_i) =  \beta + S(d_{i})
+$$
+
+带块金效应的半变差函数
+
+$$
+\rho(u; \phi, \tau_{rel}^2 ) = \tau_{rel}^2 + (1 - \tau_{rel}^2) \big(1 - \exp(- \frac{u}{\phi}) \big)
+$$
+
+**nlme** 包的函数 `corExp()` 表示自相关结构是指数型的，带块金效应的方差-协方差结构为
+
+$$
+\begin{aligned}
+\tau_{rel}^2 &= \frac{\tau^2}{\tau^2 + \sigma^2} \\
+\sigma_{tol}^2 &= \tau^2 + \sigma^2
+\end{aligned}
+$$
+
+当 $u$ 趋于 0，则 $\rho(u; \phi, \tau_{rel}^2 ) = \tau_{rel}^2$
+
+$\phi$ 只能取正值，$\tau_{rel}^2$ 的取值介于 0-1 之间，nlme
+包的默认设置下，$\phi$ 的初始值为 $0.9 \times \min_{i,j \in A} u_{ij}$，所有点之间距离的最小值的 90%，$\tau_{rel}^2$ 为 0.1
 
 ```{r}
 # 拟合存在异方差的一般线性模型
@@ -368,20 +327,61 @@ fit_rongelap_gls <- nlme::gls(
   )
 )
 summary(fit_rongelap_gls)
-# 拟合残差的半变差函数
+```
+
+**nlme** 包给出 $\tau_{rel}^2$ 和 $\sigma_{tol}^2$ 的估计，从而可以得到 $\tau^2$ 和 $\sigma^2$ 的估计。
+
+
+$$
+\begin{aligned}
+\tau_{rel}^2   &= 0.6537518 \\
+\sigma_{tol}^2 &= 2.777964^2 = 7.717084 \\
+\tau^2   &= 0.6537518 \times 7.717084 = 5.045058 \\
+\sigma^2 &= 2.777964^2 - 0.6537518 \times 7.717084 = 2.672026 \\
+\phi  &= 454.9667323 \\
+\beta &= 7.169426
+\end{aligned}
+$$
+
+::: callout-tip
+`gls()` 的 `lme()` 等价表示，结果与 `gls()` 是一样的
+
+```{r}
+#| eval: false
+#| echo: true
+
+# 添加哑变量
+rongelap$dummary <- 1
+# 拟合存在异方差的一般线性模型
+fit_rongelap_lme <- nlme::lme(
+  counts / time ~ 1, data = rongelap, random = ~ 1 | dummary,
+  correlation = nlme::corExp(
+    value = c(200, 0.1), form = ~ cX + cY, nugget = TRUE
+  )
+)
+summary(fit_rongelap_lme)
+```
+:::
+
+拟合残差的半变差函数
+
+```{r}
 fit_rongelap_vario <- nlme::Variogram(fit_rongelap_gls,
   form = ~ cX + cY, data = rongelap, resType = "response"
 )
+fit_rongelap_vario
 ```
+
+基于拟合残差的经验半变差图，结合 @fig-rongelap-vario ，说明添加指数型空间自相关性是有效的。
 
 ```{r}
 #| label: fig-rongelap-vario
-#| echo: !expr knitr::is_html_output()
-#| fig-cap: "核辐射强度的经验变差图"
+#| fig-cap: "核辐射强度的残差半变差图"
 #| fig-width: 5
 #| fig-height: 4
 #| fig-showtext: true
 #| code-fold: true
+#| echo: !expr knitr::is_html_output()
 
 # 经验半变差图
 plot(fit_rongelap_vario,
@@ -397,7 +397,35 @@ plot(fit_rongelap_vario,
 )
 ```
 
-结合 @fig-rongelap-vario ， 核辐射强度的经验变差图呈现的空间相关性，也因此要引入带空间随机效应的广义线性混合效应模型。
+
+除了指数型，还可以用其它模型来拟合空间相关性，从标准化半变差 @fig-rongelap-vario-norm 来看，存在非均匀的波动，如果空间相关性提取得很充分，则标准化半变差图中的数据点应是毫无趋势的，拟合线也应该是一条直线。
+
+```{r}
+#| label: fig-rongelap-vario-norm
+#| echo: !expr knitr::is_html_output()
+#| fig-cap: "核辐射强度的标准化残差半变差图"
+#| fig-width: 5
+#| fig-height: 4
+#| fig-showtext: true
+#| code-fold: true
+
+fit_rongelap_vario_norm <- nlme::Variogram(fit_rongelap_gls,
+  form = ~ cX + cY, data = rongelap, resType = "normalized"
+)
+# 经验半变差图
+plot(fit_rongelap_vario_norm,
+  col.line = "black", scales = list(
+    # 去掉图形上边、右边多余的刻度线
+    x = list(alternating = 1, tck = c(1, 0)),
+    y = list(alternating = 1, tck = c(1, 0))
+  ), par.settings = list(
+    plot.symbol = list(pch = 20, col = "black"),
+    plot.line = list(lwd = 1)
+  ),
+  xlab = "距离（米）", ylab = "半变差函数值"
+)
+```
+
 
 ### 空间广义线性混合效应模型 {#sec-rongelap-sglmm}
 
