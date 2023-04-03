@@ -294,12 +294,12 @@ ggplot(rongelap, aes(x = cX, y = cY)) +
 从另一个角度入手，直接对辐射强度建模，去掉随机效应相互独立的假设，假定随机效应之间存在相关性结构，这更符合位置效应存在相互影响的实际情况。
 
 $$
-\lambda(d_i) =  \beta + S(d_{i}) + Z_{i} 
+\log(\lambda(d_i)) =  \beta + S(d_{i}) + Z_{i} 
 $$
 
 截距 $\beta$ 相当于平均水平，$\lambda(d_i)$ 可理解为辐射强度，$S(d_{i})$ 表示位置 $d_i$ 处的空间效应，$S(d),d \in \mathbb{R}^2$ 是平稳空间高斯过程。且 $Z_i$ 之间相互独立同正态分布 $\mathcal{N}(0,\tau^2)$ ，$Z_i$ 表示与空间效应无关的块金效应，即非空间的随机效应，可以理解为测量误差、空间变差或背景辐射，这里 $i = 1,\ldots, 157$。
 
-随机过程 $S(d)$ 的自协方差函数常用的有指数型、幂二次指数型和 Matérn 型，形式如下：
+随机过程 $S(d)$ 的自协方差函数常用的有指数型、幂二次指数型（高斯型）和梅隆型，形式如下：
 
 $$
 \begin{aligned}
@@ -312,11 +312,11 @@ K_{\nu}(x) &= \int_{0}^{\infty}\exp(-x \cosh t) \cosh (\nu t) \mathrm{dt}
 \end{aligned}
 $$ {#eq-matern-formula}
 
-其中，$K_{\nu}$ 表示阶数为 $\nu$ 的修正的第二类贝塞尔函数，$\Gamma(\cdot)$ 表示伽马函数，当 $\nu = 1/2$ ，Matérn 型将简化为指数型，当 $\nu = \infty$ 时，Matérn 型将简化为幂二次指数型。固定 $\sigma = 1$，自协方差函数图像如 @fig-matern-fun 所示，不难看出，$\nu$ 影响自协方差函数的平滑性，控制点与点之间相关性的变化，$\nu$ 越大相关性越迅速地递减。$\rho$ 控制协方差函数的范围，$\rho$ 越大相关性辐射距离越远。对模型来说，它们都是超参数。
+其中，$K_{\nu}$ 表示阶数为 $\nu$ 的修正的第二类贝塞尔函数，$\Gamma(\cdot)$ 表示伽马函数，当 $\nu = 1/2$ ，梅隆型将简化为指数型，当 $\nu = \infty$ 时，梅隆型将简化为幂二次指数型。固定 $\sigma = 1$，自协方差函数图像如 @fig-matern-fun 所示，不难看出，$\nu$ 影响自协方差函数的平滑性，控制点与点之间相关性的变化，$\nu$ 越大相关性越迅速地递减。$\rho$ 控制协方差函数的范围，$\rho$ 越大相关性辐射距离越远。对模型来说，它们都是超参数。
 
 ```{r}
 #| label: fig-matern-fun
-#| fig-cap: "Matérn 型协方差函数曲线"
+#| fig-cap: "梅隆型协方差函数曲线"
 #| fig-showtext: true
 #| code-fold: true
 #| echo: !expr knitr::is_html_output()
@@ -349,14 +349,13 @@ ggplot(data = mesh_matern, aes(x = x, y = fv)) +
   labs(x = "距离", y = "相关性", color = expression(nu))
 ```
 
-
-带块金效应的半变差函数
+nlme 包对带块金效应的相关函数设定如下：
 
 $$
 \rho(u; \phi, \tau_{rel}^2 ) = \tau_{rel}^2 + (1 - \tau_{rel}^2) \big(1 - \exp(- \frac{u}{\phi}) \big)
 $$
 
-理解函数 `corExp()` 的参数，设定 $\phi = 1, \tau_{rel}^2 = 0.2$，则由距离矩阵和相关函数构造的方差协方差矩阵如下：
+理解函数 `corExp()` 的参数，设置 $\phi = 1, \tau_{rel}^2 = 0.2$，则由距离矩阵和相关函数构造的方差协方差矩阵如下：
 
 ```{r}
 library(nlme)
@@ -382,7 +381,7 @@ corMatrix(cs3Gaus)
 diag(0.2, 4) + (1 - 0.2) * exp(-as.matrix(dist(spatDat))^2)
 ```
 
-**nlme** 包的函数 `corExp()` 表示自相关结构是指数型的，带块金效应的方差-协方差结构为
+**nlme** 包的函数 `corExp()` 表示自相关结构是指数型的，为了方便估计参数做了一些重参数化的操作，带块金效应的方差-协方差结构为
 
 $$
 \begin{aligned}
@@ -398,7 +397,7 @@ $\phi$ 只能取正值，$\tau_{rel}^2$ 的取值介于 0-1 之间，nlme 包的
 ```{r}
 # 拟合存在异方差的一般线性模型
 fit_rongelap_gls <- nlme::gls(
-  counts / time ~ 1, data = rongelap,
+  log(counts / time) ~ 1, data = rongelap,
   correlation = nlme::corExp(
     value = c(200, 0.1), form = ~ cX + cY, nugget = TRUE
   )
@@ -410,12 +409,12 @@ summary(fit_rongelap_gls)
 
 $$
 \begin{aligned}
-\tau_{rel}^2   &= 0.6537518 \\
-\sigma_{tol}^2 &= 2.777964^2 = 7.717084 \\
-\tau^2   &= 0.6537518 \times 7.717084 = 5.045058 \\
-\sigma^2 &= 2.777964^2 - 0.6537518 \times 7.717084 = 2.672026 \\
-\phi  &= 454.9667323 \\
-\beta &= 7.169426
+\tau_{rel}^2   &= 0.1092496 \\
+\sigma_{tol}^2 &= 0.5739672^2 = 0.3294383 \\
+\tau^2   &= 0.1092496 \times 0.3294383 = 0.035991 \\
+\sigma^2 &= 0.5739672^2 - 0.1092496 \times 0.3294383 = 0.2934473 \\
+\phi  &= 169.7472088 \\
+\beta &= 1.812914
 \end{aligned}
 $$
 
@@ -430,7 +429,7 @@ $$
 rongelap$dummary <- 1
 # 拟合存在异方差的一般线性模型
 fit_rongelap_lme <- nlme::lme(
-  counts / time ~ 1, data = rongelap, random = ~ 1 | dummary,
+  log(counts / time) ~ 1, data = rongelap, random = ~ 1 | dummary,
   correlation = nlme::corExp(
     value = c(200, 0.1), form = ~ cX + cY, nugget = TRUE
   )
@@ -512,7 +511,7 @@ Y_{i} &\sim \mathrm{Poisson}(t(d_{i})\lambda(d_i))
 \end{aligned}
 $$ {#eq-rongelap-poisson-sglmmm}
 
-模型中，放射粒子数$Y_{i}$作为响应变量服从均值为 $t(d_{i})\lambda(d_i)$ 的泊松分布。 
+模型中，放射粒子数$Y_{i}$作为响应变量服从均值为 $t(d_{i})\lambda(d_i)$ 的泊松分布。
 
 **spaMM** 包的使用语法和前面介绍的 **nlme** 包类似，它可以拟合空间广义线性混合效应模型，拟合函数 `fitme()` 提供统一的使用语法，输出一个 **spaMM** 包内建的 HLfit 类型的数据对象。
 
@@ -526,7 +525,7 @@ fit_rongelap_spamm <- fitme(counts ~ 1 + Matern(1 | cX + cY) + offset(log(time))
 summary(fit_rongelap_spamm)
 ```
 
-从输出结果来看，模型固定效应的截距项 1.824，随机效应的方差为 0.2973，自协方差函数中参数 $\nu = 0.3642$，对比 **spaMM** 包的函数 `Matern()` 实现的 Matérn 型自相关函数公式与 @eq-matern-formula ，输出结果需要转化一下，以符合 @eq-matern-formula ，则 $\rho = \sqrt{2 \times 0.364211759} / 0.0061486 = 138.81$ ，即空间相关性的最大影响距离为 138.8 米。
+从输出结果来看，模型固定效应的截距项 1.824，随机效应的方差为 0.2973，自协方差函数中参数 $\nu = 0.3642$，对比 **spaMM** 包的函数 `Matern()` 实现的 梅隆型自相关函数公式与 @eq-matern-formula ，输出结果需要转化一下，以符合 @eq-matern-formula ，则 $\rho = \sqrt{2 \times 0.364211759} / 0.0061486 = 138.81$ ，即空间相关性的最大影响距离为 138.8 米。
 
 ## 模型预测 {#sec-rongelap-predict}
 
