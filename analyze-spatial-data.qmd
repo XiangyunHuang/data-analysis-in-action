@@ -185,11 +185,24 @@ print(p2, vp = grid::viewport(x = .25, y = .725, width = .275, height = .45))
 
 cloud(counts / time ~ cX * cY,
   data = rongelap, col = "black",
+  xlim = c(-6500, 50), ylim = c(-3800, 110),
   scales = list(arrows = FALSE, col = "black"),
   xlab = list("横坐标（米）", rot = 20),
   ylab = list("纵坐标（米）", rot = -50),
   zlab = list("辐射强度", rot = 90),
   type = c("p", "h"), pch = 16, lwd = 0.5,
+  panel = function(...) { # 添加海岸线
+    L <- list(...)
+    L$x <- rongelap_coastline$cX
+    L$y <- rongelap_coastline$cY
+    L$z <- rep(0, nrow(rongelap_coastline))
+    L$type <- "l"
+    L$col <- "black"
+    L$lty <- 2
+    L$lwd <- 1
+    do.call(panel.cloud, L)
+    p <- panel.cloud(...)
+  },
   # 减少三维图形的边空
   lattice.options = list(
     layout.widths = list(
@@ -201,8 +214,12 @@ cloud(counts / time ~ cX * cY,
       top.padding = list(x = -1.0, units = "inches")
     )
   ),
-  # 设置坐标轴字体大小
   par.settings = list(
+    # 移除几条内框线
+    # box.3d = list(col = c(1, 1, NA, NA, 1, NA, 1, 1, 1)),
+    # 设置坐标轴上刻度标签字体大小
+    axis.text = list(cex = 1),
+    # 去掉外框线
     axis.line = list(col = "transparent")
   ),
   # 设置三维图的观察方位
