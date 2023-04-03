@@ -513,19 +513,20 @@ $$ {#eq-rongelap-poisson-sglmmm}
 
 模型中，放射粒子数$Y_{i}$作为响应变量服从均值为 $t(d_{i})\lambda(d_i)$ 的泊松分布。
 
-**spaMM** 包的使用语法和前面介绍的 **nlme** 包类似，它可以拟合空间广义线性混合效应模型，拟合函数 `fitme()` 提供统一的使用语法，输出一个 **spaMM** 包内建的 HLfit 类型的数据对象。
+**spaMM** 包的使用语法和前面介绍的 **nlme** 包类似，它可以拟合空间广义线性混合效应模型，拟合函数 `fitme()` 提供统一的使用语法，输出一个 **spaMM** 包内建的 HLfit 类型的数据对象。 **spaMM** 包的函数 `Matern()` 实现了梅隆型自协方差函数，指数型和幂二次指数型是它的特例。
 
 ```{r}
 #| message: false
 
 library(spaMM)
 fit_rongelap_spamm <- fitme(counts ~ 1 + Matern(1 | cX + cY) + offset(log(time)),
-  family = poisson(link = "log"), data = rongelap
+  family = poisson(link = "log"), data = rongelap,
+  fixed = list(nu = 0.5)
 )
 summary(fit_rongelap_spamm)
 ```
 
-从输出结果来看，模型固定效应的截距项 1.824，随机效应的方差为 0.2973，自协方差函数中参数 $\nu = 0.3642$，对比 **spaMM** 包的函数 `Matern()` 实现的 梅隆型自相关函数公式与 @eq-matern-formula ，输出结果需要转化一下，以符合 @eq-matern-formula ，则 $\rho = \sqrt{2 \times 0.364211759} / 0.0061486 = 138.81$ ，即空间相关性的最大影响距离为 138.8 米。
+从输出结果来看，模型固定效应的截距项 `1.831`，随机效应的方差为 `0.2964`，自协方差函数中参数 $\rho = 0.009683345$，对比函数 `Matern()` 实现的指数型自相关函数公式与 @eq-matern-formula ，输出结果需要转化一下，以符合 @eq-matern-formula ，则 $\rho = 1 / 0.00961486 = 104.0057$ ，即空间相关性的最大影响距离为 104 米。
 
 ## 模型预测 {#sec-rongelap-predict}
 
