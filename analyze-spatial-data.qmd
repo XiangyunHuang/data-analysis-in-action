@@ -277,7 +277,7 @@ rongelap$glm_residuals <- residuals(fit_rongelap_glm)
 #| label: fig-rongelap-glm-residuals
 #| fig-cap: "辐射强度的拟合残差的空间分布"
 #| fig-width: 7
-#| fig-height: 3.5
+#| fig-height: 4
 #| fig-showtext: true
 #| echo: !expr knitr::is_html_output()
 #| code-fold: true
@@ -285,8 +285,8 @@ rongelap$glm_residuals <- residuals(fit_rongelap_glm)
 ggplot(rongelap, aes(x = cX, y = cY)) +
   geom_point(aes(colour = glm_residuals / time), size = 0.5) +
   scale_color_distiller(palette = "Greys", direction = 1) +
-  theme_void() +
-  labs(color = "残差")
+  theme_bw() +
+  labs(x = "横坐标（米）", y = "纵坐标（米）", color = "残差")
 ```
 
 ### 空间线性混合效应模型 {#sec-rongelap-slmm}
@@ -513,7 +513,7 @@ $$ {#eq-rongelap-poisson-sglmmm}
 
 模型中，放射粒子数$Y_{i}$作为响应变量服从均值为 $t(d_{i})\lambda(d_i)$ 的泊松分布。
 
-**spaMM** 包的使用语法和前面介绍的 **nlme** 包类似，它可以拟合空间广义线性混合效应模型，拟合函数 `fitme()` 提供统一的使用语法，输出一个 **spaMM** 包内建的 HLfit 类型的数据对象。 **spaMM** 包的函数 `Matern()` 实现了梅隆型自协方差函数，指数型和幂二次指数型是它的特例。
+**spaMM** 包可以拟合空间广义线性混合效应模型，它的使用语法和前面介绍的 **nlme** 包类似，拟合函数 `fitme()` 对一大类统计模型提供统一的使用语法，输出一个 **spaMM** 包内建的 HLfit 类型的数据对象。 **spaMM** 包的函数 `Matern()` 实现了梅隆型自协方差函数，指数型和幂二次指数型是它的特例。当固定 $\nu = 0.5$ 时，梅隆型函数 `Matern()` 的形式退化为 $\exp(-\rho d)$ ，其中 `d` 表示距离，$\rho$ 相当于前面出现的 $1/\phi$ 。
 
 ```{r}
 #| message: false
@@ -526,7 +526,7 @@ fit_rongelap_spamm <- fitme(counts ~ 1 + Matern(1 | cX + cY) + offset(log(time))
 summary(fit_rongelap_spamm)
 ```
 
-从输出结果来看，模型固定效应的截距项 `1.831`，随机效应的方差为 `0.2964`，自协方差函数中参数 $\rho = 0.009683345$，对比函数 `Matern()` 实现的指数型自相关函数公式与 @eq-matern-formula ，输出结果需要转化一下，以符合 @eq-matern-formula ，则 $\rho = 1 / 0.00961486 = 104.0057$ ，即空间相关性的最大影响距离为 104 米。
+从输出结果来看，模型固定效应的截距项 $\beta$ 为 `1.831`，随机效应的方差 $\sigma^2$ 为 `0.2964`，自协方差函数中参数 $\rho = 0.009683345$，对比函数 `Matern()` 实现的指数型自相关函数公式与 @eq-matern-formula ，输出结果需要转化一下，以符合 @eq-matern-formula ，则 $\phi = 1 / 0.00961486 = 104.0057$ ，即空间相关性的最大影响距离为 104 米。
 
 ## 模型预测 {#sec-rongelap-predict}
 
