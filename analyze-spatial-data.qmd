@@ -227,46 +227,6 @@ cloud(counts / time ~ cX * cY,
 )
 ```
 
-```{r}
-#| eval: false
-#| code-fold: true
-#| echo: !expr knitr::is_html_output()
-
-# 可选的替代三维图形
-library(rgl)
-view3d(
-  theta = 0, phi = -45, fov = 30,
-  zoom = 1, interactive = TRUE
-)
-# 将连续型数据向量转化为颜色向量
-colorize_numeric <- function(x) {
-  scales::col_numeric(palette = "viridis", domain = range(x))(x)
-}
-# 在数据集 quakes 上添加新的数据 color
-rongelap <- within(rongelap, {
-  lambda <- counts / time
-  color <- colorize_numeric(lambda)
-})
-# 绘制图形
-with(rongelap, {
-  plot3d(
-    x = cX, y = cY, z = lambda, col = color,
-    type = "h",
-    xlab = "南北方向", ylab = "东西方向",
-    zlab = "辐射强度"
-  )
-  points3d(x = cX, y = cY, z = lambda,
-           col = color, size = 5)
-})
-
-# 绘制图形
-with(rongelap, {
-  open3d()
-  spheres3d(x = cX, y = cY, z = lambda, 
-            radius = lambda, color = color)
-})
-```
-
 ## 数据建模 {#sec-rongelap-modeling}
 
 ### 广义线性模型 {#sec-rongelap-glm}
@@ -366,7 +326,7 @@ ggplot(data = mesh_matern, aes(x = x, y = fv)) +
   labs(x = "距离", y = "相关性", color = expression(nu))
 ```
 
-nlme 包对带块金效应的相关函数设定如下：
+**nlme** 包对带块金效应的相关函数设定如下：
 
 $$
 \rho(u; \phi, \tau_{rel}^2 ) = \tau_{rel}^2 + (1 - \tau_{rel}^2) \big(1 - \exp(- \frac{u}{\phi}) \big)
