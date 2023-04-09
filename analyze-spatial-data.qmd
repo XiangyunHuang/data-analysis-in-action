@@ -185,11 +185,24 @@ print(p2, vp = grid::viewport(x = .25, y = .725, width = .275, height = .45))
 
 cloud(counts / time ~ cX * cY,
   data = rongelap, col = "black",
+  xlim = c(-6500, 50), ylim = c(-3800, 110),
   scales = list(arrows = FALSE, col = "black"),
   xlab = list("横坐标（米）", rot = 20),
   ylab = list("纵坐标（米）", rot = -50),
   zlab = list("辐射强度", rot = 90),
   type = c("p", "h"), pch = 16, lwd = 0.5,
+  panel = function(...) { # 添加海岸线
+    L <- list(...)
+    L$x <- rongelap_coastline$cX
+    L$y <- rongelap_coastline$cY
+    L$z <- rep(0, nrow(rongelap_coastline))
+    L$type <- "l"
+    L$col <- "black"
+    L$lty <- 2
+    L$lwd <- 1
+    do.call(panel.cloud, L)
+    p <- panel.cloud(...)
+  },
   # 减少三维图形的边空
   lattice.options = list(
     layout.widths = list(
@@ -201,8 +214,12 @@ cloud(counts / time ~ cX * cY,
       top.padding = list(x = -1.0, units = "inches")
     )
   ),
-  # 设置坐标轴字体大小
   par.settings = list(
+    # 移除几条内框线
+    # box.3d = list(col = c(1, 1, NA, NA, 1, NA, 1, 1, 1)),
+    # 设置坐标轴上刻度标签字体大小
+    axis.text = list(cex = 1),
+    # 去掉外框线
     axis.line = list(col = "transparent")
   ),
   # 设置三维图的观察方位
@@ -210,62 +227,9 @@ cloud(counts / time ~ cX * cY,
 )
 ```
 
-```{r}
-#| eval: false
-#| code-fold: true
-#| echo: !expr knitr::is_html_output()
-
-# 可选的替代三维图形
-library(plot3D)
-with(rongelap, {
-  par(mar = c(0.1, 2.5, 0.1, 0.1))
-  scatter3D(
-    x = cX, y = cY, z = counts / time,
-    xlab = "\nX", ylab = "\nY", zlab = "\nZ",
-    pch = 16, type = "h", ticktype = "detailed",
-    phi = 40, theta = -30, r = 50, d = 0.1,
-    expand = 0.5, box = TRUE,
-    # bty = "u",
-    bty = "f",
-    col = "black", asp = 1, col.axis = "gray"
-  )
-})
-
-library(rgl)
-view3d(
-  theta = 0, phi = -45, fov = 30,
-  zoom = 1, interactive = TRUE
-)
-# 将连续型数据向量转化为颜色向量
-colorize_numeric <- function(x) {
-  scales::col_numeric(palette = "viridis", domain = range(x))(x)
-}
-# 在数据集 quakes 上添加新的数据 color
-rongelap <- within(rongelap, {
-  lambda <- counts / time
-  color <- colorize_numeric(lambda)
-})
-# 绘制图形
-with(rongelap, {
-  plot3d(
-    x = cX, y = cY, z = lambda, col = color,
-    type = "h",
-    xlab = "南北方向", ylab = "东西方向",
-    zlab = "辐射强度"
-  )
-  points3d(x = cX, y = cY, z = lambda,
-           col = color, size = 5)
-})
-
-# 绘制图形
-with(rongelap, {
-  open3d()
-  spheres3d(x = cX, y = cY, z = lambda, 
-            radius = lambda, color = color)
-})
-```
-
 ## 数据建模 {#sec-rongelap-modeling}
+
+### 广义线性模型 {#sec-rongelap-glm}
 
 核辐射是由放射元素衰变产生的，通常用单位时间释放出来的粒子数目表示辐射强度，也是核辐射强度，因此，建立泊松型广义线性模型分析数据。
 
@@ -290,7 +254,7 @@ rongelap$glm_residuals <- residuals(fit_rongelap_glm)
 #| label: fig-rongelap-glm-residuals
 #| fig-cap: "辐射强度的拟合残差的空间分布"
 #| fig-width: 7
-#| fig-height: 3.5
+#| fig-height: 4
 #| fig-showtext: true
 #| echo: !expr knitr::is_html_output()
 #| code-fold: true
@@ -298,129 +262,21 @@ rongelap$glm_residuals <- residuals(fit_rongelap_glm)
 ggplot(rongelap, aes(x = cX, y = cY)) +
   geom_point(aes(colour = glm_residuals / time), size = 0.5) +
   scale_color_distiller(palette = "Greys", direction = 1) +
-  theme_void() +
-  labs(color = "残差")
+  theme_bw() +
+  labs(x = "横坐标（米）", y = "纵坐标（米）", color = "残差")
 ```
 
-从实际场景出发，也不难理解，位置信息是非常关键的。进一步，充分利用位置信息，精细建模是很有必要的。相邻位置的核辐射强度是相关的，离得近的比离得远的更相关。简单的广义线性模型并没有考虑距离相关性，它认为各个观测点的数据是相互独立的。因此，考虑采用广义线性混合效应模型，在广义线性模型的基础上添加位置相关的随机效应，用以刻画未能直接观测到的潜在影响。简单起见，假定随机效应之间是相互独立的正态分布。
+### 空间线性混合效应模型 {#sec-rongelap-slmm}
+
+从另一个角度入手，直接对辐射强度建模，去掉随机效应相互独立的假设，假定随机效应之间存在相关性结构，这更符合位置效应存在相互影响的实际情况。
 
 $$
-\begin{aligned}
-\log(\lambda_{j}) &= \beta_{0j} \\
-\beta_{0j} &=\gamma_{00} + U_{0j}
-\end{aligned}
+\log(\lambda(d_i)) =  \beta + S(d_{i}) + Z_{i} 
 $$
 
-其中响应变量服从泊松分布，即 $Y_{j} \sim \mathrm{Poisson}(t_{j}\lambda_{j})$ ，$\lambda_{j}$ 表示辐射强度，$t_{j}$ 表示时间，随机效应 $\beta_{0j}$ 服从均值为 0，方差为 $\tau_{00}^2$ 的正态分布，即 $U_{0j} \sim \mathcal{N}(0,\tau_{00}^2)$ 。截距项（常数项） $\gamma_{00}$ 可以理解为背景辐射，为简单起见，假定为常数。如果全岛观察到有系统性的背景辐射变化，可以考虑用随机变量来建模背景辐射。157 个检测站点的残差服从独立同分布的正态分布，即 $\epsilon_{j} \sim \mathcal{N}(0,\sigma^2)$，$j=1,2,\cdots,157$ 。
+截距 $\beta$ 相当于平均水平，$\lambda(d_i)$ 可理解为辐射强度，$S(d_{i})$ 表示位置 $d_i$ 处的空间效应，$S(d),d \in \mathbb{R}^2$ 是平稳空间高斯过程。且 $Z_i$ 之间相互独立同正态分布 $\mathcal{N}(0,\tau^2)$ ，$Z_i$ 表示与空间效应无关的块金效应，即非空间的随机效应，可以理解为测量误差、空间变差或背景辐射，这里 $i = 1,\ldots, 157$。
 
-::: callout-tip
-根据目前已有的数据，没有收集影响辐射强度的其它因素，模型中也就没有加其它观测变量，所以，只有截距项是变化的。如果有其他因素，可以在 $\beta_{0j}$ 后加入，比如 $\beta_{1j}x_{j}$。进一步，如果在 157 个位置处反复测量多次放射数据，则模型又可变为重复测量模型。
-
-$$
-\begin{aligned}
-\log(\lambda_{ij}) &= \beta_{0j} +\beta_{1j}x_{1ij} \\
-\beta_{0j} &=\gamma_{00} + U_{0j} \\
-\beta_{1j} &=\gamma_{10} + U_{1j} \\
-\begin{bmatrix}
-    U_{0j} \\
-    U_{1j}
-\end{bmatrix}
-&\sim \mathcal{N}
-\left(
-\begin{bmatrix}
-    0  \\
-    0 
-\end{bmatrix}
-,
-\begin{bmatrix}
-    \tau_{00}^2 & \tau_{01} \\
-    \tau_{01} & \tau_{10}^2
-\end{bmatrix}
-\right)\\
-Y_{ij} &\sim \mathrm{Poisson}(t_{ij}\lambda_{ij})
-\end{aligned}
-$$
-
-其中下标 $i$ 代表重复测量，则 $Y_{ij}$ 表示第 $i$ 次在第 $j$ 个位置检测到的辐射量，$x_{1ij}$ 表示第1个协变量第$i$次在第$j$个位置上的观测值，一种非常贴合实际的情形是 $x_{1ij}$ 就代表时间 $T_{ij}$ ，表示科学家每隔 5 年登岛收集数据，此后登岛多次，$T_{ij}$ 意味着第 $i$ 次登岛收集各个检测点的辐射数据。变截距 $\beta_{0j}$ 和变系数 $\beta_{1j}$ 同时存在，且二者联合分布为二元正态分布，残差仍然假定独立同正态分布 $\epsilon_{ij} \sim \mathcal{N}(0,\sigma^2)$ 。
-:::
-
-**lme4** 包[@Bates2015]是拟合广义线性混合效应模型的金标准，模型拟合函数 `glmer()` 的使用非常类似 Base R 提供的函数 `glm()`。
-
-```{r}
-library(Matrix)
-library(lme4)
-rongelap$dummary <- 1:157
-fit_rongelap_glmer <- glmer(counts ~ 1 + (1 | dummary),
-  family = poisson(link = "log"),
-  offset = log(time), data = rongelap
-)
-summary(fit_rongelap_glmer)
-```
-
-从拟合模型的结果来看，参数 $\gamma_{00} = 1.94405, \tau_{00}^2 = 0.2223$ 。将每个位置看作单独的一个随机效应，比较两个模型的对数似然，后者变大了，这意味着模型拟合效果更好了。
-
-```{r}
-# 广义线性模型
-logLik(fit_rongelap_glm)
-# 广义线性混合效应模型
-logLik(fit_rongelap_glmer)
-```
-
-进一步，去掉随机效应相互独立的假设，随机效应之间存在相关性结构，这更符合位置效应存在相互影响的实际情况。核辐射强度的空间分布
-
-```{r}
-# 拟合存在异方差的一般线性模型
-fit_rongelap_gls <- nlme::gls(counts / time ~ 1, data = rongelap)
-# 拟合残差的半变差函数
-fit_rongelap_vario <- nlme::Variogram(fit_rongelap_gls,
-  form = ~ cX + cY, data = rongelap, resType = "response"
-)
-```
-
-```{r}
-#| label: fig-rongelap-vario
-#| echo: !expr knitr::is_html_output()
-#| fig-cap: "核辐射强度的经验变差图"
-#| fig-width: 5
-#| fig-height: 4
-#| fig-showtext: true
-#| code-fold: true
-
-# 经验半变差图
-plot(fit_rongelap_vario,
-  col.line = "black", scales = list(
-    # 去掉图形上边、右边多余的刻度线
-    x = list(alternating = 1, tck = c(1, 0)),
-    y = list(alternating = 1, tck = c(1, 0))
-  ), par.settings = list(
-    plot.symbol = list(pch = 20, col = "black"),
-    plot.line = list(lwd = 1)
-  ),
-  xlab = "距离（米）", ylab = "半变差函数值"
-)
-```
-
-结合 @fig-rongelap-vario ， 核辐射强度的经验变差图呈现的空间相关性，也因此要引入带空间随机效应的广义线性混合效应模型。克里金插值方法
-
-```{r}
-fit_rongelap_krige <- nlme::gls(
-  model = counts / time ~ 1, data = rongelap,
-  correlation = nlme::corExp(form = ~ cX + cY, nugget = TRUE)
-)
-summary(fit_rongelap_krige)
-```
-
-根据 ${}^{137}\mathrm{Cs}$ 放出的伽马射线在 $N=157$ 站点不同时间间隔 $t(d_{i})$ 的辐射量，建立泊松型空间广义线性混合效应模型。
-
-$$
-\begin{aligned}
-\log\{\lambda(d_i)\} & =  \beta + S(d_{i}) \\
-\log\{\lambda(d_i)\} & =  \beta + S(d_{i}) + Z_{i} \\
-Y_{i} &\sim \mathrm{Poisson}(t(d_{i})\lambda(d_i))
-\end{aligned}
-$$ {#eq-rongelap-poisson-sglmmm}
-
-模型中，截距 $\beta$ 相当于平均水平，放射粒子数$Y_{i}$作为响应变量服从均值为 $t(d_{i})\lambda(d_i)$ 的泊松分布，$\lambda(d_i)$ 可理解为辐射强度，$S(d_{i})$ 表示位置 $d_i$ 处的空间效应，随机过程 $S(d)$ 的自协方差函数常用的有指数型、幂二次指数型和 Matérn 型，形式如下：
+随机过程 $S(d)$ 的自协方差函数常用的有指数型、幂二次指数型（高斯型）和梅隆型，形式如下：
 
 $$
 \begin{aligned}
@@ -433,11 +289,11 @@ K_{\nu}(x) &= \int_{0}^{\infty}\exp(-x \cosh t) \cosh (\nu t) \mathrm{dt}
 \end{aligned}
 $$ {#eq-matern-formula}
 
-其中，$K_{\nu}$ 表示阶数为 $\nu$ 的修正的第二类贝塞尔函数，$\Gamma(\cdot)$ 表示伽马函数，当 $\nu = 1/2$ ，Matérn 型将简化为指数型，当 $\nu = \infty$ 时，Matérn 型将简化为幂二次指数型。固定 $\sigma = 1$，自协方差函数图像如 @fig-matern-fun 所示，不难看出，$\nu$ 影响自协方差函数的平滑性，控制点与点之间相关性的变化，$\nu$ 越大相关性越迅速地递减。$\rho$ 控制协方差函数的范围，$\rho$ 越大相关性辐射距离越远。对模型来说，它们都是超参数。
+其中，$K_{\nu}$ 表示阶数为 $\nu$ 的修正的第二类贝塞尔函数，$\Gamma(\cdot)$ 表示伽马函数，当 $\nu = 1/2$ ，梅隆型将简化为指数型，当 $\nu = \infty$ 时，梅隆型将简化为幂二次指数型。固定 $\sigma = 1$，自协方差函数图像如 @fig-matern-fun 所示，不难看出，$\nu$ 影响自协方差函数的平滑性，控制点与点之间相关性的变化，$\nu$ 越大相关性越迅速地递减。$\rho$ 控制协方差函数的范围，$\rho$ 越大相关性辐射距离越远。对模型来说，它们都是超参数。
 
 ```{r}
 #| label: fig-matern-fun
-#| fig-cap: "Matérn 型协方差函数曲线"
+#| fig-cap: "梅隆型协方差函数曲线"
 #| fig-showtext: true
 #| code-fold: true
 #| echo: !expr knitr::is_html_output()
@@ -470,25 +326,172 @@ ggplot(data = mesh_matern, aes(x = x, y = fv)) +
   labs(x = "距离", y = "相关性", color = expression(nu))
 ```
 
-$S(d),d \in \mathbb{R}^2$ 是平稳空间高斯过程，且 $Z_i$ 之间相互独立同正态分布 $\mathcal{N}(0,\tau^2)$ ，$Z_i$ 表示与空间效应无关的块金效应，即非空间的随机效应，可以理解为测量误差、空间变差或背景辐射，这里 $i = 1,\ldots, 157$。
+**nlme** 包对带块金效应的相关函数设定如下：
 
-**spaMM** 包使用语法和前面介绍的 **lme4** 包一样，它可以拟合空间广义线性混合效应模型，支持非常丰富的统计建模功能，从简单线性模型到相对复杂的空间广义线性混合效应模型，拟合函数 `fitme()` 提供统一的使用语法，输出一个 **spaMM** 包内建的 HLfit 类型的数据对象。
+$$
+\rho(u; \phi, \tau_{rel}^2 ) = \tau_{rel}^2 + (1 - \tau_{rel}^2) \big(1 - \exp(- \frac{u}{\phi}) \big)
+$$
+
+理解函数 `corExp()` 的参数，设置 $\phi = 1, \tau_{rel}^2 = 0.2$，则由距离矩阵和相关函数构造的方差协方差矩阵如下：
+
+```{r}
+library(nlme)
+spatDat <- data.frame(x = (1:4) / 4, y = (1:4) / 4)
+cs3Exp <- corExp(c(1, 0.2), form = ~ x + y, nugget = TRUE)
+cs3Exp <- Initialize(cs3Exp, spatDat)
+corMatrix(cs3Exp)
+```
+
+相关性矩阵的初始化结果等价于如下矩阵
+
+```{r}
+diag(0.2, 4) + (1 - 0.2) * exp(-as.matrix(dist(spatDat)))
+```
+
+高斯型相关性矩阵
+
+```{r}
+cs3Gaus <- corGaus(c(1, 0.2), form = ~ x + y, nugget = TRUE)
+cs3Gaus <- Initialize(cs3Gaus, spatDat)
+corMatrix(cs3Gaus)
+# 等价于
+diag(0.2, 4) + (1 - 0.2) * exp(-as.matrix(dist(spatDat))^2)
+```
+
+**nlme** 包的函数 `corExp()` 表示自相关结构是指数型的，为了方便估计参数做了一些重参数化的操作，带块金效应的方差-协方差结构为
+
+$$
+\begin{aligned}
+\tau_{rel}^2 &= \frac{\tau^2}{\tau^2 + \sigma^2} \\
+\sigma_{tol}^2 &= \tau^2 + \sigma^2
+\end{aligned}
+$$
+
+当 $u$ 趋于 0，则 $\rho(u; \phi, \tau_{rel}^2 ) = \tau_{rel}^2$
+
+$\phi$ 只能取正值，$\tau_{rel}^2$ 的取值介于 0-1 之间，nlme 包的默认设置下，$\phi$ 的初始值为 $0.9 \times \min_{i,j \in A} u_{ij}$，所有点之间距离的最小值的 90%，$\tau_{rel}^2$ 为 0.1
+
+```{r}
+# 拟合存在异方差的一般线性模型
+fit_rongelap_gls <- nlme::gls(
+  log(counts / time) ~ 1, data = rongelap,
+  correlation = nlme::corExp(
+    value = c(200, 0.1), form = ~ cX + cY, nugget = TRUE
+  )
+)
+summary(fit_rongelap_gls)
+```
+
+**nlme** 包给出 $\tau_{rel}^2$ 和 $\sigma_{tol}^2$ 的估计，从而可以得到 $\tau^2$ 和 $\sigma^2$ 的估计。
+
+$$
+\begin{aligned}
+\tau_{rel}^2   &= 0.1092496 \\
+\sigma_{tol}^2 &= 0.5739672^2 = 0.3294383 \\
+\tau^2   &= 0.1092496 \times 0.3294383 = 0.035991 \\
+\sigma^2 &= 0.5739672^2 - 0.1092496 \times 0.3294383 = 0.2934473 \\
+\phi  &= 169.7472088 \\
+\beta &= 1.812914
+\end{aligned}
+$$
+
+拟合残差的半变差函数
+
+```{r}
+fit_rongelap_vario <- nlme::Variogram(fit_rongelap_gls,
+  form = ~ cX + cY, data = rongelap, resType = "response"
+)
+fit_rongelap_vario
+```
+
+基于拟合残差的经验半变差图，结合 @fig-rongelap-vario ，说明添加指数型空间自相关性是有效的。
+
+```{r}
+#| label: fig-rongelap-vario
+#| fig-cap: "核辐射强度的残差半变差图"
+#| fig-width: 5
+#| fig-height: 4
+#| fig-showtext: true
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
+
+# 经验半变差图
+plot(fit_rongelap_vario,
+  col.line = "black", scales = list(
+    # 去掉图形上边、右边多余的刻度线
+    x = list(alternating = 1, tck = c(1, 0)),
+    y = list(alternating = 1, tck = c(1, 0))
+  ), par.settings = list(
+    plot.symbol = list(pch = 20, col = "black"),
+    plot.line = list(lwd = 1)
+  ),
+  xlab = "距离（米）", ylab = "半变差函数值"
+)
+```
+
+如果空间相关性提取得很充分，则标准化半变差图中的数据点应是毫无趋势的，拟合线也应该是一条直线。除了指数型，还可以用其它模型来拟合空间相关性，从标准化半变差 @fig-rongelap-vario-norm 来看，存在非均匀的波动，不过模型提升空间不大了。
+
+```{r}
+#| label: fig-rongelap-vario-norm
+#| echo: !expr knitr::is_html_output()
+#| fig-cap: "核辐射强度的标准化残差半变差图"
+#| fig-width: 5
+#| fig-height: 4
+#| fig-showtext: true
+#| code-fold: true
+
+fit_rongelap_vario_norm <- nlme::Variogram(fit_rongelap_gls,
+  form = ~ cX + cY, data = rongelap, resType = "normalized"
+)
+# 经验半变差图
+plot(fit_rongelap_vario_norm,
+  col.line = "black", scales = list(
+    # 去掉图形上边、右边多余的刻度线
+    x = list(alternating = 1, tck = c(1, 0)),
+    y = list(alternating = 1, tck = c(1, 0))
+  ), par.settings = list(
+    plot.symbol = list(pch = 20, col = "black"),
+    plot.line = list(lwd = 1)
+  ),
+  xlab = "距离（米）", ylab = "半变差函数值"
+)
+```
+
+### 空间广义线性混合效应模型 {#sec-rongelap-sglmm}
+
+从实际场景出发，也不难理解，位置信息是非常关键的。进一步，充分利用位置信息，精细建模是很有必要的。相邻位置的核辐射强度是相关的，离得近的比离得远的更相关。简单的广义线性模型并没有考虑距离相关性，它认为各个观测点的数据是相互独立的。因此，考虑采用广义线性混合效应模型，在广义线性模型的基础上添加位置相关的随机效应，用以刻画未能直接观测到的潜在影响。根据 ${}^{137}\mathrm{Cs}$ 放出的伽马射线在 $N=157$ 站点不同时间间隔 $t(d_{i})$ 的辐射量，建立泊松型空间广义线性混合效应模型。
+
+$$
+\begin{aligned}
+\log\{\lambda(d_i)\} & =  \beta + S(d_{i}) + Z_{i} \\
+Y_{i} &\sim \mathrm{Poisson}(t(d_{i})\lambda(d_i))
+\end{aligned}
+$$ {#eq-rongelap-poisson-sglmmm}
+
+模型中，放射粒子数$Y_{i}$作为响应变量服从均值为 $t(d_{i})\lambda(d_i)$ 的泊松分布，其它模型成分的说明同前。
+
+**spaMM** 包可以拟合空间广义线性混合效应模型，它的使用语法和前面介绍的 **nlme** 包类似，拟合函数 `fitme()` 对一大类统计模型提供统一的使用语法，输出一个 **spaMM** 包内建的 HLfit 类型的数据对象。 **spaMM** 包的函数 `Matern()` 实现了梅隆型自协方差函数，指数型和幂二次指数型是它的特例。当固定 $\nu = 0.5$ 时，梅隆型函数 `Matern()` 的形式退化为 $\exp(-\rho d)$ ，其中 `d` 表示距离，$\rho$ 相当于前面出现的 $1/\phi$ 。
 
 ```{r}
 #| message: false
 
 library(spaMM)
 fit_rongelap_spamm <- fitme(counts ~ 1 + Matern(1 | cX + cY) + offset(log(time)),
-  family = poisson(link = "log"), data = rongelap
+  family = poisson(link = "log"), data = rongelap,
+  fixed = list(nu = 0.5)
 )
 summary(fit_rongelap_spamm)
 ```
 
-从输出结果来看，模型固定效应的截距项 1.824，随机效应的方差为 0.2973，自协方差函数中参数 $\nu = 0.3642$，对比 **spaMM** 包的函数 `Matern()` 实现的 Matérn 型自相关函数公式与 @eq-matern-formula ，输出结果需要转化一下，以符合 @eq-matern-formula ，则 $\rho = \sqrt{2 \times 0.364211759} / 0.0061486 = 138.81$ ，即空间相关性的最大影响距离为 138.8 米，对数似然函数值为 -1317.551。对数似然函数的值又变大了，拟合效果更好了，相比于从广义线性模型到广义线性混合效应模型，提升不是特别多，一般来说，模型越复杂提升空间会越小，过于复杂也没有必要。
+从输出结果来看，模型固定效应的截距项 $\beta$ 为 `1.831`，随机效应的方差 $\sigma^2$ 为 `0.2964`，自协方差函数中参数 $\rho = 0.009683345$，对比函数 `Matern()` 实现的指数型自相关函数公式与 @eq-matern-formula ，输出结果需要转化一下，以符合 @eq-matern-formula ，则 $\phi = 1 / 0.00961486 = 104.0057$ ，即空间相关性的最大影响距离为 104 米。
+
+
 
 ## 模型预测 {#sec-rongelap-predict}
 
 接下来，预测给定的边界（海岸线）内任意位置的核辐射强度，展示全岛的核辐射强度分布。先从点构造多边形数据，再将多边形做网格划分，继而将网格中心点作为模型输入获得核辐射强度的预测值。
+
+### 海岸线数据 {#sec-rongelap-coastline}
 
 海岸线上取一些点，点的数量越多，对海岸线的刻画越精确，这在转弯处体现得非常明显。海岸线的数据是以成对的坐标构成，导入 R 语言中，是以数据框的形式存储，为了方便后续的操作，引入空间数据操作的 **sf** 包[@Pebesma2018]，将核辐射数据和海岸线数据转化为 POINT 类型的空间点数据。
 
@@ -536,6 +539,8 @@ ggplot(rongelap_coastline_sfp) +
   theme_void()
 ```
 
+### 边界处理 {#sec-rongelap-border}
+
 为了确保覆盖整个岛，处理好边界问题，需要一点缓冲空间，就是说在给定的边界线外围再延伸一段距离，构造一个更大的多边形，这可以用函数 `st_buffer()` 实现，根据海岸线构造缓冲区，得到一个 POLYGON 类型的几何数据对象。考虑到朗格拉普岛的实际大小，缓冲距离选择 50 米。
 
 ```{r}
@@ -559,6 +564,8 @@ ggplot() +
   geom_sf(data = rongelap_coastline_buffer, fill = NA, color = "black") +
   theme_void()
 ```
+
+### 构造网格 {#sec-rongelap-grid}
 
 接下来，利用函数 `st_make_grid()` 根据朗格拉普岛海岸缓冲线构造网格，朗格拉普岛是狭长的，因此，网格是 $75\times 150$ 的，意味着水平方向 75 行，垂直方向 150 列。网格的疏密程度是可以调整的，网格越密，格点越多，核辐射强度分布越精确，计算也越耗时。
 
@@ -614,6 +621,8 @@ ggplot() +
   theme_void()
 ```
 
+### 整理数据 {#sec-rongelap-pred}
+
 函数 `st_coordinates()` 抽取网格中心点的坐标并用函数 `as.data.frame()` 转化为数据框类型，新数据的列名需要和训练数据保持一致，最后补充漂移项 `time`，以便输入模型中。漂移项并不影响核辐射强度，指定为 300 或 400 都可以。
 
 ```{r}
@@ -630,6 +639,8 @@ rongelap_grid_pred <- predict(fit_rongelap_spamm,
 )
 rongelap_grid_df$pred <- as.vector(rongelap_grid_pred)
 ```
+
+### 展示结果 {#sec-rongelap-image}
 
 将预测结果以散点图的形式呈现到图上，考虑到核辐射在全岛的分布应当是连续性的，空间连续性也是这类模型的假设，接下来要绘制热力图。
 
