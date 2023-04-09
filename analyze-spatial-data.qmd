@@ -395,26 +395,6 @@ $$
 \end{aligned}
 $$
 
-::: callout-tip
-`gls()` 的 `lme()` 等价表示，结果与 `gls()` 是一样的。
-
-```{r}
-#| eval: false
-#| echo: true
-
-# 添加哑变量
-rongelap$dummary <- 1
-# 拟合存在异方差的一般线性模型
-fit_rongelap_lme <- nlme::lme(
-  log(counts / time) ~ 1, data = rongelap, random = ~ 1 | dummary,
-  correlation = nlme::corExp(
-    value = c(200, 0.1), form = ~ cX + cY, nugget = TRUE
-  )
-)
-summary(fit_rongelap_lme)
-```
-:::
-
 拟合残差的半变差函数
 
 ```{r}
@@ -505,42 +485,7 @@ summary(fit_rongelap_spamm)
 
 从输出结果来看，模型固定效应的截距项 $\beta$ 为 `1.831`，随机效应的方差 $\sigma^2$ 为 `0.2964`，自协方差函数中参数 $\rho = 0.009683345$，对比函数 `Matern()` 实现的指数型自相关函数公式与 @eq-matern-formula ，输出结果需要转化一下，以符合 @eq-matern-formula ，则 $\phi = 1 / 0.00961486 = 104.0057$ ，即空间相关性的最大影响距离为 104 米。
 
-::: callout-note
-[**glmmTMB**](https://github.com/glmmTMB/glmmTMB) 包基于 [TMB](https://github.com/kaskr/adcomp)[@TMB2016]框架可以拟合空间广义线性混合效应模型，使用语法和前面介绍的函数 `glm()` 类似。
 
-```{r}
-#| eval: false
-# 位置标准化
-rongelap$loc <- glmmTMB::numFactor(scale(rongelap$cX), scale(rongelap$cY))
-# 位置 ID
-rongelap$ID <- factor(rep(1, nrow(rongelap)))
-# 拟合模型
-fit_rongelap_glmmtmb <- glmmTMB::glmmTMB(
-  formula = counts ~ 1 + exp(loc + 0 | ID),
-  data = rongelap, family = poisson(link = "log"),
-  offset = log(time)
-)
-```
-
-函数 `glmmTMB()` 还支持梅隆型 `mat` 和高斯型 `gau` 等协方差结构。它返回一个 glmmTMB 类型的数据对象，提供的方法如下：
-
--   函数 `summary()` 类似 `stats::summary.glm()`，打印输出模型结果，如 AIC、BIC、对数似然值、随机效应的标准差和协方差矩阵，固定效应等。此处，随机效应的标准偏差为 0.544，方差为 $0.544^2 = 0.2959$。
--   函数 `ranef()` 提取随机效应，这里是 157 维的，随机效应的协方差矩阵是 $157 \times 157$ 维的，篇幅所限，此处略去。
--   函数 `fixef()` 提取模型的固定效应，此处仅有截距，截距为 1.82007。
--   函数 `logLik()` 提取模型的对数似然。
--   函数 `residuals()` 提取模型的拟合残差。
-
-```{r}
-#| eval: false
-
-# 对数似然
-logLik(fit_rongelap_glmmtmb)
-# 固定效应，此处即截距
-fixef(fit_rongelap_glmmtmb)
-```
-
-对数似然的值和 **spaMM** 包的输出结果接近，但 **glmmTMB** 包不能估计协方差函数中的参数 $\phi$。值得注意，由于 $\sigma^2$ 与 $\tau^2$ 存在识别困难， **spaMM** 与 **glmmTMB** 都没有给出块金效应的估计。
-:::
 
 ## 模型预测 {#sec-rongelap-predict}
 
