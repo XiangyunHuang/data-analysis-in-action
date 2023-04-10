@@ -183,6 +183,19 @@ print(p2, vp = grid::viewport(x = .25, y = .725, width = .275, height = .45))
 #| code-fold: true
 #| echo: !expr knitr::is_html_output()
 
+# 参考 lattice 书籍的图 6.5 的绘图代码
+panel.3dcoastline <- function(..., rot.mat, distance, xlim, ylim, zlim,
+                        xlim.scaled, ylim.scaled, zlim.scaled){
+  scale.vals <- function(x, original, scaled) {
+    scaled[1] + (x-original[1]) * diff(scaled) / diff(original)
+  }
+  scaled.map <- rbind(scale.vals(rongelap_coastline$cX, xlim, xlim.scaled),
+                      scale.vals(rongelap_coastline$cY, ylim, ylim.scaled),
+                      zlim.scaled[1])
+  m <- ltransform3dto3d(scaled.map, rot.mat, distance)
+  panel.lines(m[1,], m[2,], col = "black")
+}
+
 cloud(counts / time ~ cX * cY,
   data = rongelap, col = "black",
   xlim = c(-6500, 50), ylim = c(-3800, 110),
@@ -191,17 +204,9 @@ cloud(counts / time ~ cX * cY,
   ylab = list("纵坐标（米）", rot = -50),
   zlab = list("辐射强度", rot = 90),
   type = c("p", "h"), pch = 16, lwd = 0.5,
-  panel = function(...) { # 添加海岸线
-    L <- list(...)
-    L$x <- rongelap_coastline$cX
-    L$y <- rongelap_coastline$cY
-    L$z <- rep(0, nrow(rongelap_coastline))
-    L$type <- "l"
-    L$col <- "black"
-    L$lty <- 2
-    L$lwd <- 1
-    do.call(panel.cloud, L)
-    p <- panel.cloud(...)
+  panel.3d.cloud = function(...) {
+    panel.3dmap(...)
+    panel.3dscatter(...)
   },
   # 减少三维图形的边空
   lattice.options = list(
@@ -484,8 +489,6 @@ summary(fit_rongelap_spamm)
 ```
 
 从输出结果来看，模型固定效应的截距项 $\beta$ 为 `1.831`，随机效应的方差 $\sigma^2$ 为 `0.2964`，自协方差函数中参数 $\rho = 0.009683345$，对比函数 `Matern()` 实现的指数型自相关函数公式与 @eq-matern-formula ，输出结果需要转化一下，以符合 @eq-matern-formula ，则 $\phi = 1 / 0.00961486 = 104.0057$ ，即空间相关性的最大影响距离为 104 米。
-
-
 
 ## 模型预测 {#sec-rongelap-predict}
 
