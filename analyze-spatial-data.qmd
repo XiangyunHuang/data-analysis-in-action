@@ -172,7 +172,7 @@ p1
 print(p2, vp = grid::viewport(x = .25, y = .725, width = .275, height = .45))
 ```
 
-**ggplot2** 包只能在二维平面上展示数据，对于空间数据，立体图形似乎更加符合数据背景。**lattice** 包的函数 `cloud()` 可以绘制三维的散点图，组合点和线两种绘图元素构造出射线，线越长表示放射性越强，以射线搭配放射状的粒子辐射，似乎也更加贴切，如 @fig-rongelap-concentration 所示，展示朗格拉普岛上采样点的位置及检测到的辐射强度。
+**ggplot2** 包只能在二维平面上展示数据，对于空间数据，立体图形更加符合数据产生背景。如 @fig-rongelap-concentration 所示，以三维图形展示朗格拉普岛上采样点的位置及检测到的辐射强度。**lattice** 包的函数 `cloud()` 可以绘制三维的散点图，将自定义的面板函数 `panel.3dcoastline()` 传递给参数 `panel.3d.cloud` 绘制岛屿海岸线。组合点和线两种绘图元素构造出射线，线的长短表示放射性的强弱，以射线表示粒子辐射现象更加贴切。
 
 ```{r}
 #| label: fig-rongelap-concentration
@@ -185,15 +185,17 @@ print(p2, vp = grid::viewport(x = .25, y = .725, width = .275, height = .45))
 
 # 参考 lattice 书籍的图 6.5 的绘图代码
 panel.3dcoastline <- function(..., rot.mat, distance, xlim, ylim, zlim,
-                        xlim.scaled, ylim.scaled, zlim.scaled){
+                              xlim.scaled, ylim.scaled, zlim.scaled) {
   scale.vals <- function(x, original, scaled) {
-    scaled[1] + (x-original[1]) * diff(scaled) / diff(original)
+    scaled[1] + (x - original[1]) * diff(scaled) / diff(original)
   }
-  scaled.map <- rbind(scale.vals(rongelap_coastline$cX, xlim, xlim.scaled),
-                      scale.vals(rongelap_coastline$cY, ylim, ylim.scaled),
-                      zlim.scaled[1])
+  scaled.map <- rbind(
+    scale.vals(rongelap_coastline$cX, xlim, xlim.scaled),
+    scale.vals(rongelap_coastline$cY, ylim, ylim.scaled),
+    zlim.scaled[1]
+  )
   m <- ltransform3dto3d(scaled.map, rot.mat, distance)
-  panel.lines(m[1,], m[2,], col = "black")
+  panel.lines(m[1, ], m[2, ], col = "black")
 }
 
 cloud(counts / time ~ cX * cY,
@@ -205,7 +207,7 @@ cloud(counts / time ~ cX * cY,
   zlab = list("辐射强度", rot = 90),
   type = c("p", "h"), pch = 16, lwd = 0.5,
   panel.3d.cloud = function(...) {
-    panel.3dcoastline(...)
+    panel.3dcoastline(...) # 海岸线
     panel.3dscatter(...)
   },
   # 减少三维图形的边空
