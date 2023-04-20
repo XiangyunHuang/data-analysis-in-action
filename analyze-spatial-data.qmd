@@ -324,13 +324,13 @@ ggplot(data = mesh_matern, aes(x = x, y = fv)) +
   labs(x = "距离", y = "相关性", color = expression(nu))
 ```
 
-**nlme** 包对带块金效应的相关函数设定如下：
+**nlme** 包中带块金效应的指数型自相关函数设定如下：
 
 $$
 \rho(u; \phi, \tau_{rel}^2 ) = \tau_{rel}^2 + (1 - \tau_{rel}^2) \big(1 - \exp(- \frac{u}{\phi}) \big)
 $$
 
-理解函数 `corExp()` 的参数，设置 $\phi = 1, \tau_{rel}^2 = 0.2$，则由距离矩阵和相关函数构造的方差协方差矩阵如下：
+下面以一个简单示例理解自相关函数 `corExp()` 的作用，令 $\phi = 1, \tau_{rel}^2 = 0.2$，则由距离矩阵和自相关函数构造的方差协方差矩阵如下：
 
 ```{r}
 library(nlme)
@@ -340,13 +340,13 @@ cs3Exp <- Initialize(cs3Exp, spatDat)
 corMatrix(cs3Exp)
 ```
 
-相关性矩阵的初始化结果等价于如下矩阵
+相关性矩阵的初始化结果等价于如下矩阵：
 
 ```{r}
 diag(0.2, 4) + (1 - 0.2) * exp(-as.matrix(dist(spatDat)))
 ```
 
-高斯型相关性矩阵
+**nlme** 包还有好些自相关函数，如常用的高斯型自相关函数 `corGaus()` ，它与函数 `corExp()` 的作用类似，示例如下：
 
 ```{r}
 cs3Gaus <- corGaus(c(1, 0.2), form = ~ x + y, nugget = TRUE)
@@ -356,7 +356,7 @@ corMatrix(cs3Gaus)
 diag(0.2, 4) + (1 - 0.2) * exp(-as.matrix(dist(spatDat))^2)
 ```
 
-**nlme** 包的函数 `corExp()` 表示自相关结构是指数型的，为了方便估计参数做了一些重参数化的操作，带块金效应的方差-协方差结构为
+**nlme** 包的函数 `corExp()` 表示自相关结构是指数型的，为了方便估计参数做了一些重参数化的操作，带块金效应的方差协方差结构为
 
 $$
 \begin{aligned}
@@ -365,12 +365,9 @@ $$
 \end{aligned}
 $$
 
-当 $u$ 趋于 0，则 $\rho(u; \phi, \tau_{rel}^2 ) = \tau_{rel}^2$
-
-$\phi$ 只能取正值，$\tau_{rel}^2$ 的取值介于 0-1 之间，nlme 包的默认设置下，$\phi$ 的初始值为 $0.9 \times \min_{i,j \in A} u_{ij}$，所有点之间距离的最小值的 90%，$\tau_{rel}^2$ 为 0.1
+当 $u$ 趋于 0，则 $\rho(u; \phi, \tau_{rel}^2 ) = \tau_{rel}^2$ ，另外， $\phi$ 只能取正值，$\tau_{rel}^2$ 的取值介于 0-1 之间，**nlme** 包的默认设置下，$\phi$ 的初始值为 $0.9 \times \min_{i,j \in A} u_{ij}$，即所有点之间距离的最小值的 90%，而 $\tau_{rel}^2$ 为 0.1 。**nlme** 包的函数 `gls()` 实现限制极大似然估计方法，可以拟合存在异方差的一般线性模型，也是一种特殊的带自相关结构的线性混合效应模型，随机效应的结构可以看作异方差的结构。
 
 ```{r}
-# 拟合存在异方差的一般线性模型
 fit_rongelap_gls <- nlme::gls(
   log(counts / time) ~ 1, data = rongelap,
   correlation = nlme::corExp(
@@ -380,20 +377,27 @@ fit_rongelap_gls <- nlme::gls(
 summary(fit_rongelap_gls)
 ```
 
-**nlme** 包给出 $\tau_{rel}^2$ 和 $\sigma_{tol}^2$ 的估计，从而可以得到 $\tau^2$ 和 $\sigma^2$ 的估计。
+**nlme** 包给出截距项 $\beta$ 、相对块金效应 $\tau_{rel}^2$ 、高斯过程范围参数 $\phi$ 和方差 $\sigma_{tol}^2$ 的估计，
 
 $$
 \begin{aligned}
 \tau_{rel}^2   &= 0.1092496 \\
 \sigma_{tol}^2 &= 0.5739672^2 = 0.3294383 \\
-\tau^2   &= 0.1092496 \times 0.3294383 = 0.035991 \\
-\sigma^2 &= 0.5739672^2 - 0.1092496 \times 0.3294383 = 0.2934473 \\
 \phi  &= 169.7472088 \\
 \beta &= 1.812914
 \end{aligned}
 $$
 
-拟合残差的半变差函数
+根据前面的关系式，可以得到 $\tau^2$ 和 $\sigma^2$ 的估计。
+
+$$
+\begin{aligned}
+\tau^2   &= \tau^2_{rel} \times \sigma^2_{tol} = 0.1092496 \times 0.3294383 = 0.035991 \\
+\sigma^2 &= \sigma^2_{tol} - \tau^2_{rel} \times \sigma^2_{tol} = 0.5739672^2 - 0.1092496 \times 0.3294383 = 0.2934473
+\end{aligned}
+$$
+
+接下来检查空间相关性， rongelap 数据集包含 157 个采样点的坐标，两两配对，共有 $(157 - 1) \times (157 - 2) / 2 = 12090$ 对。拟合残差的半变差函数
 
 ```{r}
 fit_rongelap_vario <- nlme::Variogram(fit_rongelap_gls,
@@ -402,7 +406,7 @@ fit_rongelap_vario <- nlme::Variogram(fit_rongelap_gls,
 fit_rongelap_vario
 ```
 
-基于拟合残差的经验半变差图，结合 @fig-rongelap-vario ，说明添加指数型空间自相关性是有效的。
+结合拟合残差的经验半变差 @fig-rongelap-vario ，说明添加指数型空间自相关性是合理的。
 
 ```{r}
 #| label: fig-rongelap-vario
