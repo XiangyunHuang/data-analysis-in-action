@@ -94,7 +94,6 @@ RUN dnf -y copr enable iucar/cran \
   && dnf -y install $(cat desc_pkgs.txt) \
   && dnf clean all \
   && install2.r showtextdb showtext \
-  && Rscript -e 'install.packages("cmdstanr", repos = c("https://mc-stan.org/r-packages/", getOption("repos")), type="source")' \
   && export GITHUB_PAT=${GITHUB_PAT} \
   && Rscript -e "remotes::install_deps('.', dependencies = TRUE)" \
   && rm -f DESCRIPTION desc_pkgs.txt
