@@ -8,10 +8,7 @@ LABEL org.label-schema.license="GPL-3.0" \
       org.label-schema.vendor="Book Project" \
       maintainer="Xiangyun Huang <xiangyunfaith@outlook.com>"
 
-ARG CMDSTAN=/opt/cmdstan/cmdstan-2.31.0
-ARG CMDSTAN_VERSION=2.31.0
 ARG QUARTO_VERSION=1.2.280
-ARG RETICULATE_PYTHON_ENV=/opt/.virtualenvs/r-tensorflow
 ARG GITHUB_PAT=abc123
 
 # System dependencies required for R packages
@@ -89,15 +86,6 @@ RUN ln -s /usr/lib64/R/library/littler/examples/install.r /usr/bin/install.r \
  && systemctl enable rstudio-server \
  && dnf clean all
 
-# Set CmdStanR
-ENV CMDSTAN=$CMDSTAN
-
-RUN mkdir -p /opt/cmdstan \
-  && curl -fLo cmdstan-${CMDSTAN_VERSION}.tar.gz https://github.com/stan-dev/cmdstan/releases/download/v${CMDSTAN_VERSION}/cmdstan-${CMDSTAN_VERSION}.tar.gz \
-  && tar -xzf cmdstan-${CMDSTAN_VERSION}.tar.gz -C /opt/cmdstan/ \
-  && make -C ${CMDSTAN} build \
-  && rm -rf cmdstan-${CMDSTAN_VERSION}.tar.gz
-
 # Set Extra R Packages
 COPY DESCRIPTION DESCRIPTION
 COPY desc_pkgs.txt desc_pkgs.txt
@@ -110,16 +98,6 @@ RUN dnf -y copr enable iucar/cran \
   && export GITHUB_PAT=${GITHUB_PAT} \
   && Rscript -e "remotes::install_deps('.', dependencies = TRUE)" \
   && rm -f DESCRIPTION desc_pkgs.txt
-
-# Set Python virtualenv
-ENV RETICULATE_PYTHON_ENV=$RETICULATE_PYTHON_ENV
-ENV RETICULATE_PYTHON=${RETICULATE_PYTHON_ENV}/bin/python
-
-COPY requirements.txt requirements.txt
-RUN virtualenv -p /usr/bin/python3 ${RETICULATE_PYTHON_ENV} \
- && source ${RETICULATE_PYTHON_ENV}/bin/activate \
- && pip install -r requirements.txt \
- && rm -f requirements.txt
 
 # Set Quarto and Pandoc
 RUN curl -fLo quarto.tar.gz https://github.com/quarto-dev/quarto-cli/releases/download/v${QUARTO_VERSION}/quarto-${QUARTO_VERSION}-linux-amd64.tar.gz \
