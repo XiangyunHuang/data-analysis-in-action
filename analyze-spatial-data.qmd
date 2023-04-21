@@ -141,7 +141,7 @@ p1 <- ggplot() +
   geom_path(data = rongelap_coastline, aes(x = cX, y = cY)) +
   geom_point(data = rongelap, aes(x = cX, y = cY, color = counts / time), size = 0.5) +
   scale_x_continuous(n.breaks = 7) +
-  scale_color_distiller(palette = "Greys", direction = 1) +
+  scale_color_viridis_c() +
   geom_segment(
     data = data.frame(x = -5560, xend = -5000, y = -3000, yend = -2000),
     aes(x = x, y = y, xend = xend, yend = yend),
@@ -153,7 +153,7 @@ p1 <- ggplot() +
 p2 <- ggplot() +
   geom_point(data = rongelap, aes(x = cX, y = cY, color = counts / time), 
              size = 2, show.legend = FALSE) +
-  scale_color_distiller(palette = "Greys", direction = 1) +
+  scale_color_viridis_c() +
   coord_cartesian(xlim = c(-5700, -5540), ylim = c(-3260, -3100)) +
   theme_bw() +
   labs(x = NULL, y = NULL)
@@ -259,7 +259,7 @@ rongelap$glm_residuals <- residuals(fit_rongelap_glm)
 
 ggplot(rongelap, aes(x = cX, y = cY)) +
   geom_point(aes(colour = glm_residuals / time), size = 0.5) +
-  scale_color_distiller(palette = "Greys", direction = 1) +
+  scale_color_viridis_c() +
   theme_bw() +
   labs(x = "横坐标（米）", y = "纵坐标（米）", color = "残差")
 ```
@@ -322,7 +322,7 @@ mesh_matern$rho_math <- paste("rho==", mesh_matern$rho, sep = "")
 ggplot(data = mesh_matern, aes(x = x, y = fv)) +
   geom_line(aes(color = nu_math)) +
   facet_wrap(vars(rho_math), ncol = 1, labeller = ggplot2::label_parsed) +
-  scale_color_grey(labels = expression(nu == 0.5, nu == 1.5, nu == 2.5)) +
+  scale_color_viridis_d(labels = expression(nu == 0.5, nu == 1.5, nu == 2.5)) +
   theme_minimal(base_size = 13) +
   labs(x = "距离", y = "相关性", color = expression(nu))
 ```
@@ -685,63 +685,34 @@ sk <- beta + t(m_pred) %*% solve(m_obs, log(rongelap_sf$counts / rongelap_sf$tim
 rongelap_grid_df$pred_sk <- exp(sk)
 ```
 
-### 展示结果 {#sec-rongelap-image}
+### 展示结果 {#sec-rongelap-plot}
 
-将预测结果以散点图的形式呈现到图上，考虑到核辐射在全岛的分布应当是连续性的，空间连续性也是这类模型的假设，接下来要绘制热力图。为了绘制热力图，利用 **stars** 包[@stars2022]将预测数据按原网格化的精度转化成栅格对象，裁减超出朗格拉普岛海岸线以外的内容。
+将预测结果以散点图的形式呈现到图上，见下 @fig-rongelap-pred ，由于散点非常多，紧挨在一起就连成片了。上子图是 **spaMM** 包预测的结果，下子图是 **nlme** 包预测的结果，后者图像看起来会稍微平滑一些。由于从空间线性混合效应模型到空间广义线性混合效应模型的效果提升不多，在曲折处，图像的平滑差异才会比较明显。
 
 ```{r}
 #| label: fig-rongelap-pred
 #| fig-cap: "朗格拉普岛核辐射强度的分布"
-#| fig-width: 7
-#| fig-height: 4.5
+#| fig-width: 6
+#| fig-height: 6
 #| fig-showtext: true
 #| echo: !expr knitr::is_html_output()
 #| code-fold: true
-#| layout-ncol: 1
-#| fig-subcap: 
-#| - nlme
-#| - spaMM
 
-library(abind)
-library(stars)
 rongelap_grid_sf <- st_as_sf(rongelap_grid_df, coords = c("cX", "cY"), dim = "XY")
-rongelap_grid_stars <- st_rasterize(rongelap_grid_sf, nx = 150, ny = 75)
-rongelap_stars <- st_crop(x = rongelap_grid_stars, y = rongelap_coastline_sfp)
-
-ggplot() +
-  geom_stars(
-    data = rongelap_stars, na.action = na.omit,
-    aes(fill = pred_sk / time)
-  ) +
-  # 海岸线
-  geom_sf(
-    data = rongelap_coastline_sfp,
-    fill = NA, color = "gray30", linewidth = 0.5
-  ) +
-  # 图例
-  scale_fill_distiller(palette = "Greys", direction = 1) +
-  theme_void() +
-  labs(fill = "辐射强度") +
-  theme(legend.position = c(0.95, 0.2))
-ggplot() +
-  geom_stars(
-    data = rongelap_stars, na.action = na.omit,
-    aes(fill = pred_sp / time)
-  ) +
-  # 海岸线
-  geom_sf(
-    data = rongelap_coastline_sfp,
-    fill = NA, color = "gray30", linewidth = 0.5
-  ) +
-  # 图例
-  scale_fill_distiller(palette = "Greys", direction = 1) +
-  theme_void() +
-  labs(fill = "辐射强度") +
-  theme(legend.position = c(0.95, 0.2))
-
+plot(rongelap_grid_sf[c("pred_sp", "pred_sk")], pch = 16, cex = 0.75,
+     breaks = (0:78) / 6, key.pos = 4, pal = hcl.colors)
 ```
 
-除了矢量栅格化函数 `st_rasterize()` 和栅格剪裁函数 `st_crop()` ，**stars** 包还提供栅格数据图层 `geom_stars()`，这可以和 **ggplot2** 内置的图层搭配使用。下 @fig-rongelap-pred-stars 是 **ggplot2** 包和 **grid** 包一起绘制的辐射强度的热力分布图。图左侧一小一大两个虚线框是放大前后的部分区域，展示朗格拉普岛核辐射强度的局部变化。
+考虑到核辐射在全岛的分布应当是连续性的，空间连续性也是这类模型的假设，接下来要绘制热力图。为了绘制热力图，先用 **stars** 包[@stars2022]将预测数据按原网格化的精度转化成栅格对象，裁减超出朗格拉普岛海岸线以外的内容。
+
+```{r}
+library(abind)
+library(stars)
+rongelap_grid_stars <- st_rasterize(rongelap_grid_sf, nx = 150, ny = 75)
+rongelap_stars <- st_crop(x = rongelap_grid_stars, y = rongelap_coastline_sfp)
+```
+
+除了矢量栅格化函数 `st_rasterize()` 和栅格剪裁函数 `st_crop()` ，**stars** 包还提供栅格数据图层 `geom_stars()`，这可以和 **ggplot2** 内置的图层搭配使用。下 @fig-rongelap-pred-sp 是 **ggplot2** 包和 **grid** 包一起绘制的辐射强度的热力分布图。图左侧一小一大两个虚线框是放大前后的部分区域，展示朗格拉普岛核辐射强度的局部变化。
 
 ```{r}
 #| label: fig-rongelap-pred-sp
@@ -772,7 +743,7 @@ p3 <- ggplot() +
     fill = NA, color = "gray30", linewidth = 0.5
   ) +
   # 图例
-  scale_fill_distiller(palette = "Greys", direction = 1) +
+  scale_fill_viridis_c() +
   # 虚线框
   geom_sf(data = dash_sfp, fill = NA, linewidth = 0.75, lty = 2) +
   # 箭头
@@ -794,7 +765,7 @@ p4 <- ggplot() +
     data = rongelap_coastline_sfp,
     fill = NA, color = "gray30", linewidth = 0.75
   ) +
-  scale_fill_distiller(palette = "Greys", direction = 1) +
+  scale_fill_viridis_c() +
   # 虚线框
   geom_sf(data = dash_sfp, fill = NA, linewidth = 0.75, lty = 2) +
   theme_void() +
