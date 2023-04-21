@@ -141,7 +141,7 @@ p1 <- ggplot() +
   geom_path(data = rongelap_coastline, aes(x = cX, y = cY)) +
   geom_point(data = rongelap, aes(x = cX, y = cY, color = counts / time), size = 0.5) +
   scale_x_continuous(n.breaks = 7) +
-  scale_color_viridis_c() +
+  scale_color_viridis_c(option = "C") +
   geom_segment(
     data = data.frame(x = -5560, xend = -5000, y = -3000, yend = -2000),
     aes(x = x, y = y, xend = xend, yend = yend),
@@ -153,7 +153,7 @@ p1 <- ggplot() +
 p2 <- ggplot() +
   geom_point(data = rongelap, aes(x = cX, y = cY, color = counts / time), 
              size = 2, show.legend = FALSE) +
-  scale_color_viridis_c() +
+  scale_color_viridis_c(option = "C") +
   coord_cartesian(xlim = c(-5700, -5540), ylim = c(-3260, -3100)) +
   theme_bw() +
   labs(x = NULL, y = NULL)
@@ -259,7 +259,7 @@ rongelap$glm_residuals <- residuals(fit_rongelap_glm)
 
 ggplot(rongelap, aes(x = cX, y = cY)) +
   geom_point(aes(colour = glm_residuals / time), size = 0.5) +
-  scale_color_viridis_c() +
+  scale_color_viridis_c(option = "C") +
   theme_bw() +
   labs(x = "横坐标（米）", y = "纵坐标（米）", color = "残差")
 ```
@@ -298,6 +298,7 @@ $$ {#eq-matern-formula}
 #| code-fold: true
 #| echo: !expr knitr::is_html_output()
 #| fig-width: 7
+#| out-width: 70%
 
 # 参数 x 两点之间的距离，要求 x 大于 0
 # 参数 sigma nu rho 分别与前述公式参数对应
@@ -322,7 +323,7 @@ mesh_matern$rho_math <- paste("rho==", mesh_matern$rho, sep = "")
 ggplot(data = mesh_matern, aes(x = x, y = fv)) +
   geom_line(aes(color = nu_math)) +
   facet_wrap(vars(rho_math), ncol = 1, labeller = ggplot2::label_parsed) +
-  scale_color_viridis_d(labels = expression(nu == 0.5, nu == 1.5, nu == 2.5)) +
+  scale_color_viridis_d(labels = expression(nu == 0.5, nu == 1.5, nu == 2.5), option = "C") +
   theme_minimal(base_size = 13) +
   labs(x = "距离", y = "相关性", color = expression(nu))
 ```
@@ -505,14 +506,15 @@ $$ {#eq-rongelap-poisson-sglmmm}
 #| message: false
 
 library(spaMM)
-fit_rongelap_spamm <- fitme(counts ~ 1 + Matern(1 | cX + cY) + offset(log(time)),
+fit_rongelap_spamm <- fitme(
+  formula = counts ~ 1 + Matern(1 | cX + cY) + offset(log(time)),
   family = poisson(link = "log"), data = rongelap,
   fixed = list(nu = 0.5)
 )
 summary(fit_rongelap_spamm)
 ```
 
-从输出结果来看，模型固定效应的截距项 $\beta$ 为 `1.831`，随机效应的方差 $\sigma^2$ 为 `0.2964`，自协方差函数中参数 $\rho = 0.009683345$，对比函数 `Matern()` 实现的指数型自相关函数公式与 @eq-matern-formula ，输出结果需要转化一下，以符合 @eq-matern-formula ，则 $\phi = 1 / 0.00961486 = 104.0057$ ，即空间相关性的最大影响距离为 104 米。
+从输出结果来看，模型固定效应的截距项 $\beta$ 为 `1.831`，随机效应的方差 $\sigma^2$ 为 `0.2964`，自协方差函数中参数 $\rho = 0.00968$，对比函数 `Matern()` 实现的指数型自相关函数公式与 @eq-matern-formula ，输出结果需要转化一下，以符合 @eq-matern-formula ，则 $\phi = 1 / 0.00968 = 103.3$ ，即空间相关性的最大影响距离为 103.3 米。
 
 ## 模型预测 {#sec-rongelap-predict}
 
@@ -553,7 +555,6 @@ rongelap_coastline_sfp <- st_cast(st_combine(st_geometry(rongelap_coastline_sf))
 #| fig-height: 3
 #| fig-showtext: true
 #| code-fold: true
-#| echo: !expr knitr::is_html_output()
 
 # 点集
 library(ggplot2)
@@ -583,7 +584,6 @@ rongelap_coastline_buffer <- st_buffer(rongelap_coastline_sfp, dist = 50)
 #| fig-height: 4
 #| fig-showtext: true
 #| code-fold: true
-#| echo: !expr knitr::is_html_output()
 
 ggplot() +
   geom_sf(data = rongelap_sf, size = 0.5) +
@@ -610,7 +610,6 @@ rongelap_coastline_grid <- st_make_grid(rongelap_coastline_buffer, n = c(150, 75
 #| fig-height: 4
 #| fig-showtext: true
 #| code-fold: true
-#| echo: !expr knitr::is_html_output()
 
 ggplot() +
   geom_sf(data = rongelap_coastline_grid, fill = NA, color = "gray") +
@@ -639,7 +638,6 @@ rongelap_grid_centroid <- st_centroid(rongelap_grid)
 #| fig-height: 4
 #| fig-showtext: true
 #| code-fold: true
-#| echo: !expr knitr::is_html_output()
 
 ggplot() +
   geom_sf(data = rongelap_coastline_sfp, 
@@ -692,15 +690,31 @@ rongelap_grid_df$pred_sk <- exp(sk)
 ```{r}
 #| label: fig-rongelap-pred
 #| fig-cap: "朗格拉普岛核辐射强度的分布"
-#| fig-width: 6
+#| fig-width: 5.5
 #| fig-height: 6
 #| fig-showtext: true
-#| echo: !expr knitr::is_html_output()
 #| code-fold: true
+#| echo: !expr knitr::is_html_output()
 
-rongelap_grid_sf <- st_as_sf(rongelap_grid_df, coords = c("cX", "cY"), dim = "XY")
-plot(rongelap_grid_sf[c("pred_sp", "pred_sk")], pch = 16, cex = 0.75,
-     breaks = (0:78) / 6, key.pos = 4, pal = hcl.colors)
+rongelap_grid_df2 <- reshape(
+  data = rongelap_grid_df, 
+  varying = c("pred_sp", "pred_sk"), 
+  times = c("spaMM", "nlme"),
+  v.names = "pred", 
+  timevar = "method",
+  idvar = c("cX", "cY"),
+  new.row.names = 1:(2 * 1612), 
+  direction = "long"
+)
+
+rongelap_grid_sf2 <- st_as_sf(rongelap_grid_df2, coords = c("cX", "cY"), dim = "XY")
+
+ggplot(data = rongelap_grid_sf2) +
+  geom_sf(aes(color = pred), size = 0.75) +
+  scale_color_viridis_c(option = "C") +
+  facet_wrap(~method, ncol = 1) +
+  theme_void() +
+  labs(color = "预测值")
 ```
 
 考虑到核辐射在全岛的分布应当是连续性的，空间连续性也是这类模型的假设，接下来要绘制热力图。为了绘制热力图，先用 **stars** 包[@stars2022]将预测数据按原网格化的精度转化成栅格对象，裁减超出朗格拉普岛海岸线以外的内容。
@@ -708,6 +722,7 @@ plot(rongelap_grid_sf[c("pred_sp", "pred_sk")], pch = 16, cex = 0.75,
 ```{r}
 library(abind)
 library(stars)
+rongelap_grid_sf <- st_as_sf(rongelap_grid_df, coords = c("cX", "cY"), dim = "XY")
 rongelap_grid_stars <- st_rasterize(rongelap_grid_sf, nx = 150, ny = 75)
 rongelap_stars <- st_crop(x = rongelap_grid_stars, y = rongelap_coastline_sfp)
 ```
