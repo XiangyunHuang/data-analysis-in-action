@@ -665,7 +665,7 @@ rongelap_grid_pred <- predict(fit_rongelap_spamm,
 rongelap_grid_df$pred_sp <- as.vector(rongelap_grid_pred)
 ```
 
-作为对比，在上一节空间线性混合效应模型的基础上，下面采用简单克里金方法预测。
+作为对比，在上一节空间线性混合效应模型的基础上，简单起见，不考虑块金效应，下面复用截距和范围参数，采用简单克里金方法预测。
 
 ```{r}
 # 截距
@@ -677,7 +677,7 @@ cov_fun <- function(h) exp(-h / phi)
 # 距离矩阵
 m_obs <- cov_fun(st_distance(x = rongelap_sf))
 m_pred <- cov_fun(st_distance(x = rongelap_sf, y = rongelap_grid_centroid))
-# 预测
+# 简单克里金插值
 sk <- beta + t(m_pred) %*% solve(m_obs, log(rongelap_sf$counts / rongelap_sf$time) - beta)
 # 辐射强度预测值
 rongelap_grid_df$pred_sk <- exp(sk)
@@ -685,7 +685,7 @@ rongelap_grid_df$pred_sk <- exp(sk)
 
 ### 展示结果 {#sec-rongelap-plot}
 
-将预测结果以散点图的形式呈现到图上，见下 @fig-rongelap-pred ，由于散点非常多，紧挨在一起就连成片了。上子图是 **spaMM** 包预测的结果，下子图是 **nlme** 包预测的结果，后者图像看起来会稍微平滑一些。由于从空间线性混合效应模型到空间广义线性混合效应模型的效果提升不多，在曲折处，图像的平滑差异才会比较明显。
+将预测结果以散点图的形式呈现到图上，见下 @fig-rongelap-pred ，由于散点非常多，紧挨在一起就连成片了。上子图是 **nlme** 包预测的结果，下子图是 **spaMM** 包预测的结果，前者图像看起来会稍微平滑一些。从空间线性混合效应模型到空间广义线性混合效应模型的效果提升不多，在曲折处，图像的平滑差异才会比较明显。
 
 ```{r}
 #| label: fig-rongelap-pred
@@ -694,21 +694,17 @@ rongelap_grid_df$pred_sk <- exp(sk)
 #| fig-height: 6
 #| fig-showtext: true
 #| code-fold: true
-#| echo: !expr knitr::is_html_output()
 
+# 数据框变形
 rongelap_grid_df2 <- reshape(
-  data = rongelap_grid_df, 
-  varying = c("pred_sp", "pred_sk"), 
-  times = c("spaMM", "nlme"),
-  v.names = "pred", 
-  timevar = "method",
-  idvar = c("cX", "cY"),
-  new.row.names = 1:(2 * 1612), 
-  direction = "long"
+  data = rongelap_grid_df, varying = c("pred_sp", "pred_sk"), 
+  times = c("spaMM", "nlme"), v.names = "pred", 
+  timevar = "method", idvar = c("cX", "cY"),
+  new.row.names = 1:(2 * 1612), direction = "long"
 )
-
+# 数据框类型转换
 rongelap_grid_sf2 <- st_as_sf(rongelap_grid_df2, coords = c("cX", "cY"), dim = "XY")
-
+# 分面展示两种预测方法
 ggplot(data = rongelap_grid_sf2) +
   geom_sf(aes(color = pred), size = 0.75) +
   scale_color_viridis_c(option = "C") +
@@ -717,7 +713,7 @@ ggplot(data = rongelap_grid_sf2) +
   labs(color = "预测值")
 ```
 
-考虑到核辐射在全岛的分布应当是连续性的，空间连续性也是这类模型的假设，接下来要绘制热力图。为了绘制热力图，先用 **stars** 包[@stars2022]将预测数据按原网格化的精度转化成栅格对象，裁减超出朗格拉普岛海岸线以外的内容。
+考虑到核辐射在全岛的分布应当是连续性的，空间连续性也是这类模型的假设，接下来绘制热力图，先用 **stars** 包[@stars2022]将预测数据按原网格化的精度转化成栅格对象，裁减超出朗格拉普岛海岸线以外的内容。
 
 ```{r}
 library(abind)
@@ -727,7 +723,7 @@ rongelap_grid_stars <- st_rasterize(rongelap_grid_sf, nx = 150, ny = 75)
 rongelap_stars <- st_crop(x = rongelap_grid_stars, y = rongelap_coastline_sfp)
 ```
 
-除了矢量栅格化函数 `st_rasterize()` 和栅格剪裁函数 `st_crop()` ，**stars** 包还提供栅格数据图层 `geom_stars()`，这可以和 **ggplot2** 内置的图层搭配使用。下 @fig-rongelap-pred-sp 是 **ggplot2** 包和 **grid** 包一起绘制的辐射强度的热力分布图。图左侧一小一大两个虚线框是放大前后的部分区域，展示朗格拉普岛核辐射强度的局部变化。
+除了矢量栅格化函数 `st_rasterize()` 和栅格剪裁函数 `st_crop()` ，**stars** 包还提供栅格数据图层 `geom_stars()`，这可以和 **ggplot2** 内置的图层搭配使用。下 @fig-rongelap-pred-sp 是 **ggplot2** 包和 **grid** 包一起绘制的辐射强度的热力分布图，展示 **spaMM** 包的预测效果。图左侧一小一大两个虚线框是放大前后的部分区域，展示朗格拉普岛核辐射强度的局部变化。
 
 ```{r}
 #| label: fig-rongelap-pred-sp
@@ -758,7 +754,7 @@ p3 <- ggplot() +
     fill = NA, color = "gray30", linewidth = 0.5
   ) +
   # 图例
-  scale_fill_viridis_c() +
+  scale_fill_viridis_c(option = "C") +
   # 虚线框
   geom_sf(data = dash_sfp, fill = NA, linewidth = 0.75, lty = 2) +
   # 箭头
@@ -780,7 +776,7 @@ p4 <- ggplot() +
     data = rongelap_coastline_sfp,
     fill = NA, color = "gray30", linewidth = 0.75
   ) +
-  scale_fill_viridis_c() +
+  scale_fill_viridis_c(option = "C") +
   # 虚线框
   geom_sf(data = dash_sfp, fill = NA, linewidth = 0.75, lty = 2) +
   theme_void() +
