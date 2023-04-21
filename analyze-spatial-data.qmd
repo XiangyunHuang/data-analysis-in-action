@@ -690,7 +690,7 @@ rongelap_grid_df$pred_sk <- exp(sk)
 将预测结果以散点图的形式呈现到图上，考虑到核辐射在全岛的分布应当是连续性的，空间连续性也是这类模型的假设，接下来要绘制热力图。为了绘制热力图，利用 **stars** 包[@stars2022]将预测数据按原网格化的精度转化成栅格对象，裁减超出朗格拉普岛海岸线以外的内容。
 
 ```{r}
-#| label: fig-rongelap-pred-stars
+#| label: fig-rongelap-pred
 #| fig-cap: "朗格拉普岛核辐射强度的分布"
 #| fig-width: 7
 #| fig-height: 4.5
@@ -698,28 +698,15 @@ rongelap_grid_df$pred_sk <- exp(sk)
 #| echo: !expr knitr::is_html_output()
 #| code-fold: true
 #| layout-ncol: 1
+#| fig-subcap: 
+#| - nlme
+#| - spaMM
 
 library(abind)
 library(stars)
 rongelap_grid_sf <- st_as_sf(rongelap_grid_df, coords = c("cX", "cY"), dim = "XY")
 rongelap_grid_stars <- st_rasterize(rongelap_grid_sf, nx = 150, ny = 75)
 rongelap_stars <- st_crop(x = rongelap_grid_stars, y = rongelap_coastline_sfp)
-
-ggplot() +
-  geom_stars(
-    data = rongelap_stars, na.action = na.omit,
-    aes(fill = pred_sp / time)
-  ) +
-  # 海岸线
-  geom_sf(
-    data = rongelap_coastline_sfp,
-    fill = NA, color = "gray30", linewidth = 0.5
-  ) +
-  # 图例
-  scale_fill_distiller(palette = "Greys", direction = 1) +
-  theme_void() +
-  labs(fill = "辐射强度") +
-  theme(legend.position = c(0.95, 0.2))
 
 ggplot() +
   geom_stars(
@@ -736,12 +723,28 @@ ggplot() +
   theme_void() +
   labs(fill = "辐射强度") +
   theme(legend.position = c(0.95, 0.2))
+ggplot() +
+  geom_stars(
+    data = rongelap_stars, na.action = na.omit,
+    aes(fill = pred_sp / time)
+  ) +
+  # 海岸线
+  geom_sf(
+    data = rongelap_coastline_sfp,
+    fill = NA, color = "gray30", linewidth = 0.5
+  ) +
+  # 图例
+  scale_fill_distiller(palette = "Greys", direction = 1) +
+  theme_void() +
+  labs(fill = "辐射强度") +
+  theme(legend.position = c(0.95, 0.2))
+
 ```
 
-除了矢量栅格化函数 `st_rasterize()` 和栅格剪裁函数 `st_crop()` ，**stars** 包还提供栅格数据图层 `geom_stars()`，这可以和 **ggplot2** 内置的图层搭配使用。下 @fig-rongelap-pred-stars 是 **ggplot2** 包和**grid** 包一起绘制的辐射强度的热力分布图。图左侧一小一大两个虚线框是放大前后的部分区域，展示朗格拉普岛核辐射强度的局部变化。
+除了矢量栅格化函数 `st_rasterize()` 和栅格剪裁函数 `st_crop()` ，**stars** 包还提供栅格数据图层 `geom_stars()`，这可以和 **ggplot2** 内置的图层搭配使用。下 @fig-rongelap-pred-stars 是 **ggplot2** 包和 **grid** 包一起绘制的辐射强度的热力分布图。图左侧一小一大两个虚线框是放大前后的部分区域，展示朗格拉普岛核辐射强度的局部变化。
 
 ```{r}
-#| label: fig-rongelap-pred-sp-stars
+#| label: fig-rongelap-pred-sp
 #| fig-cap: "朗格拉普岛核辐射强度的分布"
 #| fig-width: 7
 #| fig-height: 4.5
