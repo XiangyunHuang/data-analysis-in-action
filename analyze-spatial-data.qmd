@@ -255,18 +255,13 @@ summary(fit_rongelap_glm)
 从 @fig-rongelap-glm-residuals 不难看出，颜色深和颜色浅的点分别聚集在一起，且与周围点的颜色呈现层次变化，拟合残差存在明显的空间相关性。如果将位置变量 `cX` 和 `cY` 加入广义线性模型，也会达到统计意义上的显著。
 
 ```{r}
-rongelap$glm_residuals <- residuals(fit_rongelap_glm)
-```
-
-```{r}
 #| label: fig-rongelap-glm-residuals
 #| fig-cap: "辐射强度的拟合残差的空间分布"
 #| fig-width: 7
 #| fig-height: 4
 #| fig-showtext: true
-#| echo: !expr knitr::is_html_output()
-#| code-fold: true
 
+rongelap$glm_residuals <- residuals(fit_rongelap_glm)
 ggplot(rongelap, aes(x = cX, y = cY)) +
   geom_point(aes(colour = glm_residuals / time), size = 0.5) +
   scale_color_viridis_c(option = "C") +
@@ -499,7 +494,7 @@ plot(fit_rongelap_vario_norm,
 
 ### 空间广义线性混合效应模型 {#sec-rongelap-sglmm}
 
-简单的广义线性模型并没有考虑距离相关性，它认为各个观测点的数据是相互独立的。因此，考虑采用广义线性混合效应模型，在广义线性模型的基础上添加位置相关的随机效应，用以刻画未能直接观测到的潜在影响。根据 ${}^{137}\mathrm{Cs}$ 放出的伽马射线在 $N=157$ 站点不同时间间隔 $t_i$ 的辐射量，建立泊松型空间广义线性混合效应模型。
+简单的广义线性模型并没有考虑距离相关性，它认为各个观测点的数据是相互独立的。因此，考虑采用广义线性混合效应模型，在广义线性模型的基础上添加位置相关的随机效应，用以刻画未能直接观测到的潜在影响。 ${}^{137}\mathrm{Cs}$ 放出伽马射线，在 $N=157$ 个采样点，分别以时间间隔 $t_i$ 测量辐射量 $Y(x_i)$，建立泊松型空间广义线性混合效应模型。
 
 $$
 \begin{aligned}
@@ -510,7 +505,7 @@ $$ {#eq-rongelap-poisson-sglmmm}
 
 模型中，放射粒子数 $Y(x_{i})$ 作为响应变量服从均值为 $t_i\lambda(x_i)$ 的泊松分布，其它模型成分的说明同前。
 
-**nlme** 包不能拟合空间广义线性混合效应模型， **spaMM** 包可以，它的使用语法与前面介绍的函数 `glm()` 、 **nlme** 包都类似，函数 `fitme()` 可以拟合从线性模型到广义线性混合效应模型的一大类模型，且使用统一的语法，输出一个 `HLfit` 类型的数据对象。 **spaMM** 包的函数 `Matern()` 实现了梅隆型自协方差函数，指数型和幂二次指数型是它的特例。当固定 $\nu = 0.5$ 时，梅隆型自相关函数 `Matern()` 的形式退化为 $\exp(-\rho d)$ ，其中 `d` 表示距离，相当于前面出现的 $u$，$\rho$ 相当于前面出现的 $1/\phi$ 。
+**nlme** 包不能拟合空间广义线性混合效应模型， **spaMM** 包可以，它的使用语法与前面介绍的函数 `glm()` 、 **nlme** 包都类似，函数 `fitme()` 可以拟合从线性模型到广义线性混合效应模型的一大类模型，且使用统一的语法，输出一个 `HLfit` 类型的数据对象。 **spaMM** 包的函数 `Matern()` 实现了梅隆型自协方差函数，指数型和幂二次指数型是它的特例。当固定 $\nu = 0.5$ 时，梅隆型自协方差函数 `Matern()` 的形式退化为 $\sigma^2\exp(-\rho d)$ ，其中 $d$ 表示距离，相当于前面出现的 $u$，$\rho$ 表示范围参数，相当于前面出现的 $1/\phi$ 。
 
 ```{r}
 #| message: false
@@ -524,7 +519,7 @@ fit_rongelap_spamm <- fitme(
 summary(fit_rongelap_spamm)
 ```
 
-从输出结果来看，模型固定效应的截距项 $\beta$ 为 `1.831`，随机效应的方差 $\sigma^2$ 为 `0.2964`，自协方差函数中参数 $\rho = 0.00968$，对比函数 `Matern()` 实现的指数型自相关函数公式与 @eq-matern-formula ，输出结果需要转化一下，以符合 @eq-matern-formula ，则 $\phi = 1 / 0.00968 = 103.3$ ，即空间相关性的最大影响距离为 103.3 米。
+从输出结果来看，模型固定效应的截距项 $\beta$ 为 `1.831`，随机效应的方差 $\sigma^2$ 为 `0.2964`，自协方差函数中参数 $\rho = 0.00968$，对比函数 `Matern()` 实现的指数型自协方差函数公式与 @eq-matern-formula ，将输出结果需要转化一下，则 $\phi = 1 / 0.00968 = 103.3$ ，表示在这个模型的设定下，空间相关性的最大影响距离为 103.3 米。
 
 函数 `fitme()` 默认使用极大似然估计模型参数，也可以使用限制极大似然来估计。
 
@@ -537,7 +532,7 @@ fit_rongelap_spamm2 <- fitme(
 summary(fit_rongelap_spamm2)
 ```
 
-泊松分布的均值 $\mathsf{E}\{Y(x_i)\}=\mathrm{t}_i\lambda(x_i)$ 和方差 $\mathsf{Var}\{Y(x_i)\}$ 的值是一样的，如果假定它们不同，比如方差是关于均值的二次函数，可以用负二项分布来拟合数据，一般来说会更加精确。
+泊松分布的均值 $\mathsf{E}\{Y(x_i)\}=\mathrm{t}_i\lambda(x_i)$ 和方差 $\mathsf{Var}\{Y(x_i)\}$ 的值是一样的。如果假定它们不同，比如方差是关于均值的二次函数，可以用负二项分布来拟合数据，一般来说效果会更加好，对数似然函数值 `logL` 在变大。
 
 ```{r}
 fit_rongelap_spamm3 <- fitme(
