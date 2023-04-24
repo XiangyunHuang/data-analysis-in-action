@@ -467,8 +467,8 @@ $$ {#eq-matern-formula}
 #| fig-showtext: true
 #| code-fold: true
 #| echo: !expr knitr::is_html_output()
-#| fig-width: 6
-#| fig-height: 5
+#| fig-width: 5
+#| fig-height: 4
 
 # 参数 x 两点之间的距离，要求 x 大于 0
 # 参数 sigma nu rho 分别与前述公式参数对应
@@ -858,7 +858,61 @@ rongelap_grid_pred <- predict(fit_rongelap_spamm,
 rongelap_grid_df$pred_sp <- as.vector(rongelap_grid_pred)
 ```
 
-作为对比，在上一节空间线性混合效应模型的基础上，简单起见，不考虑块金效应，下面复用截距和范围参数，采用简单克里金方法预测。
+### 克里金插值 {#sec-kriging-interpolation}
+
+作为对比，在上一节空间线性混合效应模型的基础上，简单起见，不考虑块金效应，下面复用截距和范围参数，采用简单克里金方法预测。最佳线性无偏估计（Best Linear Unbiased Estimator）
+
+在研究区域 $\mathcal{D}$ 采集一些数据，已知采样点 $x_1,x_2,\ldots,x_n$ 的辐射强度分别为 $\lambda(x_1),\lambda(x_2),\ldots,\lambda(x_n)$ 。现在的问题是对于未采样的位置 $x_0$，它的辐射强度 $\lambda(x_0)$ 是多少？在满足无偏性的条件下，$\hat{\lambda}(x_0)$ 是预测方差最小的估计。下 @fig-kriging 是克里金插值的示意图。
+
+```{r}
+#| echo: false
+
+# 将 pdf 格式图片转为 png 格式
+to_png <- function(fig_path) {
+  png_path <- sub("\\.pdf$", ".png", fig_path)
+  magick::image_write(magick::image_read_pdf(fig_path),
+                      format = "png", path = png_path,
+                      density = 300, quality = 100
+  )
+  return(png_path)
+}
+```
+
+```{tikz}
+#| label: fig-kriging
+#| fig-cap: 克里金插值
+#| fig-process: !expr to_png
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
+#| out-width: 50%
+
+\begin{tikzpicture}[scale=1.5,transform shape]
+\draw [ultra thick,black] plot [smooth cycle] coordinates {(0,0) (2,2) (4,1) (3.5,0) (3,-2)};
+
+\draw[fill=gray] (1,1) circle [radius=0.05];
+\node [below] at (1,1) (A) {\tiny $\lambda(x_1)$};
+\draw[fill=gray] (0.8,0) circle [radius=0.05];
+\node [below] at (0.8,0) (B) {\tiny $\lambda(x_2)$};
+\draw[fill=gray] (2.5,1.3) circle [radius=0.05];
+\node [below] at (2.5,1.3) (C){\tiny $\lambda(x_3)$};
+\draw[fill=gray] (3,0.75) circle [radius=0.05];
+\node [below] at (3,0.75) (D) {\tiny $\lambda(x_4)$};
+\draw[fill=gray] (2.7,-1) circle [radius=0.05];
+\node [below] at (2.7,-1) (E) {\tiny $\lambda(x_5)$};
+
+\draw[fill=magenta, red] (2,0) circle [radius=0.05];
+\node [below] at (2,0) (F) {\tiny $\hat{\lambda}(x_0)$};
+
+\draw [thick,-stealth] (A) -- (F);
+\draw [thick,-stealth] (B) -- (F);
+\draw [thick,-stealth] (C) -- (F);
+\draw [thick,-stealth] (D) -- (F);
+\draw [thick,-stealth] (E) -- (F);
+
+\node [below] at (3.8,2) {$\mathcal{D}$};
+\end{tikzpicture}
+```
+
 
 ```{r}
 # 截距
