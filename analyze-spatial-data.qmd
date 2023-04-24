@@ -860,30 +860,7 @@ rongelap_grid_df$pred_sp <- as.vector(rongelap_grid_pred)
 
 ### 克里金插值 {#sec-kriging-interpolation}
 
-作为对比，在上一节空间线性混合效应模型的基础上，简单起见，不考虑块金效应，下面复用截距和范围参数，采用简单克里金方法预测。最佳线性无偏估计（Best Linear Unbiased Estimator）
-
-在研究区域 $\mathcal{D}$ 采集一些数据，已知采样点 $x_1,x_2,\ldots,x_n$ 的辐射强度分别为 $\lambda(x_1),\lambda(x_2),\ldots,\lambda(x_n)$ 。现在的问题是对于未采样的位置 $x_0$，它的辐射强度 $\lambda(x_0)$ 是多少？在满足无偏性的条件下，$\hat{\lambda}(x_0)$ 是使预测方差最小的估计。
-
-$$
-\hat{\lambda}(x_0) = \sum_{i=1}^{N}w_i\lambda(x_i)
-$$
-
-其中 $w_i$ 是待定的权重系数。$\hat{\lambda}(x_0)$ 是 $\lambda(x_0)$ 的无偏估计，要求预测方差最小，即求解如下最优化问题。
-
-$$
-\begin{aligned}
-\min_{w_i} & \mathsf{Var}\{\hat{\lambda}(x_0) - \lambda(x_0)\} \\
-& \mathsf{E}\{\hat{\lambda}(x_0) - \lambda(x_0) \} = 0
-\end{aligned}
-$$
-
-根据无偏性条件可推导出
-
-$$
-\sum_{i=1}^{N}w_i = 1
-$$
-
-下 @fig-kriging 是克里金插值的示意图。
+作为对比，在上一节空间线性混合效应模型的基础上，简单起见，不考虑块金效应，下面复用截距和范围参数，采用简单克里金方法预测。最佳线性无偏估计（Best Linear Unbiased Estimator）， @fig-kriging 是克里金插值的示意图。
 
 ```{r}
 #| echo: false
@@ -924,15 +901,36 @@ to_png <- function(fig_path) {
 \draw[fill=magenta, red] (2,0) circle [radius=0.05];
 \node [below] at (2,0) (F) {\tiny $\hat{\lambda}(x_0)$};
 
-\draw [thick,-stealth] (A) -- (F);
-\draw [thick,-stealth] (B) -- (F);
-\draw [thick,-stealth] (C) -- (F);
-\draw [thick,-stealth] (D) -- (F);
-\draw [thick,-stealth] (E) -- (F);
+\draw [thick,-stealth] (A) -- (F) node[midway,above,rotate=-30] {\tiny $w_1$};
+\draw [thick,-stealth] (B) -- (F) node[midway,above] {\tiny $w_2$};
+\draw [thick,-stealth] (C) -- (F) node[midway, above, rotate=75] {\tiny $w_3$};
+\draw [thick,-stealth] (D) -- (F) node[midway, below, rotate=45] {\tiny $w_4$};
+\draw [thick,-stealth] (E) -- (F) node[midway, above, rotate=-45] {\tiny $w_5$};
 
 \node [below] at (3.8,2) {$\mathcal{D}$};
 \end{tikzpicture}
 ```
+
+已知研究区域 $\mathcal{D} \subset \mathbb{R}^2$ 中的采样点 $x_i \in \mathcal{D}$ 的辐射强度为 $\lambda(x_i)$ 。对于区域 $\mathcal{D}$ 中未采样的位置 $x_0$，它的辐射强度 $\lambda(x_0)$ 是多少？在满足无偏性的条件下，$\hat{\lambda}(x_0)$ 是使预测方差最小的估计。
+
+$$
+\hat{\lambda}(x_0) = \sum_{i=1}^{N}w_i\lambda(x_i)
+$$
+
+其中 $w_i$ 是待定的权重系数。$\hat{\lambda}(x_0)$ 是 $\lambda(x_0)$ 的无偏估计，要求预测方差最小，即求解如下最优化问题。
+
+$$
+\begin{aligned}
+\min_{w_i} & \mathsf{Var}\{\hat{\lambda}(x_0) - \lambda(x_0)\} \\
+& \mathsf{E}\{\hat{\lambda}(x_0) - \lambda(x_0) \} = 0
+\end{aligned}
+$$
+
+根据无偏性条件可推导出
+
+$$
+\sum_{i=1}^{N}w_i = 1
+$$
 
 ```{r}
 # 截距
