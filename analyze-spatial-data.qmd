@@ -862,7 +862,28 @@ rongelap_grid_df$pred_sp <- as.vector(rongelap_grid_pred)
 
 作为对比，在上一节空间线性混合效应模型的基础上，简单起见，不考虑块金效应，下面复用截距和范围参数，采用简单克里金方法预测。最佳线性无偏估计（Best Linear Unbiased Estimator）
 
-在研究区域 $\mathcal{D}$ 采集一些数据，已知采样点 $x_1,x_2,\ldots,x_n$ 的辐射强度分别为 $\lambda(x_1),\lambda(x_2),\ldots,\lambda(x_n)$ 。现在的问题是对于未采样的位置 $x_0$，它的辐射强度 $\lambda(x_0)$ 是多少？在满足无偏性的条件下，$\hat{\lambda}(x_0)$ 是预测方差最小的估计。下 @fig-kriging 是克里金插值的示意图。
+在研究区域 $\mathcal{D}$ 采集一些数据，已知采样点 $x_1,x_2,\ldots,x_n$ 的辐射强度分别为 $\lambda(x_1),\lambda(x_2),\ldots,\lambda(x_n)$ 。现在的问题是对于未采样的位置 $x_0$，它的辐射强度 $\lambda(x_0)$ 是多少？在满足无偏性的条件下，$\hat{\lambda}(x_0)$ 是使预测方差最小的估计。
+
+$$
+\hat{\lambda}(x_0) = \sum_{i=1}^{N}w_i\lambda(x_i)
+$$
+
+其中 $w_i$ 是待定的权重系数。$\hat{\lambda}(x_0)$ 是 $\lambda(x_0)$ 的无偏估计，要求预测方差最小，即求解如下最优化问题。
+
+$$
+\begin{aligned}
+\min_{w_i} & \mathsf{Var}\{\hat{\lambda}(x_0) - \lambda(x_0)\} \\
+& \mathsf{E}\{\hat{\lambda}(x_0) - \lambda(x_0) \} = 0
+\end{aligned}
+$$
+
+根据无偏性条件可推导出
+
+$$
+\sum_{i=1}^{N}w_i = 1
+$$
+
+下 @fig-kriging 是克里金插值的示意图。
 
 ```{r}
 #| echo: false
@@ -884,10 +905,10 @@ to_png <- function(fig_path) {
 #| fig-process: !expr to_png
 #| code-fold: true
 #| echo: !expr knitr::is_html_output()
-#| out-width: 50%
+#| out-width: 45%
 
 \begin{tikzpicture}[scale=1.5,transform shape]
-\draw [ultra thick,black] plot [smooth cycle] coordinates {(0,0) (2,2) (4,1) (3.5,0) (3,-2)};
+\draw [thick,black] plot [smooth cycle] coordinates {(0,0) (2,2) (4,1) (3.5,0) (3,-2)};
 
 \draw[fill=gray] (1,1) circle [radius=0.05];
 \node [below] at (1,1) (A) {\tiny $\lambda(x_1)$};
@@ -912,7 +933,6 @@ to_png <- function(fig_path) {
 \node [below] at (3.8,2) {$\mathcal{D}$};
 \end{tikzpicture}
 ```
-
 
 ```{r}
 # 截距
