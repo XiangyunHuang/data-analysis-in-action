@@ -54,7 +54,7 @@ ggplot() +
   labs(x = "经度", y = "纬度")
 ```
 
-[Ole F. Christensen](https://orcid.org/0000-0002-8230-8062) 和 Paulo J. Ribeiro Jr 将 `rongelap` 数据集存放在 [**geoRglm**](https://cran.r-project.org/package=geoRglm)[@Christensen2002] 包内，后来，**geoRglm** 不维护，已从 CRAN 移除了，笔者从他们主页下载了数据。数据集 `rongelap` 记录了 157 个测量点的伽马射线强度，即在时间间隔 `time` （秒）内放射的粒子数目 `counts`（个），测量站点的横纵坐标分别为 `cX` （米）和 `cY`（米），坐标参考原点在岛的东北， @fig-rongelap-location 右上角的位置。下 @tbl-rongelap-nuclear-data 展示部分朗格拉普岛核辐射检测数据及海岸线坐标数据。
+[Ole F. Christensen](https://orcid.org/0000-0002-8230-8062) 和 Paulo J. Ribeiro Jr 将 `rongelap` 数据集存放在 [**geoRglm**](https://cran.r-project.org/package=geoRglm)[@Christensen2002] 包内，后来，**geoRglm** 不维护，已从 CRAN 移除了，笔者从他们主页下载了数据。数据集 `rongelap` 记录了 157 个测量点的伽马射线强度，即在时间间隔 `time` （秒）内放射的粒子数目 `counts`（个），测量点的横纵坐标分别为 `cX` （米）和 `cY`（米），下 @tbl-rongelap-nuclear-data 展示部分朗格拉普岛核辐射检测数据及海岸线坐标数据。
 
 ```{r}
 #| label: tbl-rongelap-nuclear-data
@@ -79,47 +79,35 @@ knitr::kable(head(rongelap_coastline, 6),
 )
 ```
 
+坐标原点在岛的东北，下 @fig-rongelap-location-1 右上角的位置。采样点的编号见下 @fig-rongelap-location-2，基本上按照从下（南）到上（北），从左（西）到右（东）的顺序依次测量。
+
 ```{r}
 #| label: fig-rongelap-location
 #| fig-cap: "采样点在岛上的分布"
+#| fig-subcap: 
+#| - 采样分布
+#| - 采样顺序
 #| fig-showtext: true
 #| fig-width: 7
 #| fig-height: 4
 #| code-fold: true
-#| echo: !expr knitr::is_html_output()
+#| layout-nrow: 2
+#| layout-ncol: 1
 
-library(lattice)
-xyplot(cY ~ cX,
-  data = rongelap, pch = 19, cex = 0.25,
-  xlab = "横坐标（米）",
-  ylab = "纵坐标（米）",
-  scales = list(
-    # 去掉图形上边、右边多余的刻度线
-    x = list(alternating = 1, tck = c(1, 0)),
-    y = list(alternating = 1, tck = c(1, 0))
-  ),
-  # 减少三维图形的边空
-  lattice.options = list(
-    layout.widths = list(
-      left.padding = list(x = 0, units = "inches"),
-      right.padding = list(x = -0.15, units = "inches")
-    ),
-    layout.heights = list(
-      bottom.padding = list(x = -0.1, units = "inches"),
-      top.padding = list(x = -0.2, units = "inches")
-    )
-  ),
-  panel = function(...) {
-    panel.grid(h = -1, v = -1, ...)
-    panel.points(col = "black", ...)
-    panel.lines(
-      x = rongelap_coastline$cX,
-      y = rongelap_coastline$cY,
-      col = "black"
-    )
-  },
-  par.settings = list(axis.line = list(col = "black"))
-)
+library(ggplot2)
+ggplot() +
+  geom_point(data = rongelap, aes(x = cX, y = cY), size = 1) +
+  geom_path(data = rongelap_coastline, aes(x = cX, y = cY)) +
+  theme_bw() +
+  coord_fixed() +
+  labs(x = "横坐标（米）", y = "纵坐标（米）")
+
+rongelap$dummy <- rownames(rongelap)
+ggplot(rongelap, aes(x = cX, y = cY)) +
+  geom_text(aes(label = dummy), size = 3) +
+  theme_bw() +
+  coord_fixed() +
+  labs(x = "横坐标（米）", y = "纵坐标（米）")
 ```
 
 ## 数据探索 {#sec-rongelap-exploration}
@@ -174,6 +162,7 @@ print(p2, vp = grid::viewport(x = .25, y = .725, width = .275, height = .45))
 #| echo: !expr knitr::is_html_output()
 #| out-width: 70%
 
+library(lattice)
 # 参考 lattice 书籍的图 6.5 的绘图代码
 panel.3dcoastline <- function(..., rot.mat, distance, xlim, ylim, zlim,
                               xlim.scaled, ylim.scaled, zlim.scaled) {
@@ -230,6 +219,8 @@ cloud(counts / time ~ cX * cY,
 
 ### 广义线性模型 {#sec-rongelap-glm}
 
+#### 泊松分布
+
 核辐射是由放射元素衰变产生的，通常用单位时间释放出来的粒子数目表示辐射强度，因此，建立如下泊松型广义线性模型来拟合核辐射强度。
 
 $$
@@ -242,32 +233,160 @@ $$
 其中，$\lambda$ 表示核辐射强度，$\beta$ 表示未知的截距，$Y$ 表示观测到的粒子数目，$t$ 表示相应的观测时间。R 软件内置的 stats 包有函数 `glm()` 可以拟合上述广义线性模型，代码如下。
 
 ```{r}
-fit_rongelap_glm <- glm(counts ~ 1,
+fit_rongelap_poisson <- glm(counts ~ 1,
   family = poisson(link = "log"), offset = log(time), data = rongelap
 )
-summary(fit_rongelap_glm)
+summary(fit_rongelap_poisson)
 ```
 
 ::: callout-note
-当 `family = poisson(link = "log")` 时，响应变量只能是正整数，所以不能放 `counts / time`。泊松广义线性模型是对辐射强度建模，辐射强度与位置 `cX` 和 `cY` 有关。当响应变量为放射出来的粒子数目 `counts` 时，为了表示辐射强度，需要设置参数 `offset`，表示与放射粒子数目对应的时间间隔`time`。联系函数是对数函数，因此时间间隔需要取对数。
+当 `family = poisson(link = "log")` 时，响应变量只能是正整数，所以不能放 `counts / time`。泊松广义线性模型是对辐射强度建模，辐射强度与位置 `cX` 和 `cY` 有关。当响应变量为放射出来的粒子数目 `counts` 时，为了表示辐射强度，需要设置参数 `offset`，表示与放射粒子数目对应的时间间隔 `time`。联系函数是对数函数，因此时间间隔需要取对数。
 :::
 
-从 @fig-rongelap-glm-residuals 不难看出，颜色深和颜色浅的点分别聚集在一起，且与周围点的颜色呈现层次变化，拟合残差存在明显的空间相关性。如果将位置变量 `cX` 和 `cY` 加入广义线性模型，也会达到统计意义上的显著。
+从辐射强度的拟合残差的空间分布 @fig-rongelap-poisson-residuals 不难看出，颜色深和颜色浅的点分别聚集在一起，且与周围点的颜色呈现层次变化，拟合残差存在明显的空间相关性。如果将位置变量 `cX` 和 `cY` 加入广义线性模型，也会达到统计意义上的显著。
 
 ```{r}
-#| label: fig-rongelap-glm-residuals
-#| fig-cap: "辐射强度的拟合残差的空间分布"
+#| label: fig-rongelap-poisson-residuals
+#| fig-cap: "残差的空间分布"
 #| fig-width: 7
 #| fig-height: 4
 #| fig-showtext: true
 
-rongelap$glm_residuals <- residuals(fit_rongelap_glm)
+rongelap$poisson_residuals <- residuals(fit_rongelap_poisson)
 ggplot(rongelap, aes(x = cX, y = cY)) +
-  geom_point(aes(colour = glm_residuals / time), size = 0.5) +
+  geom_point(aes(colour = poisson_residuals / time), size = 0.5) +
   scale_color_viridis_c(option = "C") +
   theme_bw() +
   labs(x = "横坐标（米）", y = "纵坐标（米）", color = "残差")
 ```
+
+#### 伽马分布
+
+从另外一个角度来思考，通过观察辐射强度的直方图，发现其分布形式与正态分布相似。实际上，辐射强度为非负值，所以应与特定参数下的伽马分布相似。
+
+```{r}
+#| label: fig-rongelap-histogram
+#| fig-cap: "辐射强度的直方图"
+#| fig-width: 5
+#| fig-height: 4
+#| fig-showtext: true
+
+ggplot(data = rongelap) +
+  geom_histogram(aes(x = counts / time),
+    fill = "orange", color = "white"
+  ) +
+  theme_bw() +
+  labs(x = "辐射强度", y = "频数")
+```
+
+形状参数为 $\alpha$ 和尺度参数为 $\sigma$ 的伽马分布的概率密度函数 $f(x;\alpha, \sigma)$ 如下：
+
+$$
+f(x;\alpha,\sigma) = \frac{1}{\sigma^\alpha \Gamma(\alpha)}x^{\alpha - 1} \exp(- \frac{x}{\sigma}), \quad \alpha \geq 0, \sigma > 0
+$$
+
+其中，$\Gamma(\cdot)$ 表示伽马函数，下 @fig-rongelap-dgamma 展示两个伽马分布的概率密度函数，形状参数分别为 5 和 9，尺度参数均为 1，即伽马分布 $f(x; 5, 1)$ 和 $f(x; 9, 1)$ 。
+
+```{r}
+#| label: fig-rongelap-dgamma
+#| fig-cap: "伽马分布的概率密度函数"
+#| fig-width: 5
+#| fig-height: 4
+#| fig-showtext: true
+#| echo: !expr knitr::is_html_output()
+
+ggplot() +
+  geom_function(
+    fun = dgamma, args = list(shape = 9, scale = 1),
+    aes(colour = "list(alpha == 9, sigma == 1)"),
+    linewidth = 1.2, xlim = c(0, 20), 
+  ) +
+  geom_function(
+    fun = dgamma, args = list(shape = 5, scale = 1),
+    aes(colour = "list(alpha == 5, sigma == 1)"),
+    linewidth = 1.2, xlim = c(0, 20)
+  ) +
+  scale_colour_viridis_d(
+    labels = scales::parse_format(),
+    option = "C"
+  ) +
+  theme_bw(base_family = "Noto Serif CJK SC") +
+  labs(x = "随机变量", y = "概率密度", color = "参数")
+```
+
+所以，可以使用响应变量服从伽马分布的广义线性模型来拟合数据。
+
+```{r}
+fit_rongelap_gamma <- glm(counts / time ~ 1,
+  family = Gamma(link = "log"), data = rongelap
+)
+summary(fit_rongelap_gamma)
+```
+
+#### 负二项分布
+
+对于计数数据，除了泊松分布，还可以用负二项分布
+
+```{r}
+library(MASS)
+fit_rongelap_negbin <- glm.nb(
+  formula = counts ~ 1 + offset(log(time)),
+  data = rongelap, link = log
+)
+summary(fit_rongelap_negbin)
+```
+
+```{r}
+anova(fit_rongelap_poisson, fit_rongelap_negbin)
+```
+
+
+### 广义线性混合效应模型
+
+@fig-poisson-residuals 描述残差的分布，从 @fig-poisson-residuals-1 发现残差存在一定的线性趋势，岛屿的东南方，残差基本为正，而在岛屿的西北方，残差基本为负，说明有一定的异方差性。从 @fig-poisson-residuals-2 发现残差在水平方向上的分布像个哑铃，说明异方差现象明显。从 @fig-poisson-residuals-3 发现残差在垂直方向上的分布像棵松树，也说明异方差现象明显。
+
+```{r}
+#| label: fig-poisson-residuals
+#| fig-cap: 残差分布图
+#| fig-subcap: 
+#| - 残差与编号的关系
+#| - 残差与横坐标的关系
+#| - 残差与纵坐标的关系
+#| fig-showtext: true
+#| fig-width: 4
+#| fig-height: 3
+#| layout-ncol: 2
+#| layout-nrow: 2
+
+ggplot(rongelap, aes(x = 1:157, y = poisson_residuals / time)) +
+  geom_point(size = 1) +
+  theme_bw() +
+  labs(x = "编号", y = "残差")
+
+ggplot(rongelap, aes(x = cX, y = poisson_residuals / time)) +
+  geom_point(size = 1) +
+  theme_bw() +
+  labs(x = "横坐标", y = "残差")
+
+ggplot(rongelap, aes(x = cY, y = poisson_residuals / time)) +
+  geom_point(size = 1) +
+  theme_bw() +
+  labs(x = "纵坐标", y = "残差")
+```
+
+既然异方差比较严重，给每个位置分配一个独立的方差是合理的，相当于添加随机效应。简单起见，假定异方差是相互独立的。
+
+```{r}
+#| message: false
+
+library(spaMM)
+fit_poisson_glmm <- fitme(
+  formula = counts ~ 1 + (1 | dummy) + offset(log(time)),
+  data = rongelap, family = poisson(link = "log")
+)
+summary(fit_poisson_glmm)
+```
+
 
 ### 空间线性混合效应模型 {#sec-rongelap-slmm}
 
@@ -341,33 +460,7 @@ $$
 \rho(u; \phi, \tau_{rel}^2 ) = \tau_{rel}^2 + (1 - \tau_{rel}^2) \big(1 - \exp(- \frac{u}{\phi}) \big)
 $$
 
-下面以一个简单示例理解自相关函数 `corExp()` 的作用，令 $\phi = 1, \tau_{rel}^2 = 0.2$，则由距离矩阵和自相关函数构造的方差协方差矩阵如下：
-
-```{r}
-library(nlme)
-spatDat <- data.frame(x = (1:4) / 4, y = (1:4) / 4)
-cs3Exp <- corExp(c(1, 0.2), form = ~ x + y, nugget = TRUE)
-cs3Exp <- Initialize(cs3Exp, spatDat)
-corMatrix(cs3Exp)
-```
-
-相关性矩阵的初始化结果等价于如下矩阵：
-
-```{r}
-diag(0.2, 4) + (1 - 0.2) * exp(-as.matrix(dist(spatDat)))
-```
-
-**nlme** 包还有好些自相关函数，如常用的高斯型自相关函数 `corGaus()` ，它与函数 `corExp()` 的作用类似，示例如下：
-
-```{r}
-cs3Gaus <- corGaus(c(1, 0.2), form = ~ x + y, nugget = TRUE)
-cs3Gaus <- Initialize(cs3Gaus, spatDat)
-corMatrix(cs3Gaus)
-# 等价于
-diag(0.2, 4) + (1 - 0.2) * exp(-as.matrix(dist(spatDat))^2)
-```
-
-**nlme** 包的函数 `corExp()` 表示自相关结构是指数型的，为了方便估计参数做了一些重参数化的操作。
+为了方便估计，**nlme** 包对参数做了一些重参数化的操作。
 
 $$
 \begin{aligned}
@@ -376,30 +469,56 @@ $$
 \end{aligned}
 $$ {#eq-reparameterization}
 
-当 $u$ 趋于 0 时， $\rho(u; \phi, \tau_{rel}^2 ) = \tau_{rel}^2$ 。另，$\phi$ 取正值，$\tau_{rel}^2$ 取值介于 0-1 之间，在默认设置下，$\phi$ 的初始值为 $0.9 \times \min_{i,j \in A} u_{ij}$，即所有点之间距离的最小值的 90%， $\tau_{rel}^2$ 为 0.1 。
+当 $u$ 趋于 0 时， $\rho(u; \phi, \tau_{rel}^2 ) = \tau_{rel}^2$ 。另外，$\phi$ 取值为正，$\tau_{rel}^2$ 取值介于 0-1 之间，在默认设置下，$\phi$ 的初始值为 $0.9 \times \min_{i,j \in A} u_{ij}$，即所有点之间距离的最小值的 90%， $\tau_{rel}^2$ 为 0.1 。
+
+下面以一个简单示例理解自相关函数 `corExp()` 的作用，令 $\phi = 1.2, \tau_{rel}^2 = 0.2$，则由距离矩阵和自相关函数构造的自相关矩阵如下：
+
+```{r}
+library(nlme)
+spatDat <- data.frame(x = (1:4) / 4, y = (1:4) / 4)
+cs3Exp <- corExp(c(1.2, 0.2), form = ~ x + y, nugget = TRUE)
+cs3Exp <- Initialize(cs3Exp, spatDat)
+corMatrix(cs3Exp)
+```
+
+自相关矩阵的初始化结果等价于如下矩阵：
+
+```{r}
+diag(0.2, 4) + (1 - 0.2) * exp(-as.matrix(dist(spatDat)) / 1.2)
+```
+
+除了函数 `corExp()` ，**nlme** 包还有好些自相关函数，如高斯自相关函数 `corGaus()` ，线性自相关函数 `corLin()` ，有理自相关函数 `corRatio()` ，球型自相关函数 `corSpher()` 等。它们的作用与函数 `corExp()` 类似，使用方式也一样，如下是高斯型自相关函数的示例，其他的不再一一举例。
+
+```{r}
+cs3Gaus <- corGaus(c(1.2, 0.2), form = ~ x + y, nugget = TRUE)
+cs3Gaus <- Initialize(cs3Gaus, spatDat)
+corMatrix(cs3Gaus)
+# 等价于
+diag(0.2, 4) + (1 - 0.2) * exp(-as.matrix(dist(spatDat))^2 / 1.2^2)
+```
 
 #### nlme 包的拟合函数 `gls()` {#sec-gls-function}
 
 **nlme** 包的函数 `gls()` 实现限制极大似然估计方法，可以拟合存在异方差的一般线性模型，也是一种特殊的带自相关结构的线性混合效应模型，随机效应的结构可以看作异方差的结构。
 
 ```{r}
-fit_rongelap_gls <- nlme::gls(
+fit_rongelap_gls <- gls(
   log(counts / time) ~ 1, data = rongelap,
-  correlation = nlme::corExp(
+  correlation = corExp(
     value = c(200, 0.1), form = ~ cX + cY, nugget = TRUE
   )
 )
 summary(fit_rongelap_gls)
 ```
 
-**nlme** 包给出截距项 $\beta$ 、相对块金效应 $\tau_{rel}^2$ 、高斯过程范围参数 $\phi$ 和方差 $\sigma_{tol}^2$ 的估计，
+**nlme** 包给出截距项 $\beta$ 、相对块金效应 $\tau_{rel}^2$ 、范围参数 $\phi$ 和残差标准差 $\sigma_{tol}$ 的估计，
 
 $$
 \begin{aligned}
-\tau_{rel}^2   &= 0.1092496 \\
-\sigma_{tol}^2 &= 0.5739672^2 = 0.3294383 \\
+\beta &= 1.812914 \\
 \phi  &= 169.7472088 \\
-\beta &= 1.812914
+\tau_{rel}^2   &= 0.1092496 \\
+\sigma_{tol} &= 0.5739672
 \end{aligned}
 $$
 
@@ -418,19 +537,19 @@ $$
 
 $$
 T(x_i) = \beta + S(x_{i}) + Z_{i} 
-$$ 令 $\gamma(u_{ij}) = \frac{1}{2}\mathsf{Var}\{T(x_i) - T(x_j)\}$ 表示半变差，这里 $u_{ij}$ 表示采样点 $x_i$ 与 $x_j$ 之间的距离。考虑到
+$$ 令 $\gamma(u_{ij}) = \frac{1}{2}\mathsf{Var}\{T(x_i) - T(x_j)\}$ 表示半变差函数，这里 $u_{ij}$ 表示采样点 $x_i$ 与 $x_j$ 之间的距离。考虑到
 
 $$
 \gamma(u_{ij}) = \frac{1}{2}\mathsf{E}\big\{\big[T(x_i) - T(x_j)\big]^2\big\} = \tau^2 + \sigma^2\big(1-\rho(u_{ij})\big)
 $$
 
-上式第一个等号右侧期望可以用样本来计算，称之为样本半变差函数，第二个等号右侧为理论半变差函数。为了便于计算，将距离做一定划分，尽量使得各个距离区间的样本对数接近，此时，第 $i$ 个距离区间上样本半变差函数值的计算公式如下：
+上式第一个等号右侧期望可以用样本代入来计算，称之为经验半变差函数，第二个等号右侧为理论半变差函数。为了便于计算，将距离做一定划分，尽量使得各个距离区间的样本点对的数目接近。此时，第 $i$ 个距离区间上经验半变差函数值 $\hat{\gamma}(h_i)$ 的计算公式如下：
 
 $$
 \hat{\gamma}(h_i) = \frac{1}{2N(h_i)}\sum_{j=1}^{N(h_i)}(T(x_i)-T(x_i+h'))^2, \ \ h_{i,0} \le h' < h_{i,1}
 $$
 
-其中，$[h_{i,0},h_{i,1}]$ 表示第 $i$ 个距离区间，$N(h_i)$ 表示第 $i$ 个距离区间内所有配对样本点的对数，只要两个点之间的距离在这个区间内，就算是一对。$\hat{\gamma}(h_i)$ 代表第 $i$ 个距离区间上的样本半变差函数值。rongelap 数据集包含 157 个采样点的坐标，两两配对，共有 $(157 - 1) \times (157 - 2) / 2 = 12090$ 对。下面拟合关于残差的样本半变差函数：
+其中，$[h_{i,0},h_{i,1}]$ 表示第 $i$ 个距离区间，$N(h_i)$ 表示第 $i$ 个距离区间内所有样本点对的数目，只要两个点之间的距离在这个区间内，就算是一对。`rongelap` 数据集包含 157 个采样点，两两配对，共有 $(157 - 1) \times (157 - 2) / 2 = 12090$ 对。下面拟合模型残差的经验半变差函数：
 
 ```{r}
 fit_rongelap_vario <- nlme::Variogram(fit_rongelap_gls,
@@ -439,11 +558,11 @@ fit_rongelap_vario <- nlme::Variogram(fit_rongelap_gls,
 fit_rongelap_vario
 ```
 
-结果显示，距离在 0-89.44272 米之间的坐标点有 510 对，样本半变差函数值为 0.07006716。距离在 89.44272-144.22205 米之间的坐标点有 601 对，样本半变差函数值为 0.12719889，依此类推。将距离和计算的样本半变差绘制出来，即得到经验半变差图，如 @fig-rongelap-vario 所示。刚开始，半变差很小，之后随距离增加而增大，直到达到一个平台。由于半变差反比于空间相关性的程度，随着距离增加，空间相关性减弱。这说明数据中确含有空间相关性，模型中添加指数型空间自相关结构是合理的。
+结果显示，距离在 0-89.44272 米之间的坐标点有 510 对，经验半变差函数值为 0.07006716。距离在 89.44272-144.22205 米之间的坐标点有 601 对，经验半变差函数值为 0.12719889，依此类推。将距离和计算的经验半变差函数值绘制出来，即得到经验半变差图，如 @fig-rongelap-vario 所示。刚开始，半变差值很小，之后随距离增加而增大，一直到达一个平台。半变差反比于空间相关性的程度，随着距离增加，空间相关性减弱。这说明数据中确含有空间相关性，模型中添加指数型自相关空间结构是合理的。
 
 ```{r}
 #| label: fig-rongelap-vario
-#| fig-cap: "核辐射强度的残差半变差图"
+#| fig-cap: "残差的经验半变差图"
 #| fig-width: 5
 #| fig-height: 4
 #| fig-showtext: true
@@ -464,16 +583,16 @@ plot(fit_rongelap_vario,
 )
 ```
 
-如果空间相关性提取得很充分，则标准化残差的半变差图中的数据点应是围绕标准差上下波动，无明显趋势，拟合线几乎是一条水平线，从 @fig-rongelap-vario-norm 来看，存在一些非均匀的波动，是采样点在空间的分布不均匀所致，岛屿狭长的中部地带采样点稀疏。如前所述，除了指数型，还可以用其它模型来拟合空间相关性。
+如果空间相关性提取得很充分，则标准化残差的半变差图中的数据点应是围绕标准差 1 上下波动，无明显趋势，拟合线几乎是一条水平线，从 @fig-rongelap-vario-norm 来看，存在一些非均匀的波动，是采样点在空间的分布不均匀所致，岛屿狭长的中部地带采样点稀疏。如前所述，刻画空间相关性，除了指数型，还可以用其它自相关结构来拟合，留待读者练习。
 
 ```{r}
 #| label: fig-rongelap-vario-norm
-#| echo: !expr knitr::is_html_output()
-#| fig-cap: "核辐射强度的标准化残差半变差图"
+#| fig-cap: "标准化残差的经验半变差图"
 #| fig-width: 5
 #| fig-height: 4
 #| fig-showtext: true
 #| code-fold: true
+#| echo: !expr knitr::is_html_output()
 
 fit_rongelap_vario_norm <- nlme::Variogram(fit_rongelap_gls,
   form = ~ cX + cY, data = rongelap, resType = "normalized"
