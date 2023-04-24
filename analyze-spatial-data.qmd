@@ -378,7 +378,16 @@ ggplot(rongelap, aes(x = cY, y = poisson_residuals / time)) +
   labs(x = "纵坐标", y = "残差")
 ```
 
-既然异方差比较严重，给每个位置分配一个独立的方差是合理的，相当于添加随机效应。简单起见，假定异方差是相互独立的。
+既然异方差比较严重，给每个位置分配一个独立的方差是合理的，相当于添加一个随机效应。简单起见，假定异方差是相互独立的。
+
+$$
+\begin{aligned}
+\log(\lambda_i) &= \beta + Z_i \\
+Y_i & \sim \mathrm{Poisson}(t_i\lambda_i)
+\end{aligned}
+$$
+
+其中，$Z_i$ 相互独立同正态分布 $\mathcal{N}(0,\tau^2)$ ，$i = 1,\ldots, 157$ 表示采样点的位置编号。与之前类似，下面考虑响应变量为泊松分布、伽马分布和负二项分布的情况，采用 **spaMM** 包分别拟合上述模型。
 
 ```{r}
 #| message: false
@@ -403,12 +412,26 @@ fit_glmm_negbin2 <- fitme(
 summary(fit_glmm_negbin2)
 ```
 
+截距项 `(Intercept)` 的点估计和区间估计分别如下：
+
 ```{r}
+# 点估计
+fixef(fit_glmm_poisson)
+fixef(fit_glmm_gamma)
+fixef(fit_glmm_negbin2)
+# 区间估计
 confint(fit_glmm_poisson, parm = "(Intercept)")
-
 confint(fit_glmm_gamma, parm = "(Intercept)")
-
 confint(fit_glmm_negbin2, parm = "(Intercept)")
+```
+
+随机效应的方差 $\tau^2$ 的点估计如下：
+
+```{r}
+# 随机效应的方差估计
+get_ranPars(fit_glmm_poisson)$lambda[[1]]
+get_ranPars(fit_glmm_gamma)$lambda[[1]]
+get_ranPars(fit_glmm_negbin2)$lambda[[1]]
 ```
 
 ### 空间线性混合效应模型 {#sec-rongelap-slmm}
@@ -419,7 +442,7 @@ $$
 \log\big(\lambda(x_i)\big) = \beta + S(x_{i}) + Z_{i} 
 $$ {#eq-rongelap-gaussian-slmm}
 
-截距 $\beta$ 相当于平均水平，$\lambda(x_i)$ 可理解为辐射强度，$S(x_{i})$ 表示位置 $x_i$ 处的空间效应，$S(x),x \in \mathbb{R}^2$ 是平稳空间高斯过程。且 $Z_i$ 之间相互独立同正态分布 $\mathcal{N}(0,\tau^2)$ ，$Z_i$ 表示与空间效应无关的块金效应，即非空间的随机效应，可以理解为测量误差、空间变差或背景辐射，这里 $i = 1,\ldots, 157$。
+截距 $\beta$ 相当于平均水平，$\lambda(x_i)$ 可理解为辐射强度，$S(x_{i})$ 表示位置 $x_i$ 处的空间效应，$S(x),x \in \mathbb{R}^2$ 是平稳空间高斯过程。且 $Z_i$ 之间相互独立同正态分布 $\mathcal{N}(0,\tau^2)$ ，$Z_i$ 表示与空间效应无关的块金效应，即非空间的随机效应，可以理解为测量误差、空间变差或背景辐射。
 
 #### 自协方差函数 {#sec-covariance-function}
 
@@ -427,9 +450,9 @@ $$ {#eq-rongelap-gaussian-slmm}
 
 $$
 \begin{aligned}
-\mathrm{Cov}( S(x_i), S(x_j) ) &= \sigma^2 \exp\big( -\frac{\|x_i -x_j\|_{2}}{\phi} \big) \\
-\mathrm{Cov}( S(x_i), S(x_j) ) &= \sigma^2 \exp\big( -\frac{\|x_i -x_j\|_{2}^{2}}{2l^2} \big) \\
-\mathrm{Cov}( S(x_i), S(x_j) ) &= \sigma^2 \frac{2^{1 - \nu}}{\Gamma(\nu)}
+\mathsf{Cov}( S(x_i), S(x_j) ) &= \sigma^2 \exp\big( -\frac{\|x_i -x_j\|_{2}}{\phi} \big) \\
+\mathsf{Cov}( S(x_i), S(x_j) ) &= \sigma^2 \exp\big( -\frac{\|x_i -x_j\|_{2}^{2}}{2l^2} \big) \\
+\mathsf{Cov}( S(x_i), S(x_j) ) &= \sigma^2 \frac{2^{1 - \nu}}{\Gamma(\nu)}
 \left(\sqrt{2\nu}\frac{\|x_i -x_j\|_{2}}{\rho}\right)^{\nu}
 K_{\nu}\left(\sqrt{2\nu}\frac{\|x_i -x_j\|_{2}}{\rho}\right) \\
 K_{\nu}(x) &= \int_{0}^{\infty}\exp(-x \cosh t) \cosh (\nu t) \mathrm{dt}
@@ -541,10 +564,8 @@ summary(fit_rongelap_gls)
 
 $$
 \begin{aligned}
-\beta &= 1.812914 \\
-\phi  &= 169.7472088 \\
-\tau_{rel}^2   &= 0.1092496 \\
-\sigma_{tol} &= 0.5739672
+\beta &= 1.812914, \quad \phi  = 169.7472088 \\
+\tau_{rel}^2   &= 0.1092496, \quad \sigma_{tol} = 0.5739672
 \end{aligned}
 $$
 
