@@ -96,7 +96,7 @@ knitr::kable(head(rongelap_coastline, 6),
 
 library(ggplot2)
 ggplot() +
-  geom_point(data = rongelap, aes(x = cX, y = cY), size = 1) +
+  geom_point(data = rongelap, aes(x = cX, y = cY), size = 0.5) +
   geom_path(data = rongelap_coastline, aes(x = cX, y = cY)) +
   theme_bw() +
   coord_fixed() +
@@ -310,7 +310,10 @@ ggplot() +
     labels = scales::parse_format(),
     option = "C"
   ) +
-  theme_bw(base_family = "Noto Serif CJK SC") +
+  theme_bw(base_family = "sans") +
+  theme(axis.title = element_text(family = "Noto Sans CJK SC"),
+        legend.title = element_text(family = "Noto Sans CJK SC"),
+        legend.position = "top", legend.justification = "right") +
   labs(x = "随机变量", y = "概率密度", color = "参数")
 ```
 
@@ -339,7 +342,6 @@ summary(fit_rongelap_negbin)
 ```{r}
 anova(fit_rongelap_poisson, fit_rongelap_negbin)
 ```
-
 
 ### 广义线性混合效应模型
 
@@ -386,7 +388,6 @@ fit_poisson_glmm <- fitme(
 )
 summary(fit_poisson_glmm)
 ```
-
 
 ### 空间线性混合效应模型 {#sec-rongelap-slmm}
 
@@ -855,8 +856,8 @@ ggplot(data = rongelap_grid_sf2) +
   geom_sf(aes(color = pred), size = 0.75) +
   scale_color_viridis_c(option = "C") +
   facet_wrap(~method, ncol = 1) +
-  theme_void() +
-  labs(color = "预测值")
+  theme_bw() +
+  labs(x = "横坐标（米）", y = "纵坐标（米）", color = "预测值")
 ```
 
 考虑到核辐射在全岛的分布应当是连续性的，空间连续性也是这类模型的假设，接下来绘制热力图，先用 **stars** 包[@stars2022]将预测数据按原网格化的精度转化成栅格对象，裁减超出朗格拉普岛海岸线以外的内容。
@@ -909,8 +910,8 @@ p3 <- ggplot() +
     aes(x = x, y = y, xend = xend, yend = yend),
     arrow = arrow(length = unit(0.03, "npc"))
   ) +
-  theme_void() +
-  labs(fill = "辐射强度") +
+  theme_bw() +
+  labs(x = "横坐标（米）", y = "纵坐标（米）", fill = "辐射强度") +
   theme(legend.position = c(0.95, 0.2))
 
 p4 <- ggplot() +
