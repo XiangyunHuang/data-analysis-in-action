@@ -295,6 +295,7 @@ $$
 #| fig-width: 5
 #| fig-height: 4
 #| fig-showtext: true
+#| code-fold: true
 #| echo: !expr knitr::is_html_output()
 
 ggplot() +
@@ -310,6 +311,7 @@ ggplot() +
   ) +
   scale_colour_viridis_d(
     labels = scales::parse_format(),
+    begin = 0.3, end = 0.7,
     option = "C"
   ) +
   theme_bw(base_family = "sans") +
@@ -384,11 +386,31 @@ ggplot(rongelap, aes(x = cY, y = poisson_residuals / time)) +
 #| message: false
 
 library(spaMM)
-fit_poisson_glmm <- fitme(
+fit_glmm_poisson <- fitme(
   formula = counts ~ 1 + (1 | dummy) + offset(log(time)),
   data = rongelap, family = poisson(link = "log")
 )
-summary(fit_poisson_glmm)
+summary(fit_glmm_poisson)
+
+fit_glmm_gamma <- fitme(
+  formula = counts / time  ~ 1 + (1 | dummy),
+  data = rongelap, family = Gamma(link = "log")
+)
+summary(fit_glmm_gamma)
+
+fit_glmm_negbin2 <- fitme(
+  formula = counts ~ 1 + (1 | dummy) + offset(log(time)),
+  data = rongelap, family = negbin2(link = "log")
+)
+summary(fit_glmm_negbin2)
+```
+
+```{r}
+confint(fit_glmm_poisson, parm = "(Intercept)")
+
+confint(fit_glmm_gamma, parm = "(Intercept)")
+
+confint(fit_glmm_negbin2, parm = "(Intercept)")
 ```
 
 ### 空间线性混合效应模型 {#sec-rongelap-slmm}
@@ -450,8 +472,11 @@ mesh_matern$rho_math <- paste("rho==", mesh_matern$rho, sep = "")
 ggplot(data = mesh_matern, aes(x = x, y = fv)) +
   geom_line(aes(color = nu_math)) +
   facet_wrap(vars(rho_math), ncol = 1, labeller = ggplot2::label_parsed) +
-  scale_color_viridis_d(labels = expression(nu == 0.5, nu == 1.5, nu == 2.5), option = "C") +
-  theme_minimal(base_size = 13) +
+  scale_color_viridis_d(
+    labels = expression(nu == 0.5, nu == 1.5, nu == 2.5), 
+    begin = 0.3, end = 0.7, option = "C"
+    ) +
+  theme_bw(base_size = 13) +
   labs(x = "距离", y = "相关性", color = expression(nu))
 ```
 
