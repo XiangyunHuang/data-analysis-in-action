@@ -980,8 +980,8 @@ $$
 
 $$
 \begin{bmatrix}
-V & \bm{1}^{\top} \\
-\bm{1} & 0
+V & \bm{1} \\
+\bm{1}^{\top} & 0
 \end{bmatrix}
 \begin{bmatrix}
 \bm{w}  \\
@@ -996,7 +996,7 @@ $$
 
 所以，$\bm{w}^{\top} = \bm{u}^{\top}V^{-1}$ ，在位置 $x_0$ 处的预测 $\hat{\lambda}(x_0) = \beta + \bm{u}^{\top}V^{-1}(\bm{\lambda} - \beta \bm{1})$ ，预测的均方误差 $\mathsf{E}\{[\hat{\lambda}(x_0) - \lambda(x_0)]^2\} = \mathsf{Var}\{\hat{\lambda}(x_0) - \lambda(x_0)\} = \sigma_0^2 - \bm{u}^{\top}V^{-1}\bm{u}$ 。根据样本可以估计半变差函数 @eq-semi-variogram 的参数，从而 $V$ 、 $\sigma_{0}^2$ 和 $\bm{u}$ 都是已知的。
 
-在空间线性混合效应模型一节，截距 $\beta$ ，方差 $\sigma^2$ ，块金效应 $\tau^2$ 和范围参数 $\phi$ 都估计出来了。在此基础上，简单起见，不考虑块金效应，复用截距 $\beta$ 、范围参数 $\phi$ ，采用简单克里金方法预测，作为后续的对比。
+在空间线性混合效应模型一节，截距 $\beta$ ，方差 $\sigma^2$ ，块金效应 $\tau^2$ 和范围参数 $\phi$ 都估计出来了。在此基础上，采用简单克里金方法预测，作为后续的对比。
 
 ```{r}
 # 截距
@@ -1006,7 +1006,7 @@ phi <- 169.7472088
 # 自相关函数
 cov_fun <- function(h) 0.2934473 * exp(-h / phi)
 # 距离矩阵
-m_obs <- cov_fun(st_distance(x = rongelap_sf))
+m_obs <- cov_fun(st_distance(x = rongelap_sf)) + diag(0.035991, 157)
 m_pred <- cov_fun(st_distance(x = rongelap_sf, y = rongelap_grid_centroid))
 # 简单克里金插值
 sk <- beta + t(m_pred) %*% solve(m_obs, log(rongelap_sf$counts / rongelap_sf$time) - beta)
