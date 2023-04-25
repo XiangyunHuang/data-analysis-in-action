@@ -594,7 +594,7 @@ $$ 令 $\gamma(u_{ij}) = \frac{1}{2}\mathsf{Var}\{T(x_i) - T(x_j)\}$ 表示半�
 
 $$
 \gamma(u_{ij}) = \frac{1}{2}\mathsf{E}\big\{\big[T(x_i) - T(x_j)\big]^2\big\} = \tau^2 + \sigma^2\big(1-\rho(u_{ij})\big)
-$$
+$$ {#eq-semi-variogram}
 
 上式第一个等号右侧期望可以用样本代入来计算，称之为经验半变差函数，第二个等号右侧为理论半变差函数。为了便于计算，将距离做一定划分，尽量使得各个距离区间的样本点对的数目接近。此时，第 $i$ 个距离区间上经验半变差函数值 $\hat{\gamma}(h_i)$ 的计算公式如下：
 
@@ -927,7 +927,7 @@ $$
 
 $$
 \begin{aligned}
-\min_{\bm{w}} \quad & \mathsf{Var}\{\hat{\lambda}(x_0) - \lambda(x_0)\} \\
+\min_{\bm{w}} \quad & \frac{1}{2}\mathsf{Var}\{\hat{\lambda}(x_0) - \lambda(x_0)\} \\
 \text{s.t.} \quad & \mathsf{E}\{\hat{\lambda}(x_0) - \lambda(x_0) \} = 0
 \end{aligned}
 $$ {#eq-kriging-optim}
@@ -964,21 +964,39 @@ $$
 其中，$\sigma_{0}^2 = \mathsf{Var}\{\lambda(x_0)\}$ 是未知常数，$\bm{u} = \mathsf{Cov}\{\bm{\lambda},\lambda(x_0)\}$ 是未知的 $N \times 1$ 向量。采用拉格朗日乘数法将约束优化问题 @eq-kriging-optim 转为如下无约束优化问题。
 
 $$
-\min_{\bm{w}} \mathcal{L}(\bm{w},k) = \bm{w}^{\top}V\bm{w} + \sigma_{0}^2 - 2\bm{w}^{\top} \bm{u} + \kappa (\bm{w}^{\top} \bm{1} - 1)
+\min_{\bm{w}} \mathcal{L}(\bm{w},k) = \frac{1}{2}\bm{w}^{\top}V\bm{w} + \frac{1}{2}\sigma_{0}^2 - \bm{w}^{\top} \bm{u} + \kappa (\bm{w}^{\top} \bm{1} - 1)
 $$
 
 其中，$\kappa$ 表示拉格朗日乘子，$\bm{1}$ 表示 $N \times 1$ 维的全 1 向量。对 $\bm{w}$ 和 $\kappa$ 分别求偏导，并令其各自等于 0 ，则有
 
 $$
 \begin{aligned}
-\frac{\partial \mathcal{L}(\bm{w},\kappa)}{\partial \bm{w}} &= 2 \bm{w}^{\top} V - 2 \bm{u}^{\top} + \kappa \bm{1}^{\top}= 0 \\
+\frac{\partial \mathcal{L}(\bm{w},\kappa)}{\partial \bm{w}} &=  \bm{w}^{\top} V -  \bm{u}^{\top} + \kappa \bm{1}^{\top}= 0 \\
 \frac{\partial \mathcal{L}(\bm{w},k)}{\partial \kappa} &= \bm{w}^{\top} \bm{1} - 1 = 0
 \end{aligned}
 $$
 
-所以，$\bm{w}^{\top} = \bm{u}^{\top}V^{-1}$ ，在位置 $x_0$ 处的预测 $\hat{\lambda}(x_0) = \beta + \bm{u}^{\top}V^{-1}(\bm{\lambda} - \beta \bm{1})$ ，预测的均方误差 $\mathsf{E}\{[\hat{\lambda}(x_0) - \lambda(x_0)]^2\} = \sigma_0^2 - \bm{u}^{\top}V^{-1}\bm{u}$ 。
+联立上述方程可得
 
-作为对比，在上一节空间线性混合效应模型的基础上，简单起见，不考虑块金效应，下面复用截距 $\beta$ 、指数型自相关函数的范围参数 $\phi$ ，采用简单克里金方法预测。
+$$
+\begin{bmatrix}
+V & \bm{1}^{\top} \\
+\bm{1} & 0
+\end{bmatrix}
+\begin{bmatrix}
+\bm{w}  \\
+k
+\end{bmatrix}
+= 
+\begin{bmatrix}
+\bm{u}  \\
+1
+\end{bmatrix}
+$$
+
+所以，$\bm{w}^{\top} = \bm{u}^{\top}V^{-1}$ ，在位置 $x_0$ 处的预测 $\hat{\lambda}(x_0) = \beta + \bm{u}^{\top}V^{-1}(\bm{\lambda} - \beta \bm{1})$ ，预测的均方误差 $\mathsf{E}\{[\hat{\lambda}(x_0) - \lambda(x_0)]^2\} = \mathsf{Var}\{\hat{\lambda}(x_0) - \lambda(x_0)\} = \sigma_0^2 - \bm{u}^{\top}V^{-1}\bm{u}$ 。根据样本可以估计半变差函数 @eq-semi-variogram 的参数，从而 $\sigma_{0}^2$ 和 $\bm{u}$ 都是已知的。
+
+在空间线性混合效应模型一节，截距 $\beta$ ，方差 $\sigma^2$ ，块金效应 $\tau^2$ 和范围参数 $\phi$ 都估计出来了。在此基础上，简单起见，不考虑块金效应，复用截距 $\beta$ 、范围参数 $\phi$ ，采用简单克里金方法预测，作为后续的对比。
 
 ```{r}
 # 截距
@@ -986,7 +1004,7 @@ beta <- 1.812914
 # 范围参数
 phi <- 169.7472088
 # 自相关函数
-cov_fun <- function(h) exp(-h / phi)
+cov_fun <- function(h) 0.2934473 * exp(-h / phi)
 # 距离矩阵
 m_obs <- cov_fun(st_distance(x = rongelap_sf))
 m_pred <- cov_fun(st_distance(x = rongelap_sf, y = rongelap_grid_centroid))
