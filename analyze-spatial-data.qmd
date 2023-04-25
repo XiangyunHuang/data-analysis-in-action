@@ -6,6 +6,12 @@
 source("_common.R")
 ```
 
+::: hidden
+$$
+ \def\bm#1{{\boldsymbol #1}}
+$$
+:::
+
 本章内容属于空间分析的范畴，空间分析的内容十分广泛，本章仅以一个模型和一个数据简略介绍。一个模型是空间广义线性混合效应模型，空间广义线性混合效应模型在流行病学、生态学、环境学等领域有广泛的应用，如预测某地区内的疟疾流行度分布，预测某地区 PM 2.5 污染物浓度分布等。一个数据来自生态学领域，数据集所含样本量不大，但每个样本收集成本不小，采集样本前也都有实验设计，数据采集的地点是预先设定的。下面将对真实数据分析和建模，任务是预测核辐射强度在朗格拉普岛上的分布。
 
 ## 数据说明 {#sec-rongelap-data}
@@ -860,7 +866,7 @@ rongelap_grid_df$pred_sp <- as.vector(rongelap_grid_pred)
 
 ### 克里金插值 {#sec-kriging-interpolation}
 
-作为对比，在上一节空间线性混合效应模型的基础上，简单起见，不考虑块金效应，下面复用截距和范围参数，采用简单克里金方法预测。最佳线性无偏估计（Best Linear Unbiased Estimator）， @fig-kriging 是克里金插值的示意图。
+在空间分析中，克里金插值是非常基础且重要的内容，具有非常好的统计性质，是最佳线性无偏估计（Best Linear Unbiased Estimator）， @fig-kriging 是克里金插值的示意图，下面介绍插值的原理。
 
 ```{r}
 #| echo: false
@@ -924,13 +930,55 @@ $$
 \min_{w_i} \quad & \mathsf{Var}\{\hat{\lambda}(x_0) - \lambda(x_0)\} \\
 \text{s.t.} \quad & \mathsf{E}\{\hat{\lambda}(x_0) - \lambda(x_0) \} = 0
 \end{aligned}
-$$
+$$ {#eq-kriging-optim}
 
 根据无偏性条件可推导出
 
 $$
-\sum_{i=1}^{N}w_i = 1
+\sum_{i=1}^{N}w_i = 1.
 $$
+
+令 $\bm{\lambda} = [\lambda(x_1),\lambda(x_1),\ldots,\lambda(x_N)]^{\top}$ ，$V$ 表示随机向量 $\bm{\lambda}$ 的协方差矩阵 $\mathsf{Var}(\bm{\lambda})$ ，其第 $i$ 行第 $j$ 列的元素为 $\mathsf{Cov}(\lambda(x_i),\lambda(x_j))$ ，其对角线上的元素为方差 $\mathsf{Var}\{\lambda(x_i)\}, i = 1,2,\ldots,N$ 。令 $\bm{w} = [w_1,w_2,\ldots,w_N]^{\top}$ ，则
+
+$$
+\hat{\lambda}(x_0) = \sum_{i=1}^{N}w_i\lambda(x_i) = \bm{w}^{\top}\bm{\lambda}
+$$
+
+$\hat{\lambda}(x_0)$ 的方差 $\mathsf{Var}\{\hat{\lambda}(x_0)\}$ 根据随机向量二次型，有
+
+$$
+\mathsf{Var}\{\hat{\lambda}(x_0)\} = \bm{w}^{\top}\mathsf{Var}\{\bm{\lambda}\}\bm{w} = \bm{w}^{\top}V\bm{w}
+$$
+
+因此，
+
+$$
+\begin{aligned}
+\mathsf{Var}\{\hat{\lambda}(x_0) - \lambda(x_0)\} &= \mathsf{Var}\{\hat{\lambda}(x_0) \} + \mathsf{Var}\{\lambda(x_0)\} - 2 \mathsf{Cov}(\hat{\lambda}(x_0), \lambda(x_0)) \\
+&= \bm{w}^{\top}V\bm{w} + \sigma_{0}^2 - 2\sum_{i=1}^{N}w_i \mathsf{Cov}\{\lambda(x_i),\lambda(x_0)\} \\
+& = \bm{w}^{\top}V\bm{w} + \sigma_{0}^2 - 2\bm{w}^{\top} \mathsf{Cov}\{\bm{\lambda},\lambda(x_0)\} \\
+& = \bm{w}^{\top}V\bm{w} + \sigma_{0}^2 - 2\bm{w}^{\top} \bm{u}
+\end{aligned}
+$$
+
+其中，$\sigma_{0}^2 = \mathsf{Var}\{\lambda(x_0)\}$ 是未知常数，$\bm{u} = \mathsf{Cov}\{\bm{\lambda},\lambda(x_0)\}$ 是未知的 $N \times 1$ 向量。采用拉格朗日乘数法将约束优化问题 @eq-kriging-optim 转为如下无约束优化问题。
+
+$$
+\min_{w_i} \mathcal{L}(\bm{w},k) = \bm{w}^{\top}V\bm{w} + \sigma_{0}^2 - 2\bm{w}^{\top} \bm{u} + \kappa (\bm{w}^{\top} \bm{1} - 1)
+$$
+
+其中，$\kappa$ 表示拉格朗日乘子，$\bm{1}$ 表示 $N \times 1$ 维的全 1 向量。分别对 $\kappa$ 和 $\bm{w}$ 求偏导，并令偏导等于 0 ，则有
+
+$$
+\begin{aligned}
+\frac{\partial \mathcal{L}(\bm{w},\kappa)}{\partial \bm{w}} &= 2 \bm{w}^{\top} V - 2 \bm{u}^{\top} = 0 \\
+\frac{\partial \mathcal{L}(\bm{w},k)}{\partial \kappa} &= \bm{w}^{\top} \bm{1} - 1 = 0
+\end{aligned}
+$$
+
+所以，$\bm{w}^{\top} = \bm{u}^{\top}V^{-1}$ ，在位置 $x_0$ 处的预测 $\hat{\lambda}(x_0) = \beta + \bm{u}^{\top}V^{-1}(\bm{\lambda} - \beta \bm{1})$ ，预测的均方误差 $\mathsf{E}\{[\hat{\lambda}(x_0) - \lambda(x_0)]^2\} = \sigma_0^2 - \bm{u}^{\top}V^{-1}\bm{u}$ 。
+
+作为对比，在上一节空间线性混合效应模型的基础上，简单起见，不考虑块金效应，下面复用截距 $\beta$ 、指数型自相关函数的范围参数 $\phi$ ，采用简单克里金方法预测。
 
 ```{r}
 # 截距
