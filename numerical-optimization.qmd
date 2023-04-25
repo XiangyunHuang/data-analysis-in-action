@@ -8,15 +8,29 @@
 Sys.setenv(ROI_LOAD_PLUGINS = FALSE)
 ```
 
+::: hidden
+$$
+ \def\bm#1{{\boldsymbol #1}}
+$$
+:::
+
 本章介绍四类典型的优化问题及 R 语言求解过程。除了 R 软件内置一些数值优化求解器，R 语言社区有大量的运筹优化方面的函数和 R 包。本文将重点介绍 **ROI** 包，它通过插件包对 20 多个 R 包提供统一的调用方式，相当于一个运筹优化方面的基础设施平台，极大地方便学习和使用。本文不能一一概括，仅详述其中两个，求解线性优化（linear optimization）与混合整数优化（mixed integer linear optimization）的 **Rglpk** 包，求解二次优化（quadratic optimization）和非线性优化（nonlinear optimization）的 **nloptr** 包，相信读者之后可以举一反三。
 
 **Rglpk** 包可以求解大规模线性优化，整数优化和混合整数优化，**ROI** 包通过插件包 **ROI.plugin.glpk** 与之连接调用。**nloptr** 包可以求解二次优化和非线性优化，**ROI** 包通过插件包 **ROI.plugin.nloptr** 与之连接调用。
 
 ```{r}
+#| message: false
+
 library(ROI)
 library(ROI.plugin.glpk)
 library(ROI.plugin.nloptr)
 library(lattice)
+custom_palette <- function(irr, ref, height, saturation = 0.9) {
+  hsv(
+    h = height, s = 1 - saturation * (1 - (1 - ref)^0.5),
+    v = irr
+  )
+}
 ```
 
 ## 线性优化 {#sec-linear-optimization}
@@ -90,11 +104,11 @@ res$objval
 
 整数优化分变量取值为 0 或 1 的 0-1 整数优化和带有整数约束的混合整数优化。
 
-### 0-1 优化
+### 0-1 整数优化
 
 变量要么是 0 要么是 1
 
-### 混合优化 {#sec-mixed-integer-linear-optimization}
+### 混合整数优化 {#sec-mixed-integer-linear-optimization}
 
 一部分变量要求是整数
 
@@ -169,7 +183,7 @@ res$objval
 
 二次优化分严格凸二次和非严格凸二次优化问题，严格凸要求矩阵正定，非严格凸要求矩阵半正定。
 
-### 严格凸
+### 严格凸二次优化
 
 ROI 默认的二次规划的标准形式为
 
@@ -214,7 +228,7 @@ nlp$objval
 nlp$solution
 ```
 
-### 非严格凸
+### 非严格凸二次优化
 
 锥问题
 
@@ -224,7 +238,7 @@ nlp$solution
 
 R 自带的函数 `nlminb()` 可求解无约束、箱式约束优化问题，`constrOptim()` 还可求解线性不等式约束优化，其中包括带线性约束的二次规划。`optim()` 提供一大类优化算法，且包含随机优化算法---模拟退火算法，可求解无约束、箱式约束优化问题。
 
-### 无约束
+### 无约束优化
 
 #### 示例 1
 
@@ -260,6 +274,7 @@ wireframe(
   ylab = expression(x[2]),
   zlab = list(expression(italic(f) ~ group("(", list(x[1], x[2]), ")")), rot = 90),
   scales = list(arrows = FALSE, col = "black"),
+  shade.colors.palette = custom_palette,
   # 减少三维图形的边空
   lattice.options = list(
     layout.widths = list(
@@ -339,6 +354,7 @@ wireframe(
   ylab = expression(x[2]), 
   zlab = list(expression(italic(f) ~ group("(", list(x[1], x[2]), ")")), rot = 90),
   scales = list(arrows = FALSE, col = "black"),
+  shade.colors.palette = custom_palette,
   # 减少三维图形的边空
   lattice.options = list(
     layout.widths = list(
@@ -379,6 +395,7 @@ wireframe(
   ylab = expression(x[2]),
   zlab = list(expression(italic(f) ~ group("(", list(x[1], x[2]), ")")), rot = 90),
   scales = list(arrows = FALSE, col = "black"),
+  shade.colors.palette = custom_palette,
   # 减少三维图形的边空
   lattice.options = list(
     layout.widths = list(
@@ -426,8 +443,7 @@ Min=@cos(x1) * @cos(x2) - @Sum(P(j): (-1)^j * j * 2 * @exp(-500 * ((x1 - j * 2)^
 
 Lingo 18.0 启用全局优化求解器后，在 $(x_1 = 7.999982, x_2 = 7.999982)$ 取得最小值 -7.978832。而默认未启用全局优化求解器的情况下，在 $(x_1 = 18.84956, x_2 = -40.84070)$ 取得局部极小值 -1.000000。
 
-
-### 箱式约束
+### 箱式约束优化
 
 有如下箱式约束优化问题，示例来自函数 nlminb 的帮助文档，目标函数和[香蕉函数](https://en.wikipedia.org/wiki/Rosenbrock_function)有些相似。
 
@@ -546,15 +562,17 @@ optim(
 )
 ```
 
-### 线性约束
+### 线性约束优化
 
-### 非线性约束
+### 非线性约束优化
+
+**nloptr** 包的非线性优化能力覆盖 Octave 和 Ipopt 。
 
 #### 示例 1
 
 -   非线性等式约束
 
-示例来自 [Octave 优化文档](https://octave.org/doc/v6.2.0/Nonlinear-Programming.html)，该优化问题包含多个非线性等式约束。
+示例来自 Octave 的[非线性优化帮助文档](https://octave.org/doc/v8.2.0/Nonlinear-Programming.html)，该优化问题包含多个非线性等式约束。
 
 $$
 \begin{array}{l}
@@ -622,6 +640,7 @@ op <- OP(
 ```{r}
 nlp <- ROI_solve(op, solver = "nloptr.slsqp", start = c(-1.8, 1.7, 1.9, -0.8,-0.8))
 nlp$solution
+nlp$objval
 ```
 
 计算结果和 Octave 的示例一致。
@@ -632,7 +651,7 @@ nlp$solution
 -   非线性不等式约束，不等式约束包含等号
 -   箱式约束
 
-此优化问题来源于 [Ipopt 官网](https://coin-or.github.io/Ipopt/INTERFACES.html)，约束条件比较复杂。提供的初始值为 $x_0 = (1,5,5,1)$，最优解为 $x_{\star} = (1.00000000,4.74299963,3.82114998,1.37940829)$。优化问题的具体内容如下：
+此优化问题来源于 Ipopt 官网的[帮助文档](https://coin-or.github.io/Ipopt/INTERFACES.html)，约束条件比较复杂。提供的初始值为 $x_0 = (1,5,5,1)$，最优解为 $x_{\star} = (1.00000000,4.74299963,3.82114998,1.37940829)$。优化问题的具体内容如下：
 
 $$
 \begin{array}{l}
