@@ -33,8 +33,7 @@ RUN dnf -y upgrade \
  && dnf clean all
    
 # System dependencies required for Quarto Book project
-RUN dnf -y install nodejs-devel \
-   python3-virtualenv \
+RUN dnf -y install python3-virtualenv \
    google-noto-cjk-fonts \
    google-noto-sans-fonts \
    google-noto-serif-fonts \
@@ -96,6 +95,7 @@ RUN dnf -y copr enable iucar/cran \
   && dnf clean all \
   && install2.r showtextdb showtext \
   && export GITHUB_PAT=${GITHUB_PAT} \
+  && export DOWNLOAD_STATIC_LIBV8=1 \
   && Rscript -e "remotes::install_deps('.', dependencies = TRUE)" \
   && rm -f DESCRIPTION desc_pkgs.txt
 
