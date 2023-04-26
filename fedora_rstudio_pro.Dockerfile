@@ -61,6 +61,7 @@ RUN dnf -y install v8-devel \
    texlive-standalone \
    texlive-animate \
    texlive-media9 \
+   chromium \
  && dnf clean all
 
 # Setup R and RStudio Server Open Source
