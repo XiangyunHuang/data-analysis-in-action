@@ -1,0 +1,745 @@
+# 数值优化 {#sec-numerical-optimization}
+
+```{r}
+#| echo: false
+
+# 锥优化、组合优化、多目标优化、图优化、全局优化不在本章范围
+# 加载 ROI 时不要自动加载插件
+Sys.setenv(ROI_LOAD_PLUGINS = FALSE)
+```
+
+::: hidden
+$$
+ \def\bm#1{{\boldsymbol #1}}
+$$
+:::
+
+本章介绍四类典型的优化问题及 R 语言求解过程。除了 R 软件内置一些数值优化求解器，R 语言社区有大量的运筹优化方面的函数和 R 包。本文将重点介绍 **ROI** 包，它通过插件包对 20 多个 R 包提供统一的调用方式，相当于一个运筹优化方面的基础设施平台，极大地方便学习和使用。本文不能一一概括，仅详述其中两个，求解线性优化（linear optimization）与混合整数优化（mixed integer linear optimization）的 **Rglpk** 包，求解二次优化（quadratic optimization）和非线性优化（nonlinear optimization）的 **nloptr** 包，相信读者之后可以举一反三。
+
+**Rglpk** 包可以求解大规模线性优化，整数优化和混合整数优化，**ROI** 包通过插件包 **ROI.plugin.glpk** 与之连接调用。**nloptr** 包可以求解二次优化和非线性优化，**ROI** 包通过插件包 **ROI.plugin.nloptr** 与之连接调用。
+
+```{r}
+#| message: false
+
+library(ROI)
+library(ROI.plugin.glpk)
+library(ROI.plugin.nloptr)
+library(lattice)
+custom_palette <- function(irr, ref, height, saturation = 0.9) {
+  hsv(
+    h = height, s = 1 - saturation * (1 - (1 - ref)^0.5),
+    v = irr
+  )
+}
+```
+
+## 线性优化 {#sec-linear-optimization}
+
+线性优化是指目标函数和约束条件都是线性的优化问题。
+
+$$
+\begin{array}{l}
+  \min_x \quad -6x_1 -5x_2 \\
+    s.t.\left\{ 
+    \begin{array}{l}
+    x_1  + 4x_2 \leq 16\\
+    6x_1 + 4x_2 \leq 28\\
+    2x_1 - 5x_2 \leq 6
+    \end{array} \right.
+\end{array}
+$$
+
+写成矩阵形式
+
+$$
+\begin{array}{l}
+\min_x \quad
+  \begin{bmatrix}
+  -6  \\
+  -5
+  \end{bmatrix}
+  ^{T} x \\
+s.t.\left\{ 
+ \begin{array}{l}
+  \begin{bmatrix}
+  1 & 4  \\
+  6 & 4  \\
+  2 & -5 
+  \end{bmatrix}
+  x \leq
+  \begin{bmatrix}
+   16 \\
+   28 \\
+   6
+  \end{bmatrix}
+ \end{array} \right.
+\end{array} 
+$$
+
+```{r}
+op <- OP(
+  objective = L_objective(c(-6, -5)),
+  # 指定变量类型：第1-2个变量都是连续值
+  types = c("C", "C"),
+  constraints = L_constraint(
+    L = matrix(c(
+      1, 4,
+      6, 4, 
+      2, -5
+    ), ncol = 2, byrow = TRUE),
+    dir = c("<=", "<=", "<="),
+    rhs = c(16, 28, 6)
+  ),
+  maximum = FALSE
+)
+op
+
+res <- ROI_solve(op, solver = "glpk")
+res$solution
+
+res$objval
+```
+
+## 整数优化 {#sec-integer-linear-optimization}
+
+整数优化分变量取值为 0 或 1 的 0-1 整数优化和带有整数约束的混合整数优化。
+
+### 0-1 整数优化
+
+变量要么是 0 要么是 1
+
+### 混合整数优化 {#sec-mixed-integer-linear-optimization}
+
+一部分变量要求是整数
+
+$$
+\begin{array}{l}
+  \max_x \quad 3x_1 + 7x_2 - 12x_3 \\
+    s.t.\left\{ 
+    \begin{array}{l}
+    5x_1 + 7x_2 + 2x_3 \leq 61\\
+    3x_1 + 2x_2 - 9x_3 \leq 35\\
+    x_1 + 3x_2 + x_3 \leq 31\\
+    x_1,x_2 \geq 0, \quad x_2, x_3 \in \mathbb{Z}, \quad x_3 \in [-10, 10]
+    \end{array} \right.
+\end{array}
+$$
+
+矩阵形式如下
+
+$$
+\begin{array}{l}
+\min_x \quad
+  \begin{bmatrix}
+  3  \\
+  7  \\
+  -12
+  \end{bmatrix}
+  ^{T} x \\
+s.t.\left\{ 
+ \begin{array}{l}
+  \begin{bmatrix}
+  5 & 7 & 2 \\
+  3 & 2 & -9\\
+  1 & 3 & 1
+  \end{bmatrix}
+  x \leq
+  \begin{bmatrix}
+   61 \\
+   35 \\
+   31
+  \end{bmatrix}
+ \end{array} \right.
+\end{array} 
+$$
+
+```{r}
+op <- OP(
+  objective = L_objective(c(3, 7, -12)),
+  # 指定变量类型：第1个变量是连续值，第2、3个变量是整数
+  types = c("C", "I", "I"),
+  constraints = L_constraint(
+    L = matrix(c(
+      5, 7, 2,
+      3, 2, -9,
+      1, 3, 1
+    ), ncol = 3, byrow = TRUE),
+    dir = c("<=", "<=", "<="),
+    rhs = c(61, 35, 31)
+  ),
+  # 添加约束：第3个变量的下、上界分别是 -10 和 10
+  bounds = V_bound(li = 3, ui = 3, lb = -10, ub = 10, nobj = 3),
+  maximum = TRUE
+)
+op
+
+res <- ROI_solve(op, solver = "glpk")
+res$solution
+
+res$objval
+```
+
+## 二次优化 {#sec-quadratic-optimization}
+
+二次优化分严格凸二次和非严格凸二次优化问题，严格凸要求矩阵正定，非严格凸要求矩阵半正定。
+
+### 严格凸二次优化
+
+ROI 默认的二次规划的标准形式为
+
+$$
+\min_{\bm{x}} \frac{1}{2}\bm{x}^{\top}D\bm{x} + d^{\top}\bm{x} \quad \quad A^{\top}\bm{x} \geq d_{0}
+$$
+
+参数 `Dmat`、`dvec`、`Amat`、`dvec0` 分别对应二次规划问题中的 $D,d,A,d_{0}$。下面举个二次规划的具体例子
+
+$$
+D = \begin{bmatrix}2 & -1\\
+-1 & 2
+\end{bmatrix}, \quad
+d = (-3,2), \quad
+A = \begin{bmatrix}1 & 1\\
+-1 & 1 \\
+0  & -1
+\end{bmatrix}, \quad
+d_{0} = (2,-2,-3)
+$$
+
+即目标函数
+
+$$
+Q(x_1,x_2) = x_1^2 + x_2^2 - x_1 x_2 + 3x_1- 2x_2+4
+$$
+
+```{r}
+Dmat <- matrix(c(2, -1, -1, 2), nrow = 2, byrow = TRUE)
+dvec <- c(-3, 2)
+A <- matrix(c(1, 1, -1, 1, 0, -1), ncol = 2, byrow = TRUE)
+dvec0 <- c(2, -2, -3)
+
+op <- OP(
+  objective = Q_objective(Q = Dmat, L = -dvec),
+  constraints = L_constraint(A, rep(">=", 3), dvec0),
+  maximum = FALSE # 默认求最小
+)
+nlp <- ROI_solve(op, solver = "nloptr.slsqp", start = c(1, 2))
+nlp$objval
+
+nlp$solution
+```
+
+### 非严格凸二次优化
+
+锥问题
+
+## 非线性优化 {#sec-nonlinear-optimization}
+
+非线性优化按是否带有约束，以及约束是线性还是非线性。
+
+R 自带的函数 `nlminb()` 可求解无约束、箱式约束优化问题，`constrOptim()` 还可求解线性不等式约束优化，其中包括带线性约束的二次规划。`optim()` 提供一大类优化算法，且包含随机优化算法---模拟退火算法，可求解无约束、箱式约束优化问题。
+
+### 无约束优化
+
+#### 示例 1
+
+Rastrigin 函数是多模态函数，有许多局部极小值。
+
+$$
+f(\bm{x})= \sum_{i=1}^{n}\big(x_i^2 - 10 \cos(2\pi x_i) + 10\big)
+$$
+
+```{r}
+#| label: fig-rastrigin
+#| fig-cap: Rastrigin 函数
+#| fig-width: 5.5 
+#| fig-height: 5
+#| fig-showtext: true
+#| code-fold: true
+
+fn <- function(x) {
+  sum(x^2 - 10 * cos(2 * pi * x) + 10)
+}
+
+df <- expand.grid(
+  x = seq(-4, 4, length.out = 201),
+  y = seq(-4, 4, length.out = 201)
+)
+
+df$fnxy <- apply(df, 1, fn)
+
+wireframe(
+  data = df, fnxy ~ x * y,
+  shade = TRUE, drape = FALSE,
+  xlab = expression(x[1]),
+  ylab = expression(x[2]),
+  zlab = list(expression(italic(f) ~ group("(", list(x[1], x[2]), ")")), rot = 90),
+  scales = list(arrows = FALSE, col = "black"),
+  shade.colors.palette = custom_palette,
+  # 减少三维图形的边空
+  lattice.options = list(
+    layout.widths = list(
+      left.padding = list(x = -.6, units = "inches"),
+      right.padding = list(x = -1.0, units = "inches")
+    ),
+    layout.heights = list(
+      bottom.padding = list(x = -.8, units = "inches"),
+      top.padding = list(x = -1.0, units = "inches")
+    )
+  ),
+  par.settings = list(axis.line = list(col = "transparent")),
+  screen = list(z = 120, x = -65, y = 0)
+)
+```
+
+设置 10 维的优化
+
+```{r}
+op <- OP(
+  objective = F_objective(fn, n = 10L),
+  bounds = V_bound(ld = -50, ud = 50, nobj = 10L)
+)
+```
+
+调全局优化器求解非凸优化问题
+
+```{r}
+nlp <- ROI_solve(op, solver = "nloptr.directL")
+nlp$solution
+nlp$objval
+```
+
+#### 示例 2
+
+有如下复杂的目标函数
+
+$$
+\begin{array}{l}
+  \min_x \quad \cos(x_1)\cos(x_2) - \sum_{i=1}^{5}\Big( (-1)^i \cdot i \cdot 2 \cdot \exp\big(-500 \cdot ( (x_1 - i \cdot 2)^2 + (x_2 - i\cdot 2)^2 ) \big) \Big) \\
+  \text{s.t.} \quad -50 \leq x_1, x_2 \leq 50
+\end{array}
+$$
+
+```{r}
+subfun <- function(i, m) {
+  (-1)^i * i * 2 * exp(-500 * ((m[1] - i * 2)^2 + (m[2] - i * 2)^2))
+}
+
+fn <- function(x) {
+  cos(x[1]) * cos(x[2]) -
+    sum(mapply(FUN = subfun, i = 1:5, MoreArgs = list(m = x)))
+}
+```
+
+目标函数的图像见 @fig-super-function ，搜索区域 $[-50, 50] \times [-50, 50]$ 内几乎没有变化的梯度，给寻优过程带来很大困难。
+
+```{r}
+#| label: fig-super-function
+#| fig-width: 5.5
+#| fig-height: 5
+#| fig-cap: 函数图像
+#| fig-showtext: true
+#| code-fold: true
+
+df <- expand.grid(
+  x = seq(-50, 50, length.out = 101),
+  y = seq(-50, 50, length.out = 101)
+)
+
+df$fnxy = apply(df, 1, fn)
+
+wireframe(
+  data = df, fnxy ~ x * y,
+  shade = TRUE, drape = FALSE,
+  xlab = expression(x[1]), 
+  ylab = expression(x[2]), 
+  zlab = list(expression(italic(f) ~ group("(", list(x[1], x[2]), ")")), rot = 90),
+  scales = list(arrows = FALSE, col = "black"),
+  shade.colors.palette = custom_palette,
+  # 减少三维图形的边空
+  lattice.options = list(
+    layout.widths = list(
+      left.padding = list(x = -.6, units = "inches"),
+      right.padding = list(x = -1.0, units = "inches")
+    ),
+    layout.heights = list(
+      bottom.padding = list(x = -.8, units = "inches"),
+      top.padding = list(x = -1.0, units = "inches")
+    )
+  ),
+  par.settings = list(axis.line = list(col = "transparent")),
+  screen = list(z = 120, x = -65, y = 0)
+)
+```
+
+将区域 $[0, 12] \times [0, 12]$ 的图像绘制出来，不难发现，有不少局部陷阱。
+
+```{r}
+#| label: fig-zoom-super-function
+#| fig-cap: 局部放大的函数图像
+#| fig-width: 5.5
+#| fig-height: 5
+#| fig-showtext: true
+#| code-fold: true
+
+df <- expand.grid(
+  x = seq(0, 12, length.out = 201),
+  y = seq(0, 12, length.out = 201)
+)
+
+df$fnxy <- apply(df, 1, fn)
+
+wireframe(
+  data = df, fnxy ~ x * y,
+  shade = TRUE, drape = FALSE,
+  xlab = expression(x[1]),
+  ylab = expression(x[2]),
+  zlab = list(expression(italic(f) ~ group("(", list(x[1], x[2]), ")")), rot = 90),
+  scales = list(arrows = FALSE, col = "black"),
+  shade.colors.palette = custom_palette,
+  # 减少三维图形的边空
+  lattice.options = list(
+    layout.widths = list(
+      left.padding = list(x = -.6, units = "inches"),
+      right.padding = list(x = -1.0, units = "inches")
+    ),
+    layout.heights = list(
+      bottom.padding = list(x = -.8, units = "inches"),
+      top.padding = list(x = -1.0, units = "inches")
+    )
+  ),
+  par.settings = list(axis.line = list(col = "transparent")),
+  screen = list(z = 120, x = -65, y = 0)
+)
+```
+
+最优解在 $(7.999982, 7.999982)$ 取得，目标函数值为 -7.978832。
+
+```{r}
+fn(x = c(7.999982, 7.999982))
+```
+
+面对如此复杂的函数，调用全局优化器
+
+```{r}
+op <- OP(
+  objective = F_objective(fn, n = 2L),
+  bounds = V_bound(ld = -50, ud = 50, nobj = 2L)
+)
+nlp <- ROI_solve(op, solver = "nloptr.directL")
+nlp$solution
+nlp$objval
+```
+
+实际上，还是陷入局部最优解。
+
+```         
+SETS:
+P/1..5/;
+Endsets
+Min=@cos(x1) * @cos(x2) - @Sum(P(j): (-1)^j * j * 2 * @exp(-500 * ((x1 - j * 2)^2 + (x2 - j * 2)^2)));
+@Bnd(-50, x1, 50);
+@Bnd(-50, x2, 50);
+```
+
+Lingo 18.0 启用全局优化求解器后，在 $(x_1 = 7.999982, x_2 = 7.999982)$ 取得最小值 -7.978832。而默认未启用全局优化求解器的情况下，在 $(x_1 = 18.84956, x_2 = -40.84070)$ 取得局部极小值 -1.000000。
+
+### 箱式约束优化
+
+有如下箱式约束优化问题，示例来自函数 nlminb 的帮助文档，目标函数和[香蕉函数](https://en.wikipedia.org/wiki/Rosenbrock_function)有些相似。
+
+$$
+\begin{array}{l}
+  \min_x \quad  (x_1 - 1)^2 + 4\sum_{i =1}^{n -1}(x_{i+1} -x_i^2)^2  \\
+  \text{s.t.} \quad 2 \leq x_1,x_2,\cdots,x_n \leq 4
+\end{array}
+$$
+
+```{r}
+fn <- function(x) {
+  n <- length(x)
+  sum(c(1, rep(4, n - 1)) * (x - c(1, x[-n])^2)^2)
+}
+```
+
+$n$ 维目标函数是非线性的，给定初值 $(3, 3, \cdots, 3)$，下面求解 25 维的箱式约束，
+
+```{r}
+nlminb(start = rep(3, 25), objective = fn, lower = rep(2, 25), upper = rep(4, 25))
+```
+
+`nlminb()` 出于历史兼容性的原因尚且存在，最优解的第24个分量没有在可行域的边界上。使用 `constrOptim()` 函数求解，默认求极小，需将箱式或线性不等式约束写成矩阵形式，即 $Ax \geq b$ 的形式，参数 ui 是 $k \times n$ 的约束矩阵 $A$，ci 是右侧 $k$ 维约束向量 $b$。以上面的优化问题为例，将箱式约束 $2 \leq x_1,x_2 \leq 4$ 转化为矩阵形式，约束矩阵和向量分别为：
+
+$$
+A = \begin{bmatrix}
+1  & 0  \\
+0  & 1 \\
+-1 & 0 \\
+0  & -1
+\end{bmatrix}, \quad
+b = (2, 2, -4, -4)
+$$
+
+```{r}
+constrOptim(
+  theta = rep(3, 25), # 初始值
+  f = fn, # 目标函数
+  method = "Nelder-Mead", # 没有提供梯度，则必须用 Nelder-Mead 方法
+  ui = rbind(diag(rep(1, 25)), diag(rep(-1, 25))),
+  ci = c(rep(2, 25), rep(-4, 25))
+)
+```
+
+从求解的结果来看，convergence = 1 意味着迭代次数到达默认的极限 maxit = 500，结合 `nlminb()` 函数的求解结果来看，实际上还没有收敛。如果没有提供梯度，则必须用 Nelder-Mead 方法，下面增加迭代次数到 1000。
+
+```{r}
+constrOptim(
+  theta = rep(3, 25), # 初始值
+  f = fn, # 目标函数
+  method = "Nelder-Mead", 
+  control = list(maxit = 1000),
+  ui = rbind(diag(rep(1, 25)), diag(rep(-1, 25))),
+  ci = c(rep(2, 25), rep(-4, 25))
+)
+```
+
+还是没有收敛，可见 Nelder-Mead 方法在这个优化问题上收敛速度比较慢。下面考虑调用基于梯度的优化算法 --- BFGS 方法。
+
+```{r}
+# 输入 n 维向量，输出 n 维向量
+gr <- function(x) {
+  n <- length(x)
+  c(2 * (x[1] - 2), rep(0, n - 1))
+  +8 * c(0, x[-1] - x[-n]^2)
+  -16 * c(x[-n], 0) * c(x[-1] - x[-n]^2, 0)
+}
+
+constrOptim(
+  theta = rep(3, 25), # 初始值
+  f = fn, # 目标函数
+  grad = gr,
+  method = "BFGS", 
+  control = list(maxit = 1000),
+  ui = rbind(diag(rep(1, 25)), diag(rep(-1, 25))),
+  ci = c(rep(2, 25), rep(-4, 25))
+)
+```
+
+相比于 Nelder-Mead 方法，目标值 373 更大，可见已陷入局部最优解，下面通过 ROI 包，分别调用求解器 L-BFGS 和 directL，发现前者同样陷入局部最优解，而后者可以获得与 `nlminb()` 函数一致的结果。
+
+```{r}
+# 调用改进的 BFGS 算法
+op <- OP(
+  objective = F_objective(fn, n = 25L, G = gr),
+  bounds = V_bound(ld = 2, ud = 4, nobj = 25L)
+)
+nlp <- ROI_solve(op, solver = "nloptr.lbfgs", start = rep(3, 25))
+nlp$objval
+nlp$solution
+```
+
+```{r}
+# 调全局优化算法
+nlp <- ROI_solve(op, solver = "nloptr.directL")
+nlp$objval
+nlp$solution
+```
+
+下面再与函数 `optim()` 提供的 L-BFGS-B 算法比较
+
+```{r}
+optim(
+  par = rep(3, 25), fn = fn, gr = NULL, method = "L-BFGS-B",
+  lower = rep(2, 25), upper = rep(4, 25)
+)
+```
+
+值得注意的是，当提供梯度信息的时候，虽然求解速度提升了，但是最优解变差了。
+
+```{r}
+optim(
+  par = rep(3, 25), fn = fn, gr = gr, method = "L-BFGS-B",
+  lower = rep(2, 25), upper = rep(4, 25)
+)
+```
+
+### 线性约束优化
+
+### 非线性约束优化
+
+**nloptr** 包的非线性优化能力覆盖 Octave 和 Ipopt 。
+
+#### 示例 1
+
+-   非线性等式约束
+
+示例来自 Octave 的[非线性优化帮助文档](https://octave.org/doc/v8.2.0/Nonlinear-Programming.html)，该优化问题包含多个非线性等式约束。
+
+$$
+\begin{array}{l}
+\min_x \quad \mathrm{e}^{\prod_{i=1}^{5} x_i} - \frac{1}{2}(x_1^3 + x_2^3 + 1)^2 \\
+\text{s.t.} \left\{ 
+  \begin{array}{l}
+   \sum_{i=1}^{5}x_i^2 - 10 = 0 \\
+   x_2 x_3 - 5x_4 x_5 = 0 \\
+   x_1^3 + x_2^3 + 1 = 0
+  \end{array} \right.
+\end{array}
+$$
+
+```{r}
+# 一个 5 维的目标函数
+fn <- function(x) {
+  exp(prod(x)) - 0.5 * (x[1]^3 + x[2]^3 + 1)^2
+}
+# 目标函数的梯度
+gr <- function(x) {
+  c(
+    exp(prod(x))*prod(x[-1]) - 3*(x[1]^3 + x[2]^3 + 1)*x[1]^2,
+    exp(prod(x))*prod(x[-2]) - 3*(x[1]^3 + x[2]^3 + 1)*x[2]^2,
+    exp(prod(x))*prod(x[-3]), 
+    exp(prod(x))*prod(x[-4]),
+    exp(prod(x))*prod(x[-5])
+  )
+}
+# 等式约束
+heq <- function(x) {
+  c(
+    sum(x^2) - 10,
+    x[2] * x[3] - 5 * x[4] * x[5],
+    x[1]^3 + x[2]^3 + 1
+  )
+}
+# 等式约束的雅可比
+heq.jac <- function(x) {
+  matrix(c(2 * x[1], 2 * x[2], 2 * x[3], 2 * x[4], 2 * x[5],
+    0, x[3], x[2], -5 * x[5], -5 * x[4],
+    3 * x[1]^2, 3 * x[2]^2, 0, 0, 0),
+    ncol = 5, byrow = TRUE
+  )
+}
+```
+
+```{r}
+# 定义目标规划
+op <- OP(
+  objective = F_objective(F = fn, n = 5L, G = gr), # 5 个目标变量
+  constraints = F_constraint(
+    F = list(heq = heq),
+    dir = "==",
+    rhs = 0,
+    # 等式的雅可比
+    J = list(heq.jac = heq.jac)
+  ),
+  bounds = V_bound(ld = -Inf, ud = Inf, nobj = 5L),
+  maximum = FALSE # 求最小
+)
+```
+
+调用 SQP（序列二次规划） 求解器
+
+```{r}
+nlp <- ROI_solve(op, solver = "nloptr.slsqp", start = c(-1.8, 1.7, 1.9, -0.8,-0.8))
+nlp$solution
+nlp$objval
+```
+
+计算结果和 Octave 的示例一致。
+
+#### 示例 2
+
+-   非线性等式约束
+-   非线性不等式约束，不等式约束包含等号
+-   箱式约束
+
+此优化问题来源于 Ipopt 官网的[帮助文档](https://coin-or.github.io/Ipopt/INTERFACES.html)，约束条件比较复杂。提供的初始值为 $x_0 = (1,5,5,1)$，最优解为 $x_{\star} = (1.00000000,4.74299963,3.82114998,1.37940829)$。优化问题的具体内容如下：
+
+$$
+\begin{array}{l}
+  \min_x \quad x_1 x_4 (x_1 + x_2 + x_3) + x_3 \\
+    \text{s.t.} \left\{ 
+    \begin{array}{l}
+     x_1^2 + x_2^2 + x_3^2 + x_4^2 = 40 \\
+     x_1 x_2 x_3 x_4 \geq 25 \\
+     1 \leq x_1, x_2, x_3, x_4 \leq 5
+    \end{array} \right.
+\end{array}
+$$
+
+考虑用 **ROI** 调 **nloptr** 实现，看结果是否和例子一致，**nloptr** 支持箱式约束且支持不等式约束包含等号。
+
+```{r}
+# 一个 4 维的目标函数
+fn <- function(x) {
+  x[1] * x[4] * (x[1] + x[2] + x[3]) + x[3]
+}
+# 目标函数的梯度
+gr <- function(x) {
+  c(
+    x[4] * (2 * x[1] + x[2] + x[3]), x[1] * x[4],
+    x[1] * x[4] + 1, x[1] * (x[1] + x[2] + x[3])
+  )
+}
+# 等式约束
+heq <- function(x) {
+  sum(x^2)
+}
+# 等式约束的雅可比
+heq.jac <- function(x) {
+  2 * c(x[1], x[2], x[3], x[4])
+}
+# 不等式约束
+hin <- function(x) {
+  prod(x)
+}
+# 不等式约束的雅可比
+hin.jac <- function(x) {
+  c(prod(x[-1]), prod(x[-2]), prod(x[-3]), prod(x[-4]))
+}
+# 定义目标规划
+op <- OP(
+  objective = F_objective(F = fn, n = 4L, G = gr), # 4 个目标变量
+  constraints = F_constraint(
+    F = list(heq = heq, hin = hin),
+    dir = c("==", ">="),
+    rhs = c(40, 25),
+    # 等式和不等式约束的雅可比
+    J = list(heq.jac = heq.jac, hin.jac = hin.jac)
+  ),
+  bounds = V_bound(ld = 1, ud = 5, nobj = 4L),
+  maximum = FALSE # 求最小
+)
+```
+
+```{r}
+# 目标函数初始值
+fn(c(1, 5, 5, 1))
+# 目标函数最优值
+fn(c(1.00000000, 4.74299963, 3.82114998, 1.37940829))
+```
+
+求解一般的非线性约束问题。
+
+-   求解器 `nloptr.mma` / `nloptr.cobyla` 仅支持非线性不等式约束，不支持等式约束。
+-   函数 `nlminb()` 只支持等式约束。
+
+因此，下面分别调用 `nloptr.auglag`、`nloptr.slsqp` 和 `nloptr.isres` 来求解上述优化问题。
+
+```{r}
+nlp <- ROI_solve(op, solver = "nloptr.auglag", start = c(1, 5, 5, 1))
+nlp$solution
+nlp$objval
+```
+
+```{r}
+nlp <- ROI_solve(op, solver = "nloptr.slsqp", start = c(1, 5, 5, 1))
+nlp$solution
+nlp$objval
+```
+
+```{r}
+nlp <- ROI_solve(op, solver = "nloptr.isres", start = c(1, 5, 5, 1))
+nlp$solution
+nlp$objval
+```
+
+可以看出，**nloptr** 提供的优化能力可以覆盖 [Ipopt 求解器](https://github.com/coin-or/Ipopt)，推荐使用 `nloptr.slsqp` 求解器。
