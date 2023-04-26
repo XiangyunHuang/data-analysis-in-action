@@ -858,10 +858,16 @@ rongelap_grid_df$time <- 1
 将数据输入 **spaMM** 包拟合的模型对象 `fit_rongelap_spamm`，并将模型返回的结果整理成数据框，再与采样点数据合并。`predict()` 是一个泛型函数，**spaMM** 包为模型对象提供了相应的预测方法。
 
 ```{r}
+# 预测值
 rongelap_grid_pred <- predict(fit_rongelap_spamm,
   newdata = rongelap_grid_df, type = "response"
 )
 rongelap_grid_df$pred_sp <- as.vector(rongelap_grid_pred)
+# 预测方差
+rongelap_grid_var <- get_predVar(fit_rongelap_spamm,
+  newdata = rongelap_grid_df, variances = list(predVar = TRUE)
+)
+rongelap_grid_df$var_sp <- as.vector(rongelap_grid_var)
 ```
 
 ### 克里金插值 {#sec-kriging-interpolation}
@@ -994,29 +1000,42 @@ k
 \end{bmatrix}.
 $$
 
-所以，$\bm{w}^{\top} = \bm{u}^{\top}V^{-1}$ ，在位置 $x_0$ 处的预测 $\hat{\lambda}(x_0) = \beta + \bm{u}^{\top}V^{-1}(\bm{\lambda} - \beta \bm{1})$ ，预测的均方误差 $\mathsf{E}\{[\hat{\lambda}(x_0) - \lambda(x_0)]^2\} = \mathsf{Var}\{\hat{\lambda}(x_0) - \lambda(x_0)\} = \sigma_0^2 - \bm{u}^{\top}V^{-1}\bm{u}$ 。根据样本可以估计半变差函数 @eq-semi-variogram 的参数，从而 $V$ 、 $\sigma_{0}^2$ 和 $\bm{u}$ 都是已知的。
+所以，$\bm{w}^{\top} = \bm{u}^{\top}V^{-1}$ ，在位置 $x_0$ 处的预测 $\hat{\lambda}(x_0) = \bm{u}^{\top}V^{-1}\bm{\lambda}$ ，预测的均方误差 $\mathsf{E}\{[\hat{\lambda}(x_0) - \lambda(x_0)]^2\} = \mathsf{Var}\{\hat{\lambda}(x_0) - \lambda(x_0)\} = \sigma_0^2 - \bm{u}^{\top}V^{-1}\bm{u}$ 。根据样本可以估计半变差函数 @eq-semi-variogram 的参数，从而 $V$ 、 $\sigma_{0}^2$ 和 $\bm{u}$ 都是已知的。
 
-在空间线性混合效应模型一节，截距 $\beta$ ，方差 $\sigma^2$ ，块金效应 $\tau^2$ 和范围参数 $\phi$ 都估计出来了。在此基础上，采用简单克里金方法预测，作为后续的对比。
+在空间线性混合效应模型一节，截距 $\beta$ ，方差 $\sigma^2$ ，块金效应 $\tau^2$ 和范围参数 $\phi$ 都估计出来了。在此基础上，采用简单克里金方法预测，以 $V + \tau^2\mathsf{I}$ 替换 $V$ ，$\bm{\lambda} - \beta \bm{1}$ 替换 $\bm{\lambda}$ ，可得
+
+$$
+\begin{aligned}
+\hat{\lambda}(x_0) &= \beta + \bm{u}^{\top}(V + \tau^2\mathsf{I})^{-1}(\bm{\lambda} - \beta \bm{1}) \\
+\mathsf{Var}\{\hat{\lambda}(x_0) - \lambda(x_0)\} &= \sigma^2 - \bm{u}^{\top}(V + \tau^2\mathsf{I})^{-1}\bm{u}.
+\end{aligned}
+$$
 
 ```{r}
 # 截距
 beta <- 1.812914
 # 范围参数
 phi <- 169.7472088
+# 方差
+sigma_sq <- 0.2934473
+# 块金效应
+tau_sq <- 0.035991
 # 自相关函数
-cov_fun <- function(h) 0.2934473 * exp(-h / phi)
+cov_fun <- function(h) sigma_sq * exp(-h / phi)
 # 距离矩阵
-m_obs <- cov_fun(st_distance(x = rongelap_sf)) + diag(0.035991, 157)
+m_obs <- cov_fun(st_distance(x = rongelap_sf)) + diag(tau_sq, 157)
 m_pred <- cov_fun(st_distance(x = rongelap_sf, y = rongelap_grid_centroid))
 # 简单克里金插值
-sk <- beta + t(m_pred) %*% solve(m_obs, log(rongelap_sf$counts / rongelap_sf$time) - beta)
+mean_sk <- beta + t(m_pred) %*% solve(m_obs, log(rongelap_sf$counts / rongelap_sf$time) - beta)
 # 辐射强度预测值
-rongelap_grid_df$pred_sk <- exp(sk)
+rongelap_grid_df$pred_sk <- exp(mean_sk)
+# 辐射强度预测方差
+rongelap_grid_df$var_sk <- sigma_sq - diag(t(m_pred) %*% solve(m_obs, m_pred)) 
 ```
 
 ### 展示结果 {#sec-rongelap-plot}
 
-将预测结果以散点图的形式呈现到图上，见下 @fig-rongelap-pred ，由于散点非常多，紧挨在一起就连成片了。上子图是 **nlme** 包预测的结果，下子图是 **spaMM** 包预测的结果，前者图像看起来会稍微平滑一些。从空间线性混合效应模型到空间广义线性混合效应模型的效果提升不多，在曲折处，图像的平滑差异才会比较明显。
+将预测结果以散点图的形式呈现到图上，见下 @fig-rongelap-pred ，由于散点非常多，紧挨在一起就连成片了。上子图是 **nlme** 包预测的结果，下子图是 **spaMM** 包预测的结果，前者图像看起来会稍微平滑一些。
 
 ```{r}
 #| label: fig-rongelap-pred
@@ -1028,8 +1047,9 @@ rongelap_grid_df$pred_sk <- exp(sk)
 
 # 数据框变形
 rongelap_grid_df2 <- reshape(
-  data = rongelap_grid_df, varying = c("pred_sp", "pred_sk"), 
-  times = c("spaMM", "nlme"), v.names = "pred", 
+  data = rongelap_grid_df, 
+  varying = c("pred_sp", "var_sp", "pred_sk",  "var_sk"), 
+  times = c("spaMM", "nlme"), v.names = c("pred", "var"), 
   timevar = "method", idvar = c("cX", "cY"),
   new.row.names = 1:(2 * 1612), direction = "long"
 )
@@ -1042,6 +1062,25 @@ ggplot(data = rongelap_grid_sf2) +
   facet_wrap(~method, ncol = 1) +
   theme_bw() +
   labs(x = "横坐标（米）", y = "纵坐标（米）", color = "预测值")
+```
+
+从空间线性混合效应模型到空间广义线性混合效应模型的效果提升不多，差异不太明显。下 @fig-rongelap-var 展示核辐射强度预测方差的分布。
+
+```{r}
+#| label: fig-rongelap-var
+#| fig-cap: 核辐射强度预测方差的分布"
+#| fig-width: 6
+#| fig-height: 6
+#| fig-showtext: true
+#| code-fold: true
+
+# 分面展示两种预测方法
+ggplot(data = rongelap_grid_sf2) +
+  geom_sf(aes(color = var), size = 0.5) +
+  scale_color_viridis_c(option = "C") +
+  facet_wrap(~method, ncol = 1) +
+  theme_bw() +
+  labs(x = "横坐标（米）", y = "纵坐标（米）", color = "预测方差")
 ```
 
 考虑到核辐射在全岛的分布应当是连续性的，空间连续性也是这类模型的假设，接下来绘制热力图，先用 **stars** 包[@stars2022]将预测数据按原网格化的精度转化成栅格对象，裁减超出朗格拉普岛海岸线以外的内容。
