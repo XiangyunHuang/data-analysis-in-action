@@ -590,7 +590,7 @@ $$
 
 $$
 T(x_i) = \beta + S(x_{i}) + Z_{i} 
-$$ 令 $\gamma(u_{ij}) = \frac{1}{2}\mathsf{Var}\{T(x_i) - T(x_j)\}$ 表示半变差函数，这里 $u_{ij}$ 表示采样点 $x_i$ 与 $x_j$ 之间的距离。考虑到
+$$ 令 $\gamma(u_{ij}) = \frac{1}{2}\mathsf{Var}\{T(x_i) - T(x_j)\}$ 表示半变差函数（Semi Variogram），这里 $u_{ij}$ 表示采样点 $x_i$ 与 $x_j$ 之间的距离。考虑到
 
 $$
 \gamma(u_{ij}) = \frac{1}{2}\mathsf{E}\big\{\big[T(x_i) - T(x_j)\big]^2\big\} = \tau^2 + \sigma^2\big(1-\rho(u_{ij})\big)
@@ -602,10 +602,10 @@ $$
 \hat{\gamma}(h_i) = \frac{1}{2N(h_i)}\sum_{j=1}^{N(h_i)}(T(x_i)-T(x_i+h'))^2, \ \ h_{i,0} \le h' < h_{i,1}
 $$
 
-其中，$[h_{i,0},h_{i,1}]$ 表示第 $i$ 个距离区间，$N(h_i)$ 表示第 $i$ 个距离区间内所有样本点对的数目，只要两个点之间的距离在这个区间内，就算是一对。`rongelap` 数据集包含 157 个采样点，两两配对，共有 $(157 - 1) \times (157 - 2) / 2 = 12090$ 对。下面拟合模型残差的经验半变差函数：
+其中，$[h_{i,0},h_{i,1}]$ 表示第 $i$ 个距离区间，$N(h_i)$ 表示第 $i$ 个距离区间内所有样本点对的数目，只要两个点之间的距离在这个区间内，就算是一对。`rongelap` 数据集包含 157 个采样点，两两配对，共有 $(157 - 1) \times (157 - 2) / 2 = 12090$ 对。**nlme** 包的函数 `Variogram()` 拟合模型残差的经验半变差函数：
 
 ```{r}
-fit_rongelap_vario <- nlme::Variogram(fit_rongelap_gls,
+fit_rongelap_vario <- Variogram(fit_rongelap_gls,
   form = ~ cX + cY, data = rongelap, resType = "response"
 )
 fit_rongelap_vario
@@ -863,7 +863,7 @@ rongelap_grid_pred <- predict(fit_rongelap_spamm,
   newdata = rongelap_grid_df, type = "response"
 )
 rongelap_grid_df$pred_sp <- as.vector(rongelap_grid_pred)
-# 预测方差
+# 线性预测的方差
 rongelap_grid_var <- get_predVar(fit_rongelap_spamm,
   newdata = rongelap_grid_df, variances = list(predVar = TRUE), which = "predVar"
 )
@@ -872,7 +872,7 @@ rongelap_grid_df$var_sp <- as.vector(rongelap_grid_var)
 
 ### 克里金插值 {#sec-kriging-interpolation}
 
-在空间分析中，克里金插值是非常基础且重要的内容，具有非常好的统计性质，是最佳线性无偏估计（Best Linear Unbiased Estimator）， @fig-kriging 是克里金插值的示意图，下面介绍插值的原理。
+在空间分析中，克里金插值是非常基础且重要的内容，具有很好的统计性质，是最佳线性无偏估计（Best Linear Unbiased Estimator）， @fig-kriging 是克里金插值的示意图，下面介绍插值的原理。
 
 ```{r}
 #| echo: false
@@ -929,7 +929,7 @@ $$
 \hat{\lambda}(x_0) = \sum_{i=1}^{N}w_i\lambda(x_i)
 $$
 
-其中 $w_i$ 是待定的权重系数。$\hat{\lambda}(x_0)$ 是 $\lambda(x_0)$ 的无偏估计，要求预测方差最小，即求解如下最优化问题。
+其中 $w_i$ 是待定的权重系数。$\hat{\lambda}(x_0)$ 是 $\lambda(x_0)$ 的无偏估计，要使预测方差最小，需求解如下最优化问题。
 
 $$
 \begin{aligned}
@@ -944,13 +944,13 @@ $$
 \sum_{i=1}^{N}w_i = 1.
 $$
 
-令 $\bm{\lambda} = [\lambda(x_1),\lambda(x_1),\ldots,\lambda(x_N)]^{\top}$ ，$V$ 表示随机向量 $\bm{\lambda}$ 的协方差矩阵 $\mathsf{Var}(\bm{\lambda})$ ，其第 $i$ 行第 $j$ 列的元素为 $\mathsf{Cov}(\lambda(x_i),\lambda(x_j))$ ，其对角线上的元素为方差 $\mathsf{Var}\{\lambda(x_i)\}, i = 1,2,\ldots,N$ 。令 $\bm{w} = [w_1,w_2,\ldots,w_N]^{\top}$ ，则
+令 $\bm{\lambda} = [\lambda(x_1),\lambda(x_1),\ldots,\lambda(x_N)]^{\top}$ ，$V$ 表示随机向量 $\bm{\lambda}$ 的自协方差矩阵 $\mathsf{Var}(\bm{\lambda})$ ，其第 $i$ 行第 $j$ 列的元素为 $\mathsf{Cov}\{\lambda(x_i),\lambda(x_j)\}$ ，对角线上的元素为方差 $\mathsf{Var}\{\lambda(x_i)\}, i = 1,2,\ldots,N$ 。令 $\bm{w} = [w_1,w_2,\ldots,w_N]^{\top}$ ，则
 
 $$
 \hat{\lambda}(x_0) = \sum_{i=1}^{N}w_i\lambda(x_i) = \bm{w}^{\top}\bm{\lambda}.
 $$
 
-$\hat{\lambda}(x_0)$ 的方差 $\mathsf{Var}\{\hat{\lambda}(x_0)\}$ 根据随机向量二次型，有
+根据随机向量二次型，$\hat{\lambda}(x_0)$ 的方差 $\mathsf{Var}\{\hat{\lambda}(x_0)\}$ 有
 
 $$
 \mathsf{Var}\{\hat{\lambda}(x_0)\} = \bm{w}^{\top}\mathsf{Var}\{\bm{\lambda}\}\bm{w} = \bm{w}^{\top}V\bm{w}.
@@ -967,10 +967,10 @@ $$
 \end{aligned}
 $$
 
-其中，$\sigma_{0}^2 = \mathsf{Var}\{\lambda(x_0)\} = \sigma^2$ 是未知常数，$\bm{u} = \mathsf{Cov}\{\bm{\lambda},\lambda(x_0)\}$ 是未知的 $N \times 1$ 向量。采用拉格朗日乘数法将约束优化问题 @eq-kriging-optim 转为如下无约束优化问题。
+其中，$\sigma_{0}^2 = \mathsf{Var}\{\lambda(x_0)\} = \mathsf{Var}\{\lambda(x_i)\}= \sigma^2$ 是未知常数，$\bm{u} = \mathsf{Cov}\{\bm{\lambda},\lambda(x_0)\}$ 是未知的 $N \times 1$ 向量。采用拉格朗日乘数法将约束优化问题 @eq-kriging-optim 转为如下无约束优化问题。
 
 $$
-\min_{\bm{w}} \mathcal{L}(\bm{w},k) = \frac{1}{2}\bm{w}^{\top}V\bm{w} + \frac{1}{2}\sigma_{0}^2 - \bm{w}^{\top} \bm{u} + \kappa (\bm{w}^{\top} \bm{1} - 1)
+\min_{\bm{w},\kappa} \mathcal{L}(\bm{w},k) = \frac{1}{2}\bm{w}^{\top}V\bm{w} + \frac{1}{2}\sigma_{0}^2 - \bm{w}^{\top} \bm{u} + \kappa (\bm{w}^{\top} \bm{1} - 1)
 $$
 
 其中，$\kappa$ 表示拉格朗日乘子，$\bm{1}$ 表示 $N \times 1$ 维的全 1 向量。对 $\bm{w}$ 和 $\kappa$ 分别求偏导，并令其各自等于 0 ，则有
@@ -1020,10 +1020,11 @@ phi <- 169.7472088
 sigma_sq <- 0.2934473
 # 块金效应
 tau_sq <- 0.035991
-# 自相关函数
+# 自协方差函数
 cov_fun <- function(h) sigma_sq * exp(-h / phi)
-# 距离矩阵
+# 观测距离矩阵
 m_obs <- cov_fun(st_distance(x = rongelap_sf)) + diag(tau_sq, 157)
+# 预测距离矩阵
 m_pred <- cov_fun(st_distance(x = rongelap_sf, y = rongelap_grid_centroid))
 # 简单克里金插值
 mean_sk <- beta + t(m_pred) %*% solve(m_obs, log(rongelap_sf$counts / rongelap_sf$time) - beta)
