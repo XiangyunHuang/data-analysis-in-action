@@ -16,7 +16,23 @@ $$
 
 本章介绍四类典型的优化问题及 R 语言求解过程。除了 R 软件内置一些数值优化求解器，R 语言社区有大量的运筹优化方面的函数和 R 包。本文将重点介绍 **ROI** 包，它通过插件包对 20 多个 R 包提供统一的调用方式，相当于一个运筹优化方面的基础设施平台，极大地方便学习和使用。本文不能一一概括，仅详述其中两个，求解线性优化（linear optimization）与混合整数优化（mixed integer linear optimization）的 **Rglpk** 包，求解二次优化（quadratic optimization）和非线性优化（nonlinear optimization）的 **nloptr** 包，相信读者之后可以举一反三。
 
-**Rglpk** 包可以求解大规模线性优化，整数优化和混合整数优化，**ROI** 包通过插件包 **ROI.plugin.glpk** 与之连接调用。**nloptr** 包可以求解二次优化和非线性优化，**ROI** 包通过插件包 **ROI.plugin.nloptr** 与之连接调用。
+```{mermaid}
+%%| label: fig-roi-plugin
+%%| fig-width: 6.5
+%%| fig-cap: ROI 包、插件包和数值优化 R 包的关系
+
+flowchart TB
+  Rglpk --> ROI_Rglpk(ROI.plugin.glpk)
+  ROI_Rglpk --> ROI(ROI)
+  nloptr --> ROI_nloptr(ROI.plugin.nloptr)
+  ROI_nloptr --> ROI(ROI)
+  lpsolve --> ROI_lpsolve(ROI.plugin.lpsolve)
+  ROI_lpsolve --> ROI(ROI)
+  quadprog --> ROI_quadprog(ROI.plugin.quadprog)
+  ROI_quadprog --> ROI(ROI)
+```
+
+**Rglpk** 包可以求解大规模线性优化，整数优化和混合整数优化，**ROI** 包通过插件包 **ROI.plugin.glpk** 与之连接调用。**nloptr** 包可以求解二次优化和非线性优化，**ROI** 包通过插件包 **ROI.plugin.nloptr** 与之连接调用。**ROI** 包通过插件包来实际调用第三方做数值优化的 R 包。
 
 ```{r}
 #| message: false
@@ -58,15 +74,15 @@ $$
   -6  \\
   -5
   \end{bmatrix}
-  ^{T} x \\
-s.t.\left\{ 
+  ^{\top} \bm{x} \\
+\text{s.t.}\left\{ 
  \begin{array}{l}
   \begin{bmatrix}
   1 & 4  \\
   6 & 4  \\
   2 & -5 
   \end{bmatrix}
-  x \leq
+  \bm{x} \leq
   \begin{bmatrix}
    16 \\
    28 \\
@@ -135,7 +151,7 @@ $$
   7  \\
   -12
   \end{bmatrix}
-  ^{T} x \\
+  ^{\top} \bm{x} \\
 s.t.\left\{ 
  \begin{array}{l}
   \begin{bmatrix}
@@ -143,7 +159,7 @@ s.t.\left\{
   3 & 2 & -9\\
   1 & 3 & 1
   \end{bmatrix}
-  x \leq
+  \bm{x} \leq
   \begin{bmatrix}
    61 \\
    35 \\
