@@ -33,7 +33,7 @@ RUN dnf -y upgrade \
  && dnf clean all
    
 # System dependencies required for Quarto Book project
-RUN dnf -y install v8-devel \
+RUN dnf -y install nodejs-devel \
    python3-virtualenv \
    google-noto-cjk-fonts \
    google-noto-sans-fonts \
