@@ -120,7 +120,7 @@ ggplot(rongelap, aes(x = cX, y = cY)) +
 
 ## 数据探索 {#sec-rongelap-exploration}
 
-朗格拉普岛呈月牙形，有数千米长，但仅几百米宽，十分狭长。采样点在岛上的分布如 @fig-rongelap-location 所示，主网格以约 200 米的间隔采样，在岛屿的东北和西南方各有两个密集采样区，每个网格采样区是 $5 \times 5$ 方式排列的，上下左右间隔均为 40 米。朗格拉普岛上各个检测站点的核辐射强度如 @fig-rongelap-location-zoom 所示，颜色越亮表示辐射越强，四个检测区的采样阵列非常密集，通过局部放大展示了最左侧的一个检测区，它将作为后续模型比较的参照区域。
+朗格拉普岛呈月牙形，有数千米长，但仅几百米宽，十分狭长。采样点在岛上的分布如 @fig-rongelap-location 所示，主网格以约 200 米的间隔采样，在岛屿的东北和西南方各有两个密集采样区，每个网格采样区是 $5 \times 5$ 方式排列的，上下左右间隔均为 40 米。朗格拉普岛上各个检测站点的核辐射强度如 @fig-rongelap-location-zoom 所示，越亮表示核辐射越强，四个检测区的采样阵列非常密集，通过局部放大展示了最左侧的一个检测区，它将作为后续模型比较的参照区域。
 
 ```{r}
 #| label: fig-rongelap-location-zoom
@@ -865,7 +865,7 @@ rongelap_grid_pred <- predict(fit_rongelap_spamm,
 rongelap_grid_df$pred_sp <- as.vector(rongelap_grid_pred)
 # 预测方差
 rongelap_grid_var <- get_predVar(fit_rongelap_spamm,
-  newdata = rongelap_grid_df, variances = list(predVar = TRUE)
+  newdata = rongelap_grid_df, variances = list(predVar = TRUE), which = "predVar"
 )
 rongelap_grid_df$var_sp <- as.vector(rongelap_grid_var)
 ```
@@ -960,7 +960,7 @@ $$
 
 $$
 \begin{aligned}
-\mathsf{Var}\{\hat{\lambda}(x_0) - \lambda(x_0)\} &= \mathsf{Var}\{\hat{\lambda}(x_0) \} + \mathsf{Var}\{\lambda(x_0)\} - 2 \mathsf{Cov}(\hat{\lambda}(x_0), \lambda(x_0)) \\
+\mathsf{Var}\{\hat{\lambda}(x_0) - \lambda(x_0)\} &= \mathsf{Var}\{\hat{\lambda}(x_0) \} + \mathsf{Var}\{\lambda(x_0)\} - 2 \mathsf{Cov}\{\hat{\lambda}(x_0), \lambda(x_0)\} \\
 &= \bm{w}^{\top}V\bm{w} + \sigma_{0}^2 - 2\sum_{i=1}^{N}w_i \mathsf{Cov}\{\lambda(x_i),\lambda(x_0)\} \\
 & = \bm{w}^{\top}V\bm{w} + \sigma_{0}^2 - 2\bm{w}^{\top} \mathsf{Cov}\{\bm{\lambda},\lambda(x_0)\} \\
 & = \bm{w}^{\top}V\bm{w} + \sigma_{0}^2 - 2\bm{w}^{\top} \bm{u}.
@@ -1039,7 +1039,7 @@ rongelap_grid_df$var_sk <- sigma_sq - diag(t(m_pred) %*% solve(m_obs, m_pred))
 
 ```{r}
 #| label: fig-rongelap-pred
-#| fig-cap: "朗格拉普岛核辐射强度的分布"
+#| fig-cap: 朗格拉普岛核辐射强度的分布
 #| fig-width: 6
 #| fig-height: 6
 #| fig-showtext: true
@@ -1058,17 +1058,20 @@ rongelap_grid_sf2 <- st_as_sf(rongelap_grid_df2, coords = c("cX", "cY"), dim = "
 # 分面展示两种预测方法
 ggplot(data = rongelap_grid_sf2) +
   geom_sf(aes(color = pred), size = 0.5) +
-  scale_color_viridis_c(option = "C") +
+  scale_color_viridis_c(option = "C", breaks = 0:12,
+    guide = guide_colourbar(
+      barwidth = 1, barheight = 15
+    )) +
   facet_wrap(~method, ncol = 1) +
   theme_bw() +
   labs(x = "横坐标（米）", y = "纵坐标（米）", color = "预测值")
 ```
 
-从空间线性混合效应模型到空间广义线性混合效应模型的效果提升不多，差异不太明显。下 @fig-rongelap-var 展示核辐射强度预测方差的分布。
+从空间线性混合效应模型到空间广义线性混合效应模型的效果提升不多，差异不太明显。下 @fig-rongelap-var 展示核辐射强度预测方差的分布。越简单的模型，预测值的分布越平滑，越复杂的模型，捕捉到更多局部细节，因而，预测值的分布越曲折。
 
 ```{r}
 #| label: fig-rongelap-var
-#| fig-cap: 核辐射强度预测方差的分布"
+#| fig-cap: 核辐射强度预测方差的分布
 #| fig-width: 6
 #| fig-height: 6
 #| fig-showtext: true
@@ -1077,7 +1080,12 @@ ggplot(data = rongelap_grid_sf2) +
 # 分面展示两种预测方法
 ggplot(data = rongelap_grid_sf2) +
   geom_sf(aes(color = var), size = 0.5) +
-  scale_color_viridis_c(option = "C") +
+  scale_color_viridis_c(
+    option = "C", breaks = 0.1 * 0:16 / 4,
+    guide = guide_colourbar(
+      barwidth = 1, barheight = 15
+    )
+  ) +
   facet_wrap(~method, ncol = 1) +
   theme_bw() +
   labs(x = "横坐标（米）", y = "纵坐标（米）", color = "预测方差")
@@ -1112,7 +1120,6 @@ dash_sfp <- st_polygon(x = list(rbind(
   c(-5000, -3600),
   c(-6000, -3600)
 )), dim = "XY")
-
 # 主体内容
 p3 <- ggplot() +
   geom_stars(
@@ -1125,7 +1132,13 @@ p3 <- ggplot() +
     fill = NA, color = "gray30", linewidth = 0.5
   ) +
   # 图例
-  scale_fill_viridis_c(option = "C") +
+  scale_fill_viridis_c(
+    option = "C", breaks = 0:12,
+    guide = guide_colourbar(
+      barwidth = 15, barheight = 1.5,
+      title.position = "top" # 图例标题位于图例上方
+    )
+  ) +
   # 虚线框
   geom_sf(data = dash_sfp, fill = NA, linewidth = 0.75, lty = 2) +
   # 箭头
@@ -1136,8 +1149,11 @@ p3 <- ggplot() +
   ) +
   theme_bw() +
   labs(x = "横坐标（米）", y = "纵坐标（米）", fill = "辐射强度") +
-  theme(legend.position = c(0.95, 0.2), 
-        legend.background = element_blank())
+  theme(
+    legend.position = c(0.8, 0.1),
+    legend.direction = "horizontal",
+    legend.background = element_blank()
+  )
 
 p4 <- ggplot() +
   geom_stars(
@@ -1148,7 +1164,7 @@ p4 <- ggplot() +
     data = rongelap_coastline_sfp,
     fill = NA, color = "gray30", linewidth = 0.75
   ) +
-  scale_fill_viridis_c(option = "C") +
+  scale_fill_viridis_c(option = "C", breaks = 0:12) +
   # 虚线框
   geom_sf(data = dash_sfp, fill = NA, linewidth = 0.75, lty = 2) +
   theme_void() +
@@ -1158,7 +1174,7 @@ p3
 print(p4, vp = grid::viewport(x = .3, y = .65, width = .45, height = .45))
 ```
 
-美国当年是在比基尼环礁做的氢弹核试验，试验地与朗格拉普岛相距 100 多英里。核辐射羽流受大气、海洋环流等影响，漂流到朗格拉普岛。又受朗格拉普岛周围水文、地理环境影响，核辐射强度在全岛的分布是不均匀的，颜色越亮的地方表示受到的核辐射越严重。
+美国当年是在比基尼环礁做的氢弹核试验，试验地与朗格拉普岛相距 100 多英里。核辐射羽流受大气、海洋环流等影响，漂流到朗格拉普岛。又受朗格拉普岛周围水文、地理环境影响，核辐射强度在全岛的分布是不均匀的，图中越亮的地方表示受到的核辐射越严重。
 
 ## 拓展阅读 {#sec-further-reading-spatial}
 
