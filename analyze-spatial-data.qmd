@@ -227,8 +227,6 @@ cloud(counts / time ~ cX * cY,
 
 ### 广义线性模型 {#sec-rongelap-glm}
 
-#### 泊松分布
-
 核辐射是由放射元素衰变产生的，通常用单位时间释放出来的粒子数目表示辐射强度，因此，建立如下泊松型广义线性模型来拟合核辐射强度。
 
 $$
@@ -267,8 +265,6 @@ ggplot(rongelap, aes(x = cX, y = cY)) +
   theme_bw() +
   labs(x = "横坐标（米）", y = "纵坐标（米）", color = "残差")
 ```
-
-#### 伽马分布
 
 从另外一个角度来思考，通过观察辐射强度的直方图，发现其分布形式与正态分布相似。实际上，辐射强度为非负值，所以应与特定参数下的伽马分布相似。
 
@@ -334,9 +330,7 @@ fit_rongelap_gamma <- glm(counts / time ~ 1,
 summary(fit_rongelap_gamma)
 ```
 
-#### 负二项分布
-
-对于计数数据，除了泊松分布，还可以用负二项分布
+对于计数数据，除了泊松分布，还可以用负二项分布来拟合数据。
 
 ```{r}
 library(MASS)
@@ -347,9 +341,23 @@ fit_rongelap_negbin <- glm.nb(
 summary(fit_rongelap_negbin)
 ```
 
+泊松分布、伽马分布和负二项分布的对数似然函数值如下：
+
 ```{r}
-anova(fit_rongelap_poisson, fit_rongelap_negbin)
+logLik(fit_rongelap_poisson)
+logLik(fit_rongelap_gamma)
+logLik(fit_rongelap_negbin)
 ```
+
+三个广义线性模型的 AIC 统计量如下：
+
+```{r}
+AIC(fit_rongelap_poisson)
+AIC(fit_rongelap_gamma)
+AIC(fit_rongelap_negbin)
+```
+
+负二项广义线性模型拟合效果好于泊松广义线性，伽马广义线性模型响应变量与之不同，无法与之比较，将作为后续模型比较的基础模型。
 
 ### 广义线性混合效应模型
 
@@ -434,11 +442,20 @@ confint(fit_glmm_negbin2, parm = "(Intercept)")
 随机效应的方差 $\tau^2$ 的点估计如下：
 
 ```{r}
-# 随机效应的方差估计
 get_ranPars(fit_glmm_poisson)$lambda[[1]]
 get_ranPars(fit_glmm_gamma)$lambda[[1]]
 get_ranPars(fit_glmm_negbin2)$lambda[[1]]
 ```
+
+对数似然函数值的计算如下：
+
+```{r}
+logLik(fit_glmm_poisson)
+logLik(fit_glmm_gamma)
+logLik(fit_glmm_negbin2)
+```
+
+对伽马分布和负二项分布，从广义线性模型到广义线性混合效应模型 ，提升可以忽略不计。而对泊松分布，提升十分明显。无论是广义线性模型还是广义线性混合效应模型，负二项分布比泊松分布的效果都好。
 
 ### 空间线性混合效应模型 {#sec-rongelap-slmm}
 
@@ -524,7 +541,7 @@ $$
 \end{aligned}
 $$ {#eq-reparameterization}
 
-当 $u$ 趋于 0 时， $\rho(u; \phi, \tau_{rel}^2 ) = \tau_{rel}^2$ 。另外，$\phi$ 取值为正，$\tau_{rel}^2$ 取值介于 0-1 之间，在默认设置下，$\phi$ 的初始值为 $0.9 \times \min_{i,j \in A} u_{ij}$，即所有点之间距离的最小值的 90%， $\tau_{rel}^2$ 为 0.1 。
+当 $u$ 趋于 0 时， $\rho(u; \phi, \tau_{rel}^2 ) = \tau_{rel}^2$ 。另外，$\phi$ 取值为正，$\tau_{rel}^2$ 取值介于 0-1 之间，在默认设置下，$\phi$ 的初始值为 $0.1 \times \max_{i,j \in A} u_{ij}$，即所有点之间距离的最大值的 10%， $\tau_{rel}^2$ 为 0.1 ，这只是作为参考，用户可根据实际情况调整。
 
 下面以一个简单示例理解自相关函数 `corExp()` 的作用，令 $\phi = 1.2, \tau_{rel}^2 = 0.2$，则由距离矩阵和自相关函数构造的自相关矩阵如下：
 
@@ -554,7 +571,7 @@ diag(0.2, 4) + (1 - 0.2) * exp(-as.matrix(dist(spatDat))^2 / 1.2^2)
 
 #### nlme 包的拟合函数 `gls()` {#sec-gls-function}
 
-**nlme** 包的函数 `gls()` 实现限制极大似然估计方法，可以拟合存在异方差的一般线性模型，也是一种特殊的带自相关结构的线性混合效应模型，随机效应的结构可以看作异方差的结构。
+**nlme** 包的函数 `gls()` 实现限制极大似然估计方法，可以拟合存在异方差的一般线性模型。所谓一般线性模型，即在简单线性模型的基础上，残差不再是独立同分布的，而是存在相关性。函数 `gls()` 可以拟合具有空间自相关性的残差结构。这种一般线性模型又可以看作是一种特殊的带空间自相关结构的线性混合效应模型，空间随机效应的结构可以看作异方差的结构。
 
 ```{r}
 fit_rongelap_gls <- gls(
@@ -590,7 +607,9 @@ $$
 
 $$
 T(x_i) = \beta + S(x_{i}) + Z_{i} 
-$$ 令 $\gamma(u_{ij}) = \frac{1}{2}\mathsf{Var}\{T(x_i) - T(x_j)\}$ 表示半变差函数（Semi Variogram），这里 $u_{ij}$ 表示采样点 $x_i$ 与 $x_j$ 之间的距离。考虑到
+$$
+
+令 $\gamma(u_{ij}) = \frac{1}{2}\mathsf{Var}\{T(x_i) - T(x_j)\}$ 表示半变差函数（Semivariogram），这里 $u_{ij}$ 表示采样点 $x_i$ 与 $x_j$ 之间的距离。考虑到
 
 $$
 \gamma(u_{ij}) = \frac{1}{2}\mathsf{E}\big\{\big[T(x_i) - T(x_j)\big]^2\big\} = \tau^2 + \sigma^2\big(1-\rho(u_{ij})\big)
@@ -870,146 +889,7 @@ rongelap_grid_var <- get_predVar(fit_rongelap_spamm,
 rongelap_grid_df$var_sp <- as.vector(rongelap_grid_var)
 ```
 
-### 克里金插值 {#sec-kriging-interpolation}
-
-在空间分析中，克里金插值是非常基础且重要的内容，具有很好的统计性质，是最佳线性无偏估计（Best Linear Unbiased Estimator）， @fig-kriging 是克里金插值的示意图，下面介绍插值的原理。
-
-```{r}
-#| echo: false
-
-# 将 pdf 格式图片转为 png 格式
-to_png <- function(fig_path) {
-  png_path <- sub("\\.pdf$", ".png", fig_path)
-  magick::image_write(magick::image_read_pdf(fig_path),
-                      format = "png", path = png_path,
-                      density = 300, quality = 100
-  )
-  return(png_path)
-}
-```
-
-```{tikz}
-#| label: fig-kriging
-#| fig-cap: 克里金插值
-#| fig-process: !expr to_png
-#| code-fold: true
-#| echo: !expr knitr::is_html_output()
-#| out-width: 45%
-
-\begin{tikzpicture}[scale=1.5,transform shape]
-\draw [thick,black] plot [smooth cycle] coordinates {(0,0) (2,2) (4,1) (3.5,0) (3,-2)};
-
-\draw[fill=gray] (1,1) circle [radius=0.05];
-\node [below] at (1,1) (A) {\tiny $\lambda(x_1)$};
-\draw[fill=gray] (0.8,0) circle [radius=0.05];
-\node [below] at (0.8,0) (B) {\tiny $\lambda(x_2)$};
-\draw[fill=gray] (2.5,1.3) circle [radius=0.05];
-\node [below] at (2.5,1.3) (C){\tiny $\lambda(x_3)$};
-\draw[fill=gray] (3,0.75) circle [radius=0.05];
-\node [below] at (3,0.75) (D) {\tiny $\lambda(x_4)$};
-\draw[fill=gray] (2.7,-1) circle [radius=0.05];
-\node [below] at (2.7,-1) (E) {\tiny $\lambda(x_5)$};
-
-\draw[fill=magenta, red] (2,0) circle [radius=0.05];
-\node [below] at (2,0) (F) {\tiny $\hat{\lambda}(x_0)$};
-
-\draw [thick,-stealth] (A) -- (F) node[midway,above,rotate=-30] {\tiny $w_1$};
-\draw [thick,-stealth] (B) -- (F) node[midway,above] {\tiny $w_2$};
-\draw [thick,-stealth] (C) -- (F) node[midway, above, rotate=75] {\tiny $w_3$};
-\draw [thick,-stealth] (D) -- (F) node[midway, below, rotate=45] {\tiny $w_4$};
-\draw [thick,-stealth] (E) -- (F) node[midway, above, rotate=-45] {\tiny $w_5$};
-
-\node [below] at (3.8,2) {$\mathcal{D}$};
-\end{tikzpicture}
-```
-
-已知研究区域 $\mathcal{D} \subset \mathbb{R}^2$ 中的采样点 $x_i \in \mathcal{D}$ 的辐射强度为 $\lambda(x_i)$ 。对于区域 $\mathcal{D}$ 中未采样的位置 $x_0$，它的辐射强度 $\lambda(x_0)$ 是多少？在满足无偏性的条件下，$\hat{\lambda}(x_0)$ 是使预测方差最小的估计。
-
-$$
-\hat{\lambda}(x_0) = \sum_{i=1}^{N}w_i\lambda(x_i)
-$$
-
-其中 $w_i$ 是待定的权重系数。$\hat{\lambda}(x_0)$ 是 $\lambda(x_0)$ 的无偏估计，要使预测方差最小，需求解如下最优化问题。
-
-$$
-\begin{aligned}
-\min_{\bm{w}} \quad & \frac{1}{2}\mathsf{Var}\{\hat{\lambda}(x_0) - \lambda(x_0)\} \\
-\text{s.t.} \quad & \mathsf{E}\{\hat{\lambda}(x_0) - \lambda(x_0) \} = 0
-\end{aligned}
-$$ {#eq-kriging-optim}
-
-在平稳性的假设下， $\mathsf{E}\{\lambda(x_i)\} = \mathsf{E}\{\lambda(x_0)\}$ 且 $\mathsf{Var}\{\lambda(x_i)\} = \sigma^2$ 。根据无偏性条件可推导出
-
-$$
-\sum_{i=1}^{N}w_i = 1.
-$$
-
-令 $\bm{\lambda} = [\lambda(x_1),\lambda(x_1),\ldots,\lambda(x_N)]^{\top}$ ，$V$ 表示随机向量 $\bm{\lambda}$ 的自协方差矩阵 $\mathsf{Var}(\bm{\lambda})$ ，其第 $i$ 行第 $j$ 列的元素为 $\mathsf{Cov}\{\lambda(x_i),\lambda(x_j)\}$ ，对角线上的元素为方差 $\mathsf{Var}\{\lambda(x_i)\}, i = 1,2,\ldots,N$ 。令 $\bm{w} = [w_1,w_2,\ldots,w_N]^{\top}$ ，则
-
-$$
-\hat{\lambda}(x_0) = \sum_{i=1}^{N}w_i\lambda(x_i) = \bm{w}^{\top}\bm{\lambda}.
-$$
-
-根据随机向量二次型，$\hat{\lambda}(x_0)$ 的方差 $\mathsf{Var}\{\hat{\lambda}(x_0)\}$ 有
-
-$$
-\mathsf{Var}\{\hat{\lambda}(x_0)\} = \bm{w}^{\top}\mathsf{Var}\{\bm{\lambda}\}\bm{w} = \bm{w}^{\top}V\bm{w}.
-$$
-
-因此，
-
-$$
-\begin{aligned}
-\mathsf{Var}\{\hat{\lambda}(x_0) - \lambda(x_0)\} &= \mathsf{Var}\{\hat{\lambda}(x_0) \} + \mathsf{Var}\{\lambda(x_0)\} - 2 \mathsf{Cov}\{\hat{\lambda}(x_0), \lambda(x_0)\} \\
-&= \bm{w}^{\top}V\bm{w} + \sigma_{0}^2 - 2\sum_{i=1}^{N}w_i \mathsf{Cov}\{\lambda(x_i),\lambda(x_0)\} \\
-& = \bm{w}^{\top}V\bm{w} + \sigma_{0}^2 - 2\bm{w}^{\top} \mathsf{Cov}\{\bm{\lambda},\lambda(x_0)\} \\
-& = \bm{w}^{\top}V\bm{w} + \sigma_{0}^2 - 2\bm{w}^{\top} \bm{u}.
-\end{aligned}
-$$
-
-其中，$\sigma_{0}^2 = \mathsf{Var}\{\lambda(x_0)\} = \mathsf{Var}\{\lambda(x_i)\}= \sigma^2$ 是未知常数，$\bm{u} = \mathsf{Cov}\{\bm{\lambda},\lambda(x_0)\}$ 是未知的 $N \times 1$ 向量。采用拉格朗日乘数法将约束优化问题 @eq-kriging-optim 转为如下无约束优化问题。
-
-$$
-\min_{\bm{w},\kappa} \mathcal{L}(\bm{w},k) = \frac{1}{2}\bm{w}^{\top}V\bm{w} + \frac{1}{2}\sigma_{0}^2 - \bm{w}^{\top} \bm{u} + \kappa (\bm{w}^{\top} \bm{1} - 1)
-$$
-
-其中，$\kappa$ 表示拉格朗日乘子，$\bm{1}$ 表示 $N \times 1$ 维的全 1 向量。对 $\bm{w}$ 和 $\kappa$ 分别求偏导，并令其各自等于 0 ，则有
-
-$$
-\begin{aligned}
-\frac{\partial \mathcal{L}(\bm{w},\kappa)}{\partial \bm{w}} &=  \bm{w}^{\top} V -  \bm{u}^{\top} + \kappa \bm{1}^{\top}= \bm{0} \\
-\frac{\partial \mathcal{L}(\bm{w},k)}{\partial \kappa} &= \bm{w}^{\top} \bm{1} - 1 = 0
-\end{aligned}
-$$
-
-联立上述方程可得方程组，一共 $N+1$ 个变量和方程。
-
-$$
-\begin{bmatrix}
-V & \bm{1} \\
-\bm{1}^{\top} & 0
-\end{bmatrix}
-\begin{bmatrix}
-\bm{w}  \\
-k
-\end{bmatrix}
-= 
-\begin{bmatrix}
-\bm{u}  \\
-1
-\end{bmatrix}.
-$$
-
-所以，$\bm{w}^{\top} = \bm{u}^{\top}V^{-1}$ ，在位置 $x_0$ 处的预测 $\hat{\lambda}(x_0) = \bm{u}^{\top}V^{-1}\bm{\lambda}$ ，预测的均方误差 $\mathsf{E}\{[\hat{\lambda}(x_0) - \lambda(x_0)]^2\} = \mathsf{Var}\{\hat{\lambda}(x_0) - \lambda(x_0)\} = \sigma_0^2 - \bm{u}^{\top}V^{-1}\bm{u}$ 。根据样本可以估计半变差函数 @eq-semi-variogram 的参数，从而 $V$ 、 $\sigma_{0}^2$ 和 $\bm{u}$ 都是已知的。
-
-在空间线性混合效应模型一节，截距 $\beta$ ，方差 $\sigma^2$ ，块金效应 $\tau^2$ 和范围参数 $\phi$ 都估计出来了。在此基础上，采用简单克里金方法预测，以 $V + \tau^2\mathsf{I}$ 替换 $V$ ，$\bm{\lambda} - \beta \bm{1}$ 替换 $\bm{\lambda}$ ，可得
-
-$$
-\begin{aligned}
-\hat{\lambda}(x_0) &= \beta + \bm{u}^{\top}(V + \tau^2\mathsf{I})^{-1}(\bm{\lambda} - \beta \bm{1}) \\
-\mathsf{Var}\{\hat{\lambda}(x_0) - \lambda(x_0)\} &= \sigma^2 - \bm{u}^{\top}(V + \tau^2\mathsf{I})^{-1}\bm{u}.
-\end{aligned}
-$$
+在空间线性混合效应模型一节，截距 $\beta$ ，方差 $\sigma^2$ ，块金效应 $\tau^2$ 和范围参数 $\phi$ 都估计出来了。在此基础上，采用普通克里金插值方法预测。
 
 ```{r}
 # 截距
@@ -1178,6 +1058,163 @@ print(p4, vp = grid::viewport(x = .3, y = .65, width = .45, height = .45))
 ```
 
 美国当年是在比基尼环礁做的氢弹核试验，试验地与朗格拉普岛相距 100 多英里。核辐射羽流受大气、海洋环流等影响，漂流到朗格拉普岛。又受朗格拉普岛周围水文、地理环境影响，核辐射强度在全岛的分布是不均匀的，图中越亮的地方表示受到的核辐射越严重。
+
+## 模型理论 {#sec-spatial-theory}
+
+### 广义最小二乘 {#sec-generalized-least-squares}
+
+**nlme** 包的函数 `gls()` 的名称 gls 是 Generalized Least Squares 广义最小二乘的意思。顾名思义，广义最小二乘是最小二乘的推广形式。当模型残差不满足独立和同分布的条件，存在相关性或异方差，就需要广义最小二乘。
+
+-   最小二乘
+
+-   广义最小二乘 （Generalized Least Squares ，简称 GLS）
+
+### 限制极大似然 {#sec-restricted-maximum-likelihood}
+
+**nlme** 包的函数 `gls()` 提供极大似然和限制极大似然两种方法估计模型参数。
+
+-   极大似然
+
+-   限制极大似然（Restricted Maximum Likelihood，简称 REML）
+
+### 克里金插值 {#sec-kriging-interpolation}
+
+在空间分析中，克里金插值（Kriging Interpolation）是非常基础且重要的内容，具有很好的统计性质，是最佳线性无偏预测（Best Linear Unbiased Predictor）， @fig-kriging 是简单克里金插值的示意图，下面介绍插值的原理。
+
+```{r}
+#| echo: false
+
+# 将 pdf 格式图片转为 png 格式
+to_png <- function(fig_path) {
+  png_path <- sub("\\.pdf$", ".png", fig_path)
+  magick::image_write(magick::image_read_pdf(fig_path),
+                      format = "png", path = png_path,
+                      density = 300, quality = 100
+  )
+  return(png_path)
+}
+```
+
+```{tikz}
+#| label: fig-kriging
+#| fig-cap: 简单克里金插值
+#| fig-process: !expr to_png
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
+#| out-width: 45%
+
+\begin{tikzpicture}[scale=1.5,transform shape]
+\draw [thick,black] plot [smooth cycle] coordinates {(0,0) (2,2) (4,1) (3.5,0) (3,-2)};
+
+\draw[fill=gray] (1,1) circle [radius=0.05];
+\node [below] at (1,1) (A) {\tiny $\lambda(x_1)$};
+\draw[fill=gray] (0.8,0) circle [radius=0.05];
+\node [below] at (0.8,0) (B) {\tiny $\lambda(x_2)$};
+\draw[fill=gray] (2.5,1.3) circle [radius=0.05];
+\node [below] at (2.5,1.3) (C){\tiny $\lambda(x_3)$};
+\draw[fill=gray] (3,0.75) circle [radius=0.05];
+\node [below] at (3,0.75) (D) {\tiny $\lambda(x_4)$};
+\draw[fill=gray] (2.7,-1) circle [radius=0.05];
+\node [below] at (2.7,-1) (E) {\tiny $\lambda(x_5)$};
+
+\draw[fill=magenta, red] (2,0) circle [radius=0.05];
+\node [below] at (2,0) (F) {\tiny $\hat{\lambda}(x_0)$};
+
+\draw [thick,-stealth] (A) -- (F) node[midway,above,rotate=-30] {\tiny $w_1$};
+\draw [thick,-stealth] (B) -- (F) node[midway,above] {\tiny $w_2$};
+\draw [thick,-stealth] (C) -- (F) node[midway, above, rotate=75] {\tiny $w_3$};
+\draw [thick,-stealth] (D) -- (F) node[midway, below, rotate=45] {\tiny $w_4$};
+\draw [thick,-stealth] (E) -- (F) node[midway, above, rotate=-45] {\tiny $w_5$};
+
+\node [below] at (3.8,2) {$\mathcal{D}$};
+\end{tikzpicture}
+```
+
+已知研究区域 $\mathcal{D} \subset \mathbb{R}^2$ 中的采样点 $x_i \in \mathcal{D}$ 的辐射强度为 $\lambda(x_i)$ 。对于区域 $\mathcal{D}$ 中未采样的位置 $x_0$，它的辐射强度 $\lambda(x_0)$ 是多少？在满足无偏性的条件下，$\hat{\lambda}(x_0)$ 是使预测方差最小的估计。
+
+$$
+\hat{\lambda}(x_0) = \sum_{i=1}^{N}w_i\lambda(x_i)
+$$
+
+其中 $w_i$ 是待定的权重系数。$\hat{\lambda}(x_0)$ 是 $\lambda(x_0)$ 的无偏估计，要使预测方差最小，需求解如下最优化问题。
+
+$$
+\begin{aligned}
+\min_{\bm{w}} \quad & \frac{1}{2}\mathsf{Var}\{\hat{\lambda}(x_0) - \lambda(x_0)\} \\
+\text{s.t.} \quad & \mathsf{E}\{\hat{\lambda}(x_0) - \lambda(x_0) \} = 0
+\end{aligned}
+$$
+
+在平稳性的假设下， $\mathsf{E}\{\lambda(x_i)\} = \mathsf{E}\{\lambda(x_0)\}$ 且 $\mathsf{Var}\{\lambda(x_i)\} = \sigma^2$ 。根据无偏性条件可推导出
+
+$$
+\sum_{i=1}^{N}w_i = 1.
+$$
+
+令 $\bm{\lambda} = [\lambda(x_1),\lambda(x_1),\ldots,\lambda(x_N)]^{\top}$ ，$V$ 表示随机向量 $\bm{\lambda}$ 的自协方差矩阵 $\mathsf{Var}(\bm{\lambda})$ ，其第 $i$ 行第 $j$ 列的元素为 $\mathsf{Cov}\{\lambda(x_i),\lambda(x_j)\}$ ，对角线上的元素为方差 $\mathsf{Var}\{\lambda(x_i)\}, i = 1,2,\ldots,N$ 。令 $\bm{w} = [w_1,w_2,\ldots,w_N]^{\top}$ ，则
+
+$$
+\hat{\lambda}(x_0) = \sum_{i=1}^{N}w_i\lambda(x_i) = \bm{w}^{\top}\bm{\lambda}.
+$$
+
+根据随机向量二次型，$\hat{\lambda}(x_0)$ 的方差 $\mathsf{Var}\{\hat{\lambda}(x_0)\}$ 有
+
+$$
+\mathsf{Var}\{\hat{\lambda}(x_0)\} = \bm{w}^{\top}\mathsf{Var}\{\bm{\lambda}\}\bm{w} = \bm{w}^{\top}V\bm{w}.
+$$
+
+因此，
+
+$$
+\begin{aligned}
+\mathsf{Var}\{\hat{\lambda}(x_0) - \lambda(x_0)\} &= \mathsf{Var}\{\hat{\lambda}(x_0) \} + \mathsf{Var}\{\lambda(x_0)\} - 2 \mathsf{Cov}\{\hat{\lambda}(x_0), \lambda(x_0)\} \\
+&= \bm{w}^{\top}V\bm{w} + \sigma_{0}^2 - 2\sum_{i=1}^{N}w_i \mathsf{Cov}\{\lambda(x_i),\lambda(x_0)\} \\
+& = \bm{w}^{\top}V\bm{w} + \sigma_{0}^2 - 2\bm{w}^{\top} \mathsf{Cov}\{\bm{\lambda},\lambda(x_0)\} \\
+& = \bm{w}^{\top}V\bm{w} + \sigma_{0}^2 - 2\bm{w}^{\top} \bm{u}.
+\end{aligned}
+$$
+
+其中，$\sigma_{0}^2 = \mathsf{Var}\{\lambda(x_0)\} = \mathsf{Var}\{\lambda(x_i)\}= \sigma^2$ 是未知常数，$\bm{u} = \mathsf{Cov}\{\bm{\lambda},\lambda(x_0)\}$ 是未知的 $N \times 1$ 向量。采用拉格朗日乘数法将约束优化问题 @eq-kriging-optim 转为如下无约束优化问题。
+
+$$
+\min_{\bm{w},\kappa} \mathcal{L}(\bm{w},k) = \frac{1}{2}\bm{w}^{\top}V\bm{w} + \frac{1}{2}\sigma_{0}^2 - \bm{w}^{\top} \bm{u} + \kappa (\bm{w}^{\top} \bm{1} - 1)
+$$
+
+其中，$\kappa$ 表示拉格朗日乘子，$\bm{1}$ 表示 $N \times 1$ 维的全 1 向量。对 $\bm{w}$ 和 $\kappa$ 分别求偏导，并令其各自等于 0 ，则有
+
+$$
+\begin{aligned}
+\frac{\partial \mathcal{L}(\bm{w},\kappa)}{\partial \bm{w}} &=  \bm{w}^{\top} V -  \bm{u}^{\top} + \kappa \bm{1}^{\top}= \bm{0} \\
+\frac{\partial \mathcal{L}(\bm{w},k)}{\partial \kappa} &= \bm{w}^{\top} \bm{1} - 1 = 0
+\end{aligned}
+$$
+
+联立上述方程可得方程组，一共 $N+1$ 个变量和方程。
+
+$$
+\begin{bmatrix}
+V & \bm{1} \\
+\bm{1}^{\top} & 0
+\end{bmatrix}
+\begin{bmatrix}
+\bm{w}  \\
+k
+\end{bmatrix}
+= 
+\begin{bmatrix}
+\bm{u}  \\
+1
+\end{bmatrix}.
+$$
+
+所以，$\bm{w}^{\top} = \bm{u}^{\top}V^{-1}$ ，在位置 $x_0$ 处的预测 $\hat{\lambda}(x_0) = \bm{u}^{\top}V^{-1}\bm{\lambda}$ ，预测的均方误差 $\mathsf{E}\{[\hat{\lambda}(x_0) - \lambda(x_0)]^2\} = \mathsf{Var}\{\hat{\lambda}(x_0) - \lambda(x_0)\} = \sigma_0^2 - \bm{u}^{\top}V^{-1}\bm{u}$ 。根据数据可以估计经验半变差函数 @eq-semi-variogram 的参数，从而 $V$ 、 $\sigma_{0}^2$ 和 $\bm{u}$ 都是已知的。以 $V + \tau^2\mathsf{I}$ 替换 $V$ ，$\bm{\lambda} - \beta \bm{1}$ 替换 $\bm{\lambda}$ ，可得普通克里金插值的预测值及其均方误差。
+
+$$
+\begin{aligned}
+\hat{\lambda}(x_0) &= \beta + \bm{u}^{\top}(V + \tau^2\mathsf{I})^{-1}(\bm{\lambda} - \beta \bm{1}) \\
+\mathsf{Var}\{\hat{\lambda}(x_0) - \lambda(x_0)\} &= \sigma^2 - \bm{u}^{\top}(V + \tau^2\mathsf{I})^{-1}\bm{u}.
+\end{aligned}
+$$
 
 ## 拓展阅读 {#sec-further-reading-spatial}
 
