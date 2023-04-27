@@ -1063,11 +1063,96 @@ print(p4, vp = grid::viewport(x = .3, y = .65, width = .45, height = .45))
 
 ### 广义最小二乘 {#sec-generalized-least-squares}
 
-**nlme** 包的函数 `gls()` 的名称 gls 是 Generalized Least Squares 广义最小二乘的意思。顾名思义，广义最小二乘是最小二乘的推广形式。当模型残差不满足独立和同分布的条件，存在相关性或异方差，就需要广义最小二乘。
+**nlme** 包的函数 `gls()` 的名称 `gls` 是 Generalized Least Squares 广义最小二乘的意思。顾名思义，广义最小二乘是最小二乘的推广形式。当模型残差不满足独立同分布的条件，存在相关性或异方差，就需要广义最小二乘 （Generalized Least Squares ，简称 GLS）。在前面的第 @sec-rongelap-slmm 小节，广义最小二乘估计模型 @eq-rongelap-gaussian-slmm 的参数，下面继续介绍其原理。线性模型的一般形式如下：
 
--   最小二乘
+$$
+\bm{y} = X\bm{\beta} + \bm{\epsilon}
+$$
 
--   广义最小二乘 （Generalized Least Squares ，简称 GLS）
+其中，$\bm{y}$ 是 $N \times 1$ 的列向量，表示响应变量对应的观测数据。 $X$ 是 $N \times p$ 的矩阵，表示 $p$ 维协变量对应的 $N$ 次观测数据。$\bm{\beta}$ 是 $p \times 1$ 的列向量，表示待估的模型参数。 $\bm{\epsilon}$ 是 $N \times 1$ 的列向量，表示残差。假定 $X$ 是固定的，不是随机的，且与 $\bm{\epsilon}$ 独立。随机向量 $\bm{\epsilon}$ 的期望为 $\mathsf{E}\{\bm{\epsilon}\} = \bm{0}$，方差为 $\Sigma = \mathsf{Cov}\{\bm{\epsilon},\bm{\epsilon}\} = \mathsf{Var}\{\bm{\epsilon}\}$ 。则有
+
+$$
+\mathsf{E}\{\bm{y}|\bm{\epsilon}\} = X\bm{\beta}, \quad \mathsf{Var}\{\bm{y}|\bm{\epsilon}\} = \Sigma.
+$$
+
+现在的目标是找到一个 $\hat{\bm{\beta}}$ 使得 $\mathsf{Var}\{\bm{y} - X\hat{\bm{\beta}}\}$ 最小。
+
+类似地，对于一次新的观测 $\bm{x}_0$，它是一个 $1 \times p$ 的行向量，现在的目标是找到一个 $\hat{y}_0$ ，在满足无偏性的条件下，使得预测的均方误差 $\mathsf{E}\{(\hat{y}_0 - y_0)^2\}$ 最小，也就是预测方差 $\mathsf{Var}\{\hat{y}_0 - y_0\}$ 最小。不妨设 $\hat{y}_0$ 是关于 $\bm{y}$ 的线性组合，即 $\hat{y}_0 = \bm{w}^{\top}\bm{y}$ ，此处，$\bm{w}$ 是 $N \times 1$ 维的权重向量。找 $\hat{y}_0$ 的问题转为求解如下最优化问题。
+
+$$
+\begin{aligned}
+\min_{\bm{w}}\quad & \mathsf{Var}\{\hat{y}_0 - y_0\} \\
+\text{s.t.}  \quad & \mathsf{E}\{\hat{y}_0 - y_0\} = 0
+\end{aligned}
+$$ {#eq-lmm-optim}
+
+对于无偏性的约束条件，有
+
+$$
+\mathsf{E}\{\hat{y}_0 - y_0\} = \mathsf{E}\{\bm{w}^{\top}X\bm{\beta} - \bm{x}_0\bm{\beta}\} = \bm{w}^{\top}X\bm{\beta} - \bm{x}_0\bm{\beta} = 0
+$$
+
+对于目标函数，有
+
+$$
+\begin{aligned}
+\mathsf{Var}\{\hat{y}_0 - y_0\} &= \mathsf{Var}\{\bm{w}^{\top}\bm{y} - \bm{x}_0\bm{\beta}- \epsilon_0\} \\
+&= \mathsf{Var}\{\bm{w}^{\top}(X\bm{\beta} + \bm{\epsilon}) - \bm{x}_0\bm{\beta} - \epsilon_0\} \\
+& = \mathsf{Var}\{\bm{w}^{\top}\bm{\epsilon} - \epsilon_0 \} \\
+& = \mathsf{E}\{(\bm{w}^{\top}\bm{\epsilon} - \epsilon_0)^2\} - [\mathsf{E}\{(\bm{w}^{\top}\bm{\epsilon} - \epsilon_0)\}]^2 \\
+& = \mathsf{E}\{(\bm{w}^{\top}\bm{\epsilon} - \epsilon_0)^2\} \\
+& = \bm{w}^{\top}\mathsf{Cov}\{\bm{\epsilon},\bm{\epsilon}^{\top}\} \bm{w} - \bm{w}^{\top} \mathsf{Cov}\{\bm{\epsilon}, \epsilon_0^{\top}\} - \mathsf{Cov}\{\epsilon_0, \bm{\epsilon}^{\top}\} \bm{w} + \mathsf{Cov}\{\epsilon_0, \epsilon_0 \} \\
+& = \bm{w}^{\top}\mathsf{Cov}\{\bm{\epsilon},\bm{\epsilon}^{\top}\} \bm{w} - 2 \mathsf{Cov}\{\epsilon_0, \bm{\epsilon}^{\top}\} \bm{w} + \mathsf{Cov}\{\epsilon_0, \epsilon_0 \} \\
+& = \bm{w}^{\top}\Sigma_{11} \bm{w} - 2 \Sigma_{01} \bm{w} + \Sigma_{00}
+\end{aligned}
+$$
+
+令$$
+\Sigma_{11} = \mathsf{Cov}\{\bm{\epsilon},\bm{\epsilon}^{\top}\}, \Sigma_{01} = \mathsf{Cov}\{\epsilon_0, \bm{\epsilon}^{\top}\}, \Sigma_{00} = \mathsf{Cov}\{\epsilon_0, \epsilon_0 \}
+$$
+
+采用拉格朗日乘数法将约束优化问题 @eq-lmm-optim 转为如下无约束优化问题
+
+$$
+\min_{\bm{w},\kappa} \quad \bm{w}^{\top}\Sigma_{11} \bm{w} - 2 \Sigma_{01} \bm{w} + \Sigma_{00} + \kappa (\bm{w}^{\top}X - \bm{x}_0)
+$$
+
+对 $\bm{w},\kappa$ 分别求偏导，并令偏导等于 0，可得
+
+$$
+\begin{aligned}
+2 \bm{w}^{\top} \Sigma_{11} - 2 \Sigma_{10} + \kappa X^{\top} = \bm{0} \\
+\bm{w}^{\top}  X - \bm{x}_0 = \bm{0}
+\end{aligned}
+$$
+
+第一个式子右乘 $\Sigma_{11}^{-1}X$ ，再将第二个式子代入第一个式子，有
+
+$$
+2 \underbrace{\bm{w}^{\top} X}_{\bm{x_0}} -2 \Sigma_{10}\Sigma_{11}^{-1}X + \kappa X^{\top}\Sigma_{11}^{-1}X = 0
+$$
+
+可得
+
+$$
+\kappa = 2 (X^{\top}\Sigma_{11}^{-1}X)^{-1} (\bm{x_0} - \Sigma_{10}\Sigma_{11}^{-1}X)
+$$
+
+将 $\kappa$ 代入第一个式子，可得
+
+$$
+\bm{w}^{\top} = (\Sigma_{10} - (X^{\top}\Sigma_{11}^{-1}X)^{-1}(\bm{x}_0 - \Sigma_{10}\Sigma_{11}^{-1}X)) \Sigma_{11}^{-1}.
+$$
+
+从而，
+
+$$
+\begin{aligned}
+\hat{y}_0 &= \bm{w}^{\top}\bm{y} \\
+&= (\Sigma_{10} - (X^{\top}\Sigma_{11}^{-1}X)^{-1}(\bm{x}_0 - \Sigma_{10}\Sigma_{11}^{-1}X)) \Sigma_{11}^{-1}\bm{y} \\
+&= \Sigma_{10} \Sigma_{11}^{-1}\bm{y} - (X^{\top}\Sigma_{11}^{-1}X)^{-1}(\bm{x}_0 - \Sigma_{10}\Sigma_{11}^{-1}X)\Sigma_{11}^{-1}\bm{y}
+\end{aligned}
+$$
 
 ### 限制极大似然 {#sec-restricted-maximum-likelihood}
 
