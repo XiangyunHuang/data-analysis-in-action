@@ -116,13 +116,13 @@ rlogis(n, location = 0, scale = 1)
 响应变量 $Y$ 服从伯努利分布 $\mathrm{Bernoulli}(p)$，取值是 0 或 1，对线性预测 $X\boldsymbol{\beta}$ 做 Logistic 变换
 
 $$
-p = \mathsf{E}Y = \mathrm{Logistic}(X\boldsymbol{\beta}) = \frac{1}{1 + e^{-(\alpha + X\boldsymbol{\beta})}} = \frac{e^{\alpha + X\boldsymbol{\beta}}}{1 + e^{\alpha + X\boldsymbol{\beta}}}
+\bm{p} = \mathsf{E}Y = \mathrm{Logistic}(X\boldsymbol{\beta}) = \frac{1}{1 + e^{-(\alpha + X\boldsymbol{\beta})}} = \frac{e^{\alpha + X\boldsymbol{\beta}}}{1 + e^{\alpha + X\boldsymbol{\beta}}}
 $$
 
 Logistic 的逆变换
 
 $$
-\mathrm{Logistic}^{-1}(p)= \ln\big(\frac{p}{1-p}\big) = \alpha + X\boldsymbol{\beta}
+\mathrm{Logistic}^{-1}(\bm{p})= \ln\big(\frac{\bm{p}}{1 - \bm{p}}\big) = \alpha + X\boldsymbol{\beta}
 $$
 
 记数据矩阵 $X$ 为
@@ -134,12 +134,19 @@ X = \begin{bmatrix}
     \vdots & \vdots & \vdots & \ddots & \vdots \\
     x_{n1} & x_{n2} & x_{n3} & \dots  & x_{nk}
 \end{bmatrix}
+= 
+\begin{bmatrix}
+\bm{x}_1^{\top} \\
+\bm{x}_2^{\top} \\
+\vdots \\
+\bm{x}_n^{\top}
+\end{bmatrix}
 $$
 
-每一行表示一次观测，每一列表示一个变量的 $n$ 次观测，记 $X = (\bm{x}_1, \bm{x}_2, \cdots, \bm{x}_n)^{\top} = (X_1, X_2, \cdots, X_k)$ 是一个$n \times k$ 数据矩阵，其中 $\bm{x}_i$ 表示矩阵 $X$ 的第 $i$ 行，一共有 $n$ 行，可以看作是 $1 \times k$ 的矩阵，$X_j, j = 1,2, \cdots, k$ 表示矩阵 $X$ 的第 $j$ 列，一共有 $k$ 列。类似地， $\boldsymbol{\beta} = (\beta_1, \beta_2, \cdots, \beta_k)^{\top}$ 是一个列向量，可以看作是 $k \times 1$ 的矩阵，$\beta_j$ 表示第 $j$ 个变量 $X_j$ 的系数。对第 $i$ 次观测
+每一行表示一次观测，每一列表示一个变量的 $n$ 次观测，记 $X = (X_1, X_2, \cdots, X_k)$ 是一个 $n \times k$ 数据矩阵，其中 $\bm{x}_i^{\top}$ 表示矩阵 $X$ 的第 $i$ 行，一共有 $n$ 行，可以看作是 $1 \times k$ 的矩阵，$X_j, j = 1,2, \cdots, k$ 表示矩阵 $X$ 的第 $j$ 列，一共有 $k$ 列。类似地， $\boldsymbol{\beta} = (\beta_1, \beta_2, \cdots, \beta_k)^{\top}$ 是一个列向量，可以看作是 $k \times 1$ 的矩阵，$\beta_j$ 表示第 $j$ 个变量 $X_j$ 的系数。对第 $i$ 次观测
 
 $$
-\mathrm{Logistic}^{-1}(p_i)= \ln\big(\frac{p_i}{1-p_i}\big) = \alpha + \bm{x}_i\boldsymbol{\beta}
+\mathrm{Logistic}^{-1}(p_i)= \ln\big(\frac{p_i}{1-p_i}\big) = \alpha + \bm{x}_i^{\top}\boldsymbol{\beta}
 $$
 
 关于参数 $\alpha,\boldsymbol{\beta}$ 的似然函数如下：
@@ -147,7 +154,7 @@ $$
 $$
 \begin{aligned}
 L(\alpha,\boldsymbol{\beta}) &= \prod_{i=1}^{n} p_i^{y_i}(1 - p_i)^{1 - y_i} \\ 
-     &= \prod_{i=1}^{n} \Big(\frac{e^{\alpha + \bm{x}_i\boldsymbol{\beta}}}{1 + e^{\alpha + \bm{x}_i\boldsymbol{\beta}}}\Big)^{y_i}\Big(\frac{1}{e^{\alpha + \bm{x}_i\boldsymbol{\beta}}}\Big)^{1-y_i} \\
+     &= \prod_{i=1}^{n} \Big(\frac{e^{\alpha + \bm{x}_i^{\top}\boldsymbol{\beta}}}{1 + e^{\alpha + \bm{x}_i^{\top}\boldsymbol{\beta}}}\Big)^{y_i}\Big(\frac{1}{e^{\alpha + \bm{x}_i^{\top}\boldsymbol{\beta}}}\Big)^{1-y_i} \\
 \end{aligned}
 $$ {#eq-logit-lik}
 
@@ -167,7 +174,7 @@ $$
 \begin{aligned}
 \frac{\partial \ell(\alpha,\boldsymbol{\beta})}{\partial \alpha}  &= \sum_{i=1}^{n}\Big[ \big(\frac{y_i}{p_i} -  \frac{1- y_i}{1 - p_i}\big) \frac{\partial p_i}{\partial \alpha} \Big] \\
 \frac{\partial \ell(\alpha,\boldsymbol{\beta})}{\partial \boldsymbol{\beta}} &= \sum_{i=1}^{n}\Big[\big(\frac{y_i}{p_i} -  \frac{1- y_i}{1 - p_i}\big) \frac{\partial p_i}{\partial \beta} \Big] \\
-& = \sum_{i=1}^{n}\Big[\big(\frac{y_i}{p_i} -  \frac{1- y_i}{1 - p_i}\big) p_i(1- p_i) \bm{x}_i \Big] 
+& = \sum_{i=1}^{n}\Big[\big(\frac{y_i}{p_i} -  \frac{1- y_i}{1 - p_i}\big) p_i(1- p_i) \bm{x}_i^{\top} \Big] 
 \end{aligned}
 $$ {#eq-logit-lik-log-partial}
 
@@ -187,7 +194,7 @@ X <- matrix(rnorm(n * k), ncol = k)
 y <- rbinom(n, size = 1, prob = plogis(1 + 3 * X[, 1] - 2 * X[, 2]))
 ```
 
-模拟数据矩阵 X 与上述记号 $X$ 是对应的，记号 $x_i$ 表示数据矩阵的第 $i$ 行。$\alpha$ 是逻辑回归方程的截距，$\beta$ 是 $k$ 维向量，$X$ 是 $n \times k$ 维的矩阵且 $n > k$，$y$ 是 $n$ 维向量。极大化对数似然函数 @eq-logit-lik-log ，就是求解一个多维非线性无约束优化问题。方便起见，将 $\alpha$ 合并进 $\beta$ 向量，另，函数 `optim()` 默认求极小，因此在对数似然函数前添加负号。
+模拟数据矩阵 X 与上述记号 $X$ 是对应的，记号 $\bm{x_i}^{\top}$ 表示数据矩阵的第 $i$ 行。$\alpha$ 是逻辑回归方程的截距，$\bm{\beta}$ 是 $k$ 维列向量，$X$ 是 $n \times k$ 维的矩阵且 $n > k$，$y$ 是 $n$ 维向量。极大化对数似然函数 @eq-logit-lik-log ，就是求解一个多维非线性无约束优化问题。方便起见，将 $\alpha$ 合并进 $\bm{\beta}$ 向量，另，函数 `optim()` 默认求极小，因此在对数似然函数前添加负号。
 
 ```{r}
 # 目标函数
@@ -225,12 +232,19 @@ beta <- seq(2, 4, length.out = 20)
 df <- expand.grid(x = alpha, y = beta)
 df$fnxy <- apply(X = df, MARGIN = 1, FUN = log_logit_lik0, X0 = X0, y0 = y0)
 library(lattice)
+custom_palette <- function(irr, ref, height, saturation = 0.9) {
+  hsv(
+    h = height, s = 1 - saturation * (1 - (1 - ref)^0.5),
+    v = irr
+  )
+}
 wireframe(
   data = df, fnxy ~ x * y,
   shade = TRUE, drape = FALSE,
   xlab = expression(alpha),
   ylab = expression(beta),
   zlab = list(expression(-loglik(alpha, beta)), rot = 90),
+  shade.colors.palette = custom_palette,
   # 减少三维图形的边空
   lattice.options = list(
     layout.widths = list(
