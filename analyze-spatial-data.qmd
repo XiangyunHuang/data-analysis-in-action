@@ -25,8 +25,8 @@ $$
 #| echo: !expr knitr::is_html_output()
 #| fig-showtext: true
 #| message: false
-#| fig-width: 7
-#| fig-height: 5
+#| fig-width: 5.6
+#| fig-height: 4
 
 # 从网站 https://gadm.org/ 下载国家各级行政区划数据
 # geodata 包返回 SpatVector 类型的数据对象
@@ -96,15 +96,16 @@ knitr::kable(head(rongelap_coastline, 6),
 #| - 采样分布
 #| - 采样顺序
 #| fig-showtext: true
-#| fig-width: 7
-#| fig-height: 4
+#| fig-width: 6.2
+#| fig-height: 3.2
 #| code-fold: true
 #| layout-nrow: 2
 #| layout-ncol: 1
+#| echo: !expr knitr::is_html_output()
 
 library(ggplot2)
 ggplot() +
-  geom_point(data = rongelap, aes(x = cX, y = cY), size = 0.5) +
+  geom_point(data = rongelap, aes(x = cX, y = cY), size = 0.2) +
   geom_path(data = rongelap_coastline, aes(x = cX, y = cY)) +
   theme_bw() +
   coord_fixed() +
@@ -112,7 +113,7 @@ ggplot() +
 
 rongelap$dummy <- rownames(rongelap)
 ggplot(rongelap, aes(x = cX, y = cY)) +
-  geom_text(aes(label = dummy), size = 3) +
+  geom_text(aes(label = dummy), size = 2) +
   theme_bw() +
   coord_fixed() +
   labs(x = "横坐标（米）", y = "纵坐标（米）")
@@ -125,37 +126,36 @@ ggplot(rongelap, aes(x = cX, y = cY)) +
 ```{r}
 #| label: fig-rongelap-location-zoom
 #| fig-cap: "岛上各采样点的核辐射强度"
-#| fig-width: 8
-#| fig-height: 4
+#| fig-width: 6.2
+#| fig-height: 3.2
 #| fig-showtext: true
 #| code-fold: true
 #| echo: !expr knitr::is_html_output()
 
-library(ggplot2)
-
 p1 <- ggplot() +
   geom_path(data = rongelap_coastline, aes(x = cX, y = cY)) +
-  geom_point(data = rongelap, aes(x = cX, y = cY, color = counts / time), size = 0.5) +
+  geom_point(data = rongelap, aes(x = cX, y = cY, color = counts / time), size = 0.2) +
   scale_x_continuous(n.breaks = 7) +
   scale_color_viridis_c(option = "C") +
   geom_segment(
-    data = data.frame(x = -5560, xend = -5000, y = -3000, yend = -2000),
+    data = data.frame(x = -5560, xend = -5000, y = -3000, yend = -2300),
     aes(x = x, y = y, xend = xend, yend = yend),
     arrow = arrow(length = unit(0.03, "npc"))
   ) +
   theme_bw() +
+  coord_fixed() +
   labs(x = "横坐标（米）", y = "纵坐标（米）", color = "辐射强度")
 
 p2 <- ggplot() +
   geom_point(data = rongelap, aes(x = cX, y = cY, color = counts / time), 
-             size = 2, show.legend = FALSE) +
+             size = 1, show.legend = FALSE) +
   scale_color_viridis_c(option = "C") +
-  coord_cartesian(xlim = c(-5700, -5540), ylim = c(-3260, -3100)) +
+  coord_fixed(xlim = c(-5700, -5540), ylim = c(-3260, -3100)) +
   theme_bw() +
   labs(x = NULL, y = NULL)
 
 p1
-print(p2, vp = grid::viewport(x = .25, y = .725, width = .275, height = .45))
+print(p2, vp = grid::viewport(x = .25, y = .66, width = .275, height = .45))
 ```
 
 **ggplot2** 包只能在二维平面上展示数据，对于空间数据，立体图形更加符合数据产生背景。如 @fig-rongelap-concentration 所示，以三维图形展示朗格拉普岛上采样点的位置及检测到的辐射强度。**lattice** 包的函数 `cloud()` 可以绘制三维的散点图，将自定义的面板函数 `panel.3dcoastline()` 传递给参数 `panel.3d.cloud` 绘制岛屿海岸线。组合点和线两种绘图元素构造出射线，线的长短表示放射性的强弱，以射线表示粒子辐射现象更加贴切。
@@ -164,11 +164,10 @@ print(p2, vp = grid::viewport(x = .25, y = .725, width = .275, height = .45))
 #| label: fig-rongelap-concentration
 #| fig-cap: "岛上各采样点的辐射强度"
 #| fig-showtext: true
-#| fig-width: 6
-#| fig-height: 5
+#| fig-width: 5.2
+#| fig-height: 3.5
 #| code-fold: true
 #| echo: !expr knitr::is_html_output()
-#| out-width: 70%
 
 library(lattice)
 # 参考 lattice 书籍的图 6.5 的绘图代码
@@ -190,7 +189,7 @@ cloud(counts / time ~ cX * cY,
   data = rongelap, col = "black",
   xlim = c(-6500, 100), ylim = c(-3800, 150),
   scales = list(arrows = FALSE, col = "black"),
-  aspect = c(0.75, 1, 1),
+  aspect = c(0.75, 0.5),
   xlab = list("横坐标（米）", rot = 20),
   ylab = list("纵坐标（米）", rot = -50),
   zlab = list("辐射强度", rot = 90),
@@ -202,19 +201,19 @@ cloud(counts / time ~ cX * cY,
   # 减少三维图形的边空
   lattice.options = list(
     layout.widths = list(
-      left.padding = list(x = -.6, units = "inches"),
+      left.padding = list(x = -0.5, units = "inches"),
       right.padding = list(x = -1.0, units = "inches")
     ),
     layout.heights = list(
-      bottom.padding = list(x = -.8, units = "inches"),
-      top.padding = list(x = -1.0, units = "inches")
+      bottom.padding = list(x = -1.5, units = "inches"),
+      top.padding = list(x = -1.5, units = "inches")
     )
   ),
   par.settings = list(
     # 移除几条内框线
     # box.3d = list(col = c(1, 1, NA, NA, 1, NA, 1, 1, 1)),
-    # 设置坐标轴上刻度标签字体大小
-    # axis.text = list(cex = 1),
+    # 刻度标签字体大小
+    axis.text = list(cex = 0.8),
     # 去掉外框线
     axis.line = list(col = "transparent")
   ),
@@ -254,13 +253,13 @@ summary(fit_rongelap_poisson)
 ```{r}
 #| label: fig-rongelap-poisson-residuals
 #| fig-cap: "残差的空间分布"
-#| fig-width: 7
-#| fig-height: 4
+#| fig-width: 6.2
+#| fig-height: 3.2
 #| fig-showtext: true
 
 rongelap$poisson_residuals <- residuals(fit_rongelap_poisson)
 ggplot(rongelap, aes(x = cX, y = cY)) +
-  geom_point(aes(colour = poisson_residuals / time), size = 0.5) +
+  geom_point(aes(colour = poisson_residuals / time), size = 0.2) +
   scale_color_viridis_c(option = "C") +
   theme_bw() +
   labs(x = "横坐标（米）", y = "纵坐标（米）", color = "残差")
@@ -272,7 +271,7 @@ ggplot(rongelap, aes(x = cX, y = cY)) +
 #| label: fig-rongelap-histogram
 #| fig-cap: "辐射强度的直方图"
 #| fig-width: 5
-#| fig-height: 4
+#| fig-height: 3.5
 #| fig-showtext: true
 
 ggplot(data = rongelap, aes(x = counts / time)) +
@@ -601,6 +600,20 @@ $$
 \end{aligned}
 $$
 
+**nlme** 包的另一个函数 `lme()` ，扩展了函数 `gls()` 的功能，支持添加随机效应。在模型 @eq-rongelap-gaussian-slmm 的基础上，添加一个随机截距。
+
+```{r}
+rongelap$dummy <- 1
+fit_rongelap_lme <- lme(
+  log(counts / time) ~ 1, data = rongelap,
+  random = ~ 1 | dummy,
+  correlation = corExp(
+    value = c(200, 0.1), form = ~ cX + cY, nugget = TRUE
+  )
+)
+summary(fit_rongelap_lme)
+```
+
 #### 经验半变差函数图 {#sec-semi-variogram}
 
 接下来用经验半变差函数图检查空间相关性。为方便表述起见，令 $T(x_i)$ 代表 @eq-rongelap-gaussian-slmm 等号右侧的部分，即表示线性预测（Linear Predictor）。
@@ -798,13 +811,13 @@ rongelap_coastline_buffer <- st_buffer(rongelap_coastline_sfp, dist = 50)
 ```{r}
 #| label: fig-rongelap-buffer
 #| fig-cap: "朗格拉普岛海岸线及其缓冲区"
-#| fig-width: 7
-#| fig-height: 4
+#| fig-width: 6.2
+#| fig-height: 3.2
 #| fig-showtext: true
 #| code-fold: true
 
 ggplot() +
-  geom_sf(data = rongelap_sf, size = 0.5) +
+  geom_sf(data = rongelap_sf, size = 0.2) +
   geom_sf(data = rongelap_coastline_sfp, fill = NA, color = "gray30") +
   geom_sf(data = rongelap_coastline_buffer, fill = NA, color = "black") +
   theme_void()
@@ -906,12 +919,26 @@ cov_fun <- function(h) sigma_sq * exp(-h / phi)
 m_obs <- cov_fun(st_distance(x = rongelap_sf)) + diag(tau_sq, 157)
 # 预测距离矩阵
 m_pred <- cov_fun(st_distance(x = rongelap_sf, y = rongelap_grid_centroid))
+
 # 简单克里金插值
-mean_sk <- beta + t(m_pred) %*% solve(m_obs, log(rongelap_sf$counts / rongelap_sf$time) - beta)
+# 均值函数
+mean_fun <- function(m_pred) {
+  n1 <- 1 - t(rep(1, 157)) %*% solve(m_obs, m_pred)
+  n2 <- t(rep(1, 157)) %*% solve(m_obs, rep(1, 157))
+  beta + (t(m_pred) + (n1 / n2) %*% t(rep(1, 157))) %*% solve(m_obs, log(rongelap_sf$counts / rongelap_sf$time) - beta)
+}
+mean_sk <- apply(m_pred, 2, mean_fun)
 # 辐射强度预测值
 rongelap_grid_df$pred_sk <- exp(mean_sk)
+# 方差函数
+var_fun <- function(m_pred){
+  n1 <- 1 - t(rep(1, 157)) %*% solve(m_obs, m_pred)
+  n2 <- t(rep(1, 157)) %*% solve(m_obs, rep(1, 157))
+  t(m_pred) %*% solve(m_obs, m_pred) - n1^2 / n2
+}
 # 辐射强度预测方差
-rongelap_grid_df$var_sk <- sigma_sq - diag(t(m_pred) %*% solve(m_obs, m_pred)) 
+var_sk <- apply(m_pred, 2, var_fun)
+rongelap_grid_df$var_sk <- var_sk
 ```
 
 ### 展示结果 {#sec-rongelap-plot}
@@ -1063,23 +1090,164 @@ print(p4, vp = grid::viewport(x = .3, y = .65, width = .45, height = .45))
 
 ### 广义最小二乘 {#sec-generalized-least-squares}
 
-**nlme** 包的函数 `gls()` 的名称 gls 是 Generalized Least Squares 广义最小二乘的意思。顾名思义，广义最小二乘是最小二乘的推广形式。当模型残差不满足独立和同分布的条件，存在相关性或异方差，就需要广义最小二乘。
+**nlme** 包的函数 `gls()` 的名称 `gls` 是 Generalized Least Squares 广义最小二乘的意思。顾名思义，广义最小二乘是最小二乘的推广形式。当模型残差不满足独立同分布的条件，存在相关性或异方差，就需要广义最小二乘 （Generalized Least Squares ，简称 GLS）。在前面的 @sec-rongelap-slmm ，采用广义最小二乘估计 @eq-rongelap-gaussian-slmm 的参数，下面继续介绍其原理。线性模型的一般形式如下：
 
--   最小二乘
+$$
+\bm{y} = X\bm{\beta} + \bm{\epsilon}
+$$
 
--   广义最小二乘 （Generalized Least Squares ，简称 GLS）
+其中，$\bm{y}$ 是 $N \times 1$ 的列向量，表示响应变量对应的观测数据。 $X$ 是 $N \times p$ 的矩阵，表示 $p$ 维协变量对应的 $N$ 次观测数据。$\bm{\beta}$ 是 $p \times 1$ 的列向量，表示待估的模型参数。 $\bm{\epsilon}$ 是 $N \times 1$ 的列向量，表示残差。
+
+假定随机向量 $\bm{\epsilon}$ 的期望为 $\mathsf{E}\{\bm{\epsilon}|X\} = \bm{0}$，方差为 $\mathsf{Var}\{\bm{\epsilon}|X\}=\Sigma$ ，且 $X$ 与 $\bm{\epsilon}$ 不相关，则有
+
+$$
+\mathsf{E}\{\bm{y}|X\} = X\bm{\beta}, \quad \mathsf{Var}\{\bm{y}|X\} = \Sigma.
+$$
+
+#### $\bm{\beta}$ 的最佳线性无偏估计
+
+现在的目标是找到一个 $\bm{\beta}$ ，使得残差平方和最小，即求解如下无约束最优化问题。
+
+$$
+\begin{aligned}
+\min_{\bm{\beta}}\quad & \bm{\epsilon}^{\top}\bm{\epsilon}
+\end{aligned}
+$$ {#eq-gls-beta}
+
+将 $\bm{\epsilon}= \bm{y} - X\bm{\beta}$ 代入并展开，目标函数可进一步表达为如下形式。
+
+$$
+\begin{aligned}
+\bm{\epsilon}^{\top}\bm{\epsilon} &= (\bm{y} - X\bm{\beta})^{\top}(\bm{y} - X\bm{\beta}) \\
+&=\bm{y}^{\top}\bm{y} - \bm{y}^{\top}X\bm{\beta} - (X\bm{\beta})^{\top}\bm{y} + (X\bm{\beta})^{\top}X\bm{\beta} \\
+&=\bm{y}^{\top}\bm{y} - 2 \bm{y}^{\top}X\bm{\beta} + \bm{\beta}^{\top}X^{\top}X\bm{\beta}
+\end{aligned}
+$$
+
+对 $\bm{\beta}$ 求偏导，并令偏导等于 $\bm{0}$。
+
+$$
+-2X^{\top}\bm{y} + 2X^{\top}X\bm{\beta} = 0
+$$
+
+可得 $\bm{\beta}$ 的最小二乘估计 $\hat{\bm{\beta}}$ 。
+
+$$
+\hat{\bm{\beta}} = (X^{\top}X)^{-1}X^{\top}\bm{y}.
+$$
+
+此时，$\hat{\bm{\beta}}$ 的期望 $\mathsf{E}\{\hat{\bm{\beta}}\} = \bm{\beta}$ ，即 $\hat{\bm{\beta}}$ 是 $\bm{\beta}$ 无偏的估计。$\hat{\bm{\beta}}$ 的方差 $\mathsf{Var}\{\hat{\bm{\beta}}\}$ 的计算如下：
+
+$$
+\begin{aligned}
+\mathsf{Var}\{\hat{\bm{\beta}}\} &= \mathsf{E}\{\hat{\bm{\beta}}^{\top}\hat{\bm{\beta}}\} - \mathsf{E}\{\hat{\bm{\beta}}^{\top}\}\mathsf{E}\{\hat{\bm{\beta}}\} \\
+&= \mathsf{E}\{ [(X^{\top}X)^{-1}X^{\top}\bm{y}]^{\top} (X^{\top}X)^{-1}X^{\top}\bm{y} \} - \bm{\beta}^{\top}\bm{\beta} \\
+&= \mathsf{E}\{ [(X^{\top}X)^{-1}X^{\top}(X\bm{\beta} + \bm{\epsilon})]^{\top} (X^{\top}X)^{-1}X^{\top}(X\bm{\beta} + \bm{\epsilon}) \} - \bm{\beta}^{\top}\bm{\beta} \\
+&= \mathsf{E}\{ (\bm{\beta} + (X^{\top}X)^{-1}X^{\top}\bm{\epsilon})^{\top} (\bm{\beta} + (X^{\top}X)^{-1}X^{\top}\bm{\epsilon})\} - \bm{\beta}^{\top}\bm{\beta} \\
+&= \mathsf{E}\{\bm{\epsilon}^{\top} A^{\top}A\bm{\epsilon}\} \\
+&= \mathrm{tr}[A^{\top}A\Sigma].
+\end{aligned}
+$$
+
+其中，$A = (X^{\top}X)^{-1}X^{\top}$。当 $\bm{\epsilon}$ 之间存在相关性时，需要广义最小二乘估计，即
+
+$$
+\hat{\bm{\beta}}_{gls} = (X^{\top}\Sigma^{-1}X)^{-1} X^{\top}\Sigma^{-1}\bm{y}.
+$$
+
+当 $\bm{\epsilon}$ 之间存在空间相关性时，$\Sigma$ 含有参数 $\sigma^2,\phi$ ，若模型带块金效应，则还含有参数 $\tau^2$ 。可见，上式不足以估计模型的参数，且看后续 @sec-restricted-maximum-likelihood 。
+
+#### $y_0$ 的最佳线性无偏估计
+
+类似地，对于一次新的观测 $\bm{x}_0$，它是一个 $p \times 1$ 的列向量，现在的目标是找到一个 $\hat{y}_0$ ，在满足无偏性的条件下，使得预测的均方误差 $\mathsf{E}\{(\hat{y}_0 - y_0)^2\}$ 最小，也是预测方差 $\mathsf{Var}\{\hat{y}_0 - y_0\}$ 最小，也是残差的方差 $\mathsf{Var}\{\hat{\epsilon}_0\}$ 最小。不妨设 $\hat{y}_0$ 是关于 $\bm{y}$ 的线性组合，即 $\hat{y}_0 = \bm{w}^{\top}\bm{y}$ ，此处，$\bm{w}$ 是 $N \times 1$ 维的权重向量。找 $\hat{y}_0$ 的问题转为求解如下最优化问题。
+
+$$
+\begin{aligned}
+\min_{\bm{w}}\quad & \mathsf{Var}\{\hat{y}_0 - y_0\} \\
+\text{s.t.}  \quad & \mathsf{E}\{\hat{y}_0 - y_0\} = 0
+\end{aligned}
+$$ {#eq-gls-predictor}
+
+对于无偏性的约束条件，有
+
+$$
+\mathsf{E}\{\hat{y}_0 - y_0\} = \mathsf{E}\{\bm{w}^{\top}(X\bm{\beta} + \bm{\epsilon}) - (\bm{x}_0^{\top}\bm{\beta} + \bm{\epsilon}_0)\} = \bm{w}^{\top}X\bm{\beta} - \bm{x}_0^{\top}\bm{\beta} = 0
+$$
+
+对于目标函数，有
+
+$$
+\begin{aligned}
+\mathsf{Var}\{\hat{y}_0 - y_0\} &= \mathsf{Var}\{\bm{w}^{\top}\bm{y} - \bm{x}_0^{\top}\bm{\beta}- \epsilon_0\} \\
+&= \mathsf{Var}\{\bm{w}^{\top}(X\bm{\beta} + \bm{\epsilon}) - \bm{x}_0^{\top}\bm{\beta} - \epsilon_0\} \\
+& = \mathsf{Var}\{\bm{w}^{\top}\bm{\epsilon} - \epsilon_0 \} \\
+& = \mathsf{E}\{(\bm{w}^{\top}\bm{\epsilon} - \epsilon_0)^2\} - [\mathsf{E}\{(\bm{w}^{\top}\bm{\epsilon} - \epsilon_0)\}]^2 \\
+& = \mathsf{E}\{(\bm{w}^{\top}\bm{\epsilon} - \epsilon_0)^2\} \\
+& = \mathsf{E}\{(\bm{w}^{\top}\bm{\epsilon} - \epsilon_0)(\bm{w}^{\top}\bm{\epsilon} - \epsilon_0)^{\top}\} \\
+& = \bm{w}^{\top}\mathsf{Cov}\{\bm{\epsilon},\bm{\epsilon}^{\top}\} \bm{w} - 2\mathsf{Cov}\{\epsilon_0, \bm{\epsilon}^{\top}\} \bm{w} + \mathsf{Cov}\{\epsilon_0, \epsilon_0 \} \\
+& = \bm{w}^{\top}\Sigma_{11} \bm{w} - 2 \Sigma_{01} \bm{w} + \Sigma_{00}
+\end{aligned}
+$$
+
+令$$
+\Sigma_{11} = \mathsf{Cov}\{\bm{\epsilon},\bm{\epsilon}^{\top}\}, 
+\Sigma_{10} = \mathsf{Cov}\{\bm{\epsilon},\epsilon_0\}, \Sigma_{01} = \mathsf{Cov}\{\epsilon_0, \bm{\epsilon}^{\top}\}, \Sigma_{00} = \mathsf{Cov}\{\epsilon_0, \epsilon_0 \}
+$$
+
+采用拉格朗日乘数法将约束优化问题 @eq-gls-predictor 转为如下无约束优化问题
+
+$$
+\min_{\bm{w},\bm{\kappa}} \quad \bm{w}^{\top}\Sigma_{11} \bm{w} - 2 \Sigma_{01} \bm{w} + \Sigma_{00} + (\bm{x}_0^{\top} - \bm{w}^{\top}X) \bm{\kappa}
+$$
+
+其中，$\bm{\kappa}$ 是 $p \times 1$ 维的拉格朗日乘子向量，对 $\bm{w},\bm{\kappa}$ 分别求偏导，并令偏导等于 $\bm{0}$，可得
+
+$$
+\begin{aligned}
+2 \Sigma_{11} \bm{w} - 2 \Sigma_{10} - X\bm{\kappa}  = \bm{0} \\
+X^{\top}\bm{w}  - \bm{x}_0 = \bm{0}
+\end{aligned}
+$$
+
+第一个式子左乘 $X^{\top}\Sigma_{11}^{-1}$ ，再将第二个式子代入第一个式子，有
+
+$$
+2 \underbrace{X^{\top}\bm{w}}_{\bm{x_0}} -2 X^{\top}\Sigma_{11}^{-1}\Sigma_{10} -  X^{\top}\Sigma_{11}^{-1}X\bm{\kappa}= 0
+$$
+
+可得
+
+$$
+\bm{\kappa} = 2 (X^{\top}\Sigma_{11}^{-1}X)^{-1} (\bm{x_0} - X^{\top}\Sigma_{11}^{-1}\Sigma_{10})
+$$
+
+将 $\bm{\kappa}$ 代入第一个式子，可得
+
+$$
+\bm{w} = \Sigma_{11}^{-1} \big(\Sigma_{10} 
++ X(X^{\top}\Sigma_{11}^{-1}X)^{-1}(\bm{x}_0 - X^{\top}\Sigma_{11}^{-1}\Sigma_{10})\big) .
+$$
+
+从而
+
+$$
+\begin{aligned}
+\hat{y}_0 &= \bm{w}^{\top}\bm{y} \\
+&= \Sigma_{01} \Sigma_{11}^{-1}\bm{y} + (\bm{x}_0^{\top} - \Sigma_{01}\Sigma_{11}^{-1}X) (X^{\top}\Sigma_{11}^{-1}X)^{-1} X^{\top}\Sigma_{11}^{-1}\bm{y} \\
+&= \bm{x}_0^{\top}(X^{\top}\Sigma_{11}^{-1}X)^{-1} X^{\top}\Sigma_{11}^{-1}\bm{y} + \Sigma_{01} \Sigma_{11}^{-1}\big(\bm{y} - X(X^{\top}\Sigma_{11}^{-1}X)^{-1}X^{\top}\Sigma_{11}^{-1}\bm{y}\big)\\
+&= \bm{x}_0^{\top} \hat{\bm{\beta}}_{gls} + \Sigma_{01} \Sigma_{11}^{-1}(\bm{y} - X\hat{\bm{\beta}}_{gls})
+\end{aligned}
+$$
 
 ### 限制极大似然 {#sec-restricted-maximum-likelihood}
 
-**nlme** 包的函数 `gls()` 提供极大似然和限制极大似然两种方法估计模型参数。
-
--   极大似然
+**nlme** 包的函数 `gls()` 提供极大似然和限制极大似然两种方法估计模型参数。极大似然估计对残差的分布有要求，一般假定 $\bm{\epsilon}$ 服从多元正态分布，即 $\bm{\epsilon} \sim \mathrm{MVN}(\bm{0}, \Sigma)$ 。
 
 -   限制极大似然（Restricted Maximum Likelihood，简称 REML）
 
 ### 克里金插值 {#sec-kriging-interpolation}
 
-在空间分析中，克里金插值（Kriging Interpolation）是非常基础且重要的内容，具有很好的统计性质，是最佳线性无偏预测（Best Linear Unbiased Predictor）。下面介绍插值的原理， @fig-kriging 是简单克里金插值的示意图。
+在空间分析中，克里金插值（Kriging Interpolation）是非常基础且重要的内容，具有很好的统计性质，是最佳线性无偏预测（Best Linear Unbiased Predictor）。下面介绍插值的原理， @fig-kriging 是普通克里金（Ordinary kriging）插值的示意图。
 
 ```{r}
 #| echo: false
@@ -1097,7 +1265,7 @@ to_png <- function(fig_path) {
 
 ```{tikz}
 #| label: fig-kriging
-#| fig-cap: 简单克里金插值
+#| fig-cap: 普通克里金插值
 #| fig-process: !expr to_png
 #| code-fold: true
 #| echo: !expr knitr::is_html_output()
@@ -1168,24 +1336,24 @@ $$
 $$
 \begin{aligned}
 \mathsf{Var}\{\hat{\lambda}(x_0) - \lambda(x_0)\} &= \mathsf{Var}\{\hat{\lambda}(x_0) \} + \mathsf{Var}\{\lambda(x_0)\} - 2 \mathsf{Cov}\{\hat{\lambda}(x_0), \lambda(x_0)\} \\
-&= \bm{w}^{\top}V\bm{w} + \sigma_{0}^2 - 2\sum_{i=1}^{N}w_i \mathsf{Cov}\{\lambda(x_i),\lambda(x_0)\} \\
-& = \bm{w}^{\top}V\bm{w} + \sigma_{0}^2 - 2\bm{w}^{\top} \mathsf{Cov}\{\bm{\lambda},\lambda(x_0)\} \\
-& = \bm{w}^{\top}V\bm{w} + \sigma_{0}^2 - 2\bm{w}^{\top} \bm{u}.
+&= \bm{w}^{\top}V\bm{w} + \sigma_{0}^2 - 2\sum_{i=1}^{N} \mathsf{Cov}\{\lambda(x_i),\lambda(x_0)\}w_i \\
+& = \bm{w}^{\top}V\bm{w} + \sigma_{0}^2 - 2[\mathsf{Cov}\{\bm{\lambda},\lambda(x_0)\}]^{\top}\bm{w}  \\
+& = \bm{w}^{\top}V\bm{w} + \sigma_{0}^2 - 2\bm{u}^{\top}\bm{w} .
 \end{aligned}
 $$
 
 其中，$\sigma_{0}^2 = \mathsf{Var}\{\lambda(x_0)\} = \mathsf{Var}\{\lambda(x_i)\}= \sigma^2$ 是未知常数，$\bm{u} = \mathsf{Cov}\{\bm{\lambda},\lambda(x_0)\}$ 是未知的 $N \times 1$ 向量。采用拉格朗日乘数法将约束优化问题 @eq-kriging-optim 转为如下无约束优化问题。
 
 $$
-\min_{\bm{w},\kappa} \mathcal{L}(\bm{w},k) = \frac{1}{2}\bm{w}^{\top}V\bm{w} + \frac{1}{2}\sigma_{0}^2 - \bm{w}^{\top} \bm{u} + \kappa (\bm{w}^{\top} \bm{1} - 1)
+\min_{\bm{w},\kappa} \mathcal{L}(\bm{w},k) = \frac{1}{2}\bm{w}^{\top}V\bm{w} + \frac{1}{2}\sigma_{0}^2 - \bm{u}^{\top}\bm{w}  + \kappa (1 - \bm{1}^{\top} \bm{w})
 $$
 
-其中，$\kappa$ 表示拉格朗日乘子，$\bm{1}$ 表示 $N \times 1$ 维的全 1 向量。分别对 $\bm{w}$ 和 $\kappa$ 求偏导，并令其等于 0 ，则有
+其中，$\kappa$ 表示拉格朗日乘子，$\bm{1}$ 表示 $N \times 1$ 维的全 1 向量。分别对 $\bm{w}$ 和 $\kappa$ 求偏导，并令其分别等于零向量 $\bm{0}$ 和零 $0$ ，则有
 
 $$
 \begin{aligned}
-\frac{\partial \mathcal{L}(\bm{w},\kappa)}{\partial \bm{w}} &=  \bm{w}^{\top} V -  \bm{u}^{\top} + \kappa \bm{1}^{\top}= \bm{0} \\
-\frac{\partial \mathcal{L}(\bm{w},k)}{\partial \kappa} &= \bm{w}^{\top} \bm{1} - 1 = 0
+\frac{\partial \mathcal{L}(\bm{w},\kappa)}{\partial \bm{w}} &=  V \bm{w} -  \bm{u} - \kappa \bm{1}= \bm{0} \\
+\frac{\partial \mathcal{L}(\bm{w},k)}{\partial \kappa} &= \bm{1}^{\top} \bm{w} - 1 = 0
 \end{aligned}
 $$
 
@@ -1198,21 +1366,45 @@ V & \bm{1} \\
 \end{bmatrix}
 \begin{bmatrix}
 \bm{w}  \\
-k
+-\kappa
 \end{bmatrix}
 = 
 \begin{bmatrix}
 \bm{u}  \\
-1
+0
 \end{bmatrix}.
 $$
 
-所以，$\bm{w}^{\top} = \bm{u}^{\top}V^{-1}$ ，在位置 $x_0$ 处的预测 $\hat{\lambda}(x_0) = \bm{u}^{\top}V^{-1}\bm{\lambda}$ ，预测的均方误差 $\mathsf{E}\{[\hat{\lambda}(x_0) - \lambda(x_0)]^2\} = \mathsf{Var}\{\hat{\lambda}(x_0) - \lambda(x_0)\} = \sigma_0^2 - \bm{u}^{\top}V^{-1}\bm{u}$ 。根据数据可以估计经验半变差函数 @eq-semi-variogram 的参数，从而 $V$ 、 $\sigma_{0}^2$ 和 $\bm{u}$ 都是已知的。以 $V + \tau^2\mathsf{I}$ 替换 $V$ ，$\bm{\lambda} - \beta \bm{1}$ 替换 $\bm{\lambda}$ ，可得普通克里金插值的预测值及其均方误差。
+第一个方程左乘 $\bm{1}^{\top}V^{-1}$ ，再将第二个式子代入，可得
 
 $$
 \begin{aligned}
-\hat{\lambda}(x_0) &= \beta + \bm{u}^{\top}(V + \tau^2\mathsf{I})^{-1}(\bm{\lambda} - \beta \bm{1}) \\
-\mathsf{Var}\{\hat{\lambda}(x_0) - \lambda(x_0)\} &= \sigma^2 - \bm{u}^{\top}(V + \tau^2\mathsf{I})^{-1}\bm{u}.
+\kappa &= \frac{1- \bm{1}^{\top}V^{-1}\bm{u}}{\bm{1}^{\top}V^{-1}\bm{1}} \\
+\bm{w} &= V^{-1}(\bm{u} + \frac{1- \bm{1}^{\top}V^{-1}\bm{u}}{\bm{1}^{\top}V^{-1}\bm{1}} \bm{1})
+\end{aligned}
+$$
+
+所以，在位置 $x_0$ 处的预测 $\hat{\lambda}(x_0)$ ，
+
+$$
+\hat{\lambda}(x_0) = \bm{w}^{\top}\bm{\lambda}= (\bm{u}^{\top} + \frac{1- \bm{1}^{\top}V^{-1}\bm{u}}{\bm{1}^{\top}V^{-1}\bm{1}} \bm{1}^{\top}) V^{-1}\bm{\lambda}
+$$
+
+预测的均方误差 $\mathsf{MSE}$ ，
+
+$$
+\begin{aligned}
+\mathsf{MSE} &= \mathsf{E}\{[\hat{\lambda}(x_0) - \lambda(x_0)]^2\} \\
+&= \mathsf{Var}\{\hat{\lambda}(x_0) - \lambda(x_0)\}
+\end{aligned}
+$$
+
+根据数据可以估计经验半变差函数 @eq-semi-variogram 的参数，从而 $V$ 、 $\sigma_{0}^2$ 和 $\bm{u}$ 都是已知的。以 $V + \tau^2I$ 替换 $V$ ，$\bm{\lambda} - \beta \bm{1}$ 替换 $\bm{\lambda}$ ，可得普通克里金插值的预测值及其均方误差。
+
+$$
+\begin{aligned}
+\hat{\lambda}(x_0) &= \beta + (\bm{u}^{\top} + \frac{1- \bm{1}^{\top}(V + \tau^2I)^{-1}\bm{u}}{\bm{1}^{\top}(V + \tau^2I)^{-1}\bm{1}} \bm{1}^{\top}) (V + \tau^2I)^{-1}(\bm{\lambda} - \beta \bm{1}) \\
+\mathsf{Var}\{\hat{\lambda}(x_0) - \lambda(x_0)\} &= \bm{u}^{\top}(V + \tau^2I)^{-1}\bm{u} - \frac{\big(1- \bm{1}^{\top}(V + \tau^2I)^{-1}\bm{u}\big)^2}{\bm{1}^{\top}(V + \tau^2I)^{-1}\bm{1}}.
 \end{aligned}
 $$
 
