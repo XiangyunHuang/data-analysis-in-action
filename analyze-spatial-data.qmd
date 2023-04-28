@@ -601,6 +601,20 @@ $$
 \end{aligned}
 $$
 
+**nlme** 包的另一个函数 `lme()` ，扩展了函数 `gls()` 的功能，支持添加随机效应。在模型 @eq-rongelap-gaussian-slmm 的基础上，添加一个随机截距。
+
+```{r}
+rongelap$dummy <- 1
+fit_rongelap_lme <- lme(
+  log(counts / time) ~ 1, data = rongelap,
+  random = ~ 1 | dummy,
+  correlation = corExp(
+    value = c(200, 0.1), form = ~ cX + cY, nugget = TRUE
+  )
+)
+summary(fit_rongelap_lme)
+```
+
 #### 经验半变差函数图 {#sec-semi-variogram}
 
 接下来用经验半变差函数图检查空间相关性。为方便表述起见，令 $T(x_i)$ 代表 @eq-rongelap-gaussian-slmm 等号右侧的部分，即表示线性预测（Linear Predictor）。
@@ -1063,7 +1077,7 @@ print(p4, vp = grid::viewport(x = .3, y = .65, width = .45, height = .45))
 
 ### 广义最小二乘 {#sec-generalized-least-squares}
 
-**nlme** 包的函数 `gls()` 的名称 `gls` 是 Generalized Least Squares 广义最小二乘的意思。顾名思义，广义最小二乘是最小二乘的推广形式。当模型残差不满足独立同分布的条件，存在相关性或异方差，就需要广义最小二乘 （Generalized Least Squares ，简称 GLS）。在前面的第 @sec-rongelap-slmm 小节，广义最小二乘估计模型 @eq-rongelap-gaussian-slmm 的参数，下面继续介绍其原理。线性模型的一般形式如下：
+**nlme** 包的函数 `gls()` 的名称 `gls` 是 Generalized Least Squares 广义最小二乘的意思。顾名思义，广义最小二乘是最小二乘的推广形式。当模型残差不满足独立同分布的条件，存在相关性或异方差，就需要广义最小二乘 （Generalized Least Squares ，简称 GLS）。在前面的 @sec-rongelap-slmm ，采用广义最小二乘估计 @eq-rongelap-gaussian-slmm 的参数，下面继续介绍其原理。线性模型的一般形式如下：
 
 $$
 \bm{y} = X\bm{\beta} + \bm{\epsilon}
@@ -1077,6 +1091,10 @@ $$
 
 现在的目标是找到一个 $\hat{\bm{\beta}}$ 使得 $\mathsf{Var}\{\bm{y} - X\hat{\bm{\beta}}\}$ 最小。
 
+$$
+\hat{\beta}_{gls} = (X^{\top}\Sigma^{-1}X)^{-1} X^{\top}\Sigma^{-1}\bm{y} 
+$$
+
 类似地，对于一次新的观测 $\bm{x}_0$，它是一个 $1 \times p$ 的行向量，现在的目标是找到一个 $\hat{y}_0$ ，在满足无偏性的条件下，使得预测的均方误差 $\mathsf{E}\{(\hat{y}_0 - y_0)^2\}$ 最小，也就是预测方差 $\mathsf{Var}\{\hat{y}_0 - y_0\}$ 最小。不妨设 $\hat{y}_0$ 是关于 $\bm{y}$ 的线性组合，即 $\hat{y}_0 = \bm{w}^{\top}\bm{y}$ ，此处，$\bm{w}$ 是 $N \times 1$ 维的权重向量。找 $\hat{y}_0$ 的问题转为求解如下最优化问题。
 
 $$
@@ -1089,7 +1107,7 @@ $$ {#eq-lmm-optim}
 对于无偏性的约束条件，有
 
 $$
-\mathsf{E}\{\hat{y}_0 - y_0\} = \mathsf{E}\{\bm{w}^{\top}X\bm{\beta} - \bm{x}_0\bm{\beta}\} = \bm{w}^{\top}X\bm{\beta} - \bm{x}_0\bm{\beta} = 0
+\mathsf{E}\{\hat{y}_0 - y_0\} = \mathsf{E}\{\bm{w}^{\top}(X\bm{\beta} + \bm{\epsilon}) - (\bm{x}_0\bm{\beta} + \bm{\epsilon}_0)\} = \bm{w}^{\top}X\bm{\beta} - \bm{x}_0\bm{\beta} = 0
 $$
 
 对于目标函数，有
@@ -1101,47 +1119,49 @@ $$
 & = \mathsf{Var}\{\bm{w}^{\top}\bm{\epsilon} - \epsilon_0 \} \\
 & = \mathsf{E}\{(\bm{w}^{\top}\bm{\epsilon} - \epsilon_0)^2\} - [\mathsf{E}\{(\bm{w}^{\top}\bm{\epsilon} - \epsilon_0)\}]^2 \\
 & = \mathsf{E}\{(\bm{w}^{\top}\bm{\epsilon} - \epsilon_0)^2\} \\
-& = \bm{w}^{\top}\mathsf{Cov}\{\bm{\epsilon},\bm{\epsilon}^{\top}\} \bm{w} - \bm{w}^{\top} \mathsf{Cov}\{\bm{\epsilon}, \epsilon_0^{\top}\} - \mathsf{Cov}\{\epsilon_0, \bm{\epsilon}^{\top}\} \bm{w} + \mathsf{Cov}\{\epsilon_0, \epsilon_0 \} \\
-& = \bm{w}^{\top}\mathsf{Cov}\{\bm{\epsilon},\bm{\epsilon}^{\top}\} \bm{w} - 2 \mathsf{Cov}\{\epsilon_0, \bm{\epsilon}^{\top}\} \bm{w} + \mathsf{Cov}\{\epsilon_0, \epsilon_0 \} \\
+& = \mathsf{E}\{(\bm{w}^{\top}\bm{\epsilon} - \epsilon_0)(\bm{w}^{\top}\bm{\epsilon} - \epsilon_0)^{\top}\} \\
+& = \bm{w}^{\top}\mathsf{Cov}\{\bm{\epsilon},\bm{\epsilon}^{\top}\} \bm{w} - 2\mathsf{Cov}\{\epsilon_0, \bm{\epsilon}^{\top}\} \bm{w} + \mathsf{Cov}\{\epsilon_0, \epsilon_0 \} \\
 & = \bm{w}^{\top}\Sigma_{11} \bm{w} - 2 \Sigma_{01} \bm{w} + \Sigma_{00}
 \end{aligned}
 $$
 
 令$$
-\Sigma_{11} = \mathsf{Cov}\{\bm{\epsilon},\bm{\epsilon}^{\top}\}, \Sigma_{01} = \mathsf{Cov}\{\epsilon_0, \bm{\epsilon}^{\top}\}, \Sigma_{00} = \mathsf{Cov}\{\epsilon_0, \epsilon_0 \}
+\Sigma_{11} = \mathsf{Cov}\{\bm{\epsilon},\bm{\epsilon}^{\top}\}, 
+\Sigma_{10} = \mathsf{Cov}\{\bm{\epsilon},\epsilon_0\}, \Sigma_{01} = \mathsf{Cov}\{\epsilon_0, \bm{\epsilon}^{\top}\}, \Sigma_{00} = \mathsf{Cov}\{\epsilon_0, \epsilon_0 \}
 $$
 
 采用拉格朗日乘数法将约束优化问题 @eq-lmm-optim 转为如下无约束优化问题
 
 $$
-\min_{\bm{w},\kappa} \quad \bm{w}^{\top}\Sigma_{11} \bm{w} - 2 \Sigma_{01} \bm{w} + \Sigma_{00} + \kappa (\bm{w}^{\top}X - \bm{x}_0)
+\min_{\bm{w},\bm{\kappa}} \quad \bm{w}^{\top}\Sigma_{11} \bm{w} - 2 \Sigma_{01} \bm{w} + \Sigma_{00} + (\bm{x}_0 - \bm{w}^{\top}X) \bm{\kappa}
 $$
 
-对 $\bm{w},\kappa$ 分别求偏导，并令偏导等于 0，可得
+其中，$\bm{\kappa}$ 是 $p \times 1$ 维的拉格朗日乘子向量，对 $\bm{w},\bm{\kappa}$ 分别求偏导，并令偏导等于 0，可得
 
 $$
 \begin{aligned}
-2 \bm{w}^{\top} \Sigma_{11} - 2 \Sigma_{10} + \kappa X^{\top} = \bm{0} \\
-\bm{w}^{\top}  X - \bm{x}_0 = \bm{0}
+2 \Sigma_{11} \bm{w} - 2 \Sigma_{10} - X\bm{\kappa}  = \bm{0} \\
+X^{\top}\bm{w}  - \bm{x}_0^{\top} = \bm{0}
 \end{aligned}
 $$
 
-第一个式子右乘 $\Sigma_{11}^{-1}X$ ，再将第二个式子代入第一个式子，有
+第一个式子左乘 $X^{\top}\Sigma_{11}^{-1}$ ，再将第二个式子代入第一个式子，有
 
 $$
-2 \underbrace{\bm{w}^{\top} X}_{\bm{x_0}} -2 \Sigma_{10}\Sigma_{11}^{-1}X + \kappa X^{\top}\Sigma_{11}^{-1}X = 0
+2 \underbrace{X^{\top}\bm{w}}_{\bm{x_0}^{\top}} -2 X^{\top}\Sigma_{11}^{-1}\Sigma_{10} -  X^{\top}\Sigma_{11}^{-1}X\bm{\kappa}= 0
 $$
 
 可得
 
 $$
-\kappa = 2 (X^{\top}\Sigma_{11}^{-1}X)^{-1} (\bm{x_0} - \Sigma_{10}\Sigma_{11}^{-1}X)
+\bm{\kappa} = 2 (X^{\top}\Sigma_{11}^{-1}X)^{-1} (\bm{x_0}^{\top} - X^{\top}\Sigma_{11}^{-1}\Sigma_{10})
 $$
 
-将 $\kappa$ 代入第一个式子，可得
+将 $\bm{\kappa}$ 代入第一个式子，可得
 
 $$
-\bm{w}^{\top} = (\Sigma_{10} - (X^{\top}\Sigma_{11}^{-1}X)^{-1}(\bm{x}_0 - \Sigma_{10}\Sigma_{11}^{-1}X)) \Sigma_{11}^{-1}.
+\bm{w} = \Sigma_{11}^{-1} (\Sigma_{10} 
++ X(X^{\top}\Sigma_{11}^{-1}X)^{-1}(\bm{x}_0^{\top} - X^{\top}\Sigma_{11}^{-1}\Sigma_{10})) .
 $$
 
 从而，
@@ -1149,8 +1169,8 @@ $$
 $$
 \begin{aligned}
 \hat{y}_0 &= \bm{w}^{\top}\bm{y} \\
-&= (\Sigma_{10} - (X^{\top}\Sigma_{11}^{-1}X)^{-1}(\bm{x}_0 - \Sigma_{10}\Sigma_{11}^{-1}X)) \Sigma_{11}^{-1}\bm{y} \\
-&= \Sigma_{10} \Sigma_{11}^{-1}\bm{y} - (X^{\top}\Sigma_{11}^{-1}X)^{-1}(\bm{x}_0 - \Sigma_{10}\Sigma_{11}^{-1}X)\Sigma_{11}^{-1}\bm{y}
+&= \Sigma_{01} \Sigma_{11}^{-1}\bm{y} + (\bm{x}_0 - \Sigma_{01}\Sigma_{11}^{-1}X) (X^{\top}\Sigma_{11}^{-1}X)^{-1} X^{\top}\Sigma_{11}^{-1}\bm{y} \\
+&= \bm{x}_0 \hat{\beta}_{gls} + \Sigma_{01} \Sigma_{11}^{-1}(\bm{y} - X\hat{\beta}_{gls})
 \end{aligned}
 $$
 
@@ -1253,24 +1273,24 @@ $$
 $$
 \begin{aligned}
 \mathsf{Var}\{\hat{\lambda}(x_0) - \lambda(x_0)\} &= \mathsf{Var}\{\hat{\lambda}(x_0) \} + \mathsf{Var}\{\lambda(x_0)\} - 2 \mathsf{Cov}\{\hat{\lambda}(x_0), \lambda(x_0)\} \\
-&= \bm{w}^{\top}V\bm{w} + \sigma_{0}^2 - 2\sum_{i=1}^{N}w_i \mathsf{Cov}\{\lambda(x_i),\lambda(x_0)\} \\
-& = \bm{w}^{\top}V\bm{w} + \sigma_{0}^2 - 2\bm{w}^{\top} \mathsf{Cov}\{\bm{\lambda},\lambda(x_0)\} \\
-& = \bm{w}^{\top}V\bm{w} + \sigma_{0}^2 - 2\bm{w}^{\top} \bm{u}.
+&= \bm{w}^{\top}V\bm{w} + \sigma_{0}^2 - 2\sum_{i=1}^{N} \mathsf{Cov}\{\lambda(x_i),\lambda(x_0)\}w_i \\
+& = \bm{w}^{\top}V\bm{w} + \sigma_{0}^2 - 2[\mathsf{Cov}\{\bm{\lambda},\lambda(x_0)\}]^{\top}\bm{w}  \\
+& = \bm{w}^{\top}V\bm{w} + \sigma_{0}^2 - 2\bm{u}^{\top}\bm{w} .
 \end{aligned}
 $$
 
 其中，$\sigma_{0}^2 = \mathsf{Var}\{\lambda(x_0)\} = \mathsf{Var}\{\lambda(x_i)\}= \sigma^2$ 是未知常数，$\bm{u} = \mathsf{Cov}\{\bm{\lambda},\lambda(x_0)\}$ 是未知的 $N \times 1$ 向量。采用拉格朗日乘数法将约束优化问题 @eq-kriging-optim 转为如下无约束优化问题。
 
 $$
-\min_{\bm{w},\kappa} \mathcal{L}(\bm{w},k) = \frac{1}{2}\bm{w}^{\top}V\bm{w} + \frac{1}{2}\sigma_{0}^2 - \bm{w}^{\top} \bm{u} + \kappa (\bm{w}^{\top} \bm{1} - 1)
+\min_{\bm{w},\kappa} \mathcal{L}(\bm{w},k) = \frac{1}{2}\bm{w}^{\top}V\bm{w} + \frac{1}{2}\sigma_{0}^2 - \bm{u}^{\top}\bm{w}  + \kappa (1 - \bm{1}^{\top} \bm{w})
 $$
 
 其中，$\kappa$ 表示拉格朗日乘子，$\bm{1}$ 表示 $N \times 1$ 维的全 1 向量。分别对 $\bm{w}$ 和 $\kappa$ 求偏导，并令其等于 0 ，则有
 
 $$
 \begin{aligned}
-\frac{\partial \mathcal{L}(\bm{w},\kappa)}{\partial \bm{w}} &=  \bm{w}^{\top} V -  \bm{u}^{\top} + \kappa \bm{1}^{\top}= \bm{0} \\
-\frac{\partial \mathcal{L}(\bm{w},k)}{\partial \kappa} &= \bm{w}^{\top} \bm{1} - 1 = 0
+\frac{\partial \mathcal{L}(\bm{w},\kappa)}{\partial \bm{w}} &=  V \bm{w} -  \bm{u} - \kappa \bm{1}= \bm{0} \\
+\frac{\partial \mathcal{L}(\bm{w},k)}{\partial \kappa} &= \bm{1}^{\top} \bm{w} - 1 = 0
 \end{aligned}
 $$
 
@@ -1283,20 +1303,44 @@ V & \bm{1} \\
 \end{bmatrix}
 \begin{bmatrix}
 \bm{w}  \\
-k
+-\kappa
 \end{bmatrix}
 = 
 \begin{bmatrix}
 \bm{u}  \\
-1
+0
 \end{bmatrix}.
 $$
 
-所以，$\bm{w}^{\top} = \bm{u}^{\top}V^{-1}$ ，在位置 $x_0$ 处的预测 $\hat{\lambda}(x_0) = \bm{u}^{\top}V^{-1}\bm{\lambda}$ ，预测的均方误差 $\mathsf{E}\{[\hat{\lambda}(x_0) - \lambda(x_0)]^2\} = \mathsf{Var}\{\hat{\lambda}(x_0) - \lambda(x_0)\} = \sigma_0^2 - \bm{u}^{\top}V^{-1}\bm{u}$ 。根据数据可以估计经验半变差函数 @eq-semi-variogram 的参数，从而 $V$ 、 $\sigma_{0}^2$ 和 $\bm{u}$ 都是已知的。以 $V + \tau^2\mathsf{I}$ 替换 $V$ ，$\bm{\lambda} - \beta \bm{1}$ 替换 $\bm{\lambda}$ ，可得普通克里金插值的预测值及其均方误差。
+第一个方程左乘 $\bm{1}^{\top}V^{-1}$ ，再将第二个式子代入，可得
 
 $$
 \begin{aligned}
-\hat{\lambda}(x_0) &= \beta + \bm{u}^{\top}(V + \tau^2\mathsf{I})^{-1}(\bm{\lambda} - \beta \bm{1}) \\
+\kappa &= \frac{1- \bm{1}^{\top}V^{-1}\bm{u}}{\bm{1}^{\top}V^{-1}\bm{1}} \\
+\bm{w} &= V^{-1}(\bm{u} + \frac{1- \bm{1}^{\top}V^{-1}\bm{u}}{\bm{1}^{\top}V^{-1}\bm{1}} \bm{1})
+\end{aligned}
+$$
+
+所以，在位置 $x_0$ 处的预测 $\hat{\lambda}(x_0)$ ，
+
+$$
+\hat{\lambda}(x_0) = \bm{w}^{\top}\bm{\lambda}= (\bm{u}^{\top} + \frac{1- \bm{1}^{\top}V^{-1}\bm{u}}{\bm{1}^{\top}V^{-1}\bm{1}} \bm{1}^{\top}) V^{-1}\bm{\lambda}
+$$
+
+预测的均方误差 $\mathsf{MSE}$ ，
+
+$$
+\begin{aligned}
+\mathsf{MSE} &= \mathsf{E}\{[\hat{\lambda}(x_0) - \lambda(x_0)]^2\} \\
+&= \mathsf{Var}\{\hat{\lambda}(x_0) - \lambda(x_0)\}
+\end{aligned}
+$$
+
+根据数据可以估计经验半变差函数 @eq-semi-variogram 的参数，从而 $V$ 、 $\sigma_{0}^2$ 和 $\bm{u}$ 都是已知的。以 $V + \tau^2\mathsf{I}$ 替换 $V$ ，$\bm{\lambda} - \beta \bm{1}$ 替换 $\bm{\lambda}$ ，可得普通克里金插值的预测值及其均方误差。
+
+$$
+\begin{aligned}
+\hat{\lambda}(x_0) &= \beta + (\bm{u}^{\top} + \frac{1- \bm{1}^{\top}(V + \tau^2\mathsf{I})^{-1}\bm{u}}{\bm{1}^{\top}(V + \tau^2\mathsf{I})^{-1}\bm{1}} \bm{1}^{\top}) (V + \tau^2\mathsf{I})^{-1}(\bm{\lambda} - \beta \bm{1}) \\
 \mathsf{Var}\{\hat{\lambda}(x_0) - \lambda(x_0)\} &= \sigma^2 - \bm{u}^{\top}(V + \tau^2\mathsf{I})^{-1}\bm{u}.
 \end{aligned}
 $$
