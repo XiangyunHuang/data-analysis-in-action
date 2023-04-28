@@ -1083,49 +1083,51 @@ $$
 \bm{y} = X\bm{\beta} + \bm{\epsilon}
 $$
 
-其中，$\bm{y}$ 是 $N \times 1$ 的列向量，表示响应变量对应的观测数据。 $X$ 是 $N \times p$ 的矩阵，表示 $p$ 维协变量对应的 $N$ 次观测数据。$\bm{\beta}$ 是 $p \times 1$ 的列向量，表示待估的模型参数。 $\bm{\epsilon}$ 是 $N \times 1$ 的列向量，表示残差。假定 $X$ 是固定的，不是随机的，且与 $\bm{\epsilon}$ 独立。随机向量 $\bm{\epsilon}$ 的期望为 $\mathsf{E}\{\bm{\epsilon}\} = \bm{0}$，方差为 $\Sigma = \mathsf{Cov}\{\bm{\epsilon},\bm{\epsilon}\} = \mathsf{Var}\{\bm{\epsilon}\}$ 。则有
+其中，$\bm{y}$ 是 $N \times 1$ 的列向量，表示响应变量对应的观测数据。 $X$ 是 $N \times p$ 的矩阵，表示 $p$ 维协变量对应的 $N$ 次观测数据。$\bm{\beta}$ 是 $p \times 1$ 的列向量，表示待估的模型参数。 $\bm{\epsilon}$ 是 $N \times 1$ 的列向量，表示残差。
+
+假定随机向量 $\bm{\epsilon}$ 的期望为 $\mathsf{E}\{\bm{\epsilon}|X\} = \bm{0}$，方差为 $\mathsf{Var}\{\bm{\epsilon}|X\}=\Sigma$ ，且 $X$ 与 $\bm{\epsilon}$ 不相关，则有
 
 $$
-\mathsf{E}\{\bm{y}|\bm{\epsilon}\} = X\bm{\beta}, \quad \mathsf{Var}\{\bm{y}|\bm{\epsilon}\} = \Sigma.
+\mathsf{E}\{\bm{y}|X\} = X\bm{\beta}, \quad \mathsf{Var}\{\bm{y}|X\} = \Sigma.
 $$
 
 #### $\bm{\beta}$ 的最佳线性无偏估计
 
-现在的目标是找到一个 $\hat{\bm{\beta}}$ ，使得残差平方和最小，即求解如下无约束最优化问题。
+现在的目标是找到一个 $\bm{\beta}$ ，使得残差平方和最小，即求解如下无约束最优化问题。
 
 $$
 \begin{aligned}
-\min_{\bm{\beta}}\quad & \hat{\bm{\epsilon}}^{\top}\hat{\bm{\epsilon}} 
+\min_{\bm{\beta}}\quad & \bm{\epsilon}^{\top}\bm{\epsilon}
 \end{aligned}
 $$ {#eq-gls-beta}
 
-将 $\hat{\bm{\epsilon}}= \bm{y} - X\hat{\bm{\beta}}$ 代入并展开，目标函数可进一步表达为如下形式。
+将 $\bm{\epsilon}= \bm{y} - X\bm{\beta}$ 代入并展开，目标函数可进一步表达为如下形式。
 
 $$
 \begin{aligned}
-\hat{\bm{\epsilon}}^{\top}\hat{\bm{\epsilon}} &= (\bm{y} - X\hat{\bm{\beta}})^{\top}(\bm{y} - X\hat{\bm{\beta}}) \\
-&=\bm{y}^{\top}\bm{y} - \bm{y}^{\top}X\hat{\bm{\beta}} - (X\hat{\bm{\beta}})^{\top}\bm{y} + (X\hat{\bm{\beta}})^{\top}X\hat{\bm{\beta}} \\
-&=\bm{y}^{\top}\bm{y} - 2 \bm{y}^{\top}X\hat{\bm{\beta}} + \hat{\bm{\beta}}^{\top}X^{\top}X\hat{\bm{\beta}}
+\bm{\epsilon}^{\top}\bm{\epsilon} &= (\bm{y} - X\bm{\beta})^{\top}(\bm{y} - X\bm{\beta}) \\
+&=\bm{y}^{\top}\bm{y} - \bm{y}^{\top}X\bm{\beta} - (X\bm{\beta})^{\top}\bm{y} + (X\bm{\beta})^{\top}X\bm{\beta} \\
+&=\bm{y}^{\top}\bm{y} - 2 \bm{y}^{\top}X\bm{\beta} + \bm{\beta}^{\top}X^{\top}X\bm{\beta}
 \end{aligned}
 $$
 
-对 $\hat{\bm{\beta}}$ 求偏导，并令偏导等于 $\bm{0}$。
+对 $\bm{\beta}$ 求偏导，并令偏导等于 $\bm{0}$。
 
 $$
--2X^{\top}\bm{y} + 2X^{\top}X\hat{\bm{\beta}} = 0
+-2X^{\top}\bm{y} + 2X^{\top}X\bm{\beta} = 0
 $$
 
-可得
+可得 $\bm{\beta}$ 的最小二乘估计 $\hat{\bm{\beta}}$ 。
 
 $$
-\hat{\bm{\beta}} = (X^{\top}X)^{-1}X^{\top}\bm{y}
+\hat{\bm{\beta}} = (X^{\top}X)^{-1}X^{\top}\bm{y}.
 $$
 
 此时，$\hat{\bm{\beta}}$ 的期望 $\mathsf{E}\{\hat{\bm{\beta}}\} = \bm{\beta}$ ，即 $\hat{\bm{\beta}}$ 是 $\bm{\beta}$ 无偏的估计。$\hat{\bm{\beta}}$ 的方差 $\mathsf{Var}\{\hat{\bm{\beta}}\}$ 的计算如下：
 
 $$
 \begin{aligned}
-\mathsf{Var}\{\hat{\bm{\beta}}\} &= \mathsf{E}\{\hat{\bm{\beta}}^{\top}\hat{\bm{\beta}}\} - \bm{\beta}^{\top}\bm{\beta} \\
+\mathsf{Var}\{\hat{\bm{\beta}}\} &= \mathsf{E}\{\hat{\bm{\beta}}^{\top}\hat{\bm{\beta}}\} - \mathsf{E}\{\hat{\bm{\beta}}^{\top}\}\mathsf{E}\{\hat{\bm{\beta}}\} \\
 &= \mathsf{E}\{ [(X^{\top}X)^{-1}X^{\top}\bm{y}]^{\top} (X^{\top}X)^{-1}X^{\top}\bm{y} \} - \bm{\beta}^{\top}\bm{\beta} \\
 &= \mathsf{E}\{ [(X^{\top}X)^{-1}X^{\top}(X\bm{\beta} + \bm{\epsilon})]^{\top} (X^{\top}X)^{-1}X^{\top}(X\bm{\beta} + \bm{\epsilon}) \} - \bm{\beta}^{\top}\bm{\beta} \\
 &= \mathsf{E}\{ (\bm{\beta} + (X^{\top}X)^{-1}X^{\top}\bm{\epsilon})^{\top} (\bm{\beta} + (X^{\top}X)^{-1}X^{\top}\bm{\epsilon})\} - \bm{\beta}^{\top}\bm{\beta} \\
@@ -1134,11 +1136,13 @@ $$
 \end{aligned}
 $$
 
-其中，$A = (X^{\top}X)^{-1}X^{\top}$。
+其中，$A = (X^{\top}X)^{-1}X^{\top}$。当 $\bm{\epsilon}$ 之间存在相关性时，需要广义最小二乘估计，即
 
 $$
-\hat{\bm{\beta}}_{gls} = (X^{\top}\Sigma^{-1}X)^{-1} X^{\top}\Sigma^{-1}\bm{y}
+\hat{\bm{\beta}}_{gls} = (X^{\top}\Sigma^{-1}X)^{-1} X^{\top}\Sigma^{-1}\bm{y}.
 $$
+
+当 $\bm{\epsilon}$ 之间存在空间相关性时，$\Sigma$ 是含有参数 $\sigma^2,\phi$ ，若模型带块金效应，则还含有参数 $\tau^2$ 。此时，上式不足以估计模型的参数，且看后续 @sec-restricted-maximum-likelihood 。
 
 #### $y_0$ 的最佳线性无偏估计
 
@@ -1224,9 +1228,7 @@ $$
 
 ### 限制极大似然 {#sec-restricted-maximum-likelihood}
 
-**nlme** 包的函数 `gls()` 提供极大似然和限制极大似然两种方法估计模型参数。
-
--   极大似然
+**nlme** 包的函数 `gls()` 提供极大似然和限制极大似然两种方法估计模型参数。极大似然估计对残差的分布有要求，一般假定 $\bm{\epsilon}$ 服从多元正态分布，即 $\bm{\epsilon} \sim \mathrm{MVN}(\bm{0}, \Sigma)$ 。
 
 -   限制极大似然（Restricted Maximum Likelihood，简称 REML）
 
