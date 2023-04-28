@@ -1089,33 +1089,65 @@ $$
 \mathsf{E}\{\bm{y}|\bm{\epsilon}\} = X\bm{\beta}, \quad \mathsf{Var}\{\bm{y}|\bm{\epsilon}\} = \Sigma.
 $$
 
-现在的目标是找到一个 $\hat{\bm{\beta}}$ 使得 $\mathsf{Var}\{\bm{y} - X\hat{\bm{\beta}}\}$ 最小。
+现在的目标是找到一个 $\hat{\bm{\beta}}$ ，在满足无偏性的条件下，使得残差平方和最小，即求解如下最优化问题。
 
 $$
-\hat{\beta}_{gls} = (X^{\top}\Sigma^{-1}X)^{-1} X^{\top}\Sigma^{-1}\bm{y} 
+\begin{aligned}
+\min_{\bm{\beta}}\quad & \hat{\bm{\epsilon}}^{\top}\hat{\bm{\epsilon}} \\
+\text{s.t.}  \quad & \mathsf{E}\{\hat{\bm{\beta}} - \bm{\beta}\} = 0
+\end{aligned}
+$$ {#eq-gls-beta}
+
+根据随机向量的二次型，目标函数可进一步表达为如下形式。
+
+$$
+\begin{aligned}
+\hat{\bm{\epsilon}}^{\top}\hat{\bm{\epsilon}} &= (\bm{y} - X\hat{\bm{\beta}})^{\top}(\bm{y} - X\hat{\bm{\beta}}) \\
+&=\bm{y}^{\top}\bm{y} - \bm{y}^{\top}X\hat{\bm{\beta}} - (X\hat{\bm{\beta}})^{\top}\bm{y} + (X\hat{\bm{\beta}})^{\top}X\hat{\bm{\beta}} \\
+&=\bm{y}^{\top}\bm{y} - 2 \bm{y}^{\top}X\hat{\bm{\beta}} + \hat{\bm{\beta}}^{\top}X^{\top}X\hat{\bm{\beta}}
+\end{aligned}
 $$
 
-类似地，对于一次新的观测 $\bm{x}_0$，它是一个 $1 \times p$ 的行向量，现在的目标是找到一个 $\hat{y}_0$ ，在满足无偏性的条件下，使得预测的均方误差 $\mathsf{E}\{(\hat{y}_0 - y_0)^2\}$ 最小，也就是预测方差 $\mathsf{Var}\{\hat{y}_0 - y_0\}$ 最小。不妨设 $\hat{y}_0$ 是关于 $\bm{y}$ 的线性组合，即 $\hat{y}_0 = \bm{w}^{\top}\bm{y}$ ，此处，$\bm{w}$ 是 $N \times 1$ 维的权重向量。找 $\hat{y}_0$ 的问题转为求解如下最优化问题。
+对 $\hat{\bm{\beta}}$ 求偏导，并令偏导等于 $\bm{0}$。
+
+$$
+-2X^{\top}\bm{y} + 2X^{\top}X\hat{\beta} = 0
+$$
+可得
+
+$$
+\hat{\beta} = (X^{\top}X)^{-1}X^{\top}\bm{y}
+$$
+
+$$
+\mathsf{Var}\{\hat{\bm{\epsilon}}\} = \mathsf{E}\{\hat{\bm{\epsilon}}^{\top}\hat{\bm{\epsilon}}\}
+$$
+
+$$
+\hat{\beta}_{gls} = (X^{\top}\Sigma^{-1}X)^{-1} X^{\top}\Sigma^{-1}\bm{y}
+$$
+
+类似地，对于一次新的观测 $\bm{x}_0$，它是一个 $p \times 1$ 的列向量，现在的目标是找到一个 $\hat{y}_0$ ，在满足无偏性的条件下，使得预测的均方误差 $\mathsf{E}\{(\hat{y}_0 - y_0)^2\}$ 最小，也就是预测方差 $\mathsf{Var}\{\hat{y}_0 - y_0\}$ 最小。不妨设 $\hat{y}_0$ 是关于 $\bm{y}$ 的线性组合，即 $\hat{y}_0 = \bm{w}^{\top}\bm{y}$ ，此处，$\bm{w}$ 是 $N \times 1$ 维的权重向量。找 $\hat{y}_0$ 的问题转为求解如下最优化问题。
 
 $$
 \begin{aligned}
 \min_{\bm{w}}\quad & \mathsf{Var}\{\hat{y}_0 - y_0\} \\
 \text{s.t.}  \quad & \mathsf{E}\{\hat{y}_0 - y_0\} = 0
 \end{aligned}
-$$ {#eq-lmm-optim}
+$$ {#eq-gls-predictor}
 
 对于无偏性的约束条件，有
 
 $$
-\mathsf{E}\{\hat{y}_0 - y_0\} = \mathsf{E}\{\bm{w}^{\top}(X\bm{\beta} + \bm{\epsilon}) - (\bm{x}_0\bm{\beta} + \bm{\epsilon}_0)\} = \bm{w}^{\top}X\bm{\beta} - \bm{x}_0\bm{\beta} = 0
+\mathsf{E}\{\hat{y}_0 - y_0\} = \mathsf{E}\{\bm{w}^{\top}(X\bm{\beta} + \bm{\epsilon}) - (\bm{x}_0^{\top}\bm{\beta} + \bm{\epsilon}_0)\} = \bm{w}^{\top}X\bm{\beta} - \bm{x}_0^{\top}\bm{\beta} = 0
 $$
 
 对于目标函数，有
 
 $$
 \begin{aligned}
-\mathsf{Var}\{\hat{y}_0 - y_0\} &= \mathsf{Var}\{\bm{w}^{\top}\bm{y} - \bm{x}_0\bm{\beta}- \epsilon_0\} \\
-&= \mathsf{Var}\{\bm{w}^{\top}(X\bm{\beta} + \bm{\epsilon}) - \bm{x}_0\bm{\beta} - \epsilon_0\} \\
+\mathsf{Var}\{\hat{y}_0 - y_0\} &= \mathsf{Var}\{\bm{w}^{\top}\bm{y} - \bm{x}_0^{\top}\bm{\beta}- \epsilon_0\} \\
+&= \mathsf{Var}\{\bm{w}^{\top}(X\bm{\beta} + \bm{\epsilon}) - \bm{x}_0^{\top}\bm{\beta} - \epsilon_0\} \\
 & = \mathsf{Var}\{\bm{w}^{\top}\bm{\epsilon} - \epsilon_0 \} \\
 & = \mathsf{E}\{(\bm{w}^{\top}\bm{\epsilon} - \epsilon_0)^2\} - [\mathsf{E}\{(\bm{w}^{\top}\bm{\epsilon} - \epsilon_0)\}]^2 \\
 & = \mathsf{E}\{(\bm{w}^{\top}\bm{\epsilon} - \epsilon_0)^2\} \\
@@ -1130,18 +1162,18 @@ $$
 \Sigma_{10} = \mathsf{Cov}\{\bm{\epsilon},\epsilon_0\}, \Sigma_{01} = \mathsf{Cov}\{\epsilon_0, \bm{\epsilon}^{\top}\}, \Sigma_{00} = \mathsf{Cov}\{\epsilon_0, \epsilon_0 \}
 $$
 
-采用拉格朗日乘数法将约束优化问题 @eq-lmm-optim 转为如下无约束优化问题
+采用拉格朗日乘数法将约束优化问题 @eq-gls-predictor 转为如下无约束优化问题
 
 $$
-\min_{\bm{w},\bm{\kappa}} \quad \bm{w}^{\top}\Sigma_{11} \bm{w} - 2 \Sigma_{01} \bm{w} + \Sigma_{00} + (\bm{x}_0 - \bm{w}^{\top}X) \bm{\kappa}
+\min_{\bm{w},\bm{\kappa}} \quad \bm{w}^{\top}\Sigma_{11} \bm{w} - 2 \Sigma_{01} \bm{w} + \Sigma_{00} + (\bm{x}_0^{\top} - \bm{w}^{\top}X) \bm{\kappa}
 $$
 
-其中，$\bm{\kappa}$ 是 $p \times 1$ 维的拉格朗日乘子向量，对 $\bm{w},\bm{\kappa}$ 分别求偏导，并令偏导等于 0，可得
+其中，$\bm{\kappa}$ 是 $p \times 1$ 维的拉格朗日乘子向量，对 $\bm{w},\bm{\kappa}$ 分别求偏导，并令偏导等于 $\bm{0}$，可得
 
 $$
 \begin{aligned}
 2 \Sigma_{11} \bm{w} - 2 \Sigma_{10} - X\bm{\kappa}  = \bm{0} \\
-X^{\top}\bm{w}  - \bm{x}_0^{\top} = \bm{0}
+X^{\top}\bm{w}  - \bm{x}_0 = \bm{0}
 \end{aligned}
 $$
 
@@ -1154,17 +1186,17 @@ $$
 可得
 
 $$
-\bm{\kappa} = 2 (X^{\top}\Sigma_{11}^{-1}X)^{-1} (\bm{x_0}^{\top} - X^{\top}\Sigma_{11}^{-1}\Sigma_{10})
+\bm{\kappa} = 2 (X^{\top}\Sigma_{11}^{-1}X)^{-1} (\bm{x_0} - X^{\top}\Sigma_{11}^{-1}\Sigma_{10})
 $$
 
 将 $\bm{\kappa}$ 代入第一个式子，可得
 
 $$
 \bm{w} = \Sigma_{11}^{-1} (\Sigma_{10} 
-+ X(X^{\top}\Sigma_{11}^{-1}X)^{-1}(\bm{x}_0^{\top} - X^{\top}\Sigma_{11}^{-1}\Sigma_{10})) .
++ X(X^{\top}\Sigma_{11}^{-1}X)^{-1}(\bm{x}_0 - X^{\top}\Sigma_{11}^{-1}\Sigma_{10})) .
 $$
 
-从而，
+从而
 
 $$
 \begin{aligned}
