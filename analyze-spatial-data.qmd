@@ -96,8 +96,8 @@ knitr::kable(head(rongelap_coastline, 6),
 #| - 采样分布
 #| - 采样顺序
 #| fig-showtext: true
-#| fig-width: 7
-#| fig-height: 4
+#| fig-width: 6.2
+#| fig-height: 3.2
 #| code-fold: true
 #| layout-nrow: 2
 #| layout-ncol: 1
@@ -105,7 +105,7 @@ knitr::kable(head(rongelap_coastline, 6),
 
 library(ggplot2)
 ggplot() +
-  geom_point(data = rongelap, aes(x = cX, y = cY), size = 0.5) +
+  geom_point(data = rongelap, aes(x = cX, y = cY), size = 0.2) +
   geom_path(data = rongelap_coastline, aes(x = cX, y = cY)) +
   theme_bw() +
   coord_fixed() +
@@ -113,7 +113,7 @@ ggplot() +
 
 rongelap$dummy <- rownames(rongelap)
 ggplot(rongelap, aes(x = cX, y = cY)) +
-  geom_text(aes(label = dummy), size = 3) +
+  geom_text(aes(label = dummy), size = 2) +
   theme_bw() +
   coord_fixed() +
   labs(x = "横坐标（米）", y = "纵坐标（米）")
@@ -126,37 +126,36 @@ ggplot(rongelap, aes(x = cX, y = cY)) +
 ```{r}
 #| label: fig-rongelap-location-zoom
 #| fig-cap: "岛上各采样点的核辐射强度"
-#| fig-width: 7
-#| fig-height: 4
+#| fig-width: 6.2
+#| fig-height: 3.2
 #| fig-showtext: true
 #| code-fold: true
 #| echo: !expr knitr::is_html_output()
 
-library(ggplot2)
-
 p1 <- ggplot() +
   geom_path(data = rongelap_coastline, aes(x = cX, y = cY)) +
-  geom_point(data = rongelap, aes(x = cX, y = cY, color = counts / time), size = 0.5) +
+  geom_point(data = rongelap, aes(x = cX, y = cY, color = counts / time), size = 0.2) +
   scale_x_continuous(n.breaks = 7) +
   scale_color_viridis_c(option = "C") +
   geom_segment(
-    data = data.frame(x = -5560, xend = -5000, y = -3000, yend = -2000),
+    data = data.frame(x = -5560, xend = -5000, y = -3000, yend = -2300),
     aes(x = x, y = y, xend = xend, yend = yend),
     arrow = arrow(length = unit(0.03, "npc"))
   ) +
   theme_bw() +
+  coord_fixed() +
   labs(x = "横坐标（米）", y = "纵坐标（米）", color = "辐射强度")
 
 p2 <- ggplot() +
   geom_point(data = rongelap, aes(x = cX, y = cY, color = counts / time), 
-             size = 2, show.legend = FALSE) +
+             size = 1, show.legend = FALSE) +
   scale_color_viridis_c(option = "C") +
-  coord_cartesian(xlim = c(-5700, -5540), ylim = c(-3260, -3100)) +
+  coord_fixed(xlim = c(-5700, -5540), ylim = c(-3260, -3100)) +
   theme_bw() +
   labs(x = NULL, y = NULL)
 
 p1
-print(p2, vp = grid::viewport(x = .25, y = .725, width = .275, height = .45))
+print(p2, vp = grid::viewport(x = .25, y = .66, width = .275, height = .45))
 ```
 
 **ggplot2** 包只能在二维平面上展示数据，对于空间数据，立体图形更加符合数据产生背景。如 @fig-rongelap-concentration 所示，以三维图形展示朗格拉普岛上采样点的位置及检测到的辐射强度。**lattice** 包的函数 `cloud()` 可以绘制三维的散点图，将自定义的面板函数 `panel.3dcoastline()` 传递给参数 `panel.3d.cloud` 绘制岛屿海岸线。组合点和线两种绘图元素构造出射线，线的长短表示放射性的强弱，以射线表示粒子辐射现象更加贴切。
@@ -254,13 +253,13 @@ summary(fit_rongelap_poisson)
 ```{r}
 #| label: fig-rongelap-poisson-residuals
 #| fig-cap: "残差的空间分布"
-#| fig-width: 7
-#| fig-height: 4
+#| fig-width: 6.2
+#| fig-height: 3.2
 #| fig-showtext: true
 
 rongelap$poisson_residuals <- residuals(fit_rongelap_poisson)
 ggplot(rongelap, aes(x = cX, y = cY)) +
-  geom_point(aes(colour = poisson_residuals / time), size = 0.5) +
+  geom_point(aes(colour = poisson_residuals / time), size = 0.2) +
   scale_color_viridis_c(option = "C") +
   theme_bw() +
   labs(x = "横坐标（米）", y = "纵坐标（米）", color = "残差")
@@ -272,7 +271,7 @@ ggplot(rongelap, aes(x = cX, y = cY)) +
 #| label: fig-rongelap-histogram
 #| fig-cap: "辐射强度的直方图"
 #| fig-width: 5
-#| fig-height: 4
+#| fig-height: 3.5
 #| fig-showtext: true
 
 ggplot(data = rongelap, aes(x = counts / time)) +
@@ -812,13 +811,13 @@ rongelap_coastline_buffer <- st_buffer(rongelap_coastline_sfp, dist = 50)
 ```{r}
 #| label: fig-rongelap-buffer
 #| fig-cap: "朗格拉普岛海岸线及其缓冲区"
-#| fig-width: 7
-#| fig-height: 4
+#| fig-width: 6.2
+#| fig-height: 3.2
 #| fig-showtext: true
 #| code-fold: true
 
 ggplot() +
-  geom_sf(data = rongelap_sf, size = 0.5) +
+  geom_sf(data = rongelap_sf, size = 0.2) +
   geom_sf(data = rongelap_coastline_sfp, fill = NA, color = "gray30") +
   geom_sf(data = rongelap_coastline_buffer, fill = NA, color = "black") +
   theme_void()
@@ -920,12 +919,26 @@ cov_fun <- function(h) sigma_sq * exp(-h / phi)
 m_obs <- cov_fun(st_distance(x = rongelap_sf)) + diag(tau_sq, 157)
 # 预测距离矩阵
 m_pred <- cov_fun(st_distance(x = rongelap_sf, y = rongelap_grid_centroid))
+
 # 简单克里金插值
-mean_sk <- beta + t(m_pred) %*% solve(m_obs, log(rongelap_sf$counts / rongelap_sf$time) - beta)
+# 均值函数
+mean_fun <- function(m_pred) {
+  n1 <- 1 - t(rep(1, 157)) %*% solve(m_obs, m_pred)
+  n2 <- t(rep(1, 157)) %*% solve(m_obs, rep(1, 157))
+  beta + (t(m_pred) + (n1 / n2) %*% t(rep(1, 157))) %*% solve(m_obs, log(rongelap_sf$counts / rongelap_sf$time) - beta)
+}
+mean_sk <- apply(m_pred, 2, mean_fun)
 # 辐射强度预测值
 rongelap_grid_df$pred_sk <- exp(mean_sk)
+# 方差函数
+var_fun <- function(m_pred){
+  n1 <- 1 - t(rep(1, 157)) %*% solve(m_obs, m_pred)
+  n2 <- t(rep(1, 157)) %*% solve(m_obs, rep(1, 157))
+  t(m_pred) %*% solve(m_obs, m_pred) - n1^2 / n2
+}
 # 辐射强度预测方差
-rongelap_grid_df$var_sk <- sigma_sq - diag(t(m_pred) %*% solve(m_obs, m_pred)) 
+var_sk <- apply(m_pred, 2, var_fun)
+rongelap_grid_df$var_sk <- var_sk
 ```
 
 ### 展示结果 {#sec-rongelap-plot}
