@@ -1089,16 +1089,17 @@ $$
 \mathsf{E}\{\bm{y}|\bm{\epsilon}\} = X\bm{\beta}, \quad \mathsf{Var}\{\bm{y}|\bm{\epsilon}\} = \Sigma.
 $$
 
-现在的目标是找到一个 $\hat{\bm{\beta}}$ ，在满足无偏性的条件下，使得残差平方和最小，即求解如下最优化问题。
+#### $\bm{\beta}$ 的最佳线性无偏估计
+
+现在的目标是找到一个 $\hat{\bm{\beta}}$ ，使得残差平方和最小，即求解如下无约束最优化问题。
 
 $$
 \begin{aligned}
-\min_{\bm{\beta}}\quad & \hat{\bm{\epsilon}}^{\top}\hat{\bm{\epsilon}} \\
-\text{s.t.}  \quad & \mathsf{E}\{\hat{\bm{\beta}} - \bm{\beta}\} = 0
+\min_{\bm{\beta}}\quad & \hat{\bm{\epsilon}}^{\top}\hat{\bm{\epsilon}} 
 \end{aligned}
 $$ {#eq-gls-beta}
 
-根据随机向量的二次型，目标函数可进一步表达为如下形式。
+将 $\hat{\bm{\epsilon}}= \bm{y} - X\hat{\bm{\beta}}$ 代入并展开，目标函数可进一步表达为如下形式。
 
 $$
 \begin{aligned}
@@ -1111,22 +1112,37 @@ $$
 对 $\hat{\bm{\beta}}$ 求偏导，并令偏导等于 $\bm{0}$。
 
 $$
--2X^{\top}\bm{y} + 2X^{\top}X\hat{\beta} = 0
-$$ 可得
-
-$$
-\hat{\beta} = (X^{\top}X)^{-1}X^{\top}\bm{y}
+-2X^{\top}\bm{y} + 2X^{\top}X\hat{\bm{\beta}} = 0
 $$
 
+可得
+
 $$
-\mathsf{Var}\{\hat{\bm{\epsilon}}\} = \mathsf{E}\{\hat{\bm{\epsilon}}^{\top}\hat{\bm{\epsilon}}\}
+\hat{\bm{\beta}} = (X^{\top}X)^{-1}X^{\top}\bm{y}
 $$
+
+此时，$\hat{\bm{\beta}}$ 的期望 $\mathsf{E}\{\hat{\bm{\beta}}\} = \bm{\beta}$ ，即 $\hat{\bm{\beta}}$ 是 $\bm{\beta}$ 无偏的估计。$\hat{\bm{\beta}}$ 的方差 $\mathsf{Var}\{\hat{\bm{\beta}}\}$ 的计算如下：
+
+$$
+\begin{aligned}
+\mathsf{Var}\{\hat{\bm{\beta}}\} &= \mathsf{E}\{\hat{\bm{\beta}}^{\top}\hat{\bm{\beta}}\} - \bm{\beta}^{\top}\bm{\beta} \\
+&= \mathsf{E}\{ [(X^{\top}X)^{-1}X^{\top}\bm{y}]^{\top} (X^{\top}X)^{-1}X^{\top}\bm{y} \} - \bm{\beta}^{\top}\bm{\beta} \\
+&= \mathsf{E}\{ [(X^{\top}X)^{-1}X^{\top}(X\bm{\beta} + \bm{\epsilon})]^{\top} (X^{\top}X)^{-1}X^{\top}(X\bm{\beta} + \bm{\epsilon}) \} - \bm{\beta}^{\top}\bm{\beta} \\
+&= \mathsf{E}\{ (\bm{\beta} + (X^{\top}X)^{-1}X^{\top}\bm{\epsilon})^{\top} (\bm{\beta} + (X^{\top}X)^{-1}X^{\top}\bm{\epsilon})\} - \bm{\beta}^{\top}\bm{\beta} \\
+&= \mathsf{E}\{\bm{\epsilon}^{\top} A^{\top}A\bm{\epsilon}\} \\
+&= \mathrm{tr}[A^{\top}A\Sigma].
+\end{aligned}
+$$
+
+其中，$A = (X^{\top}X)^{-1}X^{\top}$。
 
 $$
 \hat{\bm{\beta}}_{gls} = (X^{\top}\Sigma^{-1}X)^{-1} X^{\top}\Sigma^{-1}\bm{y}
 $$
 
-类似地，对于一次新的观测 $\bm{x}_0$，它是一个 $p \times 1$ 的列向量，现在的目标是找到一个 $\hat{y}_0$ ，在满足无偏性的条件下，使得预测的均方误差 $\mathsf{E}\{(\hat{y}_0 - y_0)^2\}$ 最小，也就是预测方差 $\mathsf{Var}\{\hat{y}_0 - y_0\}$ 最小。不妨设 $\hat{y}_0$ 是关于 $\bm{y}$ 的线性组合，即 $\hat{y}_0 = \bm{w}^{\top}\bm{y}$ ，此处，$\bm{w}$ 是 $N \times 1$ 维的权重向量。找 $\hat{y}_0$ 的问题转为求解如下最优化问题。
+#### $y_0$ 的最佳线性无偏估计
+
+类似地，对于一次新的观测 $\bm{x}_0$，它是一个 $p \times 1$ 的列向量，现在的目标是找到一个 $\hat{y}_0$ ，在满足无偏性的条件下，使得预测的均方误差 $\mathsf{E}\{(\hat{y}_0 - y_0)^2\}$ 最小，也是预测方差 $\mathsf{Var}\{\hat{y}_0 - y_0\}$ 最小，也是残差的方差 $\mathsf{Var}\{\hat{\epsilon}_0\}$ 最小。不妨设 $\hat{y}_0$ 是关于 $\bm{y}$ 的线性组合，即 $\hat{y}_0 = \bm{w}^{\top}\bm{y}$ ，此处，$\bm{w}$ 是 $N \times 1$ 维的权重向量。找 $\hat{y}_0$ 的问题转为求解如下最优化问题。
 
 $$
 \begin{aligned}
