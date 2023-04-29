@@ -1108,8 +1108,6 @@ $$
 \mathsf{E}\{\bm{y}|X\} = X\bm{\beta}, \quad \mathsf{Var}\{\bm{y}|X\} = \Sigma.
 $$
 
-#### $\bm{\beta}$ 的最佳线性无偏估计
-
 现在的目标是找到一个 $\bm{\beta}$ ，使得残差平方和最小，即求解如下无约束最优化问题。
 
 $$
@@ -1159,9 +1157,7 @@ $$
 \hat{\bm{\beta}}_{gls} = (X^{\top}\Sigma^{-1}X)^{-1} X^{\top}\Sigma^{-1}\bm{y}.
 $$
 
-当 $\bm{\epsilon}$ 之间存在空间相关性时，$\Sigma$ 含有参数 $\sigma^2,\phi$ ，若模型带块金效应，则还含有参数 $\tau^2$ 。可见，上式不足以估计模型的参数，且看后续 @sec-restricted-maximum-likelihood 。
-
-#### $y_0$ 的最佳线性无偏估计
+当 $\bm{\epsilon}$ 之间存在空间相关性时，$\Sigma$ 含有参数 $\sigma^2,\phi$ ，若模型带块金效应，则还含有参数 $\tau^2$ 。可见，上式不足以估计模型的参数，且看后续 @sec-maximum-likelihood 。
 
 类似地，对于一次新的观测 $\bm{x}_0$，它是一个 $p \times 1$ 的列向量，现在的目标是找到一个 $\hat{y}_0$ ，在满足无偏性的条件下，使得预测的均方误差 $\mathsf{E}\{(\hat{y}_0 - y_0)^2\}$ 最小，也是预测方差 $\mathsf{Var}\{\hat{y}_0 - y_0\}$ 最小，也是残差的方差 $\mathsf{Var}\{\hat{\epsilon}_0\}$ 最小。不妨设 $\hat{y}_0$ 是关于 $\bm{y}$ 的线性组合，即 $\hat{y}_0 = \bm{w}^{\top}\bm{y}$ ，此处，$\bm{w}$ 是 $N \times 1$ 维的权重向量。找 $\hat{y}_0$ 的问题转为求解如下最优化问题。
 
@@ -1252,12 +1248,14 @@ $$
 其中，$B = \bm{w}^{\top}$ 。
 
 ::: callout-note
-广义最小二乘估计的过程基本来源于课程 [Stats 253: Analysis of Spatial and Temporal Data](https://web.stanford.edu/class/stats253/) 的 [lect5](https://web.stanford.edu/class/stats253/lectures/lect5.pdf) 。
+广义最小二乘估计参考课程 [Stats 253: Analysis of Spatial and Temporal Data](https://web.stanford.edu/class/stats253/) 的 [lect5](https://web.stanford.edu/class/stats253/lectures/lect5.pdf) 。
 :::
 
-### 限制极大似然 {#sec-restricted-maximum-likelihood}
+### 限制极大似然 {#sec-maximum-likelihood}
 
-**nlme** 包的函数 `gls()` 提供极大似然和限制极大似然两种方法估计模型参数。极大似然估计对残差的分布有要求，一般假定 $\bm{\epsilon}$ 服从多元正态分布，即 $\bm{\epsilon} \sim \mathrm{MVN}(\bm{0}, \Sigma_{\bm{\theta}})$ ，这里 $\Sigma_{\bm{\theta}}$ 表示协方差阵与参数向量 $\bm{\theta}$ 有关，$\bm{\theta} = (\sigma^2, \phi, \tau^2)$ ，各个分量的含义同前。则关于参数 $(\bm{\beta}, \bm{\theta})$ 的似然函数如下：
+**nlme** 包的函数 `gls()` 提供极大似然和限制极大似然两种方法估计模型参数。
+
+极大似然估计对残差的分布有要求，一般假定 $\bm{\epsilon}$ 服从多元正态分布，即 $\bm{\epsilon} \sim \mathrm{MVN}(\bm{0}, \Sigma_{\bm{\theta}})$ ，这里 $\Sigma_{\bm{\theta}}$ 表示协方差阵与参数向量 $\bm{\theta}$ 有关，$\bm{\theta} = (\sigma^2, \phi, \tau^2)$ ，各个分量的含义同前。则关于参数 $(\bm{\beta}, \bm{\theta})$ 的似然函数如下：
 
 $$
 \mathcal{L}(\bm{\beta}, \bm{\theta}) = \frac{1}{(2\pi)^{n/2}(\det \Sigma_{\bm{\theta}})^{1/2}}\exp\Big\{-\frac{1}{2}(\bm{y} - X\bm{\beta})^{\top}\Sigma_{\bm{\theta}}^{-1}(\bm{y} - X\bm{\beta})\Big\}
@@ -1294,7 +1292,11 @@ $$
 
 考虑到 $\bm{\theta}$ 的维数不是很高，理论上，可以做暴力网格搜索，但时间花费可能很高，推荐采用一些启发式的全局优化算法。此外，初始值的选取也很重要， $\bm{\beta}$ 的初值可用最小二乘估计代替，$\sigma^2$ 的初值可用模型残差的方差代替，$\tau^2$ 的初值可取 $\sigma^2$ 的十分之一，$\phi$ 的初值可取最大距离的十分之一。
 
--    限制极大似然（Restricted Maximum Likelihood，简称 REML）
+::: callout-note
+极大似然估计参考课程 [Stats 253: Analysis of Spatial and Temporal Data](https://web.stanford.edu/class/stats253/) 的 [lect4](https://web.stanford.edu/class/stats253/lectures/lect4.pdf) 。
+:::
+
+限制极大似然（Restricted Maximum Likelihood，简称 REML）
 
 ### 克里金插值 {#sec-kriging-interpolation}
 
