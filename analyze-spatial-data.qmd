@@ -600,13 +600,13 @@ $$
 \end{aligned}
 $$
 
-**nlme** 包的另一个函数 `lme()` ，扩展了函数 `gls()` 的功能，支持添加随机效应。在模型 @eq-rongelap-gaussian-slmm 的基础上，添加一个随机截距。
+**nlme** 包的另一个函数 `lme()` ，扩展了函数 `gls()` 的功能，支持添加随机效应。下面在模型 @eq-rongelap-gaussian-slmm 的基础上添加一个变化的截距项，所有的采样位置归为一组，相当于添加一个随机误差项 $\xi$ ，它服从均值为 0 方差为 $\delta^2$ 的正态分布。这样下来，模型包含三块随机项，与空间位置关联的空间随机效应 $S(x)$ ，与空间位置无关的块金效应，与分组变量 group 关联的随机效应 $\xi$ 。
 
 ```{r}
-rongelap$dummy <- 1
+rongelap$group <- 1
 fit_rongelap_lme <- lme(
   log(counts / time) ~ 1, data = rongelap,
-  random = ~ 1 | dummy,
+  random = ~ 1 | group,
   correlation = corExp(
     value = c(200, 0.1), form = ~ cX + cY, nugget = TRUE
   )
