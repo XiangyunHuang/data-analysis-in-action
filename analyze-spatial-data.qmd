@@ -920,7 +920,7 @@ m_obs <- cov_fun(st_distance(x = rongelap_sf)) + diag(tau_sq, 157)
 # 预测距离矩阵
 m_pred <- cov_fun(st_distance(x = rongelap_sf, y = rongelap_grid_centroid))
 
-# 简单克里金插值
+# 普通克里金插值
 # 均值函数
 mean_fun <- function(m_pred) {
   n1 <- 1 - t(rep(1, 157)) %*% solve(m_obs, m_pred)
@@ -1143,7 +1143,7 @@ $$
 \mathsf{Var}\{\hat{\bm{\beta}}\} &= \mathsf{E}\{\hat{\bm{\beta}}^{\top}\hat{\bm{\beta}}\} - \mathsf{E}\{\hat{\bm{\beta}}^{\top}\}\mathsf{E}\{\hat{\bm{\beta}}\} \\
 &= \mathsf{E}\{ [(X^{\top}X)^{-1}X^{\top}\bm{y}]^{\top} (X^{\top}X)^{-1}X^{\top}\bm{y} \} - \bm{\beta}^{\top}\bm{\beta} \\
 &= \mathsf{E}\{ [(X^{\top}X)^{-1}X^{\top}(X\bm{\beta} + \bm{\epsilon})]^{\top} (X^{\top}X)^{-1}X^{\top}(X\bm{\beta} + \bm{\epsilon}) \} - \bm{\beta}^{\top}\bm{\beta} \\
-&= \mathsf{E}\{ (\bm{\beta} + (X^{\top}X)^{-1}X^{\top}\bm{\epsilon})^{\top} (\bm{\beta} + (X^{\top}X)^{-1}X^{\top}\bm{\epsilon})\} - \bm{\beta}^{\top}\bm{\beta} \\
+&= \mathsf{E}\{ [\bm{\beta} + (X^{\top}X)^{-1}X^{\top}\bm{\epsilon}]^{\top} [\bm{\beta} + (X^{\top}X)^{-1}X^{\top}\bm{\epsilon}]\} - \bm{\beta}^{\top}\bm{\beta} \\
 &= \mathsf{E}\{\bm{\epsilon}^{\top} A^{\top}A\bm{\epsilon}\} \\
 &= \mathrm{tr}[A^{\top}A\Sigma].
 \end{aligned}
@@ -1238,6 +1238,14 @@ $$
 &= \bm{x}_0^{\top} \hat{\bm{\beta}}_{gls} + \Sigma_{01} \Sigma_{11}^{-1}(\bm{y} - X\hat{\bm{\beta}}_{gls})
 \end{aligned}
 $$
+
+进而
+
+$$
+\mathsf{Var}\{\hat{y}_0\} = \mathrm{tr}[B^{\top}B\Sigma_{11}]
+$$
+
+其中，$B = \bm{w}^{\top}$ 。
 
 ### 限制极大似然 {#sec-restricted-maximum-likelihood}
 
@@ -1336,16 +1344,16 @@ $$
 $$
 \begin{aligned}
 \mathsf{Var}\{\hat{\lambda}(x_0) - \lambda(x_0)\} &= \mathsf{Var}\{\hat{\lambda}(x_0) \} + \mathsf{Var}\{\lambda(x_0)\} - 2 \mathsf{Cov}\{\hat{\lambda}(x_0), \lambda(x_0)\} \\
-&= \bm{w}^{\top}V\bm{w} + \sigma_{0}^2 - 2\sum_{i=1}^{N} \mathsf{Cov}\{\lambda(x_i),\lambda(x_0)\}w_i \\
-& = \bm{w}^{\top}V\bm{w} + \sigma_{0}^2 - 2[\mathsf{Cov}\{\bm{\lambda},\lambda(x_0)\}]^{\top}\bm{w}  \\
-& = \bm{w}^{\top}V\bm{w} + \sigma_{0}^2 - 2\bm{u}^{\top}\bm{w} .
+&= \bm{w}^{\top}V\bm{w} + \sigma^2 - 2\sum_{i=1}^{N} \mathsf{Cov}\{\lambda(x_i),\lambda(x_0)\}w_i \\
+& = \bm{w}^{\top}V\bm{w} + \sigma^2 - 2[\mathsf{Cov}\{\bm{\lambda},\lambda(x_0)\}]^{\top}\bm{w}  \\
+& = \bm{w}^{\top}V\bm{w} + \sigma^2 - 2\bm{u}^{\top}\bm{w} .
 \end{aligned}
-$$
+$$ {#eq-kriging-variance}
 
-其中，$\sigma_{0}^2 = \mathsf{Var}\{\lambda(x_0)\} = \mathsf{Var}\{\lambda(x_i)\}= \sigma^2$ 是未知常数，$\bm{u} = \mathsf{Cov}\{\bm{\lambda},\lambda(x_0)\}$ 是未知的 $N \times 1$ 向量。采用拉格朗日乘数法将约束优化问题 @eq-kriging-optim 转为如下无约束优化问题。
+其中，$\mathsf{Var}\{\lambda(x_0)\} = \mathsf{Var}\{\lambda(x_i)\}= \sigma^2$ 是未知常数，$\bm{u} = \mathsf{Cov}\{\bm{\lambda},\lambda(x_0)\}$ 是未知的 $N \times 1$ 向量。假设它们已知，采用拉格朗日乘数法将约束优化问题 @eq-kriging-optim 转为如下无约束优化问题。
 
 $$
-\min_{\bm{w},\kappa} \mathcal{L}(\bm{w},k) = \frac{1}{2}\bm{w}^{\top}V\bm{w} + \frac{1}{2}\sigma_{0}^2 - \bm{u}^{\top}\bm{w}  + \kappa (1 - \bm{1}^{\top} \bm{w})
+\min_{\bm{w},\kappa} \mathcal{L}(\bm{w},k) = \frac{1}{2}\bm{w}^{\top}V\bm{w} + \frac{1}{2}\sigma^2 - \bm{u}^{\top}\bm{w}  + \kappa (1 - \bm{1}^{\top} \bm{w})
 $$
 
 其中，$\kappa$ 表示拉格朗日乘子，$\bm{1}$ 表示 $N \times 1$ 维的全 1 向量。分别对 $\bm{w}$ 和 $\kappa$ 求偏导，并令其分别等于零向量 $\bm{0}$ 和零 $0$ ，则有
@@ -1390,21 +1398,12 @@ $$
 \hat{\lambda}(x_0) = \bm{w}^{\top}\bm{\lambda}= (\bm{u}^{\top} + \frac{1- \bm{1}^{\top}V^{-1}\bm{u}}{\bm{1}^{\top}V^{-1}\bm{1}} \bm{1}^{\top}) V^{-1}\bm{\lambda}
 $$
 
-预测的均方误差 $\mathsf{MSE}$ ，
-
-$$
-\begin{aligned}
-\mathsf{MSE} &= \mathsf{E}\{[\hat{\lambda}(x_0) - \lambda(x_0)]^2\} \\
-&= \mathsf{Var}\{\hat{\lambda}(x_0) - \lambda(x_0)\}
-\end{aligned}
-$$
-
-根据数据可以估计经验半变差函数 @eq-semi-variogram 的参数，从而 $V$ 、 $\sigma_{0}^2$ 和 $\bm{u}$ 都是已知的。以 $V + \tau^2I$ 替换 $V$ ，$\bm{\lambda} - \beta \bm{1}$ 替换 $\bm{\lambda}$ ，可得普通克里金插值的预测值及其均方误差。
+将 $\bm{w}$ 代入 @eq-kriging-variance 可得克里金预测的方差。根据数据可以估计经验半变差函数 @eq-semi-variogram 的参数，从而 $V$ 、 $\sigma^2$ 和 $\bm{u}$ 都是已知的。以 $V + \tau^2I$ 替换 $V$ ，$\bm{\lambda} - \beta \bm{1}$ 替换 $\bm{\lambda}$ ，可得普通克里金插值的预测值及其均方误差。
 
 $$
 \begin{aligned}
 \hat{\lambda}(x_0) &= \beta + (\bm{u}^{\top} + \frac{1- \bm{1}^{\top}(V + \tau^2I)^{-1}\bm{u}}{\bm{1}^{\top}(V + \tau^2I)^{-1}\bm{1}} \bm{1}^{\top}) (V + \tau^2I)^{-1}(\bm{\lambda} - \beta \bm{1}) \\
-\mathsf{Var}\{\hat{\lambda}(x_0) - \lambda(x_0)\} &= \bm{u}^{\top}(V + \tau^2I)^{-1}\bm{u} - \frac{\big(1- \bm{1}^{\top}(V + \tau^2I)^{-1}\bm{u}\big)^2}{\bm{1}^{\top}(V + \tau^2I)^{-1}\bm{1}}.
+\mathsf{Var}\{\hat{\lambda}(x_0)\} &= \bm{u}^{\top}(V + \tau^2I)^{-1}\bm{u} - \frac{\big(1- \bm{1}^{\top}(V + \tau^2I)^{-1}\bm{u}\big)^2}{\bm{1}^{\top}(V + \tau^2I)^{-1}\bm{1}}.
 \end{aligned}
 $$
 
