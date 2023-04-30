@@ -1251,7 +1251,7 @@ $$
 广义最小二乘估计参考课程 [Stats 253: Analysis of Spatial and Temporal Data](https://web.stanford.edu/class/stats253/) 的 [lect5](https://web.stanford.edu/class/stats253/lectures/lect5.pdf) 。
 :::
 
-### 限制极大似然 {#sec-maximum-likelihood}
+### 极大似然 {#sec-maximum-likelihood}
 
 **nlme** 包的函数 `gls()` 提供极大似然（Maximum Likelihood，简称 ML）和限制极大似然（Restricted Maximum Likelihood，简称 REML）两种方法估计模型参数。
 
@@ -1279,13 +1279,29 @@ $$
 \log \mathcal{L}(\bm{\theta}) = -\frac{n}{2}\log 2\pi - \frac{1}{2}\log (\det \Sigma_{\bm{\theta}}) -\frac{1}{2}\big(\bm{y} - X\hat{\bm{\beta}}(\bm{\theta})\big)^{\top}\Sigma_{\bm{\theta}}^{-1}\big(\bm{y} - X\hat{\bm{\beta}}(\bm{\theta})\big)
 $$
 
+现在主要关注上式右侧中包含的二次型，将 $\hat{\bm{\beta}}(\bm{\theta})$ 代入，可得
+
+$$
+\log \mathcal{L}(\bm{\theta}) = -\frac{n}{2}\log 2\pi - \frac{1}{2}\log (\det \Sigma_{\bm{\theta}}) -\frac{1}{2}\bm{y}^{\top}A^{\top}\Sigma_{\bm{\theta}}^{-1}A\bm{y}
+$$
+
+方便起见，记 $A = I - X(X^{\top}\Sigma_{\bm{\theta}}^{-1}X)^{-1}X^{\top}\Sigma_{\bm{\theta}}^{-1}$ ，这里 $I$ 是 $n$ 维单位矩阵。
+
+$$
+\begin{aligned}
+A\Sigma_{\bm{\theta}} &= \Sigma_{\bm{\theta}} - X(X^{\top}\Sigma_{\bm{\theta}}^{-1}X)^{-1}X^{\top} \\
+A^{\top} &= I -\Sigma_{\bm{\theta}}^{-1}(\Sigma_{\bm{\theta}} - A\Sigma_{\bm{\theta}}) =\Sigma_{\bm{\theta}}^{-1} A\Sigma_{\bm{\theta}} \\
+A^2 &= A
+\end{aligned}
+$$
+
 经过一些复杂的矩阵运算，$\log \mathcal{L}(\bm{\theta})$ 化简为如下形式。
 
 $$
 \log \mathcal{L}(\bm{\theta}) = -\frac{n}{2}\log (2\pi) - \frac{1}{2}\log (\det \Sigma_{\bm{\theta}}) -\frac{1}{2}\bm{y}^{\top}\Sigma_{\bm{\theta}}^{-1}\big(I - X(X^{\top}\Sigma_{\bm{\theta}}^{-1}X)^{-1}X^{\top}\Sigma_{\bm{\theta}}^{-1}\big)\bm{y}
 $$
 
-对数似然函数的形式还是很复杂，极大化这个似然函数，一般还需要两个关键步骤。
+对数似然函数的形式还是很复杂，极大化这个对数似然函数，一般还需要两个关键步骤。
 
 1.  计算似然函数关于 $\bm{\theta}$ 各个分量的偏导数。
 2.  求解一个非凸优化问题。
