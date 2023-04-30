@@ -461,10 +461,10 @@ logLik(fit_glmm_negbin2)
 从实际场景出发，也不难理解，位置信息是非常关键的。进一步，充分利用位置信息，精细建模是很有必要的。相邻位置的核辐射强度是相关的，离得近的比离得远的更相关。下面对辐射强度建模，假定随机效应之间存在相关性结构，去掉随机效应相互独立的假设，这更符合位置效应存在相互影响的实际情况。
 
 $$
-\log\big(\lambda(x_i)\big) = \beta + S(x_{i}) + Z_{i} 
+\log\big(\lambda(x_i)\big) = \beta + S(x_{i}) + Z_{i}
 $$ {#eq-rongelap-gaussian-slmm}
 
-其中，$\beta$ 表示截距，相当于平均水平，$\lambda(x_i)$ 表示位置 $x_i$ 处的辐射强度，$S(x_{i})$ 表示位置 $x_i$ 处的空间效应，$S(x),x \in \mathcal{D} \subset{\mathbb{R}^2}$ 是二维平稳空间高斯过程 $\mathcal{S}$ 的具体实现。 $\mathcal{D}$ 表示研究区域，可以理解为朗格拉普岛，它是二维实平面 $\mathbb{R}^2$ 的子集。 $Z_i$ 之间相互独立同正态分布 $\mathcal{N}(0,\tau^2)$ ，$Z_i$ 表示非空间的随机效应，在空间统计中，常称之为块金效应，可以理解为测量误差、空间变差或背景辐射。
+其中，$\beta$ 表示截距，相当于平均水平，$\lambda(x_i)$ 表示位置 $x_i$ 处的辐射强度，$S(x_{i})$ 表示位置 $x_i$ 处的空间效应，$S(x),x \in \mathcal{D} \subset{\mathbb{R}^2}$ 是二维平稳空间高斯过程 $\mathcal{S}$ 的具体实现。 $\mathcal{D}$ 表示研究区域，可以理解为朗格拉普岛，它是二维实平面 $\mathbb{R}^2$ 的子集。 $Z_i$ 之间相互独立同正态分布 $\mathcal{N}(0,\tau^2)$ ，$Z_i$ 表示非空间的随机效应，在空间统计中，常称之为块金效应，可以理解为测量误差、空间变差或背景辐射。值得注意，此时，块金效应和模型残差是合并在一起的。
 
 #### 自协方差函数 {#sec-covariance-function}
 
@@ -600,7 +600,7 @@ $$
 \end{aligned}
 $$
 
-**nlme** 包的另一个函数 `lme()` ，扩展了函数 `gls()` 的功能，支持添加随机效应。下面在模型 @eq-rongelap-gaussian-slmm 的基础上添加一个变化的截距项，所有的采样位置归为一组，相当于添加一个随机误差项 $\xi$ ，它服从均值为 0 方差为 $\delta^2$ 的正态分布。这样下来，模型包含三块随机项，与空间位置关联的空间随机效应 $S(x)$ ，与空间位置无关的块金效应，与分组变量 group 关联的随机效应 $\xi$ 。
+**nlme** 包的另一个函数 `lme()` ，扩展了函数 `gls()` 的功能，支持添加随机效应。下面在模型 @eq-rongelap-gaussian-slmm 的基础上添加一个变化的截距项，所有的采样位置归为一组，相当于添加一个随机项 $\xi$ ，一般假定它服从均值为 0 方差为 $\delta^2$ 的正态分布。这样下来，模型包含三块随机项，与空间位置关联的空间随机效应 $S(x)$ ，与空间位置无关的块金效应 $Z_i$，与分组变量 group 关联的随机效应 $\xi$ 。
 
 ```{r}
 rongelap$group <- 1
@@ -1253,7 +1253,7 @@ $$
 
 ### 限制极大似然 {#sec-maximum-likelihood}
 
-**nlme** 包的函数 `gls()` 提供极大似然和限制极大似然两种方法估计模型参数。
+**nlme** 包的函数 `gls()` 提供极大似然（Maximum Likelihood，简称 ML）和限制极大似然（Restricted Maximum Likelihood，简称 REML）两种方法估计模型参数。
 
 极大似然估计对残差的分布有要求，一般假定 $\bm{\epsilon}$ 服从多元正态分布，即 $\bm{\epsilon} \sim \mathrm{MVN}(\bm{0}, \Sigma_{\bm{\theta}})$ ，这里 $\Sigma_{\bm{\theta}}$ 表示协方差阵与参数向量 $\bm{\theta}$ 有关，$\bm{\theta} = (\sigma^2, \phi, \tau^2)$ ，各个分量的含义同前。则关于参数 $(\bm{\beta}, \bm{\theta})$ 的似然函数如下：
 
@@ -1273,19 +1273,19 @@ $$
 \mathcal{L}(\bm{\theta}) = \frac{1}{(2\pi)^{n/2}(\det \Sigma_{\bm{\theta}})^{1/2}}\exp\Big\{-\frac{1}{2}\big(\bm{y} - X\hat{\bm{\beta}}(\bm{\theta})\big)^{\top}\Sigma_{\bm{\theta}}^{-1}\big(\bm{y} - X\hat{\bm{\beta}}(\bm{\theta})\big)\Big\}
 $$
 
-为方便优化计算，进一步对似然函数取对数
+为方便优化计算，进一步对似然函数取对数。
 
 $$
 \log \mathcal{L}(\bm{\theta}) = -\frac{n}{2}\log 2\pi - \frac{1}{2}\log (\det \Sigma_{\bm{\theta}}) -\frac{1}{2}\big(\bm{y} - X\hat{\bm{\beta}}(\bm{\theta})\big)^{\top}\Sigma_{\bm{\theta}}^{-1}\big(\bm{y} - X\hat{\bm{\beta}}(\bm{\theta})\big)
 $$
 
-经过一些复杂的矩阵运算，$\log \mathcal{L}(\bm{\theta})$ 化简为
+经过一些复杂的矩阵运算，$\log \mathcal{L}(\bm{\theta})$ 化简为如下形式。
 
 $$
 \log \mathcal{L}(\bm{\theta}) = -\frac{n}{2}\log (2\pi) - \frac{1}{2}\log (\det \Sigma_{\bm{\theta}}) -\frac{1}{2}\bm{y}^{\top}\Sigma_{\bm{\theta}}^{-1}\big(I - X(X^{\top}\Sigma_{\bm{\theta}}^{-1}X)^{-1}X^{\top}\Sigma_{\bm{\theta}}^{-1}\big)\bm{y}
 $$
 
-对数似然函数的形式还是很复杂，极大化这个似然函数，需要
+对数似然函数的形式还是很复杂，极大化这个似然函数，一般还需要两个关键步骤。
 
 1.  计算似然函数关于 $\bm{\theta}$ 各个分量的偏导数。
 2.  求解一个非凸优化问题。
@@ -1296,7 +1296,7 @@ $$
 极大似然估计参考课程 [Stats 253: Analysis of Spatial and Temporal Data](https://web.stanford.edu/class/stats253/) 的 [lect4](https://web.stanford.edu/class/stats253/lectures/lect4.pdf) 。
 :::
 
-限制极大似然（Restricted Maximum Likelihood，简称 REML）
+限制极大似然
 
 ### 克里金插值 {#sec-kriging-interpolation}
 
