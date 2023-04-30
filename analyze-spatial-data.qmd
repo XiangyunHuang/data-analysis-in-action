@@ -1276,16 +1276,16 @@ $$
 为方便优化计算，进一步对似然函数取对数。
 
 $$
-\log \mathcal{L}(\bm{\theta}) = -\frac{n}{2}\log 2\pi - \frac{1}{2}\log (\det \Sigma_{\bm{\theta}}) -\frac{1}{2}\big(\bm{y} - X\hat{\bm{\beta}}(\bm{\theta})\big)^{\top}\Sigma_{\bm{\theta}}^{-1}\big(\bm{y} - X\hat{\bm{\beta}}(\bm{\theta})\big)
+\log \mathcal{L}(\bm{\theta}) = -\frac{n}{2}\log(2\pi) - \frac{1}{2}\log (\det \Sigma_{\bm{\theta}}) -\frac{1}{2}\big(\bm{y} - X\hat{\bm{\beta}}(\bm{\theta})\big)^{\top}\Sigma_{\bm{\theta}}^{-1}\big(\bm{y} - X\hat{\bm{\beta}}(\bm{\theta})\big)
 $$
 
-现在主要关注上式右侧中包含的二次型，将 $\hat{\bm{\beta}}(\bm{\theta})$ 代入，可得
+现在主要关注上式右侧中包含的二次型，将 $\hat{\bm{\beta}}(\bm{\theta})$ 代入。方便计算和书写起见，临时记 $A = I - X(X^{\top}\Sigma_{\bm{\theta}}^{-1}X)^{-1}X^{\top}\Sigma_{\bm{\theta}}^{-1}$ ，这里 $I$ 是 $n$ 维单位矩阵。可得
 
 $$
-\log \mathcal{L}(\bm{\theta}) = -\frac{n}{2}\log 2\pi - \frac{1}{2}\log (\det \Sigma_{\bm{\theta}}) -\frac{1}{2}\bm{y}^{\top}A^{\top}\Sigma_{\bm{\theta}}^{-1}A\bm{y}
+\log \mathcal{L}(\bm{\theta}) = -\frac{n}{2}\log(2\pi) - \frac{1}{2}\log (\det \Sigma_{\bm{\theta}}) -\frac{1}{2}\bm{y}^{\top}A^{\top}\Sigma_{\bm{\theta}}^{-1}A\bm{y}
 $$
 
-方便起见，记 $A = I - X(X^{\top}\Sigma_{\bm{\theta}}^{-1}X)^{-1}X^{\top}\Sigma_{\bm{\theta}}^{-1}$ ，这里 $I$ 是 $n$ 维单位矩阵。
+为了进一步化简，下面计算 $A^{\top}$ 和 $A^2$ ，再将它们依次代入上述对数似然函数。
 
 $$
 \begin{aligned}
@@ -1295,7 +1295,7 @@ A^2 &= A
 \end{aligned}
 $$
 
-经过一些复杂的矩阵运算，$\log \mathcal{L}(\bm{\theta})$ 化简为如下形式。
+经过一些不太复杂的矩阵运算，$\log \mathcal{L}(\bm{\theta})$ 化简为如下形式。
 
 $$
 \log \mathcal{L}(\bm{\theta}) = -\frac{n}{2}\log (2\pi) - \frac{1}{2}\log (\det \Sigma_{\bm{\theta}}) -\frac{1}{2}\bm{y}^{\top}\Sigma_{\bm{\theta}}^{-1}\big(I - X(X^{\top}\Sigma_{\bm{\theta}}^{-1}X)^{-1}X^{\top}\Sigma_{\bm{\theta}}^{-1}\big)\bm{y}
@@ -1312,7 +1312,25 @@ $$
 极大似然估计参考课程 [Stats 253: Analysis of Spatial and Temporal Data](https://web.stanford.edu/class/stats253/) 的 [lect4](https://web.stanford.edu/class/stats253/lectures/lect4.pdf) 。
 :::
 
-限制极大似然
+介绍限制极大似然之前，先回顾一下线性模型的一般形式
+
+$$
+\bm{y} = X\bm{\beta} + \bm{\epsilon}
+$$
+
+找一个 $N$ 阶方阵 $P$ 使得 $PX\bm{\beta} = \bm{0}$ ，且 $P$ 不依赖于 $\bm{\beta}$，这样的矩阵 $P$ 形式如下
+
+$$
+P = I - X(XX^{\top})^{-1}X^{\top}
+$$
+
+不难发现，矩阵 $P$ 具有性质 $P^{\top} = P, P^2 = P$ ，即矩阵 $P$ 是一个投影矩阵。线性模型的一般形式化为
+
+$$
+P\bm{y} = P \bm{\epsilon}
+$$
+
+这就是说将整个模型投影到一个新的空间中，在这个新的空间中，模型不含有参数 $\bm{\beta}$ ，只剩下参数 $\bm{\theta}$。然后，极大化似然函数，得到 $\bm{\theta}$ 的估计 $\hat{\bm{\theta}}$ ，再将 $\hat{\bm{\theta}}$ 代入 $\bm{\beta}$ 的广义最小二乘估计 $\hat{\beta(\bm{\theta})}$ ，至此，模型参数全部求解完毕。相比于剖面极大似然估计，限制极大似然估计是无偏的。
 
 ### 克里金插值 {#sec-kriging-interpolation}
 
@@ -1388,7 +1406,7 @@ $$
 \sum_{i=1}^{N}w_i = 1.
 $$
 
-令 $\bm{\lambda} = [\lambda(x_1),\lambda(x_1),\ldots,\lambda(x_N)]^{\top}$ ，$V$ 表示随机向量 $\bm{\lambda}$ 的自协方差矩阵 $\mathsf{Var}(\bm{\lambda})$ ，其第 $i$ 行第 $j$ 列的元素为 $\mathsf{Cov}\{\lambda(x_i),\lambda(x_j)\}$ ，对角线上的元素为方差 $\mathsf{Var}\{\lambda(x_i)\}, i = 1,2,\ldots,N$ 。令 $\bm{w} = [w_1,w_2,\ldots,w_N]^{\top}$ ，则
+令 $\bm{\lambda} = [\lambda(x_1),\lambda(x_1),\ldots,\lambda(x_N)]^{\top}$ ，$V$ 表示随机向量 $\bm{\lambda}$ 的方差-协方差矩阵 $\mathsf{Var}\{\bm{\lambda}\}$ ，其第 $i$ 行第 $j$ 列的元素为 $\mathsf{Cov}\{\lambda(x_i),\lambda(x_j)\}$ ，对角线上的元素为方差 $\mathsf{Var}\{\lambda(x_i)\}, i = 1,2,\ldots,N$ 。令 $\bm{w} = [w_1,w_2,\ldots,w_N]^{\top}$ ，则
 
 $$
 \hat{\lambda}(x_0) = \sum_{i=1}^{N}w_i\lambda(x_i) = \bm{w}^{\top}\bm{\lambda}.
