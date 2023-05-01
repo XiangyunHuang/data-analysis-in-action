@@ -560,8 +560,6 @@ Lingo 18.0 启用全局优化求解器后，在 $(x_1 = 7.999982, x_2 = 7.999982
 
 #### 示例 3
 
-空间高斯过程协方差矩阵参数的剖面极大似然估计。关于协方差矩阵的参数的似然函数是非凸的，多模态的。详细描述见 Brian Ripley 早年论文 [@Ripley1987]
-
 高斯随机过程回归模型
 
 $$
@@ -580,7 +578,7 @@ $$
 \log \mathcal{L}(\bm{\theta}) = -\frac{n}{2}\log (2\pi) - \frac{1}{2}\log (\det \Sigma_{\bm{\theta}}) -\frac{1}{2}\bm{y}^{\top}\Sigma_{\bm{\theta}}^{-1}\big(I - D(D^{\top}\Sigma_{\bm{\theta}}^{-1}D)^{-1}D^{\top}\Sigma_{\bm{\theta}}^{-1}\big)\bm{y}
 $$
 
-下面考虑一个来自 **MASS** 包真实数据 topo。
+下面考虑一个来自 **MASS** 包真实数据 `topo`。topo 数据集最初来自 John C. Davis （1973年）所著的书《Statistics and Data Analysis in Geology》。后来， J. J. Warnes 和 B. D. Ripley （1987年）以该数据集为例指出空间高斯过程的协方差函数的似然估计中存在的问题[@Ripley1987]，并将其作为数据集 topo 放在 **MASS** 包里。Paulo J. Ribeiro Jr 和 Peter J. Diggle （2001年）将该数据集打包成自定义的 `geodata` 数据类型，放在 **geoR** 包里，并在他俩合著的书《Model-based Geostatistics》中多次出现。`topo` 是空间地形数据集，包含有 52 行 3 列，数据点是 310 平方英尺范围内的海拔高度数据，`x` 坐标每单位 50 英尺，`y` 坐标单位同 `x` 坐标，海拔高度 `z` 单位是英尺。
 
 ```{r}
 library(MASS)
@@ -588,7 +586,7 @@ data(topo)
 str(topo)
 ```
 
-根据 topo 数据集， $D = \bm{1}$ 是一个 $n \times 1$ 的列向量，$\bm{\beta} = \beta$ 是一个截距项。设置参数初值 $(\sigma,\phi) = (65,2)$ 。用 R 语言编码的似然函数如下：
+根据 `topo` 数据集， $D = \bm{1}$ 是一个 $52 \times 1$ 的列向量，$\bm{\beta} = \beta$ 是一个截距项。设置参数初值 $(\sigma,\phi) = (65,2)$ 。用 R 语言编码的似然函数如下：
 
 ```{r}
 log_lik <- function(x) {
@@ -615,17 +613,12 @@ nlp$solution
 nlp$objval
 ```
 
-如果初始值靠近局部极值点，则就近收敛到该极值点。比如初值 $(65, 7)$ 。
+如果初始值靠近局部极值点，则就近收敛到该极值点，比如初值 $(65, 7)$ ， $(70, 7.5)$ 。
 
 ```{r}
 nlp <- ROI_solve(op, solver = "nlminb", start = c(65, 7))
 nlp$solution
 nlp$objval
-```
-
-再比如初值 $(70, 7.5)$ 。
-
-```{r}
 nlp <- ROI_solve(op, solver = "nlminb", start = c(70, 7.5))
 nlp$solution
 nlp$objval
@@ -649,7 +642,7 @@ dat <- expand.grid(
 dat$fn <- apply(dat, 1, log_lik)
 ```
 
-似然函数关于参数 $(\sigma,\phi)$ 的三维曲面
+似然函数关于参数 $(\sigma,\phi)$ 的三维曲面见 @fig-topo-loglik-persp 。
 
 ```{r}
 #| label: fig-topo-loglik-persp
@@ -685,35 +678,35 @@ wireframe(
 )
 ```
 
-等高线图呈现一道非常平滑的山岭。
+等高线图呈现一道非常长且平滑的山岭 long flat ridge，山岭上布满许多局部极大值，普通的数值优化求解器常常陷入其中，只有全局优化求解器才可能找到全局极大值点。高斯过程回归模型的对数似然函数是非凸的，多模态的。
 
 ```{r}
 #| label: fig-topo-loglik-contour
 #| fig-cap: 对数似然函数的等高线图
 #| fig-width: 4.5
-#| fig-height: 3.5
+#| fig-height: 3.7
 #| fig-showtext: true
 #| code-fold: true
 #| echo: !expr knitr::is_html_output()
 
 levelplot(fn ~ sigma * phi,
-  data = dat, aspect = 1, 
+  data = dat, aspect = 1,
+  xlim = c(54.5, 75.5), ylim = c(4.9, 8.1),
   xlab = expression(sigma), ylab = expression(phi),
   col.regions = cm.colors, contour = TRUE,
-   scales = list(
-    # 去掉图形上边、右边多余的刻度线
+  scales = list(
     x = list(alternating = 1, tck = c(1, 0)),
     y = list(alternating = 1, tck = c(1, 0))
   ),
-  # 减少图形的边空
+  # 减少三维图形的边空
   lattice.options = list(
     layout.widths = list(
       left.padding = list(x = 0, units = "inches"),
       right.padding = list(x = 0, units = "inches")
     ),
     layout.heights = list(
-      bottom.padding = list(x = 0, units = "inches"),
-      top.padding = list(x = 0, units = "inches")
+      bottom.padding = list(x = -.5, units = "inches"),
+      top.padding = list(x = -.5, units = "inches")
     )
   )
 )
@@ -732,7 +725,7 @@ fit_topo_ml <- gls(z ~ 1,
 summary(fit_topo_ml)
 ```
 
-如果使用限制极大似然估计，会发现参数估计结果与之相距甚远，而对数似然函数值相差无几。参数估计结果 $(\sigma,\phi) = (128.8275, 25.47324)$
+如果使用限制极大似然估计，会发现参数估计结果与之相距甚远，而对数似然函数值相差无几。参数估计结果 $(\sigma,\phi) = (128.8275, 25.47324)$ 。
 
 ```{r}
 fit_topo_reml <- gls(z ~ 1,
