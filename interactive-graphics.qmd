@@ -6,7 +6,6 @@
 source("_common.R")
 ```
 
-
 ```{css}
 #| echo: false
 
@@ -18,8 +17,6 @@ source("_common.R")
 在之前的数据探索章节介绍了 **ggplot2** 包，本章将介绍 **plotly** 包，绘制交互图形，包含基础元素、常用图形和技巧，沿用日志提交数据和 Base R 内置的斐济及周边地震数据。写作上，仍然以一个数据串联尽可能多的小节，从 **ggplot2** 包到 **plotly** 包，将介绍其间的诸多联系，以便读者轻松掌握。
 
 ## 基础元素 {#sec-interactive-elements}
-
-
 
 ### 图层 {#sec-plotly-layer}
 
@@ -35,17 +32,17 @@ knitr::kable(matrix(grep("add_*", x = ls("package:plotly"), value = T), ncol = 3
 )
 ```
 
-----------------  -----------------------  ---------------  
-add_annotations   add_histogram            add_polygons     
-add_area          add_histogram2d          add_ribbons      
-add_bars          add_histogram2dcontour   add_scattergeo   
-add_boxplot       add_image                add_segments     
-add_choropleth    add_lines                add_sf           
-add_contour       add_markers              add_surface      
-add_data          add_mesh                 add_table        
-add_fun           add_paths                add_text         
-add_heatmap       add_pie                  add_trace        
-----------------  -----------------------  ---------------  
+|                 |                        |                |
+|:----------------|:-----------------------|:---------------|
+| add_annotations | add_histogram          | add_polygons   |
+| add_area        | add_histogram2d        | add_ribbons    |
+| add_bars        | add_histogram2dcontour | add_scattergeo |
+| add_boxplot     | add_image              | add_segments   |
+| add_choropleth  | add_lines              | add_sf         |
+| add_contour     | add_markers            | add_surface    |
+| add_data        | add_mesh               | add_table      |
+| add_fun         | add_paths              | add_text       |
+| add_heatmap     | add_pie                | add_trace      |
 
 : **plotly** 包可以绘制丰富的统计图形 {#tbl-plotly-layers}
 
@@ -71,8 +68,7 @@ plotly::plot_ly(data = quakes, x = ~long, y = ~lat) |>
   plotly::add_trace(type = "scatter", mode = "markers")
 ```
 
-
-::: {.callout-tip}
+::: callout-tip
 **plotly** 包的函数 `plot_ly()` 又与 **ggplot2** 包中函数 `qplot()` 类似，可以将大部分设置塞进去。
 
 ```{r}
@@ -88,7 +84,6 @@ plotly::plot_ly(
 所以，总的来说， `add_markers()` 、`add_trace(type = "scatter", mode = "markers")` 和 `plot_ly(type = "scatter", mode = "markers")` 是等价的。
 :::
 
-
 ### 配色 {#sec-plotly-color}
 
 在 @fig-plotly-markers 的基础上，将颜色映射到震级变量上。
@@ -102,12 +97,9 @@ plotly::plot_ly(data = quakes, x = ~long, y = ~lat) |>
   plotly::add_markers(color = ~mag)
 ```
 
-
 ### 刻度 {#sec-plotly-scale}
 
-
 东经和南纬
-
 
 ```{r}
 #| label: fig-plotly-scale
@@ -121,7 +113,6 @@ plotly::plot_ly(data = quakes, x = ~long, y = ~lat) |>
     yaxis = list(title = "纬度", ticksuffix = 'S')
   )
 ```
-
 
 ### 标签 {#sec-plotly-label}
 
@@ -148,8 +139,6 @@ plotly::plot_ly(
   )
 ```
 
-
-
 ### 主题 {#sec-plotly-theme}
 
 plotly 内置了一些主题风格
@@ -175,39 +164,115 @@ plotly::plot_ly(
   )
 ```
 
-
 ### 字体 {#sec-plotly-font}
-
-
 
 ### 图例 {#sec-plotly-legend}
 
+### 公式 {#sec-plotly-formula}
 
+正态分布的概率密度函数形式如下：
 
+$$
+\begin{aligned}
+& f(x;\mu,\sigma^2) = \frac{1}{\sqrt{2\pi}\sigma}\exp\{-\frac{(x -\mu)^2}{2\sigma^2}\}
+\end{aligned}
+$$
+
+下图展示两个正态分布，分别是 $\mathcal{N}(3, 1^2)$ 和 $\mathcal{N}(2, 1.5^2)$ 。函数 `plotly::TeX()` 包裹 LaTeX 书写的数学公式，**plotly** 包调用 [MathJax](https://www.mathjax.org/) 库渲染图中的公式符号。
+
+```{r}
+#| label: fig-plotly-formula
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+#| fig-cap: "设置数学公式"
+
+x <- seq(from = -4, to = 8, length.out = 193)
+y1 <- dnorm(x, mean = 3, sd = 1)
+y2 <- dnorm(x, mean = 2, sd = 1.5)
+hline <- function(y = 0, color = "red") {
+  list(
+    type = "line", 
+    x0 = 0, 
+    x1 = 1, 
+    xref = "paper",
+    y0 = y, 
+    y1 = y, 
+    line = list(color = color, dash = 'dash')
+  )
+}
+
+vline <- function(x = 0, color = "red") {
+  list(
+    type = "line", 
+    x0 = x, 
+    x1 = x, 
+    yref = "paper",
+    y0 = 0, 
+    y1 = 1, 
+    line = list(color = color, dash = 'dash')
+  )
+}
+
+plotly::plot_ly(
+  x = x, y = y1,
+  type = "scatter", mode = "lines",
+  fill = "tozeroy", fillcolor = "rgba(102, 102, 102, 0.2)",
+  text = ~ paste0(
+    "x：", x, "<br>",
+    "y：", round(y1, 3), "<br>"
+  ),
+  hoverinfo = "text",
+  name = plotly::TeX("\\mathcal{N}(3,1^2)"),
+  line = list(shape = "spline", color = "#666666")
+) |> 
+  plotly::add_trace(
+    x = x, y = y2,
+    type = "scatter", mode = "lines",
+    fill = "tozeroy", fillcolor = "rgba(153, 153, 153, 0.2)",
+    text = ~ paste0(
+      "x：", x, "<br>",
+      "y：", round(y2, 3), "<br>"
+    ),
+    hoverinfo = "text",
+    name = plotly::TeX("\\mathcal{N}(2, 1.5^2)"),
+    line = list(shape = "spline", color = "#999999")
+  ) |> 
+  plotly::layout(
+    xaxis = list(
+      showgrid = F,
+      title = plotly::TeX("x")
+    ),
+    yaxis = list(
+      showgrid = F,
+      title = plotly::TeX("f(x)")
+    ),
+    legend = list(x = 0.8, y = 1, orientation = "v")
+  ) |> 
+  plotly::config(
+    staticPlot = TRUE,
+    mathjax = "cdn",
+    displayModeBar = FALSE
+  )
+```
 
 ## 常用图形 {#sec-plotly-common-graphics}
 
-
-
 ### 散点图 {#sec-plotly-scatter}
-
 
 **plotly** 包支持绘制许多常见的散点图，从直角坐标系 `scatter` 到极坐标系 `scatterpolar` 和地理坐标系 `scattergeo`，从二维平面 `scatter` 到三维空间 `scatter3d`，借助 WebGL 可以渲染大规模的数据点 `scattergl`。
 
-| 类型             | 名称              |
-| :--------------- | :---------------- |
-| `scatter`        | 二维平面散点图    |
-| `scatter3d`      | 三维立体散点图    |
-| `scattergl`      | 散点图（WebGL 版）|
-| `scatterpolar`   | 极坐标下散点图    |
+| 类型             | 名称                          |
+|:-----------------|:------------------------------|
+| `scatter`        | 二维平面散点图                |
+| `scatter3d`      | 三维立体散点图                |
+| `scattergl`      | 散点图（WebGL 版）            |
+| `scatterpolar`   | 极坐标下散点图                |
 | `scatterpolargl` | 极坐标下散点图（WebGL 版）    |
-| `scattergeo`     | 地理坐标下散点图  |
+| `scattergeo`     | 地理坐标下散点图              |
 | `scattermapbox`  | 地理坐标下散点图（MapBox 版） |
-| `scattercarpet`  | 地毯图            |
-| `scatterternary` | 三元图            |
+| `scattercarpet`  | 地毯图                        |
+| `scatterternary` | 三元图                        |
 
 : plotly 包支持绘制的散点图类型 {#tbl-plotly-scatter}
-
 
 @fig-scatter 展示斐济及其周边的地震分布
 
@@ -226,10 +291,7 @@ plotly::plot_ly(
   )
 ```
 
-
-
 ### 柱形图 {#sec-plotly-bar}
-
 
 ```{r}
 #| echo: false
@@ -248,7 +310,6 @@ svn_trunk_log <- within(svn_trunk_log, {
 trunk_year <- aggregate(data = svn_trunk_log, revision ~ year, FUN = length)
 ```
 
-
 ```{r}
 #| label: fig-plotly-bar
 #| fig-cap: "柱形图"
@@ -264,9 +325,7 @@ plotly::plot_ly(
   )
 ```
 
-
 ### 曲线图 {#sec-plotly-line}
-
 
 ```{r}
 #| label: fig-plotly-curve
@@ -282,8 +341,6 @@ plotly::plot_ly(
     yaxis = list(title = "代码提交量")
   )
 ```
-
-
 
 ### 直方图 {#sec-plotly-hist}
 
@@ -341,9 +398,7 @@ plotly::plot_ly(quakes,
   )
 ```
 
-
 ### 箱线图 {#sec-plotly-boxplot}
-
 
 ```{r}
 #| label: fig-quakes-depth-box
@@ -359,7 +414,6 @@ plotly::plot_ly(quakes,
     yaxis = list(title = "震级")
   )
 ```
-
 
 ```{r}
 #| label: fig-quakes-depth-violin
@@ -377,7 +431,6 @@ plotly::plot_ly(quakes,
     yaxis = list(title = "震级")
   )
 ```
-
 
 ### 热力图 {#sec-plotly-densitymap}
 
@@ -402,8 +455,6 @@ plotly::plot_ly(
 ```
 
 图中设置瓦片地图的风格 `style` 为 `"stamen-terrain"`，还可以使用其他开放的栅格瓦片地图服务，比如 `"open-street-map"` 和 `"carto-positron"`。如果使用 MapBox 提供的矢量瓦片地图服务，则需要访问令牌 Mapbox Access Token。图中设置中心坐标 `center` 以及缩放倍数 `zoom`，目的是突出图片中的数据区域。设置调色板 Viridis 展示热力分布，黄色团块的地方表示地震频次高。
-
-
 
 ### 面量图 {#sec-plotly-choropleth-maps}
 
@@ -435,18 +486,9 @@ plotly::plot_ly(
   )
 ```
 
-
-
-
 ### 动态图 {#sec-plotly-animation}
 
 本节参考 plotly 包的官方示例[渐变动画](https://plotly.com/r/cumulative-animations/)，数据来自 SVN 代码提交日志，统计 Martin Maechler 和 Brian Ripley 的年度代码提交量，他们是 R Core Team 非常重要的两位成员，长期参与维护 R 软件及社区。下 @fig-plotly-animation 展示 1999-2022 年 Martin Maechler 和 Brian Ripley 的代码提交量变化。
-
-
-<!-- 
-[lazyeval](https://github.com/hadley/lazyeval) 的非标准计算采用 Base R 实现，目前，已经可以被 [rlang](https://github.com/r-lib/rlang/) 替代。 
--->
-
 
 ```{r}
 #| label: fig-plotly-animation
@@ -493,9 +535,9 @@ subset(trunk_year_author, year >= 1999 & author %in% c("ripley", "maechler")) |>
   )
 ```
 
+[**lazyeval**](https://github.com/hadley/lazyeval) 的非标准计算采用 Base R 实现，目前，已经可以被 [**rlang**](https://github.com/r-lib/rlang/) 替代。
 
 ## 常用技巧 {#sec-plotly-common-tricks}
-
 
 ### 动静转化 {#sec-plotly-ggplotly}
 
@@ -529,7 +571,7 @@ plotly::ggplotly(p) |>
   plotly::config(staticPlot = TRUE)
 ```
 
-::: {.callout-tip}
+::: callout-tip
 函数 `style()` 设置动态点的注释，比如点横纵坐标、坐标文本，以及整个注释标签的样式，如背景色。
 
 ```{r}
@@ -552,9 +594,7 @@ plotly::orca(p, "plotly-quakes.svg")
 plotly::save_image(p, "plotly-quakes.svg")
 ```
 
-
 ### 数学公式 {#sec-plotly-math}
-
 
 ### 坐标系统 {#sec-plotly-coord}
 
@@ -600,7 +640,6 @@ plotly::plot_ly(
     )
   ))
 ```
-
 
 ### 添加水印 {#sec-plotly-watermark}
 
@@ -689,12 +728,9 @@ plotly::subplot(p11,
 )
 ```
 
-
 ### 图表联动 {#sec-plotly-crosstalk}
 
-
 **crosstalk** 包可将 **plotly** 包绘制的图形和 **DT** 包制作的表格联动起来。**plotly** 绘制交互图形，在图形上用套索工具筛选出来的数据显示在表格中。
-
 
 ```{r}
 #| label: fig-crosstalk
@@ -713,4 +749,3 @@ d <- DT::datatable(quakes_sd, options = list(dom = "tp"))
 # 将图表组合一起展示
 bscols(list(p, d))
 ```
-
