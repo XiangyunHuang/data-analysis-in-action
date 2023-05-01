@@ -281,17 +281,17 @@ $$
 \end{aligned}
 $$
 
-其中，对称矩阵 $A$ 含有参数
+其中，含参对称矩阵 $A(x_1,x_2,x_3)$ 如下
 
 $$
-A = \begin{bmatrix}
+A(x_1,x_2,x_3) = \begin{bmatrix}
   1 & x_1 & x_2  \\
   x_1 & 1 & x_3  \\
   x_2 & x_3 & 1 
   \end{bmatrix}
 $$
 
-集合 $K$ 是一个非空的封闭的凸锥。
+集合 $K$ 是一个非空的封闭凸锥。
 
 $$
 S = \{ (x_1,x_2,x_3) \in \mathbb{R}^3 \mid A(x_1,x_2,x_3) \in \mathcal{S}_{+}^3 \},
@@ -300,7 +300,7 @@ $$
 $\mathcal{S}$ 是有界的半正定的。
 
 $$
-\det(A(x_1,x_2,x_3)) = - (x_1^2 + x_2^2 + x_3^2 -2xyz -1) 
+\det(A(x_1,x_2,x_3)) = - (x_1^2 + x_2^2 + x_3^2 -2x_1 x_2 x_3 -1) 
 $$
 
 $S$ 的边界可表示为
@@ -331,6 +331,7 @@ $$
 fun <- function(x){
   2^2 + 3^2 + x^2 - 2*2*3*x - 1
 }
+fun(2)
 (A = toeplitz(x = 1:3))
 det(A)
 ```
@@ -560,6 +561,173 @@ Lingo 18.0 启用全局优化求解器后，在 $(x_1 = 7.999982, x_2 = 7.999982
 #### 示例 3
 
 空间高斯过程协方差矩阵参数的剖面极大似然估计。关于协方差矩阵的参数的似然函数是非凸的，多模态的。详细描述见 Brian Ripley 早年论文 [@Ripley1987]
+
+高斯随机过程回归模型
+
+$$
+\bm{y}(x) = D\bm{\beta} + S(x)
+$$
+
+其中，$\bm{\beta}$ 是一个 $p\times 1$ 维列向量，随机过程 $S(x)$ 是均值为零，协方差为 $\Sigma_{\bm{\theta}}$ 的平稳高斯过程，协方差矩阵 $\Sigma_{\bm{\theta}}$ 的元素如下：
+
+$$
+\mathsf{Cov}\{S(x_i), S(x_j)\} = \sigma^2 \exp(-\|x_i - x_j\| / \phi)
+$$
+
+其中， $\bm{\theta} = (\sigma^2,\phi)$ 表示与协方差矩阵相关的参数，随机过程 $S(x)$ 服从多元正态分布 $\mathrm{MVN}(\bm{0},\Sigma_{\bm{\theta}})$ ，则 $\bm{y}(x)$ 也服从多元正态分布 $\mathrm{MVN}(D\bm{\beta},\Sigma_{\bm{\theta}})$ 。
+
+参数 $\bm{\beta}$ 的广义最小二乘估计 $\hat{\bm{\beta}}(\bm{\theta}) = (D^{\top}\Sigma_{\bm{\theta}}^{-1}D)^{-1} D^{\top}\Sigma_{\bm{\theta}}^{-1}\bm{y}$
+
+关于参数 $\bm{\theta}$ 的对数似然函数如下
+
+$$
+\log \mathcal{L}(\bm{\theta}) = -\frac{n}{2}\log (2\pi) - \frac{1}{2}\log (\det \Sigma_{\bm{\theta}}) -\frac{1}{2}\bm{y}^{\top}\Sigma_{\bm{\theta}}^{-1}\big(I - D(D^{\top}\Sigma_{\bm{\theta}}^{-1}D)^{-1}D^{\top}\Sigma_{\bm{\theta}}^{-1}\big)\bm{y}
+$$
+
+根据 topo 数据集， $D = \bm{1}$ 是一个 $n \times 1$ 的列向量，$\bm{\beta} = \beta$ 是一个截距项。
+
+参数初值 $(\sigma,\phi) = (65,2)$ 。
+
+```{r}
+library(MASS)
+data(topo)
+head(topo)
+```
+
+似然函数
+
+```{r}
+# 扔掉常数项
+log_lik <- function(x) {
+  n <- nrow(topo)
+  D <- t(t(rep(1, n)))
+  Sigma <- x[1]^2 * exp(-as.matrix(dist(topo[, c("x", "y")])) / x[2])
+  inv_Sigma <- solve(Sigma)
+  as.vector(-1 / 2 * log(det(Sigma)) - 1 / 2 * t(topo[, "z"]) %*% inv_Sigma %*% (diag(1, n) - D %*% solve(t(D) %*% inv_Sigma %*% D, t(D)) %*% inv_Sigma) %*% topo[, "z"])
+}
+log_lik(x = c(65, 2))
+```
+
+不同的初始值，收敛到不同的位置，目标函数值非常接近。
+
+```{r}
+op <- OP(
+  objective = F_objective(log_lik, n = 2L),
+  bounds = V_bound(lb = c(55, 5), ub = c(75, 8)),
+  maximum = TRUE
+)
+nlp <- ROI_solve(op, solver = "nlminb", start = c(65, 2))
+nlp$solution
+nlp$objval
+```
+
+如果初始值靠近局部极值点，则就近收敛到该极值点。比如初值 $(65, 7)$
+
+```{r}
+nlp <- ROI_solve(op, solver = "nlminb", start = c(65, 7))
+nlp$solution
+nlp$objval
+```
+
+再比如初值 $(70, 7.5)$
+
+```{r}
+nlp <- ROI_solve(op, solver = "nlminb", start = c(70, 7.5))
+nlp$solution
+nlp$objval
+```
+
+尝试调用全局优化求解器，大大小小的坑都跳过去了，结果还是比较满意的。
+
+```{r}
+nlp <- ROI_solve(op, solver = "nloptr.directL")
+nlp$solution
+nlp$objval
+```
+
+目标区域网格化，计算格点处的似然函数值，然后绘制似然函数图像。
+
+```{r}
+dat <- expand.grid(
+  sigma = seq(from = 55, to = 75, length.out = 41),
+  phi = seq(from = 5, to = 8, length.out = 31)
+)
+dat$fn <- apply(dat, 1, log_lik)
+```
+
+似然函数关于参数 $(\sigma,\phi)$ 的三维曲面
+
+```{r}
+#| label: fig-topo-loglik-persp
+#| fig-cap: 对数似然函数的曲面图
+#| fig-width: 4.5
+#| fig-height: 4.5
+#| fig-showtext: true
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
+
+wireframe(
+  data = dat, fn ~ sigma * phi,
+  shade = TRUE, drape = FALSE,
+  xlab = expression(sigma), ylab = expression(phi),
+  zlab = list(expression(
+    italic(log-lik) ~ group("(", list(sigma, phi), ")")
+  ), rot = 90),
+  scales = list(arrows = FALSE, col = "black"),
+  shade.colors.palette = custom_palette,
+  # 减少三维图形的边空
+  lattice.options = list(
+    layout.widths = list(
+      left.padding = list(x = -0.5, units = "inches"),
+      right.padding = list(x = -1.0, units = "inches")
+    ),
+    layout.heights = list(
+      bottom.padding = list(x = -1.5, units = "inches"),
+      top.padding = list(x = -1.5, units = "inches")
+    )
+  ),
+  par.settings = list(axis.line = list(col = "transparent")),
+  screen = list(z = 120, x = -65, y = 0)
+)
+```
+
+等高线图呈现一道非常平滑的山岭。
+
+```{r}
+#| label: fig-topo-loglik-contour
+#| fig-cap: 对数似然函数的等高线图
+#| fig-width: 4.5
+#| fig-height: 4.5
+#| fig-showtext: true
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
+
+levelplot(fn ~ sigma * phi,
+  data = dat, aspect = 1, 
+  xlab = expression(sigma), ylab = expression(phi),
+  col.regions = cm.colors, contour = TRUE,
+   scales = list(
+    # 去掉图形上边、右边多余的刻度线
+    x = list(alternating = 1, tck = c(1, 0)),
+    y = list(alternating = 1, tck = c(1, 0))
+  ),
+  # 减少图形的边空
+  lattice.options = list(
+    layout.widths = list(
+      left.padding = list(x = 0, units = "inches"),
+      right.padding = list(x = 0, units = "inches")
+    ),
+    layout.heights = list(
+      bottom.padding = list(x = 0, units = "inches"),
+      top.padding = list(x = 0, units = "inches")
+    )
+  )
+)
+```
+
+上图中没有看到许多局部极小值，与作者论文中的图 1 似乎不符。原因是什么？似然函数中涉及到的矩阵运算不精确，应该设计精度更高的运算方式？**lattice** 包绘图引擎无法展示更加细微的差异？
+
+还有一种解释，上图是对的，算法迭代时，对不同的初值，常常收敛到不同的结果，而这些不同的结果都位于岭上不同位置，对应的对数似然值却又几乎一样。
 
 ### 箱式约束优化
 
