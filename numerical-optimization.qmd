@@ -585,19 +585,19 @@ $$
 ```{r}
 library(MASS)
 data(topo)
-head(topo)
+str(topo)
 ```
 
 根据 topo 数据集， $D = \bm{1}$ 是一个 $n \times 1$ 的列向量，$\bm{\beta} = \beta$ 是一个截距项。设置参数初值 $(\sigma,\phi) = (65,2)$ 。用 R 语言编码的似然函数如下：
 
 ```{r}
-# 扔掉常数项
 log_lik <- function(x) {
   n <- nrow(topo)
   D <- t(t(rep(1, n)))
   Sigma <- x[1]^2 * exp(-as.matrix(dist(topo[, c("x", "y")])) / x[2])
   inv_Sigma <- solve(Sigma)
-  as.vector(-1 / 2 * log(det(Sigma)) - 1 / 2 * t(topo[, "z"]) %*% inv_Sigma %*% (diag(1, n) - D %*% solve(t(D) %*% inv_Sigma %*% D, t(D)) %*% inv_Sigma) %*% topo[, "z"])
+  P <- diag(1, n) - D %*% solve(t(D) %*% inv_Sigma %*% D, t(D)) %*% inv_Sigma
+  as.vector(-1 / 2 * log(det(Sigma)) - 1 / 2 * t(topo[, "z"]) %*% inv_Sigma %*% P %*% topo[, "z"])
 }
 log_lik(x = c(65, 2))
 ```
@@ -691,7 +691,7 @@ wireframe(
 #| label: fig-topo-loglik-contour
 #| fig-cap: 对数似然函数的等高线图
 #| fig-width: 4.5
-#| fig-height: 4.5
+#| fig-height: 3.5
 #| fig-showtext: true
 #| code-fold: true
 #| echo: !expr knitr::is_html_output()
@@ -721,7 +721,7 @@ levelplot(fn ~ sigma * phi,
 
 上图中没有看到许多局部极小值，与作者论文中的图 1 似乎不符。原因是什么？似然函数中涉及到的矩阵运算不精确，应该设计精度更高的运算方式？**lattice** 包绘图引擎无法展示更加细微的差异？还有一种解释，上图是对的，算法迭代时，对不同的初值，常常收敛到不同的结果，而这些不同的结果都位于岭上不同位置，对应的对数似然值却又几乎一样。
 
-作为验证，下面调用 **nlme** 包的 `gls()` 函数拟合数据，参数估计结果与全局优化求解器的结果比较一致。参数估计结果 $(\sigma, \phi)= (63.93429, 6.121352)$
+作为验证，下面调用 **nlme** 包的 `gls()` 函数拟合数据，参数的极大似然估计结果与全局优化求解器的结果比较一致。参数估计结果 $(\sigma, \phi)= (63.93429, 6.121352)$ ，对数似然函数值为 -244.6006 ，自编的似然函数 `log_lik()` 在最优解处的值为 -196.8158，再加上之前扔掉的常数项 `-52 / 2 * log(2 * pi)` ，就是 -244.6006 ，丝毫不差。
 
 ```{r}
 library(nlme)
