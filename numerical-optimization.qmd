@@ -560,7 +560,7 @@ Lingo 18.0 启用全局优化求解器后，在 $(x_1 = 7.999982, x_2 = 7.999982
 
 #### 示例 3
 
-高斯随机过程回归模型
+高斯过程回归模型
 
 $$
 \bm{y}(x) = D\bm{\beta} + S(x)
@@ -578,7 +578,7 @@ $$
 \log \mathcal{L}(\bm{\theta}) = -\frac{n}{2}\log (2\pi) - \frac{1}{2}\log (\det \Sigma_{\bm{\theta}}) -\frac{1}{2}\bm{y}^{\top}\Sigma_{\bm{\theta}}^{-1}\big(I - D(D^{\top}\Sigma_{\bm{\theta}}^{-1}D)^{-1}D^{\top}\Sigma_{\bm{\theta}}^{-1}\big)\bm{y}
 $$
 
-下面考虑一个来自 **MASS** 包真实数据 `topo`。topo 数据集最初来自 John C. Davis （1973年）所著的书《Statistics and Data Analysis in Geology》。后来， J. J. Warnes 和 B. D. Ripley （1987年）以该数据集为例指出空间高斯过程的协方差函数的似然估计中存在的问题[@Ripley1987]，并将其作为数据集 topo 放在 **MASS** 包里。Paulo J. Ribeiro Jr 和 Peter J. Diggle （2001年）将该数据集打包成自定义的 `geodata` 数据类型，放在 **geoR** 包里，并在他俩合著的书《Model-based Geostatistics》中多次出现。`topo` 是空间地形数据集，包含有 52 行 3 列，数据点是 310 平方英尺范围内的海拔高度数据，`x` 坐标每单位 50 英尺，`y` 坐标单位同 `x` 坐标，海拔高度 `z` 单位是英尺。
+下面考虑一个来自 **MASS** 包真实数据 `topo`。topo 数据集最初来自 John C. Davis （1973年）所著的书《Statistics and Data Analysis in Geology》。后来， J. J. Warnes 和 B. D. Ripley （1987年）以该数据集为例指出空间高斯过程的协方差函数的似然估计中存在的问题[@Ripley1987]，并将其作为数据集 `topo` 放在 **MASS** 包里。Paulo J. Ribeiro Jr 和 Peter J. Diggle （2001年）将该数据集打包成自定义的 `geodata` 数据类型，放在 **geoR** 包里，并在他俩合著的书《Model-based Geostatistics》中多次出现。`topo` 是空间地形数据集，包含有 52 行 3 列，数据点是 310 平方英尺范围内的海拔高度数据，`x` 坐标每单位 50 英尺，`y` 坐标单位同 `x` 坐标，海拔高度 `z` 单位是英尺。
 
 ```{r}
 library(MASS)
@@ -594,13 +594,13 @@ log_lik <- function(x) {
   D <- t(t(rep(1, n)))
   Sigma <- x[1]^2 * exp(-as.matrix(dist(topo[, c("x", "y")])) / x[2])
   inv_Sigma <- solve(Sigma)
-  P <- diag(1, n) - D %*% solve(t(D) %*% inv_Sigma %*% D, t(D)) %*% inv_Sigma
+  P <- diag(1, n) - D %*% solve(t(D) %*% solve(Sigma, D), t(D)) %*% inv_Sigma
   as.vector(-1 / 2 * log(det(Sigma)) - 1 / 2 * t(topo[, "z"]) %*% inv_Sigma %*% P %*% topo[, "z"])
 }
 log_lik(x = c(65, 2))
 ```
 
-发现，对不同的初始值，收敛到不同的位置，目标函数值非常接近。
+关于参数的偏导计算复杂，就不计算梯度了，下面调用 R 软件内置的 `nlminb` 优化器。发现，对不同的初始值，收敛到不同的位置，目标函数值非常接近。
 
 ```{r}
 op <- OP(
@@ -624,7 +624,7 @@ nlp$solution
 nlp$objval
 ```
 
-尝试调用全局优化求解器，大大小小的坑都跳过去了，结果还是比较满意的。
+尝试调用来自 **nloptr** 包的全局优化求解器 `nloptr.directL` ，大大小小的坑都跳过去了，结果还是比较满意的。
 
 ```{r}
 nlp <- ROI_solve(op, solver = "nloptr.directL")
