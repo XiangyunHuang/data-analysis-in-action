@@ -906,7 +906,16 @@ rongelap_grid_var <- get_predVar(fit_rongelap_spamm,
 rongelap_grid_df$var_sp <- as.vector(rongelap_grid_var)
 ```
 
-在空间线性混合效应模型一节，截距 $\beta$ ，方差 $\sigma^2$ ，块金效应 $\tau^2$ 和范围参数 $\phi$ 都估计出来了。在此基础上，采用普通克里金插值方法预测，公式见 @eq-ordinary-kriging 。
+在空间线性混合效应模型一节，截距 $\beta$ ，方差 $\sigma^2$ ，块金效应 $\tau^2$ 和范围参数 $\phi$ 都估计出来了。在此基础上，采用简单克里金插值方法预测，对于未采样观测的位置 $x_0$，它的辐射强度的预测值 $\hat{\lambda}(x_0)$ 及其预测方差 $\mathsf{Var}\{\hat{\lambda}(x_0)\}$ 的计算公式如下。
+
+$$
+\begin{aligned}
+\hat{\lambda}(x_0) &= \beta + \bm{u}^{\top}(V + \tau^2I)^{-1}(\bm{\lambda} - \bm{1}\beta) \\
+\mathsf{Var}\{\hat{\lambda}(x_0)\}  &= \sigma^2 - \bm{u}^{\top}(V + \tau^2I)^{-1}\bm{u}
+\end{aligned}
+$$
+
+其中，协方差矩阵 $V$ 的元素为 $\mathsf{Cov}\{S(x_i),S(x_j)\}$ ，列向量 $\bm{u}$ 的元素为 $\mathsf{Cov}\{S(x_i),S(x_0)\}$ 。
 
 ```{r}
 # 截距
@@ -923,17 +932,28 @@ cov_fun <- function(h) sigma_sq * exp(-h / phi)
 m_obs <- cov_fun(st_distance(x = rongelap_sf)) + diag(tau_sq, 157)
 # 预测距离矩阵
 m_pred <- cov_fun(st_distance(x = rongelap_sf, y = rongelap_grid_centroid))
+# 简单克里金插值 Simple Kriging
+mean_sk <- beta + t(m_pred) %*% solve(m_obs, log(rongelap_sf$counts / rongelap_sf$time) - beta)
+# 辐射强度预测值
+rongelap_grid_df$pred_sk <- exp(mean_sk)
+# 辐射强度预测方差
+rongelap_grid_df$var_sk <- sigma_sq - diag(t(m_pred) %*% solve(m_obs, m_pred))
+```
 
-# 普通克里金插值
+```{r}
+#| eval: false
+#| echo: false
+
+# 普通克里金插值 Ordinary Kriging
 # 均值函数
 mean_fun <- function(m_pred) {
   n1 <- 1 - t(rep(1, 157)) %*% solve(m_obs, m_pred)
   n2 <- t(rep(1, 157)) %*% solve(m_obs, rep(1, 157))
   beta + (t(m_pred) + (n1 / n2) %*% t(rep(1, 157))) %*% solve(m_obs, log(rongelap_sf$counts / rongelap_sf$time) - beta)
 }
-mean_sk <- apply(m_pred, 2, mean_fun)
+mean_ok <- apply(m_pred, 2, mean_fun)
 # 辐射强度预测值
-rongelap_grid_df$pred_sk <- exp(mean_sk)
+rongelap_grid_df$pred_ok <- exp(mean_ok)
 # 方差函数
 var_fun <- function(m_pred){
   n1 <- 1 - t(rep(1, 157)) %*% solve(m_obs, m_pred)
@@ -941,8 +961,8 @@ var_fun <- function(m_pred){
   t(m_pred) %*% solve(m_obs, m_pred) - n1^2 / n2
 }
 # 辐射强度预测方差
-var_sk <- apply(m_pred, 2, var_fun)
-rongelap_grid_df$var_sk <- var_sk
+var_ok <- apply(m_pred, 2, var_fun)
+rongelap_grid_df$var_ok <- var_ok
 ```
 
 ### 展示结果 {#sec-rongelap-plot}
@@ -961,7 +981,7 @@ rongelap_grid_df$var_sk <- var_sk
 # 数据框变形
 rongelap_grid_df2 <- reshape(
   data = rongelap_grid_df, 
-  varying = c("pred_sp", "var_sp", "pred_sk",  "var_sk"), 
+  varying = c("pred_sp", "var_sp", "pred_sk", "var_sk"), 
   times = c("spaMM", "nlme"), v.names = c("pred", "var"), 
   timevar = "method", idvar = c("cX", "cY"),
   new.row.names = 1:(2 * 1612), direction = "long"
