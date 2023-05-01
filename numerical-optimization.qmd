@@ -574,19 +574,13 @@ $$
 \mathsf{Cov}\{S(x_i), S(x_j)\} = \sigma^2 \exp(-\|x_i - x_j\| / \phi)
 $$
 
-其中， $\bm{\theta} = (\sigma^2,\phi)$ 表示与协方差矩阵相关的参数，随机过程 $S(x)$ 服从多元正态分布 $\mathrm{MVN}(\bm{0},\Sigma_{\bm{\theta}})$ ，则 $\bm{y}(x)$ 也服从多元正态分布 $\mathrm{MVN}(D\bm{\beta},\Sigma_{\bm{\theta}})$ 。
-
-参数 $\bm{\beta}$ 的广义最小二乘估计 $\hat{\bm{\beta}}(\bm{\theta}) = (D^{\top}\Sigma_{\bm{\theta}}^{-1}D)^{-1} D^{\top}\Sigma_{\bm{\theta}}^{-1}\bm{y}$
-
-关于参数 $\bm{\theta}$ 的对数似然函数如下
+其中， $\bm{\theta} = (\sigma^2,\phi)$ 表示与协方差矩阵相关的参数，随机过程 $S(x)$ 服从多元正态分布 $\mathrm{MVN}(\bm{0},\Sigma_{\bm{\theta}})$ ，则 $\bm{y}(x)$ 也服从多元正态分布 $\mathrm{MVN}(D\bm{\beta},\Sigma_{\bm{\theta}})$ 。参数 $\bm{\beta}$ 的广义最小二乘估计为 $\hat{\bm{\beta}}(\bm{\theta}) = (D^{\top}\Sigma_{\bm{\theta}}^{-1}D)^{-1} D^{\top}\Sigma_{\bm{\theta}}^{-1}\bm{y}$ ，关于参数 $\bm{\theta}$ 的对数似然函数如下：
 
 $$
 \log \mathcal{L}(\bm{\theta}) = -\frac{n}{2}\log (2\pi) - \frac{1}{2}\log (\det \Sigma_{\bm{\theta}}) -\frac{1}{2}\bm{y}^{\top}\Sigma_{\bm{\theta}}^{-1}\big(I - D(D^{\top}\Sigma_{\bm{\theta}}^{-1}D)^{-1}D^{\top}\Sigma_{\bm{\theta}}^{-1}\big)\bm{y}
 $$
 
-根据 topo 数据集， $D = \bm{1}$ 是一个 $n \times 1$ 的列向量，$\bm{\beta} = \beta$ 是一个截距项。
-
-参数初值 $(\sigma,\phi) = (65,2)$ 。
+下面考虑一个来自 **MASS** 包真实数据 topo。
 
 ```{r}
 library(MASS)
@@ -594,7 +588,7 @@ data(topo)
 head(topo)
 ```
 
-似然函数
+根据 topo 数据集， $D = \bm{1}$ 是一个 $n \times 1$ 的列向量，$\bm{\beta} = \beta$ 是一个截距项。设置参数初值 $(\sigma,\phi) = (65,2)$ 。用 R 语言编码的似然函数如下：
 
 ```{r}
 # 扔掉常数项
@@ -608,7 +602,7 @@ log_lik <- function(x) {
 log_lik(x = c(65, 2))
 ```
 
-不同的初始值，收敛到不同的位置，目标函数值非常接近。
+发现，对不同的初始值，收敛到不同的位置，目标函数值非常接近。
 
 ```{r}
 op <- OP(
@@ -621,7 +615,7 @@ nlp$solution
 nlp$objval
 ```
 
-如果初始值靠近局部极值点，则就近收敛到该极值点。比如初值 $(65, 7)$
+如果初始值靠近局部极值点，则就近收敛到该极值点。比如初值 $(65, 7)$ 。
 
 ```{r}
 nlp <- ROI_solve(op, solver = "nlminb", start = c(65, 7))
@@ -629,7 +623,7 @@ nlp$solution
 nlp$objval
 ```
 
-再比如初值 $(70, 7.5)$
+再比如初值 $(70, 7.5)$ 。
 
 ```{r}
 nlp <- ROI_solve(op, solver = "nlminb", start = c(70, 7.5))
@@ -725,9 +719,28 @@ levelplot(fn ~ sigma * phi,
 )
 ```
 
-上图中没有看到许多局部极小值，与作者论文中的图 1 似乎不符。原因是什么？似然函数中涉及到的矩阵运算不精确，应该设计精度更高的运算方式？**lattice** 包绘图引擎无法展示更加细微的差异？
+上图中没有看到许多局部极小值，与作者论文中的图 1 似乎不符。原因是什么？似然函数中涉及到的矩阵运算不精确，应该设计精度更高的运算方式？**lattice** 包绘图引擎无法展示更加细微的差异？还有一种解释，上图是对的，算法迭代时，对不同的初值，常常收敛到不同的结果，而这些不同的结果都位于岭上不同位置，对应的对数似然值却又几乎一样。
 
-还有一种解释，上图是对的，算法迭代时，对不同的初值，常常收敛到不同的结果，而这些不同的结果都位于岭上不同位置，对应的对数似然值却又几乎一样。
+作为验证，下面调用 **nlme** 包的 `gls()` 函数拟合数据，参数估计结果与全局优化求解器的结果比较一致。参数估计结果 $(\sigma, \phi)= (63.93429, 6.121352)$
+
+```{r}
+library(nlme)
+fit_topo_ml <- gls(z ~ 1,
+  data = topo, method = "ML",
+  correlation = corExp(value = 65, form = ~ x + y)
+)
+summary(fit_topo_ml)
+```
+
+如果使用限制极大似然估计，会发现参数估计结果与之相距甚远，而对数似然函数值相差无几。参数估计结果 $(\sigma,\phi) = (128.8275, 25.47324)$
+
+```{r}
+fit_topo_reml <- gls(z ~ 1,
+  data = topo, method = "REML",
+  correlation = corExp(value = 65, form = ~ x + y)
+)
+summary(fit_topo_reml)
+```
 
 ### 箱式约束优化
 
