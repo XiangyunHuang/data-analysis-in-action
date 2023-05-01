@@ -127,10 +127,10 @@ res$objval
 
 函数 `OP()` 定义一个优化问题，参数如下：
 
--   `objective` ：线性目标函数的系数，数值型向量
+-   `objective` ：线性目标函数的系数，数值型向量。
 -   `constraints` ：约束矩阵 $A$ ，约束分量的方向 `>=` 、`<=` 或 `=` ，右手边的向量 $b$ 。
 -   `types` ：变量的类型，如 `"B"` 表示 0-1 变量，字母 B 是 binary 的意思，`"I"` 表示整型变量，字母 I 是 integer 的意思，`"C"` 表示数值型变量，字母 C 是 continuous 的意思。本例中，两个变量都是连续型的，`types = c("C", "C")` 。
--   `maximum` ：目标函数需要求极大还是极小，逻辑值 `TRUE` 或 `FALSE`。
+-   `maximum` ：目标函数需要求极大还是极小，默认求极小，取值为逻辑值 `TRUE` 或 `FALSE`。
 
 ## 整数优化 {#sec-integer-linear-optimization}
 
@@ -746,6 +746,8 @@ $$
 \end{array}
 $$
 
+R 语言编码的函数代码如下：
+
 ```{r}
 fn <- function(x) {
   n <- length(x)
@@ -753,10 +755,55 @@ fn <- function(x) {
 }
 ```
 
+考虑二维的情形，绘制三维曲面图像，见 @fig-valley-persp 。
+
+```{r}
+#| label: fig-valley-persp
+#| fig-cap: 类香蕉函数的曲面图
+#| fig-width: 4.5
+#| fig-height: 4.5
+#| fig-showtext: true
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
+
+dat <- expand.grid(
+  x1 = seq(from = 2, to = 4, length.out = 21),
+  x2 = seq(from = 2, to = 4, length.out = 21)
+)
+dat$fn <- apply(dat, 1, fn)
+
+wireframe(
+  data = dat, fn ~ x1 * x2,
+  shade = TRUE, drape = FALSE,
+  xlab = expression(x[1]), ylab = expression(x[2]),
+  zlab = list(expression(
+    italic(f) ~ group("(", list(x[1], x[2]), ")")
+  ), rot = 90),
+  scales = list(arrows = FALSE, col = "black"),
+  shade.colors.palette = custom_palette,
+  # 减少三维图形的边空
+  lattice.options = list(
+    layout.widths = list(
+      left.padding = list(x = -0.5, units = "inches"),
+      right.padding = list(x = -1.0, units = "inches")
+    ),
+    layout.heights = list(
+      bottom.padding = list(x = -1.5, units = "inches"),
+      top.padding = list(x = -1.5, units = "inches")
+    )
+  ),
+  par.settings = list(axis.line = list(col = "transparent")),
+  screen = list(z = 120, x = -65, y = 0)
+)
+```
+
 $n$ 维目标函数是非线性的，给定初值 $(3, 3, \cdots, 3)$，下面求解 25 维的箱式约束，
 
 ```{r}
-nlminb(start = rep(3, 25), objective = fn, lower = rep(2, 25), upper = rep(4, 25))
+nlminb(
+  start = rep(3, 25), objective = fn,
+  lower = rep(2, 25), upper = rep(4, 25)
+)
 ```
 
 `nlminb()` 出于历史兼容性的原因尚且存在，最优解的第24个分量没有在可行域的边界上。使用 `constrOptim()` 函数求解，默认求极小，需将箱式或线性不等式约束写成矩阵形式，即 $Ax \geq b$ 的形式，参数 ui 是 $k \times n$ 的约束矩阵 $A$，ci 是右侧 $k$ 维约束向量 $b$。以上面的优化问题为例，将箱式约束 $2 \leq x_1,x_2 \leq 4$ 转化为矩阵形式，约束矩阵和向量分别为：
@@ -853,8 +900,6 @@ optim(
   lower = rep(2, 25), upper = rep(4, 25)
 )
 ```
-
-### 线性约束优化
 
 ### 非线性约束优化
 
