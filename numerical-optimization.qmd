@@ -249,7 +249,11 @@ Dmat <- matrix(c(2, -1, -1, 2), nrow = 2, byrow = TRUE)
 dvec <- c(-3, 2)
 A <- matrix(c(1, 1, -1, 1, 0, -1), ncol = 2, byrow = TRUE)
 dvec0 <- c(2, -2, -3)
+```
 
+定义目标规划
+
+```{r}
 op <- OP(
   objective = Q_objective(Q = Dmat, L = -dvec),
   constraints = L_constraint(A, rep(">=", 3), dvec0),
@@ -257,7 +261,6 @@ op <- OP(
 )
 nlp <- ROI_solve(op, solver = "nloptr.slsqp", start = c(1, 2))
 nlp$objval
-
 nlp$solution
 ```
 
@@ -909,7 +912,7 @@ optim(
 
 -   非线性等式约束
 
-示例来自 Octave 的[非线性优化帮助文档](https://octave.org/doc/v8.2.0/Nonlinear-Programming.html)，该优化问题包含多个非线性等式约束。
+示例来自 Octave 的[非线性优化帮助文档](https://octave.org/doc/v8.2.0/Nonlinear-Programming.html)，Octave 函数 `sqp()` 使用序列二次规划求解器（successive quadratic programming solver）解非线性规划问题，示例中该优化问题包含多个非线性等式约束。
 
 $$
 \begin{array}{l}
@@ -923,8 +926,10 @@ $$
 \end{array}
 $$
 
+目标函数是非线性的，包含 5 个变量，约束条件是非线性的，有 3 个等式约束。先手动计算目标函数的梯度，等式约束的雅可比矩阵。
+
 ```{r}
-# 一个 5 维的目标函数
+# 目标函数
 fn <- function(x) {
   exp(prod(x)) - 0.5 * (x[1]^3 + x[2]^3 + 1)^2
 }
@@ -946,7 +951,7 @@ heq <- function(x) {
     x[1]^3 + x[2]^3 + 1
   )
 }
-# 等式约束的雅可比
+# 等式约束的雅可比矩阵
 heq.jac <- function(x) {
   matrix(c(2 * x[1], 2 * x[2], 2 * x[3], 2 * x[4], 2 * x[5],
     0, x[3], x[2], -5 * x[5], -5 * x[4],
@@ -956,20 +961,24 @@ heq.jac <- function(x) {
 }
 ```
 
+在 `OP()` 函数里定义目标规划的各个成分。
+
 ```{r}
 # 定义目标规划
 op <- OP(
-  objective = F_objective(F = fn, n = 5L, G = gr), # 5 个目标变量
+  # 5 个目标变量
+  objective = F_objective(F = fn, n = 5L, G = gr), 
   constraints = F_constraint(
     F = list(heq = heq),
     dir = "==",
     rhs = 0,
-    # 等式的雅可比
+    # 等式约束的雅可比矩阵
     J = list(heq.jac = heq.jac)
   ),
   bounds = V_bound(ld = -Inf, ud = Inf, nobj = 5L),
   maximum = FALSE # 求最小
 )
+op
 ```
 
 调用 SQP（序列二次规划） 求解器
@@ -991,7 +1000,7 @@ nlp$objval
 -   非线性不等式约束，不等式约束包含等号
 -   箱式约束
 
-此优化问题来源于 Ipopt 官网的[帮助文档](https://coin-or.github.io/Ipopt/INTERFACES.html)，约束条件比较复杂。提供的初始值为 $x_0 = (1,5,5,1)$，最优解为 $x_{\star} = (1.00000000,4.74299963,3.82114998,1.37940829)$。优化问题的具体内容如下：
+此优化问题来源于 **Ipopt** 官网的[帮助文档](https://coin-or.github.io/Ipopt/INTERFACES.html)，约束条件比较复杂。提供的初始值为 $x_0 = (1,5,5,1)$，最优解为 $x_{\star} = (1.00000000,4.74299963,3.82114998,1.37940829)$。优化问题的具体内容如下：
 
 $$
 \begin{array}{l}
@@ -1005,7 +1014,7 @@ $$
 \end{array}
 $$
 
-考虑用 **ROI** 调 **nloptr** 实现，看结果是否和例子一致，**nloptr** 支持箱式约束且支持不等式约束包含等号。
+下面用 **ROI** 调 **nloptr** 包求解，看结果是否和例子一致，**nloptr** 支持箱式约束且支持不等式约束包含等号。
 
 ```{r}
 # 一个 4 维的目标函数
@@ -1050,6 +1059,8 @@ op <- OP(
 )
 ```
 
+作为对比参考，先计算目标函数的初始值和最优值。
+
 ```{r}
 # 目标函数初始值
 fn(c(1, 5, 5, 1))
@@ -1082,4 +1093,4 @@ nlp$solution
 nlp$objval
 ```
 
-可以看出，**nloptr** 提供的优化能力可以覆盖 [Ipopt 求解器](https://github.com/coin-or/Ipopt)，推荐使用 `nloptr.slsqp` 求解器。
+可以看出，**nloptr** 提供的优化能力可以覆盖 [Ipopt 求解器](https://github.com/coin-or/Ipopt)，从以上求解的情况来看，推荐使用 `nloptr.slsqp` 求解器，这也是 Octave 的选择。
