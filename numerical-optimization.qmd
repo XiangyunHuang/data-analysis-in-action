@@ -41,6 +41,7 @@ library(ROI)
 library(ROI.plugin.glpk)
 library(ROI.plugin.nloptr)
 library(lattice)
+# 自定义调色板
 custom_palette <- function(irr, ref, height, saturation = 0.9) {
   hsv(
     h = height, s = 1 - saturation * (1 - (1 - ref)^0.5),
@@ -48,6 +49,12 @@ custom_palette <- function(irr, ref, height, saturation = 0.9) {
   )
 }
 ```
+
+选取几个应用于统计模型的数值优化示例。
+
+-   二项泊松混合模型的参数估计
+-   高斯过程回归模型的参数估计
+-   广义线性混合模型的参数估计
 
 ## 线性优化 {#sec-linear-optimization}
 
@@ -93,10 +100,9 @@ $$
 $$
 
 ```{r}
+# 定义优化问题
 op <- OP(
   objective = L_objective(c(-6, -5)),
-  # 指定变量类型：第1-2个变量都是连续值
-  types = c("C", "C"),
   constraints = L_constraint(
     L = matrix(c(
       1, 4,
@@ -106,15 +112,25 @@ op <- OP(
     dir = c("<=", "<=", "<="),
     rhs = c(16, 28, 6)
   ),
+  types = c("C", "C"),
   maximum = FALSE
 )
+# 优化问题描述
 op
-
+# 求解优化问题
 res <- ROI_solve(op, solver = "glpk")
+# 可行解
 res$solution
-
+# 目标函数值
 res$objval
 ```
+
+函数 `OP()` 定义一个优化问题，参数如下：
+
+-   `objective` ：线性目标函数的系数，数值型向量。
+-   `constraints` ：约束矩阵 $A$ ，约束分量的方向 `>=` 、`<=` 或 `=` ，右手边的向量 $b$ 。
+-   `types` ：变量的类型，如 `"B"` 表示 0-1 变量，字母 B 是 binary 的意思，`"I"` 表示整型变量，字母 I 是 integer 的意思，`"C"` 表示数值型变量，字母 C 是 continuous 的意思。本例中，两个变量都是连续型的，`types = c("C", "C")` 。
+-   `maximum` ：目标函数需要求极大还是极小，默认求极小，取值为逻辑值 `TRUE` 或 `FALSE`。
 
 ## 整数优化 {#sec-integer-linear-optimization}
 
@@ -145,7 +161,7 @@ $$
 
 $$
 \begin{array}{l}
-\min_x \quad
+\max_{x} \quad
   \begin{bmatrix}
   3  \\
   7  \\
@@ -169,10 +185,11 @@ s.t.\left\{
 \end{array} 
 $$
 
+第1个变量是连续值，第2、3个变量是整数，第3个变量的下、上界分别是 -10 和 10。
+
 ```{r}
 op <- OP(
   objective = L_objective(c(3, 7, -12)),
-  # 指定变量类型：第1个变量是连续值，第2、3个变量是整数
   types = c("C", "I", "I"),
   constraints = L_constraint(
     L = matrix(c(
@@ -183,15 +200,15 @@ op <- OP(
     dir = c("<=", "<=", "<="),
     rhs = c(61, 35, 31)
   ),
-  # 添加约束：第3个变量的下、上界分别是 -10 和 10
+  # 添加约束
   bounds = V_bound(li = 3, ui = 3, lb = -10, ub = 10, nobj = 3),
   maximum = TRUE
 )
 op
-
+# 求解
 res <- ROI_solve(op, solver = "glpk")
+# 最优解
 res$solution
-
 res$objval
 ```
 
@@ -199,9 +216,9 @@ res$objval
 
 二次优化分严格凸二次和非严格凸二次优化问题，严格凸要求矩阵正定，非严格凸要求矩阵半正定。
 
-### 严格凸二次优化
+### 严格二次优化
 
-ROI 默认的二次规划的标准形式为
+**ROI** 包的使用接口定义的二次规划的标准形式为
 
 $$
 \min_{\bm{x}} \frac{1}{2}\bm{x}^{\top}D\bm{x} + d^{\top}\bm{x} \quad \quad A^{\top}\bm{x} \geq d_{0}
@@ -232,21 +249,28 @@ Dmat <- matrix(c(2, -1, -1, 2), nrow = 2, byrow = TRUE)
 dvec <- c(-3, 2)
 A <- matrix(c(1, 1, -1, 1, 0, -1), ncol = 2, byrow = TRUE)
 dvec0 <- c(2, -2, -3)
+```
 
+定义目标规划
+
+```{r}
 op <- OP(
   objective = Q_objective(Q = Dmat, L = -dvec),
   constraints = L_constraint(A, rep(">=", 3), dvec0),
-  maximum = FALSE # 默认求最小
+  maximum = FALSE
 )
 nlp <- ROI_solve(op, solver = "nloptr.slsqp", start = c(1, 2))
 nlp$objval
-
 nlp$solution
 ```
 
-### 非严格凸二次优化
+### 非严格二次优化
 
-锥问题
+## 凸优化 {#sec-convex-optimization}
+
+### 严格凸优化
+
+### 非严格凸优化
 
 ## 非线性优化 {#sec-nonlinear-optimization}
 
@@ -264,17 +288,24 @@ $$
 f(\bm{x})= \sum_{i=1}^{n}\big(x_i^2 - 10 \cos(2\pi x_i) + 10\big)
 $$
 
-```{r}
-#| label: fig-rastrigin
-#| fig-cap: Rastrigin 函数
-#| fig-width: 5.5 
-#| fig-height: 5
-#| fig-showtext: true
-#| code-fold: true
+计算函数值的 R 代码
 
+```{r}
 fn <- function(x) {
   sum(x^2 - 10 * cos(2 * pi * x) + 10)
 }
+```
+
+二维 Rastrigin 函数图像
+
+```{r}
+#| label: fig-rastrigin
+#| fig-cap: 二维 Rastrigin 函数图像
+#| fig-width: 4.5
+#| fig-height: 4.5
+#| fig-showtext: true
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
 
 df <- expand.grid(
   x = seq(-4, 4, length.out = 201),
@@ -282,24 +313,25 @@ df <- expand.grid(
 )
 
 df$fnxy <- apply(df, 1, fn)
-
 wireframe(
   data = df, fnxy ~ x * y,
   shade = TRUE, drape = FALSE,
   xlab = expression(x[1]),
   ylab = expression(x[2]),
-  zlab = list(expression(italic(f) ~ group("(", list(x[1], x[2]), ")")), rot = 90),
+  zlab = list(expression(
+    italic(f) ~ group("(", list(x[1], x[2]), ")")
+  ), rot = 90),
   scales = list(arrows = FALSE, col = "black"),
   shade.colors.palette = custom_palette,
   # 减少三维图形的边空
   lattice.options = list(
     layout.widths = list(
-      left.padding = list(x = -.6, units = "inches"),
+      left.padding = list(x = -0.5, units = "inches"),
       right.padding = list(x = -1.0, units = "inches")
     ),
     layout.heights = list(
-      bottom.padding = list(x = -.8, units = "inches"),
-      top.padding = list(x = -1.0, units = "inches")
+      bottom.padding = list(x = -1.5, units = "inches"),
+      top.padding = list(x = -1.5, units = "inches")
     )
   ),
   par.settings = list(axis.line = list(col = "transparent")),
@@ -329,10 +361,10 @@ nlp$objval
 有如下复杂的目标函数
 
 $$
-\begin{array}{l}
-  \min_x \quad \cos(x_1)\cos(x_2) - \sum_{i=1}^{5}\Big( (-1)^i \cdot i \cdot 2 \cdot \exp\big(-500 \cdot ( (x_1 - i \cdot 2)^2 + (x_2 - i\cdot 2)^2 ) \big) \Big) \\
-  \text{s.t.} \quad -50 \leq x_1, x_2 \leq 50
-\end{array}
+\begin{aligned}
+  & \min_x ~ \cos(x_1)\cos(x_2) - \sum_{i=1}^{5}\Big( (-1)^i \cdot i \cdot 2 \cdot \exp\big(-500 \cdot ( (x_1 - i \cdot 2)^2 + (x_2 - i\cdot 2)^2 ) \big) \Big) \\
+  & \text{s.t.} ~ -50 \leq x_1, x_2 \leq 50
+\end{aligned}
 $$
 
 ```{r}
@@ -350,36 +382,37 @@ fn <- function(x) {
 
 ```{r}
 #| label: fig-super-function
-#| fig-width: 5.5
-#| fig-height: 5
+#| fig-width: 4.5
+#| fig-height: 4.5
 #| fig-cap: 函数图像
 #| fig-showtext: true
 #| code-fold: true
+#| echo: !expr knitr::is_html_output()
 
 df <- expand.grid(
   x = seq(-50, 50, length.out = 101),
   y = seq(-50, 50, length.out = 101)
 )
-
-df$fnxy = apply(df, 1, fn)
-
+df$fnxy <- apply(df, 1, fn)
 wireframe(
   data = df, fnxy ~ x * y,
   shade = TRUE, drape = FALSE,
-  xlab = expression(x[1]), 
-  ylab = expression(x[2]), 
-  zlab = list(expression(italic(f) ~ group("(", list(x[1], x[2]), ")")), rot = 90),
+  xlab = expression(x[1]),
+  ylab = expression(x[2]),
+  zlab = list(expression(
+    italic(f) ~ group("(", list(x[1], x[2]), ")")
+  ), rot = 90),
   scales = list(arrows = FALSE, col = "black"),
   shade.colors.palette = custom_palette,
   # 减少三维图形的边空
   lattice.options = list(
     layout.widths = list(
-      left.padding = list(x = -.6, units = "inches"),
+      left.padding = list(x = -0.5, units = "inches"),
       right.padding = list(x = -1.0, units = "inches")
     ),
     layout.heights = list(
-      bottom.padding = list(x = -.8, units = "inches"),
-      top.padding = list(x = -1.0, units = "inches")
+      bottom.padding = list(x = -1.5, units = "inches"),
+      top.padding = list(x = -1.5, units = "inches")
     )
   ),
   par.settings = list(axis.line = list(col = "transparent")),
@@ -392,10 +425,11 @@ wireframe(
 ```{r}
 #| label: fig-zoom-super-function
 #| fig-cap: 局部放大的函数图像
-#| fig-width: 5.5
-#| fig-height: 5
+#| fig-width: 4.5
+#| fig-height: 4.5
 #| fig-showtext: true
 #| code-fold: true
+#| echo: !expr knitr::is_html_output()
 
 df <- expand.grid(
   x = seq(0, 12, length.out = 201),
@@ -403,24 +437,25 @@ df <- expand.grid(
 )
 
 df$fnxy <- apply(df, 1, fn)
-
 wireframe(
   data = df, fnxy ~ x * y,
   shade = TRUE, drape = FALSE,
   xlab = expression(x[1]),
   ylab = expression(x[2]),
-  zlab = list(expression(italic(f) ~ group("(", list(x[1], x[2]), ")")), rot = 90),
+  zlab = list(expression(
+    italic(f) ~ group("(", list(x[1], x[2]), ")")
+  ), rot = 90),
   scales = list(arrows = FALSE, col = "black"),
   shade.colors.palette = custom_palette,
   # 减少三维图形的边空
   lattice.options = list(
     layout.widths = list(
-      left.padding = list(x = -.6, units = "inches"),
+      left.padding = list(x = -0.5, units = "inches"),
       right.padding = list(x = -1.0, units = "inches")
     ),
     layout.heights = list(
-      bottom.padding = list(x = -.8, units = "inches"),
-      top.padding = list(x = -1.0, units = "inches")
+      bottom.padding = list(x = -1.5, units = "inches"),
+      top.padding = list(x = -1.5, units = "inches")
     )
   ),
   par.settings = list(axis.line = list(col = "transparent")),
@@ -434,7 +469,7 @@ wireframe(
 fn(x = c(7.999982, 7.999982))
 ```
 
-面对如此复杂的函数，调用全局优化器
+面对如此复杂的函数，调用全局优化器寻优。
 
 ```{r}
 op <- OP(
@@ -459,9 +494,186 @@ Min=@cos(x1) * @cos(x2) - @Sum(P(j): (-1)^j * j * 2 * @exp(-500 * ((x1 - j * 2)^
 
 Lingo 18.0 启用全局优化求解器后，在 $(x_1 = 7.999982, x_2 = 7.999982)$ 取得最小值 -7.978832。而默认未启用全局优化求解器的情况下，在 $(x_1 = 18.84956, x_2 = -40.84070)$ 取得局部极小值 -1.000000。
 
+#### 示例 3
+
+高斯过程回归模型
+
+$$
+\bm{y}(x) = D\bm{\beta} + S(x)
+$$
+
+其中，$\bm{\beta}$ 是一个 $p\times 1$ 维列向量，随机过程 $S(x)$ 是均值为零，协方差为 $V_{\bm{\theta}}$ 的平稳高斯过程，协方差矩阵 $V_{\bm{\theta}}$ 的元素如下：
+
+$$
+\mathsf{Cov}\{S(x_i), S(x_j)\} = \sigma^2 \exp(-\|x_i - x_j\| / \phi)
+$$
+
+其中， $\bm{\theta} = (\sigma^2,\phi)$ 表示与协方差矩阵相关的参数，随机过程 $S(x)$ 的一个实现服从多元正态分布 $\mathrm{MVN}(\bm{0},V_{\bm{\theta}})$ ，则 $\bm{y}(x)$ 也服从多元正态分布 $\mathrm{MVN}(D\bm{\beta},V_{\bm{\theta}})$ 。参数 $\bm{\beta}$ 的广义最小二乘估计为 $\hat{\bm{\beta}}(\bm{\theta}) = (D^{\top}V_{\bm{\theta}}^{-1}D)^{-1} D^{\top}V_{\bm{\theta}}^{-1}\bm{y}$ ，关于参数 $\bm{\theta}$ 的剖面对数似然函数如下：
+
+$$
+\log \mathcal{L}(\bm{\theta}) = -\frac{n}{2}\log (2\pi) - \frac{1}{2}\log (\det V_{\bm{\theta}}) -\frac{1}{2}\bm{y}^{\top}V_{\bm{\theta}}^{-1}\big(I - D(D^{\top}V_{\bm{\theta}}^{-1}D)^{-1}D^{\top}V_{\bm{\theta}}^{-1}\big)\bm{y}
+$$
+
+下面考虑一个来自 **MASS** 包真实数据 `topo`。topo 数据集最初来自 John C. Davis （1973年）所著的书《Statistics and Data Analysis in Geology》。后来， J. J. Warnes 和 B. D. Ripley （1987年）以该数据集为例指出空间高斯过程的协方差函数的似然估计中存在的问题[@Ripley1987]，并将其作为数据集 `topo` 放在 **MASS** 包里。Paulo J. Ribeiro Jr 和 Peter J. Diggle （2001年）将该数据集打包成自定义的 `geodata` 数据类型，放在 **geoR** 包里，并在他俩合著的书《Model-based Geostatistics》中多次出现。`topo` 是空间地形数据集，包含有 52 行 3 列，数据点是 310 平方英尺范围内的海拔高度数据，`x` 坐标每单位 50 英尺，`y` 坐标单位同 `x` 坐标，海拔高度 `z` 单位是英尺。
+
+```{r}
+library(MASS)
+data(topo)
+str(topo)
+```
+
+根据 `topo` 数据集， $D = \bm{1}$ 是一个 $52 \times 1$ 的列向量，$\bm{\beta} = \beta$ 是一个截距项。设置参数初值 $(\sigma,\phi) = (65,2)$ 。为了与 Ripley 的论文中的图比较，下面扔掉了对数似然函数中常数项，用 R 语言编码的似然函数如下：
+
+```{r}
+log_lik <- function(x) {
+  n <- nrow(topo)
+  D <- t(t(rep(1, n)))
+  Sigma <- x[1]^2 * exp(-as.matrix(dist(topo[, c("x", "y")])) / x[2])
+  inv_Sigma <- solve(Sigma)
+  P <- diag(1, n) - D %*% solve(t(D) %*% solve(Sigma, D), t(D)) %*% inv_Sigma
+  as.vector(-1 / 2 * log(det(Sigma)) - 1 / 2 * t(topo[, "z"]) %*% inv_Sigma %*% P %*% topo[, "z"])
+}
+log_lik(x = c(65, 2))
+```
+
+关于参数的偏导计算复杂，就不计算梯度了，下面调用 R 软件内置的 `nlminb` 优化器。发现，对不同的初始值，收敛到不同的位置，目标函数值非常接近。
+
+```{r}
+op <- OP(
+  objective = F_objective(log_lik, n = 2L),
+  bounds = V_bound(lb = c(55, 5), ub = c(75, 8)),
+  maximum = TRUE
+)
+nlp <- ROI_solve(op, solver = "nlminb", start = c(65, 2))
+nlp$solution
+nlp$objval
+```
+
+如果初始值靠近局部极值点，则就近收敛到该极值点，比如初值 $(65, 7)$ ， $(70, 7.5)$ 。
+
+```{r}
+nlp <- ROI_solve(op, solver = "nlminb", start = c(65, 7))
+nlp$solution
+nlp$objval
+nlp <- ROI_solve(op, solver = "nlminb", start = c(70, 7.5))
+nlp$solution
+nlp$objval
+```
+
+尝试调用来自 **nloptr** 包的全局优化求解器 `nloptr.directL` ，大大小小的坑都跳过去了，结果还是比较满意的。
+
+```{r}
+nlp <- ROI_solve(op, solver = "nloptr.directL")
+nlp$solution
+nlp$objval
+```
+
+目标区域网格化，计算格点处的似然函数值，然后绘制似然函数图像。
+
+```{r}
+dat <- expand.grid(
+  sigma = seq(from = 55, to = 75, length.out = 41),
+  phi = seq(from = 5, to = 8, length.out = 31)
+)
+dat$fn <- apply(dat, 1, log_lik)
+```
+
+似然函数关于参数 $(\sigma,\phi)$ 的三维曲面见 @fig-topo-loglik-persp 。
+
+```{r}
+#| label: fig-topo-loglik-persp
+#| fig-cap: 对数似然函数的曲面图
+#| fig-width: 4.5
+#| fig-height: 4.5
+#| fig-showtext: true
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
+
+wireframe(
+  data = dat, fn ~ sigma * phi,
+  shade = TRUE, drape = FALSE,
+  xlab = expression(sigma), ylab = expression(phi),
+  zlab = list(expression(
+    italic(log-lik) ~ group("(", list(sigma, phi), ")")
+  ), rot = 90),
+  scales = list(arrows = FALSE, col = "black"),
+  shade.colors.palette = custom_palette,
+  # 减少三维图形的边空
+  lattice.options = list(
+    layout.widths = list(
+      left.padding = list(x = -0.5, units = "inches"),
+      right.padding = list(x = -1.0, units = "inches")
+    ),
+    layout.heights = list(
+      bottom.padding = list(x = -1.5, units = "inches"),
+      top.padding = list(x = -1.5, units = "inches")
+    )
+  ),
+  par.settings = list(axis.line = list(col = "transparent")),
+  screen = list(z = 120, x = -65, y = 0)
+)
+```
+
+等高线图呈现一道非常长且平滑的山岭 long flat ridge，山岭上布满许多局部极大值，普通的数值优化求解器常常陷入其中，只有全局优化求解器才可能找到全局极大值点。高斯过程回归模型的对数似然函数是非凸的，多模态的。
+
+```{r}
+#| label: fig-topo-loglik-contour
+#| fig-cap: 对数似然函数的等高线图
+#| fig-width: 4.5
+#| fig-height: 3.7
+#| fig-showtext: true
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
+
+levelplot(fn ~ sigma * phi,
+  data = dat, aspect = 1,
+  xlim = c(54.5, 75.5), ylim = c(4.9, 8.1),
+  xlab = expression(sigma), ylab = expression(phi),
+  col.regions = cm.colors, contour = TRUE,
+  scales = list(
+    x = list(alternating = 1, tck = c(1, 0)),
+    y = list(alternating = 1, tck = c(1, 0))
+  ),
+  # 减少三维图形的边空
+  lattice.options = list(
+    layout.widths = list(
+      left.padding = list(x = 0, units = "inches"),
+      right.padding = list(x = 0, units = "inches")
+    ),
+    layout.heights = list(
+      bottom.padding = list(x = -.5, units = "inches"),
+      top.padding = list(x = -.5, units = "inches")
+    )
+  )
+)
+```
+
+上图中没有看到许多局部极小值，与作者论文中的图 1 似乎不符。原因是什么？似然函数中涉及到的矩阵运算不精确，应该设计精度更高的运算方式？**lattice** 包绘图引擎无法展示更加细微的差异？还有一种解释，上图是对的，算法迭代时，对不同的初值，常常收敛到不同的结果，而这些不同的结果都位于岭上不同位置，对应的对数似然值却又几乎一样。
+
+作为验证，下面调用 **nlme** 包的 `gls()` 函数拟合数据，参数的极大似然估计结果与全局优化求解器的结果比较一致。参数估计结果 $(\sigma, \phi)= (63.93429, 6.121352)$ ，对数似然函数值为 -244.6006 ，自编的似然函数 `log_lik()` 在最优解处的值为 -196.8158，再加上之前扔掉的常数项 `-52 / 2 * log(2 * pi)` ，就是 -244.6006 ，丝毫不差。
+
+```{r}
+library(nlme)
+fit_topo_ml <- gls(z ~ 1,
+  data = topo, method = "ML",
+  correlation = corExp(value = 65, form = ~ x + y)
+)
+summary(fit_topo_ml)
+```
+
+如果使用限制极大似然估计，会发现参数估计结果与之相距甚远，而对数似然函数值相差无几。参数估计结果 $(\sigma,\phi) = (128.8275, 25.47324)$ 。
+
+```{r}
+fit_topo_reml <- gls(z ~ 1,
+  data = topo, method = "REML",
+  correlation = corExp(value = 65, form = ~ x + y)
+)
+summary(fit_topo_reml)
+```
+
 ### 箱式约束优化
 
-有如下箱式约束优化问题，示例来自函数 nlminb 的帮助文档，目标函数和[香蕉函数](https://en.wikipedia.org/wiki/Rosenbrock_function)有些相似。
+有如下箱式约束优化问题，示例来自函数 `nlminb()` 的帮助文档，目标函数和[香蕉函数](https://en.wikipedia.org/wiki/Rosenbrock_function)有些相似。
 
 $$
 \begin{array}{l}
@@ -470,6 +682,8 @@ $$
 \end{array}
 $$
 
+R 语言编码的函数代码如下：
+
 ```{r}
 fn <- function(x) {
   n <- length(x)
@@ -477,10 +691,55 @@ fn <- function(x) {
 }
 ```
 
+考虑二维的情形，绘制三维曲面图像，见 @fig-valley-persp 。
+
+```{r}
+#| label: fig-valley-persp
+#| fig-cap: 类香蕉函数的曲面图
+#| fig-width: 4.5
+#| fig-height: 4.5
+#| fig-showtext: true
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
+
+dat <- expand.grid(
+  x1 = seq(from = 2, to = 4, length.out = 21),
+  x2 = seq(from = 2, to = 4, length.out = 21)
+)
+dat$fn <- apply(dat, 1, fn)
+
+wireframe(
+  data = dat, fn ~ x1 * x2,
+  shade = TRUE, drape = FALSE,
+  xlab = expression(x[1]), ylab = expression(x[2]),
+  zlab = list(expression(
+    italic(f) ~ group("(", list(x[1], x[2]), ")")
+  ), rot = 90),
+  scales = list(arrows = FALSE, col = "black"),
+  shade.colors.palette = custom_palette,
+  # 减少三维图形的边空
+  lattice.options = list(
+    layout.widths = list(
+      left.padding = list(x = -0.5, units = "inches"),
+      right.padding = list(x = -1.0, units = "inches")
+    ),
+    layout.heights = list(
+      bottom.padding = list(x = -1.5, units = "inches"),
+      top.padding = list(x = -1.5, units = "inches")
+    )
+  ),
+  par.settings = list(axis.line = list(col = "transparent")),
+  screen = list(z = 120, x = -65, y = 0)
+)
+```
+
 $n$ 维目标函数是非线性的，给定初值 $(3, 3, \cdots, 3)$，下面求解 25 维的箱式约束，
 
 ```{r}
-nlminb(start = rep(3, 25), objective = fn, lower = rep(2, 25), upper = rep(4, 25))
+nlminb(
+  start = rep(3, 25), objective = fn,
+  lower = rep(2, 25), upper = rep(4, 25)
+)
 ```
 
 `nlminb()` 出于历史兼容性的原因尚且存在，最优解的第24个分量没有在可行域的边界上。使用 `constrOptim()` 函数求解，默认求极小，需将箱式或线性不等式约束写成矩阵形式，即 $Ax \geq b$ 的形式，参数 ui 是 $k \times n$ 的约束矩阵 $A$，ci 是右侧 $k$ 维约束向量 $b$。以上面的优化问题为例，将箱式约束 $2 \leq x_1,x_2 \leq 4$ 转化为矩阵形式，约束矩阵和向量分别为：
@@ -505,7 +764,7 @@ constrOptim(
 )
 ```
 
-从求解的结果来看，convergence = 1 意味着迭代次数到达默认的极限 maxit = 500，结合 `nlminb()` 函数的求解结果来看，实际上还没有收敛。如果没有提供梯度，则必须用 Nelder-Mead 方法，下面增加迭代次数到 1000。
+从求解的结果来看，`convergence = 1` 意味着迭代次数到达默认的极限 `maxit = 500`，结合 `nlminb()` 函数的求解结果来看，实际上还没有收敛。如果没有提供梯度，则必须用 Nelder-Mead 方法，下面增加迭代次数到 1000。
 
 ```{r}
 constrOptim(
@@ -540,7 +799,7 @@ constrOptim(
 )
 ```
 
-相比于 Nelder-Mead 方法，目标值 373 更大，可见已陷入局部最优解，下面通过 ROI 包，分别调用求解器 L-BFGS 和 directL，发现前者同样陷入局部最优解，而后者可以获得与 `nlminb()` 函数一致的结果。
+相比于 Nelder-Mead 方法，目标值 373 更大，可见已陷入局部最优解，下面通过 ROI 包，分别调用求解器 `nloptr.lbfgs` 和 `nloptr.directL` ，发现前者同样陷入局部最优解，而后者可以获得与 `nlminb()` 函数一致的结果。
 
 ```{r}
 # 调用改进的 BFGS 算法
@@ -560,7 +819,7 @@ nlp$objval
 nlp$solution
 ```
 
-下面再与函数 `optim()` 提供的 L-BFGS-B 算法比较
+下面再与函数 `optim()` 提供的 `L-BFGS-B` 算法比较。
 
 ```{r}
 optim(
@@ -578,17 +837,15 @@ optim(
 )
 ```
 
-### 线性约束优化
-
 ### 非线性约束优化
 
-**nloptr** 包的非线性优化能力覆盖 Octave 和 Ipopt 。
+**nloptr** 包的非线性优化能力覆盖开源优化软件 [Octave](https://www.octave.org/) 和 [Ipopt](https://github.com/coin-or/Ipopt) 。
 
 #### 示例 1
 
 -   非线性等式约束
 
-示例来自 Octave 的[非线性优化帮助文档](https://octave.org/doc/v8.2.0/Nonlinear-Programming.html)，该优化问题包含多个非线性等式约束。
+示例来自 Octave 的[非线性优化帮助文档](https://octave.org/doc/v8.2.0/Nonlinear-Programming.html)，Octave 函数 `sqp()` 使用序列二次规划求解器（successive quadratic programming solver）解非线性规划问题，示例中该优化问题包含多个非线性等式约束。
 
 $$
 \begin{array}{l}
@@ -602,8 +859,10 @@ $$
 \end{array}
 $$
 
+目标函数是非线性的，包含 5 个变量，约束条件是非线性的，有 3 个等式约束。先手动计算目标函数的梯度，等式约束的雅可比矩阵。
+
 ```{r}
-# 一个 5 维的目标函数
+# 目标函数
 fn <- function(x) {
   exp(prod(x)) - 0.5 * (x[1]^3 + x[2]^3 + 1)^2
 }
@@ -625,7 +884,7 @@ heq <- function(x) {
     x[1]^3 + x[2]^3 + 1
   )
 }
-# 等式约束的雅可比
+# 等式约束的雅可比矩阵
 heq.jac <- function(x) {
   matrix(c(2 * x[1], 2 * x[2], 2 * x[3], 2 * x[4], 2 * x[5],
     0, x[3], x[2], -5 * x[5], -5 * x[4],
@@ -635,26 +894,33 @@ heq.jac <- function(x) {
 }
 ```
 
+在 `OP()` 函数里定义目标规划的各个成分。
+
 ```{r}
 # 定义目标规划
 op <- OP(
-  objective = F_objective(F = fn, n = 5L, G = gr), # 5 个目标变量
+  # 5 个目标变量
+  objective = F_objective(F = fn, n = 5L, G = gr), 
   constraints = F_constraint(
     F = list(heq = heq),
     dir = "==",
     rhs = 0,
-    # 等式的雅可比
+    # 等式约束的雅可比矩阵
     J = list(heq.jac = heq.jac)
   ),
   bounds = V_bound(ld = -Inf, ud = Inf, nobj = 5L),
   maximum = FALSE # 求最小
 )
+op
 ```
 
 调用 SQP（序列二次规划） 求解器
 
 ```{r}
-nlp <- ROI_solve(op, solver = "nloptr.slsqp", start = c(-1.8, 1.7, 1.9, -0.8,-0.8))
+nlp <- ROI_solve(op,
+  solver = "nloptr.slsqp",
+  start = c(-1.8, 1.7, 1.9, -0.8, -0.8)
+)
 nlp$solution
 nlp$objval
 ```
@@ -667,7 +933,7 @@ nlp$objval
 -   非线性不等式约束，不等式约束包含等号
 -   箱式约束
 
-此优化问题来源于 Ipopt 官网的[帮助文档](https://coin-or.github.io/Ipopt/INTERFACES.html)，约束条件比较复杂。提供的初始值为 $x_0 = (1,5,5,1)$，最优解为 $x_{\star} = (1.00000000,4.74299963,3.82114998,1.37940829)$。优化问题的具体内容如下：
+此优化问题来源于 **Ipopt** 官网的[帮助文档](https://coin-or.github.io/Ipopt/INTERFACES.html)，约束条件比较复杂。提供的初始值为 $x_0 = (1,5,5,1)$，最优解为 $x_{\star} = (1.00000000,4.74299963,3.82114998,1.37940829)$。优化问题的具体内容如下：
 
 $$
 \begin{array}{l}
@@ -681,7 +947,7 @@ $$
 \end{array}
 $$
 
-考虑用 **ROI** 调 **nloptr** 实现，看结果是否和例子一致，**nloptr** 支持箱式约束且支持不等式约束包含等号。
+下面用 **ROI** 调 **nloptr** 包求解，看结果是否和例子一致，**nloptr** 支持箱式约束且支持不等式约束包含等号。
 
 ```{r}
 # 一个 4 维的目标函数
@@ -726,6 +992,8 @@ op <- OP(
 )
 ```
 
+作为对比参考，先计算目标函数的初始值和最优值。
+
 ```{r}
 # 目标函数初始值
 fn(c(1, 5, 5, 1))
@@ -758,4 +1026,4 @@ nlp$solution
 nlp$objval
 ```
 
-可以看出，**nloptr** 提供的优化能力可以覆盖 [Ipopt 求解器](https://github.com/coin-or/Ipopt)，推荐使用 `nloptr.slsqp` 求解器。
+可以看出，**nloptr** 提供的优化能力可以覆盖 [Ipopt 求解器](https://github.com/coin-or/Ipopt)，从以上求解的情况来看，推荐使用 `nloptr.slsqp` 求解器，这也是 Octave 的选择。

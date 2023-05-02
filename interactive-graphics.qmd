@@ -168,88 +168,6 @@ plotly::plot_ly(
 
 ### 图例 {#sec-plotly-legend}
 
-### 公式 {#sec-plotly-formula}
-
-正态分布的概率密度函数形式如下：
-
-$$
-\begin{aligned}
-& f(x;\mu,\sigma^2) = \frac{1}{\sqrt{2\pi}\sigma}\exp\{-\frac{(x -\mu)^2}{2\sigma^2}\}
-\end{aligned}
-$$
-
-下图展示两个正态分布，分别是 $\mathcal{N}(3, 1^2)$ 和 $\mathcal{N}(2, 1.5^2)$ 。函数 `plotly::TeX()` 包裹 LaTeX 书写的数学公式，**plotly** 包调用 [MathJax](https://www.mathjax.org/) 库渲染图中的公式符号。
-
-```{r}
-#| label: fig-plotly-formula
-#| eval: !expr knitr::is_html_output(excludes = 'epub')
-#| fig-cap: "设置数学公式"
-#| code-fold: true
-
-x <- seq(from = -4, to = 8, length.out = 193)
-y1 <- dnorm(x, mean = 3, sd = 1)
-y2 <- dnorm(x, mean = 2, sd = 1.5)
-hline <- function(y = 0, color = "red") {
-  list(
-    type = "line", 
-    x0 = 0, 
-    x1 = 1, 
-    xref = "paper",
-    y0 = y, 
-    y1 = y, 
-    line = list(color = color, dash = 'dash')
-  )
-}
-
-vline <- function(x = 0, color = "red") {
-  list(
-    type = "line", 
-    x0 = x, 
-    x1 = x, 
-    yref = "paper",
-    y0 = 0, 
-    y1 = 1, 
-    line = list(color = color, dash = 'dash')
-  )
-}
-
-plotly::plot_ly(
-  x = x, y = y1,
-  type = "scatter", mode = "lines",
-  fill = "tozeroy", fillcolor = "rgba(102, 102, 102, 0.2)",
-  text = ~ paste0(
-    "x：", x, "<br>",
-    "y：", round(y1, 3), "<br>"
-  ),
-  hoverinfo = "text",
-  name = plotly::TeX("\\mathcal{N}(3,1^2)"),
-  line = list(shape = "spline", color = "#666666")
-) |> 
-  plotly::add_trace(
-    x = x, y = y2,
-    type = "scatter", mode = "lines",
-    fill = "tozeroy", fillcolor = "rgba(153, 153, 153, 0.2)",
-    text = ~ paste0(
-      "x：", x, "<br>",
-      "y：", round(y2, 3), "<br>"
-    ),
-    hoverinfo = "text",
-    name = plotly::TeX("\\mathcal{N}(2, 1.5^2)"),
-    line = list(shape = "spline", color = "#999999")
-  ) |> 
-  plotly::layout(
-    xaxis = list(
-      showgrid = F,
-      title = plotly::TeX("x")
-    ),
-    yaxis = list(
-      showgrid = F,
-      title = plotly::TeX("f(x)")
-    ),
-    legend = list(x = 0.8, y = 1, orientation = "v")
-  )
-```
-
 ## 常用图形 {#sec-plotly-common-graphics}
 
 ### 散点图 {#sec-plotly-scatter}
@@ -535,6 +453,69 @@ subset(trunk_year_author, year >= 1999 & author %in% c("ripley", "maechler")) |>
 
 ## 常用技巧 {#sec-plotly-common-tricks}
 
+### 数学公式 {#sec-plotly-formula}
+
+正态分布的概率密度函数形式如下：
+
+$$
+\begin{aligned}
+& f(x;\mu,\sigma^2) = \frac{1}{\sqrt{2\pi}\sigma}\exp\{-\frac{(x -\mu)^2}{2\sigma^2}\}
+\end{aligned}
+$$
+
+下图展示两个正态分布，分别是 $\mathcal{N}(3, 1^2)$ 和 $\mathcal{N}(2, 1.5^2)$ 。函数 `plotly::TeX()` 包裹 LaTeX 书写的数学公式，**plotly** 包调用 [MathJax](https://www.mathjax.org/) 库渲染图中的公式符号。
+
+```{r}
+#| label: fig-plotly-formula
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+#| fig-cap: "设置数学公式"
+#| code-fold: true
+
+x <- seq(from = -4, to = 8, length.out = 193)
+y1 <- dnorm(x, mean = 3, sd = 1)
+y2 <- dnorm(x, mean = 2, sd = 1.5)
+
+plotly::plot_ly(
+  x = x, y = y1,
+  type = "scatter", mode = "lines",
+  fill = "tozeroy", fillcolor = "rgba(0, 204, 102, 0.2)",
+  text = ~ paste0(
+    "x：", x, "<br>",
+    "y：", round(y1, 3), "<br>"
+  ),
+  hoverinfo = "text",
+  name = plotly::TeX("\\mathcal{N}(3,1^2)"),
+  line = list(shape = "spline", color = "#009B95")
+) |> 
+  plotly::add_trace(
+    x = x, y = y2,
+    type = "scatter", mode = "lines",
+    fill = "tozeroy", fillcolor = "rgba(51, 102, 204, 0.2)",
+    text = ~ paste0(
+      "x：", x, "<br>",
+      "y：", round(y2, 3), "<br>"
+    ),
+    hoverinfo = "text",
+    name = plotly::TeX("\\mathcal{N}(2, 1.5^2)"),
+    line = list(shape = "spline", color = "#403173")
+  ) |> 
+  plotly::layout(
+    xaxis = list(
+      showgrid = F,
+      title = plotly::TeX("x")
+    ),
+    yaxis = list(
+      showgrid = F,
+      title = plotly::TeX("f(x)")
+    ),
+    legend = list(x = 0.8, y = 1, orientation = "v")
+  ) |> 
+  plotly::config(
+    mathjax = "cdn",
+    displayModeBar = FALSE
+  )
+```
+
 ### 动静转化 {#sec-plotly-ggplotly}
 
 在出版书籍，发表期刊文章，打印纸质文稿等场景中，需要将交互图形导出为静态图形，再插入到正文之中。
@@ -589,8 +570,6 @@ plotly::orca(p, "plotly-quakes.svg")
 # kaleido
 plotly::save_image(p, "plotly-quakes.svg")
 ```
-
-### 数学公式 {#sec-plotly-math}
 
 ### 坐标系统 {#sec-plotly-coord}
 
