@@ -230,12 +230,12 @@ cloud(counts / time ~ cX * cY,
 
 $$
 \begin{aligned}
-\log(\lambda) &= \beta \\
-Y & \sim \mathrm{Poisson}(t\lambda)
+\log(\bm{\lambda}) &= \bm{1}\beta \\
+\bm{y} & \sim \mathrm{Poisson}(\bm{t}\bm{\lambda})
 \end{aligned}
 $$
 
-其中，$\lambda$ 表示核辐射强度，$\beta$ 表示未知的截距，$Y$ 表示观测到的粒子数目，$t$ 表示相应的观测时间。R 软件内置的 stats 包有函数 `glm()` 可以拟合上述广义线性模型，代码如下。
+其中，$\bm{\lambda}$ 表示核辐射强度，$\beta$ 表示未知的截距，$\bm{y}$ 表示观测到的粒子数目，$\bm{t}$ 表示相应的观测时间。R 软件内置的 stats 包有函数 `glm()` 可以拟合上述广义线性模型，代码如下。
 
 ```{r}
 fit_rongelap_poisson <- glm(counts ~ 1,
@@ -396,7 +396,7 @@ ggplot(rongelap, aes(x = cY, y = poisson_residuals / time)) +
 $$
 \begin{aligned}
 \log(\lambda_i) &= \beta + Z_i \\
-Y_i & \sim \mathrm{Poisson}(t_i\lambda_i)
+y_i & \sim \mathrm{Poisson}(t_i\lambda_i)
 \end{aligned}
 $$
 
@@ -702,18 +702,18 @@ plot(fit_rongelap_vario_norm,
 
 ### 空间广义线性混合效应模型 {#sec-rongelap-sglmm}
 
-简单的广义线性模型并没有考虑距离相关性，它认为各个观测点的数据是相互独立的。因此，考虑采用广义线性混合效应模型，在广义线性模型的基础上添加位置相关的随机效应，用以刻画未能直接观测到的潜在影响。 ${}^{137}\mathrm{Cs}$ 放出伽马射线，在 $n=157$ 个采样点，分别以时间间隔 $t_i$ 测量辐射量 $Y(x_i)$，建立泊松型空间广义线性混合效应模型。
+简单的广义线性模型并没有考虑距离相关性，它认为各个观测点的数据是相互独立的。因此，考虑采用广义线性混合效应模型，在广义线性模型的基础上添加位置相关的随机效应，用以刻画未能直接观测到的潜在影响。 ${}^{137}\mathrm{Cs}$ 放出伽马射线，在 $n=157$ 个采样点，分别以时间间隔 $t_i$ 测量辐射量 $y(x_i)$，建立泊松型空间广义线性混合效应模型。
 
 $$
 \begin{aligned}
 \log\{\lambda(x_i)\} & =  \beta + S(x_{i}) + Z_{i} \\
-Y(x_{i}) &\sim \mathrm{Poisson}(t_i\lambda(x_i))
+y(x_{i}) &\sim \mathrm{Poisson}(t_i\lambda(x_i))
 \end{aligned}
 $$ {#eq-rongelap-poisson-sglmmm}
 
-模型中，放射粒子数 $Y(x_{i})$ 作为响应变量服从均值为 $t_i\lambda(x_i)$ 的泊松分布，其它模型成分的说明同前。
+模型中，放射粒子数 $y(x_{i})$ 作为响应变量服从均值为 $t_i\lambda(x_i)$ 的泊松分布，其它模型成分的说明同前。
 
-**nlme** 包不能拟合空间广义线性混合效应模型， **spaMM** 包可以，它的使用语法与前面介绍的函数 `glm()` 、 **nlme** 包都类似，函数 `fitme()` 可以拟合从线性模型到广义线性混合效应模型的一大类模型，且使用统一的语法，输出一个 `HLfit` 类型的数据对象。 **spaMM** 包的函数 `Matern()` 实现了梅隆型自协方差函数，指数型和幂二次指数型是它的特例。当固定 $\nu = 0.5$ 时，梅隆型自协方差函数 `Matern()` 的形式退化为 $\sigma^2\exp(-\phi u)$ ，其中，$\phi$ 表示范围参数，相当于前面出现的 $1/\phi$ 。
+**nlme** 包不能拟合空间广义线性混合效应模型， **spaMM** 包可以，它的使用语法与前面介绍的函数 `glm()` 、 **nlme** 包都类似，函数 `fitme()` 可以拟合从线性模型到广义线性混合效应模型的一大类模型，且使用统一的语法，输出一个 `HLfit` 类型的数据对象。 **spaMM** 包的函数 `Matern()` 实现了梅隆型自协方差函数，指数型和幂二次指数型是它的特例。当固定 $\nu = 0.5$ 时，梅隆型自协方差函数 `Matern()` 的形式退化为 $\sigma^2\exp(- \alpha u)$ ，其中，$\alpha$ 与范围参数关联，相当于前面出现的 $1/\phi$ 。
 
 ```{r}
 #| message: false
@@ -740,7 +740,7 @@ fit_rongelap_spamm2 <- fitme(
 summary(fit_rongelap_spamm2)
 ```
 
-泊松分布的均值 $\mathsf{E}\{Y(x_i)\}=\mathrm{t}_i\lambda(x_i)$ 和方差 $\mathsf{Var}\{Y(x_i)\}$ 的值是一样的。如果假定它们不同，比如方差是关于均值的二次函数，可以用负二项分布来拟合数据，一般来说效果会更加好，对数似然函数值 `logL` 在变大。
+泊松分布的均值 $\mathsf{E}\{y(x_i)\}=\mathrm{t}_i\lambda(x_i)$ 和方差 $\mathsf{Var}\{y(x_i)\}$ 的值是一样的。如果假定它们不同，比如方差是关于均值的二次函数，可以用负二项分布来拟合数据，一般来说效果会更加好，对数似然函数值 `logL` 在变大。
 
 ```{r}
 fit_rongelap_spamm3 <- fitme(
@@ -1166,12 +1166,12 @@ $$
 &= \mathsf{E}\{ [(X^{\top}X)^{-1}X^{\top}\bm{y}]^{\top} (X^{\top}X)^{-1}X^{\top}\bm{y} \} - \bm{\beta}^{\top}\bm{\beta} \\
 &= \mathsf{E}\{ [(X^{\top}X)^{-1}X^{\top}(X\bm{\beta} + \bm{\epsilon})]^{\top} (X^{\top}X)^{-1}X^{\top}(X\bm{\beta} + \bm{\epsilon}) \} - \bm{\beta}^{\top}\bm{\beta} \\
 &= \mathsf{E}\{ [\bm{\beta} + (X^{\top}X)^{-1}X^{\top}\bm{\epsilon}]^{\top} [\bm{\beta} + (X^{\top}X)^{-1}X^{\top}\bm{\epsilon}]\} - \bm{\beta}^{\top}\bm{\beta} \\
-&= \mathsf{E}\{\bm{\epsilon}^{\top} A^{\top}A\bm{\epsilon}\} \\
-&= \mathrm{tr}[A^{\top}AV].
+&= \mathsf{E}\{\bm{\epsilon}^{\top}X(X^{\top}X)^{-1}(X^{\top}X)^{-1}X^{\top}\bm{\epsilon}\} \\
+&= \mathrm{tr}[X(X^{\top}X)^{-1}(X^{\top}X)^{-1}X^{\top}V].
 \end{aligned}
 $$
 
-其中，$A = (X^{\top}X)^{-1}X^{\top}$。当 $\bm{\epsilon}$ 之间存在相关性时，需要广义最小二乘估计，即
+当 $\bm{\epsilon}$ 之间存在相关性时，需要广义最小二乘估计，即
 
 $$
 \hat{\bm{\beta}}_{gls} = (X^{\top}V^{-1}X)^{-1} X^{\top}V^{-1}\bm{y}.
@@ -1259,13 +1259,7 @@ $$
 \end{aligned}
 $$
 
-进而
-
-$$
-\mathsf{Var}\{\hat{y}_0\} = \mathrm{tr}[B^{\top}BV_{11}]
-$$
-
-其中，$B = \bm{w}^{\top}$ 。
+进而 $\mathsf{Var}\{\hat{y}_0\} = \mathrm{tr}[\bm{w}\bm{w}^{\top}V_{11}]$ 。
 
 ::: callout-note
 广义最小二乘估计参考课程 [Stats 253: Analysis of Spatial and Temporal Data](https://web.stanford.edu/class/stats253/) 的 [lect5](https://web.stanford.edu/class/stats253/lectures/lect5.pdf) 。
