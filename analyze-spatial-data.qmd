@@ -1122,10 +1122,10 @@ $$
 
 其中，$\bm{y}$ 是 $n \times 1$ 的列向量，表示响应变量对应的观测数据。 $X$ 是 $n \times p$ 的矩阵，表示 $p$ 维协变量对应的 $n$ 次观测数据。$\bm{\beta}$ 是 $p \times 1$ 的列向量，表示待估的模型参数。 $\bm{\epsilon}$ 是 $n \times 1$ 的列向量，表示残差。
 
-假定随机向量 $\bm{\epsilon}$ 的期望为 $\mathsf{E}\{\bm{\epsilon}|X\} = \bm{0}$，方差为 $\mathsf{Var}\{\bm{\epsilon}|X\}=\Sigma$ ，且 $X$ 与 $\bm{\epsilon}$ 不相关，则有
+假定随机向量 $\bm{\epsilon}$ 的期望为 $\mathsf{E}\{\bm{\epsilon}|X\} = \bm{0}$，方差为 $\mathsf{Var}\{\bm{\epsilon}|X\}=V$ ，且 $X$ 与 $\bm{\epsilon}$ 不相关，则有
 
 $$
-\mathsf{E}\{\bm{y}|X\} = X\bm{\beta}, \quad \mathsf{Var}\{\bm{y}|X\} = \Sigma.
+\mathsf{E}\{\bm{y}|X\} = X\bm{\beta}, \quad \mathsf{Var}\{\bm{y}|X\} = V.
 $$
 
 现在的目标是找到一个 $\bm{\beta}$ ，使得残差平方和最小，即求解如下无约束最优化问题。
@@ -1167,17 +1167,17 @@ $$
 &= \mathsf{E}\{ [(X^{\top}X)^{-1}X^{\top}(X\bm{\beta} + \bm{\epsilon})]^{\top} (X^{\top}X)^{-1}X^{\top}(X\bm{\beta} + \bm{\epsilon}) \} - \bm{\beta}^{\top}\bm{\beta} \\
 &= \mathsf{E}\{ [\bm{\beta} + (X^{\top}X)^{-1}X^{\top}\bm{\epsilon}]^{\top} [\bm{\beta} + (X^{\top}X)^{-1}X^{\top}\bm{\epsilon}]\} - \bm{\beta}^{\top}\bm{\beta} \\
 &= \mathsf{E}\{\bm{\epsilon}^{\top} A^{\top}A\bm{\epsilon}\} \\
-&= \mathrm{tr}[A^{\top}A\Sigma].
+&= \mathrm{tr}[A^{\top}AV].
 \end{aligned}
 $$
 
 其中，$A = (X^{\top}X)^{-1}X^{\top}$。当 $\bm{\epsilon}$ 之间存在相关性时，需要广义最小二乘估计，即
 
 $$
-\hat{\bm{\beta}}_{gls} = (X^{\top}\Sigma^{-1}X)^{-1} X^{\top}\Sigma^{-1}\bm{y}.
+\hat{\bm{\beta}}_{gls} = (X^{\top}V^{-1}X)^{-1} X^{\top}V^{-1}\bm{y}.
 $$
 
-当 $\bm{\epsilon}$ 之间存在空间相关性时，$\Sigma$ 含有参数 $\sigma^2,\phi$ ，若模型带块金效应，则还含有参数 $\tau^2$ 。可见，上式不足以估计模型的参数，且看后续 @sec-maximum-likelihood 。
+当 $\bm{\epsilon}$ 之间存在空间相关性时，$V$ 含有参数 $\sigma^2,\phi$ ，若模型带块金效应，则还含有参数 $\tau^2$ 。可见，上式不足以估计模型的参数，且看后续 @sec-maximum-likelihood 。
 
 类似地，对于一次新的观测 $\bm{x}_0$，它是一个 $p \times 1$ 的列向量，现在的目标是找到一个 $\hat{y}_0$ ，在满足无偏性的条件下，使得预测的均方误差 $\mathsf{E}\{(\hat{y}_0 - y_0)^2\}$ 最小，也是预测方差 $\mathsf{Var}\{\hat{y}_0 - y_0\}$ 最小，也是残差的方差 $\mathsf{Var}\{\hat{\epsilon}_0\}$ 最小。不妨设 $\hat{y}_0$ 是关于 $\bm{y}$ 的线性组合，即 $\hat{y}_0 = \bm{w}^{\top}\bm{y}$ ，此处，$\bm{w}$ 是 $n \times 1$ 维的权重向量。找 $\hat{y}_0$ 的问题转为求解如下最优化问题。
 
@@ -1205,47 +1205,47 @@ $$
 & = \mathsf{E}\{(\bm{w}^{\top}\bm{\epsilon} - \epsilon_0)^2\} \\
 & = \mathsf{E}\{(\bm{w}^{\top}\bm{\epsilon} - \epsilon_0)(\bm{w}^{\top}\bm{\epsilon} - \epsilon_0)^{\top}\} \\
 & = \bm{w}^{\top}\mathsf{Cov}\{\bm{\epsilon},\bm{\epsilon}^{\top}\} \bm{w} - 2\mathsf{Cov}\{\epsilon_0, \bm{\epsilon}^{\top}\} \bm{w} + \mathsf{Cov}\{\epsilon_0, \epsilon_0 \} \\
-& = \bm{w}^{\top}\Sigma_{11} \bm{w} - 2 \Sigma_{01} \bm{w} + \Sigma_{00}
+& = \bm{w}^{\top}V_{11} \bm{w} - 2 V_{01} \bm{w} + V_{00}
 \end{aligned}
 $$
 
 令$$
-\Sigma_{11} = \mathsf{Cov}\{\bm{\epsilon},\bm{\epsilon}^{\top}\}, 
-\Sigma_{10} = \mathsf{Cov}\{\bm{\epsilon},\epsilon_0\}, \Sigma_{01} = \mathsf{Cov}\{\epsilon_0, \bm{\epsilon}^{\top}\}, \Sigma_{00} = \mathsf{Cov}\{\epsilon_0, \epsilon_0 \}
+V_{11} = \mathsf{Cov}\{\bm{\epsilon},\bm{\epsilon}^{\top}\}, 
+V_{10} = \mathsf{Cov}\{\bm{\epsilon},\epsilon_0\}, V_{01} = \mathsf{Cov}\{\epsilon_0, \bm{\epsilon}^{\top}\}, V_{00} = \mathsf{Cov}\{\epsilon_0, \epsilon_0 \}
 $$
 
 采用拉格朗日乘数法将约束优化问题 @eq-gls-predictor 转为如下无约束优化问题
 
 $$
-\min_{\bm{w},\bm{\kappa}} \quad \bm{w}^{\top}\Sigma_{11} \bm{w} - 2 \Sigma_{01} \bm{w} + \Sigma_{00} + (\bm{x}_0^{\top} - \bm{w}^{\top}X) \bm{\kappa}
+\min_{\bm{w},\bm{\kappa}} \quad \bm{w}^{\top}V_{11} \bm{w} - 2 V_{01} \bm{w} + V_{00} + (\bm{x}_0^{\top} - \bm{w}^{\top}X) \bm{\kappa}
 $$
 
 其中，$\bm{\kappa}$ 是 $p \times 1$ 维的拉格朗日乘子向量，对 $\bm{w},\bm{\kappa}$ 分别求偏导，并令偏导等于 $\bm{0}$，可得
 
 $$
 \begin{aligned}
-2 \Sigma_{11} \bm{w} - 2 \Sigma_{10} - X\bm{\kappa}  = \bm{0} \\
+2 V_{11} \bm{w} - 2 V_{10} - X\bm{\kappa}  = \bm{0} \\
 X^{\top}\bm{w}  - \bm{x}_0 = \bm{0}
 \end{aligned}
 $$
 
-第一个式子左乘 $X^{\top}\Sigma_{11}^{-1}$ ，再将第二个式子代入第一个式子，有
+第一个式子左乘 $X^{\top}V_{11}^{-1}$ ，再将第二个式子代入第一个式子，有
 
 $$
-2 \underbrace{X^{\top}\bm{w}}_{\bm{x_0}} -2 X^{\top}\Sigma_{11}^{-1}\Sigma_{10} -  X^{\top}\Sigma_{11}^{-1}X\bm{\kappa}= 0
+2 \underbrace{X^{\top}\bm{w}}_{\bm{x_0}} -2 X^{\top}V_{11}^{-1}V_{10} -  X^{\top}V_{11}^{-1}X\bm{\kappa}= 0
 $$
 
 可得
 
 $$
-\bm{\kappa} = 2 (X^{\top}\Sigma_{11}^{-1}X)^{-1} (\bm{x_0} - X^{\top}\Sigma_{11}^{-1}\Sigma_{10})
+\bm{\kappa} = 2 (X^{\top}V_{11}^{-1}X)^{-1} (\bm{x_0} - X^{\top}V_{11}^{-1}V_{10})
 $$
 
 将 $\bm{\kappa}$ 代入第一个式子，可得
 
 $$
-\bm{w} = \Sigma_{11}^{-1} \big(\Sigma_{10} 
-+ X(X^{\top}\Sigma_{11}^{-1}X)^{-1}(\bm{x}_0 - X^{\top}\Sigma_{11}^{-1}\Sigma_{10})\big) .
+\bm{w} = V_{11}^{-1} \big(V_{10} 
++ X(X^{\top}V_{11}^{-1}X)^{-1}(\bm{x}_0 - X^{\top}V_{11}^{-1}V_{10})\big) .
 $$
 
 从而
@@ -1253,16 +1253,16 @@ $$
 $$
 \begin{aligned}
 \hat{y}_0 &= \bm{w}^{\top}\bm{y} \\
-&= \Sigma_{01} \Sigma_{11}^{-1}\bm{y} + (\bm{x}_0^{\top} - \Sigma_{01}\Sigma_{11}^{-1}X) (X^{\top}\Sigma_{11}^{-1}X)^{-1} X^{\top}\Sigma_{11}^{-1}\bm{y} \\
-&= \bm{x}_0^{\top}(X^{\top}\Sigma_{11}^{-1}X)^{-1} X^{\top}\Sigma_{11}^{-1}\bm{y} + \Sigma_{01} \Sigma_{11}^{-1}\big(\bm{y} - X(X^{\top}\Sigma_{11}^{-1}X)^{-1}X^{\top}\Sigma_{11}^{-1}\bm{y}\big)\\
-&= \bm{x}_0^{\top} \hat{\bm{\beta}}_{gls} + \Sigma_{01} \Sigma_{11}^{-1}(\bm{y} - X\hat{\bm{\beta}}_{gls})
+&= V_{01} V_{11}^{-1}\bm{y} + (\bm{x}_0^{\top} - V_{01}V_{11}^{-1}X) (X^{\top}V_{11}^{-1}X)^{-1} X^{\top}V_{11}^{-1}\bm{y} \\
+&= \bm{x}_0^{\top}(X^{\top}V_{11}^{-1}X)^{-1} X^{\top}V_{11}^{-1}\bm{y} + V_{01} V_{11}^{-1}\big(\bm{y} - X(X^{\top}V_{11}^{-1}X)^{-1}X^{\top}V_{11}^{-1}\bm{y}\big)\\
+&= \bm{x}_0^{\top} \hat{\bm{\beta}}_{gls} + V_{01} V_{11}^{-1}(\bm{y} - X\hat{\bm{\beta}}_{gls})
 \end{aligned}
 $$
 
 进而
 
 $$
-\mathsf{Var}\{\hat{y}_0\} = \mathrm{tr}[B^{\top}B\Sigma_{11}]
+\mathsf{Var}\{\hat{y}_0\} = \mathrm{tr}[B^{\top}BV_{11}]
 $$
 
 其中，$B = \bm{w}^{\top}$ 。
@@ -1275,42 +1275,42 @@ $$
 
 **nlme** 包的函数 `gls()` 提供极大似然（Maximum Likelihood，简称 ML）和限制极大似然（Restricted Maximum Likelihood，简称 REML）两种方法估计模型参数。
 
-极大似然估计对残差的分布有要求，一般假定 $\bm{\epsilon}$ 服从多元正态分布，即 $\bm{\epsilon} \sim \mathrm{MVN}(\bm{0}, \Sigma_{\bm{\theta}})$ ，这里 $\Sigma_{\bm{\theta}}$ 表示协方差阵与参数向量 $\bm{\theta}$ 有关，$\bm{\theta} = (\sigma^2, \phi, \tau^2)$ ，各个分量的含义同前。则关于参数 $(\bm{\beta}, \bm{\theta})$ 的似然函数如下：
+极大似然估计对残差的分布有要求，一般假定 $\bm{\epsilon}$ 服从多元正态分布，即 $\bm{\epsilon} \sim \mathrm{MVN}(\bm{0}, V_{\bm{\theta}})$ ，这里 $V_{\bm{\theta}}$ 表示协方差阵与参数向量 $\bm{\theta}$ 有关，$\bm{\theta} = (\sigma^2, \phi, \tau^2)$ ，各个分量的含义同前。则关于参数 $(\bm{\beta}, \bm{\theta})$ 的似然函数如下：
 
 $$
-\mathcal{L}(\bm{\beta}, \bm{\theta}) = \frac{1}{(2\pi)^{n/2}(\det \Sigma_{\bm{\theta}})^{1/2}}\exp\Big\{-\frac{1}{2}(\bm{y} - X\bm{\beta})^{\top}\Sigma_{\bm{\theta}}^{-1}(\bm{y} - X\bm{\beta})\Big\}
+\mathcal{L}(\bm{\beta}, \bm{\theta}) = \frac{1}{(2\pi)^{n/2}(\det V_{\bm{\theta}})^{1/2}}\exp\Big\{-\frac{1}{2}(\bm{y} - X\bm{\beta})^{\top}V_{\bm{\theta}}^{-1}(\bm{y} - X\bm{\beta})\Big\}
 $$
 
 在前面，已经获得参数 $\bm{\beta}$ 的广义最小二乘估计 $\hat{\bm{\beta}}(\bm{\theta})$ 。
 
 $$
-\hat{\bm{\beta}}(\bm{\theta}) = (X^{\top}\Sigma_{\bm{\theta}}^{-1}X)^{-1} X^{\top}\Sigma_{\bm{\theta}}^{-1}\bm{y}
+\hat{\bm{\beta}}(\bm{\theta}) = (X^{\top}V_{\bm{\theta}}^{-1}X)^{-1} X^{\top}V_{\bm{\theta}}^{-1}\bm{y}
 $$
 
 将上式代入似然函数 $\mathcal{L}(\bm{\beta}, \bm{\theta})$ ，意味着消去了参数向量 $\bm{\beta}$ ，只剩下 $\bm{\theta}$ 。
 
 $$
-\mathcal{L}(\bm{\theta}) = \frac{1}{(2\pi)^{n/2}(\det \Sigma_{\bm{\theta}})^{1/2}}\exp\Big\{-\frac{1}{2}\big(\bm{y} - X\hat{\bm{\beta}}(\bm{\theta})\big)^{\top}\Sigma_{\bm{\theta}}^{-1}\big(\bm{y} - X\hat{\bm{\beta}}(\bm{\theta})\big)\Big\}
+\mathcal{L}(\bm{\theta}) = \frac{1}{(2\pi)^{n/2}(\det V_{\bm{\theta}})^{1/2}}\exp\Big\{-\frac{1}{2}\big(\bm{y} - X\hat{\bm{\beta}}(\bm{\theta})\big)^{\top}V_{\bm{\theta}}^{-1}\big(\bm{y} - X\hat{\bm{\beta}}(\bm{\theta})\big)\Big\}
 $$
 
 为方便优化计算，进一步对似然函数取对数。
 
 $$
-\log \mathcal{L}(\bm{\theta}) = -\frac{n}{2}\log(2\pi) - \frac{1}{2}\log (\det \Sigma_{\bm{\theta}}) -\frac{1}{2}\big(\bm{y} - X\hat{\bm{\beta}}(\bm{\theta})\big)^{\top}\Sigma_{\bm{\theta}}^{-1}\big(\bm{y} - X\hat{\bm{\beta}}(\bm{\theta})\big)
+\log \mathcal{L}(\bm{\theta}) = -\frac{n}{2}\log(2\pi) - \frac{1}{2}\log (\det V_{\bm{\theta}}) -\frac{1}{2}\big(\bm{y} - X\hat{\bm{\beta}}(\bm{\theta})\big)^{\top}V_{\bm{\theta}}^{-1}\big(\bm{y} - X\hat{\bm{\beta}}(\bm{\theta})\big)
 $$
 
-现在主要关注上式右侧中包含的二次型，将 $\hat{\bm{\beta}}(\bm{\theta})$ 代入。方便计算和书写起见，临时记 $A = I - X(X^{\top}\Sigma_{\bm{\theta}}^{-1}X)^{-1}X^{\top}\Sigma_{\bm{\theta}}^{-1}$ ，这里 $I$ 是 $n$ 维单位矩阵。可得
+现在主要关注上式右侧中包含的二次型，将 $\hat{\bm{\beta}}(\bm{\theta})$ 代入。方便计算和书写起见，临时记 $A = I - X(X^{\top}V_{\bm{\theta}}^{-1}X)^{-1}X^{\top}V_{\bm{\theta}}^{-1}$ ，这里 $I$ 是 $n$ 维单位矩阵。可得
 
 $$
-\log \mathcal{L}(\bm{\theta}) = -\frac{n}{2}\log(2\pi) - \frac{1}{2}\log (\det \Sigma_{\bm{\theta}}) -\frac{1}{2}\bm{y}^{\top}A^{\top}\Sigma_{\bm{\theta}}^{-1}A\bm{y}
+\log \mathcal{L}(\bm{\theta}) = -\frac{n}{2}\log(2\pi) - \frac{1}{2}\log (\det V_{\bm{\theta}}) -\frac{1}{2}\bm{y}^{\top}A^{\top}V_{\bm{\theta}}^{-1}A\bm{y}
 $$
 
 为了进一步化简，下面计算 $A^{\top}$ 和 $A^2$ ，再将它们依次代入上述对数似然函数。
 
 $$
 \begin{aligned}
-A\Sigma_{\bm{\theta}} &= \Sigma_{\bm{\theta}} - X(X^{\top}\Sigma_{\bm{\theta}}^{-1}X)^{-1}X^{\top} \\
-A^{\top} &= I -\Sigma_{\bm{\theta}}^{-1}(\Sigma_{\bm{\theta}} - A\Sigma_{\bm{\theta}}) =\Sigma_{\bm{\theta}}^{-1} A\Sigma_{\bm{\theta}} \\
+AV_{\bm{\theta}} &= V_{\bm{\theta}} - X(X^{\top}V_{\bm{\theta}}^{-1}X)^{-1}X^{\top} \\
+A^{\top} &= I -V_{\bm{\theta}}^{-1}(V_{\bm{\theta}} - AV_{\bm{\theta}}) =V_{\bm{\theta}}^{-1} AV_{\bm{\theta}} \\
 A^2 &= A
 \end{aligned}
 $$
@@ -1318,7 +1318,7 @@ $$
 经过一些不太复杂的矩阵运算，$\log \mathcal{L}(\bm{\theta})$ 化简为如下形式。
 
 $$
-\log \mathcal{L}(\bm{\theta}) = -\frac{n}{2}\log (2\pi) - \frac{1}{2}\log (\det \Sigma_{\bm{\theta}}) -\frac{1}{2}\bm{y}^{\top}\Sigma_{\bm{\theta}}^{-1}\big(I - X(X^{\top}\Sigma_{\bm{\theta}}^{-1}X)^{-1}X^{\top}\Sigma_{\bm{\theta}}^{-1}\big)\bm{y}
+\log \mathcal{L}(\bm{\theta}) = -\frac{n}{2}\log (2\pi) - \frac{1}{2}\log (\det V_{\bm{\theta}}) -\frac{1}{2}\bm{y}^{\top}V_{\bm{\theta}}^{-1}\big(I - X(X^{\top}V_{\bm{\theta}}^{-1}X)^{-1}X^{\top}V_{\bm{\theta}}^{-1}\big)\bm{y}
 $$
 
 对数似然函数的形式还是很复杂，极大化这个对数似然函数，一般还需要两个关键步骤。
@@ -1364,7 +1364,7 @@ $$
 类似前面的广义最小二乘估计一节中的预测过程，可得
 
 $$
-\hat{y}_0 = \bm{x}_0^{\top} \hat{\bm{\beta}}(\bm{\theta}) + \Sigma_{01} \Sigma_{11}^{-1}(\bm{y} - X\hat{\bm{\beta}}(\bm{\theta}))
+\hat{y}_0 = \bm{x}_0^{\top} \hat{\bm{\beta}}(\bm{\theta}) + V_{01} V_{11}^{-1}(\bm{y} - X\hat{\bm{\beta}}(\bm{\theta}))
 $$
 
 形式上一点没变，除了 $\hat{\bm{\beta}}(\bm{\theta})$ 中参数 $\bm{\theta}$ 是上面限制极大似然估计的结果，其它符号的含义同前。

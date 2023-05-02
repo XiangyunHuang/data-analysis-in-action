@@ -218,7 +218,7 @@ res$objval
 
 ### 严格二次优化
 
-ROI 默认的二次规划的标准形式为
+**ROI** 包的使用接口定义的二次规划的标准形式为
 
 $$
 \min_{\bm{x}} \frac{1}{2}\bm{x}^{\top}D\bm{x} + d^{\top}\bm{x} \quad \quad A^{\top}\bm{x} \geq d_{0}
@@ -502,16 +502,16 @@ $$
 \bm{y}(x) = D\bm{\beta} + S(x)
 $$
 
-其中，$\bm{\beta}$ 是一个 $p\times 1$ 维列向量，随机过程 $S(x)$ 是均值为零，协方差为 $\Sigma_{\bm{\theta}}$ 的平稳高斯过程，协方差矩阵 $\Sigma_{\bm{\theta}}$ 的元素如下：
+其中，$\bm{\beta}$ 是一个 $p\times 1$ 维列向量，随机过程 $S(x)$ 是均值为零，协方差为 $V_{\bm{\theta}}$ 的平稳高斯过程，协方差矩阵 $V_{\bm{\theta}}$ 的元素如下：
 
 $$
 \mathsf{Cov}\{S(x_i), S(x_j)\} = \sigma^2 \exp(-\|x_i - x_j\| / \phi)
 $$
 
-其中， $\bm{\theta} = (\sigma^2,\phi)$ 表示与协方差矩阵相关的参数，随机过程 $S(x)$ 的一个实现服从多元正态分布 $\mathrm{MVN}(\bm{0},\Sigma_{\bm{\theta}})$ ，则 $\bm{y}(x)$ 也服从多元正态分布 $\mathrm{MVN}(D\bm{\beta},\Sigma_{\bm{\theta}})$ 。参数 $\bm{\beta}$ 的广义最小二乘估计为 $\hat{\bm{\beta}}(\bm{\theta}) = (D^{\top}\Sigma_{\bm{\theta}}^{-1}D)^{-1} D^{\top}\Sigma_{\bm{\theta}}^{-1}\bm{y}$ ，关于参数 $\bm{\theta}$ 的剖面对数似然函数如下：
+其中， $\bm{\theta} = (\sigma^2,\phi)$ 表示与协方差矩阵相关的参数，随机过程 $S(x)$ 的一个实现服从多元正态分布 $\mathrm{MVN}(\bm{0},V_{\bm{\theta}})$ ，则 $\bm{y}(x)$ 也服从多元正态分布 $\mathrm{MVN}(D\bm{\beta},V_{\bm{\theta}})$ 。参数 $\bm{\beta}$ 的广义最小二乘估计为 $\hat{\bm{\beta}}(\bm{\theta}) = (D^{\top}V_{\bm{\theta}}^{-1}D)^{-1} D^{\top}V_{\bm{\theta}}^{-1}\bm{y}$ ，关于参数 $\bm{\theta}$ 的剖面对数似然函数如下：
 
 $$
-\log \mathcal{L}(\bm{\theta}) = -\frac{n}{2}\log (2\pi) - \frac{1}{2}\log (\det \Sigma_{\bm{\theta}}) -\frac{1}{2}\bm{y}^{\top}\Sigma_{\bm{\theta}}^{-1}\big(I - D(D^{\top}\Sigma_{\bm{\theta}}^{-1}D)^{-1}D^{\top}\Sigma_{\bm{\theta}}^{-1}\big)\bm{y}
+\log \mathcal{L}(\bm{\theta}) = -\frac{n}{2}\log (2\pi) - \frac{1}{2}\log (\det V_{\bm{\theta}}) -\frac{1}{2}\bm{y}^{\top}V_{\bm{\theta}}^{-1}\big(I - D(D^{\top}V_{\bm{\theta}}^{-1}D)^{-1}D^{\top}V_{\bm{\theta}}^{-1}\big)\bm{y}
 $$
 
 下面考虑一个来自 **MASS** 包真实数据 `topo`。topo 数据集最初来自 John C. Davis （1973年）所著的书《Statistics and Data Analysis in Geology》。后来， J. J. Warnes 和 B. D. Ripley （1987年）以该数据集为例指出空间高斯过程的协方差函数的似然估计中存在的问题[@Ripley1987]，并将其作为数据集 `topo` 放在 **MASS** 包里。Paulo J. Ribeiro Jr 和 Peter J. Diggle （2001年）将该数据集打包成自定义的 `geodata` 数据类型，放在 **geoR** 包里，并在他俩合著的书《Model-based Geostatistics》中多次出现。`topo` 是空间地形数据集，包含有 52 行 3 列，数据点是 310 平方英尺范围内的海拔高度数据，`x` 坐标每单位 50 英尺，`y` 坐标单位同 `x` 坐标，海拔高度 `z` 单位是英尺。
