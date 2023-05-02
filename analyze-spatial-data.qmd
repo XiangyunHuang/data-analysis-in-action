@@ -230,12 +230,12 @@ cloud(counts / time ~ cX * cY,
 
 $$
 \begin{aligned}
-\log(\bm{\lambda}) &= \bm{1}\beta \\
-\bm{y} & \sim \mathrm{Poisson}(\bm{t}\bm{\lambda})
+\log(\lambda_i) &= \beta \\
+y_i & \sim \mathrm{Poisson}(t_i\lambda_i)
 \end{aligned}
 $$
 
-其中，$\bm{\lambda}$ 表示核辐射强度，$\beta$ 表示未知的截距，$\bm{y}$ 表示观测到的粒子数目，$\bm{t}$ 表示相应的观测时间。R 软件内置的 stats 包有函数 `glm()` 可以拟合上述广义线性模型，代码如下。
+其中，$\lambda_i$ 表示核辐射强度，$\beta$ 表示未知的截距，$y_i$ 表示观测到的粒子数目，$t_i$ 表示相应的观测时间，$i = 1,\ldots, 157$ 表示采样点的位置编号。R 软件内置的 stats 包有函数 `glm()` 可以拟合上述广义线性模型，代码如下。
 
 ```{r}
 fit_rongelap_poisson <- glm(counts ~ 1,
@@ -400,7 +400,7 @@ y_i & \sim \mathrm{Poisson}(t_i\lambda_i)
 \end{aligned}
 $$
 
-其中，$Z_i$ 相互独立同正态分布 $\mathcal{N}(0,\tau^2)$ ，$i = 1,\ldots, 157$ 表示采样点的位置编号。与之前类似，下面考虑响应变量为泊松分布、伽马分布和负二项分布的情况，采用 **spaMM** 包分别拟合上述模型。
+其中，$Z_i$ 相互独立同正态分布 $\mathcal{N}(0,\tau^2)$ 。与之前类似，下面考虑响应变量为泊松分布、伽马分布和负二项分布的情况，采用 **spaMM** 包分别拟合上述模型。
 
 ```{r}
 #| message: false
@@ -481,7 +481,7 @@ K_{\nu}(x) &= \int_{0}^{\infty}\exp(-x \cosh t) \cosh (\nu t) \mathrm{dt}
 \end{aligned}
 $$ {#eq-matern-formula}
 
-其中，$K_{\nu}$ 表示阶数为 $\nu$ 的修正的第二类贝塞尔函数，$\Gamma(\cdot)$ 表示伽马函数，当 $\nu = 1/2$ ，梅隆型将简化为指数型，当 $\nu = \infty$ 时，梅隆型将简化为幂二次指数型。固定 $\sigma = 1$，自协方差函数图像如 @fig-matern-fun 所示，不难看出，$\nu$ 影响自协方差函数的平滑性，控制点与点之间相关性的变化，$\nu$ 越大相关性越迅速地递减。$\phi$ 控制协方差函数的范围，$\phi$ 越大相关性辐射距离越远。对模型来说，它们都是超参数。
+其中，$K_{\nu}$ 表示阶数为 $\nu$ 的修正的第二类贝塞尔函数，$\Gamma(\cdot)$ 表示伽马函数，当 $\nu = 1/2$ ，梅隆型将简化为指数型，当 $\nu = \infty$ 时，梅隆型将简化为幂二次指数型。固定 $\sigma = 1$，自协方差函数图像如 @fig-matern-fun 所示，不难看出，$\nu$ 影响自协方差函数的平滑性，控制点与点之间相关性的变化，$\nu$ 越大相关性越迅速地递减。$\phi$ 控制自协方差函数的范围，$\phi$ 越大相关性辐射距离越远。对模型来说，它们都是超参数。
 
 ```{r}
 #| label: fig-matern-fun
@@ -531,7 +531,7 @@ $$
 \rho(u; \phi, \tau_{rel}^2 ) = \tau_{rel}^2 + (1 - \tau_{rel}^2) \big(1 - \exp(- \frac{u}{\phi}) \big)
 $$
 
-为了方便估计，**nlme** 包对参数做了一些重参数化的操作。
+为了方便参数估计，**nlme** 包对参数做了一些重参数化的操作。
 
 $$
 \begin{aligned}
@@ -570,7 +570,7 @@ diag(0.2, 4) + (1 - 0.2) * exp(-as.matrix(dist(spatDat))^2 / 1.2^2)
 
 #### nlme 包的拟合函数 `gls()` {#sec-gls-function}
 
-**nlme** 包的函数 `gls()` 实现限制极大似然估计方法，可以拟合存在异方差的一般线性模型。所谓一般线性模型，即在简单线性模型的基础上，残差不再是独立同分布的，而是存在相关性。函数 `gls()` 可以拟合具有空间自相关性的残差结构。这种一般线性模型又可以看作是一种特殊的带空间自相关结构的线性混合效应模型，空间随机效应的结构可以看作异方差的结构。
+**nlme** 包的函数 `gls()` 实现限制极大似然估计方法，可以拟合存在异方差的一般线性模型。所谓一般线性模型，即在简单线性模型的基础上，残差不再是独立同分布的，而是存在相关性。函数 `gls()` 可以拟合具有空间自相关性的残差结构。这种线性模型又可以看作是一种带空间自相关结构的线性混合效应模型，空间随机效应的结构可以看作异方差的结构。
 
 ```{r}
 fit_rongelap_gls <- gls(
@@ -600,7 +600,7 @@ $$
 \end{aligned}
 $$
 
-**nlme** 包的另一个函数 `lme()` ，扩展了函数 `gls()` 的功能，支持添加随机效应。下面在模型 @eq-rongelap-gaussian-slmm 的基础上添加一个变化的截距项，所有的采样位置归为一组，相当于添加一个随机项 $\xi$ ，一般假定它服从均值为 0 方差为 $\delta^2$ 的正态分布。这样下来，模型包含三块随机项，与空间位置关联的空间随机效应 $S(x)$ ，与空间位置无关的块金效应 $Z_i$，与分组变量 group 关联的随机效应 $\xi$ 。
+**nlme** 包的另一个函数 `lme()` ，扩展了函数 `gls()` 的功能，支持添加额外的随机效应。下面在模型 @eq-rongelap-gaussian-slmm 的基础上添加一个变化的截距项，所有的采样位置归为一组，相当于添加一个随机项 $\xi$ ，一般假定它服从均值为 0 方差为 $\delta^2$ 的正态分布。这样下来，模型包含三块随机项，与空间位置关联的空间随机效应 $S(x)$ ，与空间位置无关的块金效应 $Z_i$，与分组变量 group 关联的随机效应 $\xi$ 。
 
 ```{r}
 rongelap$group <- 1
@@ -1209,7 +1209,9 @@ $$
 \end{aligned}
 $$
 
-令$$
+为方便叙述，作如下简记。
+
+$$
 V_{11} = \mathsf{Cov}\{\bm{\epsilon},\bm{\epsilon}^{\top}\}, 
 V_{10} = \mathsf{Cov}\{\bm{\epsilon},\epsilon_0\}, V_{01} = \mathsf{Cov}\{\epsilon_0, \bm{\epsilon}^{\top}\}, V_{00} = \mathsf{Cov}\{\epsilon_0, \epsilon_0 \}
 $$
@@ -1220,7 +1222,7 @@ $$
 \min_{\bm{w},\bm{\kappa}} \quad \bm{w}^{\top}V_{11} \bm{w} - 2 V_{01} \bm{w} + V_{00} + (\bm{x}_0^{\top} - \bm{w}^{\top}X) \bm{\kappa}
 $$
 
-其中，$\bm{\kappa}$ 是 $p \times 1$ 维的拉格朗日乘子向量，对 $\bm{w},\bm{\kappa}$ 分别求偏导，并令偏导等于 $\bm{0}$，可得
+其中，$\bm{\kappa}$ 是 $p \times 1$ 维的拉格朗日乘子向量，对 $\bm{w},\bm{\kappa}$ 分别求偏导，并令偏导等于 $\bm{0}$ 。
 
 $$
 \begin{aligned}
@@ -1229,26 +1231,23 @@ X^{\top}\bm{w}  - \bm{x}_0 = \bm{0}
 \end{aligned}
 $$
 
-第一个式子左乘 $X^{\top}V_{11}^{-1}$ ，再将第二个式子代入第一个式子，有
+第一个式子左乘 $X^{\top}V_{11}^{-1}$ ，再将第二个式子代入第一个式子。
 
 $$
 2 \underbrace{X^{\top}\bm{w}}_{\bm{x_0}} -2 X^{\top}V_{11}^{-1}V_{10} -  X^{\top}V_{11}^{-1}X\bm{\kappa}= 0
 $$
 
-可得
+可得拉格朗日乘子向量 $\bm{\kappa}$ ，再将 $\bm{\kappa}$ 代入第一个式子，可得权重向量 $\bm{w}$ 。
 
 $$
-\bm{\kappa} = 2 (X^{\top}V_{11}^{-1}X)^{-1} (\bm{x_0} - X^{\top}V_{11}^{-1}V_{10})
-$$
-
-将 $\bm{\kappa}$ 代入第一个式子，可得
-
-$$
-\bm{w} = V_{11}^{-1} \big(V_{10} 
+\begin{aligned}
+\bm{\kappa} &= 2 (X^{\top}V_{11}^{-1}X)^{-1} (\bm{x_0} - X^{\top}V_{11}^{-1}V_{10}) \\
+\bm{w} &= V_{11}^{-1} \big(V_{10} 
 + X(X^{\top}V_{11}^{-1}X)^{-1}(\bm{x}_0 - X^{\top}V_{11}^{-1}V_{10})\big) .
+\end{aligned}
 $$
 
-从而
+根据权重向量，可获得预测值 $\hat{y}_0$ 以及预测方差 $\mathsf{Var}\{\hat{y}_0\}$ 。
 
 $$
 \begin{aligned}
@@ -1259,7 +1258,7 @@ $$
 \end{aligned}
 $$
 
-进而 $\mathsf{Var}\{\hat{y}_0\} = \mathrm{tr}[\bm{w}\bm{w}^{\top}V_{11}]$ 。
+而 $\mathsf{Var}\{\hat{y}_0\} = \mathrm{tr}[\bm{w}\bm{w}^{\top}V_{11}]$ 。
 
 ::: callout-note
 广义最小二乘估计参考课程 [Stats 253: Analysis of Spatial and Temporal Data](https://web.stanford.edu/class/stats253/) 的 [lect5](https://web.stanford.edu/class/stats253/lectures/lect5.pdf) 。
@@ -1309,13 +1308,13 @@ A^2 &= A
 \end{aligned}
 $$
 
-经过一些不太复杂的矩阵运算，$\log \mathcal{L}(\bm{\theta})$ 化简为如下形式。
+经过上述矩阵运算，$\log \mathcal{L}(\bm{\theta})$ 化简为如下形式。
 
 $$
 \log \mathcal{L}(\bm{\theta}) = -\frac{n}{2}\log (2\pi) - \frac{1}{2}\log (\det V_{\bm{\theta}}) -\frac{1}{2}\bm{y}^{\top}V_{\bm{\theta}}^{-1}\big(I - X(X^{\top}V_{\bm{\theta}}^{-1}X)^{-1}X^{\top}V_{\bm{\theta}}^{-1}\big)\bm{y}
 $$
 
-对数似然函数的形式还是很复杂，极大化这个对数似然函数，一般还需要两个关键步骤。
+对数似然函数的形式还是很复杂，极大化这个对数似然函数，还需要两个关键步骤。
 
 1.  计算似然函数关于 $\bm{\theta}$ 各个分量的偏导数。
 2.  求解一个非凸优化问题。
@@ -1365,7 +1364,7 @@ $$
 
 ### 克里金插值 {#sec-kriging-interpolation}
 
-在空间分析中，克里金插值（Kriging Interpolation）是非常基础且重要的内容，具有很好的统计性质，是最佳线性无偏预测（Best Linear Unbiased Predictor）。下面介绍插值的原理， @fig-kriging 是普通克里金（Ordinary kriging）插值的示意图。
+在空间分析中，克里金插值（Kriging Interpolation）是非常基础且重要的内容，具有很好的统计性质，是最佳线性无偏预测（Best Linear Unbiased Predictor）。下面介绍普通克里金（Ordinary kriging）插值的原理， @fig-kriging 是示意图。
 
 ```{r}
 #| echo: false
