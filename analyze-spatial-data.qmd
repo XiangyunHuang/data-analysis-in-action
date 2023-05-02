@@ -473,15 +473,15 @@ $$ {#eq-rongelap-gaussian-slmm}
 $$
 \begin{aligned}
 \mathsf{Cov}( S(x_i), S(x_j) ) &= \sigma^2 \exp\big( -\frac{\|x_i -x_j\|_{2}}{\phi} \big) \\
-\mathsf{Cov}( S(x_i), S(x_j) ) &= \sigma^2 \exp\big( -\frac{\|x_i -x_j\|_{2}^{2}}{2l^2} \big) \\
+\mathsf{Cov}( S(x_i), S(x_j) ) &= \sigma^2 \exp\big( -\frac{\|x_i -x_j\|_{2}^{2}}{2\phi^2} \big) \\
 \mathsf{Cov}( S(x_i), S(x_j) ) &= \sigma^2 \frac{2^{1 - \nu}}{\Gamma(\nu)}
-\left(\sqrt{2\nu}\frac{\|x_i -x_j\|_{2}}{\rho}\right)^{\nu}
-K_{\nu}\left(\sqrt{2\nu}\frac{\|x_i -x_j\|_{2}}{\rho}\right) \\
+\left(\sqrt{2\nu}\frac{\|x_i -x_j\|_{2}}{\phi}\right)^{\nu}
+K_{\nu}\left(\sqrt{2\nu}\frac{\|x_i -x_j\|_{2}}{\phi}\right) \\
 K_{\nu}(x) &= \int_{0}^{\infty}\exp(-x \cosh t) \cosh (\nu t) \mathrm{dt}
 \end{aligned}
 $$ {#eq-matern-formula}
 
-其中，$K_{\nu}$ 表示阶数为 $\nu$ 的修正的第二类贝塞尔函数，$\Gamma(\cdot)$ 表示伽马函数，当 $\nu = 1/2$ ，梅隆型将简化为指数型，当 $\nu = \infty$ 时，梅隆型将简化为幂二次指数型。固定 $\sigma = 1$，自协方差函数图像如 @fig-matern-fun 所示，不难看出，$\nu$ 影响自协方差函数的平滑性，控制点与点之间相关性的变化，$\nu$ 越大相关性越迅速地递减。$\rho$ 控制协方差函数的范围，$\rho$ 越大相关性辐射距离越远。对模型来说，它们都是超参数。
+其中，$K_{\nu}$ 表示阶数为 $\nu$ 的修正的第二类贝塞尔函数，$\Gamma(\cdot)$ 表示伽马函数，当 $\nu = 1/2$ ，梅隆型将简化为指数型，当 $\nu = \infty$ 时，梅隆型将简化为幂二次指数型。固定 $\sigma = 1$，自协方差函数图像如 @fig-matern-fun 所示，不难看出，$\nu$ 影响自协方差函数的平滑性，控制点与点之间相关性的变化，$\nu$ 越大相关性越迅速地递减。$\phi$ 控制协方差函数的范围，$\phi$ 越大相关性辐射距离越远。对模型来说，它们都是超参数。
 
 ```{r}
 #| label: fig-matern-fun
@@ -493,28 +493,28 @@ $$ {#eq-matern-formula}
 #| fig-height: 4
 
 # 参数 x 两点之间的距离，要求 x 大于 0
-# 参数 sigma nu rho 分别与前述公式参数对应
-cov_matern_nu <- function(x, sigma = 1, nu = 3 / 2, rho = 5) {
-  phi <- sqrt(2 * nu) * x / rho
+# 参数 sigma nu phi 分别与前述公式参数对应
+cov_matern_nu <- function(x, sigma = 1, nu = 3 / 2, phi = 5) {
+  phi <- sqrt(2 * nu) * x / phi
   sigma^2 * 2^(1 - nu) / gamma(nu) * phi^nu * besselK(x = phi, nu = nu)
 }
 library(ggplot2)
 mesh_matern <- expand.grid(
   x = seq(from = 0.01, to = 20, by = 0.04),
-  sigma = 1, nu = c(5 / 2, 3 / 2, 1 / 2), rho = c(5, 2.5)
+  sigma = 1, nu = c(5 / 2, 3 / 2, 1 / 2), phi = c(5, 2.5)
 )
 
 mesh_matern$fv <- cov_matern_nu(
   x = mesh_matern$x, sigma = mesh_matern$sigma,
-  nu = mesh_matern$nu, rho = mesh_matern$rho
+  nu = mesh_matern$nu, phi = mesh_matern$phi
 )
 
 mesh_matern$nu_math <- paste("nu==", mesh_matern$nu, sep = "")
-mesh_matern$rho_math <- paste("rho==", mesh_matern$rho, sep = "")
+mesh_matern$phi_math <- paste("phi==", mesh_matern$phi, sep = "")
 
 ggplot(data = mesh_matern, aes(x = x, y = fv)) +
   geom_line(aes(color = nu_math)) +
-  facet_wrap(vars(rho_math), ncol = 1, labeller = ggplot2::label_parsed) +
+  facet_wrap(vars(phi_math), ncol = 1, labeller = ggplot2::label_parsed) +
   scale_color_viridis_d(
     labels = expression(nu == 0.5, nu == 1.5, nu == 2.5), 
     begin = 0.3, end = 0.7, option = "C"
@@ -702,7 +702,7 @@ plot(fit_rongelap_vario_norm,
 
 ### 空间广义线性混合效应模型 {#sec-rongelap-sglmm}
 
-简单的广义线性模型并没有考虑距离相关性，它认为各个观测点的数据是相互独立的。因此，考虑采用广义线性混合效应模型，在广义线性模型的基础上添加位置相关的随机效应，用以刻画未能直接观测到的潜在影响。 ${}^{137}\mathrm{Cs}$ 放出伽马射线，在 $N=157$ 个采样点，分别以时间间隔 $t_i$ 测量辐射量 $Y(x_i)$，建立泊松型空间广义线性混合效应模型。
+简单的广义线性模型并没有考虑距离相关性，它认为各个观测点的数据是相互独立的。因此，考虑采用广义线性混合效应模型，在广义线性模型的基础上添加位置相关的随机效应，用以刻画未能直接观测到的潜在影响。 ${}^{137}\mathrm{Cs}$ 放出伽马射线，在 $n=157$ 个采样点，分别以时间间隔 $t_i$ 测量辐射量 $Y(x_i)$，建立泊松型空间广义线性混合效应模型。
 
 $$
 \begin{aligned}
@@ -713,7 +713,7 @@ $$ {#eq-rongelap-poisson-sglmmm}
 
 模型中，放射粒子数 $Y(x_{i})$ 作为响应变量服从均值为 $t_i\lambda(x_i)$ 的泊松分布，其它模型成分的说明同前。
 
-**nlme** 包不能拟合空间广义线性混合效应模型， **spaMM** 包可以，它的使用语法与前面介绍的函数 `glm()` 、 **nlme** 包都类似，函数 `fitme()` 可以拟合从线性模型到广义线性混合效应模型的一大类模型，且使用统一的语法，输出一个 `HLfit` 类型的数据对象。 **spaMM** 包的函数 `Matern()` 实现了梅隆型自协方差函数，指数型和幂二次指数型是它的特例。当固定 $\nu = 0.5$ 时，梅隆型自协方差函数 `Matern()` 的形式退化为 $\sigma^2\exp(-\rho d)$ ，其中 $d$ 表示距离，相当于前面出现的 $u$，$\rho$ 表示范围参数，相当于前面出现的 $1/\phi$ 。
+**nlme** 包不能拟合空间广义线性混合效应模型， **spaMM** 包可以，它的使用语法与前面介绍的函数 `glm()` 、 **nlme** 包都类似，函数 `fitme()` 可以拟合从线性模型到广义线性混合效应模型的一大类模型，且使用统一的语法，输出一个 `HLfit` 类型的数据对象。 **spaMM** 包的函数 `Matern()` 实现了梅隆型自协方差函数，指数型和幂二次指数型是它的特例。当固定 $\nu = 0.5$ 时，梅隆型自协方差函数 `Matern()` 的形式退化为 $\sigma^2\exp(-\phi u)$ ，其中，$\phi$ 表示范围参数，相当于前面出现的 $1/\phi$ 。
 
 ```{r}
 #| message: false
@@ -727,7 +727,7 @@ fit_rongelap_spamm <- fitme(
 summary(fit_rongelap_spamm)
 ```
 
-从输出结果来看，模型固定效应的截距项 $\beta$ 为 `1.831`，随机效应的方差 $\sigma^2$ 为 `0.2964`，自协方差函数中参数 $\rho = 0.00968$，对比函数 `Matern()` 实现的指数型自协方差函数公式与 @eq-matern-formula ，将输出结果需要转化一下，则 $\phi = 1 / 0.00968 = 103.3$ ，表示在这个模型的设定下，空间相关性的最大影响距离为 103.3 米。
+从输出结果来看，模型固定效应的截距项 $\beta$ 为 `1.831`，随机效应的方差 $\sigma^2$ 为 `0.2964`，对比函数 `Matern()` 实现的指数型自协方差函数公式与 @eq-matern-formula ，将输出结果转化一下，则 $\phi = 1 / 0.00968 = 103.3$ ，表示在这个模型的设定下，空间相关性的最大影响距离为 103.3 米。
 
 函数 `fitme()` 默认使用极大似然估计模型参数，也可以使用限制极大似然来估计。
 
@@ -915,7 +915,7 @@ $$
 \end{aligned}
 $$
 
-其中，协方差矩阵 $V$ 的元素为 $\mathsf{Cov}\{S(x_i),S(x_j)\}$ ，列向量 $\bm{u}$ 的元素为 $\mathsf{Cov}\{S(x_i),S(x_0)\}$ 。
+其中，协方差矩阵 $V$ 中第 $i$ 行第 $j$ 列的元素为 $\mathsf{Cov}\{S(x_i),S(x_j)\}$ ，列向量 $\bm{u}$ 的第 $i$ 个元素为 $\mathsf{Cov}\{S(x_i),S(x_0)\}$ 。
 
 ```{r}
 # 截距
@@ -1120,7 +1120,7 @@ $$
 \bm{y} = X\bm{\beta} + \bm{\epsilon}
 $$
 
-其中，$\bm{y}$ 是 $N \times 1$ 的列向量，表示响应变量对应的观测数据。 $X$ 是 $N \times p$ 的矩阵，表示 $p$ 维协变量对应的 $N$ 次观测数据。$\bm{\beta}$ 是 $p \times 1$ 的列向量，表示待估的模型参数。 $\bm{\epsilon}$ 是 $N \times 1$ 的列向量，表示残差。
+其中，$\bm{y}$ 是 $n \times 1$ 的列向量，表示响应变量对应的观测数据。 $X$ 是 $n \times p$ 的矩阵，表示 $p$ 维协变量对应的 $n$ 次观测数据。$\bm{\beta}$ 是 $p \times 1$ 的列向量，表示待估的模型参数。 $\bm{\epsilon}$ 是 $n \times 1$ 的列向量，表示残差。
 
 假定随机向量 $\bm{\epsilon}$ 的期望为 $\mathsf{E}\{\bm{\epsilon}|X\} = \bm{0}$，方差为 $\mathsf{Var}\{\bm{\epsilon}|X\}=\Sigma$ ，且 $X$ 与 $\bm{\epsilon}$ 不相关，则有
 
@@ -1179,7 +1179,7 @@ $$
 
 当 $\bm{\epsilon}$ 之间存在空间相关性时，$\Sigma$ 含有参数 $\sigma^2,\phi$ ，若模型带块金效应，则还含有参数 $\tau^2$ 。可见，上式不足以估计模型的参数，且看后续 @sec-maximum-likelihood 。
 
-类似地，对于一次新的观测 $\bm{x}_0$，它是一个 $p \times 1$ 的列向量，现在的目标是找到一个 $\hat{y}_0$ ，在满足无偏性的条件下，使得预测的均方误差 $\mathsf{E}\{(\hat{y}_0 - y_0)^2\}$ 最小，也是预测方差 $\mathsf{Var}\{\hat{y}_0 - y_0\}$ 最小，也是残差的方差 $\mathsf{Var}\{\hat{\epsilon}_0\}$ 最小。不妨设 $\hat{y}_0$ 是关于 $\bm{y}$ 的线性组合，即 $\hat{y}_0 = \bm{w}^{\top}\bm{y}$ ，此处，$\bm{w}$ 是 $N \times 1$ 维的权重向量。找 $\hat{y}_0$ 的问题转为求解如下最优化问题。
+类似地，对于一次新的观测 $\bm{x}_0$，它是一个 $p \times 1$ 的列向量，现在的目标是找到一个 $\hat{y}_0$ ，在满足无偏性的条件下，使得预测的均方误差 $\mathsf{E}\{(\hat{y}_0 - y_0)^2\}$ 最小，也是预测方差 $\mathsf{Var}\{\hat{y}_0 - y_0\}$ 最小，也是残差的方差 $\mathsf{Var}\{\hat{\epsilon}_0\}$ 最小。不妨设 $\hat{y}_0$ 是关于 $\bm{y}$ 的线性组合，即 $\hat{y}_0 = \bm{w}^{\top}\bm{y}$ ，此处，$\bm{w}$ 是 $n \times 1$ 维的权重向量。找 $\hat{y}_0$ 的问题转为求解如下最优化问题。
 
 $$
 \begin{aligned}
@@ -1425,7 +1425,7 @@ to_png <- function(fig_path) {
 已知研究区域 $\mathcal{D} \subset \mathbb{R}^2$ 中的采样点 $x_i \in \mathcal{D}$ 的辐射强度为 $\lambda(x_i)$ 。对于区域 $\mathcal{D}$ 中未采样的位置 $x_0$，它的辐射强度 $\lambda(x_0)$ 是多少？在满足无偏性的条件下，$\hat{\lambda}(x_0)$ 是使预测方差最小的估计。
 
 $$
-\hat{\lambda}(x_0) = \sum_{i=1}^{N}w_i\lambda(x_i)
+\hat{\lambda}(x_0) = \sum_{i=1}^{n}w_i\lambda(x_i)
 $$
 
 其中 $w_i$ 是待定的权重系数。$\hat{\lambda}(x_0)$ 是 $\lambda(x_0)$ 的无偏估计，要使预测方差最小，需求解如下最优化问题。
@@ -1440,13 +1440,13 @@ $$ {#eq-kriging-optim}
 在平稳性的假设下， $\mathsf{E}\{\lambda(x_i)\} = \mathsf{E}\{\lambda(x_0)\}$ 且 $\mathsf{Var}\{\lambda(x_i)\} = \sigma^2$ 。根据无偏性条件可推导出
 
 $$
-\sum_{i=1}^{N}w_i = 1.
+\sum_{i=1}^{n}w_i = 1.
 $$
 
-令 $\bm{\lambda} = [\lambda(x_1),\lambda(x_1),\ldots,\lambda(x_N)]^{\top}$ ，$V$ 表示随机向量 $\bm{\lambda}$ 的方差-协方差矩阵 $\mathsf{Var}\{\bm{\lambda}\}$ ，其第 $i$ 行第 $j$ 列的元素为 $\mathsf{Cov}\{\lambda(x_i),\lambda(x_j)\}$ ，对角线上的元素为方差 $\mathsf{Var}\{\lambda(x_i)\}, i = 1,2,\ldots,N$ 。令 $\bm{w} = [w_1,w_2,\ldots,w_N]^{\top}$ ，则
+令 $\bm{\lambda} = [\lambda(x_1),\lambda(x_1),\ldots,\lambda(x_n)]^{\top}$ ，$V$ 表示随机向量 $\bm{\lambda}$ 的协方差矩阵 $\mathsf{Var}\{\bm{\lambda}\}$ ，其第 $i$ 行第 $j$ 列的元素为 $\mathsf{Cov}\{\lambda(x_i),\lambda(x_j)\}$ ，对角线上的元素为方差 $\mathsf{Var}\{\lambda(x_i)\}, i = 1,2,\ldots, n$ 。令 $\bm{w} = (w_1,w_2,\ldots,w_n)^{\top}$ ，则
 
 $$
-\hat{\lambda}(x_0) = \sum_{i=1}^{N}w_i\lambda(x_i) = \bm{w}^{\top}\bm{\lambda}.
+\hat{\lambda}(x_0) = \sum_{i=1}^{n}w_i\lambda(x_i) = \bm{w}^{\top}\bm{\lambda}.
 $$
 
 根据随机向量二次型，$\hat{\lambda}(x_0)$ 的方差 $\mathsf{Var}\{\hat{\lambda}(x_0)\}$ 有
@@ -1466,13 +1466,13 @@ $$
 \end{aligned}
 $$ {#eq-kriging-variance}
 
-其中，$\mathsf{Var}\{\lambda(x_0)\} = \mathsf{Var}\{\lambda(x_i)\}= \sigma^2$ 是未知常数，$\bm{u} = \mathsf{Cov}\{\bm{\lambda},\lambda(x_0)\}$ 是未知的 $N \times 1$ 向量。假设它们已知，采用拉格朗日乘数法将约束优化问题 @eq-kriging-optim 转为如下无约束优化问题。
+其中，$\mathsf{Var}\{\lambda(x_0)\} = \mathsf{Var}\{\lambda(x_i)\}= \sigma^2$ 是未知常数，$\bm{u} = \mathsf{Cov}\{\bm{\lambda},\lambda(x_0)\}$ 是未知的 $n \times 1$ 向量。假设它们已知，采用拉格朗日乘数法将约束优化问题 @eq-kriging-optim 转为如下无约束优化问题。
 
 $$
 \min_{\bm{w},\kappa} \mathcal{L}(\bm{w},k) = \frac{1}{2}\bm{w}^{\top}V\bm{w} + \frac{1}{2}\sigma^2 - \bm{u}^{\top}\bm{w}  + \kappa (1 - \bm{1}^{\top} \bm{w})
 $$
 
-其中，$\kappa$ 表示拉格朗日乘子，$\bm{1}$ 表示 $N \times 1$ 维的全 1 向量。分别对 $\bm{w}$ 和 $\kappa$ 求偏导，并令其分别等于零向量 $\bm{0}$ 和零 $0$ ，则有
+其中，$\kappa$ 表示拉格朗日乘子，$\bm{1}$ 表示 $n \times 1$ 维的全 1 向量。分别对 $\bm{w}$ 和 $\kappa$ 求偏导，并令其分别等于零向量 $\bm{0}$ 和零 $0$ ，则有
 
 $$
 \begin{aligned}
@@ -1481,7 +1481,7 @@ $$
 \end{aligned}
 $$
 
-联立上述方程可得方程组，一共 $N+1$ 个变量和方程。
+联立上述方程可得方程组，一共 $n+1$ 个变量和方程。
 
 $$
 \begin{bmatrix}
