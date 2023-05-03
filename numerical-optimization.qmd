@@ -214,51 +214,78 @@ res$objval
 
 ## 二次优化 {#sec-quadratic-optimization}
 
-二次优化分严格凸二次和非严格凸二次优化问题，严格凸要求矩阵正定，非严格凸要求矩阵半正定。
+二次优化分严格凸二次和非严格凸二次优化问题，严格凸要求矩阵正定，非严格凸要求矩阵半正定。对于矩阵负定的情况，不是凸优化问题，暂不考虑。
 
 ### 严格二次优化
 
-**ROI** 包的使用接口定义的二次规划的标准形式为
+二次优化的一般形式如下：
 
 $$
-\min_{\bm{x}} \frac{1}{2}\bm{x}^{\top}D\bm{x} + d^{\top}\bm{x} \quad \quad A^{\top}\bm{x} \geq d_{0}
+\begin{aligned}
+\min_{\bm{x}} \quad & \frac{1}{2}\bm{x}^{\top}D\bm{x} + d^{\top}\bm{x} \\
+\text{s.t.} \quad & A\bm{x} \leq \bm{b}
+\end{aligned}
 $$
 
-参数 `Dmat`、`dvec`、`Amat`、`dvec0` 分别对应二次规划问题中的 $D,d,A,d_{0}$。下面举个二次规划的具体例子
+二次优化不都是凸优化，当且仅当矩阵 $D$ 半正定时，上述二次规划是凸二次优化，当矩阵 $D$ 正定时，上述二次规划是严格凸二次优化。下面举个严格凸二次规划的具体例子，令
 
 $$
-D = \begin{bmatrix}2 & -1\\
+D = \begin{bmatrix}
+2 & -1\\
 -1 & 2
 \end{bmatrix}, \quad
-d = (-3,2), \quad
-A = \begin{bmatrix}1 & 1\\
--1 & 1 \\
-0  & -1
+\bm{d} =  
+\begin{bmatrix}
+3 \\
+-2
 \end{bmatrix}, \quad
-d_{0} = (2,-2,-3)
+A = \begin{bmatrix}
+-1 & -1  \\
+1 & -1 \\
+0  & 1
+\end{bmatrix}, \quad
+\bm{b} = \begin{bmatrix}
+-2 \\
+2 \\
+3
+\end{bmatrix}
 $$
 
 即目标函数
 
 $$
-Q(x_1,x_2) = x_1^2 + x_2^2 - x_1 x_2 + 3x_1- 2x_2+4
+Q(x_1,x_2) = x_1^2 + x_2^2 - x_1 x_2 + 3x_1- 2x_2
 $$
+
+二次规划中的数据矩阵和向量 $D,d,A,b$ 依次用 `Dmat`、`dvec`、`Amat`、`bvec` 表示出来。
 
 ```{r}
 Dmat <- matrix(c(2, -1, -1, 2), nrow = 2, byrow = TRUE)
-dvec <- c(-3, 2)
-A <- matrix(c(1, 1, -1, 1, 0, -1), ncol = 2, byrow = TRUE)
-dvec0 <- c(2, -2, -3)
+dvec <- c(3, -2)
+A <- matrix(c(-1, -1, 1, -1, 0, 1), ncol = 2, byrow = TRUE)
+bvec <- c(-2, 2, 3)
 ```
 
-定义目标规划
+**同样，也是在函数** `OP()`中传递目标函数，约束条件。在函数 `Q_objective()` 中定义二次规划的目标函数，字母 Q 是 Quadratic 的意思，表示二次部分，字母 L 是 Linear 的意思，表示线性部分。函数 `L_constraint()` 的使用同线性优化，不再赘述。根据 **ROI** 包的使用接口定义的参数，定义目标规划
 
 ```{r}
 op <- OP(
-  objective = Q_objective(Q = Dmat, L = -dvec),
-  constraints = L_constraint(A, rep(">=", 3), dvec0),
+  objective = Q_objective(Q = Dmat, L = dvec),
+  constraints = L_constraint(L = A, dir = rep("<=", 3), rhs = bvec),
   maximum = FALSE
 )
+op
+```
+
+**nloptr** 包有许多优化求解器，可用于求解二次规划的也有好几个。对于一个目标规划，函数 `ROI_applicable_solvers()` 可以找到能够求解此优化问题的求解器。
+
+```{r}
+ROI_applicable_solvers(op)
+```
+
+下面使用其中的 `nloptr.slsqp` 来求解。
+
+```{r}
 nlp <- ROI_solve(op, solver = "nloptr.slsqp", start = c(1, 2))
 nlp$objval
 nlp$solution
