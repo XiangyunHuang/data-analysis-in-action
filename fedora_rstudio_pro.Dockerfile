@@ -1,4 +1,4 @@
-FROM fedora:37
+FROM fedora:38
 
 RUN groupadd staff \
   && useradd -g staff -d /home/docker docker
