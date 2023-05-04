@@ -273,7 +273,7 @@ A <- matrix(c(-1, -1, 1, -1, 0, 1), ncol = 2, byrow = TRUE)
 bvec <- c(-2, 2, 3)
 ```
 
-**同样，也是在函数** `OP()`中传递目标函数，约束条件。在函数 `Q_objective()` 中定义二次规划的目标函数，字母 Q 是 Quadratic 的意思，表示二次部分，字母 L 是 Linear 的意思，表示线性部分。函数 `L_constraint()` 的使用同线性优化，不再赘述。根据 **ROI** 包的使用接口定义的参数，定义目标规划
+同样，也是在函数 `OP()`中传递目标函数，约束条件。在函数 `Q_objective()` 中定义二次规划的目标函数，字母 Q 是 Quadratic 的意思，表示二次部分，字母 L 是 Linear 的意思，表示线性部分。函数 `L_constraint()` 的使用同线性优化，不再赘述。根据 **ROI** 包的使用接口定义的参数，定义目标规划
 
 ```{r}
 op <- OP(
@@ -316,8 +316,8 @@ nlp2$solution
 ```{r}
 #| label: fig-quadprog
 #| fig-cap: "对比无约束和有约束条件下的解"
-#| fig-width: 4.5
-#| fig-height: 4
+#| fig-width: 5
+#| fig-height: 3.33
 #| fig-showtext: true
 #| code-fold: true
 #| echo: !expr knitr::is_html_output()
@@ -345,6 +345,17 @@ levelplot(fn ~ x1 * x2, data = dat, aspect = .7,
       lwd = 5, col = c("red", "yellow", "blue"), pch = 19
     )
   },
+  # 减少三维图形的边空
+  lattice.options = list(
+    layout.widths = list(
+      left.padding = list(x = 0, units = "inches"),
+      right.padding = list(x = 0, units = "inches")
+    ),
+    layout.heights = list(
+      bottom.padding = list(x = -1.5, units = "inches"),
+      top.padding = list(x = -1.5, units = "inches")
+    )
+  ),
   scales = list(
     x = list(alternating = 1, tck = c(1, 0)),
     y = list(alternating = 1, tck = c(1, 0))
@@ -358,18 +369,35 @@ levelplot(fn ~ x1 * x2, data = dat, aspect = .7,
 
 ### 混合整数二次优化
 
-对变量添加整型约束，原二次规划即变成混合整数二次规划 （Mixed Integer Quadratic Programming，简称 MIQP）。目前，ROI 支持的开源求解器都不能处理 MIQP 问题，只有 **CVXR** 包和 [**rmpk**](https://github.com/r-opt/rmpk) 包能解 MIQP 问题，更多关于 **CVXR** 包的介绍见[示例库](https://cvxr.rbind.io/examples/)。
+对变量添加整型约束，原二次规划即变成混合整数二次规划 （Mixed Integer Quadratic Programming，简称 MIQP）。目前，ROI 支持的开源求解器都不能处理 MIQP 问题，只有 **CVXR** 包和 [**rmpk**](https://github.com/r-opt/rmpk) 包能解 MIQP 问题，更多关于 **CVXR** 包的介绍见[示例库](https://cvxr.rbind.io/examples/)。**ECOSolveR** 包可以求解一些锥规划，且变量可以包含整数。将凸二次规划转为锥规划问题，再调 ecos 求解器。
 
 ```{r}
 #| eval: false
 
 op <- OP(
-  objective = Q_objective(Q = Dmat, L = -dvec),
-  constraints = L_constraint(A, rep(">=", 3), bvec),
+  objective = Q_objective(Q = Dmat, L = dvec),
+  constraints = L_constraint(A, rep("<=", 3), bvec),
   types = c("I", "C"),
   maximum = FALSE # 默认求最小
 )
 nlp <- ROI_solve(op, solver = "nloptr.slsqp", start = c(1, 2))
+nlp$objval
+nlp$solution
+```
+
+链接 ECOSolveR 包提供 ecos 求解器
+
+```{r}
+#| eval: false
+
+op <- OP(
+  objective = Q_objective(Q = Dmat, L = dvec),
+  constraints = L_constraint(A, rep("<=", 3), bvec),
+  types = c("I", "C"),
+  maximum = FALSE # 默认求最小
+)
+library(ROI.plugin.ecos)
+nlp <- ROI_solve(op, solver = "ecos", start = c(1, 2))
 nlp$objval
 nlp$solution
 ```
@@ -381,16 +409,16 @@ nlp$solution
 
 library(CVXR)
 # Variables minimized over
-x <- Variable(1, integer = TRUE)
-y <- Variable(1)
+x1 <- Variable(1, integer = TRUE)
+x2 <- Variable(1)
 
 # Problem definition
-objective <- Minimize(x^2 + y^2)
-constraints <- list(x >= 0, 2*x + y == 1)
+objective <- Minimize(x1^2 + x2^2 - x1 * x2 + 3 * x1 - 2 * x2)
+constraints <- list(-x1 - x2 <= -2, x1 - x2 <= 2, x2 <= 3)
 prob <- Problem(objective, constraints)
 
 # Problem solution
-solution <- solve(prob)
+solution <- psolve(prob, solver = "ECOS")
 solution$status
 solution$value
 solution$getValue(x)
@@ -423,15 +451,63 @@ $$ {#eq-convex-cone}
 
 ### 指数锥
 
-函数 `K_expp()` 表示指数锥
+指数锥的定义如下：
+
+$$
+\mathcal{K}_{\text{expp}} = \{(x_1, x_2,x_3) \in \mathbb{R}^3 | x_2 > 0,x_2\exp\big(\frac{x_1}{x_2}\big) \leq x_3\} \cup \{(x_1, 0, x_3) \in \mathbb{R}^3 | x_1 \leq 0, x_3 \geq 0 \}
+$$
+
+它的对偶如下：
+
+$$
+\mathcal{K}_{\text{expd}} = \{(x_1, x_2,x_3) \in \mathbb{R}^3 | x_1 < 0, - x_1\exp\big(\frac{x_2}{x_1}\big) \leq \exp(1)x_3\} \cup \{(0, x_2, x_3) \in \mathbb{R}^3 | x_2 , x_3 \geq 0 \}
+$$
+
+考虑一个锥规划问题
+
+$$
+\begin{aligned}
+\max_{(\bm{x}, \bm{t})} \quad & x_1 + 2 x_2 \\
+\text{s.t.} \quad & \exp(7 + 3x_1 + 5 x_2) \leq 9 + 11 t_1 + 12t_2 \\
+\quad & x_1,x_2 \in (-\infty,20], ~ t_1,t_2 \in (-\infty, 50]
+\end{aligned}
+$$
+
+约束条件 $\exp(7 + 3x_1 + 5 x_2) \leq 9 + 11 t_1 + 12t_2$ 可以用指数锥来表示
+
+$$
+\begin{aligned}
+u &= 7 + 3y_1 + 5y_2 \\
+v &= 1 \\
+w &= 9 + 11t_1 + 12t_2
+\end{aligned}
+$$
+
+记 $\bm{x} = (y_1,y_2,t_1,t_2)^{\top}$ ，则线性约束矩阵 $A$ 和约束向量 $\bm{b}$ 如下：
+
+$$
+A = \begin{bmatrix}
+-3 & -5 & 0 & 0 \\
+0 & 0 & 0 & 0 \\
+0 & 0 & -11 & -12
+\end{bmatrix}, \quad
+\bm{b} = \begin{bmatrix}
+7 \\
+1 \\
+9
+\end{bmatrix}
+$$
+
+函数 `K_expp()` 表示指数锥，整个锥规划问题的表示
 
 ```{r}
+# 锥约束
 cexpp <- C_constraint(L = rbind(
   c(-3, -5, 0, 0), 
   c(0, 0, 0, 0),
   c(0, 0, -11, -12)
 ), cone = K_expp(1), rhs = c(7, 1, 9))
-
+# 目标规划
 expp <- OP(objective = c(1, 2, 0, 0), constraints = cexpp,
   bounds = V_bound(ld = -Inf, ub = c(20, 20, 50, 50)), 
   maximum = TRUE
@@ -453,11 +529,59 @@ expp_sol$objval
 
 ### 幂锥
 
+一个三维幂锥的定义如下：
+
+$$
+\mathcal{K}_{\text{powp}}^{\alpha} = \{(x_1, x_2,x_3) \in \mathbb{R}^3 | x_1,x_2 \geq 0,x_1^{\alpha}x_2^{1-\alpha} \geq |x_3| \}, \alpha \in [0,1]
+$$
+
+它的对偶形式如下：
+
+$$
+\mathcal{K}_{\text{powp}}^{\alpha} = \Big\{(x_1, x_2,x_3) \in \mathbb{R}^3 | x_1,x_2 \geq 0,\big(\frac{x_1}{\alpha}\big)^{\alpha}\big(\frac{x_2}{1 - \alpha}\big)^{1-\alpha} \geq |x_3| \Big\}, \alpha \in [0,1]
+$$
+
+考虑如下锥规划问题
+
+$$
+\begin{aligned}
+\min_{\bm{x}} \quad & 3x_1 + 5 x_2 \\
+\text{s.t.} \quad & 5 + x_1 \leq (2 + x_2)^4 \\
+\quad & x_1 \geq 0, ~ x_2 \geq 2
+\end{aligned}
+$$
+
+约束条件 $5 + x_1 \leq (2 + x_2)^4$ 可以重新表示为幂锥
+
+$$
+\begin{aligned}
+u &= 5 + y_1\\
+v &= 1 \\
+w &= 2 + y_2 \\
+\alpha &= 1/4
+\end{aligned}
+$$
+
+记 $\bm{x} = (y_1,y_2)^{\top}$ ，约束矩阵和约束向量如下
+
+$$
+A = \begin{bmatrix}
+-1  & 0 \\
+0   & 0 \\
+0   & -1
+\end{bmatrix}, \quad
+\bm{b} = \begin{bmatrix}
+5 \\
+1 \\
+2
+\end{bmatrix}
+$$
+
 函数 `K_powp()` 表示幂锥
 
 ```{r}
 A <- rbind(c(-1, 0), c(0, 0), c(0, -1))
-cpowp <- C_constraint(A, K_powp(1 / 4), rhs = c(5, 1, 2))
+cpowp <- C_constraint(L = A, cones = K_powp(1 / 4), rhs = c(5, 1, 2))
 op <- OP(
   objective = c(3, 5),
   constraints = cpowp,
@@ -474,7 +598,47 @@ op_sol$objval
 
 ### 半正定锥
 
-函数 `K_psd()` 表示半正定锥
+如果矩阵 $A$ 是半正定的，记为 $A \succeq 0$ ，如果矩阵 $A$ 是正定的，记为 $A \succ 0$ 。记 $n$ 阶实对称的集合为 $\mathcal{S}^{n}$ 。
+
+$$
+\mathcal{K}_{\text{psd}}^{n} = \{A | A \in \mathcal{S}^{n}, \bm{x}^{\top}A\bm{x} \geq 0, \forall \bm{x} \in \mathbb{R}^n \}
+$$
+
+考虑如下锥规划问题
+
+$$
+\begin{aligned}
+\min_{\bm{x}} \quad & x_1 + x_2 - x_3 \\
+\text{s.t.} \quad & 
+x_1 \begin{bmatrix}
+10  & 3 \\
+3   & 10
+\end{bmatrix} + 
+x_2 \begin{bmatrix}
+6  & -4 \\
+-4   & 10
+\end{bmatrix} + 
+x_3 \begin{bmatrix}
+8  & 1 \\
+1  & 6
+\end{bmatrix} \preceq 
+\begin{bmatrix}
+16  & -13 \\
+-13  & 60
+\end{bmatrix}
+\\
+\quad & x_1,x_2,x_3 \geq 0
+\end{aligned}
+$$
+
+函数 `K_psd()` 表示半正定锥，函数 `vech()` 将对称矩阵的上三角部分拉成一个向量。
+
+```{r}
+(A <- toeplitz(x = 3:1))
+vech(A)
+```
+
+锥规划的表示如下
 
 ```{r}
 F1 <- rbind(c(10, 3), c(3, 10))
@@ -486,14 +650,14 @@ op <- OP(
   objective = L_objective(c(1, 1, -1)),
   constraints = C_constraint(
     L = vech(F1, F2, F3),
-    cone = K_psd(3),
+    cones = K_psd(3),
     rhs = vech(F0)
   )
 )
 op
 ```
 
-仍然调用 scs 求解器
+仍然调用 **scs** 求解器
 
 ```{r}
 op_sol <- ROI_solve(op, solver = "scs")
