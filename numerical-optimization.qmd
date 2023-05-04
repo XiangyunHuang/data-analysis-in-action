@@ -26,7 +26,7 @@ flowchart TB
   ROI_Rglpk --> ROI(ROI)
   nloptr --> ROI_nloptr(ROI.plugin.nloptr)
   ROI_nloptr --> ROI(ROI)
-  lpsolve --> ROI_lpsolve(ROI.plugin.lpsolve)
+  scs --> ROI_lpsolve(ROI.plugin.scs)
   ROI_lpsolve --> ROI(ROI)
   quadprog --> ROI_quadprog(ROI.plugin.quadprog)
   ROI_quadprog --> ROI(ROI)
@@ -40,6 +40,7 @@ flowchart TB
 library(ROI)
 library(ROI.plugin.glpk)
 library(ROI.plugin.nloptr)
+library(ROI.plugin.scs)
 library(lattice)
 # 自定义调色板
 custom_palette <- function(irr, ref, height, saturation = 0.9) {
@@ -212,11 +213,17 @@ res$solution
 res$objval
 ```
 
-## 二次优化 {#sec-quadratic-optimization}
+### 旅行商问题 {#sec-tsp}
 
-二次优化分严格凸二次和非严格凸二次优化问题，严格凸要求矩阵正定，非严格凸要求矩阵半正定。对于矩阵负定的情况，不是凸优化问题，暂不考虑。
+旅行商问题 The Traveling Salesman Problem 是一个混合整数线性规划问题。
 
-### 严格二次优化
+**TSP** 包 [@TSP2007]
+
+## 凸二次优化 {#sec-quadratic-optimization}
+
+二次优化分严格凸二次和非严格凸二次优化问题，严格凸要求矩阵对称正定，非严格凸要求矩阵对称半正定。对于矩阵负定的情况，不是凸优化问题，暂不考虑。
+
+### 严格凸二次优化
 
 二次优化的一般形式如下：
 
@@ -291,13 +298,208 @@ nlp$objval
 nlp$solution
 ```
 
-### 非严格二次优化
+作为对比，移除线性不等式约束，求解无约束优化问题。
 
-## 凸优化 {#sec-convex-optimization}
+```{r}
+op2 <- OP(
+  objective = Q_objective(Q = Dmat, L = dvec),
+  maximum = FALSE
+)
+op2
+nlp2 <- ROI_solve(op2, solver = "nloptr.slsqp", start = c(1, 2))
+nlp2$objval
+nlp2$solution
+```
 
-### 严格凸优化
+在可行域上画出等高线，标记目标解的位置， @fig-quadprog 展示无约束和有约束条件下的解。图中红点表示无约束下的解，黄点表示线性约束下的解。
 
-### 非严格凸优化
+```{r}
+#| label: fig-quadprog
+#| fig-cap: "对比无约束和有约束条件下的解"
+#| fig-width: 4.5
+#| fig-height: 4
+#| fig-showtext: true
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
+
+# 约束解
+qp_sol <- nlp$solution
+# 无约束解
+uc_sol <- nlp2$solution
+x1 <- seq(-2, 5.5, length.out = 100)
+x2 <- seq(-1, 3.5, length.out = 100)
+dat <- expand.grid(x1 = x1, x2 = x2)
+# 二次规划的目标函数
+dat$fn <- with(dat, x1^2 + x2^2 - x1 * x2 + 3 * x1 - 2 * x2)
+levelplot(fn ~ x1 * x2, data = dat, aspect = .7,
+  xlab = expression(x[1]), ylab = expression(x[2]),
+  xlim = c(-2.2, 5.7), ylim = c(-1.1, 3.6),
+  panel = function(...) {
+    panel.levelplot(...)
+    panel.polygon(x = c(2, 5, -1), y = c(0, 3, 3),
+      border = TRUE, lwd = 2, col = "transparent"
+    )
+    panel.points(
+      x = c(uc_sol[1], qp_sol[1], -4/3),
+      y = c(uc_sol[2], qp_sol[2], 1/3),
+      lwd = 5, col = c("red", "yellow", "blue"), pch = 19
+    )
+  },
+  scales = list(
+    x = list(alternating = 1, tck = c(1, 0)),
+    y = list(alternating = 1, tck = c(1, 0))
+  ), contour = TRUE, 
+  colorkey = TRUE,
+  col.regions = terrain.colors
+)
+```
+
+蓝色的点是无约束情况下，目标函数的最小值，而求解器 `nloptr.slsqp` 给出的最优解是红点，令人疑惑。
+
+### 混合整数二次优化
+
+对变量添加整型约束，原二次规划即变成混合整数二次规划 （Mixed Integer Quadratic Programming，简称 MIQP）。目前，ROI 支持的开源求解器都不能处理 MIQP 问题，只有 **CVXR** 包和 [**rmpk**](https://github.com/r-opt/rmpk) 包能解 MIQP 问题，更多关于 **CVXR** 包的介绍见[示例库](https://cvxr.rbind.io/examples/)。
+
+```{r}
+#| eval: false
+
+op <- OP(
+  objective = Q_objective(Q = Dmat, L = -dvec),
+  constraints = L_constraint(A, rep(">=", 3), bvec),
+  types = c("I", "C"),
+  maximum = FALSE # 默认求最小
+)
+nlp <- ROI_solve(op, solver = "nloptr.slsqp", start = c(1, 2))
+nlp$objval
+nlp$solution
+```
+
+```{r}
+#| eval: false
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
+
+library(CVXR)
+# Variables minimized over
+x <- Variable(1, integer = TRUE)
+y <- Variable(1)
+
+# Problem definition
+objective <- Minimize(x^2 + y^2)
+constraints <- list(x >= 0, 2*x + y == 1)
+prob <- Problem(objective, constraints)
+
+# Problem solution
+solution <- solve(prob)
+solution$status
+solution$value
+solution$getValue(x)
+solution$getValue(y)
+```
+
+### 非严格凸二次优化
+
+**kernlab** 包[@kernlab2004] 当矩阵 $D$ 为半正定时，
+
+### 分类问题
+
+高斯过程用于分类问题，选用高效且依赖少的 **kernlab** 包求解。
+
+## 锥优化 {#sec-cone-optimization}
+
+什么是锥？锥的数学表示和几何表示。
+
+锥优化问题的一般形式如下
+
+$$
+\begin{aligned}
+\min_{\bm{x}} \quad & \bm{d}^{\top}\bm{x} \\
+\text{s.t.} \quad & A\bm{x} + s = \bm{b} \\
+\quad & s \in \mathcal{K}
+\end{aligned}
+$$ {#eq-convex-cone}
+
+其中，集合 $\mathcal{K}$ 是一个非空的封闭凸锥。在一个凸锥里，寻求一个线性目标函数的最小值。专门求解此类问题的 **scs** 包 [@scs2016] 也在 **ROI** 包的支持范围内，可以求解的锥优化包括零锥、线性锥、二阶锥、指数锥、幂锥和半正定锥。
+
+### 指数锥
+
+函数 `K_expp()` 表示指数锥
+
+```{r}
+cexpp <- C_constraint(L = rbind(
+  c(-3, -5, 0, 0), 
+  c(0, 0, 0, 0),
+  c(0, 0, -11, -12)
+), cone = K_expp(1), rhs = c(7, 1, 9))
+
+expp <- OP(objective = c(1, 2, 0, 0), constraints = cexpp,
+  bounds = V_bound(ld = -Inf, ub = c(20, 20, 50, 50)), 
+  maximum = TRUE
+)
+expp
+```
+
+对于锥优化，可以调用 **scs** 包来求解。
+
+```{r}
+# 调用 scs 包
+library(ROI.plugin.scs)
+expp_sol <- ROI_solve(expp, solver = "scs")
+# 最优解
+expp_sol$solution
+# 目标函数值
+expp_sol$objval
+```
+
+### 幂锥
+
+函数 `K_powp()` 表示幂锥
+
+```{r}
+A <- rbind(c(-1, 0), c(0, 0), c(0, -1))
+cpowp <- C_constraint(A, K_powp(1 / 4), rhs = c(5, 1, 2))
+op <- OP(
+  objective = c(3, 5),
+  constraints = cpowp,
+  bounds = V_bound(lb = c(0, 2))
+)
+op
+```
+
+```{r}
+op_sol <- ROI_solve(op, solver = "scs", max_iter = 1e6)
+op_sol$solution
+op_sol$objval
+```
+
+### 半正定锥
+
+函数 `K_psd()` 表示半正定锥
+
+```{r}
+F1 <- rbind(c(10, 3), c(3, 10))
+F2 <- rbind(c(6, -4), c(-4, 10))
+F3 <- rbind(c(8, 1), c(1, 6))
+F0 <- rbind(c(16, -13), c(-13, 60))
+# 目标规划
+op <- OP(
+  objective = L_objective(c(1, 1, -1)),
+  constraints = C_constraint(
+    L = vech(F1, F2, F3),
+    cone = K_psd(3),
+    rhs = vech(F0)
+  )
+)
+op
+```
+
+仍然调用 scs 求解器
+
+```{r}
+op_sol <- ROI_solve(op, solver = "scs")
+op_sol$solution
+op_sol$objval
+```
 
 ## 非线性优化 {#sec-nonlinear-optimization}
 
@@ -778,7 +980,12 @@ A = \begin{bmatrix}
 -1 & 0 \\
 0  & -1
 \end{bmatrix}, \quad
-b = (2, 2, -4, -4)
+b = \begin{bmatrix}
+2 \\
+2 \\
+-4 \\ 
+-4
+\end{bmatrix}
 $$
 
 ```{r}
