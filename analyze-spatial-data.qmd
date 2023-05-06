@@ -747,7 +747,7 @@ plot(fit_rongelap_vario_norm,
 $$
 \begin{aligned}
 \log\{\lambda(x_i)\} & =  \beta + S(x_{i}) + Z_{i} \\
-y(x_{i}) &\sim \mathrm{Poisson}(t_i\lambda(x_i))
+y(x_{i}) &\sim \mathrm{Poisson}\big(t_i\lambda(x_i)\big)
 \end{aligned}
 $$ {#eq-rongelap-poisson-sglmmm}
 
@@ -760,20 +760,20 @@ $$ {#eq-rongelap-poisson-sglmmm}
 
 library(spaMM)
 fit_rongelap_spamm <- fitme(
-  formula = counts ~ 1 + Matern(1 | cX + cY) + offset(log(time)),
+  formula = counts ~ 1 + Matern(1 | cX + cY) + (1 | dummy) + offset(log(time)),
   family = poisson(link = "log"), data = rongelap,
   fixed = list(nu = 0.5)
 )
 summary(fit_rongelap_spamm)
 ```
 
-从输出结果来看，模型固定效应的截距项 $\beta$ 为 `1.831`，随机效应的方差 $\sigma^2$ 为 `0.2964`，对比函数 `Matern()` 实现的指数型自协方差函数公式与 @eq-matern-formula ，将输出结果转化一下，则 $\phi = 1 / 0.00968 = 103.3$ ，表示在这个模型的设定下，空间相关性的最大影响距离为 103.3 米。
+从输出结果来看，模型固定效应的截距项 $\beta$ 为 `1.821`，空间随机效应的方差 $\sigma^2$ 为 `0.2649`，块金效应 $\tau^2$ 为 `0.0353`，对比函数 `Matern()` 实现的指数型自协方差函数公式与 @eq-matern-formula ，将输出结果转化一下，则 $\phi = 1 / 0.00658 = 151.97$ ，表示在这个模型的设定下，空间相关性的最大影响距离约为 152 米。
 
 函数 `fitme()` 默认使用极大似然估计模型参数，也可以使用限制极大似然来估计。
 
 ```{r}
 fit_rongelap_spamm2 <- fitme(
-  formula = counts ~ 1 + Matern(1 | cX + cY) + offset(log(time)),
+  formula = counts ~ 1 + Matern(1 | cX + cY) + (1 | dummy) + offset(log(time)),
   family = poisson(link = "log"), data = rongelap,
   fixed = list(nu = 0.5), method = "REML"
 )
@@ -784,7 +784,7 @@ summary(fit_rongelap_spamm2)
 
 ```{r}
 fit_rongelap_spamm3 <- fitme(
-  formula = counts ~ 1 + Matern(1 | cX + cY) + offset(log(time)),
+  formula = counts ~ 1 + Matern(1 | cX + cY) + (1 | dummy) + offset(log(time)),
   family = negbin2(link = "log"), data = rongelap,
   fixed = list(nu = 0.5)
 )
@@ -929,6 +929,7 @@ ggplot() +
 rongelap_grid_df <- as.data.frame(st_coordinates(rongelap_grid_centroid))
 colnames(rongelap_grid_df) <- c("cX", "cY")
 rongelap_grid_df$time <- 1
+rongelap_grid_df$dummy <- 1:nrow(rongelap_grid_df)
 ```
 
 将数据输入 **spaMM** 包拟合的模型对象 `fit_rongelap_spamm`，并将模型返回的结果整理成数据框，再与采样点数据合并。`predict()` 是一个泛型函数，**spaMM** 包为模型对象提供了相应的预测方法。
