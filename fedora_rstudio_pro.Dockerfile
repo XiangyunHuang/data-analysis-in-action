@@ -1,4 +1,4 @@
-FROM fedora:37
+FROM fedora:38
 
 RUN groupadd staff \
   && useradd -g staff -d /home/docker docker
@@ -34,7 +34,8 @@ RUN dnf -y upgrade \
    
 # System dependencies required for Quarto Book project
 RUN dnf -y install python3-virtualenv \
-   google-noto-cjk-fonts \
+   google-noto-sans-cjk-fonts \
+   google-noto-serif-cjk-fonts \
    google-noto-sans-fonts \
    google-noto-serif-fonts \
    google-noto-emoji-fonts \
