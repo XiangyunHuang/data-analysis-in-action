@@ -26,7 +26,7 @@ flowchart TB
   ROI_Rglpk --> ROI(ROI)
   nloptr --> ROI_nloptr(ROI.plugin.nloptr)
   ROI_nloptr --> ROI(ROI)
-  lpsolve --> ROI_lpsolve(ROI.plugin.lpsolve)
+  scs --> ROI_lpsolve(ROI.plugin.scs)
   ROI_lpsolve --> ROI(ROI)
   quadprog --> ROI_quadprog(ROI.plugin.quadprog)
   ROI_quadprog --> ROI(ROI)
@@ -40,6 +40,7 @@ flowchart TB
 library(ROI)
 library(ROI.plugin.glpk)
 library(ROI.plugin.nloptr)
+library(ROI.plugin.scs)
 library(lattice)
 # 自定义调色板
 custom_palette <- function(irr, ref, height, saturation = 0.9) {
@@ -212,65 +213,459 @@ res$solution
 res$objval
 ```
 
-## 二次优化 {#sec-quadratic-optimization}
+### 旅行商问题 {#sec-tsp}
 
-二次优化分严格凸二次和非严格凸二次优化问题，严格凸要求矩阵正定，非严格凸要求矩阵半正定。
+旅行商问题 The Traveling Salesman Problem 是一个混合整数线性规划问题。
 
-### 严格二次优化
+**TSP** 包 [@TSP2007]
 
-**ROI** 包的使用接口定义的二次规划的标准形式为
+## 凸二次优化 {#sec-quadratic-optimization}
+
+二次优化分严格凸二次和非严格凸二次优化问题，严格凸要求矩阵对称正定，非严格凸要求矩阵对称半正定。对于矩阵负定的情况，不是凸优化问题，暂不考虑。
+
+### 严格凸二次优化
+
+二次优化的一般形式如下：
 
 $$
-\min_{\bm{x}} \frac{1}{2}\bm{x}^{\top}D\bm{x} + d^{\top}\bm{x} \quad \quad A^{\top}\bm{x} \geq d_{0}
+\begin{aligned}
+\min_{\bm{x}} \quad & \frac{1}{2}\bm{x}^{\top}D\bm{x} + \bm{d}^{\top}\bm{x} \\
+\text{s.t.} \quad & A\bm{x} \leq \bm{b}
+\end{aligned}
 $$
 
-参数 `Dmat`、`dvec`、`Amat`、`dvec0` 分别对应二次规划问题中的 $D,d,A,d_{0}$。下面举个二次规划的具体例子
+二次优化不都是凸优化，当且仅当矩阵 $D$ 半正定时，上述二次规划是凸二次优化，当矩阵 $D$ 正定时，上述二次规划是严格凸二次优化。下面举个严格凸二次规划的具体例子，令
 
 $$
-D = \begin{bmatrix}2 & -1\\
+D = \begin{bmatrix}
+2 & -1\\
 -1 & 2
 \end{bmatrix}, \quad
-d = (-3,2), \quad
-A = \begin{bmatrix}1 & 1\\
--1 & 1 \\
-0  & -1
+\bm{d} =  
+\begin{bmatrix}
+3 \\
+-2
 \end{bmatrix}, \quad
-d_{0} = (2,-2,-3)
+A = \begin{bmatrix}
+-1 & -1  \\
+1 & -1 \\
+0  & 1
+\end{bmatrix}, \quad
+\bm{b} = \begin{bmatrix}
+-2 \\
+2 \\
+3
+\end{bmatrix}
 $$
 
 即目标函数
 
 $$
-Q(x_1,x_2) = x_1^2 + x_2^2 - x_1 x_2 + 3x_1- 2x_2+4
+Q(x_1,x_2) = x_1^2 + x_2^2 - x_1 x_2 + 3x_1- 2x_2
 $$
+
+二次规划中的数据矩阵和向量 $D,\bm{d},A,\bm{b}$ 依次用 `Dmat`、`dvec`、`Amat`、`bvec` 表示出来。
 
 ```{r}
 Dmat <- matrix(c(2, -1, -1, 2), nrow = 2, byrow = TRUE)
-dvec <- c(-3, 2)
-A <- matrix(c(1, 1, -1, 1, 0, -1), ncol = 2, byrow = TRUE)
-dvec0 <- c(2, -2, -3)
+dvec <- c(3, -2)
+A <- matrix(c(-1, -1, 1, -1, 0, 1), ncol = 2, byrow = TRUE)
+bvec <- c(-2, 2, 3)
 ```
 
-定义目标规划
+同样，也是在函数 `OP()`中传递目标函数，约束条件。在函数 `Q_objective()` 中定义二次规划的目标函数，字母 Q 是 Quadratic 的意思，表示二次部分，字母 L 是 Linear 的意思，表示线性部分。函数 `L_constraint()` 的使用同线性优化，不再赘述。根据 **ROI** 包的使用接口定义的参数，定义目标规划。
 
 ```{r}
 op <- OP(
-  objective = Q_objective(Q = Dmat, L = -dvec),
-  constraints = L_constraint(A, rep(">=", 3), dvec0),
+  objective = Q_objective(Q = Dmat, L = dvec),
+  constraints = L_constraint(L = A, dir = rep("<=", 3), rhs = bvec),
   maximum = FALSE
+)
+op
+```
+
+**nloptr** 包有许多优化求解器，可用于求解二次规划的也有好几个。对于一个目标规划，函数 `ROI_applicable_solvers()` 可以找到能够求解此优化问题的求解器。
+
+```{r}
+ROI_applicable_solvers(op)
+```
+
+下面使用其中的 `nloptr.slsqp` 来求解。
+
+```{r}
+nlp <- ROI_solve(op, solver = "nloptr.slsqp", start = c(1, 2))
+nlp$objval
+nlp$solution
+```
+
+作为对比，移除线性不等式约束，求解无约束优化问题。
+
+```{r}
+op2 <- OP(
+  objective = Q_objective(Q = Dmat, L = dvec),
+  maximum = FALSE
+)
+op2
+nlp2 <- ROI_solve(op2, solver = "nloptr.slsqp", start = c(1, 2))
+nlp2$objval
+nlp2$solution
+```
+
+在可行域上画出等高线，标记目标解的位置， @fig-quadprog 展示无约束和有约束条件下的解。图中红点表示无约束下的解，黄点表示线性约束下的解。
+
+```{r}
+#| label: fig-quadprog
+#| fig-cap: "对比无约束和有约束条件下的解"
+#| fig-width: 5
+#| fig-height: 3.33
+#| fig-showtext: true
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
+
+# 约束解
+qp_sol <- nlp$solution
+# 无约束解
+uc_sol <- nlp2$solution
+x1 <- seq(-2, 5.5, length.out = 100)
+x2 <- seq(-1, 3.5, length.out = 100)
+dat <- expand.grid(x1 = x1, x2 = x2)
+# 二次规划的目标函数
+dat$fn <- with(dat, x1^2 + x2^2 - x1 * x2 + 3 * x1 - 2 * x2)
+levelplot(fn ~ x1 * x2, data = dat, aspect = .7,
+  xlab = expression(x[1]), ylab = expression(x[2]),
+  xlim = c(-2.2, 5.7), ylim = c(-1.1, 3.6),
+  panel = function(...) {
+    panel.levelplot(...)
+    panel.polygon(x = c(2, 5, -1), y = c(0, 3, 3),
+      border = TRUE, lwd = 2, col = "transparent"
+    )
+    panel.points(
+      x = c(uc_sol[1], qp_sol[1], -4/3),
+      y = c(uc_sol[2], qp_sol[2], 1/3),
+      lwd = 5, col = c("red", "yellow", "blue"), pch = 19
+    )
+  },
+  # 减少三维图形的边空
+  lattice.options = list(
+    layout.widths = list(
+      left.padding = list(x = 0, units = "inches"),
+      right.padding = list(x = 0, units = "inches")
+    ),
+    layout.heights = list(
+      bottom.padding = list(x = -1.5, units = "inches"),
+      top.padding = list(x = -1.5, units = "inches")
+    )
+  ),
+  scales = list(
+    x = list(alternating = 1, tck = c(1, 0)),
+    y = list(alternating = 1, tck = c(1, 0))
+  ), contour = TRUE, 
+  colorkey = TRUE,
+  col.regions = terrain.colors
+)
+```
+
+蓝色的点是无约束情况下，目标函数的最小值，而求解器 `nloptr.slsqp` 给出的最优解是红点，令人疑惑。
+
+### 混合整数二次优化
+
+对变量添加整型约束，原二次规划即变成混合整数二次规划 （Mixed Integer Quadratic Programming，简称 MIQP）。目前，ROI 支持的开源求解器都不能处理 MIQP 问题，只有 **CVXR** 包和 [**rmpk**](https://github.com/r-opt/rmpk) 包能解 MIQP 问题，更多关于 **CVXR** 包的介绍见[示例库](https://cvxr.rbind.io/examples/)。**ECOSolveR** 包可以求解一些锥规划，且变量可以包含整数。将凸二次规划转为锥规划问题，再调 ecos 求解器。
+
+```{r}
+#| eval: false
+
+op <- OP(
+  objective = Q_objective(Q = Dmat, L = dvec),
+  constraints = L_constraint(A, rep("<=", 3), bvec),
+  types = c("I", "C"),
+  maximum = FALSE # 默认求最小
 )
 nlp <- ROI_solve(op, solver = "nloptr.slsqp", start = c(1, 2))
 nlp$objval
 nlp$solution
 ```
 
-### 非严格二次优化
+链接 ECOSolveR 包提供 ecos 求解器
 
-## 凸优化 {#sec-convex-optimization}
+```{r}
+#| eval: false
 
-### 严格凸优化
+op <- OP(
+  objective = Q_objective(Q = Dmat, L = dvec),
+  constraints = L_constraint(A, rep("<=", 3), bvec),
+  types = c("I", "C"),
+  maximum = FALSE # 默认求最小
+)
+library(ROI.plugin.ecos)
+nlp <- ROI_solve(op, solver = "ecos", start = c(1, 2))
+nlp$objval
+nlp$solution
+```
 
-### 非严格凸优化
+```{r}
+#| eval: false
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
+
+library(CVXR)
+# Variables minimized over
+x1 <- Variable(1, integer = TRUE)
+x2 <- Variable(1)
+
+# Problem definition
+objective <- Minimize(x1^2 + x2^2 - x1 * x2 + 3 * x1 - 2 * x2)
+constraints <- list(-x1 - x2 <= -2, x1 - x2 <= 2, x2 <= 3)
+prob <- Problem(objective, constraints)
+
+# Problem solution
+solution <- psolve(prob, solver = "ECOS")
+solution$status
+solution$value
+solution$getValue(x)
+solution$getValue(y)
+```
+
+### 非严格凸二次优化
+
+**kernlab** 包[@kernlab2004] 当矩阵 $D$ 为半正定时，
+
+### 分类问题
+
+高斯过程用于分类问题，选用高效且依赖少的 **kernlab** 包求解。
+
+## 锥优化 {#sec-cone-optimization}
+
+什么是锥？锥的数学表示和几何表示。
+
+锥是定义在半正定的矩阵之上的。
+
+锥优化问题的一般形式如下
+
+$$
+\begin{aligned}
+\min_{\bm{x}} \quad & \bm{d}^{\top}\bm{x} \\
+\text{s.t.} \quad & A\bm{x} + s = \bm{b} \\
+\quad & s \in \mathcal{K}
+\end{aligned}
+$$ {#eq-convex-cone}
+
+其中，集合 $\mathcal{K}$ 是一个非空的封闭凸锥。在一个凸锥里，寻求一个线性目标函数的最小值。专门求解此类问题的 **scs** 包 [@scs2016] 也在 **ROI** 包的支持范围内，可以求解的锥优化包括零锥、线性锥、二阶锥、指数锥、幂锥和半正定锥。
+
+### 指数锥
+
+指数锥的定义如下：
+
+$$
+\mathcal{K}_{\text{expp}} = \{(x_1, x_2,x_3) \in \mathbb{R}^3 | x_2 > 0,x_2\exp\big(\frac{x_1}{x_2}\big) \leq x_3\} \cup \{(x_1, 0, x_3) \in \mathbb{R}^3 | x_1 \leq 0, x_3 \geq 0 \}
+$$
+
+它的对偶如下：
+
+$$
+\mathcal{K}_{\text{expd}} = \{(x_1, x_2,x_3) \in \mathbb{R}^3 | x_1 < 0, - x_1\exp\big(\frac{x_2}{x_1}\big) \leq \exp(1)x_3\} \cup \{(0, x_2, x_3) \in \mathbb{R}^3 | x_2 , x_3 \geq 0 \}
+$$
+
+考虑一个锥规划问题
+
+$$
+\begin{aligned}
+\max_{(\bm{x}, \bm{t})} \quad & x_1 + 2 x_2 \\
+\text{s.t.} \quad & \exp(7 + 3x_1 + 5 x_2) \leq 9 + 11 t_1 + 12t_2 \\
+\quad & x_1,x_2 \in (-\infty,20], ~ t_1,t_2 \in (-\infty, 50]
+\end{aligned}
+$$
+
+约束条件 $\exp(7 + 3x_1 + 5 x_2) \leq 9 + 11 t_1 + 12t_2$ 可以用指数锥来表示
+
+$$
+\begin{aligned}
+u &= 7 + 3y_1 + 5y_2 \\
+v &= 1 \\
+w &= 9 + 11t_1 + 12t_2
+\end{aligned}
+$$
+
+记 $\bm{x} = (y_1,y_2,t_1,t_2)^{\top}$ ，则线性约束矩阵 $A$ 和约束向量 $\bm{b}$ 如下：
+
+$$
+A = \begin{bmatrix}
+-3 & -5 & 0 & 0 \\
+0 & 0 & 0 & 0 \\
+0 & 0 & -11 & -12
+\end{bmatrix}, \quad
+\bm{b} = \begin{bmatrix}
+7 \\
+1 \\
+9
+\end{bmatrix}
+$$
+
+函数 `K_expp()` 表示指数锥，整个锥规划问题的表示
+
+```{r}
+# 锥约束
+cexpp <- C_constraint(L = rbind(
+  c(-3, -5, 0, 0), 
+  c(0, 0, 0, 0),
+  c(0, 0, -11, -12)
+), cone = K_expp(1), rhs = c(7, 1, 9))
+# 目标规划
+expp <- OP(objective = c(1, 2, 0, 0), constraints = cexpp,
+  bounds = V_bound(ld = -Inf, ub = c(20, 20, 50, 50)), 
+  maximum = TRUE
+)
+expp
+```
+
+对于锥优化，可以调用 **scs** 包来求解。
+
+```{r}
+# 调用 scs 包
+library(ROI.plugin.scs)
+expp_sol <- ROI_solve(expp, solver = "scs")
+# 最优解
+expp_sol$solution
+# 目标函数值
+expp_sol$objval
+```
+
+### 幂锥
+
+一个三维幂锥的定义如下：
+
+$$
+\mathcal{K}_{\text{powp}}^{\alpha} = \{(x_1, x_2,x_3) \in \mathbb{R}^3 | x_1,x_2 \geq 0,x_1^{\alpha}x_2^{1-\alpha} \geq |x_3| \}, \alpha \in [0,1]
+$$
+
+它的对偶形式如下：
+
+$$
+\mathcal{K}_{\text{powp}}^{\alpha} = \Big\{(x_1, x_2,x_3) \in \mathbb{R}^3 | x_1,x_2 \geq 0,\big(\frac{x_1}{\alpha}\big)^{\alpha}\big(\frac{x_2}{1 - \alpha}\big)^{1-\alpha} \geq |x_3| \Big\}, \alpha \in [0,1]
+$$
+
+考虑如下锥规划问题
+
+$$
+\begin{aligned}
+\min_{\bm{x}} \quad & 3x_1 + 5 x_2 \\
+\text{s.t.} \quad & 5 + x_1 \leq (2 + x_2)^4 \\
+\quad & x_1 \geq 0, ~ x_2 \geq 2
+\end{aligned}
+$$
+
+约束条件 $5 + x_1 \leq (2 + x_2)^4$ 可以重新表示为幂锥
+
+$$
+\begin{aligned}
+u &= 5 + y_1\\
+v &= 1 \\
+w &= 2 + y_2 \\
+\alpha &= 1/4
+\end{aligned}
+$$
+
+记 $\bm{x} = (y_1,y_2)^{\top}$ ，约束矩阵和约束向量如下
+
+$$
+A = \begin{bmatrix}
+-1  & 0 \\
+0   & 0 \\
+0   & -1
+\end{bmatrix}, \quad
+\bm{b} = \begin{bmatrix}
+5 \\
+1 \\
+2
+\end{bmatrix}
+$$
+
+函数 `K_powp()` 表示幂锥
+
+```{r}
+A <- rbind(c(-1, 0), c(0, 0), c(0, -1))
+cpowp <- C_constraint(L = A, cones = K_powp(1 / 4), rhs = c(5, 1, 2))
+op <- OP(
+  objective = c(3, 5),
+  constraints = cpowp,
+  bounds = V_bound(lb = c(0, 2))
+)
+op
+```
+
+```{r}
+op_sol <- ROI_solve(op, solver = "scs", max_iter = 1e6)
+op_sol$solution
+op_sol$objval
+```
+
+### 半正定锥
+
+如果矩阵 $A$ 是半正定的，记为 $A \succeq 0$ ，如果矩阵 $A$ 是正定的，记为 $A \succ 0$ 。记 $n$ 阶实对称的集合为 $\mathcal{S}^{n}$ 。
+
+$$
+\mathcal{K}_{\text{psd}}^{n} = \{A | A \in \mathcal{S}^{n}, \bm{x}^{\top}A\bm{x} \geq 0, \forall \bm{x} \in \mathbb{R}^n \}
+$$
+
+考虑如下锥规划问题
+
+$$
+\begin{aligned}
+\min_{\bm{x}} \quad & x_1 + x_2 - x_3 \\
+\text{s.t.} \quad & 
+x_1 \begin{bmatrix}
+10  & 3 \\
+3   & 10
+\end{bmatrix} + 
+x_2 \begin{bmatrix}
+6  & -4 \\
+-4   & 10
+\end{bmatrix} + 
+x_3 \begin{bmatrix}
+8  & 1 \\
+1  & 6
+\end{bmatrix} \preceq 
+\begin{bmatrix}
+16  & -13 \\
+-13  & 60
+\end{bmatrix}
+\\
+\quad & x_1,x_2,x_3 \geq 0
+\end{aligned}
+$$
+
+函数 `K_psd()` 表示半正定锥，函数 `vech()` 将对称矩阵的上三角部分拉成一个向量。
+
+```{r}
+(A <- toeplitz(x = 3:1))
+vech(A)
+```
+
+锥规划的表示如下
+
+```{r}
+F1 <- rbind(c(10, 3), c(3, 10))
+F2 <- rbind(c(6, -4), c(-4, 10))
+F3 <- rbind(c(8, 1), c(1, 6))
+F0 <- rbind(c(16, -13), c(-13, 60))
+# 目标规划
+op <- OP(
+  objective = L_objective(c(1, 1, -1)),
+  constraints = C_constraint(
+    L = vech(F1, F2, F3),
+    cones = K_psd(3),
+    rhs = vech(F0)
+  )
+)
+op
+```
+
+仍然调用 **scs** 求解器
+
+```{r}
+op_sol <- ROI_solve(op, solver = "scs")
+op_sol$solution
+op_sol$objval
+```
 
 ## 非线性优化 {#sec-nonlinear-optimization}
 
@@ -751,7 +1146,12 @@ A = \begin{bmatrix}
 -1 & 0 \\
 0  & -1
 \end{bmatrix}, \quad
-b = (2, 2, -4, -4)
+b = \begin{bmatrix}
+2 \\
+2 \\
+-4 \\ 
+-4
+\end{bmatrix}
 $$
 
 ```{r}
