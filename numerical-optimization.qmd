@@ -51,12 +51,6 @@ custom_palette <- function(irr, ref, height, saturation = 0.9) {
 }
 ```
 
-选取几个应用于统计模型的数值优化示例。
-
--   二项泊松混合模型的参数估计
--   高斯过程回归模型的参数估计
--   广义线性混合模型的参数估计
-
 ## 线性优化 {#sec-linear-optimization}
 
 线性优化是指目标函数和约束条件都是线性的优化问题。
@@ -212,12 +206,6 @@ res <- ROI_solve(op, solver = "glpk")
 res$solution
 res$objval
 ```
-
-### 旅行商问题 {#sec-tsp}
-
-旅行商问题 The Traveling Salesman Problem 是一个混合整数线性规划问题。
-
-**TSP** 包 [@TSP2007]
 
 ## 凸二次优化 {#sec-quadratic-optimization}
 
@@ -427,11 +415,7 @@ solution$getValue(y)
 
 ### 非严格凸二次优化
 
-**kernlab** 包[@kernlab2004] 当矩阵 $D$ 为半正定时，
-
-### 分类问题
-
-高斯过程用于分类问题，选用高效且依赖少的 **kernlab** 包求解。
+**kernlab** 包[@kernlab2004] 当矩阵 $D$ 为半正定时。
 
 ## 锥优化 {#sec-cone-optimization}
 
@@ -889,183 +873,6 @@ Min=@cos(x1) * @cos(x2) - @Sum(P(j): (-1)^j * j * 2 * @exp(-500 * ((x1 - j * 2)^
 
 Lingo 18.0 启用全局优化求解器后，在 $(x_1 = 7.999982, x_2 = 7.999982)$ 取得最小值 -7.978832。而默认未启用全局优化求解器的情况下，在 $(x_1 = 18.84956, x_2 = -40.84070)$ 取得局部极小值 -1.000000。
 
-#### 示例 3
-
-高斯过程回归模型
-
-$$
-\bm{y}(x) = D\bm{\beta} + S(x)
-$$
-
-其中，$\bm{\beta}$ 是一个 $p\times 1$ 维列向量，随机过程 $S(x)$ 是均值为零，协方差为 $V_{\bm{\theta}}$ 的平稳高斯过程，协方差矩阵 $V_{\bm{\theta}}$ 的元素如下：
-
-$$
-\mathsf{Cov}\{S(x_i), S(x_j)\} = \sigma^2 \exp(-\|x_i - x_j\| / \phi)
-$$
-
-其中， $\bm{\theta} = (\sigma^2,\phi)$ 表示与协方差矩阵相关的参数，随机过程 $S(x)$ 的一个实现服从多元正态分布 $\mathrm{MVN}(\bm{0},V_{\bm{\theta}})$ ，则 $\bm{y}(x)$ 也服从多元正态分布 $\mathrm{MVN}(D\bm{\beta},V_{\bm{\theta}})$ 。参数 $\bm{\beta}$ 的广义最小二乘估计为 $\hat{\bm{\beta}}(\bm{\theta}) = (D^{\top}V_{\bm{\theta}}^{-1}D)^{-1} D^{\top}V_{\bm{\theta}}^{-1}\bm{y}$ ，关于参数 $\bm{\theta}$ 的剖面对数似然函数如下：
-
-$$
-\log \mathcal{L}(\bm{\theta}) = -\frac{n}{2}\log (2\pi) - \frac{1}{2}\log (\det V_{\bm{\theta}}) -\frac{1}{2}\bm{y}^{\top}V_{\bm{\theta}}^{-1}\big(I - D(D^{\top}V_{\bm{\theta}}^{-1}D)^{-1}D^{\top}V_{\bm{\theta}}^{-1}\big)\bm{y}
-$$
-
-下面考虑一个来自 **MASS** 包真实数据 `topo`。topo 数据集最初来自 John C. Davis （1973年）所著的书《Statistics and Data Analysis in Geology》。后来， J. J. Warnes 和 B. D. Ripley （1987年）以该数据集为例指出空间高斯过程的协方差函数的似然估计中存在的问题[@Ripley1987]，并将其作为数据集 `topo` 放在 **MASS** 包里。Paulo J. Ribeiro Jr 和 Peter J. Diggle （2001年）将该数据集打包成自定义的 `geodata` 数据类型，放在 **geoR** 包里，并在他俩合著的书《Model-based Geostatistics》中多次出现。`topo` 是空间地形数据集，包含有 52 行 3 列，数据点是 310 平方英尺范围内的海拔高度数据，`x` 坐标每单位 50 英尺，`y` 坐标单位同 `x` 坐标，海拔高度 `z` 单位是英尺。
-
-```{r}
-library(MASS)
-data(topo)
-str(topo)
-```
-
-根据 `topo` 数据集， $D = \bm{1}$ 是一个 $52 \times 1$ 的列向量，$\bm{\beta} = \beta$ 是一个截距项。设置参数初值 $(\sigma,\phi) = (65,2)$ 。为了与 Ripley 的论文中的图比较，下面扔掉了对数似然函数中常数项，用 R 语言编码的似然函数如下：
-
-```{r}
-log_lik <- function(x) {
-  n <- nrow(topo)
-  D <- t(t(rep(1, n)))
-  Sigma <- x[1]^2 * exp(-as.matrix(dist(topo[, c("x", "y")])) / x[2])
-  inv_Sigma <- solve(Sigma)
-  P <- diag(1, n) - D %*% solve(t(D) %*% solve(Sigma, D), t(D)) %*% inv_Sigma
-  as.vector(-1 / 2 * log(det(Sigma)) - 1 / 2 * t(topo[, "z"]) %*% inv_Sigma %*% P %*% topo[, "z"])
-}
-log_lik(x = c(65, 2))
-```
-
-关于参数的偏导计算复杂，就不计算梯度了，下面调用 R 软件内置的 `nlminb` 优化器。发现，对不同的初始值，收敛到不同的位置，目标函数值非常接近。
-
-```{r}
-op <- OP(
-  objective = F_objective(log_lik, n = 2L),
-  bounds = V_bound(lb = c(55, 5), ub = c(75, 8)),
-  maximum = TRUE
-)
-nlp <- ROI_solve(op, solver = "nlminb", start = c(65, 2))
-nlp$solution
-nlp$objval
-```
-
-如果初始值靠近局部极值点，则就近收敛到该极值点，比如初值 $(65, 7)$ ， $(70, 7.5)$ 。
-
-```{r}
-nlp <- ROI_solve(op, solver = "nlminb", start = c(65, 7))
-nlp$solution
-nlp$objval
-nlp <- ROI_solve(op, solver = "nlminb", start = c(70, 7.5))
-nlp$solution
-nlp$objval
-```
-
-尝试调用来自 **nloptr** 包的全局优化求解器 `nloptr.directL` ，大大小小的坑都跳过去了，结果还是比较满意的。
-
-```{r}
-nlp <- ROI_solve(op, solver = "nloptr.directL")
-nlp$solution
-nlp$objval
-```
-
-目标区域网格化，计算格点处的似然函数值，然后绘制似然函数图像。
-
-```{r}
-dat <- expand.grid(
-  sigma = seq(from = 55, to = 75, length.out = 41),
-  phi = seq(from = 5, to = 8, length.out = 31)
-)
-dat$fn <- apply(dat, 1, log_lik)
-```
-
-似然函数关于参数 $(\sigma,\phi)$ 的三维曲面见 @fig-topo-loglik-persp 。
-
-```{r}
-#| label: fig-topo-loglik-persp
-#| fig-cap: 对数似然函数的曲面图
-#| fig-width: 4.5
-#| fig-height: 4.5
-#| fig-showtext: true
-#| code-fold: true
-#| echo: !expr knitr::is_html_output()
-
-wireframe(
-  data = dat, fn ~ sigma * phi,
-  shade = TRUE, drape = FALSE,
-  xlab = expression(sigma), ylab = expression(phi),
-  zlab = list(expression(
-    italic(log-lik) ~ group("(", list(sigma, phi), ")")
-  ), rot = 90),
-  scales = list(arrows = FALSE, col = "black"),
-  shade.colors.palette = custom_palette,
-  # 减少三维图形的边空
-  lattice.options = list(
-    layout.widths = list(
-      left.padding = list(x = -0.5, units = "inches"),
-      right.padding = list(x = -1.0, units = "inches")
-    ),
-    layout.heights = list(
-      bottom.padding = list(x = -1.5, units = "inches"),
-      top.padding = list(x = -1.5, units = "inches")
-    )
-  ),
-  par.settings = list(axis.line = list(col = "transparent")),
-  screen = list(z = 30, x = -65, y = 0)
-)
-```
-
-等高线图呈现一道非常长且平滑的山岭 long flat ridge，山岭上布满许多局部极大值，普通的数值优化求解器常常陷入其中，只有全局优化求解器才可能找到全局极大值点。高斯过程回归模型的对数似然函数是非凸的，多模态的。
-
-```{r}
-#| label: fig-topo-loglik-contour
-#| fig-cap: 对数似然函数的等高线图
-#| fig-width: 4.5
-#| fig-height: 3.7
-#| fig-showtext: true
-#| code-fold: true
-#| echo: !expr knitr::is_html_output()
-
-levelplot(fn ~ sigma * phi,
-  data = dat, aspect = 1,
-  xlim = c(54.5, 75.5), ylim = c(4.9, 8.1),
-  xlab = expression(sigma), ylab = expression(phi),
-  col.regions = cm.colors, contour = TRUE,
-  scales = list(
-    x = list(alternating = 1, tck = c(1, 0)),
-    y = list(alternating = 1, tck = c(1, 0))
-  ),
-  # 减少三维图形的边空
-  lattice.options = list(
-    layout.widths = list(
-      left.padding = list(x = 0, units = "inches"),
-      right.padding = list(x = 0, units = "inches")
-    ),
-    layout.heights = list(
-      bottom.padding = list(x = -.5, units = "inches"),
-      top.padding = list(x = -.5, units = "inches")
-    )
-  )
-)
-```
-
-上图中没有看到许多局部极小值，与作者论文中的图 1 似乎不符。原因是什么？似然函数中涉及到的矩阵运算不精确，应该设计精度更高的运算方式？**lattice** 包绘图引擎无法展示更加细微的差异？还有一种解释，上图是对的，算法迭代时，对不同的初值，常常收敛到不同的结果，而这些不同的结果都位于岭上不同位置，对应的对数似然值却又几乎一样。
-
-作为验证，下面调用 **nlme** 包的 `gls()` 函数拟合数据，参数的极大似然估计结果与全局优化求解器的结果比较一致。参数估计结果 $(\sigma, \phi)= (63.93429, 6.121352)$ ，对数似然函数值为 -244.6006 ，自编的似然函数 `log_lik()` 在最优解处的值为 -196.8158，再加上之前扔掉的常数项 `-52 / 2 * log(2 * pi)` ，就是 -244.6006 ，丝毫不差。
-
-```{r}
-library(nlme)
-fit_topo_ml <- gls(z ~ 1,
-  data = topo, method = "ML",
-  correlation = corExp(value = 65, form = ~ x + y)
-)
-summary(fit_topo_ml)
-```
-
-如果使用限制极大似然估计，会发现参数估计结果与之相距甚远，而对数似然函数值相差无几。参数估计结果 $(\sigma,\phi) = (128.8275, 25.47324)$ 。
-
-```{r}
-fit_topo_reml <- gls(z ~ 1,
-  data = topo, method = "REML",
-  correlation = corExp(value = 65, form = ~ x + y)
-)
-summary(fit_topo_reml)
-```
-
 ### 箱式约束优化
 
 有如下箱式约束优化问题，示例来自函数 `nlminb()` 的帮助文档，目标函数和[香蕉函数](https://en.wikipedia.org/wiki/Rosenbrock_function)有些相似。
@@ -1427,3 +1234,192 @@ nlp$objval
 ```
 
 可以看出，**nloptr** 提供的优化能力可以覆盖 [Ipopt 求解器](https://github.com/coin-or/Ipopt)，从以上求解的情况来看，推荐使用 `nloptr.slsqp` 求解器，这也是 Octave 的选择。
+
+## 应用 {#sec-optimization-applications}
+
+### 旅行商问题 {#sec-traveling-salesman-problem}
+
+旅行商问题 The Traveling Salesman Problem 是一个混合整数线性规划问题。
+
+**TSP** 包 [@TSP2007]
+
+### 垃圾邮件分类 {#sec-spam-email-classification}
+
+高斯过程用于分类问题，选用高效且依赖少的 **kernlab** 包求解。
+
+### 高斯过程回归 {#sec-gaussian-process-regression}
+
+高斯过程回归模型如下：
+
+$$
+\bm{y}(x) = D\bm{\beta} + S(x)
+$$
+
+其中，$\bm{\beta}$ 是一个 $p\times 1$ 维列向量，随机过程 $S(x)$ 是均值为零，协方差为 $V_{\bm{\theta}}$ 的平稳高斯过程，协方差矩阵 $V_{\bm{\theta}}$ 的元素如下：
+
+$$
+\mathsf{Cov}\{S(x_i), S(x_j)\} = \sigma^2 \exp(-\|x_i - x_j\| / \phi)
+$$
+
+其中， $\bm{\theta} = (\sigma^2,\phi)$ 表示与协方差矩阵相关的参数，随机过程 $S(x)$ 的一个实现服从多元正态分布 $\mathrm{MVN}(\bm{0},V_{\bm{\theta}})$ ，则 $\bm{y}(x)$ 也服从多元正态分布 $\mathrm{MVN}(D\bm{\beta},V_{\bm{\theta}})$ 。参数 $\bm{\beta}$ 的广义最小二乘估计为 $\hat{\bm{\beta}}(\bm{\theta}) = (D^{\top}V_{\bm{\theta}}^{-1}D)^{-1} D^{\top}V_{\bm{\theta}}^{-1}\bm{y}$ ，关于参数 $\bm{\theta}$ 的剖面对数似然函数如下：
+
+$$
+\log \mathcal{L}(\bm{\theta}) = -\frac{n}{2}\log (2\pi) - \frac{1}{2}\log (\det V_{\bm{\theta}}) -\frac{1}{2}\bm{y}^{\top}V_{\bm{\theta}}^{-1}\big(I - D(D^{\top}V_{\bm{\theta}}^{-1}D)^{-1}D^{\top}V_{\bm{\theta}}^{-1}\big)\bm{y}
+$$
+
+下面考虑一个来自 **MASS** 包真实数据 `topo`。topo 数据集最初来自 John C. Davis （1973年）所著的书《Statistics and Data Analysis in Geology》。后来， J. J. Warnes 和 B. D. Ripley （1987年）以该数据集为例指出空间高斯过程的协方差函数的似然估计中存在的问题[@Ripley1987]，并将其作为数据集 `topo` 放在 **MASS** 包里。Paulo J. Ribeiro Jr 和 Peter J. Diggle （2001年）将该数据集打包成自定义的 `geodata` 数据类型，放在 **geoR** 包里，并在他俩合著的书《Model-based Geostatistics》中多次出现。`topo` 是空间地形数据集，包含有 52 行 3 列，数据点是 310 平方英尺范围内的海拔高度数据，`x` 坐标每单位 50 英尺，`y` 坐标单位同 `x` 坐标，海拔高度 `z` 单位是英尺。
+
+```{r}
+library(MASS)
+data(topo)
+str(topo)
+```
+
+根据 `topo` 数据集， $D = \bm{1}$ 是一个 $52 \times 1$ 的列向量，$\bm{\beta} = \beta$ 是一个截距项。设置参数初值 $(\sigma,\phi) = (65,2)$ 。为了与 Ripley 的论文中的图比较，下面扔掉了对数似然函数中常数项，用 R 语言编码的似然函数如下：
+
+```{r}
+log_lik <- function(x) {
+  n <- nrow(topo)
+  D <- t(t(rep(1, n)))
+  Sigma <- x[1]^2 * exp(-as.matrix(dist(topo[, c("x", "y")])) / x[2])
+  inv_Sigma <- solve(Sigma)
+  P <- diag(1, n) - D %*% solve(t(D) %*% solve(Sigma, D), t(D)) %*% inv_Sigma
+  as.vector(-1 / 2 * log(det(Sigma)) - 1 / 2 * t(topo[, "z"]) %*% inv_Sigma %*% P %*% topo[, "z"])
+}
+log_lik(x = c(65, 2))
+```
+
+关于参数的偏导计算复杂，就不计算梯度了，下面调用 R 软件内置的 `nlminb` 优化器。发现，对不同的初始值，收敛到不同的位置，目标函数值非常接近。
+
+```{r}
+op <- OP(
+  objective = F_objective(log_lik, n = 2L),
+  bounds = V_bound(lb = c(55, 5), ub = c(75, 8)),
+  maximum = TRUE
+)
+nlp <- ROI_solve(op, solver = "nlminb", start = c(65, 2))
+nlp$solution
+nlp$objval
+```
+
+如果初始值靠近局部极值点，则就近收敛到该极值点，比如初值 $(65, 7)$ ， $(70, 7.5)$ 。
+
+```{r}
+nlp <- ROI_solve(op, solver = "nlminb", start = c(65, 7))
+nlp$solution
+nlp$objval
+nlp <- ROI_solve(op, solver = "nlminb", start = c(70, 7.5))
+nlp$solution
+nlp$objval
+```
+
+尝试调用来自 **nloptr** 包的全局优化求解器 `nloptr.directL` ，大大小小的坑都跳过去了，结果还是比较满意的。
+
+```{r}
+nlp <- ROI_solve(op, solver = "nloptr.directL")
+nlp$solution
+nlp$objval
+```
+
+目标区域网格化，计算格点处的似然函数值，然后绘制似然函数图像。
+
+```{r}
+dat <- expand.grid(
+  sigma = seq(from = 55, to = 75, length.out = 41),
+  phi = seq(from = 5, to = 8, length.out = 31)
+)
+dat$fn <- apply(dat, 1, log_lik)
+```
+
+似然函数关于参数 $(\sigma,\phi)$ 的三维曲面见 @fig-topo-loglik-persp 。
+
+```{r}
+#| label: fig-topo-loglik-persp
+#| fig-cap: 对数似然函数的曲面图
+#| fig-width: 4.5
+#| fig-height: 4.5
+#| fig-showtext: true
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
+
+wireframe(
+  data = dat, fn ~ sigma * phi,
+  shade = TRUE, drape = FALSE,
+  xlab = expression(sigma), ylab = expression(phi),
+  zlab = list(expression(
+    italic(log-lik) ~ group("(", list(sigma, phi), ")")
+  ), rot = 90),
+  scales = list(arrows = FALSE, col = "black"),
+  shade.colors.palette = custom_palette,
+  # 减少三维图形的边空
+  lattice.options = list(
+    layout.widths = list(
+      left.padding = list(x = -0.5, units = "inches"),
+      right.padding = list(x = -1.0, units = "inches")
+    ),
+    layout.heights = list(
+      bottom.padding = list(x = -1.5, units = "inches"),
+      top.padding = list(x = -1.5, units = "inches")
+    )
+  ),
+  par.settings = list(axis.line = list(col = "transparent")),
+  screen = list(z = 30, x = -65, y = 0)
+)
+```
+
+等高线图呈现一道非常长且平滑的山岭 long flat ridge，山岭上布满许多局部极大值，普通的数值优化求解器常常陷入其中，只有全局优化求解器才可能找到全局极大值点。高斯过程回归模型的对数似然函数是非凸的，多模态的。
+
+```{r}
+#| label: fig-topo-loglik-contour
+#| fig-cap: 对数似然函数的等高线图
+#| fig-width: 4.5
+#| fig-height: 3.7
+#| fig-showtext: true
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
+
+levelplot(fn ~ sigma * phi,
+  data = dat, aspect = 1,
+  xlim = c(54.5, 75.5), ylim = c(4.9, 8.1),
+  xlab = expression(sigma), ylab = expression(phi),
+  col.regions = cm.colors, contour = TRUE,
+  scales = list(
+    x = list(alternating = 1, tck = c(1, 0)),
+    y = list(alternating = 1, tck = c(1, 0))
+  ),
+  # 减少三维图形的边空
+  lattice.options = list(
+    layout.widths = list(
+      left.padding = list(x = 0, units = "inches"),
+      right.padding = list(x = 0, units = "inches")
+    ),
+    layout.heights = list(
+      bottom.padding = list(x = -.5, units = "inches"),
+      top.padding = list(x = -.5, units = "inches")
+    )
+  )
+)
+```
+
+上图中没有看到许多局部极小值，与作者论文中的图 1 似乎不符。原因是什么？似然函数中涉及到的矩阵运算不精确，应该设计精度更高的运算方式？**lattice** 包绘图引擎无法展示更加细微的差异？还有一种解释，上图是对的，算法迭代时，对不同的初值，常常收敛到不同的结果，而这些不同的结果都位于岭上不同位置，对应的对数似然值却又几乎一样。
+
+作为验证，下面调用 **nlme** 包的 `gls()` 函数拟合数据，参数的极大似然估计结果与全局优化求解器的结果比较一致。参数估计结果 $(\sigma, \phi)= (63.93429, 6.121352)$ ，对数似然函数值为 -244.6006 ，自编的似然函数 `log_lik()` 在最优解处的值为 -196.8158，再加上之前扔掉的常数项 `-52 / 2 * log(2 * pi)` ，就是 -244.6006 ，丝毫不差。
+
+```{r}
+library(nlme)
+fit_topo_ml <- gls(z ~ 1,
+  data = topo, method = "ML",
+  correlation = corExp(value = 65, form = ~ x + y)
+)
+summary(fit_topo_ml)
+```
+
+如果使用限制极大似然估计，会发现参数估计结果与之相距甚远，而对数似然函数值相差无几。参数估计结果 $(\sigma,\phi) = (128.8275, 25.47324)$ 。
+
+```{r}
+fit_topo_reml <- gls(z ~ 1,
+  data = topo, method = "REML",
+  correlation = corExp(value = 65, form = ~ x + y)
+)
+summary(fit_topo_reml)
+```
