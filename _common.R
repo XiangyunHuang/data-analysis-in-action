@@ -29,7 +29,8 @@ if (xfun::is_macos()) {
 } else if (grepl(x = sessionInfo()$running, pattern = "Fedora")) { # Github Action custom Docker Container Based on Fedora
   sysfonts::font_paths(new = c(
     "/usr/share/fonts/google-noto/",
-    "/usr/share/fonts/google-noto-cjk/"
+    "/usr/share/fonts/google-noto-serif-cjk-fonts", # Fedora 38
+    "/usr/share/fonts/google-noto-sans-cjk-fonts"   # Fedora 38
   ))
   ## 宋体
   sysfonts::font_add(
