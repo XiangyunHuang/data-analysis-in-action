@@ -14,6 +14,8 @@
     -   预测核辐射强度的分布
 -   附录
     -   统计计算
+    -   数值优化
+    -   数学符号
 
 ## 在线编译网页书籍
 
@@ -62,3 +64,131 @@ quarto render
     或者，点击 Build 窗口内的工具按钮 `Build All`，就可以看到编译书籍的过程了，等待编译完成。
 
 3.  最后，进入项目根目录下的文件夹 `_book/`，点击网页文件 `index.html`，即可在线浏览书籍。
+
+## Docker 镜像中的 R 包
+
+<details>
+
+<summary>点击获取 R 包信息</summary>
+
+``` r
+xfun::session_info(packages = .packages(TRUE), dependencies = FALSE)
+```
+
+```         
+R version 4.3.0 (2023-04-21)
+Platform: x86_64-redhat-linux-gnu (64-bit)
+Running under: Fedora Linux 38 (Container Image), RStudio 2023.3.0.386
+
+
+Locale:
+  LC_CTYPE=en_US.UTF-8       LC_NUMERIC=C               LC_TIME=en_US.UTF-8       
+  LC_COLLATE=en_US.UTF-8     LC_MONETARY=en_US.UTF-8    LC_MESSAGES=en_US.UTF-8   
+  LC_PAPER=en_US.UTF-8       LC_NAME=C                  LC_ADDRESS=C              
+  LC_TELEPHONE=C             LC_MEASUREMENT=en_US.UTF-8 LC_IDENTIFICATION=C       
+
+time zone: Etc/UTC
+tzcode source: system (glibc)
+
+Package version:
+  abind_1.4.5              AsioHeaders_1.22.1.2     askpass_1.1             
+  backports_1.4.1          base_4.3.0               base64enc_0.1.3         
+  beanplot_1.3.1           beeswarm_0.4.0           bigD_0.2.0              
+  bit_4.0.5                bit64_4.0.5              bitops_1.0.7            
+  blob_1.2.4               boot_1.3.28.1            brio_1.1.3              
+  broom_1.0.4              broom.helpers_1.13.0     bslib_0.4.2             
+  cachem_1.0.8             callr_3.7.3              checkmate_2.2.0         
+  chromote_0.1.1           class_7.3-22             classInt_0.4-9          
+  cli_3.6.1                clipr_0.8.0              cluster_2.1.4           
+  codetools_0.2.19         colorspace_2.1.0         colourpicker_1.2.0      
+  commonmark_1.9.0         compiler_4.3.0           CoprManager_0.5.1       
+  cpp11_0.4.3              crayon_1.5.2             crosstalk_1.2.0         
+  curl_5.0.0               data.table_1.14.8        datasauRus_0.1.6        
+  datasets_4.3.0           DBI_1.1.3                deldir_1.0.6            
+  desc_1.4.2               dichromat_2.0.0.1        diffobj_0.3.5           
+  digest_0.6.31            docopt_0.7.1             downlit_0.4.2           
+  dplyr_1.1.2              DT_0.27                  e1071_1.7-13            
+  ellipsis_0.3.2           evaluate_0.21            fansi_1.0.4             
+  farver_2.1.1             fastmap_1.1.1            filehash_2.4.5          
+  fontawesome_0.5.1        forcats_1.0.0            foreach_1.5.2           
+  foreign_0.8.84           fs_1.6.2                 generics_0.1.3          
+  geodata_0.5.8            geometry_0.4.7           gganimate_1.0.8         
+  ggbeeswarm_0.7.2         ggbump_0.1.99999         ggdensity_1.0.0         
+  ggeffects_1.2.2          ggExtra_0.10.0           ggfittext_0.10.0        
+  ggforce_0.4.1            ggmosaic_0.3.3           ggnewscale_0.4.8        
+  ggplot2_3.4.2            ggraph_2.1.0             ggrepel_0.9.3           
+  ggridges_0.5.4           ggsignif_0.6.4           ggstats_0.3.0           
+  ggTimeSeries_1.0.2       ggVennDiagram_1.2.2      ggwordcloud_0.5.0       
+  gifski_1.6.6.1           glmnet_4.1.7             glue_1.6.2              
+  gmp_0.7.1                graphics_4.3.0           graphlayouts_1.0.0      
+  grDevices_4.3.0          grid_4.3.0               gridExtra_2.3           
+  gridtext_0.1.5           gt_0.9.0                 gtable_0.3.3            
+  haven_2.5.2              here_1.0.1               highr_0.10              
+  HistData_0.8.7           hms_1.1.3                htmltools_0.5.5         
+  htmlwidgets_1.6.2        httpuv_1.6.9             httr_1.4.5              
+  igraph_1.4.2             insight_0.19.1           interp_1.1.4            
+  isoband_0.2.7            iterators_1.0.14         jpeg_0.1.10             
+  jquerylib_0.1.4          jsonlite_1.8.4           juicyjuice_0.1.0        
+  kernlab_0.9.32           KernSmooth_2.23-21       knitr_1.42              
+  labeling_0.4.2           labelled_2.11.0          later_1.3.1             
+  lattice_0.21.8           latticeExtra_0.6.30      lazyeval_0.2.2          
+  lifecycle_1.0.3          linprog_0.9.4            littler_0.3.18          
+  lme4_1.1.33              lmtest_0.9.40            lpSolve_5.6.18          
+  lvplot_0.2.1             lwgeom_0.2.11            magic_1.6.1             
+  magick_2.7.4             magrittr_2.0.3           mapproj_1.2.11          
+  maps_3.4.1               markdown_1.6             MASS_7.3.60             
+  Matrix_1.5.4             memoise_2.0.1            methods_4.3.0           
+  mgcv_1.8.42              mime_0.12                miniUI_0.1.1.1          
+  minqa_1.2.5              munsell_0.5.0            nlme_3.1.162            
+  nloptr_2.0.3             nnet_7.3.18              numDeriv_2016.8.1.1     
+  openssl_2.0.6            packrat_0.9.1            pals_1.7                
+  parallel_4.3.0           patchwork_1.1.2          pbapply_1.7.0           
+  pdftools_3.3.3           permute_0.9.7            pheatmap_1.0.12         
+  pillar_1.9.0             pkgconfig_2.0.3          pkgload_1.3.2           
+  plogr_0.2.0              plotly_4.10.1            plyr_1.8.8              
+  png_0.1.8                polyclip_1.10.4          praise_1.0.0            
+  prettyunits_1.1.1        processx_3.8.1           productplots_0.1.1      
+  progress_1.2.2           promises_1.2.0.1         proxy_0.4-27            
+  ps_1.7.5                 purrr_1.0.1              qpdf_1.3.2              
+  quarto_1.2               R6_2.5.1                 ragg_1.2.5              
+  rappdirs_0.3.3           RColorBrewer_1.1.3       Rcpp_1.0.10             
+  RcppArmadillo_0.12.2.0.0 RcppEigen_0.3.3.9.3      RcppProgress_0.4.2      
+  RcppTOML_0.2.2           reactable_0.4.4          reactR_0.4.4            
+  readr_2.1.4              registry_0.5.1           rematch2_2.1.2          
+  remotes_2.4.2            reticulate_1.28          Rglpk_0.6.5             
+  rlang_1.1.1              rmarkdown_2.21           ROI_1.0.1               
+  ROI.plugin.glpk_1.0.0    ROI.plugin.nloptr_1.0.0  ROI.plugin.scs_1.1.1    
+  rootSolve_1.8.2.3        rpart_4.1.19             rprojroot_2.0.3         
+  rsconnect_0.8.29         RSQLite_2.3.1            rstudioapi_0.14         
+  RVenn_1.1.0              rvest_1.0.3              s2_1.1.3                
+  sass_0.4.6               scales_1.2.1             scs_3.2.4               
+  selectr_0.4.2            sf_1.0-12                shades_1.4.0            
+  shape_1.4.6              shiny_1.7.4              shinyjs_2.1.0           
+  showtext_0.9.6           showtextdb_3.0           slam_0.1.50             
+  sm_2.2.5.7.1             sourcetools_0.1.7.1      spaMM_4.2.1             
+  spatial_7.3.16           splines_4.3.0            stars_0.6.1             
+  stats_4.3.0              stats4_4.3.0             stringi_1.7.12          
+  stringr_1.5.0            survival_3.5.5           sys_3.4.1               
+  sysfonts_0.8.8           systemfonts_1.0.4        tcltk_4.3.0             
+  terra_1.7.29             testthat_3.1.8           textshaping_0.3.6       
+  tibble_3.2.1             tidycensus_1.3.2         tidygraph_1.2.3         
+  tidyr_1.3.0              tidyselect_1.2.0         tigris_2.0.1            
+  tikzDevice_0.12.4        tinytex_0.45             titanic_0.1.0           
+  tools_4.3.0              treemapify_2.5.5         TSP_1.2.4               
+  tweenr_2.0.2             tzdb_0.3.0               units_0.8-2             
+  utf8_1.2.3               utils_4.3.0              uuid_1.1.0              
+  V8_4.3.0                 vcd_1.4.11               vctrs_0.6.2             
+  vegan_2.6.4              vioplot_0.4.0            vipor_0.4.5             
+  viridis_0.6.3            viridisLite_0.4.2        vroom_1.6.3             
+  waldo_0.5.0              webshot2_0.1.0           websocket_1.4.1         
+  withr_2.5.0              wk_0.7.3                 xfun_0.39               
+  xml2_1.3.4               xtable_1.8.4             yaml_2.3.7              
+  yulab.utils_0.0.6        zoo_1.8.12              
+
+Pandoc version: 3.1.1
+
+LaTeX version used: 
+  TeX Live 2022 with tlmgr 2022-04-18
+```
+
+</details>
