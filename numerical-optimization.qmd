@@ -1239,9 +1239,95 @@ nlp$objval
 
 ### 旅行商问题 {#sec-traveling-salesman-problem}
 
-旅行商问题 The Traveling Salesman Problem 是一个混合整数线性规划问题。
+旅行商问题 The Traveling Salesman Problem 是一个混合整数线性规划问题，**TSP** 包 [@TSP2007] 是求解此问题的最佳工具包。一般地，旅行商问题作如下定义。已知 $n$ 个城市之间的距离，以矩阵 $D$ 表示各个城市之间的距离，其元素 $d_{ij}$ 表示城市 $i$ 到城市 $j$ 之间的距离，其对角元素 $d_{ii} = 0$，其中 $i,j = 1,2,\cdots, n$ 。一个旅行路线可以用 $\{1,2,\ldots,n\}$ 的循环排列 $\pi$ 表示，$\pi(i)$ 表示在旅行线路中跟在城市 $i$ 之后的城市。旅行商问题就是找一个排列 $\pi$ 使得如下旅行线路最短。
 
-**TSP** 包 [@TSP2007]
+$$
+\sum_{i=1}^{n} d_{i\pi(i)}
+$$
+
+每个城市必须走到，且只能走一次。等价于如下整数规划问题，也是一个指派问题。\
+$$
+\begin{aligned}
+\min ~ & \sum_{i=1}^{n}\sum_{j=1}^{n} d_{ij}x_{ij} \\
+\text{s.t.} ~& \sum_{i=1}^{n}x_{ij} = 1, ~j = 1,2,\ldots,n, \\
+~& \sum_{j=1}^{n}x_{ij} = 1, ~ i = 1,2,\ldots,n, \\
+~& x_{ij} = 0 ~\text{or} ~ 1
+\end{aligned}
+$$
+
+某人要去美国 10 个城市旅行，分别是亚特兰大 Atlanta、芝加哥 Chicago、丹佛 Denver 、休斯顿 Houston、洛杉矶 Los Angeles、迈阿密 Miami、纽约 New York、旧金山 San Francisco、 西雅图 Seattle、华盛顿特区 Washington DC。10 个城市的分布如 @fig-us-city-tsp 所示。从亚特兰大出发，最后回到亚特兰大，如何规划旅行线路使得总行程最短？行程最短的路径是什么？
+
+```{r}
+#| label: fig-us-city-tsp
+#| fig-width: 6
+#| fig-height: 3.8
+#| fig-showtext: true
+#| fig-cap: "10 个城市的分布图"
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
+#| message: false
+
+# 10 个城市的经纬度数据来自 maps 包的 us.cities 数据集
+us_city_latlong <- read.table(file = textConnection("
+City, Latitude, Longitude
+Atlanta, 33.76, -84.42
+Chicago, 41.84, -87.68
+Denver, 39.77, -104.87
+Houston, 29.77, -95.39
+Los Angeles, 34.11, -118.41
+Miami, 25.78, -80.21
+New York, 40.67, -73.94
+San Francisco, 37.77, -122.45
+Seattle, 47.62, -122.35
+Washington DC, 38.91, -77.01
+"), header = TRUE, sep = ",")
+
+library(sf)
+us_city_latlong <- st_as_sf(us_city_latlong,
+  coords = c("Longitude", "Latitude"), crs = 4326
+)
+library(ggplot2)
+ggplot() +
+  geom_sf_label(
+    data = us_city_latlong, aes(label = City),
+    fun.geometry = sf::st_centroid
+  ) +
+  geom_sf(data = us_city_latlong, color = "red") +
+  coord_sf(crs = "ESRI:102003") +
+  theme_bw() +
+  labs(x = "经度", y = "纬度")
+```
+
+简单起见，这 10 个城市之间的距离以直线距离代替，R 内置的数据集 `UScitiesD` 已经记录了这 10 个城市之间的直线距离。 `UScitiesD` 是一个 dist 类型的数据，可以用函数 `as.matrix()` 将其转化为矩阵类型。
+
+```{r}
+data(UScitiesD)
+D <- as.matrix(UScitiesD)
+library(TSP)
+D_tsp <- as.TSP(D)
+tour_sol <- solve_TSP(x = D_tsp, method = "two_opt")
+tour_sol
+```
+
+途经 10 个城市的最短路程为 7373 。
+
+```{r}
+# 旅行最短路程
+tour_length(tour_sol)
+# 旅行线路方案
+as.integer(tour_sol)
+labels(D_tsp)[as.integer(tour_sol)]
+```
+
+依次走过的城市是：洛杉矶、休斯顿、迈阿密、亚特兰大、华盛顿特区、纽约、芝加哥、丹佛、西雅图、旧金山。
+
+::: exercise
+某人要周游美国各州，从纽约出发，走遍 50 个州的行政中心，最后回到纽约。规划旅行线路使得总行程最短。Base R 内置的 R 包 **datasets** 包含美国 50 个州的地理中心数据 `state.center` 。
+:::
+
+### 投资组合优化问题 {#sec-markowitz-portfolio-optimization}
+
+Markowitz 投资组合优化问题如下：
 
 ### 垃圾邮件分类 {#sec-spam-email-classification}
 
