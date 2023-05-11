@@ -1,1 +1,163 @@
 # 时序分析 {#sec-analyze-time-series-data}
+
+预测是非常古老的话题，几乎人人都想拥有预测未来的能力，唐朝袁天罡和李淳风的故事至今还广为流传。事实上，古时候只有至高无上的皇帝才可以去问钦天监了解星辰大海和国运命脉。时间序列数据的分析，以及根据分析得到的一般规律进行预测是经久不衰的命题。预测既包含一般规律指向的确定性，又有无法预知的不确定性，且**同时**包含认知局限带来的不确定性，后者往往更大。无休止地渴求往往伴随着巨大的挑战，而更大的挑战则是预测效果常常不能满足期待。
+
+[fable](https://github.com/tidyverts/fable/) 一元到多元时间序列预测问题，提供 ETS、ARIMA、TSLM 等模型，并有书籍[时间序列预测原则](https://tidyverts.github.io/tidy-forecasting-principles/)。值得一提， [forecast](https://github.com/robjhyndman/forecast/) 包开发者 Rob J Hyndman 宣称已经不再开发新的功能，推荐大家使用 fable 包。[feasts](https://github.com/tidyverts/feasts/) 包 辅助特征抽取、序列分解、汇总统计和绘制图形等， 插件包[fable.prophet](https://github.com/mitchelloharawild/fable.prophet) 接入 Prophet 的预测能力。[timetk](https://github.com/business-science/timetk) 时间序列数据处理、分析、预测和可视化工具箱，提供一致的操作方式，试图形成完成的解决方案。[The Rmetrics Association](https://www.rmetrics.org/) 开发了一系列 R 包专门处理金融时间序列数据，比如[fGarch](https://cran.r-project.org/package=fGarch) 包提供条件自回归异方差模型。
+
+[Prophet](https://github.com/facebook/prophet/tree/main/R) 贝叶斯可加时间序列预测，特别适合日粒度的数据，年、周季节性、节假日和非线性趋势都能拟合得很好。[MARSS](https://github.com/nwfsc-timeseries/MARSS) [@Holmes2012] 多元自回归状态空间模型（或动态线性模型），R 包手册[《多元时间序列分析》](https://cran.r-project.org/web/packages/MARSS/vignettes/UserGuide.pdf)和相关书籍[《Applied Time Series Analysis for Fisheries and Environmental Sciences》](https://atsa-es.github.io/atsa-labs/)。[bayesdfa](https://github.com/fate-ewi/bayesdfa) [@Ward2019] 贝叶斯动态因子分析，可以识别多元时间序列数据中的异常情况，模型构建和求解基于 Stan 语言。结合深度神经网络模型的时间序列预测，推荐 tensorflow 等框架。使用深度还是传统的统计模型取决于实际数据和业务场景，一般来讲，细粒度大规模近实时的数据常采用深度模型，粗粒度趋势周期稳定的数据且要求解释性的采用统计模型。
+
+在时间序列数据的可视化方面，除了 Base R 提供的绘图方法外，静态的时序图 [lattice](https://github.com/deepayan/lattice) 和 [ggplot2](https://github.com/tidyverse/ggplot2) 都不错，而交互式图形推荐使用 [plotly](https://github.com/plotly/plotly.R) 和 [dygraphs](https://github.com/rstudio/dygraphs)。
+
+## 数据获取
+
+Joshua M. Ulrich 开发维护的 [quantmod](https://github.com/joshuaulrich/quantmod) 包可以下载国内外股票市场的数据。首先用 **quantmod** 包 [@quantmod2022] 获取美团上市至 2022年5月27日每天的股价数据，包含 Open 开盘价、High 最高价、Low 最低价、Close 闭市价、Adjusted 调整价和 Volume 成交量等数据。
+
+```{r}
+#| label: downlaod-yahoo-data
+#| eval: false
+#| echo: true
+
+# 美团股票代码 3690
+meituan <- quantmod::getSymbols("3690.HK", auto.assign = FALSE, src = "yahoo")
+```
+
+```{r}
+#| echo: false
+#| label: load-meituan-data
+
+# 美团上市至 2022-05-27
+meituan <- readRDS(file = "data/meituan.rds")
+```
+
+## 数据探查
+
+先来看看获取的数据及其类型结构
+
+```{r}
+class(meituan)
+```
+
+数据类型颇为复杂，是由 xts 和 zoo 两种类型复合而成。
+
+```{r}
+str(meituan)
+```
+
+再看看具体的一些数据情况
+
+```{r}
+head(meituan)
+```
+
+## 数据探索
+
+**zoo** 包提供 S3 范型函数 `autoplot.zoo()` 专门可视化 zoo 类型的数据，它接受一个 zoo 类型的数据对象，返回一个 ggplot2 数据对象，然后用户可以添加自定义的绘图设置
+
+```{r}
+library(zoo)
+library(xts)
+```
+
+更多详情见帮助文档 `?autoplot.zoo()`
+
+```{r}
+#| label: meituan-ggplot2
+#| fig.cap: "美团在香港上市以来的股价走势"
+
+# xts 包需要先加载，否则 Index 不是日期类型而是数值类型
+library(ggplot2)
+autoplot(meituan[, "3690.HK.Adjusted"]) +
+  theme_minimal()
+```
+
+**zoo** 包还提供另一个范型函数 `fortify()` 将 zoo 数据对象转化为 data.frame
+
+```{r}
+library(xts) # Index 保持日期类型 Date
+# zoo 转化为 data.frame
+meituan_df <- fortify(meituan[, c("3690.HK.Adjusted", "3690.HK.High")],
+  melt = TRUE,  # 宽格式转长格式 重塑原数据集
+  names = c(Index = "Date") #  重命名表示顺序的日期列
+)
+```
+
+查看转化后的数据类型
+
+```{r}
+str(meituan_df)
+```
+
+```{r}
+# 日期字段 Date 获取年份
+meituan_df <- within(meituan_df, {
+  year <- format(Date, "%Y")
+  day_of_year <- as.integer(format(Date, "%j"))
+})
+```
+
+```{r}
+#| label: fig-meituan-by-year
+#| fig.cap: "美团调整的股价逐年走势"
+
+ggplot(data = meituan_df, aes(
+  x = day_of_year,
+  y = Value,
+  color = year
+)) +
+  geom_line() +
+  theme_minimal() +
+  facet_wrap(~Series) + 
+  labs(
+    x = "Decimal day of the year",
+    y = "Adjusted Stock Price"
+  )
+```
+
+2019 年底开始出现疫情，2020 年整年陆续有疫情，美团股价一路狂飙突进，因疫情，利好外卖业务，市场看好外卖业务。2021 年政府去杠杆，互联网监管趋严，又监又管，受外部大环境，逆全球化趋势影响，整年股价一路走低。进入 2022 年，股价在 200 附近徘徊。
+
+## 数据展示
+
+```{r}
+library(xts)
+```
+
+**xts** 包提供 S3 泛型函数 `plot.xts()` 专门用来可视化 xts 类型的时间序列数据
+
+```{r}
+#| label: meituan-plot
+#| fig.cap: "美团在香港上市以来的股价走势"
+
+plot(meituan[, "3690.HK.Adjusted"],
+  main = "Adjusted Stock Price"
+)
+```
+
+还可以任意选择一个时间窗口，展示相关数据
+
+```{r}
+#| label: fig-meituan-plot-xts
+#| fig.cap: "美团 2021 年的股价走势"
+
+plot(meituan[, "3690.HK.Adjusted"],
+  subset = "2021-01-01/2021-12-31",
+  main = "Adjusted Stock Price"
+)
+```
+
+元旦节三天不开市，所以假期没有数据。
+
+**ggfortify** [@Tang2016] 支持快速地可视化 ts、timeSeries 、stl 等多种类型的时序数据， **ggplot2** 做数据探索会有一些帮助。
+
+```{r}
+#| label: fig-air-passengers
+#| fig.cap: "1949-1960 国际航班乘客数量月度变化趋势"
+
+library(ggfortify)
+autoplot(AirPassengers, ts.geom = "line") +
+  scale_x_date(
+    date_breaks = "2 year",
+    date_minor_breaks = "4 months",
+    date_labels = "%b\n%Y"
+  ) +
+  theme_minimal()
+```
