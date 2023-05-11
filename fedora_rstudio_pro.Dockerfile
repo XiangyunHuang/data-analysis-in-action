@@ -34,15 +34,8 @@ RUN dnf -y upgrade \
    
 # System dependencies required for Quarto Book project
 RUN dnf -y install python3-virtualenv \
-   google-noto-sans-cjk-fonts \
    google-noto-serif-cjk-fonts \
-   google-noto-sans-fonts \
-   google-noto-serif-fonts \
-   google-noto-emoji-fonts \
-   google-noto-emoji-color-fonts \
-   texlive-sourceserifpro \
    texlive-sourcecodepro \
-   texlive-sourcesanspro \
    texlive-pdfcrop \
    texlive-dvisvgm \
    texlive-dvips \
