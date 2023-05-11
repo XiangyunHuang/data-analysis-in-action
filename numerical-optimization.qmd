@@ -257,7 +257,7 @@ $$
 ```{r}
 Dmat <- matrix(c(2, -1, -1, 2), nrow = 2, byrow = TRUE)
 dvec <- c(3, -2)
-A <- matrix(c(-1, -1, 1, -1, 0, 1), ncol = 2, byrow = TRUE)
+Amat <- matrix(c(-1, -1, 1, -1, 0, 1), ncol = 2, byrow = TRUE)
 bvec <- c(-2, 2, 3)
 ```
 
@@ -266,7 +266,7 @@ bvec <- c(-2, 2, 3)
 ```{r}
 op <- OP(
   objective = Q_objective(Q = Dmat, L = dvec),
-  constraints = L_constraint(L = A, dir = rep("<=", 3), rhs = bvec),
+  constraints = L_constraint(L = Amat, dir = rep("<=", 3), rhs = bvec),
   maximum = FALSE
 )
 op
@@ -286,7 +286,7 @@ nlp$objval
 nlp$solution
 ```
 
-作为对比，移除线性不等式约束，求解无约束优化问题。
+作为对比，移除线性不等式约束，求解无约束优化问题。目标函数仍然是二次型，但是已经没有线性约束条件，所以不是二次规划问题，再用求解器 `nloptr.slsqp` 求解的结果已不是无约束优化的解。
 
 ```{r}
 op2 <- OP(
@@ -299,7 +299,7 @@ nlp2$objval
 nlp2$solution
 ```
 
-在可行域上画出等高线，标记目标解的位置， @fig-quadprog 展示无约束和有约束条件下的解。图中红点表示无约束下的解，黄点表示线性约束下的解。
+在可行域上画出等高线，标记目标解的位置， @fig-quadprog 展示无约束和有约束条件下的解。图中红点表示无约束下求解器 `nloptr.slsqp` 获得的解 $(0,1)$ ，真正的无约束解是蓝点所在位置为 $(-4/3,1/3)$ ，黄点表示线性约束下求解器 `nloptr.slsqp` 获得的解 $(1/6,11/6)$ 。所以，不能用二次规划的求解器去求解无约束的二次规划问题。
 
 ```{r}
 #| label: fig-quadprog
@@ -314,8 +314,8 @@ nlp2$solution
 qp_sol <- nlp$solution
 # 无约束解
 uc_sol <- nlp2$solution
-x1 <- seq(-2, 5.5, length.out = 100)
-x2 <- seq(-1, 3.5, length.out = 100)
+x1 <- seq(-2, 5.5, length.out = 50)
+x2 <- seq(-1, 3.5, length.out = 50)
 dat <- expand.grid(x1 = x1, x2 = x2)
 # 二次规划的目标函数
 dat$fn <- with(dat, x1^2 + x2^2 - x1 * x2 + 3 * x1 - 2 * x2)
@@ -333,7 +333,7 @@ levelplot(fn ~ x1 * x2, data = dat, aspect = .7,
       lwd = 5, col = c("red", "yellow", "blue"), pch = 19
     )
   },
-  # 减少三维图形的边空
+  # 减少图形的边空
   lattice.options = list(
     layout.widths = list(
       left.padding = list(x = 0, units = "inches"),
@@ -347,13 +347,22 @@ levelplot(fn ~ x1 * x2, data = dat, aspect = .7,
   scales = list(
     x = list(alternating = 1, tck = c(1, 0)),
     y = list(alternating = 1, tck = c(1, 0))
-  ), contour = TRUE, 
-  colorkey = TRUE,
+  ), contour = TRUE, colorkey = TRUE,
   col.regions = terrain.colors
 )
 ```
 
-蓝色的点是无约束情况下，目标函数的最小值，而求解器 `nloptr.slsqp` 给出的最优解是红点，令人疑惑。
+蓝色的点是无约束情况下，目标函数的最小值，而求解器 `nloptr.slsqp` 给出的最优解是红点，令人疑惑。不过，**quadprog** 包在求解约束条件下的严格凸二次规划问题时，同时给出无约束条件下的解。这个包自定义了一套二次规划问题的符号，查看求解函数 `solve.QP()` 的说明，略作对应后，求解上述规划问题的代码如下。
+
+```{r}
+library(quadprog)
+sol <- solve.QP(
+  Dmat = Dmat, dvec = -dvec, Amat = t(-Amat), bvec = -bvec
+)
+sol
+```
+
+其中，返回值的 `unconstrained.solution` 表示无约束下的解，与预期的解一致，这就没有疑惑了。可见，约束二次规划问题和无约束二次规划问题的求解器不同。
 
 ### 混合整数二次优化
 
@@ -422,6 +431,78 @@ solution$getValue(y)
 什么是锥？锥的数学表示和几何表示。
 
 锥是定义在半正定的矩阵之上的。
+
+$n$ 阶矩阵 $A$ 是对称且半正定的，我们将这样的矩阵构成的集合记为 $\mathcal{K}_{+}^n$ 。
+
+$$
+\mathcal{K}_{+}^n = \{A \in \mathbb{R}^{n \times n}|\bm{x}^{\top}A\bm{x} \geq 0, ~ \forall \bm{x} \in \mathbb{R}^n\}
+$$
+
+目标函数为线性的凸锥优化的一般形式如下：
+
+$$
+\begin{aligned}
+\min \quad &\bm{a}^{\top}\bm{x} \\
+\text{s.t.} \quad & A\bm{x} + \bm{k} = \bm{b} \\
+& \bm{k} \in \mathcal{K}
+\end{aligned}
+$$
+
+下面举个例子说明，其中，含参对称矩阵 $A(m_1,m_2,m_3)$ 如下：
+
+$$
+A(m_1,m_2,m_3) = \begin{bmatrix}
+  1 & m_1 & m_2  \\
+  m_1 & 1 & m_3  \\
+  m_2 & m_3 & 1 
+  \end{bmatrix}
+$$
+
+而 $\bm{k} = \bm{b} - A\bm{x}$ 是非空封闭凸锥集合 $\mathcal{K}$ 中的元素。半正定矩阵 $A$ 生成的集合（凸锥） $K$ 如下：
+
+$$
+K = \{ (m_1,m_2,m_3) \in \mathbb{R}^3 \mid A(m_1,m_2,m_3) \in \mathcal{K}_{+}^3 \},
+$$
+
+集合 $K$ 是有界半正定的。含参矩阵 $A$ 的行列式如下：
+
+$$
+\det(A(m_1,m_2,m_3)) = - (m_1^2 + m_2^2 + m_3^2 -2m_1 m_2 m_3 -1) 
+$$
+
+集合 $K$ 的边界可表示为如下方程的解：
+
+$$
+m_1^2 + m_2^2 + m_3^2 -2m_1 m_2 m_3 = 1
+$$
+
+或等价地表示为如下矩阵形式：
+
+$$
+\begin{split}\left[
+\begin{array}{c}
+m_1\\m_2
+\end{array}\right]^{\top}
+\left[\begin{array}{rr}
+1 & -m_3\\-m_3 &1
+\end{array}\right]
+\left[\begin{array}{c}
+m_1\\m_2
+\end{array}\right] = 1 - m_3^2.
+\end{split}
+$$
+
+当 $m_3 = 0$ 时，集合 $K$ 的边界表示平面上的一个单位圆，当 $m_3 \in [-1, 1]$ ，集合 $K$ 的边界表示一个椭圆。设置 $m_1 = 2/3, m_2 = 3/3, m_3 = 2/3$ ，为了获得一个直观的几何表示，画图将集合 $K$ 的边界绘制出来。
+
+```{r}
+fun <- function(x) {
+  (2/3)^2 + (3/3)^2 + x^2 - 2 * (2/3) * (3/3) * x - 1
+}
+fun(2)
+
+det(A)
+solve(A, t(t(rep(1,3))))
+```
 
 锥优化问题的一般形式如下
 
@@ -584,7 +665,7 @@ op_sol$objval
 
 ### 半正定锥
 
-如果矩阵 $A$ 是半正定的，记为 $A \succeq 0$ ，如果矩阵 $A$ 是正定的，记为 $A \succ 0$ 。记 $n$ 阶实对称的集合为 $\mathcal{S}^{n}$ 。
+如果矩阵 $A$ 是半正定的，记为 $A \succeq 0$ ，如果矩阵 $A$ 是正定的，记为 $A \succ 0$ 。记 $n$ 阶实对称矩阵的集合为 $\mathcal{S}^{n}$ 。
 
 $$
 \mathcal{K}_{\text{psd}}^{n} = \{A | A \in \mathcal{S}^{n}, \bm{x}^{\top}A\bm{x} \geq 0, \forall \bm{x} \in \mathbb{R}^n \}
@@ -1305,11 +1386,12 @@ data(UScitiesD)
 D <- as.matrix(UScitiesD)
 library(TSP)
 D_tsp <- as.TSP(D)
-tour_sol <- solve_TSP(x = D_tsp, method = "two_opt")
+# 出发城市洛杉矶
+tour_sol <- solve_TSP(x = D_tsp, method = "nearest_insertion", start = 5)
 tour_sol
 ```
 
-途经 10 个城市的最短路程为 7373 。
+途经 10 个城市的最短路程为 7373 。因采用启发式的随机优化算法，每次求解的结果可能会有所不同，建议运行多次，比较结果，选择最优的方法。
 
 ```{r}
 # 旅行最短路程
@@ -1344,7 +1426,7 @@ ggplot() +
   labs(x = "经度", y = "纬度")
 ```
 
-::: exercise
+::: {#exr-tsp}
 某人要周游美国各州，从纽约出发，走遍 50 个州的行政中心，最后回到纽约。规划旅行线路使得总行程最短。Base R 内置的 R 包 **datasets** 包含美国 50 个州的地理中心数据 `state.center` 。
 :::
 
@@ -1352,9 +1434,94 @@ ggplot() +
 
 马科维茨投资组合优化问题如下：
 
-### 垃圾邮件分类 {#sec-spam-email-classification}
+-   给定约束条件下，风险最小的组合。
 
-高斯过程用于分类问题，还可以选用高效且依赖少的 **kernlab** 包求解。
+$$
+\begin{aligned}
+\min_{\bm{w}} \quad & \bm{w}^{\top}\hat{\Sigma}\bm{w} \\
+\text{s.t.} \quad & A\bm{w}^{\top} \leq \bm{b}
+\end{aligned}
+$$
+
+求解组合优化问题
+
+```{r}
+# 理解数据，重新搜集和制作数据替代 LPP2005.RET
+# data(LPP2005.RET, package = "fPortfolio")
+LPP2005.RET <- readRDS(file = "data/LPP2005.RET.rds")
+lppData <- 100 * LPP2005.RET[, 1:6]
+r <- mean(lppData)
+r
+# 目标函数
+foo <- Q_objective(Q = cov(lppData), L = rep(0, ncol(lppData)))
+# 投资约束
+full_invest <- L_constraint(rep(1, ncol(lppData)), "==", 1)
+# 回报约束
+target_return <- L_constraint(apply(lppData, 2, mean), "==", r)
+# 目标规划
+op <- OP(objective = foo, constraints = rbind(full_invest, target_return))
+op
+```
+
+求解器 `nloptr.slsqp` 需要给初值，而求解器 `quadprog` 不需要给初值。下面使用 quadprog 来求解组合优化问题。
+
+```{r}
+library(ROI.plugin.quadprog)
+sol <- ROI_solve(op, solver = "quadprog")
+w <- sol$solution
+round(w, 4)
+sqrt(t(w) %*% cov(lppData) %*% w)
+```
+
+-   最大回报
+
+给定风险下，最大回报。
+
+$$
+\begin{aligned}
+\max_{\bm{w}} \quad & \bm{w}^{\top}\hat{\bm{\mu}} \\
+\text{s.t.} \quad & A\bm{w} \leq \bm{b} \\
+\quad & \bm{w}^{\top}\hat{\Sigma}\bm{w} \leq \sigma
+\end{aligned}
+$$
+
+给定风险约束 $\sigma$ 回报最大的组合
+
+```{r}
+sigma <- sqrt(t(w) %*% cov(lppData) %*% w)
+zero_mat <- slam::simple_triplet_zero_matrix(ncol(lppData))
+# 目标函数
+foo <- Q_objective(Q = zero_mat, L = colMeans(lppData))
+# 二次约束
+maxret_constr <- Q_constraint(
+  Q = list(cov(lppData), NULL),
+  L = rbind(
+    rep(0, ncol(lppData)),
+    rep(1, ncol(lppData))
+  ),
+ dir = c("<=", "<="), rhs = c(sigma^2, 1)
+)
+# 目标规划
+op <- OP(objective = foo, constraints = maxret_constr, maximum = TRUE)
+op
+```
+
+函数 `ROI_applicable_solvers()` 识别规划问题类型，给出可求解此规划问题的求解器。
+
+```{r}
+ROI_applicable_solvers(op)
+```
+
+`quadprog` 求解器不能求解该问题，尝试求解器 `nloptr.slsqp`
+
+```{r}
+#| eval: false
+# 还需要初始值
+sol <- ROI_solve(op, solver = "nloptr.slsqp")
+w <- sol$solution
+round(w, 4)
+w %*% colMeans(lppData)
+```
 
 ### 高斯过程回归 {#sec-gaussian-process-regression}
 
