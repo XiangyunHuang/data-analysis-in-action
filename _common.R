@@ -1,4 +1,3 @@
-
 knitr::knit_hooks$set(par = function(before, options, envir) {
   if (before && options$fig.show != "none") {
     par(
@@ -22,7 +21,6 @@ if (xfun::is_macos()) {
   )
 } else { # Github Action custom Docker Container Based on Fedora
   sysfonts::font_paths(new = c(
-    "/usr/share/fonts/google-noto/",
     "/usr/share/fonts/google-noto-serif-cjk-fonts" # Fedora 38
   ))
   ## 宋体
