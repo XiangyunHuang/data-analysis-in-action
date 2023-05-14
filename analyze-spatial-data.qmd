@@ -244,9 +244,7 @@ fit_rongelap_poisson <- glm(counts ~ 1,
 summary(fit_rongelap_poisson)
 ```
 
-::: callout-note
 当 `family = poisson(link = "log")` 时，响应变量只能是正整数，所以不能放 `counts / time`。泊松广义线性模型是对辐射强度建模，辐射强度与位置 `cX` 和 `cY` 有关。当响应变量为放射出来的粒子数目 `counts` 时，为了表示辐射强度，需要设置参数 `offset`，表示与放射粒子数目对应的时间间隔 `time`。联系函数是对数函数，因此时间间隔需要取对数。
-:::
 
 从辐射强度的拟合残差的空间分布 @fig-rongelap-poisson-residuals 不难看出，颜色深和颜色浅的点分别聚集在一起，且与周围点的颜色呈现层次变化，拟合残差存在明显的空间相关性。如果将位置变量 `cX` 和 `cY` 加入广义线性模型，也会达到统计意义上的显著。
 
@@ -264,101 +262,6 @@ ggplot(rongelap, aes(x = cX, y = cY)) +
   theme_bw() +
   labs(x = "横坐标（米）", y = "纵坐标（米）", color = "残差")
 ```
-
-从另外一个角度来思考，通过观察辐射强度的直方图，发现其分布形式与正态分布相似。实际上，辐射强度为非负值，所以应与特定参数下的伽马分布相似。
-
-```{r}
-#| label: fig-rongelap-histogram
-#| fig-cap: "辐射强度的直方图"
-#| fig-width: 5
-#| fig-height: 3.5
-#| fig-showtext: true
-
-ggplot(data = rongelap, aes(x = counts / time)) +
-  geom_histogram(fill = "orange", color = "white", binwidth = 0.5) +
-  theme_bw() +
-  labs(x = "辐射强度", y = "频数")
-```
-
-形状参数为 $\alpha$ 和尺度参数为 $\sigma$ 的伽马分布的概率密度函数 $f(x;\alpha, \sigma)$ 如下：
-
-$$
-f(x;\alpha,\sigma) = \frac{1}{\sigma^\alpha \Gamma(\alpha)}x^{\alpha - 1} \exp(- \frac{x}{\sigma}), \quad \alpha \geq 0, \sigma > 0
-$$
-
-其中，$\Gamma(\cdot)$ 表示伽马函数，下 @fig-rongelap-dgamma 展示两个伽马分布的概率密度函数，形状参数分别为 5 和 9，尺度参数均为 1，即伽马分布 $f(x; 5, 1)$ 和 $f(x; 9, 1)$ 。
-
-```{r}
-#| label: fig-rongelap-dgamma
-#| fig-cap: "伽马分布的概率密度函数"
-#| fig-width: 5
-#| fig-height: 4
-#| fig-showtext: true
-#| code-fold: true
-#| echo: !expr knitr::is_html_output()
-
-ggplot() +
-  geom_function(
-    fun = dgamma, args = list(shape = 9, scale = 1),
-    aes(colour = "list(alpha == 9, sigma == 1)"),
-    linewidth = 1.2, xlim = c(0, 20), 
-  ) +
-  geom_function(
-    fun = dgamma, args = list(shape = 5, scale = 1),
-    aes(colour = "list(alpha == 5, sigma == 1)"),
-    linewidth = 1.2, xlim = c(0, 20)
-  ) +
-  scale_colour_viridis_d(
-    labels = scales::parse_format(),
-    begin = 0.3, end = 0.7,
-    option = "C"
-  ) +
-  theme_bw(base_family = "sans") +
-  theme(axis.title = element_text(family = "Noto Serif CJK SC"),
-        legend.title = element_text(family = "Noto Serif CJK SC"),
-        legend.position = "top", legend.justification = "right") +
-  labs(x = "随机变量", y = "概率密度", color = "参数")
-```
-
-所以，可以使用响应变量服从伽马分布的广义线性模型来拟合数据。
-
-```{r}
-fit_rongelap_gamma <- glm(counts / time ~ 1,
-  family = Gamma(link = "log"), data = rongelap
-)
-summary(fit_rongelap_gamma)
-```
-
-对于计数数据，除了泊松分布，还可以用负二项分布来拟合数据。
-
-```{r}
-library(MASS)
-fit_rongelap_negbin <- glm.nb(
-  formula = counts ~ 1 + offset(log(time)),
-  data = rongelap, link = log
-)
-summary(fit_rongelap_negbin)
-```
-
-泊松分布、伽马分布和负二项分布的对数似然函数值如下：
-
-```{r}
-logLik(fit_rongelap_poisson)
-logLik(fit_rongelap_gamma)
-logLik(fit_rongelap_negbin)
-```
-
-三个广义线性模型的 AIC 统计量如下：
-
-```{r}
-AIC(fit_rongelap_poisson)
-AIC(fit_rongelap_gamma)
-AIC(fit_rongelap_negbin)
-```
-
-负二项广义线性模型拟合效果好于泊松广义线性，伽马广义线性模型响应变量与之不同，无法与之比较，将作为后续模型比较的基础模型。
-
-### 广义线性混合效应模型
 
 @fig-poisson-residuals 描述残差的分布，从 @fig-poisson-residuals-1 发现残差存在一定的线性趋势，岛屿的东南方，残差基本为正，而在岛屿的西北方，残差基本为负，说明有一定的异方差性。从 @fig-poisson-residuals-2 发现残差在水平方向上的分布像个哑铃，说明异方差现象明显。从 @fig-poisson-residuals-3 发现残差在垂直方向上的分布像棵松树，也说明异方差现象明显。
 
@@ -390,71 +293,6 @@ ggplot(rongelap, aes(x = cY, y = poisson_residuals / time)) +
   theme_bw() +
   labs(x = "纵坐标", y = "残差")
 ```
-
-既然异方差比较严重，给每个位置分配一个独立的方差是合理的，相当于添加一个随机效应。简单起见，假定异方差是相互独立的。
-
-$$
-\begin{aligned}
-\log(\lambda_i) &= \beta + Z_i \\
-y_i & \sim \mathrm{Poisson}(t_i\lambda_i)
-\end{aligned}
-$$
-
-其中，$Z_i$ 相互独立同正态分布 $\mathcal{N}(0,\tau^2)$ 。与之前类似，下面考虑响应变量为泊松分布、伽马分布和负二项分布的情况，采用 **spaMM** 包分别拟合上述模型。
-
-```{r}
-#| message: false
-
-library(spaMM)
-fit_glmm_poisson <- fitme(
-  formula = counts ~ 1 + (1 | dummy) + offset(log(time)),
-  data = rongelap, family = poisson(link = "log")
-)
-summary(fit_glmm_poisson)
-
-fit_glmm_gamma <- fitme(
-  formula = counts / time  ~ 1 + (1 | dummy),
-  data = rongelap, family = Gamma(link = "log")
-)
-summary(fit_glmm_gamma)
-
-fit_glmm_negbin2 <- fitme(
-  formula = counts ~ 1 + (1 | dummy) + offset(log(time)),
-  data = rongelap, family = negbin2(link = "log")
-)
-summary(fit_glmm_negbin2)
-```
-
-截距项 `(Intercept)` 的点估计和区间估计分别如下：
-
-```{r}
-# 点估计
-fixef(fit_glmm_poisson)
-fixef(fit_glmm_gamma)
-fixef(fit_glmm_negbin2)
-# 区间估计
-confint(fit_glmm_poisson, parm = "(Intercept)")
-confint(fit_glmm_gamma, parm = "(Intercept)")
-confint(fit_glmm_negbin2, parm = "(Intercept)")
-```
-
-随机效应的方差 $\tau^2$ 的点估计如下：
-
-```{r}
-get_ranPars(fit_glmm_poisson)$lambda[[1]]
-get_ranPars(fit_glmm_gamma)$lambda[[1]]
-get_ranPars(fit_glmm_negbin2)$lambda[[1]]
-```
-
-对数似然函数值的计算如下：
-
-```{r}
-logLik(fit_glmm_poisson)
-logLik(fit_glmm_gamma)
-logLik(fit_glmm_negbin2)
-```
-
-对伽马分布和负二项分布，从广义线性模型到广义线性混合效应模型 ，提升可以忽略不计。而对泊松分布，提升十分明显。无论是广义线性模型还是广义线性混合效应模型，负二项分布比泊松分布的效果都好。
 
 ### 空间线性混合效应模型 {#sec-rongelap-slmm}
 
@@ -606,20 +444,6 @@ $$
 \end{aligned}
 $$
 
-**nlme** 包的另一个函数 `lme()` ，扩展了函数 `gls()` 的功能，支持添加额外的随机效应。下面在模型 @eq-rongelap-gaussian-slmm 的基础上添加一个变化的截距项，所有的采样位置归为一组，相当于添加一个随机项 $\xi$ ，一般假定它服从均值为 0 方差为 $\delta^2$ 的正态分布。这样下来，模型包含三块随机项，与空间位置关联的空间随机效应 $S(x)$ ，与空间位置无关的块金效应 $Z_i$，与分组变量 group 关联的随机效应 $\xi$ 。
-
-```{r}
-rongelap$group <- 1
-fit_rongelap_lme <- lme(
-  log(counts / time) ~ 1, data = rongelap,
-  random = ~ 1 | group,
-  correlation = corExp(
-    value = c(200, 0.1), form = ~ cX + cY, nugget = TRUE
-  )
-)
-summary(fit_rongelap_lme)
-```
-
 #### 经验半变差函数图 {#sec-semi-variogram}
 
 接下来用经验半变差函数图检查空间相关性。为方便表述起见，令 $T(x_i)$ 代表 @eq-rongelap-gaussian-slmm 等号右侧的部分，即表示线性预测（Linear Predictor）。
@@ -752,12 +576,12 @@ plot(fit_rongelap_vario_norm,
 
 $$
 \begin{aligned}
-\log\{\lambda(x_i)\} & =  \beta + S(x_{i}) + Z_{i} \\
+\log\{\lambda(x_i)\} & = \beta + S(x_{i}) + Z_{i} \\
 y(x_{i}) &\sim \mathrm{Poisson}\big(t_i\lambda(x_i)\big)
 \end{aligned}
 $$ {#eq-rongelap-poisson-sglmmm}
 
-模型中，放射粒子数 $y(x_{i})$ 作为响应变量服从均值为 $t_i\lambda(x_i)$ 的泊松分布，其它模型成分的说明同前。
+模型中，放射粒子数 $y(x_{i})$ 作为响应变量服从均值为 $t_i\lambda(x_i)$ 的泊松分布，其它模型成分的说明同前。简单起见，下面不添加块金效应，即。掉模型中的 $Z_i$ 。此时，块金效应对模型预测效果的提升很有限，由于 $\tau^2$ 和 $\sigma^2$ 之间存在的可识别性问题，会显著增加参数估计的复杂度。
 
 **nlme** 包不能拟合空间广义线性混合效应模型， **spaMM** 包可以，它的使用语法与前面介绍的函数 `glm()` 、 **nlme** 包都类似，函数 `fitme()` 可以拟合从线性模型到广义线性混合效应模型的一大类模型，且使用统一的语法，输出一个 `HLfit` 类型的数据对象。 **spaMM** 包的函数 `Matern()` 实现了梅隆型自协方差函数，指数型和幂二次指数型是它的特例。当固定 $\nu = 0.5$ 时，梅隆型自协方差函数 `Matern()` 的形式退化为 $\sigma^2\exp(- \alpha u)$ ，其中，$\alpha$ 与范围参数关联，相当于前面出现的 $1/\phi$ 。
 
@@ -766,36 +590,14 @@ $$ {#eq-rongelap-poisson-sglmmm}
 
 library(spaMM)
 fit_rongelap_spamm <- fitme(
-  formula = counts ~ 1 + Matern(1 | cX + cY) + (1 | dummy) + offset(log(time)),
+  formula = counts ~ 1 + Matern(1 | cX + cY) + offset(log(time)),
   family = poisson(link = "log"), data = rongelap,
-  fixed = list(nu = 0.5)
+  fixed = list(nu = 0.5), method = "REML"
 )
 summary(fit_rongelap_spamm)
 ```
 
-从输出结果来看，模型固定效应的截距项 $\beta$ 为 `1.821`，空间随机效应的方差 $\sigma^2$ 为 `0.2649`，块金效应 $\tau^2$ 为 `0.0353`，对比函数 `Matern()` 实现的指数型自协方差函数公式与 @eq-matern-formula ，将输出结果转化一下，则 $\phi = 1 / 0.00658 = 151.97$ ，表示在这个模型的设定下，空间相关性的最大影响距离约为 152 米。
-
-函数 `fitme()` 默认使用极大似然估计模型参数，也可以使用限制极大似然来估计。
-
-```{r}
-fit_rongelap_spamm2 <- fitme(
-  formula = counts ~ 1 + Matern(1 | cX + cY) + (1 | dummy) + offset(log(time)),
-  family = poisson(link = "log"), data = rongelap,
-  fixed = list(nu = 0.5), method = "REML"
-)
-summary(fit_rongelap_spamm2)
-```
-
-泊松分布的均值 $\mathsf{E}\{y(x_i)\}=\mathrm{t}_i\lambda(x_i)$ 和方差 $\mathsf{Var}\{y(x_i)\}$ 的值是一样的。如果假定它们不同，比如方差是关于均值的二次函数，可以用负二项分布来拟合数据，一般来说效果会更加好，对数似然函数值 `logL` 在变大。
-
-```{r}
-fit_rongelap_spamm3 <- fitme(
-  formula = counts ~ 1 + Matern(1 | cX + cY) + (1 | dummy) + offset(log(time)),
-  family = negbin2(link = "log"), data = rongelap,
-  fixed = list(nu = 0.5)
-)
-summary(fit_rongelap_spamm3)
-```
+从输出结果来看，模型固定效应的截距项 $\beta$ 为 `1.829`，空间随机效应的方差 $\sigma^2$ 为 `0.3069`，对比函数 `Matern()` 实现的指数型自协方差函数公式与 @eq-matern-formula ，将输出结果转化一下，则 $\phi = 1 / 0.00921 = 108.57$ ，表示在这个模型的设定下，空间相关性的最大影响距离约为 108.5 米。
 
 ## 模型预测 {#sec-rongelap-predict}
 
@@ -838,7 +640,6 @@ rongelap_coastline_sfp <- st_cast(st_combine(st_geometry(rongelap_coastline_sf))
 #| code-fold: true
 
 # 点集
-library(ggplot2)
 ggplot(rongelap_coastline_sf) +
   geom_sf(size = 0.5) +
   theme_void()
@@ -935,7 +736,6 @@ ggplot() +
 rongelap_grid_df <- as.data.frame(st_coordinates(rongelap_grid_centroid))
 colnames(rongelap_grid_df) <- c("cX", "cY")
 rongelap_grid_df$time <- 1
-rongelap_grid_df$dummy <- 1:nrow(rongelap_grid_df)
 ```
 
 将数据输入 **spaMM** 包拟合的模型对象 `fit_rongelap_spamm`，并将模型返回的结果整理成数据框，再与采样点数据合并。`predict()` 是一个泛型函数，**spaMM** 包为模型对象提供了相应的预测方法。
@@ -985,31 +785,6 @@ mean_sk <- beta + t(m_pred) %*% solve(m_obs, log(rongelap_sf$counts / rongelap_s
 rongelap_grid_df$pred_sk <- exp(mean_sk)
 # 辐射强度预测方差
 rongelap_grid_df$var_sk <- sigma_sq - diag(t(m_pred) %*% solve(m_obs, m_pred))
-```
-
-```{r}
-#| eval: false
-#| echo: false
-
-# 普通克里金插值 Ordinary Kriging
-# 均值函数
-mean_fun <- function(m_pred) {
-  n1 <- 1 - t(rep(1, 157)) %*% solve(m_obs, m_pred)
-  n2 <- t(rep(1, 157)) %*% solve(m_obs, rep(1, 157))
-  beta + (t(m_pred) + (n1 / n2) %*% t(rep(1, 157))) %*% solve(m_obs, log(rongelap_sf$counts / rongelap_sf$time) - beta)
-}
-mean_ok <- apply(m_pred, 2, mean_fun)
-# 辐射强度预测值
-rongelap_grid_df$pred_ok <- exp(mean_ok)
-# 方差函数
-var_fun <- function(m_pred){
-  n1 <- 1 - t(rep(1, 157)) %*% solve(m_obs, m_pred)
-  n2 <- t(rep(1, 157)) %*% solve(m_obs, rep(1, 157))
-  t(m_pred) %*% solve(m_obs, m_pred) - n1^2 / n2
-}
-# 辐射强度预测方差
-var_ok <- apply(m_pred, 2, var_fun)
-rongelap_grid_df$var_ok <- var_ok
 ```
 
 ### 展示结果 {#sec-rongelap-plot}
@@ -1156,424 +931,3 @@ print(p4, vp = grid::viewport(x = .3, y = .65, width = .45, height = .45))
 ```
 
 美国当年是在比基尼环礁做的氢弹核试验，试验地与朗格拉普岛相距 100 多英里。核辐射羽流受大气、海洋环流等影响，漂流到朗格拉普岛。又受朗格拉普岛周围水文、地理环境影响，核辐射强度在全岛的分布是不均匀的，图中越亮的地方表示受到的核辐射越严重。
-
-## 模型理论 {#sec-spatial-theory}
-
-### 广义最小二乘 {#sec-generalized-least-squares}
-
-**nlme** 包的函数 `gls()` 的名称 `gls` 是 Generalized Least Squares 广义最小二乘的意思。顾名思义，广义最小二乘是最小二乘的推广形式。当模型残差不满足独立同分布的条件，存在相关性或异方差，就需要广义最小二乘 （Generalized Least Squares ，简称 GLS）。在前面的 @sec-rongelap-slmm ，采用广义最小二乘估计 @eq-rongelap-gaussian-slmm 的参数，下面继续介绍其原理。线性模型的一般形式如下：
-
-$$
-\bm{y} = X\bm{\beta} + \bm{\epsilon}
-$$
-
-其中，$\bm{y}$ 是 $n \times 1$ 的列向量，表示响应变量对应的观测数据。 $X$ 是 $n \times p$ 的矩阵，表示 $p$ 维协变量对应的 $n$ 次观测数据。$\bm{\beta}$ 是 $p \times 1$ 的列向量，表示待估的模型参数。 $\bm{\epsilon}$ 是 $n \times 1$ 的列向量，表示残差。
-
-假定随机向量 $\bm{\epsilon}$ 的期望为 $\mathsf{E}\{\bm{\epsilon}|X\} = \bm{0}$，方差为 $\mathsf{Var}\{\bm{\epsilon}|X\}=V$ ，且 $X$ 与 $\bm{\epsilon}$ 不相关，则有
-
-$$
-\mathsf{E}\{\bm{y}|X\} = X\bm{\beta}, \quad \mathsf{Var}\{\bm{y}|X\} = V.
-$$
-
-现在的目标是找到一个 $\bm{\beta}$ ，使得残差平方和最小，即求解如下无约束最优化问题。
-
-$$
-\begin{aligned}
-\min_{\bm{\beta}}\quad & \bm{\epsilon}^{\top}\bm{\epsilon}
-\end{aligned}
-$$ {#eq-gls-beta}
-
-将 $\bm{\epsilon}= \bm{y} - X\bm{\beta}$ 代入并展开，目标函数可进一步表达为如下形式。
-
-$$
-\begin{aligned}
-\bm{\epsilon}^{\top}\bm{\epsilon} &= (\bm{y} - X\bm{\beta})^{\top}(\bm{y} - X\bm{\beta}) \\
-&=\bm{y}^{\top}\bm{y} - \bm{y}^{\top}X\bm{\beta} - (X\bm{\beta})^{\top}\bm{y} + (X\bm{\beta})^{\top}X\bm{\beta} \\
-&=\bm{y}^{\top}\bm{y} - 2 \bm{y}^{\top}X\bm{\beta} + \bm{\beta}^{\top}X^{\top}X\bm{\beta}
-\end{aligned}
-$$
-
-对 $\bm{\beta}$ 求偏导，并令偏导等于 $\bm{0}$。
-
-$$
--2X^{\top}\bm{y} + 2X^{\top}X\bm{\beta} = 0
-$$
-
-可得 $\bm{\beta}$ 的最小二乘估计 $\hat{\bm{\beta}}$ 。
-
-$$
-\hat{\bm{\beta}} = (X^{\top}X)^{-1}X^{\top}\bm{y}.
-$$
-
-此时，$\hat{\bm{\beta}}$ 的期望 $\mathsf{E}\{\hat{\bm{\beta}}\} = \bm{\beta}$ ，即 $\hat{\bm{\beta}}$ 是 $\bm{\beta}$ 无偏的估计。$\hat{\bm{\beta}}$ 的方差 $\mathsf{Var}\{\hat{\bm{\beta}}\}$ 的计算如下：
-
-$$
-\begin{aligned}
-\mathsf{Var}\{\hat{\bm{\beta}}\} &= \mathsf{E}\{\hat{\bm{\beta}}^{\top}\hat{\bm{\beta}}\} - \mathsf{E}\{\hat{\bm{\beta}}^{\top}\}\mathsf{E}\{\hat{\bm{\beta}}\} \\
-&= \mathsf{E}\{ [(X^{\top}X)^{-1}X^{\top}\bm{y}]^{\top} (X^{\top}X)^{-1}X^{\top}\bm{y} \} - \bm{\beta}^{\top}\bm{\beta} \\
-&= \mathsf{E}\{ [(X^{\top}X)^{-1}X^{\top}(X\bm{\beta} + \bm{\epsilon})]^{\top} (X^{\top}X)^{-1}X^{\top}(X\bm{\beta} + \bm{\epsilon}) \} - \bm{\beta}^{\top}\bm{\beta} \\
-&= \mathsf{E}\{ [\bm{\beta} + (X^{\top}X)^{-1}X^{\top}\bm{\epsilon}]^{\top} [\bm{\beta} + (X^{\top}X)^{-1}X^{\top}\bm{\epsilon}]\} - \bm{\beta}^{\top}\bm{\beta} \\
-&= \mathsf{E}\{\bm{\epsilon}^{\top}X(X^{\top}X)^{-1}(X^{\top}X)^{-1}X^{\top}\bm{\epsilon}\} \\
-&= \mathrm{tr}[X(X^{\top}X)^{-1}(X^{\top}X)^{-1}X^{\top}V].
-\end{aligned}
-$$
-
-当 $\bm{\epsilon}$ 之间存在相关性时，需要广义最小二乘估计，即
-
-$$
-\hat{\bm{\beta}}_{gls} = (X^{\top}V^{-1}X)^{-1} X^{\top}V^{-1}\bm{y}.
-$$
-
-当 $\bm{\epsilon}$ 之间存在空间相关性时，$V$ 含有参数 $\sigma^2,\phi$ ，若模型带块金效应，则还含有参数 $\tau^2$ 。可见，上式不足以估计模型的参数，且看后续 @sec-maximum-likelihood 。
-
-类似地，对于一次新的观测 $\bm{x}_0$，它是一个 $p \times 1$ 的列向量，现在的目标是找到一个 $\hat{y}_0$ ，在满足无偏性的条件下，使得预测的均方误差 $\mathsf{E}\{(\hat{y}_0 - y_0)^2\}$ 最小，也是预测方差 $\mathsf{Var}\{\hat{y}_0 - y_0\}$ 最小，也是残差的方差 $\mathsf{Var}\{\hat{\epsilon}_0\}$ 最小。不妨设 $\hat{y}_0$ 是关于 $\bm{y}$ 的线性组合，即 $\hat{y}_0 = \bm{w}^{\top}\bm{y}$ ，此处，$\bm{w}$ 是 $n \times 1$ 维的权重向量。找 $\hat{y}_0$ 的问题转为求解如下最优化问题。
-
-$$
-\begin{aligned}
-\min_{\bm{w}}\quad & \mathsf{Var}\{\hat{y}_0 - y_0\} \\
-\text{s.t.}  \quad & \mathsf{E}\{\hat{y}_0 - y_0\} = 0
-\end{aligned}
-$$ {#eq-gls-predictor}
-
-对于无偏性的约束条件，有
-
-$$
-\mathsf{E}\{\hat{y}_0 - y_0\} = \mathsf{E}\{\bm{w}^{\top}(X\bm{\beta} + \bm{\epsilon}) - (\bm{x}_0^{\top}\bm{\beta} + \bm{\epsilon}_0)\} = \bm{w}^{\top}X\bm{\beta} - \bm{x}_0^{\top}\bm{\beta} = 0
-$$
-
-对于目标函数，有
-
-$$
-\begin{aligned}
-\mathsf{Var}\{\hat{y}_0 - y_0\} &= \mathsf{Var}\{\bm{w}^{\top}\bm{y} - \bm{x}_0^{\top}\bm{\beta}- \epsilon_0\} \\
-&= \mathsf{Var}\{\bm{w}^{\top}(X\bm{\beta} + \bm{\epsilon}) - \bm{x}_0^{\top}\bm{\beta} - \epsilon_0\} \\
-& = \mathsf{Var}\{\bm{w}^{\top}\bm{\epsilon} - \epsilon_0 \} \\
-& = \mathsf{E}\{(\bm{w}^{\top}\bm{\epsilon} - \epsilon_0)^2\} - [\mathsf{E}\{(\bm{w}^{\top}\bm{\epsilon} - \epsilon_0)\}]^2 \\
-& = \mathsf{E}\{(\bm{w}^{\top}\bm{\epsilon} - \epsilon_0)^2\} \\
-& = \mathsf{E}\{(\bm{w}^{\top}\bm{\epsilon} - \epsilon_0)(\bm{w}^{\top}\bm{\epsilon} - \epsilon_0)^{\top}\} \\
-& = \bm{w}^{\top}\mathsf{Cov}\{\bm{\epsilon},\bm{\epsilon}^{\top}\} \bm{w} - 2\mathsf{Cov}\{\epsilon_0, \bm{\epsilon}^{\top}\} \bm{w} + \mathsf{Cov}\{\epsilon_0, \epsilon_0 \} \\
-& = \bm{w}^{\top}V_{11} \bm{w} - 2 V_{01} \bm{w} + V_{00}
-\end{aligned}
-$$
-
-为方便叙述，作如下简记。
-
-$$
-V_{11} = \mathsf{Cov}\{\bm{\epsilon},\bm{\epsilon}^{\top}\}, 
-V_{10} = \mathsf{Cov}\{\bm{\epsilon},\epsilon_0\}, V_{01} = \mathsf{Cov}\{\epsilon_0, \bm{\epsilon}^{\top}\}, V_{00} = \mathsf{Cov}\{\epsilon_0, \epsilon_0 \}
-$$
-
-采用拉格朗日乘数法将约束优化问题 @eq-gls-predictor 转为如下无约束优化问题
-
-$$
-\min_{\bm{w},\bm{\kappa}} \quad \bm{w}^{\top}V_{11} \bm{w} - 2 V_{01} \bm{w} + V_{00} + (\bm{x}_0^{\top} - \bm{w}^{\top}X) \bm{\kappa}
-$$
-
-其中，$\bm{\kappa}$ 是 $p \times 1$ 维的拉格朗日乘子向量，对 $\bm{w},\bm{\kappa}$ 分别求偏导，并令偏导等于 $\bm{0}$ 。
-
-$$
-\begin{aligned}
-2 V_{11} \bm{w} - 2 V_{10} - X\bm{\kappa}  = \bm{0} \\
-X^{\top}\bm{w}  - \bm{x}_0 = \bm{0}
-\end{aligned}
-$$
-
-第一个式子左乘 $X^{\top}V_{11}^{-1}$ ，再将第二个式子代入第一个式子。
-
-$$
-2 \underbrace{X^{\top}\bm{w}}_{\bm{x_0}} -2 X^{\top}V_{11}^{-1}V_{10} -  X^{\top}V_{11}^{-1}X\bm{\kappa}= 0
-$$
-
-可得拉格朗日乘子向量 $\bm{\kappa}$ ，再将 $\bm{\kappa}$ 代入第一个式子，可得权重向量 $\bm{w}$ 。
-
-$$
-\begin{aligned}
-\bm{\kappa} &= 2 (X^{\top}V_{11}^{-1}X)^{-1} (\bm{x_0} - X^{\top}V_{11}^{-1}V_{10}) \\
-\bm{w} &= V_{11}^{-1} \big(V_{10} 
-+ X(X^{\top}V_{11}^{-1}X)^{-1}(\bm{x}_0 - X^{\top}V_{11}^{-1}V_{10})\big) .
-\end{aligned}
-$$
-
-根据权重向量，可获得预测值 $\hat{y}_0$ 以及预测方差 $\mathsf{Var}\{\hat{y}_0\}$ 。
-
-$$
-\begin{aligned}
-\hat{y}_0 &= \bm{w}^{\top}\bm{y} \\
-&= V_{01} V_{11}^{-1}\bm{y} + (\bm{x}_0^{\top} - V_{01}V_{11}^{-1}X) (X^{\top}V_{11}^{-1}X)^{-1} X^{\top}V_{11}^{-1}\bm{y} \\
-&= \bm{x}_0^{\top}(X^{\top}V_{11}^{-1}X)^{-1} X^{\top}V_{11}^{-1}\bm{y} + V_{01} V_{11}^{-1}\big(\bm{y} - X(X^{\top}V_{11}^{-1}X)^{-1}X^{\top}V_{11}^{-1}\bm{y}\big)\\
-&= \bm{x}_0^{\top} \hat{\bm{\beta}}_{gls} + V_{01} V_{11}^{-1}(\bm{y} - X\hat{\bm{\beta}}_{gls})
-\end{aligned}
-$$
-
-而 $\mathsf{Var}\{\hat{y}_0\} = \mathrm{tr}[\bm{w}\bm{w}^{\top}V_{11}]$ 。
-
-::: callout-note
-广义最小二乘估计参考课程 [Stats 253: Analysis of Spatial and Temporal Data](https://web.stanford.edu/class/stats253/) 的 [lect5](https://web.stanford.edu/class/stats253/lectures/lect5.pdf) 。
-:::
-
-### 限制极大似然 {#sec-maximum-likelihood}
-
-**nlme** 包的函数 `gls()` 提供极大似然（Maximum Likelihood，简称 ML）和限制极大似然（Restricted Maximum Likelihood，简称 REML）两种方法估计模型参数。
-
-极大似然估计对残差的分布有要求，一般假定 $\bm{\epsilon}$ 服从多元正态分布，即 $\bm{\epsilon} \sim \mathrm{MVN}(\bm{0}, V_{\bm{\theta}})$ ，这里 $V_{\bm{\theta}}$ 表示协方差阵与参数向量 $\bm{\theta}$ 有关，$\bm{\theta} = (\sigma^2, \phi, \tau^2)$ ，各个分量的含义同前。则关于参数 $(\bm{\beta}, \bm{\theta})$ 的似然函数如下：
-
-$$
-\mathcal{L}(\bm{\beta}, \bm{\theta}) = \frac{1}{(2\pi)^{n/2}(\det V_{\bm{\theta}})^{1/2}}\exp\Big\{-\frac{1}{2}(\bm{y} - X\bm{\beta})^{\top}V_{\bm{\theta}}^{-1}(\bm{y} - X\bm{\beta})\Big\}
-$$
-
-在前面，已经获得参数 $\bm{\beta}$ 的广义最小二乘估计 $\hat{\bm{\beta}}(\bm{\theta})$ 。
-
-$$
-\hat{\bm{\beta}}(\bm{\theta}) = (X^{\top}V_{\bm{\theta}}^{-1}X)^{-1} X^{\top}V_{\bm{\theta}}^{-1}\bm{y}
-$$
-
-将上式代入似然函数 $\mathcal{L}(\bm{\beta}, \bm{\theta})$ ，意味着消去了参数向量 $\bm{\beta}$ ，只剩下 $\bm{\theta}$ 。
-
-$$
-\mathcal{L}(\bm{\theta}) = \frac{1}{(2\pi)^{n/2}(\det V_{\bm{\theta}})^{1/2}}\exp\Big\{-\frac{1}{2}\big(\bm{y} - X\hat{\bm{\beta}}(\bm{\theta})\big)^{\top}V_{\bm{\theta}}^{-1}\big(\bm{y} - X\hat{\bm{\beta}}(\bm{\theta})\big)\Big\}
-$$
-
-为方便优化计算，进一步对似然函数取对数。
-
-$$
-\log \mathcal{L}(\bm{\theta}) = -\frac{n}{2}\log(2\pi) - \frac{1}{2}\log (\det V_{\bm{\theta}}) -\frac{1}{2}\big(\bm{y} - X\hat{\bm{\beta}}(\bm{\theta})\big)^{\top}V_{\bm{\theta}}^{-1}\big(\bm{y} - X\hat{\bm{\beta}}(\bm{\theta})\big)
-$$
-
-现在主要关注上式右侧中包含的二次型，将 $\hat{\bm{\beta}}(\bm{\theta})$ 代入。方便计算和书写起见，临时记 $A = I - X(X^{\top}V_{\bm{\theta}}^{-1}X)^{-1}X^{\top}V_{\bm{\theta}}^{-1}$ ，这里 $I$ 是 $n$ 维单位矩阵。可得
-
-$$
-\log \mathcal{L}(\bm{\theta}) = -\frac{n}{2}\log(2\pi) - \frac{1}{2}\log (\det V_{\bm{\theta}}) -\frac{1}{2}\bm{y}^{\top}A^{\top}V_{\bm{\theta}}^{-1}A\bm{y}
-$$
-
-为了进一步化简，下面计算 $A^{\top}$ 和 $A^2$ ，再将它们依次代入上述对数似然函数。
-
-$$
-\begin{aligned}
-AV_{\bm{\theta}} &= V_{\bm{\theta}} - X(X^{\top}V_{\bm{\theta}}^{-1}X)^{-1}X^{\top} \\
-A^{\top} &= I -V_{\bm{\theta}}^{-1}(V_{\bm{\theta}} - AV_{\bm{\theta}}) =V_{\bm{\theta}}^{-1} AV_{\bm{\theta}} \\
-A^2 &= A
-\end{aligned}
-$$
-
-经过上述矩阵运算，$\log \mathcal{L}(\bm{\theta})$ 化简为如下形式。
-
-$$
-\log \mathcal{L}(\bm{\theta}) = -\frac{n}{2}\log (2\pi) - \frac{1}{2}\log (\det V_{\bm{\theta}}) -\frac{1}{2}\bm{y}^{\top}V_{\bm{\theta}}^{-1}\big(I - X(X^{\top}V_{\bm{\theta}}^{-1}X)^{-1}X^{\top}V_{\bm{\theta}}^{-1}\big)\bm{y}
-$$
-
-对数似然函数的形式还是很复杂，极大化这个对数似然函数，还需要两个关键步骤。
-
-1.  计算似然函数关于 $\bm{\theta}$ 各个分量的偏导数。
-2.  求解一个非凸优化问题。
-
-考虑到 $\bm{\theta}$ 的维数不是很高，理论上，可以做暴力网格搜索，但时间花费可能很高，推荐采用一些启发式的全局优化算法。此外，初始值的选取也很重要， $\bm{\beta}$ 的初值可用最小二乘估计代替，$\sigma^2$ 的初值可用模型残差的方差代替，$\tau^2$ 的初值可取 $\sigma^2$ 的十分之一，$\phi$ 的初值可取最大距离的十分之一。上述固定一部分参数，估计另一部分参数的过程，叫剖面极大似然（Profile Maximum Likelihood）。不难理解，剖面极大似然估计是个有偏的估计。它将全参数空间剖开，在剖面（超平面）上寻找剩余参数的极大似然估计。
-
-::: callout-note
-极大似然估计参考课程 [Stats 253: Analysis of Spatial and Temporal Data](https://web.stanford.edu/class/stats253/) 的 [lect4](https://web.stanford.edu/class/stats253/lectures/lect4.pdf) 。
-:::
-
-介绍限制极大似然之前，先回顾一下线性模型的一般形式
-
-$$
-\bm{y} = X\bm{\beta} + \bm{\epsilon}
-$$
-
-找一个 $n$ 阶方阵 $P$ 使得 $PX\bm{\beta} = \bm{0}$ ，且 $P$ 不依赖于 $\bm{\beta}$，这样的矩阵 $P$ 形式如下
-
-$$
-P = I - X(XX^{\top})^{-1}X^{\top}
-$$
-
-不难发现，矩阵 $P$ 具有性质 $P^{\top} = P, P^2 = P$ ，即矩阵 $P$ 是一个投影矩阵。线性模型的一般形式化为
-
-$$
-P\bm{y} = P \bm{\epsilon}
-$$
-
-这就是说将整个模型投影到一个新的空间中，在这个新的空间中，模型不含有参数 $\bm{\beta}$ ，只剩下参数 $\bm{\theta}$。然后，极大化似然函数，得到 $\bm{\theta}$ 的估计 $\hat{\bm{\theta}}$ ，再将 $\hat{\bm{\theta}}$ 代入 $\bm{\beta}$ 的广义最小二乘估计 $\hat{\beta(\bm{\theta})}$ ，至此，模型参数全部求解完毕。相比于剖面极大似然估计，限制极大似然估计是无偏的。
-
-在无偏性约束下，最小均方预测误差意义下，获得最佳线性无偏预测。
-
-$$
-\begin{aligned}
-\min_{\bm{w}} \quad  & \mathsf{Var}\{\hat{y}_0 - y_0\} \\
-\text{s.t.} \quad & \mathsf{E}\{\hat{y}_0 - y_0\} = 0
-\end{aligned}
-$$
-
-类似前面的广义最小二乘估计一节中的预测过程，可得
-
-$$
-\hat{y}_0 = \bm{x}_0^{\top} \hat{\bm{\beta}}(\bm{\theta}) + V_{01} V_{11}^{-1}(\bm{y} - X\hat{\bm{\beta}}(\bm{\theta}))
-$$
-
-形式上一点没变，除了 $\hat{\bm{\beta}}(\bm{\theta})$ 中参数 $\bm{\theta}$ 是上面限制极大似然估计的结果，其它符号的含义同前。
-
-### 克里金插值 {#sec-kriging-interpolation}
-
-在空间分析中，克里金插值（Kriging Interpolation）是非常基础且重要的内容，具有很好的统计性质，是最佳线性无偏预测（Best Linear Unbiased Predictor）。下面介绍普通克里金（Ordinary kriging）插值的原理， @fig-kriging 是示意图。
-
-```{r}
-#| echo: false
-
-# 将 pdf 格式图片转为 png 格式
-to_png <- function(fig_path) {
-  png_path <- sub("\\.pdf$", ".png", fig_path)
-  magick::image_write(magick::image_read_pdf(fig_path),
-                      format = "png", path = png_path,
-                      density = 300, quality = 100
-  )
-  return(png_path)
-}
-```
-
-```{tikz}
-#| label: fig-kriging
-#| fig-cap: 普通克里金插值
-#| fig-process: !expr to_png
-#| code-fold: true
-#| echo: !expr knitr::is_html_output()
-#| out-width: 45%
-
-\begin{tikzpicture}[scale=1.5,transform shape]
-\draw [thick,black] plot [smooth cycle] coordinates {(0,0) (2,2) (4,1) (3.5,0) (3,-2)};
-
-\draw[fill=gray] (1,1) circle [radius=0.05];
-\node [below] at (1,1) (A) {\tiny $\lambda(x_1)$};
-\draw[fill=gray] (0.8,0) circle [radius=0.05];
-\node [below] at (0.8,0) (B) {\tiny $\lambda(x_2)$};
-\draw[fill=gray] (2.5,1.3) circle [radius=0.05];
-\node [below] at (2.5,1.3) (C){\tiny $\lambda(x_3)$};
-\draw[fill=gray] (3,0.75) circle [radius=0.05];
-\node [below] at (3,0.75) (D) {\tiny $\lambda(x_4)$};
-\draw[fill=gray] (2.7,-1) circle [radius=0.05];
-\node [below] at (2.7,-1) (E) {\tiny $\lambda(x_5)$};
-
-\draw[fill=magenta, red] (2,0) circle [radius=0.05];
-\node [below] at (2,0) (F) {\tiny $\hat{\lambda}(x_0)$};
-
-\draw [thick,-stealth] (A) -- (F) node[midway,above,rotate=-30] {\tiny $w_1$};
-\draw [thick,-stealth] (B) -- (F) node[midway,above] {\tiny $w_2$};
-\draw [thick,-stealth] (C) -- (F) node[midway, above, rotate=75] {\tiny $w_3$};
-\draw [thick,-stealth] (D) -- (F) node[midway, below, rotate=45] {\tiny $w_4$};
-\draw [thick,-stealth] (E) -- (F) node[midway, above, rotate=-45] {\tiny $w_5$};
-
-\node [below] at (3.8,2) {$\mathcal{D}$};
-\end{tikzpicture}
-```
-
-已知研究区域 $\mathcal{D} \subset \mathbb{R}^2$ 中的采样点 $x_i \in \mathcal{D}$ 的辐射强度为 $\lambda(x_i)$ 。对于区域 $\mathcal{D}$ 中未采样的位置 $x_0$，它的辐射强度 $\lambda(x_0)$ 是多少？在满足无偏性的条件下，$\hat{\lambda}(x_0)$ 是使预测方差最小的估计。
-
-$$
-\hat{\lambda}(x_0) = \sum_{i=1}^{n}w_i\lambda(x_i)
-$$
-
-其中 $w_i$ 是待定的权重系数。$\hat{\lambda}(x_0)$ 是 $\lambda(x_0)$ 的无偏估计，要使预测方差最小，需求解如下最优化问题。
-
-$$
-\begin{aligned}
-\min_{\bm{w}} \quad & \frac{1}{2}\mathsf{Var}\{\hat{\lambda}(x_0) - \lambda(x_0)\} \\
-\text{s.t.} \quad & \mathsf{E}\{\hat{\lambda}(x_0) - \lambda(x_0) \} = 0
-\end{aligned}
-$$ {#eq-kriging-optim}
-
-在平稳性的假设下， $\mathsf{E}\{\lambda(x_i)\} = \mathsf{E}\{\lambda(x_0)\}$ 且 $\mathsf{Var}\{\lambda(x_i)\} = \sigma^2$ 。根据无偏性条件可推导出
-
-$$
-\sum_{i=1}^{n}w_i = 1.
-$$
-
-令 $\bm{\lambda} = [\lambda(x_1),\lambda(x_1),\ldots,\lambda(x_n)]^{\top}$ ，$V$ 表示随机向量 $\bm{\lambda}$ 的协方差矩阵 $\mathsf{Var}\{\bm{\lambda}\}$ ，其第 $i$ 行第 $j$ 列的元素为 $\mathsf{Cov}\{\lambda(x_i),\lambda(x_j)\}$ ，对角线上的元素为方差 $\mathsf{Var}\{\lambda(x_i)\}, i = 1,2,\ldots, n$ 。令 $\bm{w} = (w_1,w_2,\ldots,w_n)^{\top}$ ，则
-
-$$
-\hat{\lambda}(x_0) = \sum_{i=1}^{n}w_i\lambda(x_i) = \bm{w}^{\top}\bm{\lambda}.
-$$
-
-根据随机向量二次型，$\hat{\lambda}(x_0)$ 的方差 $\mathsf{Var}\{\hat{\lambda}(x_0)\}$ 有
-
-$$
-\mathsf{Var}\{\hat{\lambda}(x_0)\} = \bm{w}^{\top}\mathsf{Var}\{\bm{\lambda}\}\bm{w} = \bm{w}^{\top}V\bm{w}.
-$$
-
-因此，
-
-$$
-\begin{aligned}
-\mathsf{Var}\{\hat{\lambda}(x_0) - \lambda(x_0)\} &= \mathsf{Var}\{\hat{\lambda}(x_0) \} + \mathsf{Var}\{\lambda(x_0)\} - 2 \mathsf{Cov}\{\hat{\lambda}(x_0), \lambda(x_0)\} \\
-&= \bm{w}^{\top}V\bm{w} + \sigma^2 - 2\sum_{i=1}^{n} \mathsf{Cov}\{\lambda(x_i),\lambda(x_0)\}w_i \\
-& = \bm{w}^{\top}V\bm{w} + \sigma^2 - 2[\mathsf{Cov}\{\bm{\lambda},\lambda(x_0)\}]^{\top}\bm{w}  \\
-& = \bm{w}^{\top}V\bm{w} + \sigma^2 - 2\bm{u}^{\top}\bm{w} .
-\end{aligned}
-$$ {#eq-kriging-variance}
-
-其中，$\mathsf{Var}\{\lambda(x_0)\} = \mathsf{Var}\{\lambda(x_i)\}= \sigma^2$ 是未知常数，$\bm{u} = \mathsf{Cov}\{\bm{\lambda},\lambda(x_0)\}$ 是未知的 $n \times 1$ 向量。假设它们已知，采用拉格朗日乘数法将约束优化问题 @eq-kriging-optim 转为如下无约束优化问题。
-
-$$
-\min_{\bm{w},\kappa} \mathcal{L}(\bm{w},k) = \frac{1}{2}\bm{w}^{\top}V\bm{w} + \frac{1}{2}\sigma^2 - \bm{u}^{\top}\bm{w}  + \kappa (1 - \bm{1}^{\top} \bm{w})
-$$
-
-其中，$\kappa$ 表示拉格朗日乘子，$\bm{1}$ 表示 $n \times 1$ 维的全 1 向量。分别对 $\bm{w}$ 和 $\kappa$ 求偏导，并令其分别等于零向量 $\bm{0}$ 和零 $0$ ，则有
-
-$$
-\begin{aligned}
-\frac{\partial \mathcal{L}(\bm{w},\kappa)}{\partial \bm{w}} &=  V \bm{w} -  \bm{u} - \kappa \bm{1}= \bm{0} \\
-\frac{\partial \mathcal{L}(\bm{w},k)}{\partial \kappa} &= \bm{1}^{\top} \bm{w} - 1 = 0
-\end{aligned}
-$$
-
-联立上述方程可得方程组，一共 $n+1$ 个变量和方程。
-
-$$
-\begin{bmatrix}
-V & \bm{1} \\
-\bm{1}^{\top} & 0
-\end{bmatrix}
-\begin{bmatrix}
-\bm{w}  \\
--\kappa
-\end{bmatrix}
-= 
-\begin{bmatrix}
-\bm{u}  \\
-0
-\end{bmatrix}.
-$$
-
-第一个方程左乘 $\bm{1}^{\top}V^{-1}$ ，再将第二个式子代入，可得
-
-$$
-\begin{aligned}
-\kappa &= \frac{1- \bm{1}^{\top}V^{-1}\bm{u}}{\bm{1}^{\top}V^{-1}\bm{1}} \\
-\bm{w} &= V^{-1}(\bm{u} + \frac{1- \bm{1}^{\top}V^{-1}\bm{u}}{\bm{1}^{\top}V^{-1}\bm{1}} \bm{1})
-\end{aligned}
-$$
-
-所以，在位置 $x_0$ 处的预测 $\hat{\lambda}(x_0)$ ，
-
-$$
-\hat{\lambda}(x_0) = \bm{w}^{\top}\bm{\lambda}= (\bm{u}^{\top} + \frac{1- \bm{1}^{\top}V^{-1}\bm{u}}{\bm{1}^{\top}V^{-1}\bm{1}} \bm{1}^{\top}) V^{-1}\bm{\lambda}
-$$
-
-将 $\bm{w}$ 代入 @eq-kriging-variance 可得普通克里金插值的最小均方预测误差。
-
-$$
-\mathsf{Var}\{\hat{\lambda}(x_0) - \lambda(x_0)\} = \bm{u}^{\top}V^{-1}\bm{u} - \frac{\big(1- \bm{1}^{\top}V^{-1}\bm{u}\big)^2}{\bm{1}^{\top}V^{-1}\bm{1}}
-$$
-
-根据数据可以估计经验半变差函数 @eq-semi-variogram 的参数，从而 $\beta$、$V$ 、 $\sigma^2$ 和 $\bm{u}$ 都是已知的。以 $V + \tau^2I$ 替换 $V$ ，$\bm{\lambda} - \beta \bm{1}$ 替换 $\bm{\lambda}$ ，可得普通克里金插值的预测值 $\hat{\lambda}(x_0)$ 及其方差 $\mathsf{Var}\{\hat{\lambda}(x_0)\}$ 。相比于普通克里金插值，简单克里金插值中 $\beta$ 是已知的，没有权重之和等于 1 的约束。
-
-::: callout-note
-参考《Statistics for Spatial Data》[@Cressie1993]。
-:::
-
-## 拓展阅读 {#sec-further-reading-spatial}
-
-在过去的 20 多年里，朗格拉普岛核辐射数据集在多篇文章中作为案例分析出现，用于算法模型的比较。1998 年 Peter J. Diggle 等首次提出蒙特卡洛极大似然方法估计不带块金效应的响应变量服从泊松分布的空间广义混合效应模型的参数，分析了朗格拉普岛上核辐射强度的空间分布[@Diggle1998]。2004 年 Ole F Christensen 在 Peter J. Diggle 等人的基础上添加了块金效应，同样使用蒙特卡洛极大似然方法估计了模型中的参数[@Christensen2004]。由于现有算法表现受真实数据影响比较大，随后，2006 年 Ole F Christensen 等又提出更加稳健的 Langevin-Metropolis 算法，辅以重参数化技巧提升算法性能，可以在马尔可夫链混合和收敛方面独立于数据，并在朗格拉普岛核辐射数据中做了实验，体现出预期效果[@Christensen2006]。2015 年 Wagner Hugo Bonat 等在朗格拉普岛核辐射数据和蚕豆根腐病数据中比较了 MCMC 算法，MCEM 算法和修正的拉普拉斯近似算法，发现拉普拉斯近似可以提供类似的结果，基于剖面似然可以获得模型参数的置信区间，相比于模拟算法，不需要算法调参和收敛分析 [@Wagner2015]。2016 年 Erlis Ruli 等提出改进的拉普拉斯近似算法，用于边际似然函数，处理高维随机效应的积分，比较了现有的一些基于似然函数的推断方法，体现出渐进误差更小，在朗格拉普岛核辐射强度预测中更加精确[@Erlis2016]。对算法实现过程感兴趣的读者可以查阅前述参考文献。
-
-2002 年张首次提出蒙特卡洛极大似然算法给出空间广义线性混合效应模型的估计与预测[@Zhang2002]，因混合模型的多样性，参数计算的复杂性，后续学者们分别从贝叶斯和频率方法的视角提出精确和近似的算法。近似算法的想法是找了一个近似函数替换其中的部分或者全部，使得随着迭代次数增加的情况下，估计的参数值可以趋于真值。精确算法的想法是通过模拟计算的方式硬积一个高维积分，不断增加采样的次数逼近目标函数，比如基于 MCMC 及其改进型 HMC 和 NUTS 硬积参数的联合后验分布中的高维积分做参数的全贝叶斯推断。贝叶斯方法主流的有拉普拉斯近似和全贝叶斯推断，频率方法主流的有基于似然的拉普拉斯近似和自适应高斯-埃尔米特算法。R 语言社区的 **spaMM** 包[@Rousset2014]，**INLA** 包[@Rue2009; @Lindgren2015]、**glmmfields** 包[@glmmfields2018]、**glmmTMB [@Brooks2017]、sdmTMB** 包[@Anderson2022] 和 **hglm 包**[@Ronnegard2010]都可以用来拟合模型。
-
--   **spaMM** 包采用拉普拉斯近似算法拟合空间广义线性混合效应模型，兼容 **lme4** 包的公式语法，提供统一的使用方式，还可以与 **INLA** 包集成。
--   **INLA** 包采用随机偏微分方程方法将目标区域划分成三角网格，以拉普拉斯集成嵌套计算方法逼近参数的后验分布[@Virgilio2018]。预测精度和速度主要由网格的细密程度决定，对于大规模空间数据集，比如数以千计的采样点，可以将网格划分得稀疏一些，总是可以计算。内部采用了并行迭代和英特尔 MKL 矩阵优化工具库。
--   **glmmfields** 包以多元 t 分布替代多元正态分布表示高斯马尔可夫随机场拟合带极端事件的时空模型，所以它不局限于本文涉及的空间模型。**glmmfields** 包内建的空间和时空模型是基于 Stan 的，因此，采用全贝叶斯精确推断方式，一般以 NUTS 采样的方式获取参数后验分布，主要算法是汉密尔顿蒙特卡洛 HMC， 对自动微分变分推断方式有试验性支持。
--   **sdmTMB** 包与 **glmmTMB** 包源自一脉，内部的计算框架都来自 TMB，相比而言，支持的模型更多，特别是生态学领域的空间和时空模型。
--   **hglm** 包对于具有分层结构的混合效应模型，提出 H-Likelihood 方法拟合分层广义线性模型、空间条件自回归模型 [@Alam2015]。
