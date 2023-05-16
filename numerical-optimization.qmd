@@ -3,7 +3,7 @@
 ```{r}
 #| echo: false
 
-# 锥优化、组合优化、多目标优化、图优化、全局优化不在本章范围
+source("_common.R")
 # 加载 ROI 时不要自动加载插件
 Sys.setenv(ROI_LOAD_PLUGINS = FALSE)
 ```
@@ -366,30 +366,30 @@ sol
 
 ### 混合整数二次优化
 
-对变量添加整型约束，原二次规划即变成混合整数二次规划 （Mixed Integer Quadratic Programming，简称 MIQP）。目前，ROI 支持的开源求解器都不能处理 MIQP 问题，只有 **CVXR** 包和 [**rmpk**](https://github.com/r-opt/rmpk) 包能解 MIQP 问题，更多关于 **CVXR** 包的介绍见[示例库](https://cvxr.rbind.io/examples/)。**ECOSolveR** 包可以求解一些锥规划，且变量可以包含整数。将凸二次规划转为锥规划问题，再调 ecos 求解器。
+对变量添加整型约束，原二次规划即变成混合整数二次规划 （Mixed Integer Quadratic Programming，简称 MIQP）。目前，ROI 支持的开源求解器都不能处理 MIQP 问题，只有 **CVXR** 包和 [**rmpk**](https://github.com/r-opt/rmpk) 包能解 MIQP 问题，更多关于 **CVXR** 包的介绍见[示例库](https://cvxr.rbind.io/examples/)。
 
 ```{r}
 #| eval: false
 
 op <- OP(
   objective = Q_objective(Q = Dmat, L = dvec),
-  constraints = L_constraint(A, rep("<=", 3), bvec),
+  constraints = L_constraint(Amat, rep("<=", 3), bvec),
   types = c("I", "C"),
-  maximum = FALSE # 默认求最小
+  maximum = FALSE # 求最小
 )
 nlp <- ROI_solve(op, solver = "nloptr.slsqp", start = c(1, 2))
 nlp$objval
 nlp$solution
 ```
 
-链接 ECOSolveR 包提供 ecos 求解器
+**ECOSolveR** 包可以求解一些锥规划，且变量可以包含整数。将凸二次规划转为锥规划问题，再调 `ecos` 求解器。连接 **ECOSolveR** 包提供 `ecos` 求解器。
 
 ```{r}
 #| eval: false
 
 op <- OP(
   objective = Q_objective(Q = Dmat, L = dvec),
-  constraints = L_constraint(A, rep("<=", 3), bvec),
+  constraints = L_constraint(Amat, rep("<=", 3), bvec),
   types = c("I", "C"),
   maximum = FALSE # 默认求最小
 )
@@ -768,8 +768,8 @@ fn <- function(x) {
 #| echo: !expr knitr::is_html_output()
 
 df <- expand.grid(
-  x = seq(-4, 4, length.out = 201),
-  y = seq(-4, 4, length.out = 201)
+  x = seq(-4, 4, length.out = 101),
+  y = seq(-4, 4, length.out = 101)
 )
 
 df$fnxy <- apply(df, 1, fn)
@@ -795,7 +795,7 @@ wireframe(
     )
   ),
   par.settings = list(axis.line = list(col = "transparent")),
-  screen = list(z = 120, x = -65, y = 0)
+  screen = list(z = 30, x = -65, y = 0)
 )
 ```
 
@@ -876,7 +876,7 @@ wireframe(
     )
   ),
   par.settings = list(axis.line = list(col = "transparent")),
-  screen = list(z = 120, x = -65, y = 0)
+  screen = list(z = 30, x = -65, y = 0)
 )
 ```
 
@@ -892,8 +892,8 @@ wireframe(
 #| echo: !expr knitr::is_html_output()
 
 df <- expand.grid(
-  x = seq(0, 12, length.out = 201),
-  y = seq(0, 12, length.out = 201)
+  x = seq(0, 12, length.out = 151),
+  y = seq(0, 12, length.out = 151)
 )
 
 df$fnxy <- apply(df, 1, fn)
@@ -919,7 +919,7 @@ wireframe(
     )
   ),
   par.settings = list(axis.line = list(col = "transparent")),
-  screen = list(z = 120, x = -65, y = 0)
+  screen = list(z = 30, x = -65, y = 0)
 )
 ```
 
@@ -986,8 +986,8 @@ fn <- function(x) {
 #| echo: !expr knitr::is_html_output()
 
 dat <- expand.grid(
-  x1 = seq(from = 2, to = 4, length.out = 21),
-  x2 = seq(from = 2, to = 4, length.out = 21)
+  x1 = seq(from = 0, to = 4, length.out = 41),
+  x2 = seq(from = 0, to = 4, length.out = 41)
 )
 dat$fn <- apply(dat, 1, fn)
 
@@ -1426,10 +1426,6 @@ ggplot() +
   labs(x = "经度", y = "纬度")
 ```
 
-::: {#exr-tsp}
-某人要周游美国各州，从纽约出发，走遍 50 个州的行政中心，最后回到纽约。规划旅行线路使得总行程最短。Base R 内置的 R 包 **datasets** 包含美国 50 个州的地理中心数据 `state.center` 。
-:::
-
 ### 投资组合问题 {#sec-markowitz-portfolio-optimization}
 
 马科维茨投资组合优化问题如下：
@@ -1701,3 +1697,221 @@ fit_topo_reml <- gls(z ~ 1,
 )
 summary(fit_topo_reml)
 ```
+
+### 有限混合模型 {#sec-finite-mixtures}
+
+有限混合模型（Finite Mixtures of Distributions）的应用非常广泛，本节参考 **BB** 包 [@BB2009] 的帮助手册，以泊松混合分布为例，介绍其参数的极大似然估计。更多详细的理论和算法介绍从略，感兴趣的读者可以查阅相关文献 [@Hasselblad1969]。**BB** 包比内置函数 `optim()` 功能更强，可以求解大规模非线性方程组，也可以求解带简单约束的非线性优化问题，还可以从多个初始值出发寻找全局最优解。
+
+两个泊松分布以一定比例 $p$ 混合，以概率 $p$ 服从泊松分布 $\mathrm{Poisson}(\lambda_1)$ ，而以概率 $1-p$ 服从泊松分布 $\mathrm{Poisson}(\lambda_1)$ 。
+
+$$
+p\times \mathrm{Poisson}(\lambda_1) + (1 - p)\times \mathrm{Poisson}(\lambda_2)
+$$
+
+泊松混合分布的概率密度函数 $f(x;p,\lambda_1,\lambda_2)$ 如下：
+
+$$
+f(x;p,\lambda_1,\lambda_2) = p \times \frac{\lambda_1^x \exp(-\lambda_1)}{x!} + (1 - p) \times \frac{\lambda_2^x \exp(-\lambda_2)}{x!} 
+$$
+
+随机变量 $X$ 服从参数为 $p$ 的伯努利分布 $X \sim \mathrm{Bernoulli}(1, p)$ ，随机变量 $Y$ 服从泊松混合分布，在伯努利分布的基础上，泊松混合分布也可作如下定义：
+
+$$
+\begin{array}{l}
+Y \sim \left\{
+\begin{array}{l}
+\mathrm{Poisson}(\lambda_1), & \text{当} ~ X = 1 ~ \text{时},\\
+\mathrm{Poisson}(\lambda_2), & \text{当} ~ X = 0 ~ \text{时}.
+\end{array} \right.
+\end{array}
+$$
+
+对数似然函数如下：
+
+$$
+\ell(p) = \sum_{i=0}^{n}y_i \log\big(p\times \exp(-\lambda_1) \times\frac{\lambda_1^{x_i}}{x_i!} + (1 - p)\times \exp(-\lambda_2) \times\frac{\lambda_2 ^{x_i}}{x_i!} \big)
+$$
+
+下表数据来自 1947 年 Walter Schilling 发表在 JASA 的一篇文章 [@Schilling1947]。连续三年搜集伦敦泰晤士报刊登的死亡告示，记录每天 80 岁及以上女性死亡人数，经过汇总统计，发现三年里，一天中死亡 6 人的告示共出现有 27 次。
+
+|          |     |     |     |     |     |     |     |     |     |     |
+|----------|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+| 死亡人数 | 0   | 1   | 2   | 3   | 4   | 5   | 6   | 7   | 8   | 9   |
+| 发生频次 | 162 | 267 | 271 | 185 | 111 | 61  | 27  | 8   | 3   | 1   |
+
+: 死亡人数的统计
+
+考虑到夏季和冬季对老人死亡率的影响是不同的，因此，引入泊松混合分布来对数据建模。
+
+```{r}
+# 对数似然函数
+# p 是一个长度为 3 的向量
+# y 是观测数据向量
+poissmix_loglik <- function(p, y) {
+  i <- 0:(length(y) - 1)
+  loglik <- y * log(p[1] * exp(-p[2]) * p[2]^i / exp(lgamma(i + 1)) +
+    (1 - p[1]) * exp(-p[3]) * p[3]^i / exp(lgamma(i + 1)))
+  sum(loglik)
+}
+# lgamma(i + 1) 表示整数 i 的阶乘的对数
+# 参数的下限
+lo <- c(0, 0, 0)
+# 参数的上限
+hi <- c(1, Inf, Inf)
+# 随机生成一组参数初始值
+p0 <- runif(3, c(0.2, 1, 1), c(0.8, 5, 8)) 
+# 汇总统计出来的死亡人数的频次分布
+y <- c(162, 267, 271, 185, 111, 61, 27, 8, 3, 1)
+```
+
+调用 **BB** 包的函数 `BBoptim()` 求解多元非线性箱式约束优化问题。
+
+```{r}
+library(BB)
+# 参数估计
+ans <- BBoptim(
+  par = p0, fn = poissmix_loglik, y = y,
+  lower = lo, upper = hi, 
+  control = list(maximize = TRUE)
+)
+ans
+```
+
+`numDeriv::hessian` 计算极大似然点的黑塞矩阵，然后计算参数估计的标准差。
+
+```{r}
+# 黑塞矩阵
+hess <- numDeriv::hessian(x = ans$par, func = poissmix_loglik, y = y)
+hess
+# 标准差
+se <- sqrt(diag(solve(-hess)))
+se
+```
+
+`multiStart` 从不同初始值出发寻找全局最大值，先找一系列局部极大值，通过比较获得全局最大值。
+
+```{r}
+# 随机生成 10 组初始值
+p0 <- matrix(runif(30, c(0.2, 1, 1), c(0.8, 8, 8)), 
+             nrow = 10, ncol = 3, byrow = TRUE)
+ans <- multiStart(
+  par = p0, fn = poissmix_loglik, action = "optimize",
+  y = y, lower = lo, upper = hi, quiet = TRUE,
+  control = list(maximize = TRUE, trace = FALSE)
+)
+# 筛选出迭代收敛的解
+pmat <- round(cbind(ans$fvalue[ans$conv], ans$par[ans$conv, ]), 4)
+dimnames(pmat) <- list(NULL, c("fvalue", "parameter 1", 
+                               "parameter 2", "parameter 3"))
+# 去掉结果一样的重复解
+pmat[!duplicated(pmat), ]
+```
+
+### 置信区间估计 {#sec-binomial-confidence-interval}
+
+一元函数最优化问题和求根问题是相关的。在统计应用中，二项分布的比例参数的置信区间估计涉及求根，伽马分布的参数估计涉及求根。
+
+形状参数为 $\alpha$ 和尺度参数为 $\sigma$ 的伽马分布的概率密度函数 $f(x;\alpha, \sigma)$ 如下：
+
+$$
+f(x;\alpha,\sigma) = \frac{1}{\sigma^\alpha \Gamma(\alpha)}x^{\alpha - 1} \exp(- \frac{x}{\sigma}), \quad \alpha \geq 0, \sigma > 0
+$$
+
+其中，$\Gamma(\cdot)$ 表示伽马函数，下 @fig-dgamma 展示两个伽马分布的概率密度函数，形状参数分别为 5 和 9，尺度参数均为 1，即伽马分布 $f(x; 5, 1)$ 和 $f(x; 9, 1)$ 。
+
+```{r}
+#| label: fig-dgamma
+#| fig-cap: "伽马分布的概率密度函数"
+#| fig-width: 5
+#| fig-height: 4
+#| fig-showtext: true
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
+
+ggplot() +
+  geom_function(
+    fun = dgamma, args = list(shape = 9, scale = 1),
+    aes(colour = "list(alpha == 9, sigma == 1)"),
+    linewidth = 1.2, xlim = c(0, 20), 
+  ) +
+  geom_function(
+    fun = dgamma, args = list(shape = 5, scale = 1),
+    aes(colour = "list(alpha == 5, sigma == 1)"),
+    linewidth = 1.2, xlim = c(0, 20)
+  ) +
+  scale_colour_viridis_d(
+    labels = scales::parse_format(),
+    begin = 0.3, end = 0.7,
+    option = "C"
+  ) +
+  theme_bw(base_family = "sans") +
+  theme(axis.title = element_text(family = "Noto Serif CJK SC"),
+        legend.title = element_text(family = "Noto Serif CJK SC"),
+        legend.position = "top", legend.justification = "right") +
+  labs(x = "随机变量", y = "概率密度", color = "参数")
+```
+
+给定一组来自伽马分布的样本 $x_1,x_2,\ldots,x_n$ ，关于参数 $\alpha$ 和 $\sigma$ 的似然函数如下：
+
+$$
+\mathcal{L}(\alpha, \sigma) = \big(\frac{1}{\sigma^\alpha \Gamma(\alpha)}\big)^{n} (\prod_{i=1}^{n} x_i)^{\alpha - 1} \exp(- \frac{ \sum_{i=1}^{n} x_i }{\sigma})
+$$
+
+则，其对数似然函数如下：
+
+$$
+\ell(\alpha, \sigma) = -n\big(\alpha \log(\sigma) + \log \Gamma(\alpha) \big) + (\alpha - 1)\sum_{i=1}^{n}\log(x_i) - \frac{ \sum_{i=1}^{n} x_i }{\sigma}
+$$
+
+对数似然函数关于参数 $\alpha$ 和 $\sigma$ 的偏导数如下：
+
+$$
+\begin{aligned}
+\frac{\partial \ell(\alpha,\sigma)}{\partial \alpha} &= -n\Big( \log(\sigma) + \big(\log \Gamma(\alpha)\big)' \Big) + \sum_{i=1}^{n}\log (x_i) = 0 \\
+\frac{\partial \ell(\alpha,\sigma)}{\partial \sigma} &= - \frac{n\alpha}{\sigma} + \frac{\sum_{i=1}^{n}x_i}{\sigma^2} = 0
+\end{aligned}
+$$
+
+根据第二个式子可得 $\sigma = \frac{1}{n\alpha}\sum_{i=1}^{n}x_i$ ，将其代入第一个式子可得
+
+$$
+\log(\alpha) - \big(\log \Gamma(\alpha)\big)' = \log\big(\frac{1}{n}\sum_{i=1}^{n}x_i\big) - \frac{1}{n}\sum_{i=1}^{n}\log (x_i)
+$$
+
+```{r}
+set.seed(20232023)
+x <- rgamma(1000, shape = 1.5, scale = 2)
+# 形状参数和尺度参数的矩估计
+c(mean(x)^2 /var(x), var(x)/mean(x))
+# 极大似然估计
+# 常量
+cc <- log(mean(x)) - mean(log(x))
+# 方程
+fun <- function(alpha){
+  log(alpha) - digamma(alpha) - cc
+}
+# 找根
+uniroot(f = fun, interval = c(1, 3))
+```
+
+求得形状参数的估计 $\alpha = 1.610272$ ，进而，可得尺度参数的估计 $\sigma = 1.932667$ 。
+
+函数 `uniroot()` 只能找到方程的一个根，**rootSolve** 包采用牛顿-拉弗森（ Newton-Raphson ）算法找一元非线性方程（组）的根，特别适合有多个根的情况。
+
+```{r}
+library(rootSolve)
+# 非线性方程（组）的根
+multiroot(f = fun, start = 1.2)
+# 搜索一个方程在区间内所有的根
+uniroot.all(f = fun, interval = c(1, 3))
+```
+
+### 垃圾邮件分类 {#sec-spam-emails}
+
+**kernlab** 包[@kernlab2004]
+
+## 习题 {#sec-optimization-exercises}
+
+1.  某人要周游美国各州，从纽约出发，走遍 50 个州的行政中心，最后回到纽约。规划旅行线路使得总行程最短。Base R 内置的 R 包 **datasets** 包含美国 50 个州的地理中心数据 `state.center` 。
+
+2.  有限混合模型也常用 EM 算法来估计参数，美国黄石公园老忠实间歇泉的喷发规律近似为二维高斯混合分布，请读者以 R 软件内置的数据集 `faithful` 为基础，采用 EM 算法估计参数。
