@@ -1698,7 +1698,7 @@ fit_topo_reml <- gls(z ~ 1,
 summary(fit_topo_reml)
 ```
 
-### 有限混合模型 {#sec-finite-mixtures}
+### 泊松混合分布 {#sec-poisson-mixture-distributions}
 
 有限混合模型（Finite Mixtures of Distributions）的应用非常广泛，本节参考 **BB** 包 [@BB2009] 的帮助手册，以泊松混合分布为例，介绍其参数的极大似然估计。更多详细的理论和算法介绍从略，感兴趣的读者可以查阅相关文献 [@Hasselblad1969]。**BB** 包比内置函数 `optim()` 功能更强，可以求解大规模非线性方程组，也可以求解带简单约束的非线性优化问题，还可以从多个初始值出发寻找全局最优解。
 
@@ -1720,8 +1720,8 @@ $$
 \begin{array}{l}
 Y \sim \left\{
 \begin{array}{l}
-\mathrm{Poisson}(\lambda_1), & \text{当} ~ X = 1 ~ \text{时},\\
-\mathrm{Poisson}(\lambda_2), & \text{当} ~ X = 0 ~ \text{时}.
+\mathrm{Poisson}(\lambda_1), \quad \text{当} ~ X = 1 ~ \text{时},\\
+\mathrm{Poisson}(\lambda_2), \quad \text{当} ~ X = 0 ~ \text{时}.
 \end{array} \right.
 \end{array}
 $$
@@ -1729,7 +1729,7 @@ $$
 对数似然函数如下：
 
 $$
-\ell(p) = \sum_{i=0}^{n}y_i \log\big(p\times \exp(-\lambda_1) \times\frac{\lambda_1^{x_i}}{x_i!} + (1 - p)\times \exp(-\lambda_2) \times\frac{\lambda_2 ^{x_i}}{x_i!} \big)
+\ell(p,\lambda_1,\lambda_2) = \sum_{i=0}^{n}y_i \log\big(p\times \exp(-\lambda_1) \times\frac{\lambda_1^{x_i}}{x_i!} + (1 - p)\times \exp(-\lambda_2) \times\frac{\lambda_2 ^{x_i}}{x_i!} \big)
 $$
 
 下表数据来自 1947 年 Walter Schilling 发表在 JASA 的一篇文章 [@Schilling1947]。连续三年搜集伦敦泰晤士报刊登的死亡告示，记录每天 80 岁及以上女性死亡人数，经过汇总统计，发现三年里，一天中死亡 6 人的告示共出现有 27 次。
@@ -1807,9 +1807,9 @@ dimnames(pmat) <- list(NULL, c("fvalue", "parameter 1",
 pmat[!duplicated(pmat), ]
 ```
 
-### 置信区间估计 {#sec-binomial-confidence-interval}
+### 极大似然估计 {#sec-maximum-likelihood-estimation}
 
-一元函数最优化问题和求根问题是相关的。在统计应用中，二项分布的比例参数的置信区间估计涉及求根，伽马分布的参数估计涉及求根。
+一元函数最优化问题和求根问题是相关的。在统计应用中，二项分布的比例参数的置信区间估计涉及求根，伽马分布的参数的极大似然估计涉及求根。下面介绍求根在估计伽马分布的参数中的应用。
 
 形状参数为 $\alpha$ 和尺度参数为 $\sigma$ 的伽马分布的概率密度函数 $f(x;\alpha, \sigma)$ 如下：
 
