@@ -1457,7 +1457,7 @@ $$
 
 其中，$\bm{w}$ 是权重向量，每个分量代表对投资对象的投资比例，$\hat{\Sigma}$ 是关于投资对象的协方差矩阵，约束条件中包含两个部分，一个是权重之和为 1，一个是投资组合的收益率达到预期值。下面基于 12个科技公司公开的股价数据介绍此组合优化问题。
 
-**首先利用 quantmod** 包获取微软、谷歌、亚马逊、惠普、甲骨文、英特尔、威瑞森、eBay、AT&T、Apple、Adobe 和 IBM 等 12 支股票的历史股价数据。根据 2022-11-01 至 2022-12-01 期间的股票调整价，计算各支股票天粒度的收益率。收益率可以看作一个随机变量，收益率的波动变化，即随机变量的方差，可以看作风险。
+首先利用 **quantmod** 包获取微软、谷歌、亚马逊、惠普、甲骨文、英特尔、威瑞森、eBay、AT&T、Apple、Adobe 和 IBM 等 12 支股票的历史股价数据。根据 2022-11-01 至 2022-12-01 期间的股票调整价，计算各支股票天粒度的收益率。收益率可以看作一个随机变量，收益率的波动变化，即随机变量的方差，可以看作风险。
 
 ```{r}
 # 12 支股票的收益率
@@ -1492,9 +1492,7 @@ sqrt(t(w) %*% cov(DD) %*% w)
 
 求解出来的投资组合是甲骨文、 AT&T 和 IBM，投资比例分别是 33.58% 、37.40% 和 29.02% 。以上 12 支股票都属于科技公司，收益率具有非常高的相关性，因此，最终选出来 3 支。
 
--   最大回报
-
-给定风险下，最大回报。
+与给定预期回报而风险最小的组合优化问题相对应的是另一个问题：给定风险的约束条件下，获得预期回报最大的组合。即求解如下组合优化问题：
 
 $$
 \begin{aligned}
@@ -1504,21 +1502,24 @@ $$
 \end{aligned}
 $$
 
-给定风险约束 $\sigma$ 回报最大的组合
+其中，目标函数中 $\hat{\bm{\mu}}$ 表示根据历史数据获得的投资对象的收益率，约束条件中 $\sigma$ 表示投资者可以接受的投资风险，其他符号的含义同前。在给定风险约束 $\sigma$ 下，求取回报最大的组合。线性约束也可以用函数 `Q_constraint()` 来表示，这样线性约束和二次约束可以整合在一起，代码如下：
 
 ```{r}
+# 风险阈值
 sigma <- sqrt(t(w) %*% cov(DD) %*% w)
-zero_mat <- slam::simple_triplet_zero_matrix(ncol(DD))
+sigma
+# 12 阶的全 0 矩阵
+zero_mat <- diag(x = rep(0, ncol(DD)))
 # 目标函数
 foo <- Q_objective(Q = zero_mat, L = colMeans(DD))
-# 二次约束
+# 线性和二次约束
 maxret_constr <- Q_constraint(
   Q = list(cov(DD), NULL),
   L = rbind(
     rep(0, ncol(DD)),
     rep(1, ncol(DD))
   ),
- dir = c("<=", "<="), rhs = c(sigma^2, 1)
+ dir = c("<=", "=="), rhs = c(1/2 * sigma^2, 1)
 )
 # 目标规划
 op <- OP(objective = foo, constraints = maxret_constr, maximum = TRUE)
@@ -1531,14 +1532,65 @@ op
 ROI_applicable_solvers(op)
 ```
 
-`quadprog` 求解器不能求解该问题，尝试求解器 `nloptr.slsqp`
+`quadprog` 求解器不能求解该问题，尝试求解器 `nloptr.slsqp` ，12 支股票同等看待，所以，权重的初始值都设置为 $\frac{1}{12}$ 。
 
 ```{r}
-#| eval: false
-# 还需要初始值
-sol <- ROI_solve(op, solver = "nloptr.slsqp")
-w <- sol$solution
+# 求解规划问题
+nlp <- ROI_solve(op, solver = "nloptr.slsqp", start = rep(1/12, 12))
+# 投资组合
+w <- nlp$solution
+# 保留 4 位小数
 round(w, 4)
+# 投资组合的预期收益
+w %*% colMeans(DD)
+```
+
+结果显示，投资组合是甲骨文、 AT&T 和 IBM，投资比例分别是 33.58% 、37.40% 和 29.02% 。
+
+值得注意，当约束条件比较复杂，比如包含一些非线性的等式或不等式约束，可以用函数 `F_constraint()` 来表示，这更加的灵活，但需要传递（非）线性约束的雅可比向量或矩阵。用函数 `F_constraint()` 表示的代码如下，求解结果是一样的。
+
+```{r}
+# x 是一个表示权重的列向量 
+# 等式约束
+# 权重之和为 1 的约束
+heq <- function(x) {
+  sum(x)
+}
+# 等式约束的雅可比
+heq.jac <- function(x) {
+  rep(1, length(x))
+}
+# 不等式约束
+# 二次的风险约束
+hin <- function(x){
+  1/2 * t(x) %*% cov(DD) %*% x
+}
+# 不等式约束的雅可比
+hin.jac <- function(x){
+  cov(DD) %*% x
+}
+# 目标规划
+op <- OP(
+  objective = L_objective(L = colMeans(DD)), # 12 个目标变量
+  constraints = F_constraint(
+    # 等式和不等式约束
+    F = list(heq = heq, hin = hin),
+    dir = c("==", "<="),
+    rhs = c(1, 1/2 * sigma^2),
+    # 等式和不等式约束的雅可比
+    J = list(heq.jac = heq.jac, hin.jac = hin.jac)
+  ),
+  # 目标变量的取值范围
+  bounds = V_bound(ld = 0, ud = 1, nobj = 12L),
+  maximum = TRUE # 最大回报
+)
+op
+# 求解规划问题
+nlp <- ROI_solve(op, solver = "nloptr.slsqp", start = rep(1/12, 12))
+# 投资组合
+w <- nlp$solution
+round(w, 4)
+# 投资组合的预期收益
 w %*% colMeans(DD)
 ```
 
