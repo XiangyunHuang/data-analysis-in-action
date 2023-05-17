@@ -904,7 +904,7 @@ wireframe(
   ylab = expression(x[2]),
   zlab = list(expression(
     italic(f) ~ group("(", list(x[1], x[2]), ")")
-  ), rot = 90),
+  ), rot = 90), alpha = 0.75, 
   scales = list(arrows = FALSE, col = "black"),
   shade.colors.palette = custom_palette,
   # 减少三维图形的边空
@@ -954,7 +954,7 @@ Min=@cos(x1) * @cos(x2) - @Sum(P(j): (-1)^j * j * 2 * @exp(-500 * ((x1 - j * 2)^
 
 启用全局优化求解器后，在 $(x_1 = 7.999982, x_2 = 7.999982)$ 取得最小值 -7.978832。而默认未启用全局优化求解器的情况下，在 $(x_1 = 18.84956, x_2 = -40.84070)$ 取得局部极小值 -1.000000。
 
-在这种情况下，数值优化算法遇到瓶颈，可以采用一些全局随机优化算法，比如 **GA** 包 [@GA2013] 实现的遗传算法。经过对参数的一些调优，可以获得与商业软件一样的结果。
+在这种情况下，数值优化算法遇到瓶颈，可以采用一些全局随机优化算法，比如 **GA** 包 [@GA2013] 实现的遗传算法。经过对参数的一些调优，可以获得与商业软件几乎一样的结果。
 
 ```{r}
 nlp <- GA::ga(
@@ -970,7 +970,7 @@ nlp@solution
 nlp@fitnessValue
 ```
 
-其中，参数 `type` 指定决策变量的类型，`type = "real-valued"` 表示目标函数中的决策变量是实值连续的，参数 `fitness` 是目标函数，函数 `ga()` 对目标函数求极大，所以，对当前优化问题，添加了一个负号。 参数 `popSize` 控制种群大小，值越大，运行时间越长，搜索范围越广，获得的全局优化解越好。对于复杂的优化问题，可以不断增加种群大小来寻优，直至增加种群大小也不能获得更好的解。参数 `maxiter` 控制种群进化的次数，值越大，搜索次数可以越多，获得的解越好。参数 `popSize` 的影响大于参数 `maxiter` ，减少陷入局部最优解（陷阱）的可能。根据已知条件尽可能缩小可行域，可以减少种群大小，进而减少算法迭代时间。
+其中，参数 `type` 指定决策变量的类型，`type = "real-valued"` 表示目标函数中的决策变量是实值连续的，参数 `fitness` 是目标函数，函数 `ga()` 对目标函数求极大，所以，对当前优化问题，添加了一个负号。 参数 `popSize` 控制种群大小，值越大，运行时间越长，搜索范围越广，获得的全局优化解越好。对于复杂的优化问题，可以不断增加种群大小来寻优，直至增加种群大小也不能获得更好的解。参数 `maxiter` 控制种群进化的次数，值越大，搜索次数可以越多，获得的解越好。参数 `popSize` 的影响大于参数 `maxiter` ，减少陷入局部最优解（陷阱）的可能。根据已知条件尽可能缩小可行域，以减少种群数量，进而缩短算法迭代时间。
 
 ### 箱式约束优化
 
@@ -1354,7 +1354,7 @@ $$
 \end{aligned}
 $$
 
-某人要去美国 10 个城市旅行，分别是亚特兰大 Atlanta、芝加哥 Chicago、丹佛 Denver 、休斯顿 Houston、洛杉矶 Los Angeles、迈阿密 Miami、纽约 New York、旧金山 San Francisco、 西雅图 Seattle、华盛顿特区 Washington DC。10 个城市的分布如 @fig-tsp-problem 所示。从亚特兰大出发，最后回到亚特兰大，如何规划旅行线路使得总行程最短？行程最短的路径是什么？
+某人要去美国 10 个城市旅行，分别是亚特兰大 Atlanta、芝加哥 Chicago、丹佛 Denver 、休斯顿 Houston、洛杉矶 Los Angeles、迈阿密 Miami、纽约 New York、旧金山 San Francisco、 西雅图 Seattle、华盛顿特区 Washington DC。10 个城市的分布如 @fig-tsp-problem 所示。从洛杉矶出发，最后回到洛杉矶，如何规划旅行线路使得总行程最短？行程最短的路径是什么？
 
 ```{r}
 #| label: fig-tsp-problem
@@ -1446,9 +1446,7 @@ ggplot() +
 
 ### 投资组合问题 {#sec-markowitz-portfolio-optimization}
 
-马科维茨投资组合优化问题如下：
-
--   给定约束条件下，风险最小的组合。
+作为一个理性的投资者，希望回报最大而风险最小，给定投资和回报的约束条件下，选择风险最小的组合。一个简单的马科维茨投资组合优化问题如下：
 
 $$
 \begin{aligned}
@@ -1457,37 +1455,42 @@ $$
 \end{aligned}
 $$
 
-求解组合优化问题
+其中，$\bm{w}$ 是权重向量，每个分量代表对投资对象的投资比例，$\hat{\Sigma}$ 是关于投资对象的协方差矩阵，约束条件中包含两个部分，一个是权重之和为 1，一个是投资组合的收益率达到预期值。下面基于 12个科技公司公开的股价数据介绍此组合优化问题。
+
+**首先利用 quantmod** 包获取微软、谷歌、亚马逊、惠普、甲骨文、英特尔、威瑞森、eBay、AT&T、Apple、Adobe 和 IBM 等 12 支股票的历史股价数据。根据 2022-11-01 至 2022-12-01 期间的股票调整价，计算各支股票天粒度的收益率。收益率可以看作一个随机变量，收益率的波动变化，即随机变量的方差，可以看作风险。
 
 ```{r}
-# 理解数据，重新搜集和制作数据替代 LPP2005.RET
-# data(LPP2005.RET, package = "fPortfolio")
-library(timeDate)
-library(timeSeries)
-LPP2005.RET <- readRDS(file = "data/LPP2005.RET.rds")
-lppData <- 100 * LPP2005.RET[, 1:6]
-r <- mean(lppData)
+# 12 支股票的收益率
+tech_stock_return <- readRDS(file = "data/tech_stock_return.rds")
+DD <- 100 * tech_stock_return
+# 平均收益率
+r <- mean(DD)
 r
 # 目标函数
-foo <- Q_objective(Q = cov(lppData), L = rep(0, ncol(lppData)))
+foo <- Q_objective(Q = cov(DD), L = rep(0, ncol(DD)))
 # 投资约束
-full_invest <- L_constraint(rep(1, ncol(lppData)), "==", 1)
+full_invest <- L_constraint(rep(1, ncol(DD)), "==", 1)
 # 回报约束
-target_return <- L_constraint(apply(lppData, 2, mean), "==", r)
+target_return <- L_constraint(apply(DD, 2, mean), "==", r)
 # 目标规划
 op <- OP(objective = foo, constraints = rbind(full_invest, target_return))
 op
 ```
 
-求解器 `nloptr.slsqp` 需要给初值，而求解器 `quadprog` 不需要给初值。下面使用 quadprog 来求解组合优化问题。
+求解器 `nloptr.slsqp` 需要给初值，而求解器 `quadprog` 不需要给初值。下面使用 `quadprog` 来求解组合优化问题。
 
 ```{r}
 library(ROI.plugin.quadprog)
 sol <- ROI_solve(op, solver = "quadprog")
+# 最优解：投资组合
 w <- sol$solution
+# 保留 4 位小数
 round(w, 4)
-sqrt(t(w) %*% cov(lppData) %*% w)
+# 目标函数值：投资风险
+sqrt(t(w) %*% cov(DD) %*% w)
 ```
+
+求解出来的投资组合是甲骨文、 AT&T 和 IBM，投资比例分别是 33.58% 、37.40% 和 29.02% 。以上 12 支股票都属于科技公司，收益率具有非常高的相关性，因此，最终选出来 3 支。
 
 -   最大回报
 
@@ -1504,16 +1507,16 @@ $$
 给定风险约束 $\sigma$ 回报最大的组合
 
 ```{r}
-sigma <- sqrt(t(w) %*% cov(lppData) %*% w)
-zero_mat <- slam::simple_triplet_zero_matrix(ncol(lppData))
+sigma <- sqrt(t(w) %*% cov(DD) %*% w)
+zero_mat <- slam::simple_triplet_zero_matrix(ncol(DD))
 # 目标函数
-foo <- Q_objective(Q = zero_mat, L = colMeans(lppData))
+foo <- Q_objective(Q = zero_mat, L = colMeans(DD))
 # 二次约束
 maxret_constr <- Q_constraint(
-  Q = list(cov(lppData), NULL),
+  Q = list(cov(DD), NULL),
   L = rbind(
-    rep(0, ncol(lppData)),
-    rep(1, ncol(lppData))
+    rep(0, ncol(DD)),
+    rep(1, ncol(DD))
   ),
  dir = c("<=", "<="), rhs = c(sigma^2, 1)
 )
@@ -1536,7 +1539,7 @@ ROI_applicable_solvers(op)
 sol <- ROI_solve(op, solver = "nloptr.slsqp")
 w <- sol$solution
 round(w, 4)
-w %*% colMeans(lppData)
+w %*% colMeans(DD)
 ```
 
 ### 高斯过程回归 {#sec-gaussian-process-regression}
@@ -1835,7 +1838,7 @@ $$
 f(x;\alpha,\sigma) = \frac{1}{\sigma^\alpha \Gamma(\alpha)}x^{\alpha - 1} \exp(- \frac{x}{\sigma}), \quad \alpha \geq 0, \sigma > 0
 $$
 
-其中，$\Gamma(\cdot)$ 表示伽马函数，下 @fig-dgamma 展示两个伽马分布的概率密度函数，形状参数分别为 5 和 9，尺度参数均为 1，即伽马分布 $f(x; 5, 1)$ 和 $f(x; 9, 1)$ 。
+其中，$\Gamma(\cdot)$ 表示伽马函数，伽马分布的均值为 $\alpha \sigma$ ，方差为 $\alpha\sigma^2$ 。下 @fig-dgamma 展示两个伽马分布的概率密度函数，形状参数分别为 5 和 9，尺度参数均为 1，即伽马分布 $f(x; 5, 1)$ 和 $f(x; 9, 1)$ 。
 
 ```{r}
 #| label: fig-dgamma
@@ -1933,3 +1936,5 @@ uniroot.all(f = fun, interval = c(1, 3))
 1.  某人要周游美国各州，从纽约出发，走遍 50 个州的行政中心，最后回到纽约。规划旅行线路使得总行程最短。Base R 内置的 R 包 **datasets** 包含美国 50 个州的地理中心数据 `state.center` 。
 
 2.  有限混合模型也常用 EM 算法来估计参数，美国黄石公园老忠实间歇泉的喷发规律近似为二维高斯混合分布，请读者以 R 软件内置的数据集 `faithful` 为基础，采用 EM 算法估计参数。
+
+3.  获取百度、阿里、腾讯、京东、美团、滴滴、字节、360、网易、新浪等 10 支股票的历史股价数据。根据 2021-12-01 至 2022-12-01 股票的调整价计算 12 个月的股价收益率，根据月度股价收益率和波动率数据，设置投资组合，使得月度收益率不低于2%。
