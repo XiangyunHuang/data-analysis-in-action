@@ -41,6 +41,7 @@ library(ROI)
 library(ROI.plugin.glpk)
 library(ROI.plugin.nloptr)
 library(ROI.plugin.scs)
+library(ROI.plugin.quadprog)
 library(lattice)
 # 自定义调色板
 custom_palette <- function(irr, ref, height, saturation = 0.9) {
@@ -426,13 +427,31 @@ solution$getValue(y)
 
 **kernlab** 包[@kernlab2004] 当矩阵 $D$ 为半正定时。
 
-## 锥优化 {#sec-cone-optimization}
+## 凸锥优化 {#sec-cone-optimization}
 
-什么是锥？锥的数学表示和几何表示。
+### 锥与凸锥
 
-锥是定义在半正定的矩阵之上的。
+二维平面上，以原点为圆心的圆和以原点为顶点的扇面是凸锥。三维空间中，以原点为球心的球和以原点为顶点的圆锥是凸锥，如 @fig-convex-cone 所示。
 
-$n$ 阶矩阵 $A$ 是对称且半正定的，我们将这样的矩阵构成的集合记为 $\mathcal{K}_{+}^n$ 。
+```{r}
+#| label: fig-convex-cone
+#| fig-cap: 常见的凸锥
+#| echo: false
+#| out-width: 65%
+
+knitr::include_graphics(path = "images/cone.png")
+```
+
+锥定义在对称的矩阵上，凸锥要求矩阵正定。一个 2 阶对称矩阵 $A$ 是正定的
+
+$$
+A = \begin{bmatrix}
+  a_{11} & a_{12}  \\
+  a_{21} & a_{22}  
+  \end{bmatrix}
+$$
+
+意味着 $a_{11} > 0, a_{22} > 0, a_{12} = a_{21}, a_{11}a_{22} - a_{12}a_{21} > 0$ 。一般地，将 $n$ 阶半正定的对称矩阵 $A$ 构成的集合记为 $\mathcal{K}_{+}^n$ 。
 
 $$
 \mathcal{K}_{+}^n = \{A \in \mathbb{R}^{n \times n}|\bm{x}^{\top}A\bm{x} \geq 0, ~ \forall \bm{x} \in \mathbb{R}^n\}
@@ -500,11 +519,12 @@ fun <- function(x) {
 }
 fun(2)
 A <- toeplitz(x = 1:3 / 3)
+A
 det(A)
 solve(A, t(t(rep(1, 3))))
 ```
 
-锥优化问题的一般形式如下
+凸锥优化问题的一般形式如下
 
 $$
 \begin{aligned}
@@ -516,9 +536,39 @@ $$ {#eq-convex-cone}
 
 其中，集合 $\mathcal{K}$ 是一个非空的封闭凸锥。在一个凸锥里，寻求一个线性目标函数的最小值。专门求解此类问题的 **scs** 包 [@scs2016] 也在 **ROI** 包的支持范围内，可以求解的锥优化包括零锥、线性锥、二阶锥、指数锥、幂锥和半正定锥。
 
+### 零锥
+
+零锥的定义如下：
+
+$$
+\mathcal{K}_{zero} = \{0\}
+$$
+
+常用于表示线性等式约束。
+
+### 线性锥
+
+线性锥（Linear Cone）的定义如下：
+
+$$
+\mathcal{K}_{lin} = \{x \in \mathbb{R}|x \geq 0\}
+$$
+
+常用于表示线性不等式约束。
+
+### 二阶锥
+
+二阶锥（Second-order Cone）的定义如下：
+
+$$
+\mathcal{K}_{soc}^{n} = \{(t,x) \in \mathbb{R}^n|x \in \mathbb{R}^{n-1}, t\in\mathbb{R},\| x \|_2 \leq t\}
+$$
+
+常用于凸二次优化问题。
+
 ### 指数锥
 
-指数锥的定义如下：
+指数锥（Exponential Cone）的定义如下：
 
 $$
 \mathcal{K}_{\text{expp}} = \{(x_1, x_2,x_3) \in \mathbb{R}^3 | x_2 > 0,x_2\exp\big(\frac{x_1}{x_2}\big) \leq x_3\} \cup \{(x_1, 0, x_3) \in \mathbb{R}^3 | x_1 \leq 0, x_3 \geq 0 \}
@@ -530,7 +580,7 @@ $$
 \mathcal{K}_{\text{expd}} = \{(x_1, x_2,x_3) \in \mathbb{R}^3 | x_1 < 0, - x_1\exp\big(\frac{x_2}{x_1}\big) \leq \exp(1)x_3\} \cup \{(0, x_2, x_3) \in \mathbb{R}^3 | x_2 , x_3 \geq 0 \}
 $$
 
-考虑一个锥规划问题
+考虑一个锥优化问题
 
 $$
 \begin{aligned}
@@ -565,7 +615,7 @@ A = \begin{bmatrix}
 \end{bmatrix}
 $$
 
-函数 `K_expp()` 表示指数锥，整个锥规划问题的表示
+指数锥用函数 `K_expp()` 表示，锥优化问题的代码如下：
 
 ```{r}
 # 锥约束
@@ -596,7 +646,7 @@ expp_sol$objval
 
 ### 幂锥
 
-一个三维幂锥的定义如下：
+一个三维幂锥（Power Cone）的定义如下：
 
 $$
 \mathcal{K}_{\text{powp}}^{\alpha} = \{(x_1, x_2,x_3) \in \mathbb{R}^3 | x_1,x_2 \geq 0,x_1^{\alpha}x_2^{1-\alpha} \geq |x_3| \}, \alpha \in [0,1]
@@ -608,7 +658,7 @@ $$
 \mathcal{K}_{\text{powp}}^{\alpha} = \Big\{(x_1, x_2,x_3) \in \mathbb{R}^3 | x_1,x_2 \geq 0,\big(\frac{x_1}{\alpha}\big)^{\alpha}\big(\frac{x_2}{1 - \alpha}\big)^{1-\alpha} \geq |x_3| \Big\}, \alpha \in [0,1]
 $$
 
-考虑如下锥规划问题
+考虑如下锥优化问题
 
 $$
 \begin{aligned}
@@ -644,7 +694,7 @@ A = \begin{bmatrix}
 \end{bmatrix}
 $$
 
-函数 `K_powp()` 表示幂锥
+幂锥用函数 `K_powp()` 表示，锥优化问题的代码如下：
 
 ```{r}
 A <- rbind(c(-1, 0), c(0, 0), c(0, -1))
@@ -665,7 +715,7 @@ op_sol$objval
 
 ### 半正定锥
 
-如果矩阵 $A$ 是半正定的，记为 $A \succeq 0$ ，如果矩阵 $A$ 是正定的，记为 $A \succ 0$ 。记 $n$ 阶实对称矩阵的集合为 $\mathcal{S}^{n}$ 。
+如果矩阵 $A$ 是半正定的，记为 $A \succeq 0$ ，如果矩阵 $A$ 是正定的，记为 $A \succ 0$ 。记 $n$ 阶实对称矩阵的集合为 $\mathcal{S}^{n}$ 。半正定锥（Positive Semidefinite Cone）的定义如下：
 
 $$
 \mathcal{K}_{\text{psd}}^{n} = \{A | A \in \mathcal{S}^{n}, \bm{x}^{\top}A\bm{x} \geq 0, \forall \bm{x} \in \mathbb{R}^n \}
@@ -1477,7 +1527,7 @@ op <- OP(objective = foo, constraints = rbind(full_invest, target_return))
 op
 ```
 
-求解器 `nloptr.slsqp` 需要给初值，而求解器 `quadprog` 不需要给初值。下面使用 `quadprog` 来求解组合优化问题。
+求解器 `nloptr.slsqp` 需要给初值和等式约束的梯度，而求解器 `quadprog` 不需要给初值。下面使用 `quadprog` 来求解组合优化问题。
 
 ```{r}
 library(ROI.plugin.quadprog)
