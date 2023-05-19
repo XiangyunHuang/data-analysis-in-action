@@ -1,6 +1,8 @@
 # 分类问题 {#sec-classification-problems}
 
 ```{r}
+#| message: false
+
 library(nnet) # 多项回归 multinom
 library(kernlab) # 基于核的支持向量机 ksvm
 library(e1071) # 朴素贝叶斯 naiveBayes 和支持向量机 svm
@@ -22,6 +24,10 @@ iris_multinom <- multinom(Species ~ ., data = iris, trace = FALSE)
 summary(iris_multinom)
 ```
 
+```{r}
+table(predict(iris_multinom, iris[, -5], type = "class"), iris[, 5])
+```
+
 ## 线性判别分析
 
 ```{r}
@@ -29,6 +35,22 @@ library(MASS)
 # lda
 iris_lda <- lda(Species ~ ., data=iris)
 iris_lda
+```
+
+```{r}
+table(predict(iris_lda, iris[, -5])$class, iris[, 5])
+```
+
+## 二次判别分析
+
+```{r}
+# qda
+iris_qda <- qda(Species ~ ., data=iris)
+iris_qda
+```
+
+```{r}
+table(predict(iris_qda, iris[, -5])$class, iris[, 5])
 ```
 
 ## 朴素贝叶斯
@@ -54,18 +76,24 @@ iris_rpart
 #| fig-width: 5
 #| fig-height: 4
 #| fig-cap: 分类回归树
+#| fig-showtext: true
 
 library(rpart.plot)
 rpart.plot(iris_rpart)
+```
+
+```{r}
+iris_pred_rpart <- predict(iris_rpart, iris[, -5], type = "class")
+table(iris_pred_rpart, iris[, 5])
 ```
 
 ## 随机森林
 
 ```{r}
 library(randomForest) # 随机森林
-iris_rf <- randomForest(Species ~ .,
-  data = iris, importance = TRUE,
-  proximity = TRUE
+iris_rf <- randomForest(
+  Species ~ ., data = iris,
+  importance = TRUE, proximity = TRUE
 )
 # 分类结果
 print(iris_rf)
@@ -87,10 +115,15 @@ on.exit(par(op), add = TRUE)
 #| label: fig-iris-vi
 #| fig-cap: 变量重要性
 #| fig-height: 4
-#| fig-width: 6
+#| fig-width: 7
 #| fig-showtext: true
 
 varImpPlot(iris_rf, main = "变量重要性")
+```
+
+```{r}
+iris_pred_rf <- predict(iris_rf, iris[, -5], type = "response")
+table(iris_pred_rf, iris[, 5])
 ```
 
 ## 支持向量机
@@ -108,6 +141,11 @@ iris_ksvm
 ```
 
 **kernlab** 包的绘图函数 `plot()` 仅支持二分类模型。
+
+```{r}
+iris_pred_svm <- predict(iris_ksvm, iris[, -5], type = "response")
+table(iris_pred_svm, iris[, 5])
+```
 
 ## K 最近邻 {#sec-k-nearest-neighbour}
 
@@ -127,6 +165,21 @@ iris_knn <- knn(
 )
 # 分类结果汇总
 table(iris_knn, iris_species) 
+```
+
+## 神经网络
+
+```{r}
+library(nnet)
+iris_nnet <- nnet(Species ~ ., data = iris, size = 4, trace = FALSE)
+summary(iris_nnet)
+```
+
+size 隐藏层中的神经元数量
+
+```{r}
+iris_pred_nnet <- predict(iris_nnet, newdata = iris[,-5], type = "class")
+table(iris_pred_nnet, iris[, 5])
 ```
 
 ## 集成学习
