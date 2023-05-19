@@ -1,0 +1,136 @@
+# 分类问题 {#sec-classification-problems}
+
+```{r}
+library(nnet) # 多项回归 multinom
+library(kernlab) # 基于核的支持向量机 ksvm
+library(e1071) # 朴素贝叶斯 naiveBayes 和支持向量机 svm
+library(rpart) # 决策树 rpart
+library(MASS) # 线性判别分析 lda
+library(randomForest) # 随机森林 randomForest
+library(class) # K 最近邻 knn
+library(xgboost) # 集成学习
+library(lattice)
+```
+
+以 iris 数据集为例，简单，方便模型和算法介绍，定位入门。分类间隔最大化，也是一个优化问题，找一条分界线，一个分割面，一个超平面划分不同的种类。本章篇幅：每个算法 4 页，共计 32 页。8 个算法的介绍按照分类思路，模型，代码和参数说明，分类性能评估。应用案例是手写数字识别。要点不是数据如何复杂，而是怎样把理论写得通俗、准确，看了之后能够应用到复杂的真实数据分析场景中去。理论解释、绘图说明、经验总结。
+
+## 多项回归模型
+
+```{r}
+library(nnet) # 多项逻辑回归
+iris_multinom <- multinom(Species ~ ., data = iris, trace = FALSE)
+summary(iris_multinom)
+```
+
+## 线性判别分析
+
+```{r}
+library(MASS)
+# lda
+iris_lda <- lda(Species ~ ., data=iris)
+iris_lda
+```
+
+## 朴素贝叶斯
+
+```{r}
+library(e1071) # 朴素贝叶斯
+iris_nb <- naiveBayes(Species ~ ., data = iris)
+iris_nb
+# 分类结果
+table(predict(iris_nb, iris), iris[,5])
+```
+
+## 决策树
+
+```{r}
+library(rpart)
+iris_rpart <- rpart(Species ~ ., data = iris)
+iris_rpart
+```
+
+```{r}
+#| label: fig-iris-rpart
+#| fig-width: 5
+#| fig-height: 4
+#| fig-cap: 分类回归树
+
+library(rpart.plot)
+rpart.plot(iris_rpart)
+```
+
+## 随机森林
+
+```{r}
+library(randomForest) # 随机森林
+iris_rf <- randomForest(Species ~ .,
+  data = iris, importance = TRUE,
+  proximity = TRUE
+)
+# 分类结果
+print(iris_rf)
+```
+
+```{r}
+#| label: fig-iris-rf
+#| fig-cap: 随机森林
+#| fig-height: 3
+#| fig-width: 5
+#| fig-showtext: true
+
+op <- par(mar = c(2, 2, 1.5, 0.1))
+plot(iris_rf, main = "")
+on.exit(par(op), add = TRUE)
+```
+
+```{r}
+#| label: fig-iris-vi
+#| fig-cap: 变量重要性
+#| fig-height: 4
+#| fig-width: 6
+#| fig-showtext: true
+
+varImpPlot(iris_rf, main = "变量重要性")
+```
+
+## 支持向量机
+
+```{r}
+# e1071
+iris_svm <- svm(Species ~ ., data = iris)
+iris_svm
+```
+
+```{r}
+library(kernlab)
+iris_ksvm <- ksvm(Species ~ ., data = iris)
+iris_ksvm
+```
+
+**kernlab** 包的绘图函数 `plot()` 仅支持二分类模型。
+
+## K 最近邻 {#sec-k-nearest-neighbour}
+
+```{r}
+# 将 iris3 数据集拆分为训练集和测试集
+iris_train <- rbind(iris3[1:25, , 1], iris3[1:25, , 2], iris3[1:25, , 3])
+iris_test <- rbind(iris3[26:50, , 1], iris3[26:50, , 2], iris3[26:50, , 3])
+iris_species <- factor(rep(c("setosa", "versicolor", "virginica"), each = 25))
+```
+
+```{r}
+library(class)
+# 分 3 类
+iris_knn <- knn(
+  train = iris_train, test = iris_test,
+  cl = iris_species, k = 3, prob = TRUE
+)
+# 分类结果汇总
+table(iris_knn, iris_species) 
+```
+
+## 集成学习
+
+```{r}
+library(xgboost)
+```
