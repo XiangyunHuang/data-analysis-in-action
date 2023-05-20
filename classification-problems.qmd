@@ -4,6 +4,7 @@
 #| message: false
 
 library(nnet) # 多项回归 multinom
+library(glmnet) # 多项回归
 library(kernlab) # 基于核的支持向量机 ksvm
 library(e1071) # 朴素贝叶斯 naiveBayes 和支持向量机 svm
 library(rpart) # 决策树 rpart
@@ -16,7 +17,7 @@ library(lattice)
 
 以 iris 数据集为例，简单，方便模型和算法介绍，定位入门。分类间隔最大化，也是一个优化问题，找一条分界线，一个分割面，一个超平面划分不同的种类。本章篇幅：每个算法 4 页，共计 32 页。8 个算法的介绍按照分类思路，模型，代码和参数说明，分类性能评估。应用案例是手写数字识别。要点不是数据如何复杂，而是怎样把理论写得通俗、准确，看了之后能够应用到复杂的真实数据分析场景中去。理论解释、绘图说明、经验总结。
 
-## 多项回归模型
+## 多项回归模型 {#sec-multinomial-regression-models}
 
 ```{r}
 library(nnet) # 多项逻辑回归
@@ -28,7 +29,52 @@ summary(iris_multinom)
 table(predict(iris_multinom, iris[, -5], type = "class"), iris[, 5])
 ```
 
-## 线性判别分析
+```{r}
+library(glmnet) # 多项回归
+iris_glmnet <- glmnet(x = iris[, -5], y = iris[, 5], family = "multinomial")
+```
+
+```{r}
+#| label: fig-multinom-glmnet
+#| fig-cap: "回归系数的迭代路径"
+#| fig-width: 5
+#| fig-height: 5
+#| fig-showtext: true
+
+plot(iris_glmnet)
+```
+
+```{r}
+#| label: fig-multinom-lambda
+#| fig-cap: "惩罚系数的迭代路径"
+#| fig-width: 5
+#| fig-height: 5
+#| fig-showtext: true
+
+plot(iris_glmnet$lambda,
+  ylab = expression(lambda), xlab = "迭代次数",
+  main = "惩罚系数的迭代路径"
+)
+```
+
+选择一个迭代趋于稳定时的 lambda，比如 `iris_glmnet$lambda[80]` 。
+
+```{r}
+coef(iris_glmnet, s = 0.0002796185)
+```
+
+```{r}
+iris_pred_glmnet <- predict(
+  object = iris_glmnet, newx = as.matrix(iris[, -5]),
+  s = 0.0002796185, type = "class"
+)
+```
+
+```{r}
+table(iris_pred_glmnet, iris[, 5])
+```
+
+## 线性判别分析 {#sec-linear-discriminant-analysis}
 
 ```{r}
 library(MASS)
@@ -41,7 +87,7 @@ iris_lda
 table(predict(iris_lda, iris[, -5])$class, iris[, 5])
 ```
 
-## 二次判别分析
+## 二次判别分析 {#sec-quadratic-discriminant-analysis}
 
 ```{r}
 # qda
@@ -53,7 +99,7 @@ iris_qda
 table(predict(iris_qda, iris[, -5])$class, iris[, 5])
 ```
 
-## 朴素贝叶斯
+## 朴素贝叶斯 {#sec-naive-bayes}
 
 ```{r}
 library(e1071) # 朴素贝叶斯
@@ -63,70 +109,7 @@ iris_nb
 table(predict(iris_nb, iris), iris[,5])
 ```
 
-## 决策树
-
-```{r}
-library(rpart)
-iris_rpart <- rpart(Species ~ ., data = iris)
-iris_rpart
-```
-
-```{r}
-#| label: fig-iris-rpart
-#| fig-width: 5
-#| fig-height: 4
-#| fig-cap: 分类回归树
-#| fig-showtext: true
-
-library(rpart.plot)
-rpart.plot(iris_rpart)
-```
-
-```{r}
-iris_pred_rpart <- predict(iris_rpart, iris[, -5], type = "class")
-table(iris_pred_rpart, iris[, 5])
-```
-
-## 随机森林
-
-```{r}
-library(randomForest) # 随机森林
-iris_rf <- randomForest(
-  Species ~ ., data = iris,
-  importance = TRUE, proximity = TRUE
-)
-# 分类结果
-print(iris_rf)
-```
-
-```{r}
-#| label: fig-iris-rf
-#| fig-cap: 随机森林
-#| fig-height: 3
-#| fig-width: 5
-#| fig-showtext: true
-
-op <- par(mar = c(2, 2, 1.5, 0.1))
-plot(iris_rf, main = "")
-on.exit(par(op), add = TRUE)
-```
-
-```{r}
-#| label: fig-iris-vi
-#| fig-cap: 变量重要性
-#| fig-height: 4
-#| fig-width: 7
-#| fig-showtext: true
-
-varImpPlot(iris_rf, main = "变量重要性")
-```
-
-```{r}
-iris_pred_rf <- predict(iris_rf, iris[, -5], type = "response")
-table(iris_pred_rf, iris[, 5])
-```
-
-## 支持向量机
+## 支持向量机 {#sec-support-vector-machines}
 
 ```{r}
 # e1071
@@ -167,7 +150,7 @@ iris_knn <- knn(
 table(iris_knn, iris_species) 
 ```
 
-## 神经网络
+## 神经网络 {#sec-neural-networks}
 
 ```{r}
 library(nnet)
@@ -182,7 +165,74 @@ iris_pred_nnet <- predict(iris_nnet, newdata = iris[,-5], type = "class")
 table(iris_pred_nnet, iris[, 5])
 ```
 
+## 决策树 {#sec-recursive-partitioning}
+
+```{r}
+library(rpart)
+iris_rpart <- rpart(Species ~ ., data = iris)
+iris_rpart
+```
+
+```{r}
+#| label: fig-iris-rpart
+#| fig-width: 5
+#| fig-height: 4
+#| fig-cap: 分类回归树
+#| fig-showtext: true
+
+library(rpart.plot)
+rpart.plot(iris_rpart)
+```
+
+```{r}
+iris_pred_rpart <- predict(iris_rpart, iris[, -5], type = "class")
+table(iris_pred_rpart, iris[, 5])
+```
+
+## 随机森林 {#sec-random-forests}
+
+```{r}
+library(randomForest) # 随机森林
+iris_rf <- randomForest(
+  Species ~ ., data = iris,
+  importance = TRUE, proximity = TRUE
+)
+# 分类结果
+print(iris_rf)
+```
+
+```{r}
+#| label: fig-iris-rf
+#| fig-cap: 随机森林
+#| fig-height: 4
+#| fig-width: 5
+#| fig-showtext: true
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
+
+op <- par(mar = c(4, 4, 1.5, 0.1))
+plot(iris_rf, main = "")
+on.exit(par(op), add = TRUE)
+```
+
+```{r}
+#| label: fig-iris-vi
+#| fig-cap: 变量重要性
+#| fig-height: 4
+#| fig-width: 7
+#| fig-showtext: true
+
+varImpPlot(iris_rf, main = "变量重要性")
+```
+
+```{r}
+iris_pred_rf <- predict(iris_rf, iris[, -5], type = "response")
+table(iris_pred_rf, iris[, 5])
+```
+
 ## 集成学习
+
+梯度提升
 
 ```{r}
 library(xgboost)
