@@ -518,10 +518,58 @@ $$
 ```{r}
 #| label: fig-cone
 #| fig-cap: 锥
-#| echo: false
-#| out-width: 35%
+#| fig-width: 4.5
+#| fig-height: 4.5
+#| fig-showtext: true
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
 
-knitr::include_graphics(path = "images/ellipse-cone.png")
+# 分两部分绘图
+fn1 <- function(x) {
+  x[1] * x[2] + sqrt(x[1]^2 * x[2]^2 - x[1]^2 - x[2]^2 + 1)
+}
+
+fn2 <- function(x) {
+  x[1] * x[2] - sqrt(x[1]^2 * x[2]^2 - x[1]^2 - x[2]^2 + 1)
+}
+
+df2 <- df1 <- expand.grid(
+  x = seq(-1, 1, length.out = 51),
+  y = seq(-1, 1, length.out = 51)
+)
+
+# 计算函数值
+df1$fnxy <- apply(df, 1, fn1)
+df2$fnxy <- apply(df2, 1, fn2)
+# 添加分组变量
+df1$group <- "1"
+df2$group <- "2"
+# 合并数据
+df <- rbind(df1, df2)
+
+# 绘图
+wireframe(
+  data = df, fnxy ~ x * y, groups = group,
+  shade = TRUE, drape = FALSE,
+  xlab = expression(m[1]),
+  ylab = expression(m[2]),
+  zlab = expression(m[3]),
+  scales = list(arrows = FALSE, col = "black"),
+  shade.colors.palette = custom_palette,
+  # 减少三维图形的边空
+  lattice.options = list(
+    layout.widths = list(
+      left.padding = list(x = -0.5, units = "inches"),
+      right.padding = list(x = -1.0, units = "inches")
+    ),
+    layout.heights = list(
+      bottom.padding = list(x = -1.5, units = "inches"),
+      top.padding = list(x = -1.5, units = "inches")
+    )
+  ),
+  par.settings = list(axis.line = list(col = "transparent")),
+  screen = list(z = 30, x = -65, y = 0)
+)
 ```
 
 ### 零锥
