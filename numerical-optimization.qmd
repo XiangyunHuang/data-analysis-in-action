@@ -828,6 +828,169 @@ R 自带的函数 `nlminb()` 可求解无约束、箱式约束优化问题，`co
 
 #### 示例 1
 
+求如下分段函数的最小值
+
+$$
+\begin{array}{l}
+f(x) = \left \{ 
+\begin{array}{l}
+10, &~x \in (4, +\infty) \\
+\exp(-\frac{1}{|x-1|}), &~ x \in [-1,4] \\
+10, &~ x \in (-\infty,-1) 
+\end{array} \right.
+\end{array}
+$$
+
+函数 `optimize()` 求解一元函数的极值问题。
+
+```{r}
+fn <- function(x) ifelse(x > -1, ifelse(x < 4, exp(-1 / abs(x - 1)), 10), 10)
+optimize(f = fn, interval = c(-4, 20))
+optimize(f = fn, interval = c(-7, 20))
+```
+
+值得注意，对于不同的区间，可能获得不同的结果。
+
+```{r}
+#| echo: false
+
+options(
+  tinytex.engine = "xelatex",
+  tikzDefaultEngine = "xetex",
+  tikzDocumentDeclaration = "\\documentclass[tikz]{standalone}\n",
+  tikzXelatexPackages = c(
+    "\\usepackage[fontset=fandol]{ctex}",
+    "\\usepackage{amsfonts,mathrsfs,amssymb}\n"
+  )
+)
+# 用 magick 将 pdf 格式图片转化为 png 格式
+to_png <- function(fig_path) {
+  png_path <- sub("\\.pdf$", ".png", fig_path)
+  magick::image_write(magick::image_read_pdf(fig_path),
+    format = "png", path = png_path,
+    density = 300, quality = 100
+  )
+  return(png_path)
+}
+```
+
+```{r}
+#| label: fig-one-dimensional-optimization
+#| fig-cap: 一维函数图像
+#| fig-width: 4
+#| fig-height: 4
+#| dev: 'tikz'
+#| fig-process: !expr to_png
+#| fig-showtext: true
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
+
+# curve(expr = fn, from = -2, to = 5)
+library(ggplot2)
+ggplot() +
+  geom_function(fun = fn, xlim = c(-2, 5)) +
+  theme_bw() +
+  labs(x = "$x$", y = "$f(x)$")
+```
+
+#### 示例 2
+
+求如下隐函数的极值
+
+$$
+\begin{aligned}
+\min z = & ~\sin\Big((zx-0.5)^2 + 2xy^2 - \frac{z}{10} \Big)\cdot \\
+&~\exp\Big(-\Big( \big(x-0.5 -\exp(-y+z)\big)^2 + y^2 - \frac{z}{5} + 3 \Big)\Big)
+\end{aligned}
+$$
+
+其中， $x \in [-1,7],y \in [-2,2]$ 。
+
+对于隐函数 $f(x,y,z)=0$ ，常规的做法是先计算隐函数的偏导数，并令偏导数为 0，再求解非线性方程组，得到各个驻点，最后，将驻点代入原方程，比较驻点处函数值，根据优化目标选择最大或最小值。
+
+$$
+\begin{aligned}
+\frac{\partial f(x,y,z)}{\partial x} = 0 \\
+\frac{\partial f(x,y,z)}{\partial y} = 0
+\end{aligned}
+$$
+
+如果目标函数很复杂，隐函数偏导数难以计算，可以考虑暴力网格搜索。先估计隐函数值 $z$ 的大致范围，给定 $x,y$ 时，计算一元非线性方程的根。
+
+```{r}
+fn <- function(m) {
+  subfun <- function(x) {
+    f1 <- (m[1] * x - 0.5)^2 + 2 * m[1] * m[2]^2 - x / 10
+    f2 <- -((m[1] - 0.5 - exp(-m[2] + x))^2 + m[2]^2 - x / 5 + 3)
+    x - sin(f1) * exp(f2)
+  }
+  uniroot(f = subfun, interval = c(-1, 1))$root
+}
+```
+
+在位置 $(1,2)$ 处函数值为 0.0007368468。
+
+```{r}
+# 测试函数 fn
+fn(m = c(1, 2))
+```
+
+将目标区域网格化，通过一元非线性方程求根的方式获得每个格点处的函数值。
+
+```{r}
+df <- expand.grid(
+  x1 = seq(from = -1, to = 7, length.out = 81),
+  x2 = seq(from = -2, to = 2, length.out = 41)
+)
+# 计算格点处的函数值
+df$fn <- apply(df, 1, FUN = fn)
+```
+
+在此基础上，绘制隐函数图像，如 @fig-implicit-function 所示，可以获得关于隐函数的大致情况。
+
+```{r}
+#| label: fig-implicit-function
+#| fig-width: 4.5
+#| fig-height: 4.5
+#| fig-cap: 隐函数图像
+#| fig-showtext: true
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
+
+# 绘图
+wireframe(
+  data = df, fn ~ x1 * x2,
+  shade = TRUE, drape = FALSE,
+  xlab = expression(x[1]), ylab = expression(x[2]),
+  zlab = list(expression(
+    italic(f) ~ group("(", list(x[1], x[2]), ")")
+  ), rot = 90),
+  scales = list(arrows = FALSE, col = "black"),
+  shade.colors.palette = custom_palette,
+  # 减少三维图形的边空
+  lattice.options = list(
+    layout.widths = list(
+      left.padding = list(x = -0.5, units = "inches"),
+      right.padding = list(x = -1.0, units = "inches")
+    ),
+    layout.heights = list(
+      bottom.padding = list(x = -1.5, units = "inches"),
+      top.padding = list(x = -1.5, units = "inches")
+    )
+  ),
+  par.settings = list(axis.line = list(col = "transparent")),
+  screen = list(z = 30, x = -65, y = 0)
+)
+```
+
+最后，获得暴力网格搜索的结果，目标函数在 $(2.8,-0.9)$ 处取得最小值 $-0.02159723$。总的来说，这是一个近似结果，如果进一步缩小搜索区域，将网格划分得越细，搜索的结果将越接近全局最小值。
+
+```{r}
+df[df$fn == min(df$fn),]
+```
+
+#### 示例 3
+
 Rastrigin 函数是多模态函数，有许多局部极小值。
 
 $$
@@ -902,7 +1065,7 @@ nlp$solution
 nlp$objval
 ```
 
-#### 示例 2
+#### 示例 4
 
 有如下复杂的目标函数
 
