@@ -57,28 +57,28 @@ custom_palette <- function(irr, ref, height, saturation = 0.9) {
 线性优化是指目标函数和约束条件都是线性的优化问题。
 
 $$
-\begin{array}{l}
-  \min_x \quad -6x_1 -5x_2 \\
-    \text{s.t.} \left\{ 
-    \begin{array}{l}
+\begin{aligned}
+\min_{\bm{x}} \quad & -6x_1 -5x_2 \\
+\text{s.t.} \quad & \left\{ 
+  \begin{array}{l}
     x_1  + 4x_2 \leq 16\\
     6x_1 + 4x_2 \leq 28\\
     2x_1 - 5x_2 \leq 6
-    \end{array} \right.
-\end{array}
+  \end{array} \right.
+\end{aligned}
 $$
 
 写成矩阵形式
 
 $$
-\begin{array}{l}
-\min_x \quad
+\begin{aligned}
+\min_{\bm{x}} \quad &
   \begin{bmatrix}
   -6  \\
   -5
   \end{bmatrix}
   ^{\top} \bm{x} \\
-\text{s.t.}\left\{ 
+\text{s.t.} \quad & \left\{ 
  \begin{array}{l}
   \begin{bmatrix}
   1 & 4  \\
@@ -92,7 +92,7 @@ $$
    6
   \end{bmatrix}
  \end{array} \right.
-\end{array} 
+\end{aligned} 
 $$
 
 ```{r}
@@ -141,30 +141,30 @@ res$objval
 一部分变量要求是整数
 
 $$
-\begin{array}{l}
-  \max_x \quad 3x_1 + 7x_2 - 12x_3 \\
-    \text{s.t.}\left\{ 
-    \begin{array}{l}
+\begin{aligned}
+\max_{\bm{x}} \quad & 3x_1 + 7x_2 - 12x_3 \\
+\text{s.t.} \quad & \left\{ 
+  \begin{array}{l}
     5x_1 + 7x_2 + 2x_3 \leq 61\\
     3x_1 + 2x_2 - 9x_3 \leq 35\\
     x_1 + 3x_2 + x_3 \leq 31\\
     x_1,x_2 \geq 0, \quad x_2, x_3 \in \mathbb{Z}, \quad x_3 \in [-10, 10]
-    \end{array} \right.
-\end{array}
+  \end{array} \right.
+\end{aligned}
 $$
 
 矩阵形式如下
 
 $$
-\begin{array}{l}
-\max_{x} \quad
+\begin{aligned}
+\max_{\bm{x}} \quad &
   \begin{bmatrix}
   3  \\
   7  \\
   -12
   \end{bmatrix}
   ^{\top} \bm{x} \\
-\text{s.t.}\left\{ 
+\text{s.t.} \quad & \left\{ 
  \begin{array}{l}
   \begin{bmatrix}
   5 & 7 & 2 \\
@@ -178,7 +178,7 @@ $$
    31
   \end{bmatrix}
  \end{array} \right.
-\end{array} 
+\end{aligned} 
 $$
 
 第1个变量是连续值，第2、3个变量是整数，第3个变量的下、上界分别是 -10 和 10。
@@ -461,7 +461,7 @@ $$
 
 $$
 \begin{aligned}
-\min \quad &\bm{d}^{\top}\bm{x} \\
+\min_{\bm{x}} \quad &\bm{d}^{\top}\bm{x} \\
 \text{s.t.} \quad & A\bm{x} + \bm{k} = \bm{b} \\
 & \bm{k} \in \mathcal{K}.
 \end{aligned}
@@ -896,19 +896,19 @@ ggplot() +
 
 $$
 \begin{aligned}
-\min z = & ~\sin\Big((zx-0.5)^2 + 2xy^2 - \frac{z}{10} \Big)\cdot \\
-&~\exp\Big(-\Big( \big(x-0.5 -\exp(-y+z)\big)^2 + y^2 - \frac{z}{5} + 3 \Big)\Big)
+\min y = & ~\sin\Big((yx_1 -0.5)^2 + 2x_1 x_2^2 - \frac{y}{10} \Big)\cdot \\
+&~\exp\Big(-\Big( \big(x_1 - 0.5 -\exp(-x_2 + y)\big)^2 + x_2^2 - \frac{y}{5} + 3 \Big)\Big)
 \end{aligned}
 $$
 
-其中， $x \in [-1,7],y \in [-2,2]$ 。
+其中， $x_1 \in [-1,7],x_2 \in [-2,2]$ 。
 
-对于隐函数 $f(x,y,z)=0$ ，常规的做法是先计算隐函数的偏导数，并令偏导数为 0，再求解非线性方程组，得到各个驻点，最后，将驻点代入原方程，比较驻点处函数值，根据优化目标选择最大或最小值。
+对于隐函数 $f(x_1,x_2,y)=0$ ，常规的做法是先计算隐函数的偏导数，并令偏导数为 0，再求解非线性方程组，得到各个驻点，最后，将驻点代入原方程，比较驻点处函数值，根据优化目标选择最大或最小值。
 
 $$
 \begin{aligned}
-\frac{\partial f(x,y,z)}{\partial x} = 0 \\
-\frac{\partial f(x,y,z)}{\partial y} = 0
+\frac{\partial f(x_1,x_2,y)}{\partial x_1} = 0 \\
+\frac{\partial f(x_1,x_2,y)}{\partial x_2} = 0
 \end{aligned}
 $$
 
@@ -991,10 +991,10 @@ df[df$fn == min(df$fn),]
 Rastrigin 函数是多模态函数，有许多局部极小值。
 
 $$
-f(\bm{x})= \sum_{i=1}^{n}\big(x_i^2 - 10 \cos(2\pi x_i) + 10\big)
+\min_{\bm{x}} \sum_{i=1}^{n}\big(x_i^2 - 10 \cos(2\pi x_i) + 10\big)
 $$
 
-计算函数值的 R 代码
+其中，$x_i \in [-4,4]$。计算函数值的 R 代码
 
 ```{r}
 fn <- function(x) {
@@ -1068,7 +1068,7 @@ nlp$objval
 
 $$
 \begin{aligned}
-  & \min_x ~ \cos(x_1)\cos(x_2) - \sum_{i=1}^{5}\Big( (-1)^i \cdot i \cdot 2 \cdot \exp\big(-500 \cdot ( (x_1 - i \cdot 2)^2 + (x_2 - i\cdot 2)^2 ) \big) \Big) \\
+  & \min_{\bm{x}} ~ \cos(x_1)\cos(x_2) - \sum_{i=1}^{5}\Big( (-1)^i \cdot i \cdot 2 \cdot \exp\big(-500 \cdot ( (x_1 - i \cdot 2)^2 + (x_2 - i\cdot 2)^2 ) \big) \Big) \\
   & \text{s.t.} ~ -50 \leq x_1, x_2 \leq 50
 \end{aligned}
 $$
@@ -1223,10 +1223,10 @@ nlp@fitnessValue
 有如下箱式约束优化问题，示例来自函数 `nlminb()` 的帮助文档，目标函数和[香蕉函数](https://en.wikipedia.org/wiki/Rosenbrock_function)有些相似。
 
 $$
-\begin{array}{l}
-  \min_x \quad  (x_1 - 1)^2 + 4\sum_{i =1}^{n -1}(x_{i+1} -x_i^2)^2  \\
-  \text{s.t.} \quad 2 \leq x_1,x_2,\cdots,x_n \leq 4
-\end{array}
+\begin{aligned}
+  \min_{\bm{x}} \quad & (x_1 - 1)^2 + 4\sum_{i =1}^{n -1}(x_{i+1} -x_i^2)^2  \\
+  \text{s.t.} \quad &  2 \leq x_1,x_2,\cdots,x_n \leq 4
+\end{aligned}
 $$
 
 R 语言编码的函数代码如下：
@@ -1400,15 +1400,15 @@ optim(
 示例来自 Octave 的[非线性优化帮助文档](https://octave.org/doc/v8.2.0/Nonlinear-Programming.html)，Octave 函数 `sqp()` 使用序列二次规划求解器（successive quadratic programming solver）解非线性规划问题，示例中该优化问题包含多个非线性等式约束。
 
 $$
-\begin{array}{l}
-\min_x \quad \mathrm{e}^{\prod_{i=1}^{5} x_i} - \frac{1}{2}(x_1^3 + x_2^3 + 1)^2 \\
-\text{s.t.} \left\{ 
+\begin{aligned}
+\min_{\bm{x}} \quad &  \mathrm{e}^{\prod_{i=1}^{5} x_i} - \frac{1}{2}(x_1^3 + x_2^3 + 1)^2 \\
+\text{s.t.} \quad & \left\{ 
   \begin{array}{l}
    \sum_{i=1}^{5}x_i^2 - 10 = 0 \\
    x_2 x_3 - 5x_4 x_5 = 0 \\
    x_1^3 + x_2^3 + 1 = 0
   \end{array} \right.
-\end{array}
+\end{aligned}
 $$
 
 目标函数是非线性的，包含 5 个变量，约束条件是非线性的，有 3 个等式约束。先手动计算目标函数的梯度，等式约束的雅可比矩阵。
@@ -1488,15 +1488,15 @@ nlp$objval
 此优化问题来源于 **Ipopt** 官网的[帮助文档](https://coin-or.github.io/Ipopt/INTERFACES.html)，约束条件比较复杂。提供的初始值为 $x_0 = (1,5,5,1)$，最优解为 $x_{\star} = (1.00000000,4.74299963,3.82114998,1.37940829)$。优化问题的具体内容如下：
 
 $$
-\begin{array}{l}
-  \min_x \quad x_1 x_4 (x_1 + x_2 + x_3) + x_3 \\
-    \text{s.t.} \left\{ 
+\begin{aligned}
+\min_{\bm{x}} & \quad x_1 x_4 (x_1 + x_2 + x_3) + x_3 \\
+\text{s.t.} & \quad \left\{ 
     \begin{array}{l}
      x_1^2 + x_2^2 + x_3^2 + x_4^2 = 40 \\
      x_1 x_2 x_3 x_4 \geq 25 \\
      1 \leq x_1, x_2, x_3, x_4 \leq 5
     \end{array} \right.
-\end{array}
+\end{aligned}
 $$
 
 下面用 **ROI** 调 **nloptr** 包求解，看结果是否和例子一致，**nloptr** 支持箱式约束且支持不等式约束包含等号。
