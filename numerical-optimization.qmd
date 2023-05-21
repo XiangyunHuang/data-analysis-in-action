@@ -990,6 +990,68 @@ wireframe(
 df[df$fn == min(df$fn),]
 ```
 
+将求隐函数极值的问题转为含非线性等式约束的非线性优化问题。
+
+$$
+\begin{aligned}
+\min \quad & y \\
+\text{s.t.} \quad & f(x_1,x_2,y) = 0
+\end{aligned}
+$$
+
+由于等式约束非常复杂，手动计算等式约束的雅可比矩阵不可行，可以用 **numDeriv** 包的函数 `jacobian()` 计算等式约束的雅可比矩阵。考虑到本例中仅含有一个等式约束，雅可比矩阵退化为梯度向量，这可以用 **numDeriv** 包的另一个函数 `grad()` 计算。
+
+```{r}
+# 目标函数
+fn <- function(x) x[3]
+# 目标函数的梯度
+gr <- function(x) {
+  c(0, 0, 1)
+}
+# 等式约束
+heq <- function(x) {
+  f1 <- (x[1] * x[3] - 0.5)^2 + 2 * x[1] * x[2]^2 - x[3] / 10
+  f2 <- (x[1] - 0.5 - exp(-x[2] + x[3]))^2 + x[2]^2 - x[3] / 5 + 3
+  x[3] - sin(f1) * exp(-f2)
+}
+# 等式约束的梯度
+heq.jac <- function(x) {
+  numDeriv::grad(func = heq, x = x)
+}
+# 定义目标规划
+op <- OP(
+  # 3 个目标变量
+  objective = F_objective(F = fn, G = gr, n = 3L),
+  constraints = F_constraint(
+    F = list(heq = heq),
+    dir = "==",
+    rhs = 0,
+    # 等式约束的梯度
+    J = list(heq.jac = heq.jac)
+  ),
+  bounds = V_bound(
+    ld = -Inf, ud = Inf,
+    li = c(1, 2), ui = c(1, 2),
+    lb = c(-1, -2), ub = c(7, 2),
+    nobj = 3L
+  ),
+  maximum = FALSE # 求最小
+)
+op
+```
+
+将网格搜索的结果作为初值，继续寻找更优的目标函数值。
+
+```{r}
+nlp <- ROI_solve(op,
+  solver = "nloptr.slsqp",
+  start = c(2.8, -0.9, -0.02159723)
+)
+nlp$solution
+```
+
+可以发现，更优的目标函数值 $-0.02335$ 在 $(2.898,-0.8573)$ 取得。
+
 #### 示例 3
 
 Rastrigin 函数是多模态函数，有许多局部极小值。
