@@ -839,15 +839,9 @@ f(x) =
 \end{cases}
 $$
 
-函数 `optimize()` 求解一元函数的极值问题。
-
 ```{r}
 fn <- function(x) ifelse(x > -1, ifelse(x < 4, exp(-1 / abs(x - 1)), 10), 10)
-optimize(f = fn, interval = c(-4, 20))
-optimize(f = fn, interval = c(-7, 20))
 ```
-
-值得注意，对于不同的区间，可能获得不同的结果。
 
 ```{r}
 #| echo: false
@@ -882,13 +876,23 @@ to_png <- function(fig_path) {
 #| code-fold: true
 #| echo: !expr knitr::is_html_output()
 
-# curve(expr = fn, from = -2, to = 5)
-library(ggplot2)
-ggplot() +
-  geom_function(fun = fn, xlim = c(-2, 5), linewidth = 1) +
-  theme_bw(base_size = 14) +
-  labs(x = "$x$", y = "$f(x)$")
+op <- par(mar = c(4, 4, 0.5, 0.5))
+curve(
+  expr = fn, from = -2, to = 5, lwd = 2,
+  panel.first = grid(),
+  xlab = "$x$", ylab = "$f(x)$"
+)
+on.exit(par(op), add = TRUE)
 ```
+
+函数 `optimize()` 求解一元函数的极值问题。
+
+```{r}
+optimize(f = fn, interval = c(-4, 20))
+optimize(f = fn, interval = c(-7, 20))
+```
+
+值得注意，对于不同的区间，可能获得不同的结果。
 
 #### 示例 2
 
