@@ -130,11 +130,102 @@ res$objval
 
 ## 整数优化 {#sec-integer-linear-optimization}
 
-整数优化分变量取值为 0 或 1 的 0-1 整数优化和带有整数约束的混合整数优化。
+整数优化情况有很多，本文仅考虑以下几类简单情形：
+
+1.  目标函数和约束条件为线性，变量取值都为整数的整数优化。
+2.  目标函数和约束条件为线性，变量取值为 0 或 1 的 0-1 整数优化。
+3.  目标函数和约束条件为线性，部分变量带有整数约束的混合整数优化。
+4.  目标函数为凸二次和约束条件为线性，部分变量带有整数约束的混合整数优化。
+
+### 纯整数线性优化
+
+$$
+\begin{aligned}
+\min_{\bm{x}} \quad & -2x_1 - x_2 - 4x_3 -3x_4 -x_5\\
+\text{s.t.} \quad & \left\{ 
+  \begin{array}{l}
+    2x_2 + x_3 + 4x_4 + 2x_5 < 54 \\
+    3x_1 + 4x_2 + 5x_3 - x_4 - x_5 < 62 \\
+    x_1,x_2 \in [0,100] \quad x_3 \in [3, 100] \\
+    x_4 \in [0,100] \quad x_5 \in [2,100] \\
+    x_i \in \mathbb{Z}, ~ i = 1,2,\cdots,5.
+  \end{array} \right.
+\end{aligned}
+$$
+
+求解器 `glpk` 还可以求解一些整数优化问题。
+
+```{r}
+op <- OP(
+  objective = L_objective(c(-2, -1, -4, -3, -1)),
+  types = rep("I", 5),
+  constraints = L_constraint(
+    L = matrix(c(
+      0, 2, 1, 4, 2,
+      3, 4, 5, -1, -1
+    ), ncol = 5, byrow = TRUE),
+    dir = c("<", "<"),
+    rhs = c(54, 62)
+  ),
+  # 添加约束
+  bounds = V_bound(
+    li = 1:5, ui = 1:5,
+    lb = c(0, 0, 3, 0, 2), ub = rep(100, 5), nobj = 5
+  ),
+  maximum = FALSE
+)
+op
+# 求解
+res <- ROI_solve(op, solver = "glpk")
+# 最优解
+res$solution
+# 目标函数值
+res$objval
+```
+
+可知，最优解在 $(15,0,6,11,2)$ 处取得，目标函数值为 -89 。
+
+注意：还有一组最优解 $(19,0,4,10,5)$ ，目标函数值也为 -89 ，但是 `glpk` 求解器未能给出。
 
 ### 0-1 整数线性优化
 
-目标函数是线性的，目标变量的取值要么是 0 要么是 1。
+目标函数是线性的，目标变量的取值要么是 0 要么是 1。指派问题属于典型的 0-1 整数规划问题。有 $n$ 个人需要去完成 $n$ 项任务，每个人完成一项任务，每项任务只由一个人完成，每个人单独完成各项任务所需花费（时间、费用）不同。要求设计一个方案，人和任务之间建立一一对应的关系，使得总花费最少。
+
+设第 $i$ 个人完成第 $j$ 项任务的花费为 $d_{ij}$ ，当安排第 $i$ 个人完成第 $j$ 项任务时，记为 $x_{ij} = 1$ ，否则，记为 $x_{ij} = 0$ ，指派问题的数学模型如下：
+
+$$
+\begin{aligned}
+\min \quad & \sum_{i=1}^{n}\sum_{j=1}^{n}d_{ij}x_{ij} \\
+\text{s.t.} \quad & \left\{ 
+  \begin{array}{l}
+    \sum_{i=1}^{n} x_{ij} = 1, ~~ j = 1,2,\ldots,n\\
+    \sum_{j=1}^{n} x_{ij} = 1, ~~ i = 1,2,\ldots,n\\
+    x_{ij} = 0 ~~\text{或}~~ 1
+  \end{array} \right.
+\end{aligned}
+$$
+
+指派问题在 **lpSolve** 包做了很好的封装，只需提供花费矩阵，即可调用求解器求解该问题。
+
+```{r}
+# 花费矩阵 D
+D <- matrix(c(
+  2, 7, 7, 2,
+  7, 7, 3, 2,
+  7, 2, 8, 10,
+  1, 9, 8, 2
+), nrow = 4, ncol = 4, byrow = F)
+# 加载 lpSolve 包 
+library(lpSolve)
+# 调用指派问题求解器
+sol <- lp.assign(D)
+# 最优解
+sol$solution
+# 总花费
+sol$objval
+```
+
+可以使总花费最少的指派计划是第 1 个人完成第 4 项任务，第 2 个人完成第 3 项任务，第 3 个人完成第 2 项任务，第 4 个人完成第 1 项任务，总花费为 8。
 
 ### 混合整数线性优化 {#sec-mixed-integer-linear-optimization}
 
@@ -246,6 +337,8 @@ op <- OP(
   types = c("I", "C"),
   maximum = FALSE # 默认求最小
 )
+
+# 调用 ECOSolveR 包
 library(ROI.plugin.ecos)
 nlp <- ROI_solve(op, solver = "ecos", start = c(1, 2))
 nlp$objval
