@@ -361,7 +361,7 @@ nlp2$objval
 nlp2$solution
 ```
 
-在可行域上画出等高线，标记目标解的位置， @fig-quadprog 展示无约束和有约束条件下的解。图中红点表示无约束下求解器 `nloptr.slsqp` 获得的解 $(0,1)$ ，真正的无约束解是蓝点所在位置为 $(-4/3,1/3)$ ，黄点表示线性约束下求解器 `nloptr.slsqp` 获得的解 $(1/6,11/6)$ 。所以，不能用二次规划的求解器去求解无约束的二次规划问题。
+在可行域上画出等高线，标记目标解的位置， @fig-quadprog 展示无约束和有约束条件下的解。图中橘黄色线围成的三角形区域是可行域，红点表示无约束下求解器 `nloptr.slsqp` 获得的解 $(0,1)$ ，真正的无约束解是蓝点所在位置为 $(-4/3,1/3)$ ，黄点表示线性约束下求解器 `nloptr.slsqp` 获得的解 $(1/6,11/6)$ 。所以，不能用二次规划的求解器去求解无约束的二次规划问题。
 
 ```{r}
 #| label: fig-quadprog
@@ -376,9 +376,8 @@ nlp2$solution
 qp_sol <- nlp$solution
 # 无约束解
 uc_sol <- nlp2$solution
-x1 <- seq(-2, 5.5, length.out = 50)
-x2 <- seq(-1, 3.5, length.out = 50)
-dat <- expand.grid(x1 = x1, x2 = x2)
+dat <- expand.grid(x1 = seq(-2, 5.5, length.out = 50), 
+                   x2 = seq(-1, 3.5, length.out = 50))
 # 二次规划的目标函数
 dat$fn <- with(dat, x1^2 + x2^2 - x1 * x2 + 3 * x1 - 2 * x2)
 levelplot(fn ~ x1 * x2, data = dat, aspect = .7,
@@ -387,7 +386,7 @@ levelplot(fn ~ x1 * x2, data = dat, aspect = .7,
   panel = function(...) {
     panel.levelplot(...)
     panel.polygon(x = c(2, 5, -1), y = c(0, 3, 3),
-      border = TRUE, lwd = 2, col = "transparent"
+      border = "orange", lwd = 2, col = "transparent"
     )
     panel.points(
       x = c(uc_sol[1], qp_sol[1], -4/3),
@@ -410,11 +409,11 @@ levelplot(fn ~ x1 * x2, data = dat, aspect = .7,
     x = list(alternating = 1, tck = c(1, 0)),
     y = list(alternating = 1, tck = c(1, 0))
   ), contour = TRUE, colorkey = TRUE,
-  col.regions = terrain.colors
+  col.regions = hcl.colors
 )
 ```
 
-蓝色的点是无约束情况下，目标函数的最小值，而求解器 `nloptr.slsqp` 给出的最优解是红点，令人疑惑。不过，**quadprog** 包在求解约束条件下的严格凸二次规划问题时，同时给出无约束条件下的解。这个包自定义了一套二次规划问题的符号，查看求解函数 `solve.QP()` 的说明，略作对应后，求解上述规划问题的代码如下。
+**quadprog** 包在求解约束条件下的严格凸二次规划问题时，同时给出无约束条件下的解。这个包自定义了一套二次规划问题的符号，查看求解函数 `solve.QP()` 的说明，略作对应后，求解上述规划问题的代码如下。
 
 ```{r}
 library(quadprog)
