@@ -14,7 +14,7 @@ $$
 $$
 :::
 
-本章介绍四类典型的优化问题及 R 语言求解过程。除了 R 软件内置一些数值优化求解器，R 语言社区有大量的运筹优化方面的函数和 R 包。本文将重点介绍 **ROI** 包，它通过插件包对 20 多个 R 包提供统一的调用方式，相当于一个运筹优化方面的基础设施平台，极大地方便学习和使用。本文不能一一概括，仅详述其中两个，求解线性优化（linear optimization）与混合整数优化（mixed integer linear optimization）的 **Rglpk** 包，求解二次优化（quadratic optimization）和非线性优化（nonlinear optimization）的 **nloptr** 包，相信读者之后可以举一反三。
+本章介绍五类典型的优化问题及 R 语言求解过程。除了 R 软件内置一些数值优化求解器，R 语言社区有大量的运筹优化方面的函数和 R 包。本文将重点介绍 **ROI** 包，它通过插件包对 20 多个 R 包提供统一的调用方式，相当于一个运筹优化方面的基础设施平台，极大地方便学习和使用。本文不能一一概括，仅详述其中两个，求解线性优化（linear optimization）与混合整数优化（mixed integer linear optimization）的 **Rglpk** 包，求解二次优化（quadratic optimization）和非线性优化（nonlinear optimization）的 **nloptr** 包，相信读者之后可以举一反三。
 
 ```{mermaid}
 %%| label: fig-roi-plugin
@@ -57,28 +57,28 @@ custom_palette <- function(irr, ref, height, saturation = 0.9) {
 线性优化是指目标函数和约束条件都是线性的优化问题。
 
 $$
-\begin{array}{l}
-  \min_x \quad -6x_1 -5x_2 \\
-    \text{s.t.} \left\{ 
-    \begin{array}{l}
+\begin{aligned}
+\min_{\bm{x}} \quad & -6x_1 -5x_2 \\
+\text{s.t.} \quad & \left\{ 
+  \begin{array}{l}
     x_1  + 4x_2 \leq 16\\
     6x_1 + 4x_2 \leq 28\\
     2x_1 - 5x_2 \leq 6
-    \end{array} \right.
-\end{array}
+  \end{array} \right.
+\end{aligned}
 $$
 
 写成矩阵形式
 
 $$
-\begin{array}{l}
-\min_x \quad
+\begin{aligned}
+\min_{\bm{x}} \quad &
   \begin{bmatrix}
   -6  \\
   -5
   \end{bmatrix}
   ^{\top} \bm{x} \\
-\text{s.t.}\left\{ 
+\text{s.t.} \quad & \left\{ 
  \begin{array}{l}
   \begin{bmatrix}
   1 & 4  \\
@@ -92,7 +92,7 @@ $$
    6
   \end{bmatrix}
  \end{array} \right.
-\end{array} 
+\end{aligned} 
 $$
 
 ```{r}
@@ -130,41 +130,132 @@ res$objval
 
 ## 整数优化 {#sec-integer-linear-optimization}
 
-整数优化分变量取值为 0 或 1 的 0-1 整数优化和带有整数约束的混合整数优化。
+整数优化情况有很多，本文仅考虑以下几类简单情形：
 
-### 0-1 整数优化
+1.  目标函数和约束条件为线性，变量取值都为整数的整数优化。
+2.  目标函数和约束条件为线性，变量取值为 0 或 1 的 0-1 整数优化。
+3.  目标函数和约束条件为线性，部分变量带有整数约束的混合整数优化。
+4.  目标函数为凸二次和约束条件为线性，部分变量带有整数约束的混合整数优化。
 
-变量要么是 0 要么是 1
-
-### 混合整数优化 {#sec-mixed-integer-linear-optimization}
-
-一部分变量要求是整数
+### 纯整数线性优化
 
 $$
-\begin{array}{l}
-  \max_x \quad 3x_1 + 7x_2 - 12x_3 \\
-    \text{s.t.}\left\{ 
-    \begin{array}{l}
+\begin{aligned}
+\min_{\bm{x}} \quad & -2x_1 - x_2 - 4x_3 -3x_4 -x_5\\
+\text{s.t.} \quad & \left\{ 
+  \begin{array}{l}
+    2x_2 + x_3 + 4x_4 + 2x_5 < 54 \\
+    3x_1 + 4x_2 + 5x_3 - x_4 - x_5 < 62 \\
+    x_1,x_2 \in [0,100] \quad x_3 \in [3, 100] \\
+    x_4 \in [0,100] \quad x_5 \in [2,100] \\
+    x_i \in \mathbb{Z}, ~ i = 1,2,\cdots,5.
+  \end{array} \right.
+\end{aligned}
+$$
+
+求解器 `glpk` 还可以求解一些整数优化问题。
+
+```{r}
+op <- OP(
+  objective = L_objective(c(-2, -1, -4, -3, -1)),
+  types = rep("I", 5),
+  constraints = L_constraint(
+    L = matrix(c(
+      0, 2, 1, 4, 2,
+      3, 4, 5, -1, -1
+    ), ncol = 5, byrow = TRUE),
+    dir = c("<", "<"),
+    rhs = c(54, 62)
+  ),
+  # 添加约束
+  bounds = V_bound(
+    li = 1:5, ui = 1:5,
+    lb = c(0, 0, 3, 0, 2), ub = rep(100, 5), nobj = 5
+  ),
+  maximum = FALSE
+)
+op
+# 求解
+res <- ROI_solve(op, solver = "glpk")
+# 最优解
+res$solution
+# 目标函数值
+res$objval
+```
+
+可知，最优解在 $(15,0,6,11,2)$ 处取得，目标函数值为 -89 。
+
+注意：还有一组最优解 $(19,0,4,10,5)$ ，目标函数值也为 -89 ，但是 `glpk` 求解器未能给出。
+
+### 0-1 整数线性优化
+
+目标函数是线性的，目标变量的取值要么是 0 要么是 1。指派问题属于典型的 0-1 整数规划问题。有 $n$ 个人需要去完成 $n$ 项任务，每个人完成一项任务，每项任务只由一个人完成，每个人单独完成各项任务所需花费（时间、费用）不同。要求设计一个方案，人和任务之间建立一一对应的关系，使得总花费最少。
+
+设第 $i$ 个人完成第 $j$ 项任务的花费为 $d_{ij}$ ，当安排第 $i$ 个人完成第 $j$ 项任务时，记为 $x_{ij} = 1$ ，否则，记为 $x_{ij} = 0$ ，指派问题的数学模型如下：
+
+$$
+\begin{aligned}
+\min \quad & \sum_{i=1}^{n}\sum_{j=1}^{n}d_{ij}x_{ij} \\
+\text{s.t.} \quad & \left\{ 
+  \begin{array}{l}
+    \sum_{i=1}^{n} x_{ij} = 1, ~~ j = 1,2,\ldots,n\\
+    \sum_{j=1}^{n} x_{ij} = 1, ~~ i = 1,2,\ldots,n\\
+    x_{ij} = 0 ~~\text{或}~~ 1
+  \end{array} \right.
+\end{aligned}
+$$
+
+指派问题在 **lpSolve** 包做了很好的封装，只需提供花费矩阵，即可调用求解器求解该问题。
+
+```{r}
+# 花费矩阵 D
+D <- matrix(c(
+  2, 7, 7, 2,
+  7, 7, 3, 2,
+  7, 2, 8, 10,
+  1, 9, 8, 2
+), nrow = 4, ncol = 4, byrow = F)
+# 加载 lpSolve 包 
+library(lpSolve)
+# 调用指派问题求解器
+sol <- lp.assign(D)
+# 最优解
+sol$solution
+# 总花费
+sol$objval
+```
+
+可以使总花费最少的指派计划是第 1 个人完成第 4 项任务，第 2 个人完成第 3 项任务，第 3 个人完成第 2 项任务，第 4 个人完成第 1 项任务，总花费为 8。
+
+### 混合整数线性优化 {#sec-mixed-integer-linear-optimization}
+
+目标函数是线性的，一部分目标变量是整数。
+
+$$
+\begin{aligned}
+\max_{\bm{x}} \quad & 3x_1 + 7x_2 - 12x_3 \\
+\text{s.t.} \quad & \left\{ 
+  \begin{array}{l}
     5x_1 + 7x_2 + 2x_3 \leq 61\\
     3x_1 + 2x_2 - 9x_3 \leq 35\\
     x_1 + 3x_2 + x_3 \leq 31\\
     x_1,x_2 \geq 0, \quad x_2, x_3 \in \mathbb{Z}, \quad x_3 \in [-10, 10]
-    \end{array} \right.
-\end{array}
+  \end{array} \right.
+\end{aligned}
 $$
 
 矩阵形式如下
 
 $$
-\begin{array}{l}
-\max_{x} \quad
+\begin{aligned}
+\max_{\bm{x}} \quad &
   \begin{bmatrix}
   3  \\
   7  \\
   -12
   \end{bmatrix}
   ^{\top} \bm{x} \\
-\text{s.t.}\left\{ 
+\text{s.t.} \quad & \left\{ 
  \begin{array}{l}
   \begin{bmatrix}
   5 & 7 & 2 \\
@@ -178,7 +269,7 @@ $$
    31
   \end{bmatrix}
  \end{array} \right.
-\end{array} 
+\end{aligned} 
 $$
 
 第1个变量是连续值，第2、3个变量是整数，第3个变量的下、上界分别是 -10 和 10。
@@ -197,7 +288,10 @@ op <- OP(
     rhs = c(61, 35, 31)
   ),
   # 添加约束
-  bounds = V_bound(li = 3, ui = 3, lb = -10, ub = 10, nobj = 3),
+  bounds = V_bound(
+    li = 3, ui = 3,
+    lb = -10, ub = 10, nobj = 3
+  ),
   maximum = TRUE
 )
 op
@@ -206,6 +300,66 @@ res <- ROI_solve(op, solver = "glpk")
 # 最优解
 res$solution
 res$objval
+```
+
+### 混合整数二次优化
+
+目标函数是二次的，一部分目标变量是整数。
+
+在二次规划的基础上，对变量添加整型约束，即变成混合整数二次规划 （Mixed Integer Quadratic Programming，简称 MIQP）。
+
+```{r}
+#| eval: false
+
+op <- OP(
+  objective = Q_objective(Q = Dmat, L = dvec),
+  constraints = L_constraint(Amat, rep("<=", 3), bvec),
+  types = c("I", "C"),
+  maximum = FALSE # 求最小
+)
+nlp <- ROI_solve(op, solver = "nloptr.slsqp", start = c(1, 2))
+nlp$objval
+nlp$solution
+```
+
+目前，ROI 支持的开源求解器都不能处理 MIQP 问题，只有 **CVXR** 包和 [**rmpk**](https://github.com/r-opt/rmpk) 包能解 MIQP 问题，更多关于 **CVXR** 包的介绍见[示例库](https://cvxr.rbind.io/examples/)。
+
+**ECOSolveR** 包可以求解一些锥规划，且变量可以包含整数。将凸二次规划转为锥规划问题，再调 `ecos` 求解器。连接 **ECOSolveR** 包提供 `ecos` 求解器。
+
+```{r}
+#| eval: false
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
+
+op <- OP(
+  objective = Q_objective(Q = Dmat, L = dvec),
+  constraints = L_constraint(Amat, rep("<=", 3), bvec),
+  types = c("I", "C"),
+  maximum = FALSE # 默认求最小
+)
+
+# 调用 ECOSolveR 包
+library(ROI.plugin.ecos)
+nlp <- ROI_solve(op, solver = "ecos", start = c(1, 2))
+nlp$objval
+nlp$solution
+
+library(CVXR)
+# Variables minimized over
+x1 <- Variable(1, integer = TRUE)
+x2 <- Variable(1)
+
+# Problem definition
+objective <- Minimize(x1^2 + x2^2 - x1 * x2 + 3 * x1 - 2 * x2)
+constraints <- list(-x1 - x2 <= -2, x1 - x2 <= 2, x2 <= 3)
+prob <- Problem(objective, constraints)
+
+# Problem solution
+solution <- psolve(prob, solver = "ECOS")
+solution$status
+solution$value
+solution$getValue(x)
+solution$getValue(y)
 ```
 
 ## 凸二次优化 {#sec-quadratic-optimization}
@@ -300,7 +454,7 @@ nlp2$objval
 nlp2$solution
 ```
 
-在可行域上画出等高线，标记目标解的位置， @fig-quadprog 展示无约束和有约束条件下的解。图中红点表示无约束下求解器 `nloptr.slsqp` 获得的解 $(0,1)$ ，真正的无约束解是蓝点所在位置为 $(-4/3,1/3)$ ，黄点表示线性约束下求解器 `nloptr.slsqp` 获得的解 $(1/6,11/6)$ 。所以，不能用二次规划的求解器去求解无约束的二次规划问题。
+在可行域上画出等高线，标记目标解的位置， @fig-quadprog 展示无约束和有约束条件下的解。图中橘黄色线围成的三角形区域是可行域，红点表示无约束下求解器 `nloptr.slsqp` 获得的解 $(0,1)$ ，真正的无约束解是蓝点所在位置为 $(-4/3,1/3)$ ，黄点表示线性约束下求解器 `nloptr.slsqp` 获得的解 $(1/6,11/6)$ 。所以，不能用二次规划的求解器去求解无约束的二次规划问题。
 
 ```{r}
 #| label: fig-quadprog
@@ -315,9 +469,8 @@ nlp2$solution
 qp_sol <- nlp$solution
 # 无约束解
 uc_sol <- nlp2$solution
-x1 <- seq(-2, 5.5, length.out = 50)
-x2 <- seq(-1, 3.5, length.out = 50)
-dat <- expand.grid(x1 = x1, x2 = x2)
+dat <- expand.grid(x1 = seq(-2, 5.5, length.out = 50), 
+                   x2 = seq(-1, 3.5, length.out = 50))
 # 二次规划的目标函数
 dat$fn <- with(dat, x1^2 + x2^2 - x1 * x2 + 3 * x1 - 2 * x2)
 levelplot(fn ~ x1 * x2, data = dat, aspect = .7,
@@ -326,7 +479,7 @@ levelplot(fn ~ x1 * x2, data = dat, aspect = .7,
   panel = function(...) {
     panel.levelplot(...)
     panel.polygon(x = c(2, 5, -1), y = c(0, 3, 3),
-      border = TRUE, lwd = 2, col = "transparent"
+      border = "orange", lwd = 2, col = "transparent"
     )
     panel.points(
       x = c(uc_sol[1], qp_sol[1], -4/3),
@@ -349,11 +502,11 @@ levelplot(fn ~ x1 * x2, data = dat, aspect = .7,
     x = list(alternating = 1, tck = c(1, 0)),
     y = list(alternating = 1, tck = c(1, 0))
   ), contour = TRUE, colorkey = TRUE,
-  col.regions = terrain.colors
+  col.regions = hcl.colors
 )
 ```
 
-蓝色的点是无约束情况下，目标函数的最小值，而求解器 `nloptr.slsqp` 给出的最优解是红点，令人疑惑。不过，**quadprog** 包在求解约束条件下的严格凸二次规划问题时，同时给出无约束条件下的解。这个包自定义了一套二次规划问题的符号，查看求解函数 `solve.QP()` 的说明，略作对应后，求解上述规划问题的代码如下。
+**quadprog** 包在求解约束条件下的严格凸二次规划问题时，同时给出无约束条件下的解。这个包自定义了一套二次规划问题的符号，查看求解函数 `solve.QP()` 的说明，略作对应后，求解上述规划问题的代码如下。
 
 ```{r}
 library(quadprog)
@@ -365,64 +518,6 @@ sol
 
 其中，返回值的 `unconstrained.solution` 表示无约束下的解，与预期的解一致，这就没有疑惑了。可见，约束二次规划问题和无约束二次规划问题的求解器不同。
 
-### 混合整数二次优化
-
-对变量添加整型约束，原二次规划即变成混合整数二次规划 （Mixed Integer Quadratic Programming，简称 MIQP）。目前，ROI 支持的开源求解器都不能处理 MIQP 问题，只有 **CVXR** 包和 [**rmpk**](https://github.com/r-opt/rmpk) 包能解 MIQP 问题，更多关于 **CVXR** 包的介绍见[示例库](https://cvxr.rbind.io/examples/)。
-
-```{r}
-#| eval: false
-
-op <- OP(
-  objective = Q_objective(Q = Dmat, L = dvec),
-  constraints = L_constraint(Amat, rep("<=", 3), bvec),
-  types = c("I", "C"),
-  maximum = FALSE # 求最小
-)
-nlp <- ROI_solve(op, solver = "nloptr.slsqp", start = c(1, 2))
-nlp$objval
-nlp$solution
-```
-
-**ECOSolveR** 包可以求解一些锥规划，且变量可以包含整数。将凸二次规划转为锥规划问题，再调 `ecos` 求解器。连接 **ECOSolveR** 包提供 `ecos` 求解器。
-
-```{r}
-#| eval: false
-
-op <- OP(
-  objective = Q_objective(Q = Dmat, L = dvec),
-  constraints = L_constraint(Amat, rep("<=", 3), bvec),
-  types = c("I", "C"),
-  maximum = FALSE # 默认求最小
-)
-library(ROI.plugin.ecos)
-nlp <- ROI_solve(op, solver = "ecos", start = c(1, 2))
-nlp$objval
-nlp$solution
-```
-
-```{r}
-#| eval: false
-#| code-fold: true
-#| echo: !expr knitr::is_html_output()
-
-library(CVXR)
-# Variables minimized over
-x1 <- Variable(1, integer = TRUE)
-x2 <- Variable(1)
-
-# Problem definition
-objective <- Minimize(x1^2 + x2^2 - x1 * x2 + 3 * x1 - 2 * x2)
-constraints <- list(-x1 - x2 <= -2, x1 - x2 <= 2, x2 <= 3)
-prob <- Problem(objective, constraints)
-
-# Problem solution
-solution <- psolve(prob, solver = "ECOS")
-solution$status
-solution$value
-solution$getValue(x)
-solution$getValue(y)
-```
-
 ### 非严格凸二次优化
 
 **kernlab** 包[@kernlab2004] 当矩阵 $D$ 为半正定时。
@@ -431,13 +526,13 @@ solution$getValue(y)
 
 ### 锥与凸锥
 
-二维平面上，以原点为圆心的圆和以原点为顶点的扇面是凸锥。三维空间中，以原点为球心的球和以原点为顶点的圆锥是凸锥，如 @fig-convex-cone 所示。
+二维平面上，圆盘和扇面是凸锥。三维空间中，球，圆锥、椭球、椭圆锥都是凸锥，如 @fig-convex-cone 所示。
 
 ```{r}
 #| label: fig-convex-cone
-#| fig-cap: 常见的凸锥
+#| fig-cap: 常见的三维凸锥
 #| echo: false
-#| out-width: 50%
+#| out-width: 80%
 
 knitr::include_graphics(path = "images/cone.png")
 ```
@@ -461,7 +556,7 @@ $$
 
 $$
 \begin{aligned}
-\min \quad &\bm{d}^{\top}\bm{x} \\
+\min_{\bm{x}} \quad &\bm{d}^{\top}\bm{x} \\
 \text{s.t.} \quad & A\bm{x} + \bm{k} = \bm{b} \\
 & \bm{k} \in \mathcal{K}.
 \end{aligned}
@@ -828,13 +923,239 @@ R 自带的函数 `nlminb()` 可求解无约束、箱式约束优化问题，`co
 
 #### 示例 1
 
+求如下分段函数的最小值
+
+$$
+f(x) = 
+\begin{cases}
+10 & x \in (-\infty,-1]  \\
+\exp(-\frac{1}{|x-1|}) & x \in (-1,4) \\
+10 & x \in [4, +\infty)
+\end{cases}
+$$
+
+```{r}
+fn <- function(x) ifelse(x > -1, ifelse(x < 4, exp(-1 / abs(x - 1)), 10), 10)
+```
+
+```{r}
+#| echo: false
+
+options(
+  tinytex.engine = "xelatex",
+  tikzDefaultEngine = "xetex",
+  tikzDocumentDeclaration = "\\documentclass[tikz]{standalone}\n",
+  tikzXelatexPackages = c(
+    "\\usepackage[fontset=fandol]{ctex}",
+    "\\usepackage{amsfonts,mathrsfs,amssymb}\n"
+  )
+)
+# 用 magick 将 pdf 格式图片转化为 png 格式
+to_png <- function(fig_path) {
+  png_path <- sub("\\.pdf$", ".png", fig_path)
+  magick::image_write(magick::image_read_pdf(fig_path),
+    format = "png", path = png_path,
+    density = 300, quality = 100
+  )
+  return(png_path)
+}
+```
+
+```{r}
+#| label: fig-one-dimensional-optimization
+#| fig-cap: 一维函数图像
+#| fig-width: 4
+#| fig-height: 3
+#| dev: 'tikz'
+#| fig-process: !expr to_png
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
+
+op <- par(mar = c(4, 4, 0.5, 0.5))
+curve(
+  expr = fn, from = -2, to = 5, lwd = 2,
+  panel.first = grid(),
+  xlab = "$x$", ylab = "$f(x)$"
+)
+on.exit(par(op), add = TRUE)
+```
+
+函数 `optimize()` 求解一元函数的极值问题。
+
+```{r}
+optimize(f = fn, interval = c(-4, 20))
+optimize(f = fn, interval = c(-7, 20))
+```
+
+值得注意，对于不同的区间，可能获得不同的结果。
+
+#### 示例 2
+
+求如下隐函数的极值
+
+$$
+\begin{aligned}
+\min y = & ~\sin\Big((yx_1 -0.5)^2 + 2x_1 x_2^2 - \frac{y}{10} \Big)\cdot \\
+&~\exp\Big(-\Big( \big(x_1 - 0.5 -\exp(-x_2 + y)\big)^2 + x_2^2 - \frac{y}{5} + 3 \Big)\Big)
+\end{aligned}
+$$
+
+其中， $x_1 \in [-1,7],x_2 \in [-2,2]$ 。
+
+对于隐函数 $f(x_1,x_2,y)=0$ ，常规的做法是先计算隐函数的偏导数，并令偏导数为 0，再求解非线性方程组，得到各个驻点，最后，将驻点代入原方程，比较驻点处函数值，根据优化目标选择最大或最小值。
+
+$$
+\begin{aligned}
+\frac{\partial f(x_1,x_2,y)}{\partial x_1} = 0 \\
+\frac{\partial f(x_1,x_2,y)}{\partial x_2} = 0
+\end{aligned}
+$$
+
+如果目标函数很复杂，隐函数偏导数难以计算，可以考虑暴力网格搜索。先估计隐函数值 $z$ 的大致范围，给定 $x,y$ 时，计算一元非线性方程的根。
+
+```{r}
+fn <- function(m) {
+  subfun <- function(x) {
+    f1 <- (m[1] * x - 0.5)^2 + 2 * m[1] * m[2]^2 - x / 10
+    f2 <- -((m[1] - 0.5 - exp(-m[2] + x))^2 + m[2]^2 - x / 5 + 3)
+    x - sin(f1) * exp(f2)
+  }
+  uniroot(f = subfun, interval = c(-1, 1))$root
+}
+```
+
+在位置 $(1,2)$ 处函数值为 0.0007368468。
+
+```{r}
+# 测试函数 fn
+fn(m = c(1, 2))
+```
+
+将目标区域网格化，通过一元非线性方程求根的方式获得每个格点处的函数值。
+
+```{r}
+df <- expand.grid(
+  x1 = seq(from = -1, to = 7, length.out = 81),
+  x2 = seq(from = -2, to = 2, length.out = 41)
+)
+# 计算格点处的函数值
+df$fn <- apply(df, 1, FUN = fn)
+```
+
+在此基础上，绘制隐函数图像，如 @fig-implicit-function 所示，可以获得关于隐函数的大致情况。
+
+```{r}
+#| label: fig-implicit-function
+#| fig-width: 4.5
+#| fig-height: 4.5
+#| fig-cap: 隐函数图像
+#| fig-showtext: true
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
+
+# 绘图
+wireframe(
+  data = df, fn ~ x1 * x2,
+  shade = TRUE, drape = FALSE,
+  xlab = expression(x[1]), ylab = expression(x[2]),
+  zlab = list(expression(
+    italic(f) ~ group("(", list(x[1], x[2]), ")")
+  ), rot = 90),
+  scales = list(arrows = FALSE, col = "black"),
+  shade.colors.palette = custom_palette,
+  # 减少三维图形的边空
+  lattice.options = list(
+    layout.widths = list(
+      left.padding = list(x = -0.5, units = "inches"),
+      right.padding = list(x = -1.0, units = "inches")
+    ),
+    layout.heights = list(
+      bottom.padding = list(x = -1.5, units = "inches"),
+      top.padding = list(x = -1.5, units = "inches")
+    )
+  ),
+  par.settings = list(axis.line = list(col = "transparent")),
+  screen = list(z = 30, x = -65, y = 0)
+)
+```
+
+最后，获得暴力网格搜索的结果，目标函数在 $(2.8,-0.9)$ 处取得最小值 $-0.02159723$。总的来说，这是一个近似结果，如果进一步缩小搜索区域，将网格划分得越细，搜索的结果将越接近全局最小值。
+
+```{r}
+df[df$fn == min(df$fn),]
+```
+
+将求隐函数极值的问题转为含非线性等式约束的非线性优化问题。
+
+$$
+\begin{aligned}
+\min \quad & y \\
+\text{s.t.} \quad & f(x_1,x_2,y) = 0
+\end{aligned}
+$$
+
+由于等式约束非常复杂，手动计算等式约束的雅可比矩阵不可行，可以用 **numDeriv** 包的函数 `jacobian()` 计算等式约束的雅可比矩阵。考虑到本例中仅含有一个等式约束，雅可比矩阵退化为梯度向量，这可以用 **numDeriv** 包的另一个函数 `grad()` 计算。
+
+```{r}
+# 目标函数
+fn <- function(x) x[3]
+# 目标函数的梯度
+gr <- function(x) {
+  c(0, 0, 1)
+}
+# 等式约束
+heq <- function(x) {
+  f1 <- (x[1] * x[3] - 0.5)^2 + 2 * x[1] * x[2]^2 - x[3] / 10
+  f2 <- (x[1] - 0.5 - exp(-x[2] + x[3]))^2 + x[2]^2 - x[3] / 5 + 3
+  x[3] - sin(f1) * exp(-f2)
+}
+# 等式约束的梯度
+heq.jac <- function(x) {
+  numDeriv::grad(func = heq, x = x)
+}
+# 定义目标规划
+op <- OP(
+  # 3 个目标变量
+  objective = F_objective(F = fn, G = gr, n = 3L),
+  constraints = F_constraint(
+    F = list(heq = heq),
+    dir = "==",
+    rhs = 0,
+    # 等式约束的梯度
+    J = list(heq.jac = heq.jac)
+  ),
+  bounds = V_bound(
+    ld = -Inf, ud = Inf,
+    li = c(1, 2), ui = c(1, 2),
+    lb = c(-1, -2), ub = c(7, 2),
+    nobj = 3L
+  ),
+  maximum = FALSE # 求最小
+)
+op
+```
+
+将网格搜索的结果作为初值，继续寻找更优的目标函数值。
+
+```{r}
+nlp <- ROI_solve(op,
+  solver = "nloptr.slsqp",
+  start = c(2.8, -0.9, -0.02159723)
+)
+nlp$solution
+```
+
+可以发现，更优的目标函数值 $-0.02335$ 在 $(2.898,-0.8573)$ 取得。
+
+#### 示例 3
+
 Rastrigin 函数是多模态函数，有许多局部极小值。
 
 $$
-f(\bm{x})= \sum_{i=1}^{n}\big(x_i^2 - 10 \cos(2\pi x_i) + 10\big)
+\min_{\bm{x}} \sum_{i=1}^{n}\big(x_i^2 - 10 \cos(2\pi x_i) + 10\big)
 $$
 
-计算函数值的 R 代码
+其中，$x_i \in [-4,4]$。计算函数值的 R 代码
 
 ```{r}
 fn <- function(x) {
@@ -902,13 +1223,13 @@ nlp$solution
 nlp$objval
 ```
 
-#### 示例 2
+#### 示例 4
 
 有如下复杂的目标函数
 
 $$
 \begin{aligned}
-  & \min_x ~ \cos(x_1)\cos(x_2) - \sum_{i=1}^{5}\Big( (-1)^i \cdot i \cdot 2 \cdot \exp\big(-500 \cdot ( (x_1 - i \cdot 2)^2 + (x_2 - i\cdot 2)^2 ) \big) \Big) \\
+  & \min_{\bm{x}} ~ \cos(x_1)\cos(x_2) - \sum_{i=1}^{5}\Big( (-1)^i \cdot i \cdot 2 \cdot \exp\big(-500 \cdot ( (x_1 - i \cdot 2)^2 + (x_2 - i\cdot 2)^2 ) \big) \Big) \\
   & \text{s.t.} ~ -50 \leq x_1, x_2 \leq 50
 \end{aligned}
 $$
@@ -1063,10 +1384,10 @@ nlp@fitnessValue
 有如下箱式约束优化问题，示例来自函数 `nlminb()` 的帮助文档，目标函数和[香蕉函数](https://en.wikipedia.org/wiki/Rosenbrock_function)有些相似。
 
 $$
-\begin{array}{l}
-  \min_x \quad  (x_1 - 1)^2 + 4\sum_{i =1}^{n -1}(x_{i+1} -x_i^2)^2  \\
-  \text{s.t.} \quad 2 \leq x_1,x_2,\cdots,x_n \leq 4
-\end{array}
+\begin{aligned}
+  \min_{\bm{x}} \quad & (x_1 - 1)^2 + 4\sum_{i =1}^{n -1}(x_{i+1} -x_i^2)^2  \\
+  \text{s.t.} \quad &  2 \leq x_1,x_2,\cdots,x_n \leq 4
+\end{aligned}
 $$
 
 R 语言编码的函数代码如下：
@@ -1240,15 +1561,15 @@ optim(
 示例来自 Octave 的[非线性优化帮助文档](https://octave.org/doc/v8.2.0/Nonlinear-Programming.html)，Octave 函数 `sqp()` 使用序列二次规划求解器（successive quadratic programming solver）解非线性规划问题，示例中该优化问题包含多个非线性等式约束。
 
 $$
-\begin{array}{l}
-\min_x \quad \mathrm{e}^{\prod_{i=1}^{5} x_i} - \frac{1}{2}(x_1^3 + x_2^3 + 1)^2 \\
-\text{s.t.} \left\{ 
+\begin{aligned}
+\min_{\bm{x}} \quad &  \mathrm{e}^{\prod_{i=1}^{5} x_i} - \frac{1}{2}(x_1^3 + x_2^3 + 1)^2 \\
+\text{s.t.} \quad & \left\{ 
   \begin{array}{l}
    \sum_{i=1}^{5}x_i^2 - 10 = 0 \\
    x_2 x_3 - 5x_4 x_5 = 0 \\
    x_1^3 + x_2^3 + 1 = 0
   \end{array} \right.
-\end{array}
+\end{aligned}
 $$
 
 目标函数是非线性的，包含 5 个变量，约束条件是非线性的，有 3 个等式约束。先手动计算目标函数的梯度，等式约束的雅可比矩阵。
@@ -1328,15 +1649,15 @@ nlp$objval
 此优化问题来源于 **Ipopt** 官网的[帮助文档](https://coin-or.github.io/Ipopt/INTERFACES.html)，约束条件比较复杂。提供的初始值为 $x_0 = (1,5,5,1)$，最优解为 $x_{\star} = (1.00000000,4.74299963,3.82114998,1.37940829)$。优化问题的具体内容如下：
 
 $$
-\begin{array}{l}
-  \min_x \quad x_1 x_4 (x_1 + x_2 + x_3) + x_3 \\
-    \text{s.t.} \left\{ 
+\begin{aligned}
+\min_{\bm{x}} & \quad x_1 x_4 (x_1 + x_2 + x_3) + x_3 \\
+\text{s.t.} & \quad \left\{ 
     \begin{array}{l}
      x_1^2 + x_2^2 + x_3^2 + x_4^2 = 40 \\
      x_1 x_2 x_3 x_4 \geq 25 \\
      1 \leq x_1, x_2, x_3, x_4 \leq 5
     \end{array} \right.
-\end{array}
+\end{aligned}
 $$
 
 下面用 **ROI** 调 **nloptr** 包求解，看结果是否和例子一致，**nloptr** 支持箱式约束且支持不等式约束包含等号。
