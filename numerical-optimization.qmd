@@ -14,7 +14,7 @@ $$
 $$
 :::
 
-本章介绍四类典型的优化问题及 R 语言求解过程。除了 R 软件内置一些数值优化求解器，R 语言社区有大量的运筹优化方面的函数和 R 包。本文将重点介绍 **ROI** 包，它通过插件包对 20 多个 R 包提供统一的调用方式，相当于一个运筹优化方面的基础设施平台，极大地方便学习和使用。本文不能一一概括，仅详述其中两个，求解线性优化（linear optimization）与混合整数优化（mixed integer linear optimization）的 **Rglpk** 包，求解二次优化（quadratic optimization）和非线性优化（nonlinear optimization）的 **nloptr** 包，相信读者之后可以举一反三。
+本章介绍五类典型的优化问题及 R 语言求解过程。除了 R 软件内置一些数值优化求解器，R 语言社区有大量的运筹优化方面的函数和 R 包。本文将重点介绍 **ROI** 包，它通过插件包对 20 多个 R 包提供统一的调用方式，相当于一个运筹优化方面的基础设施平台，极大地方便学习和使用。本文不能一一概括，仅详述其中两个，求解线性优化（linear optimization）与混合整数优化（mixed integer linear optimization）的 **Rglpk** 包，求解二次优化（quadratic optimization）和非线性优化（nonlinear optimization）的 **nloptr** 包，相信读者之后可以举一反三。
 
 ```{mermaid}
 %%| label: fig-roi-plugin
@@ -132,13 +132,13 @@ res$objval
 
 整数优化分变量取值为 0 或 1 的 0-1 整数优化和带有整数约束的混合整数优化。
 
-### 0-1 整数优化
+### 0-1 整数线性优化
 
-变量要么是 0 要么是 1
+目标函数是线性的，目标变量的取值要么是 0 要么是 1。
 
-### 混合整数优化 {#sec-mixed-integer-linear-optimization}
+### 混合整数线性优化 {#sec-mixed-integer-linear-optimization}
 
-一部分变量要求是整数
+目标函数是线性的，一部分目标变量是整数。
 
 $$
 \begin{aligned}
@@ -197,7 +197,10 @@ op <- OP(
     rhs = c(61, 35, 31)
   ),
   # 添加约束
-  bounds = V_bound(li = 3, ui = 3, lb = -10, ub = 10, nobj = 3),
+  bounds = V_bound(
+    li = 3, ui = 3,
+    lb = -10, ub = 10, nobj = 3
+  ),
   maximum = TRUE
 )
 op
@@ -206,6 +209,64 @@ res <- ROI_solve(op, solver = "glpk")
 # 最优解
 res$solution
 res$objval
+```
+
+### 混合整数二次优化
+
+目标函数是二次的，一部分目标变量是整数。
+
+在二次规划的基础上，对变量添加整型约束，即变成混合整数二次规划 （Mixed Integer Quadratic Programming，简称 MIQP）。
+
+```{r}
+#| eval: false
+
+op <- OP(
+  objective = Q_objective(Q = Dmat, L = dvec),
+  constraints = L_constraint(Amat, rep("<=", 3), bvec),
+  types = c("I", "C"),
+  maximum = FALSE # 求最小
+)
+nlp <- ROI_solve(op, solver = "nloptr.slsqp", start = c(1, 2))
+nlp$objval
+nlp$solution
+```
+
+目前，ROI 支持的开源求解器都不能处理 MIQP 问题，只有 **CVXR** 包和 [**rmpk**](https://github.com/r-opt/rmpk) 包能解 MIQP 问题，更多关于 **CVXR** 包的介绍见[示例库](https://cvxr.rbind.io/examples/)。
+
+**ECOSolveR** 包可以求解一些锥规划，且变量可以包含整数。将凸二次规划转为锥规划问题，再调 `ecos` 求解器。连接 **ECOSolveR** 包提供 `ecos` 求解器。
+
+```{r}
+#| eval: false
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
+
+op <- OP(
+  objective = Q_objective(Q = Dmat, L = dvec),
+  constraints = L_constraint(Amat, rep("<=", 3), bvec),
+  types = c("I", "C"),
+  maximum = FALSE # 默认求最小
+)
+library(ROI.plugin.ecos)
+nlp <- ROI_solve(op, solver = "ecos", start = c(1, 2))
+nlp$objval
+nlp$solution
+
+library(CVXR)
+# Variables minimized over
+x1 <- Variable(1, integer = TRUE)
+x2 <- Variable(1)
+
+# Problem definition
+objective <- Minimize(x1^2 + x2^2 - x1 * x2 + 3 * x1 - 2 * x2)
+constraints <- list(-x1 - x2 <= -2, x1 - x2 <= 2, x2 <= 3)
+prob <- Problem(objective, constraints)
+
+# Problem solution
+solution <- psolve(prob, solver = "ECOS")
+solution$status
+solution$value
+solution$getValue(x)
+solution$getValue(y)
 ```
 
 ## 凸二次优化 {#sec-quadratic-optimization}
@@ -364,64 +425,6 @@ sol
 ```
 
 其中，返回值的 `unconstrained.solution` 表示无约束下的解，与预期的解一致，这就没有疑惑了。可见，约束二次规划问题和无约束二次规划问题的求解器不同。
-
-### 混合整数二次优化
-
-对变量添加整型约束，原二次规划即变成混合整数二次规划 （Mixed Integer Quadratic Programming，简称 MIQP）。目前，ROI 支持的开源求解器都不能处理 MIQP 问题，只有 **CVXR** 包和 [**rmpk**](https://github.com/r-opt/rmpk) 包能解 MIQP 问题，更多关于 **CVXR** 包的介绍见[示例库](https://cvxr.rbind.io/examples/)。
-
-```{r}
-#| eval: false
-
-op <- OP(
-  objective = Q_objective(Q = Dmat, L = dvec),
-  constraints = L_constraint(Amat, rep("<=", 3), bvec),
-  types = c("I", "C"),
-  maximum = FALSE # 求最小
-)
-nlp <- ROI_solve(op, solver = "nloptr.slsqp", start = c(1, 2))
-nlp$objval
-nlp$solution
-```
-
-**ECOSolveR** 包可以求解一些锥规划，且变量可以包含整数。将凸二次规划转为锥规划问题，再调 `ecos` 求解器。连接 **ECOSolveR** 包提供 `ecos` 求解器。
-
-```{r}
-#| eval: false
-
-op <- OP(
-  objective = Q_objective(Q = Dmat, L = dvec),
-  constraints = L_constraint(Amat, rep("<=", 3), bvec),
-  types = c("I", "C"),
-  maximum = FALSE # 默认求最小
-)
-library(ROI.plugin.ecos)
-nlp <- ROI_solve(op, solver = "ecos", start = c(1, 2))
-nlp$objval
-nlp$solution
-```
-
-```{r}
-#| eval: false
-#| code-fold: true
-#| echo: !expr knitr::is_html_output()
-
-library(CVXR)
-# Variables minimized over
-x1 <- Variable(1, integer = TRUE)
-x2 <- Variable(1)
-
-# Problem definition
-objective <- Minimize(x1^2 + x2^2 - x1 * x2 + 3 * x1 - 2 * x2)
-constraints <- list(-x1 - x2 <= -2, x1 - x2 <= 2, x2 <= 3)
-prob <- Problem(objective, constraints)
-
-# Problem solution
-solution <- psolve(prob, solver = "ECOS")
-solution$status
-solution$value
-solution$getValue(x)
-solution$getValue(y)
-```
 
 ### 非严格凸二次优化
 
