@@ -364,7 +364,198 @@ solution$getValue(y)
 
 ### 混合整数非线性优化 {#sec-mixed-integer-nonlinear-programming}
 
-[Bonmin](https://github.com/coin-or/Bonmin/) 项目专门求解混合整数非线性优化 MINLP（Mixed Integer NonLinear Programming）问题。
+在 R 语言社区的官方仓库中还没有开源的 R 包可以求解此类问题，开源社区中 [Bonmin](https://github.com/coin-or/Bonmin/) 项目专门求解混合整数非线性优化 MINLP（Mixed Integer NonLinear Programming）问题。数学规划软件 AMPL 封装了 Bonmin 软件，并提供 R 语言接口 [rAMPL](https://github.com/ampl/rAMPL)。AMPL [社区版](https://ampl.com/ce/)可以免费使用打包的开源求解器。
+
+-   线性规划求解器 [HiGHS](https://github.com/ERGO-Code/HiGHS)。
+-   整数线性规划求解器 [cbc](https://github.com/coin-or/Cbc)。
+-   整数非线性规划求解器 [Bonmin](https://github.com/coin-or/Bonmin) 和 [Couenne](https://github.com/coin-or/Couenne)。
+-   非线性规划求解器 [Ipopt](https://github.com/coin-or/Ipopt)。
+
+安装 AMPL 社区版软件后，再安装 **rAMPL** 包，它依赖 **Rcpp** 包，所以需要一并安装。
+
+``` r
+install.packages("Rcpp", type = "source")
+# 从 AMPL 官网安装 rAMPL 包
+install.packages("https://ampl.com/dl/API/rAMPL.tar.gz",
+  repos = NULL,
+  INSTALL_opts = c("--no-multiarch", "--no-staged-install")
+)
+```
+
+下面求解如下混合整数非线性优化问题。
+
+$$
+\begin{aligned}
+\min_{\bm{x}} \quad & 1.5(x_1 - \sin(x_1 -x_2))^2 + 0.5x_2^2 + x_3^2 -x_1 x_2 -2x_1 + x_2 x_3 \\
+\text{s.t.} \quad & \left\{ 
+    \begin{array}{l}
+      x_1,x_2 \in \mathbb{R} ~~ x_3 \in \mathbb{Z} \\
+      x_1,x_2 \in [-20,20] ~~ x_3 \in [-10,10].
+    \end{array} \right.
+\end{aligned}
+$$
+
+AMPL 模型代码如下：
+
+``` ampl
+var X1;
+var X2;
+var X3 integer;
+minimize z: 1.5 * (X1 - sin(X1 - X2))^2 + 0.5 * X2^2 + X3^2 - X1 * X2 - 2 * X1 + X2 * X3;
+subject to A_limit: -20 <= X1 <= 20;
+subject to B_limit: -20 <= X2 <= 20;
+subject to C_limit: -10 <= X3 <= 10;
+```
+
+将代码保存到文件 `code/MINLP.mod` ，下面加载 **rAMPL** 包，调用求解器 Bonmin 求解该优化问题。
+
+```{r}
+#| eval: false
+
+library(rAMPL)
+# 配置 AMPL 安装路径
+env <- new(Environment, "/opt/AMPL/ampl.macos64")
+ampl <- new(AMPL, env)
+# 加载混合整数非线性优化模型文件
+ampl$read("code/MINLP.mod")
+# 设置 MINLP 求解器 Bonmin
+ampl$setOption("solver", "bonmin")
+# 求解问题
+ampl$solve()
+# 最优解
+ampl$getData("X1")
+ampl$getData("X2")
+ampl$getData("X3")
+# 目标函数值
+ampl$getData("z")
+```
+
+`ampl$solve()` 的输出信息如下：
+
+```         
+Bonmin 1.8.8 using Cbc 2.10.5 and Ipopt 3.12.13
+bonmin: 
+
+******************************************************************************
+This program contains Ipopt, a library for large-scale nonlinear optimization.
+ Ipopt is released as open source code under the Eclipse Public License (EPL).
+         For more information visit http://projects.coin-or.org/Ipopt
+******************************************************************************
+
+NLP0012I 
+              Num      Status      Obj             It       time                 Location
+NLP0014I             1         OPT -4.20616        6 0.007111
+NLP0014I             2         OPT -4.1760121        4 0.004135
+NLP0014I             3         OPT -3.7431994        5 0.004932
+Cbc0010I After 0 nodes, 1 on tree, 1e+50 best solution, best possible -1.7976931e+308 (0.01 seconds)
+NLP0014I             4         OPT -4.1760121        4 0.004646
+NLP0012I 
+              Num      Status      Obj             It       time                 Location
+NLP0014I             1         OPT -4.1760121        8 0.006857
+Cbc0004I Integer solution of -4.1760121 found after 4 iterations and 1 nodes (0.03 seconds)
+NLP0014I             5         OPT -3.7431994        5 0.005481
+Cbc0001I Search completed - best objective -4.176012057187287, took 9 iterations and 2 nodes (0.03 seconds)
+Cbc0032I Strong branching done 1 times (9 iterations), fathomed 0 nodes and fixed 0 variables
+Cbc0035I Maximum depth 0, 0 variables fixed on reduced cost
+    "Finished"
+
+bonmin: Optimal
+```
+
+Bonmin 求解器的结果显示在 $(2.892556, 1.702552, -1)$ 处获得最优解，目标函数值为 $-4.176012$ ，实际上，这是一个局部最优解。下面调用另一个求解器 Couenne 求解该问题，实际上，Couenne 好于 Bonmin 求解器，它可以找到非凸混合整数非线性规划问题的全局最优解。
+
+```{r}
+#| eval: false
+# 调用 couenne 求解器
+ampl$setOption("solver", "couenne")
+```
+
+```         
+Couenne 0.5.8 -- an Open-Source solver for Mixed Integer Nonlinear Optimization
+Mailing list: couenne@list.coin-or.org
+Instructions: http://www.coin-or.org/Couenne
+couenne: 
+ANALYSIS TEST: Couenne: new cutoff value 0.0000000000e+00 (0.020553 seconds)
+NLP0012I 
+              Num      Status      Obj             It       time                 Location
+NLP0014I             1         OPT -4.20616        6 0.007888
+Couenne: new cutoff value -3.5706477181e+00 (0.030724 seconds)
+NLP0014I             2         OPT -3.7431994        5 0.0058
+Couenne: new cutoff value -3.7431993642e+00 (0.037854 seconds)
+Loaded instance "/var/folders/cv/7n2v46gx65bbdtv7ctx7jtmh0000gn/T/at87353.nl"
+Constraints:            0
+Variables:              3 (1 integer)
+Auxiliaries:            9 (1 integer)
+
+Coin0506I Presolve 25 (0) rows, 12 (0) columns and 65 (0) elements
+Clp0006I 0  Obj -640 Primal inf 971.14086 (10)
+Clp0006I 11  Obj -610
+Clp0000I Optimal - objective value -610
+Clp0032I Optimal objective -610 - 11 iterations time 0.002
+Clp0000I Optimal - objective value -610
+Cbc0012I Integer solution of -3.7431994 found by Couenne Rounding NLP after 0 iterations and 0 nodes (0.00 seconds)
+NLP Heuristic: NLP0014I             3         OPT -3.1414994        6 0.008408
+no solution.
+Clp0000I Optimal - objective value -610
+Optimality Based BT: 7 improved bounds
+Probing: 2 improved bounds
+NLP Heuristic: time limit reached.
+Cbc0031I 6 added rows had average density of 2.3333333
+Cbc0013I At root node, 6 cuts changed objective from -610 to -340.9018 in 10 passes
+Cbc0014I Cut generator 0 (Couenne convexifier cuts) - 27 row cuts average 2.1 elements, 2 column cuts (2 active)
+Cbc0010I After 0 nodes, 1 on tree, -3.7431994 best solution, best possible -340.9018 (0.03 seconds)
+Optimality Based BT: 7 improved bounds
+Couenne: new cutoff value -4.1760120572e+00 (0.084431 seconds)
+Cbc0012I Integer solution of -4.1760121 found by Couenne Rounding NLP after 38 iterations and 1 nodes (0.05 seconds)
+Optimality Based BT: 7 improved bounds
+Optimality Based BT: 5 improved bounds
+Optimality Based BT: 6 improved bounds
+Optimality Based BT: 6 improved bounds
+Optimality Based BT: 8 improved bounds
+Couenne: new cutoff value -9.9782461145e+00 (0.279699 seconds)
+Cbc0012I Integer solution of -9.9782461 found by Couenne Rounding NLP after 254 iterations and 15 nodes (0.24 seconds)
+Optimality Based BT: 6 improved bounds
+Optimality Based BT: 10 improved bounds
+Couenne: new cutoff value -1.0518325320e+01 (0.323519 seconds)
+Cbc0012I Integer solution of -10.518325 found by Couenne Rounding NLP after 293 iterations and 17 nodes (0.28 seconds)
+Optimality Based BT: 11 improved bounds
+Optimality Based BT: 9 improved bounds
+Optimality Based BT: 10 improved bounds
+Optimality Based BT: 5 improved bounds
+Optimality Based BT: 6 improved bounds
+Couenne: new cutoff value -1.0961821658e+01 (0.536504 seconds)
+Cbc0012I Integer solution of -10.961822 found by Couenne Rounding NLP after 789 iterations and 59 nodes (0.50 seconds)
+Cbc0010I After 100 nodes, 19 on tree, -10.961822 best solution, best possible -64.098307 (0.57 seconds)
+Optimality Based BT: 6 improved bounds
+Cbc0010I After 200 nodes, 7 on tree, -10.961822 best solution, best possible -10.987437 (0.74 seconds)
+Cbc0001I Search completed - best objective -10.96182165769095, took 2031 iterations and 240 nodes (0.76 seconds)
+Cbc0035I Maximum depth 23, 0 variables fixed on reduced cost
+    "Finished"
+
+Linearization cuts added at root node:         25
+Linearization cuts added in total:             25  (separation time: 0.000157s)
+Total solve time:                        0.761365s (0.761365s in branch-and-bound)
+Lower bound:                             -10.9618
+Upper bound:                             -10.9618  (gap: 0.00%)
+Branch-and-bound nodes:                       240
+Performance of                           FBBT:     0.009698s,      597 runs. fix:          0 shrnk:  0.0365667 ubd:          0 2ubd:          0 infeas:          2
+Performance of                           OBBT:     0.053543s,       15 runs. fix:          0 shrnk:    1.52884 ubd:          0 2ubd:          0 infeas:          0
+
+couenne: Optimal
+```
+
+最优解在 $x_1 = 4.999633, x_2 = 9.734148, x_3 = -5$ 处取得，最优值为 $-10.96182$ 。下面将两个最优解代入目标函数，验证一下最优值。
+
+```{r}
+fun <- function(x) {
+  1.5 * (x[1] - sin(x[1] - x[2]))^2 + 0.5 * x[2]^2 +
+    x[3]^2 - x[1] * x[2] - 2 * x[1] + x[2] * x[3]
+}
+# 局部最优解
+fun(x = c(2.892556, 1.702552, -1))
+# 全局最优解
+fun(x = c(4.999633, 9.734148, -5))
+```
 
 ## 凸二次优化 {#sec-quadratic-optimization}
 
@@ -1747,7 +1938,7 @@ nlp$objval
 
 ## 习题 {#sec-numerical-optimization-exercises}
 
-1.  求解如下非线性无约束优化问题。
+1.  求解如下 2 维非线性无约束优化问题。
 
     $$
     \min_{\bm{x}} \quad 100 (x_2 -x_1^2)^2 + (1-x_1)^2
@@ -1780,7 +1971,15 @@ nlp$objval
     optim(par = c(-1.2, 1), fn = fr, gr = grr, method = "L-BFGS-B")
     ```
 
-2.  求解如下非线性约束优化问题。
+2.  求解如下 $n$ 维非线性箱式约束优化问题。
+
+    $$
+    \min_{\bm{x}} \quad \exp\big( - \sum_{i=1}^{n}(\frac{x_i}{\beta})^{2m}\big)  - 2\exp(- \sum_{i=1}^{n}x_i^2)\prod_{i=1}^{n} \cos^2(x_i)
+    $$
+
+    其中，$\beta.=15, m = 3$ ，$x_i \in [-20,20], i = 1,2,\ldots,n$ 。请读者分别考虑 $n= 2$ 和 $n = 4$ 的情况。全局最优解在 $x_i = 0, i = 1,2,\ldots,n$ 处取得，最优值为 $-1$ 。
+
+3.  求解如下非线性约束优化问题。
 
     $$
     \begin{aligned}
