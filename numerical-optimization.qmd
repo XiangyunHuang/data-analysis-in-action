@@ -130,12 +130,13 @@ res$objval
 
 ## 整数优化 {#sec-integer-linear-optimization}
 
-整数优化情况有很多，本文仅考虑以下几类简单情形：
+整数优化情况有很多，篇幅所限，仅考虑以下几类常见情形：
 
 1.  目标函数和约束条件为线性，变量取值都为整数的整数优化。
 2.  目标函数和约束条件为线性，变量取值为 0 或 1 的 0-1 整数优化。
-3.  目标函数和约束条件为线性，部分变量带有整数约束的混合整数优化。
-4.  目标函数为凸二次和约束条件为线性，部分变量带有整数约束的混合整数优化。
+3.  目标函数和约束条件为线性，部分变量带有整数约束的混合整数线性优化。
+4.  目标函数为凸二次、约束条件为线性，部分变量是整数的混合整数二次优化。
+5.  目标函数和约束条件为非线性，部分变量是整数的混合整数非线性优化。
 
 ### 纯整数线性优化
 
@@ -306,25 +307,46 @@ res$objval
 
 目标函数是二次的，一部分目标变量是整数。
 
+$$
+\begin{aligned}
+\min_{\bm{x}} \quad & x_1^2 + x_2^2 - x_1  x_2 + 3  x_1 - 2 x_2 \\
+\text{s.t.} \quad & \left\{ 
+    \begin{array}{l}
+      -x_1 - x_2 <= -2 \\
+      x_1 - x_2 <= 2 \\
+      x_2 <= 3. \\
+      x_1 \in \mathbb{Z}
+    \end{array} \right.
+\end{aligned}
+$$
+
 在二次规划的基础上，对变量添加整型约束，即变成混合整数二次规划 （Mixed Integer Quadratic Programming，简称 MIQP）。
 
 ```{r}
-#| eval: false
-
+# D
+Dmat <- matrix(c(2, -1, -1, 2), nrow = 2, byrow = TRUE)
+# d
+dvec <- c(3, -2)
+# A
+Amat <- matrix(c(
+  -1, -1,
+  1, -1,
+  0, 1
+), ncol = 2, byrow = TRUE)
+# b
+bvec <- c(-2, 2, 3)
+# 目标规划
 op <- OP(
   objective = Q_objective(Q = Dmat, L = dvec),
   constraints = L_constraint(Amat, rep("<=", 3), bvec),
   types = c("I", "C"),
   maximum = FALSE # 求最小
 )
-nlp <- ROI_solve(op, solver = "nloptr.slsqp", start = c(1, 2))
-nlp$objval
-nlp$solution
+# 查看可用于该优化问题的求解器
+ROI_applicable_solvers(op)
 ```
 
-目前，ROI 支持的开源求解器都不能处理 MIQP 问题，只有 **CVXR** 包和 [**rmpk**](https://github.com/r-opt/rmpk) 包能解 MIQP 问题，更多关于 **CVXR** 包的介绍见[示例库](https://cvxr.rbind.io/examples/)。
-
-**ECOSolveR** 包可以求解一些锥规划，且变量可以包含整数。将凸二次规划转为锥规划问题，再调 `ecos` 求解器。连接 **ECOSolveR** 包提供 `ecos` 求解器。
+目前，**ROI** 包支持的开源求解器都不能处理 MIQP 问题。**ECOSolveR** 包可以求解一些锥规划，部分变量可以是整数。先可将凸二次规划转为凸锥规划问题，连接 **ECOSolveR** 包提供 `ecos` 求解器，再调 `ecos` 求解器求解。
 
 ```{r}
 #| eval: false
@@ -343,41 +365,92 @@ library(ROI.plugin.ecos)
 nlp <- ROI_solve(op, solver = "ecos", start = c(1, 2))
 nlp$objval
 nlp$solution
-
-library(CVXR)
-# Variables minimized over
-x1 <- Variable(1, integer = TRUE)
-x2 <- Variable(1)
-
-# Problem definition
-objective <- Minimize(x1^2 + x2^2 - x1 * x2 + 3 * x1 - 2 * x2)
-constraints <- list(-x1 - x2 <= -2, x1 - x2 <= 2, x2 <= 3)
-prob <- Problem(objective, constraints)
-
-# Problem solution
-solution <- psolve(prob, solver = "ECOS")
-solution$status
-solution$value
-solution$getValue(x)
-solution$getValue(y)
 ```
+
+因二次规划的目标函数是二次连续可微的，而且是凸函数，求解器 Bonmin 可以获得最优解。
+
+``` ampl
+var x1 integer;
+var x2;
+minimize z: x1^2 + x2^2 - x1 * x2 + 3 * x1 - 2 * x2;
+subject to A_limit: -x1 - x2 <= -2;
+subject to B_limit: x1 - x2 <= 2;
+subject to C_limit: x2 <= 3;
+```
+
+```{r}
+#| eval: false
+
+library(rAMPL)
+# 配置 AMPL 安装路径
+env <- new(Environment, "/opt/AMPL/ampl.macos64")
+ampl <- new(AMPL, env)
+# 加载混合整数二次优化模型文件
+ampl$read("code/MIQP.mod")
+# 设置 MIQP 求解器 Bonmin
+ampl$setOption("solver", "bonmin")
+# 求解问题
+ampl$solve()
+```
+
+```         
+Bonmin 1.8.8 using Cbc 2.10.5 and Ipopt 3.12.13
+bonmin: 
+
+******************************************************************************
+This program contains Ipopt, a library for large-scale nonlinear optimization.
+ Ipopt is released as open source code under the Eclipse Public License (EPL).
+         For more information visit http://projects.coin-or.org/Ipopt
+******************************************************************************
+
+NLP0012I 
+              Num      Status      Obj             It       time                 Location
+NLP0014I             1         OPT -0.083333363        5 0.006141
+NLP0012I 
+              Num      Status      Obj             It       time                 Location
+NLP0014I             1         OPT -4.9979999e-08        5 0.005499
+NLP0014I             2         OPT -3.999e-08        5 0.00661
+NLP0012I 
+              Num      Status      Obj             It       time                 Location
+NLP0014I             1         OPT -3.999e-08        5 0.007364
+Cbc0012I Integer solution of -3.999e-08 found by DiveMIPFractional after 0 iterations and 0 nodes (0.02 seconds)
+NLP0014I             2         OPT -4.9979999e-08        5 0.007163
+NLP0014I             3         OPT 1.75        6 0.008877
+Cbc0001I Search completed - best objective -3.998999975607376e-08, took 0 iterations and 0 nodes (0.04 seconds)
+Cbc0032I Strong branching done 1 times (11 iterations), fathomed 1 nodes and fixed 0 variables
+Cbc0035I Maximum depth 0, 0 variables fixed on reduced cost
+ 	"Finished"
+
+bonmin: Optimal
+```
+
+```{r}
+#| eval: false
+
+# 最优解
+ampl$getData("x1")
+ampl$getData("x2")
+# 目标函数值
+ampl$getData("z")
+```
+
+最优解在 $(0,2)$ 处获得，最优值为 0。
 
 ### 混合整数非线性优化 {#sec-mixed-integer-nonlinear-programming}
 
 在 R 语言社区的官方仓库中还没有开源的 R 包可以求解此类问题，开源社区中 [Bonmin](https://github.com/coin-or/Bonmin/) 项目专门求解混合整数非线性优化 MINLP（Mixed Integer NonLinear Programming）问题。数学规划软件 AMPL 封装了 Bonmin 软件，并提供 R 语言接口 [rAMPL](https://github.com/ampl/rAMPL)。AMPL [社区版](https://ampl.com/ce/)可以免费使用打包的开源求解器。
 
 -   线性规划求解器 [HiGHS](https://github.com/ERGO-Code/HiGHS)。
--   整数线性规划求解器 [cbc](https://github.com/coin-or/Cbc)。
--   整数非线性规划求解器 [Bonmin](https://github.com/coin-or/Bonmin) 和 [Couenne](https://github.com/coin-or/Couenne)。
--   非线性规划求解器 [Ipopt](https://github.com/coin-or/Ipopt)。
+-   混合整数线性优化求解器 [cbc](https://github.com/coin-or/Cbc)。
+-   混合整数非线性优化求解器 [Bonmin](https://github.com/coin-or/Bonmin) 和 [Couenne](https://github.com/coin-or/Couenne)。
+-   非线性优化求解器 [Ipopt](https://github.com/coin-or/Ipopt)。
 
 安装 AMPL 社区版软件后，再安装 **rAMPL** 包，它依赖 **Rcpp** 包，所以需要一并安装。
 
 ``` r
 install.packages("Rcpp", type = "source")
 # 从 AMPL 官网安装 rAMPL 包
-install.packages("https://ampl.com/dl/API/rAMPL.tar.gz",
-  repos = NULL,
+install.packages("https://ampl.com/dl/API/rAMPL.tar.gz", repos = NULL,
   INSTALL_opts = c("--no-multiarch", "--no-staged-install")
 )
 ```
@@ -468,6 +541,8 @@ Bonmin 求解器的结果显示在 $(2.892556, 1.702552, -1)$ 处获得最优解
 #| eval: false
 # 调用 couenne 求解器
 ampl$setOption("solver", "couenne")
+# 求解问题
+ampl$solve()
 ```
 
 ```         
