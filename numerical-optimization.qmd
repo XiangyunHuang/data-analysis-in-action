@@ -41,6 +41,7 @@ library(ROI)
 library(ROI.plugin.glpk)
 library(ROI.plugin.nloptr)
 library(ROI.plugin.scs)
+library(ROI.plugin.ecos)
 library(ROI.plugin.quadprog)
 library(lattice)
 # 自定义调色板
@@ -461,9 +462,7 @@ $$
 \mathcal{K}_{soc}^{n} = \{(t,x) \in \mathbb{R}^n|x \in \mathbb{R}^{n-1}, t\in\mathbb{R},\| x \|_2 \leq t\}
 $$
 
-常用于凸二次优化问题。
-
-二阶锥规划 SOCP
+常用于凸二次优化问题。考虑如下二阶锥规划 SOCP 问题：
 
 $$
 \begin{aligned}
@@ -473,13 +472,23 @@ $$
 \end{aligned}
 $$
 
-令 $\bm{x} = (y_1, y_2, t)^{\top}$ 上述非线性不等式约束等价于
+令 $\bm{x} = (y_1, y_2, t)^{\top}$ ，$\bm{b} = (b_1,b_2,b_3)^\top$
+
+$$
+A = \begin{bmatrix}
+\bm{a_1}^{\top}\\ 
+\bm{a_2}^{\top}\\ 
+\bm{a_3}^{\top}
+\end{bmatrix}
+$$
+
+上述 SOCP 问题的非线性不等式约束等价于
 
 $$
 \sqrt{(b_2 - \bm{a_2}^{\top}\bm{x})^2 + (b_3 -\bm{a_3}^{\top}\bm{x})^2} \leq b_1 - \bm{a_1}^{\top}\bm{x}
 $$
 
-记 $A = (\bm{a_1}^{\top}, \bm{a_2}^{\top}, \bm{a_3}^{\top}), \bm{b} = (b_1,b_2,b_3)^\top$ ，则
+其中，
 
 $$
 A = \begin{bmatrix}
@@ -493,6 +502,8 @@ A = \begin{bmatrix}
 4
 \end{bmatrix}
 $$
+
+**scs** 包不能求解此类规划问题，下面调用 **ECOSolveR** 包求解。
 
 ```{r}
 library(ROI.plugin.ecos)
@@ -508,7 +519,11 @@ op <- OP(
   ), maximum = TRUE,
   bounds = V_bound(ld = -Inf, ui = 3, ub = 9, nobj = 3)
 )
-nlp <- ROI_solve(op, solver = "ecos")
+sol <- ROI_solve(op, solver = "ecos")
+# 最优解
+sol$solution
+# 目标函数值
+sol$objval
 ```
 
 对目标变量 $y_1$ 添加整数约束，则只有 **ECOSolveR** 包可以求解。
@@ -528,7 +543,11 @@ op <- OP(
   types = c("I", "C", "C"), 
   bounds = V_bound(ld = -Inf, ui = 3, ub = 9, nobj = 3)
 )
-nlp <- ROI_solve(op, solver = "ecos")
+sol <- ROI_solve(op, solver = "ecos")
+# 最优解
+sol$solution
+# 目标函数值
+sol$objval
 ```
 
 ### 指数锥
@@ -583,18 +602,19 @@ $$
 指数锥用函数 `K_expp()` 表示，锥优化问题的代码如下：
 
 ```{r}
-# 锥约束
-cexpp <- C_constraint(L = rbind(
-  c(-3, -5, 0, 0), 
-  c(0, 0, 0, 0),
-  c(0, 0, -11, -12)
-), cone = K_expp(1), rhs = c(7, 1, 9))
 # 目标规划
-expp <- OP(objective = c(1, 2, 0, 0), constraints = cexpp,
-  bounds = V_bound(ld = -Inf, ub = c(20, 20, 50, 50)), 
+op <- OP(
+  objective = c(1, 2, 0, 0),
+  # 锥约束
+  constraints = C_constraint(L = rbind(
+    c(-3, -5, 0, 0),
+    c(0, 0, 0, 0),
+    c(0, 0, -11, -12)
+  ), cone = K_expp(1), rhs = c(7, 1, 9)),
+  bounds = V_bound(ld = -Inf, ub = c(20, 20, 50, 50)),
   maximum = TRUE
 )
-expp
+op
 ```
 
 对于锥优化，可以调用 **scs** 包来求解。
@@ -602,11 +622,11 @@ expp
 ```{r}
 # 调用 scs 包
 library(ROI.plugin.scs)
-expp_sol <- ROI_solve(expp, solver = "scs")
+sol <- ROI_solve(op, solver = "scs")
 # 最优解
-expp_sol$solution
+sol$solution
 # 目标函数值
-expp_sol$objval
+sol$objval
 ```
 
 ### 幂锥
@@ -673,9 +693,11 @@ op
 ```
 
 ```{r}
-op_sol <- ROI_solve(op, solver = "scs", max_iter = 1e6)
-op_sol$solution
-op_sol$objval
+sol <- ROI_solve(op, solver = "scs", max_iter = 1e6)
+# 最优解
+sol$solution
+# 目标函数值
+sol$objval
 ```
 
 ### 半正定锥
@@ -739,12 +761,14 @@ op <- OP(
 op
 ```
 
-仍然调用 **scs** 求解器
+仍然调用 **scs** 包求解器。
 
 ```{r}
-op_sol <- ROI_solve(op, solver = "scs")
-op_sol$solution
-op_sol$objval
+sol <- ROI_solve(op, solver = "scs")
+# 最优解
+sol$solution
+# 目标函数值
+sol$objval
 ```
 
 ## 非线性优化 {#sec-nonlinear-optimization}
