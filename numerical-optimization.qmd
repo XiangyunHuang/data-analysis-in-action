@@ -128,240 +128,6 @@ res$objval
 -   `types` ：变量的类型，如 `"B"` 表示 0-1 变量，字母 B 是 binary 的意思，`"I"` 表示整型变量，字母 I 是 integer 的意思，`"C"` 表示数值型变量，字母 C 是 continuous 的意思。本例中，两个变量都是连续型的，`types = c("C", "C")` 。
 -   `maximum` ：目标函数需要求极大还是极小，默认求极小，取值为逻辑值 `TRUE` 或 `FALSE`。
 
-## 整数优化 {#sec-integer-linear-optimization}
-
-整数优化情况有很多，本文仅考虑以下几类简单情形：
-
-1.  目标函数和约束条件为线性，变量取值都为整数的整数优化。
-2.  目标函数和约束条件为线性，变量取值为 0 或 1 的 0-1 整数优化。
-3.  目标函数和约束条件为线性，部分变量带有整数约束的混合整数优化。
-4.  目标函数为凸二次和约束条件为线性，部分变量带有整数约束的混合整数优化。
-
-### 纯整数线性优化
-
-$$
-\begin{aligned}
-\min_{\bm{x}} \quad & -2x_1 - x_2 - 4x_3 -3x_4 -x_5\\
-\text{s.t.} \quad & \left\{ 
-  \begin{array}{l}
-    2x_2 + x_3 + 4x_4 + 2x_5 < 54 \\
-    3x_1 + 4x_2 + 5x_3 - x_4 - x_5 < 62 \\
-    x_1,x_2 \in [0,100] \quad x_3 \in [3, 100] \\
-    x_4 \in [0,100] \quad x_5 \in [2,100] \\
-    x_i \in \mathbb{Z}, ~ i = 1,2,\cdots,5.
-  \end{array} \right.
-\end{aligned}
-$$
-
-求解器 `glpk` 还可以求解一些整数优化问题。
-
-```{r}
-op <- OP(
-  objective = L_objective(c(-2, -1, -4, -3, -1)),
-  types = rep("I", 5),
-  constraints = L_constraint(
-    L = matrix(c(
-      0, 2, 1, 4, 2,
-      3, 4, 5, -1, -1
-    ), ncol = 5, byrow = TRUE),
-    dir = c("<", "<"),
-    rhs = c(54, 62)
-  ),
-  # 添加约束
-  bounds = V_bound(
-    li = 1:5, ui = 1:5,
-    lb = c(0, 0, 3, 0, 2), ub = rep(100, 5), nobj = 5
-  ),
-  maximum = FALSE
-)
-op
-# 求解
-res <- ROI_solve(op, solver = "glpk")
-# 最优解
-res$solution
-# 目标函数值
-res$objval
-```
-
-可知，最优解在 $(15,0,6,11,2)$ 处取得，目标函数值为 -89 。
-
-注意：还有一组最优解 $(19,0,4,10,5)$ ，目标函数值也为 -89 ，但是 `glpk` 求解器未能给出。
-
-### 0-1 整数线性优化
-
-目标函数是线性的，目标变量的取值要么是 0 要么是 1。指派问题属于典型的 0-1 整数规划问题。有 $n$ 个人需要去完成 $n$ 项任务，每个人完成一项任务，每项任务只由一个人完成，每个人单独完成各项任务所需花费（时间、费用）不同。要求设计一个方案，人和任务之间建立一一对应的关系，使得总花费最少。
-
-设第 $i$ 个人完成第 $j$ 项任务的花费为 $d_{ij}$ ，当安排第 $i$ 个人完成第 $j$ 项任务时，记为 $x_{ij} = 1$ ，否则，记为 $x_{ij} = 0$ ，指派问题的数学模型如下：
-
-$$
-\begin{aligned}
-\min \quad & \sum_{i=1}^{n}\sum_{j=1}^{n}d_{ij}x_{ij} \\
-\text{s.t.} \quad & \left\{ 
-  \begin{array}{l}
-    \sum_{i=1}^{n} x_{ij} = 1, ~~ j = 1,2,\ldots,n\\
-    \sum_{j=1}^{n} x_{ij} = 1, ~~ i = 1,2,\ldots,n\\
-    x_{ij} = 0 ~~\text{或}~~ 1
-  \end{array} \right.
-\end{aligned}
-$$
-
-指派问题在 **lpSolve** 包做了很好的封装，只需提供花费矩阵，即可调用求解器求解该问题。
-
-```{r}
-# 花费矩阵 D
-D <- matrix(c(
-  2, 7, 7, 2,
-  7, 7, 3, 2,
-  7, 2, 8, 10,
-  1, 9, 8, 2
-), nrow = 4, ncol = 4, byrow = F)
-# 加载 lpSolve 包 
-library(lpSolve)
-# 调用指派问题求解器
-sol <- lp.assign(D)
-# 最优解
-sol$solution
-# 总花费
-sol$objval
-```
-
-可以使总花费最少的指派计划是第 1 个人完成第 4 项任务，第 2 个人完成第 3 项任务，第 3 个人完成第 2 项任务，第 4 个人完成第 1 项任务，总花费为 8。
-
-### 混合整数线性优化 {#sec-mixed-integer-linear-optimization}
-
-目标函数是线性的，一部分目标变量是整数。
-
-$$
-\begin{aligned}
-\max_{\bm{x}} \quad & 3x_1 + 7x_2 - 12x_3 \\
-\text{s.t.} \quad & \left\{ 
-  \begin{array}{l}
-    5x_1 + 7x_2 + 2x_3 \leq 61\\
-    3x_1 + 2x_2 - 9x_3 \leq 35\\
-    x_1 + 3x_2 + x_3 \leq 31\\
-    x_1,x_2 \geq 0, \quad x_2, x_3 \in \mathbb{Z}, \quad x_3 \in [-10, 10]
-  \end{array} \right.
-\end{aligned}
-$$
-
-矩阵形式如下
-
-$$
-\begin{aligned}
-\max_{\bm{x}} \quad &
-  \begin{bmatrix}
-  3  \\
-  7  \\
-  -12
-  \end{bmatrix}
-  ^{\top} \bm{x} \\
-\text{s.t.} \quad & \left\{ 
- \begin{array}{l}
-  \begin{bmatrix}
-  5 & 7 & 2 \\
-  3 & 2 & -9\\
-  1 & 3 & 1
-  \end{bmatrix}
-  \bm{x} \leq
-  \begin{bmatrix}
-   61 \\
-   35 \\
-   31
-  \end{bmatrix}
- \end{array} \right.
-\end{aligned} 
-$$
-
-第1个变量是连续值，第2、3个变量是整数，第3个变量的下、上界分别是 -10 和 10。
-
-```{r}
-op <- OP(
-  objective = L_objective(c(3, 7, -12)),
-  types = c("C", "I", "I"),
-  constraints = L_constraint(
-    L = matrix(c(
-      5, 7, 2,
-      3, 2, -9,
-      1, 3, 1
-    ), ncol = 3, byrow = TRUE),
-    dir = c("<=", "<=", "<="),
-    rhs = c(61, 35, 31)
-  ),
-  # 添加约束
-  bounds = V_bound(
-    li = 3, ui = 3,
-    lb = -10, ub = 10, nobj = 3
-  ),
-  maximum = TRUE
-)
-op
-# 求解
-res <- ROI_solve(op, solver = "glpk")
-# 最优解
-res$solution
-res$objval
-```
-
-### 混合整数二次优化
-
-目标函数是二次的，一部分目标变量是整数。
-
-在二次规划的基础上，对变量添加整型约束，即变成混合整数二次规划 （Mixed Integer Quadratic Programming，简称 MIQP）。
-
-```{r}
-#| eval: false
-
-op <- OP(
-  objective = Q_objective(Q = Dmat, L = dvec),
-  constraints = L_constraint(Amat, rep("<=", 3), bvec),
-  types = c("I", "C"),
-  maximum = FALSE # 求最小
-)
-nlp <- ROI_solve(op, solver = "nloptr.slsqp", start = c(1, 2))
-nlp$objval
-nlp$solution
-```
-
-目前，ROI 支持的开源求解器都不能处理 MIQP 问题，只有 **CVXR** 包和 [**rmpk**](https://github.com/r-opt/rmpk) 包能解 MIQP 问题，更多关于 **CVXR** 包的介绍见[示例库](https://cvxr.rbind.io/examples/)。
-
-**ECOSolveR** 包可以求解一些锥规划，且变量可以包含整数。将凸二次规划转为锥规划问题，再调 `ecos` 求解器。连接 **ECOSolveR** 包提供 `ecos` 求解器。
-
-```{r}
-#| eval: false
-#| code-fold: true
-#| echo: !expr knitr::is_html_output()
-
-op <- OP(
-  objective = Q_objective(Q = Dmat, L = dvec),
-  constraints = L_constraint(Amat, rep("<=", 3), bvec),
-  types = c("I", "C"),
-  maximum = FALSE # 默认求最小
-)
-
-# 调用 ECOSolveR 包
-library(ROI.plugin.ecos)
-nlp <- ROI_solve(op, solver = "ecos", start = c(1, 2))
-nlp$objval
-nlp$solution
-
-library(CVXR)
-# Variables minimized over
-x1 <- Variable(1, integer = TRUE)
-x2 <- Variable(1)
-
-# Problem definition
-objective <- Minimize(x1^2 + x2^2 - x1 * x2 + 3 * x1 - 2 * x2)
-constraints <- list(-x1 - x2 <= -2, x1 - x2 <= 2, x2 <= 3)
-prob <- Problem(objective, constraints)
-
-# Problem solution
-solution <- psolve(prob, solver = "ECOS")
-solution$status
-solution$value
-solution$getValue(x)
-solution$getValue(y)
-```
-
 ## 凸二次优化 {#sec-quadratic-optimization}
 
 二次优化分严格凸二次和非严格凸二次优化问题，严格凸要求矩阵对称正定，非严格凸要求矩阵对称半正定。对于矩阵负定的情况，不是凸优化问题，暂不考虑。
@@ -1740,3 +1506,559 @@ nlp$objval
 ```
 
 可以看出，**nloptr** 提供的优化能力可以覆盖 [Ipopt 求解器](https://github.com/coin-or/Ipopt)，从以上求解的情况来看，推荐使用 `nloptr.slsqp` 求解器，这也是 Octave 的选择。
+
+## 整数优化 {#sec-integer-linear-optimization}
+
+整数优化情况有很多，篇幅所限，仅考虑以下几类常见情形：
+
+1.  目标函数和约束条件为线性，变量取值都为整数的整数优化。
+2.  目标函数和约束条件为线性，变量取值为 0 或 1 的 0-1 整数优化。
+3.  目标函数和约束条件为线性，部分变量带有整数约束的混合整数线性优化。
+4.  目标函数为凸二次、约束条件为线性，部分变量是整数的混合整数二次优化。
+5.  目标函数和约束条件为非线性，部分变量是整数的混合整数非线性优化。
+
+### 纯整数线性优化
+
+$$
+\begin{aligned}
+\min_{\bm{x}} \quad & -2x_1 - x_2 - 4x_3 -3x_4 -x_5\\
+\text{s.t.} \quad & \left\{ 
+  \begin{array}{l}
+    2x_2 + x_3 + 4x_4 + 2x_5 < 54 \\
+    3x_1 + 4x_2 + 5x_3 - x_4 - x_5 < 62 \\
+    x_1,x_2 \in [0,100] \quad x_3 \in [3, 100] \\
+    x_4 \in [0,100] \quad x_5 \in [2,100] \\
+    x_i \in \mathbb{Z}, ~ i = 1,2,\cdots,5.
+  \end{array} \right.
+\end{aligned}
+$$
+
+求解器 `glpk` 还可以求解一些整数优化问题。
+
+```{r}
+op <- OP(
+  objective = L_objective(c(-2, -1, -4, -3, -1)),
+  types = rep("I", 5),
+  constraints = L_constraint(
+    L = matrix(c(
+      0, 2, 1, 4, 2,
+      3, 4, 5, -1, -1
+    ), ncol = 5, byrow = TRUE),
+    dir = c("<", "<"),
+    rhs = c(54, 62)
+  ),
+  # 添加约束
+  bounds = V_bound(
+    li = 1:5, ui = 1:5,
+    lb = c(0, 0, 3, 0, 2), ub = rep(100, 5), nobj = 5
+  ),
+  maximum = FALSE
+)
+op
+# 求解
+res <- ROI_solve(op, solver = "glpk")
+# 最优解
+res$solution
+# 目标函数值
+res$objval
+```
+
+可知，最优解在 $(15,0,6,11,2)$ 处取得，目标函数值为 -89 。
+
+注意：还有一组最优解 $(19,0,4,10,5)$ ，目标函数值也为 -89 ，但是 `glpk` 求解器未能给出。
+
+### 0-1 整数线性优化
+
+目标函数是线性的，目标变量的取值要么是 0 要么是 1。指派问题属于典型的 0-1 整数规划问题。有 $n$ 个人需要去完成 $n$ 项任务，每个人完成一项任务，每项任务只由一个人完成，每个人单独完成各项任务所需花费（时间、费用）不同。要求设计一个方案，人和任务之间建立一一对应的关系，使得总花费最少。
+
+设第 $i$ 个人完成第 $j$ 项任务的花费为 $d_{ij}$ ，当安排第 $i$ 个人完成第 $j$ 项任务时，记为 $x_{ij} = 1$ ，否则，记为 $x_{ij} = 0$ ，指派问题的数学模型如下：
+
+$$
+\begin{aligned}
+\min \quad & \sum_{i=1}^{n}\sum_{j=1}^{n}d_{ij}x_{ij} \\
+\text{s.t.} \quad & \left\{ 
+  \begin{array}{l}
+    \sum_{i=1}^{n} x_{ij} = 1, ~~ j = 1,2,\ldots,n\\
+    \sum_{j=1}^{n} x_{ij} = 1, ~~ i = 1,2,\ldots,n\\
+    x_{ij} = 0 ~~\text{或}~~ 1
+  \end{array} \right.
+\end{aligned}
+$$
+
+指派问题在 **lpSolve** 包做了很好的封装，只需提供花费矩阵，即可调用求解器求解该问题。
+
+```{r}
+# 花费矩阵 D
+D <- matrix(c(
+  2, 7, 7, 2,
+  7, 7, 3, 2,
+  7, 2, 8, 10,
+  1, 9, 8, 2
+), nrow = 4, ncol = 4, byrow = F)
+# 加载 lpSolve 包 
+library(lpSolve)
+# 调用指派问题求解器
+sol <- lp.assign(D)
+# 最优解
+sol$solution
+# 总花费
+sol$objval
+```
+
+可以使总花费最少的指派计划是第 1 个人完成第 4 项任务，第 2 个人完成第 3 项任务，第 3 个人完成第 2 项任务，第 4 个人完成第 1 项任务，总花费为 8。
+
+### 混合整数线性优化 {#sec-mixed-integer-linear-optimization}
+
+目标函数是线性的，一部分目标变量是整数。
+
+$$
+\begin{aligned}
+\max_{\bm{x}} \quad & 3x_1 + 7x_2 - 12x_3 \\
+\text{s.t.} \quad & \left\{ 
+  \begin{array}{l}
+    5x_1 + 7x_2 + 2x_3 \leq 61\\
+    3x_1 + 2x_2 - 9x_3 \leq 35\\
+    x_1 + 3x_2 + x_3 \leq 31\\
+    x_1,x_2 \geq 0, \quad x_2, x_3 \in \mathbb{Z}, \quad x_3 \in [-10, 10]
+  \end{array} \right.
+\end{aligned}
+$$
+
+矩阵形式如下
+
+$$
+\begin{aligned}
+\max_{\bm{x}} \quad &
+  \begin{bmatrix}
+  3  \\
+  7  \\
+  -12
+  \end{bmatrix}
+  ^{\top} \bm{x} \\
+\text{s.t.} \quad & \left\{ 
+ \begin{array}{l}
+  \begin{bmatrix}
+  5 & 7 & 2 \\
+  3 & 2 & -9\\
+  1 & 3 & 1
+  \end{bmatrix}
+  \bm{x} \leq
+  \begin{bmatrix}
+   61 \\
+   35 \\
+   31
+  \end{bmatrix}
+ \end{array} \right.
+\end{aligned} 
+$$
+
+第1个变量是连续值，第2、3个变量是整数，第3个变量的下、上界分别是 -10 和 10。
+
+```{r}
+op <- OP(
+  objective = L_objective(c(3, 7, -12)),
+  types = c("C", "I", "I"),
+  constraints = L_constraint(
+    L = matrix(c(
+      5, 7, 2,
+      3, 2, -9,
+      1, 3, 1
+    ), ncol = 3, byrow = TRUE),
+    dir = c("<=", "<=", "<="),
+    rhs = c(61, 35, 31)
+  ),
+  # 添加约束
+  bounds = V_bound(
+    li = 3, ui = 3,
+    lb = -10, ub = 10, nobj = 3
+  ),
+  maximum = TRUE
+)
+op
+# 求解
+res <- ROI_solve(op, solver = "glpk")
+# 最优解
+res$solution
+res$objval
+```
+
+### 混合整数二次优化 {#sec-mixed-integer-quadratic-programming}
+
+目标函数是二次的，一部分目标变量是整数。
+
+$$
+\begin{aligned}
+\min_{\bm{x}} \quad & x_1^2 + x_2^2 - x_1  x_2 + 3  x_1 - 2 x_2 \\
+\text{s.t.} \quad & \left\{ 
+    \begin{array}{l}
+      -x_1 - x_2 <= -2 \\
+      x_1 - x_2 <= 2 \\
+      x_2 <= 3. \\
+      x_1 \in \mathbb{Z}
+    \end{array} \right.
+\end{aligned}
+$$
+
+在二次规划的基础上，对变量添加整型约束，即变成混合整数二次规划 （Mixed Integer Quadratic Programming，简称 MIQP）。
+
+```{r}
+# D
+Dmat <- matrix(c(2, -1, -1, 2), nrow = 2, byrow = TRUE)
+# d
+dvec <- c(3, -2)
+# A
+Amat <- matrix(c(
+  -1, -1,
+  1, -1,
+  0, 1
+), ncol = 2, byrow = TRUE)
+# b
+bvec <- c(-2, 2, 3)
+# 目标规划
+op <- OP(
+  objective = Q_objective(Q = Dmat, L = dvec),
+  constraints = L_constraint(Amat, rep("<=", 3), bvec),
+  types = c("I", "C"),
+  maximum = FALSE # 求最小
+)
+# 查看可用于该优化问题的求解器
+ROI_applicable_solvers(op)
+```
+
+目前，**ROI** 包支持的开源求解器都不能处理 MIQP 问题。**ECOSolveR** 包可以求解凸二阶锥规划，部分变量可以是整数。因此，先将凸二次规划转化为凸锥规划问题，再连接 **ECOSolveR** 包提供 `ecos` 求解器，最后，调 `ecos` 求解器求解。
+
+$$
+\begin{aligned}
+\min_{(t,\bm{x})} \quad &  t\\
+\text{s.t.} \quad & \left\{ 
+    \begin{array}{l}
+x_1^2 + x_2^2 - x_1  x_2 + 3  x_1 - 2 x_2 \leq t \\
+      -x_1 - x_2 <= -2 \\
+      x_1 - x_2 <= 2 \\
+      x_2 <= 3. \\
+      x_1 \in \mathbb{Z}
+    \end{array} \right.
+\end{aligned}
+$$
+
+引入新的变量 $t$ ，原目标函数化为线性，约束条件增加一个二次型。
+
+$$
+\begin{aligned}
+\min_{(t,\bm{x})} \quad &  t\\
+\text{s.t.} \quad & \left\{ 
+    \begin{array}{l}
+      \bm{x}^{\top}D\bm{x} + 2\bm{d}^{\top}\bm{x} \leq t \\
+      A\bm{x} \leq \bm{b} \\
+      x_1 \in \mathbb{Z}
+    \end{array} \right.
+\end{aligned}
+$$
+
+其中，
+
+$$
+D = \begin{bmatrix}
+2 & -1\\
+-1 & 2
+\end{bmatrix}, \quad
+\bm{d} =  
+\begin{bmatrix}
+3 \\
+-2
+\end{bmatrix}, \quad
+A = \begin{bmatrix}
+-1 & -1  \\
+1 & -1 \\
+0  & 1
+\end{bmatrix}, \quad
+\bm{b} = \begin{bmatrix}
+-2 \\
+2 \\
+3
+\end{bmatrix}
+$$
+
+最后，凸二次规划转为二阶锥规划 SOCP，形式如下：
+
+$$
+\begin{aligned}
+\min_{(t^{\star},\bm{x})} \quad & t^{\star}\\
+\text{s.t.} \quad & \left\{ 
+    \begin{array}{l}
+      \|D^{1/2}\bm{x} + D^{-1/2}\bm{d} \|_2 \leq t^{\star} \\
+      A\bm{x} \leq \bm{b} \\
+      x_1 \in \mathbb{Z}
+    \end{array} \right.
+\end{aligned}
+$$
+
+代码如下
+
+```{r}
+#| eval: false
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
+
+op <- OP(
+  objective = Q_objective(Q = Dmat, L = dvec),
+  constraints = L_constraint(Amat, rep("<=", 3), bvec),
+  types = c("I", "C"),
+  maximum = FALSE # 默认求最小
+)
+
+# 调用 ECOSolveR 包
+library(ROI.plugin.ecos)
+nlp <- ROI_solve(op, solver = "ecos", start = c(1, 2))
+nlp$objval
+nlp$solution
+```
+
+因二次规划的目标函数是二次连续可微的，而且是凸函数，求解器 Bonmin 可以获得最优解。
+
+``` ampl
+var x1 integer;
+var x2;
+minimize z: x1^2 + x2^2 - x1 * x2 + 3 * x1 - 2 * x2;
+subject to A_limit: -x1 - x2 <= -2;
+subject to B_limit: x1 - x2 <= 2;
+subject to C_limit: x2 <= 3;
+```
+
+```{r}
+#| eval: false
+
+library(rAMPL)
+# 配置 AMPL 安装路径
+env <- new(Environment, "/opt/AMPL/ampl.macos64")
+ampl <- new(AMPL, env)
+# 加载混合整数二次优化模型文件
+ampl$read("code/MIQP.mod")
+# 设置 MIQP 求解器 Bonmin
+ampl$setOption("solver", "bonmin")
+# 求解问题
+ampl$solve()
+# 最优解
+ampl$getData("x1")
+ampl$getData("x2")
+# 目标函数值
+ampl$getData("z")
+```
+
+最优解在 $(0,2)$ 处获得，最优值为 0。
+
+### 混合整数非线性优化 {#sec-mixed-integer-nonlinear-programming}
+
+在 R 语言社区的官方仓库中还没有开源的 R 包可以求解此类问题，开源社区中 [Bonmin](https://github.com/coin-or/Bonmin/) 项目专门求解混合整数非线性优化 MINLP（Mixed Integer NonLinear Programming）问题。数学规划软件 AMPL 封装了 Bonmin 软件，并提供 R 语言接口 [rAMPL](https://github.com/ampl/rAMPL)。AMPL [社区版](https://ampl.com/ce/)可以免费使用打包的开源求解器。
+
+-   线性规划求解器 [HiGHS](https://github.com/ERGO-Code/HiGHS)。
+-   混合整数线性优化求解器 [cbc](https://github.com/coin-or/Cbc)。
+-   混合整数非线性优化求解器 [Bonmin](https://github.com/coin-or/Bonmin) 和 [Couenne](https://github.com/coin-or/Couenne)。
+-   非线性优化求解器 [Ipopt](https://github.com/coin-or/Ipopt)。
+
+安装 AMPL 社区版软件后，再安装 **rAMPL** 包，它依赖 **Rcpp** 包，所以需要一并安装。
+
+``` r
+install.packages("Rcpp", type = "source")
+# 从 AMPL 官网安装 rAMPL 包
+install.packages("https://ampl.com/dl/API/rAMPL.tar.gz", repos = NULL,
+  INSTALL_opts = c("--no-multiarch", "--no-staged-install")
+)
+```
+
+下面求解如下混合整数非线性优化问题。
+
+$$
+\begin{aligned}
+\min_{\bm{x}} \quad & 1.5(x_1 - \sin(x_1 -x_2))^2 + 0.5x_2^2 + x_3^2 -x_1 x_2 -2x_1 + x_2 x_3 \\
+\text{s.t.} \quad & \left\{ 
+    \begin{array}{l}
+      x_1,x_2 \in \mathbb{R} ~~ x_3 \in \mathbb{Z} \\
+      x_1,x_2 \in [-20,20] ~~ x_3 \in [-10,10].
+    \end{array} \right.
+\end{aligned}
+$$
+
+AMPL 模型代码如下：
+
+``` ampl
+var X1;
+var X2;
+var X3 integer;
+minimize z: 1.5 * (X1 - sin(X1 - X2))^2 + 0.5 * X2^2 + X3^2 - X1 * X2 - 2 * X1 + X2 * X3;
+subject to A_limit: -20 <= X1 <= 20;
+subject to B_limit: -20 <= X2 <= 20;
+subject to C_limit: -10 <= X3 <= 10;
+```
+
+将代码保存到文件 `code/MINLP.mod` ，下面加载 **rAMPL** 包，调用求解器 Bonmin 求解该优化问题。
+
+```{r}
+#| eval: false
+
+library(rAMPL)
+# 配置 AMPL 安装路径
+env <- new(Environment, "/opt/AMPL/ampl.macos64")
+ampl <- new(AMPL, env)
+# 加载混合整数非线性优化模型文件
+ampl$read("code/MINLP.mod")
+# 设置 MINLP 求解器 Bonmin
+ampl$setOption("solver", "bonmin")
+# 求解问题
+ampl$solve()
+# 最优解
+ampl$getData("X1")
+ampl$getData("X2")
+ampl$getData("X3")
+# 目标函数值
+ampl$getData("z")
+```
+
+Bonmin 求解器的结果显示在 $(2.892556, 1.702552, -1)$ 处获得最优解，目标函数值为 $-4.176012$ ，实际上，这是一个局部最优解。下面调用另一个求解器 Couenne 求解该问题，实际上，Couenne 好于 Bonmin 求解器，它可以找到非凸混合整数非线性规划问题的全局最优解。
+
+```{r}
+#| eval: false
+# 调用 couenne 求解器
+ampl$setOption("solver", "couenne")
+# 求解问题
+ampl$solve()
+```
+
+最优解在 $x_1 = 4.999633, x_2 = 9.734148, x_3 = -5$ 处取得，最优值为 $-10.96182$ 。下面将两个最优解代入目标函数，验证一下最优值。
+
+```{r}
+fun <- function(x) {
+  1.5 * (x[1] - sin(x[1] - x[2]))^2 + 0.5 * x[2]^2 +
+    x[3]^2 - x[1] * x[2] - 2 * x[1] + x[2] * x[3]
+}
+# 局部最优解
+fun(x = c(2.892556, 1.702552, -1))
+# 全局最优解
+fun(x = c(4.999633, 9.734148, -5))
+```
+
+## 习题 {#sec-numerical-optimization-exercises}
+
+1.  求解如下 2 维非线性无约束优化问题。
+
+    $$
+    \min_{\bm{x}} \quad 100 (x_2 -x_1^2)^2 + (1-x_1)^2
+    $$
+
+    ```{r}
+    #| eval: false
+    #| code-fold: true
+    #| echo: !expr knitr::is_html_output()
+
+    # Rosenbrock Banana function
+    # 目标函数
+    fr <- function(x) {
+      x1 <- x[1]
+      x2 <- x[2]
+      100 * (x2 - x1 * x1)^2 + (1 - x1)^2
+    }
+    # 目标函数的梯度
+    grr <- function(x) {
+      x1 <- x[1]
+      x2 <- x[2]
+      c(
+        -400 * x1 * (x2 - x1 * x1) - 2 * (1 - x1),
+        200 * (x2 - x1 * x1)
+      )
+    }
+    # 求解
+    nlminb(start = c(-1.2, 1), objective = fr, gradient = grr)
+    # 或者
+    optim(par = c(-1.2, 1), fn = fr, gr = grr, method = "L-BFGS-B")
+    ```
+
+2.  求解如下 $n$ 维非线性箱式约束优化问题。
+
+    $$
+    \min_{\bm{x}} \quad \exp\big( - \sum_{i=1}^{n}(\frac{x_i}{\beta})^{2m}\big)  - 2\exp(- \sum_{i=1}^{n}x_i^2)\prod_{i=1}^{n} \cos^2(x_i)
+    $$
+
+    其中，$\beta.=15, m = 3$ ，$x_i \in [-20,20], i = 1,2,\ldots,n$ 。请读者分别考虑 $n= 2$ 和 $n = 4$ 的情况。全局最优解在 $x_i = 0, i = 1,2,\ldots,n$ 处取得，最优值为 $-1$ 。
+
+3.  求解如下非线性约束优化问题。
+
+    $$
+    \begin{aligned}
+      \min_{\bm{x}} \quad & x_1^2\sin(x_2) + x_2^2\cos(x_1)\\
+      \text{s.t.} \quad & \left\{ 
+        \begin{array}{l}
+          1 \leq 3x_1 -x_2 \leq 3 \\
+          x_1 + x_2 \geq 2 \\
+          x_1 x_2 = 2 \\
+          \sin(x_1) \cos(x_2) \leq 0.6 \\
+          x_1,x_2 \in (-100,100).
+        \end{array} \right.
+      \end{aligned}
+     $$
+
+    ```{r}
+    #| eval: false
+    #| code-fold: true
+    #| echo: !expr knitr::is_html_output()
+
+    # 一个 2 维的目标函数
+    fn <- function(x) {
+      x[1]^2 * sin(x[2]) + x[2]^2 * cos(x[1])
+    }
+    # 目标函数的梯度
+    gr <- function(x) {
+      c(
+        2 * x[1] * sin(x[2]) - x[2]^2 * sin(x[1]),
+        x[1]^2 * cos(x[2]) + 2 * x[2] * cos(x[1])
+      )
+    }
+    # 线性约束矩阵
+    A <- matrix(c(
+      1, 1,
+      3, -1,
+      3, -1
+    ), ncol = 2, byrow = TRUE)
+    # 等式约束
+    heq <- function(x) {
+      prod(x)
+    }
+    # 等式约束的雅可比
+    heq.jac <- function(x) {
+      c(x[2], x[1])
+    }
+    # 不等式约束
+    hin <- function(x) {
+      sin(x[1]) * cos(x[2])
+    }
+    # 不等式约束的雅可比
+    hin.jac <- function(x) {
+      c(cos(x[1]) * cos(x[2]), -sin(x[1]) * sin(x[2]))
+    }
+    # 定义目标规划
+    op <- OP(
+      objective = F_objective(F = fn, G = gr, n = 2L),
+      # rbind 函数组合多种约束
+      constraints = rbind(
+        L_constraint(
+          L = A,
+          dir = c(">=", "<=", ">="),
+          rhs = c(2, 3, 1)
+        ),
+        F_constraint(
+          F = list(heq = heq, hin = hin),
+          dir = c("==", "<="),
+          rhs = c(2, 0.6),
+          # 等式和不等式约束的雅可比
+          J = list(heq.jac = heq.jac, hin.jac = hin.jac)
+        )
+      ),
+      bounds = V_bound(ld = -100, ud = 100, nobj = 2L),
+      maximum = FALSE # 求最小
+    )
+    # 求解优化问题
+    nlp <- ROI_solve(op, solver = "nloptr.slsqp", start = c(1/2, 4))
+    # 最优解
+    nlp$solution
+    # 目标函数值
+    nlp$objval
+    ```
