@@ -463,6 +463,74 @@ $$
 
 常用于凸二次优化问题。
 
+二阶锥规划 SOCP
+
+$$
+\begin{aligned}
+\max_{(\bm{y},t)} \quad & y_1 + y_2 \\
+\text{s.t.} \quad & \sqrt{(2 + 3y_1)^2 + (4+5y_2)^2} \leq 6 + 7t \\
+& y_1,y_2 \in \mathbb{R}, ~~ t \in (-\infty,9].
+\end{aligned}
+$$
+
+令 $\bm{x} = (y_1, y_2, t)^{\top}$ 上述非线性不等式约束等价于
+
+$$
+\sqrt{(b_2 - \bm{a_2}^{\top}\bm{x})^2 + (b_3 -\bm{a_3}^{\top}\bm{x})^2} \leq b_1 - \bm{a_1}^{\top}\bm{x}
+$$
+
+记 $A = (\bm{a_1}^{\top}, \bm{a_2}^{\top}, \bm{a_3}^{\top}), \bm{b} = (b_1,b_2,b_3)^\top$ ，则
+
+$$
+A = \begin{bmatrix}
+0 & 0 & -7  \\
+-3 & 0 & 0  \\
+0 & -5 & 0
+\end{bmatrix}, \quad
+\bm{b} = \begin{bmatrix}
+6 \\
+2 \\
+4
+\end{bmatrix}
+$$
+
+```{r}
+library(ROI.plugin.ecos)
+op <- OP(
+  objective = c(1, 1, 0),
+  constraints = C_constraint(
+    L = rbind(
+      c(0, 0, -7),
+      c(-3, 0, 0),
+      c(0, -5, 0)
+    ),
+    cones = K_soc(3), rhs = c(6, 2, 4)
+  ), maximum = TRUE,
+  bounds = V_bound(ld = -Inf, ui = 3, ub = 9, nobj = 3)
+)
+nlp <- ROI_solve(op, solver = "ecos")
+```
+
+对目标变量 $y_1$ 添加整数约束，则只有 **ECOSolveR** 包可以求解。
+
+```{r}
+op <- OP(
+  objective = c(1, 1, 0),
+  constraints = C_constraint(
+    L = rbind(
+      c(0, 0, -7),
+      c(-3, 0, 0),
+      c(0, -5, 0)
+    ),
+    cones = K_soc(3), rhs = c(6, 2, 4)
+  ), maximum = TRUE, 
+  # 目标变量约束
+  types = c("I", "C", "C"), 
+  bounds = V_bound(ld = -Inf, ui = 3, ub = 9, nobj = 3)
+)
+nlp <- ROI_solve(op, solver = "ecos")
+```
+
 ### 指数锥
 
 指数锥（Exponential Cone）的定义如下：
@@ -612,7 +680,7 @@ op_sol$objval
 
 ### 半正定锥
 
-如果矩阵 $A$ 是半正定的，记为 $A \succeq 0$ ，如果矩阵 $A$ 是正定的，记为 $A \succ 0$ 。记 $n$ 阶实对称矩阵的集合为 $\mathcal{S}^{n}$ 。半正定锥（Positive Semidefinite Cone）的定义如下：
+如果矩阵 $A$ 是半正定的，记为 $A \succeq 0$ ，如果矩阵 $A$ 是正定的，记为 $A \succ 0$ 。记 $n$ 阶实对称矩阵的集合为 $\mathcal{S}^{n}$ 。半正定锥（Positive Semi Definite Cone）的定义如下：
 
 $$
 \mathcal{K}_{\text{psd}}^{n} = \{A | A \in \mathcal{S}^{n}, \bm{x}^{\top}A\bm{x} \geq 0, \forall \bm{x} \in \mathbb{R}^n \}
@@ -1797,13 +1865,15 @@ $$
 
 ```{r}
 #| eval: false
-#| code-fold: true
 #| echo: !expr knitr::is_html_output()
 
 op <- OP(
   objective = Q_objective(Q = Dmat, L = dvec),
-  constraints = L_constraint(Amat, rep("<=", 3), bvec),
-  types = c("I", "C"),
+  constraints = c(
+    C_constraint(L, cones = K_soc(3)),
+    L_constraint(Amat, rep("<=", 3), bvec)
+  ),
+  types = c("I", "C", "C"),
   maximum = FALSE # 默认求最小
 )
 
