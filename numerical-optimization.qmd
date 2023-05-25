@@ -14,6 +14,16 @@ $$
 $$
 :::
 
+::: callout-tip
+## 本章亮点
+
+1.  比较全面地展示各类优化问题的 R 语言实现，其覆盖面之广，远超市面上同类 R 语言书籍。从线性优化到凸优化（包含凸二次优化和凸锥优化），从简单整数优化到混合整数非线性规划，再到一般的非线性优化，触及最新最前沿的热门话题。
+
+2.  对每类优化问题都给出示例及 R 语言实现，涉及近 10 个各类优化器。大量参照 Lingo 和 1stOpt 等国内外商业优化建模软件的官方示例，给出 R 语言实现，部分示例还和 Octave 对比，确认 R 语言求解器的效果可以达到开源和商业软件的水平。
+
+3.  对于 R 语言社区难以求解的复杂优化问题（比如混合整数非线性规划），通过连接 AMPL 软件，调用开源的优化求解器求解，对这些比较复杂的优化问题，都给出了开源替代方案，并总结了实战经验。
+:::
+
 本章介绍五类典型的优化问题及 R 语言求解过程。除了 R 软件内置一些数值优化求解器，R 语言社区有大量的运筹优化方面的函数和 R 包。本文将重点介绍 **ROI** 包，它通过插件包对 20 多个 R 包提供统一的调用方式，相当于一个运筹优化方面的基础设施平台，极大地方便学习和使用。本文不能一一概括，仅详述其中两个，求解线性优化（linear optimization）与混合整数优化（mixed integer linear optimization）的 **Rglpk** 包，求解二次优化（quadratic optimization）和非线性优化（nonlinear optimization）的 **nloptr** 包，相信读者之后可以举一反三。
 
 ```{mermaid}
@@ -33,6 +43,12 @@ flowchart TB
 ```
 
 **Rglpk** 包可以求解大规模线性优化，整数优化和混合整数优化，**ROI** 包通过插件包 **ROI.plugin.glpk** 与之连接调用。**nloptr** 包可以求解二次优化和非线性优化，**ROI** 包通过插件包 **ROI.plugin.nloptr** 与之连接调用。**ROI** 包通过插件包来实际调用第三方做数值优化的 R 包。
+
+对大部分常规优化问题，都可以纳入 ROI 包的框架内。作为补充，对一些复杂的优化问题，必须借助开源社区的第三方求解器。
+
+-   **scs** 包可解大部分常见的凸锥规划问题，但对于含整数目标变量的规划问题，无法求解，**ECOSolveR** 包可以。
+-   对于混合整数二次规划和混合整数非线性规划问题，借助 **rAMPL** 包调用开源的求解器求解。
+-   对于复杂的非线性规划问题，因其具有非凸、多模态等特点，求解非常困难，引入 **GA** 包，采用随机优化算法求解，效果达到商业软件水平。
 
 ```{r}
 #| message: false
@@ -434,7 +450,7 @@ wireframe(
 )
 ```
 
-### 零锥
+### 零锥 {#sec-zero-cone}
 
 零锥的定义如下：
 
@@ -444,7 +460,7 @@ $$
 
 常用于表示线性等式约束。
 
-### 线性锥
+### 线性锥 {#sec-linear-cone}
 
 线性锥（Linear Cone）的定义如下：
 
@@ -454,7 +470,7 @@ $$
 
 常用于表示线性不等式约束。
 
-### 二阶锥
+### 二阶锥 {#sec-second-order-cone}
 
 二阶锥（Second-order Cone）的定义如下：
 
@@ -550,7 +566,7 @@ sol$solution
 sol$objval
 ```
 
-### 指数锥
+### 指数锥 {#sec-exponential-cone}
 
 指数锥（Exponential Cone）的定义如下：
 
@@ -629,7 +645,7 @@ sol$solution
 sol$objval
 ```
 
-### 幂锥
+### 幂锥 {#sec-power-cone}
 
 一个三维幂锥（Power Cone）的定义如下：
 
@@ -700,7 +716,7 @@ sol$solution
 sol$objval
 ```
 
-### 半正定锥
+### 半正定锥 {#sec-positive-semi-definite-cone}
 
 如果矩阵 $A$ 是半正定的，记为 $A \succeq 0$ ，如果矩阵 $A$ 是正定的，记为 $A \succ 0$ 。记 $n$ 阶实对称矩阵的集合为 $\mathcal{S}^{n}$ 。半正定锥（Positive Semi Definite Cone）的定义如下：
 
@@ -2078,7 +2094,7 @@ fun(x = c(4.999633, 9.734148, -5))
 
     $$
     \begin{aligned}
-      \min_\bm{x} \quad & \exp(\sin(50 x_1)) + \sin(60\exp(x_2)) + \sin(70\sin(x_1)) \\
+      \min_{\bm{x}} \quad & \exp(\sin(50 x_1)) + \sin(60\exp(x_2)) + \sin(70\sin(x_1)) \\
              \quad & + \sin(\sin(80x_2)) - \sin(10(x_1 +x_2)) + \frac{(x_1^2 + x_2^2)^{\sin(x_2)}}{4} \\
         \text{s.t.} \quad & \left\{ 
         \begin{array}{l}
