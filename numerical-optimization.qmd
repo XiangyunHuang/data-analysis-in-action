@@ -2072,9 +2072,118 @@ fun(x = c(4.999633, 9.734148, -5))
     \min_{\bm{x}} \quad \exp\big( - \sum_{i=1}^{n}(\frac{x_i}{\beta})^{2m}\big)  - 2\exp(- \sum_{i=1}^{n}x_i^2)\prod_{i=1}^{n} \cos^2(x_i)
     $$
 
-    其中，$\beta.=15, m = 3$ ，$x_i \in [-20,20], i = 1,2,\ldots,n$ 。请读者分别考虑 $n= 2$ 和 $n = 4$ 的情况。全局最优解在 $x_i = 0, i = 1,2,\ldots,n$ 处取得，最优值为 $-1$ 。
+    其中，$\beta.=15, m = 3$ ，$x_i \in [-20,20], i = 1,2,\ldots,n$ 。请读者分别考虑 $n= 2$ 和 $n = 4$ 的情况。（全局最优解在 $x_i = 0, i = 1,2,\ldots,n$ 处取得，最优值为 $-1$ 。）
 
 3.  求解如下非线性约束优化问题。
+
+    $$
+    \begin{aligned}
+      \min_\bm{x} \quad & \exp(\sin(50 x_1)) + \sin(60\exp(x_2)) + \sin(70\sin(x_1)) \\
+             \quad & + \sin(\sin(80x_2)) - \sin(10(x_1 +x_2)) + \frac{(x_1^2 + x_2^2)^{\sin(x_2)}}{4} \\
+        \text{s.t.} \quad & \left\{ 
+        \begin{array}{l}
+         x_1 - \big((\cos(x_2))^{x_1} - x_1\big)^{x_2} \leq 0 \\
+        -50 \leq x_1,x_2 \leq 50
+        \end{array} \right.
+    \end{aligned}
+    $$
+
+    目标函数是不连续的，其函数图像如 @fig-complex-constrained 所示。（提示：容错能力低的求解器一般无法求解。Lingo 给出一个局部最优解 $(-46.14402, -0.8879601)$ ，目标函数值为 $-2.645518$ ，仅供参考。）
+
+    ```{r}
+    #| label: fig-complex-constrained
+    #| fig-cap: 目标函数的曲面图
+    #| fig-width: 4.5
+    #| fig-height: 4.5
+    #| fig-showtext: true
+    #| code-fold: true
+    #| echo: !expr knitr::is_html_output()
+
+    fn <- function(x) {
+      exp(sin(50 * x[1])) + sin(60 * exp(x[2])) +
+        sin(70 * sin(x[1])) + sin(sin(80 * x[2])) -
+        sin(10 * (x[1] + x[2])) + (x[1]^2 + x[2]^2)^(sin(x[2])) / 4
+    }
+
+    df <- expand.grid(
+      x1 = seq(from = 0.8, to = 1.4, length.out = 81),
+      x2 = seq(from = 0, to = 0.4, length.out = 41)
+    )
+    # 计算格点处的函数值
+    df$fn <- apply(df, 1, FUN = fn)
+
+    # 绘图
+    wireframe(
+      data = df, fn ~ x1 * x2,
+      shade = TRUE, drape = FALSE,
+      xlab = expression(x[1]), ylab = expression(x[2]),
+      zlab = list(expression(
+        italic(f) ~ group("(", list(x[1], x[2]), ")")
+      ), rot = 90),
+      scales = list(arrows = FALSE, col = "black"),
+      shade.colors.palette = custom_palette,
+      # 减少三维图形的边空
+      lattice.options = list(
+        layout.widths = list(
+          left.padding = list(x = -0.5, units = "inches"),
+          right.padding = list(x = -1.0, units = "inches")
+        ),
+        layout.heights = list(
+          bottom.padding = list(x = -1.5, units = "inches"),
+          top.padding = list(x = -1.5, units = "inches")
+        )
+      ),
+      par.settings = list(axis.line = list(col = "transparent")),
+      screen = list(z = 30, x = -65, y = 0)
+    )
+    ```
+
+    ```{r}
+    #| eval: false
+    #| code-fold: true
+    #| echo: !expr knitr::is_html_output()
+
+    fn <- function(x) {
+      exp(sin(50 * x[1])) + sin(60 * exp(x[2])) +
+        sin(70 * sin(x[1])) + sin(sin(80 * x[2])) -
+        sin(10 * (x[1] + x[2])) + (x[1]^2 + x[2]^2)^(sin(x[2])) / 4
+    }
+    gr <- function(x){
+      numDeriv::grad(fn, c(x[1], x[2]))
+    }
+    hin <- function(x){
+      x[1] - ( (cos(x[2]))^x[1] - x[1] )^x[2]
+    }
+    hin.jac <- function(x){
+      numDeriv::grad(hin, c(x[1], x[2]))
+    }
+    # 定义目标规划
+    op <- OP(
+      objective = F_objective(F = fn, n = 2L, G = gr), # 2 个目标变量
+      constraints = F_constraint(
+        F = list(hin = hin),
+        dir = "<=",
+        rhs = 0,
+        J = list(hin.jac = hin.jac)
+      ),
+      bounds = V_bound(ld = -50, ud = 50, nobj = 2L),
+      maximum = FALSE # 求最小
+    )
+    # 全局优化求解器 nloptr.isres，不保证全局最优
+    # 最优解 (20.68497, 37.20738) 处取得局部最优解，目标函数值 -3.053314
+    nlp <- ROI_solve(op, solver = "nloptr.isres", start = c(1, 0))
+    nlp$solution
+    nlp$objval
+    # 局部优化求解器 nloptr.cobyla
+    # 在处 (24.199046, 2.964661) 处取得局部最优解，目标函数值 0.6477342
+    nlp <- ROI_solve(op, solver = "nloptr.cobyla", start = c(1, 0))
+    nlp$solution
+    nlp$objval
+    # nloptr.mma / nloptr.auglag / nloptr.slsqp 容错能力差，都不能求解
+    nlp <- ROI_solve(op, solver = "nloptr.auglag", start = c(1, 0))
+    ```
+
+4.  求解如下非线性约束优化问题。
 
     $$
     \begin{aligned}
