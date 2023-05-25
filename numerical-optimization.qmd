@@ -14,25 +14,45 @@ $$
 $$
 :::
 
-本章介绍五类典型的优化问题及 R 语言求解过程。除了 R 软件内置一些数值优化求解器，R 语言社区有大量的运筹优化方面的函数和 R 包。本文将重点介绍 **ROI** 包，它通过插件包对 20 多个 R 包提供统一的调用方式，相当于一个运筹优化方面的基础设施平台，极大地方便学习和使用。本文不能一一概括，仅详述其中两个，求解线性优化（linear optimization）与混合整数优化（mixed integer linear optimization）的 **Rglpk** 包，求解二次优化（quadratic optimization）和非线性优化（nonlinear optimization）的 **nloptr** 包，相信读者之后可以举一反三。
+::: callout-tip
+## 本章亮点
+
+1.  比较全面地展示各类优化问题的 R 语言实现，其覆盖面之广，远超市面上同类 R 语言书籍。从线性优化到凸优化（包含凸二次优化和凸锥优化），从简单整数优化到混合整数非线性优化，再到一般的非线性优化，触及最前沿的热门话题。
+
+2.  对每类优化问题都给出示例及 R 语言实现，涉及近 10 个各类优化器。大量参考 Lingo 和 1stOpt 等国内外商业优化建模软件的官方示例，部分参考开源软件 Octave （语法大量兼容 Matlab 的科学计算软件）的非线性优化示例，给出 R 语言实现。经过对比，确认 R 语言求解器的效果可以达到同类开源和商业软件的水平。
+
+3.  对于 R 语言社区难以求解的复杂优化问题，也都给出了开源替代方案，并总结了实战经验。比如，混合整数非线性优化，通过 **rAMPL** 包连接 [AMPL](https://ampl.com/ce/) 软件，调用开源的优化求解器 [Couenne](https://github.com/coin-or/Couenne) 求解。
+:::
+
+本章介绍五类典型的优化问题及 R 语言求解过程。除了 R 软件内置一些数值优化求解器，R 语言社区有大量的运筹优化方面的函数和 R 包。本文将重点介绍 **ROI** 包 [@ROI2020]，它通过插件包对 20 多个 R 包提供统一的调用方式，相当于一个运筹优化方面的基础设施平台，极大地方便学习和使用。
 
 ```{mermaid}
 %%| label: fig-roi-plugin
 %%| fig-width: 6.5
-%%| fig-cap: ROI 包、插件包和数值优化 R 包的关系
+%%| fig-cap: 数值优化扩展包、插件包和 ROI 包的关系图
 
 flowchart TB
   Rglpk --> ROI_Rglpk(ROI.plugin.glpk)
   ROI_Rglpk --> ROI(ROI)
   nloptr --> ROI_nloptr(ROI.plugin.nloptr)
   ROI_nloptr --> ROI(ROI)
-  scs --> ROI_lpsolve(ROI.plugin.scs)
-  ROI_lpsolve --> ROI(ROI)
+  scs --> ROI_scs(ROI.plugin.scs)
+  ROI_scs --> ROI(ROI)
+  ECOSolveR --> ROI_escs(ROI.plugin.escs)
+  ROI_escs --> ROI(ROI)
   quadprog --> ROI_quadprog(ROI.plugin.quadprog)
   ROI_quadprog --> ROI(ROI)
 ```
 
-**Rglpk** 包可以求解大规模线性优化，整数优化和混合整数优化，**ROI** 包通过插件包 **ROI.plugin.glpk** 与之连接调用。**nloptr** 包可以求解二次优化和非线性优化，**ROI** 包通过插件包 **ROI.plugin.nloptr** 与之连接调用。**ROI** 包通过插件包来实际调用第三方做数值优化的 R 包。
+**ROI** 包通过插件包来实际调用第三方做数值优化的 R 包。**Rglpk** 包 [@Rglpk2023] 可以求解大规模线性优化、整数线性优化和混合整数线性优化，**ROI** 包通过插件包 **ROI.plugin.glpk** 与之连接调用。**nloptr** 包 [@nloptr2023] 可以求解二次优化和非线性优化，**ROI** 包通过插件包 **ROI.plugin.nloptr** 与之连接调用。**scs** 包 [@scs2016] 可以求解凸锥优化，**ROI** 包通过插件包 **ROI.plugin.scs** 与之连接调用。**ECOSolveR** 包 [@ECOSolveR2023] 可以求解含整数变量约束的凸锥优化，**ROI** 包通过插件包 **ROI.plugin.ecos** 与之连接调用。**quadprog** 包 [@quadprog2019] 可以求解凸二次优化，**ROI** 包通过插件包 **ROI.plugin.quadprog** 与之连接调用。本文不能一一概括，相信读者之后可以举一反三。
+
+对大部分常规优化问题，都可以纳入 **ROI** 包的框架内。对少量复杂的优化问题，必须借助开源社区的第三方求解器。
+
+-   **对于**含整型变量的凸锥优化问题，**scs** 包不能求解，**ECOSolveR** 包可以，它还可以求解可转化为凸二阶锥优化问题的混合整数二次优化问题。
+-   对于特定问题，比如 0-1 整数线性优化中的指派问题，相比于 **ROI** 包的大一统调用方式，**lpSolve** 包 [@lpSolve2023] 给出非常简明的使用语法。对凸二次优化问题，给出 **quadprog** 包的使用语法，补充说明 **nloptr** 包的结果，以及与 **ROI** 包调用语法的差异。
+-   对于凸的混合整数二次优化和非凸的混合整数非线性优化问题，借助 **rAMPL** 包 [@rAMPL2023] 分别调用开源的求解器 [Bonmin](https://github.com/coin-or/Bonmin) 和 [Couenne](https://github.com/coin-or/Couenne) 求解。
+-   对于复杂的非线性优化问题，因其具有非凸、多模态等特点，求解非常困难。需要引入随机优化算法，比如采用 **GA** 包 [@GA2013] 的遗传算法求解，效果可以达到商业软件的水平。
+-   对于凸优化问题，可以求解得又快又好，而对于非凸优化问题，要么只能获得局部最优解，要么可以搜索全局最优解，但不给保证，而且运行时间长。
 
 ```{r}
 #| message: false
@@ -41,6 +61,7 @@ library(ROI)
 library(ROI.plugin.glpk)
 library(ROI.plugin.nloptr)
 library(ROI.plugin.scs)
+library(ROI.plugin.ecos)
 library(ROI.plugin.quadprog)
 library(lattice)
 # 自定义调色板
@@ -143,7 +164,7 @@ $$
 \end{aligned}
 $$
 
-二次优化不都是凸优化，当且仅当矩阵 $D$ 半正定时，上述二次规划是凸二次优化，当矩阵 $D$ 正定时，上述二次规划是严格凸二次优化。下面举个严格凸二次规划的具体例子，令
+二次优化不都是凸优化，当且仅当矩阵 $D$ 半正定时，上述二次优化是凸二次优化，当矩阵 $D$ 正定时，上述二次优化是严格凸二次优化。下面举个严格凸二次优化的具体例子，令
 
 $$
 D = \begin{bmatrix}
@@ -173,7 +194,7 @@ $$
 Q(x_1,x_2) = x_1^2 + x_2^2 - x_1 x_2 + 3x_1- 2x_2
 $$
 
-二次规划中的数据矩阵和向量 $D,\bm{d},A,\bm{b}$ 依次用 `Dmat`、`dvec`、`Amat`、`bvec` 表示出来。
+二次优化中的数据矩阵和向量 $D,\bm{d},A,\bm{b}$ 依次用 `Dmat`、`dvec`、`Amat`、`bvec` 表示出来。
 
 ```{r}
 Dmat <- matrix(c(2, -1, -1, 2), nrow = 2, byrow = TRUE)
@@ -182,7 +203,7 @@ Amat <- matrix(c(-1, -1, 1, -1, 0, 1), ncol = 2, byrow = TRUE)
 bvec <- c(-2, 2, 3)
 ```
 
-同样，也是在函数 `OP()`中传递目标函数，约束条件。在函数 `Q_objective()` 中定义二次规划的目标函数，字母 Q 是 Quadratic 的意思，表示二次部分，字母 L 是 Linear 的意思，表示线性部分。函数 `L_constraint()` 的使用同线性优化，不再赘述。根据 **ROI** 包的使用接口定义的参数，定义目标规划。
+同样，也是在函数 `OP()`中传递目标函数，约束条件。在函数 `Q_objective()` 中定义二次优化的目标函数，字母 Q 是 Quadratic 的意思，表示二次部分，字母 L 是 Linear 的意思，表示线性部分。函数 `L_constraint()` 的使用同线性优化，不再赘述。根据 **ROI** 包的使用接口定义的参数，定义目标优化。
 
 ```{r}
 op <- OP(
@@ -193,7 +214,7 @@ op <- OP(
 op
 ```
 
-**nloptr** 包有许多优化求解器，可用于求解二次规划的也有好几个。对于一个目标规划，函数 `ROI_applicable_solvers()` 可以找到能够求解此优化问题的求解器。
+**nloptr** 包有许多优化求解器，可用于求解二次优化的也有好几个。对于一个目标优化，函数 `ROI_applicable_solvers()` 可以找到能够求解此优化问题的求解器。
 
 ```{r}
 ROI_applicable_solvers(op)
@@ -207,7 +228,7 @@ nlp$objval
 nlp$solution
 ```
 
-作为对比，移除线性不等式约束，求解无约束优化问题。目标函数仍然是二次型，但是已经没有线性约束条件，所以不是二次规划问题，再用求解器 `nloptr.slsqp` 求解的结果已不是无约束优化的解。
+作为对比，移除线性不等式约束，求解无约束优化问题。目标函数仍然是二次型，但是已经没有线性约束条件，所以不是二次优化问题，再用求解器 `nloptr.slsqp` 求解的结果已不是无约束优化的解。
 
 ```{r}
 op2 <- OP(
@@ -220,7 +241,7 @@ nlp2$objval
 nlp2$solution
 ```
 
-在可行域上画出等高线，标记目标解的位置， @fig-quadprog 展示无约束和有约束条件下的解。图中橘黄色线围成的三角形区域是可行域，红点表示无约束下求解器 `nloptr.slsqp` 获得的解 $(0,1)$ ，真正的无约束解是蓝点所在位置为 $(-4/3,1/3)$ ，黄点表示线性约束下求解器 `nloptr.slsqp` 获得的解 $(1/6,11/6)$ 。所以，不能用二次规划的求解器去求解无约束的二次规划问题。
+在可行域上画出等高线，标记目标解的位置， @fig-quadprog 展示无约束和有约束条件下的解。图中橘黄色线围成的三角形区域是可行域，红点表示无约束下求解器 `nloptr.slsqp` 获得的解 $(0,1)$ ，真正的无约束解是蓝点所在位置为 $(-4/3,1/3)$ ，黄点表示线性约束下求解器 `nloptr.slsqp` 获得的解 $(1/6,11/6)$ 。所以，不能用二次优化的求解器去求解无约束的二次优化问题。
 
 ```{r}
 #| label: fig-quadprog
@@ -237,7 +258,7 @@ qp_sol <- nlp$solution
 uc_sol <- nlp2$solution
 dat <- expand.grid(x1 = seq(-2, 5.5, length.out = 50), 
                    x2 = seq(-1, 3.5, length.out = 50))
-# 二次规划的目标函数
+# 二次优化的目标函数
 dat$fn <- with(dat, x1^2 + x2^2 - x1 * x2 + 3 * x1 - 2 * x2)
 levelplot(fn ~ x1 * x2, data = dat, aspect = .7,
   xlab = expression(x[1]), ylab = expression(x[2]),
@@ -272,7 +293,7 @@ levelplot(fn ~ x1 * x2, data = dat, aspect = .7,
 )
 ```
 
-**quadprog** 包在求解约束条件下的严格凸二次规划问题时，同时给出无约束条件下的解。这个包自定义了一套二次规划问题的符号，查看求解函数 `solve.QP()` 的说明，略作对应后，求解上述规划问题的代码如下。
+**quadprog** 包在求解约束条件下的严格凸二次优化问题时，同时给出无约束条件下的解。这个包自定义了一套二次优化问题的符号，查看求解函数 `solve.QP()` 的说明，略作对应后，求解上述优化问题的代码如下。
 
 ```{r}
 library(quadprog)
@@ -282,7 +303,7 @@ sol <- solve.QP(
 sol
 ```
 
-其中，返回值的 `unconstrained.solution` 表示无约束下的解，与预期的解一致，这就没有疑惑了。可见，约束二次规划问题和无约束二次规划问题的求解器不同。
+其中，返回值的 `unconstrained.solution` 表示无约束下的解，与预期的解一致，这就没有疑惑了。可见，约束二次优化问题和无约束二次优化问题的求解器不同。
 
 ### 非严格凸二次优化
 
@@ -328,7 +349,7 @@ $$
 \end{aligned}
 $$
 
-其中，集合 $\mathcal{K}$ 是一个非空的封闭凸锥。在一个凸锥里，寻求一个线性目标函数的最小值。专门求解此类问题的 **scs** 包 [@scs2016] 也在 **ROI** 包的支持范围内，可以求解的锥优化包括零锥、线性锥、二阶锥、指数锥、幂锥和半正定锥。
+其中，集合 $\mathcal{K}$ 是一个非空的封闭凸锥。在一个凸锥里，寻求一个线性目标函数的最小值。专门求解此类问题的 **scs** 包也在 **ROI** 包的支持范围内，可以求解的锥优化包括零锥、线性锥、二阶锥、指数锥、幂锥和半正定锥。
 
 下面举个例子说明凸锥，含参对称矩阵 $A(m_1,m_2,m_3)$ 如下：
 
@@ -433,7 +454,7 @@ wireframe(
 )
 ```
 
-### 零锥
+### 零锥 {#sec-zero-cone}
 
 零锥的定义如下：
 
@@ -443,7 +464,7 @@ $$
 
 常用于表示线性等式约束。
 
-### 线性锥
+### 线性锥 {#sec-linear-cone}
 
 线性锥（Linear Cone）的定义如下：
 
@@ -453,7 +474,7 @@ $$
 
 常用于表示线性不等式约束。
 
-### 二阶锥
+### 二阶锥 {#sec-second-order-cone}
 
 二阶锥（Second-order Cone）的定义如下：
 
@@ -461,9 +482,95 @@ $$
 \mathcal{K}_{soc}^{n} = \{(t,x) \in \mathbb{R}^n|x \in \mathbb{R}^{n-1}, t\in\mathbb{R},\| x \|_2 \leq t\}
 $$
 
-常用于凸二次优化问题。
+常用于凸二次优化问题。考虑如下二阶锥优化 SOCP 问题：
 
-### 指数锥
+$$
+\begin{aligned}
+\max_{(\bm{y},t)} \quad & y_1 + y_2 \\
+\text{s.t.} \quad & \sqrt{(2 + 3y_1)^2 + (4+5y_2)^2} \leq 6 + 7t \\
+& y_1,y_2 \in \mathbb{R}, ~~ t \in (-\infty,9].
+\end{aligned}
+$$
+
+令 $\bm{x} = (y_1, y_2, t)^{\top}$ ，$\bm{b} = (b_1,b_2,b_3)^\top$
+
+$$
+A = \begin{bmatrix}
+\bm{a_1}^{\top}\\ 
+\bm{a_2}^{\top}\\ 
+\bm{a_3}^{\top}
+\end{bmatrix}
+$$
+
+上述 SOCP 问题的非线性不等式约束等价于
+
+$$
+\sqrt{(b_2 - \bm{a_2}^{\top}\bm{x})^2 + (b_3 -\bm{a_3}^{\top}\bm{x})^2} \leq b_1 - \bm{a_1}^{\top}\bm{x}
+$$
+
+其中，
+
+$$
+A = \begin{bmatrix}
+0 & 0 & -7  \\
+-3 & 0 & 0  \\
+0 & -5 & 0
+\end{bmatrix}, \quad
+\bm{b} = \begin{bmatrix}
+6 \\
+2 \\
+4
+\end{bmatrix}
+$$
+
+**scs** 包不能求解此类优化问题，下面调用 **ECOSolveR** 包求解。
+
+```{r}
+library(ROI.plugin.ecos)
+op <- OP(
+  objective = c(1, 1, 0),
+  constraints = C_constraint(
+    L = rbind(
+      c(0, 0, -7),
+      c(-3, 0, 0),
+      c(0, -5, 0)
+    ),
+    cones = K_soc(3), rhs = c(6, 2, 4)
+  ), maximum = TRUE,
+  bounds = V_bound(ld = -Inf, ui = 3, ub = 9, nobj = 3)
+)
+sol <- ROI_solve(op, solver = "ecos")
+# 最优解
+sol$solution
+# 目标函数值
+sol$objval
+```
+
+对目标变量 $y_1$ 添加整数约束，则只有 **ECOSolveR** 包可以求解。
+
+```{r}
+op <- OP(
+  objective = c(1, 1, 0),
+  constraints = C_constraint(
+    L = rbind(
+      c(0, 0, -7),
+      c(-3, 0, 0),
+      c(0, -5, 0)
+    ),
+    cones = K_soc(3), rhs = c(6, 2, 4)
+  ), maximum = TRUE, 
+  # 目标变量约束
+  types = c("I", "C", "C"), 
+  bounds = V_bound(ld = -Inf, ui = 3, ub = 9, nobj = 3)
+)
+sol <- ROI_solve(op, solver = "ecos")
+# 最优解
+sol$solution
+# 目标函数值
+sol$objval
+```
+
+### 指数锥 {#sec-exponential-cone}
 
 指数锥（Exponential Cone）的定义如下：
 
@@ -515,18 +622,19 @@ $$
 指数锥用函数 `K_expp()` 表示，锥优化问题的代码如下：
 
 ```{r}
-# 锥约束
-cexpp <- C_constraint(L = rbind(
-  c(-3, -5, 0, 0), 
-  c(0, 0, 0, 0),
-  c(0, 0, -11, -12)
-), cone = K_expp(1), rhs = c(7, 1, 9))
-# 目标规划
-expp <- OP(objective = c(1, 2, 0, 0), constraints = cexpp,
-  bounds = V_bound(ld = -Inf, ub = c(20, 20, 50, 50)), 
+# 目标优化
+op <- OP(
+  objective = c(1, 2, 0, 0),
+  # 锥约束
+  constraints = C_constraint(L = rbind(
+    c(-3, -5, 0, 0),
+    c(0, 0, 0, 0),
+    c(0, 0, -11, -12)
+  ), cone = K_expp(1), rhs = c(7, 1, 9)),
+  bounds = V_bound(ld = -Inf, ub = c(20, 20, 50, 50)),
   maximum = TRUE
 )
-expp
+op
 ```
 
 对于锥优化，可以调用 **scs** 包来求解。
@@ -534,14 +642,14 @@ expp
 ```{r}
 # 调用 scs 包
 library(ROI.plugin.scs)
-expp_sol <- ROI_solve(expp, solver = "scs")
+sol <- ROI_solve(op, solver = "scs")
 # 最优解
-expp_sol$solution
+sol$solution
 # 目标函数值
-expp_sol$objval
+sol$objval
 ```
 
-### 幂锥
+### 幂锥 {#sec-power-cone}
 
 一个三维幂锥（Power Cone）的定义如下：
 
@@ -605,20 +713,22 @@ op
 ```
 
 ```{r}
-op_sol <- ROI_solve(op, solver = "scs", max_iter = 1e6)
-op_sol$solution
-op_sol$objval
+sol <- ROI_solve(op, solver = "scs", max_iter = 1e6)
+# 最优解
+sol$solution
+# 目标函数值
+sol$objval
 ```
 
-### 半正定锥
+### 半正定锥 {#sec-positive-semi-definite-cone}
 
-如果矩阵 $A$ 是半正定的，记为 $A \succeq 0$ ，如果矩阵 $A$ 是正定的，记为 $A \succ 0$ 。记 $n$ 阶实对称矩阵的集合为 $\mathcal{S}^{n}$ 。半正定锥（Positive Semidefinite Cone）的定义如下：
+如果矩阵 $A$ 是半正定的，记为 $A \succeq 0$ ，如果矩阵 $A$ 是正定的，记为 $A \succ 0$ 。记 $n$ 阶实对称矩阵的集合为 $\mathcal{S}^{n}$ 。半正定锥（Positive Semi Definite Cone）的定义如下：
 
 $$
 \mathcal{K}_{\text{psd}}^{n} = \{A | A \in \mathcal{S}^{n}, \bm{x}^{\top}A\bm{x} \geq 0, \forall \bm{x} \in \mathbb{R}^n \}
 $$
 
-考虑如下锥规划问题
+考虑如下锥优化问题
 
 $$
 \begin{aligned}
@@ -652,14 +762,14 @@ $$
 vech(A)
 ```
 
-锥规划的表示如下
+锥优化的表示如下
 
 ```{r}
 F1 <- rbind(c(10, 3), c(3, 10))
 F2 <- rbind(c(6, -4), c(-4, 10))
 F3 <- rbind(c(8, 1), c(1, 6))
 F0 <- rbind(c(16, -13), c(-13, 60))
-# 目标规划
+# 目标优化
 op <- OP(
   objective = L_objective(c(1, 1, -1)),
   constraints = C_constraint(
@@ -671,19 +781,21 @@ op <- OP(
 op
 ```
 
-仍然调用 **scs** 求解器
+仍然调用 **scs** 包求解器。
 
 ```{r}
-op_sol <- ROI_solve(op, solver = "scs")
-op_sol$solution
-op_sol$objval
+sol <- ROI_solve(op, solver = "scs")
+# 最优解
+sol$solution
+# 目标函数值
+sol$objval
 ```
 
 ## 非线性优化 {#sec-nonlinear-optimization}
 
 非线性优化按是否带有约束，以及约束是线性还是非线性。
 
-R 自带的函数 `nlminb()` 可求解无约束、箱式约束优化问题，`constrOptim()` 还可求解线性不等式约束优化，其中包括带线性约束的二次规划。`optim()` 提供一大类优化算法，且包含随机优化算法---模拟退火算法，可求解无约束、箱式约束优化问题。
+R 自带的函数 `nlminb()` 可求解无约束、箱式约束优化问题，`constrOptim()` 还可求解线性不等式约束优化，其中包括带线性约束的二次优化。`optim()` 提供一大类优化算法，且包含随机优化算法---模拟退火算法，可求解无约束、箱式约束优化问题。
 
 ### 无约束优化
 
@@ -879,7 +991,7 @@ heq <- function(x) {
 heq.jac <- function(x) {
   numDeriv::grad(func = heq, x = x)
 }
-# 定义目标规划
+# 定义目标优化
 op <- OP(
   # 3 个目标变量
   objective = F_objective(F = fn, G = gr, n = 3L),
@@ -1127,7 +1239,7 @@ Min=@cos(x1) * @cos(x2) - @Sum(P(j): (-1)^j * j * 2 * @exp(-500 * ((x1 - j * 2)^
 
 启用全局优化求解器后，在 $(x_1 = 7.999982, x_2 = 7.999982)$ 取得最小值 -7.978832。而默认未启用全局优化求解器的情况下，在 $(x_1 = 18.84956, x_2 = -40.84070)$ 取得局部极小值 -1.000000。
 
-在这种情况下，数值优化算法遇到瓶颈，可以采用一些全局随机优化算法，比如 **GA** 包 [@GA2013] 实现的遗传算法。经过对参数的一些调优，可以获得与商业软件几乎一样的结果。
+在这种情况下，数值优化算法遇到瓶颈，可以采用一些全局随机优化算法，比如 **GA** 包实现的遗传算法。经过对参数的一些调优，可以获得与商业软件几乎一样的结果。
 
 ```{r}
 nlp <- GA::ga(
@@ -1324,7 +1436,7 @@ optim(
 
 -   非线性等式约束
 
-示例来自 Octave 的[非线性优化帮助文档](https://octave.org/doc/v8.2.0/Nonlinear-Programming.html)，Octave 函数 `sqp()` 使用序列二次规划求解器（successive quadratic programming solver）解非线性规划问题，示例中该优化问题包含多个非线性等式约束。
+示例来自 Octave 的[非线性优化帮助文档](https://octave.org/doc/v8.2.0/Nonlinear-Programming.html)，Octave 函数 `sqp()` 使用序列二次优化求解器（successive quadratic programming solver）解非线性优化问题，示例中该优化问题包含多个非线性等式约束。
 
 $$
 \begin{aligned}
@@ -1373,10 +1485,10 @@ heq.jac <- function(x) {
 }
 ```
 
-在 `OP()` 函数里定义目标规划的各个成分。
+在 `OP()` 函数里定义目标优化的各个成分。
 
 ```{r}
-# 定义目标规划
+# 定义目标优化
 op <- OP(
   # 5 个目标变量
   objective = F_objective(F = fn, n = 5L, G = gr), 
@@ -1393,7 +1505,7 @@ op <- OP(
 op
 ```
 
-调用 SQP（序列二次规划） 求解器
+调用 SQP（序列二次优化） 求解器
 
 ```{r}
 nlp <- ROI_solve(op,
@@ -1456,7 +1568,7 @@ hin <- function(x) {
 hin.jac <- function(x) {
   c(prod(x[-1]), prod(x[-2]), prod(x[-3]), prod(x[-4]))
 }
-# 定义目标规划
+# 定义目标优化
 op <- OP(
   objective = F_objective(F = fn, n = 4L, G = gr), # 4 个目标变量
   constraints = F_constraint(
@@ -1569,7 +1681,7 @@ res$objval
 
 ### 0-1 整数线性优化
 
-目标函数是线性的，目标变量的取值要么是 0 要么是 1。指派问题属于典型的 0-1 整数规划问题。有 $n$ 个人需要去完成 $n$ 项任务，每个人完成一项任务，每项任务只由一个人完成，每个人单独完成各项任务所需花费（时间、费用）不同。要求设计一个方案，人和任务之间建立一一对应的关系，使得总花费最少。
+目标函数是线性的，目标变量的取值要么是 0 要么是 1。指派问题属于典型的 0-1 整数优化问题。有 $n$ 个人需要去完成 $n$ 项任务，每个人完成一项任务，每项任务只由一个人完成，每个人单独完成各项任务所需花费（时间、费用）不同。要求设计一个方案，人和任务之间建立一一对应的关系，使得总花费最少。
 
 设第 $i$ 个人完成第 $j$ 项任务的花费为 $d_{ij}$ ，当安排第 $i$ 个人完成第 $j$ 项任务时，记为 $x_{ij} = 1$ ，否则，记为 $x_{ij} = 0$ ，指派问题的数学模型如下：
 
@@ -1699,7 +1811,7 @@ $$
 \end{aligned}
 $$
 
-在二次规划的基础上，对变量添加整型约束，即变成混合整数二次规划 （Mixed Integer Quadratic Programming，简称 MIQP）。
+在二次优化的基础上，对变量添加整型约束，即变成混合整数二次优化 （Mixed Integer Quadratic Programming，简称 MIQP）。
 
 ```{r}
 # D
@@ -1714,7 +1826,7 @@ Amat <- matrix(c(
 ), ncol = 2, byrow = TRUE)
 # b
 bvec <- c(-2, 2, 3)
-# 目标规划
+# 目标优化
 op <- OP(
   objective = Q_objective(Q = Dmat, L = dvec),
   constraints = L_constraint(Amat, rep("<=", 3), bvec),
@@ -1725,7 +1837,7 @@ op <- OP(
 ROI_applicable_solvers(op)
 ```
 
-目前，**ROI** 包支持的开源求解器都不能处理 MIQP 问题。**ECOSolveR** 包可以求解凸二阶锥规划，部分变量可以是整数。因此，先将凸二次规划转化为凸锥规划问题，再连接 **ECOSolveR** 包提供 `ecos` 求解器，最后，调 `ecos` 求解器求解。
+目前，**ROI** 包支持的开源求解器都不能处理 MIQP 问题。**ECOSolveR** 包可以求解凸二阶锥优化，部分变量可以是整数。因此，先将凸二次优化转化为凸锥优化问题，再连接 **ECOSolveR** 包提供 `ecos` 求解器，最后，调 `ecos` 求解器求解。
 
 $$
 \begin{aligned}
@@ -1779,7 +1891,7 @@ A = \begin{bmatrix}
 \end{bmatrix}
 $$
 
-最后，凸二次规划转为二阶锥规划 SOCP，形式如下：
+最后，凸二次优化转为二阶锥优化 SOCP，形式如下：
 
 $$
 \begin{aligned}
@@ -1797,13 +1909,15 @@ $$
 
 ```{r}
 #| eval: false
-#| code-fold: true
 #| echo: !expr knitr::is_html_output()
 
 op <- OP(
   objective = Q_objective(Q = Dmat, L = dvec),
-  constraints = L_constraint(Amat, rep("<=", 3), bvec),
-  types = c("I", "C"),
+  constraints = c(
+    C_constraint(L, cones = K_soc(3)),
+    L_constraint(Amat, rep("<=", 3), bvec)
+  ),
+  types = c("I", "C", "C"),
   maximum = FALSE # 默认求最小
 )
 
@@ -1814,7 +1928,7 @@ nlp$objval
 nlp$solution
 ```
 
-因二次规划的目标函数是二次连续可微的，而且是凸函数，求解器 Bonmin 可以获得最优解。
+因二次优化的目标函数是二次连续可微的，而且是凸函数，求解器 Bonmin 可以获得最优解。
 
 ``` ampl
 var x1 integer;
@@ -1849,9 +1963,9 @@ ampl$getData("z")
 
 ### 混合整数非线性优化 {#sec-mixed-integer-nonlinear-programming}
 
-在 R 语言社区的官方仓库中还没有开源的 R 包可以求解此类问题，开源社区中 [Bonmin](https://github.com/coin-or/Bonmin/) 项目专门求解混合整数非线性优化 MINLP（Mixed Integer NonLinear Programming）问题。数学规划软件 AMPL 封装了 Bonmin 软件，并提供 R 语言接口 [rAMPL](https://github.com/ampl/rAMPL)。AMPL [社区版](https://ampl.com/ce/)可以免费使用打包的开源求解器。
+在 R 语言社区的官方仓库中还没有开源的 R 包可以求解此类问题，开源社区中 [Bonmin](https://github.com/coin-or/Bonmin/) 项目专门求解混合整数非线性优化 MINLP（Mixed Integer NonLinear Programming）问题。数学优化软件 AMPL 封装了 Bonmin 软件，并提供 R 语言接口 [rAMPL](https://github.com/ampl/rAMPL)。AMPL [社区版](https://ampl.com/ce/)可以免费使用打包的开源求解器。
 
--   线性规划求解器 [HiGHS](https://github.com/ERGO-Code/HiGHS)。
+-   线性优化求解器 [HiGHS](https://github.com/ERGO-Code/HiGHS)。
 -   混合整数线性优化求解器 [cbc](https://github.com/coin-or/Cbc)。
 -   混合整数非线性优化求解器 [Bonmin](https://github.com/coin-or/Bonmin) 和 [Couenne](https://github.com/coin-or/Couenne)。
 -   非线性优化求解器 [Ipopt](https://github.com/coin-or/Ipopt)。
@@ -1914,7 +2028,7 @@ ampl$getData("X3")
 ampl$getData("z")
 ```
 
-Bonmin 求解器的结果显示在 $(2.892556, 1.702552, -1)$ 处获得最优解，目标函数值为 $-4.176012$ ，实际上，这是一个局部最优解。下面调用另一个求解器 Couenne 求解该问题，实际上，Couenne 好于 Bonmin 求解器，它可以找到非凸混合整数非线性规划问题的全局最优解。
+Bonmin 求解器的结果显示在 $(2.892556, 1.702552, -1)$ 处获得最优解，目标函数值为 $-4.176012$ ，实际上，这是一个局部最优解。下面调用另一个求解器 Couenne 求解该问题，实际上，Couenne 好于 Bonmin 求解器，它可以找到非凸混合整数非线性优化问题的全局最优解。
 
 ```{r}
 #| eval: false
@@ -1978,9 +2092,118 @@ fun(x = c(4.999633, 9.734148, -5))
     \min_{\bm{x}} \quad \exp\big( - \sum_{i=1}^{n}(\frac{x_i}{\beta})^{2m}\big)  - 2\exp(- \sum_{i=1}^{n}x_i^2)\prod_{i=1}^{n} \cos^2(x_i)
     $$
 
-    其中，$\beta.=15, m = 3$ ，$x_i \in [-20,20], i = 1,2,\ldots,n$ 。请读者分别考虑 $n= 2$ 和 $n = 4$ 的情况。全局最优解在 $x_i = 0, i = 1,2,\ldots,n$ 处取得，最优值为 $-1$ 。
+    其中，$\beta.=15, m = 3$ ，$x_i \in [-20,20], i = 1,2,\ldots,n$ 。请读者分别考虑 $n= 2$ 和 $n = 4$ 的情况。（全局最优解在 $x_i = 0, i = 1,2,\ldots,n$ 处取得，最优值为 $-1$ 。）
 
 3.  求解如下非线性约束优化问题。
+
+    $$
+    \begin{aligned}
+      \min_{\bm{x}} \quad & \exp(\sin(50 x_1)) + \sin(60\exp(x_2)) + \sin(70\sin(x_1)) \\
+             \quad & + \sin(\sin(80x_2)) - \sin(10(x_1 +x_2)) + \frac{(x_1^2 + x_2^2)^{\sin(x_2)}}{4} \\
+        \text{s.t.} \quad & \left\{ 
+        \begin{array}{l}
+         x_1 - \big((\cos(x_2))^{x_1} - x_1\big)^{x_2} \leq 0 \\
+        -50 \leq x_1,x_2 \leq 50
+        \end{array} \right.
+    \end{aligned}
+    $$
+
+    目标函数是不连续的，其函数图像如 @fig-complex-constrained 所示。（提示：容错能力低的求解器一般无法求解。Lingo 给出一个局部最优解 $(-46.14402, -0.8879601)$ ，目标函数值为 $-2.645518$ ，仅供参考。）
+
+    ```{r}
+    #| label: fig-complex-constrained
+    #| fig-cap: 目标函数的曲面图
+    #| fig-width: 4.5
+    #| fig-height: 4.5
+    #| fig-showtext: true
+    #| code-fold: true
+    #| echo: !expr knitr::is_html_output()
+
+    fn <- function(x) {
+      exp(sin(50 * x[1])) + sin(60 * exp(x[2])) +
+        sin(70 * sin(x[1])) + sin(sin(80 * x[2])) -
+        sin(10 * (x[1] + x[2])) + (x[1]^2 + x[2]^2)^(sin(x[2])) / 4
+    }
+
+    df <- expand.grid(
+      x1 = seq(from = 0.8, to = 1.4, length.out = 81),
+      x2 = seq(from = 0, to = 0.4, length.out = 41)
+    )
+    # 计算格点处的函数值
+    df$fn <- apply(df, 1, FUN = fn)
+
+    # 绘图
+    wireframe(
+      data = df, fn ~ x1 * x2,
+      shade = TRUE, drape = FALSE,
+      xlab = expression(x[1]), ylab = expression(x[2]),
+      zlab = list(expression(
+        italic(f) ~ group("(", list(x[1], x[2]), ")")
+      ), rot = 90),
+      scales = list(arrows = FALSE, col = "black"),
+      shade.colors.palette = custom_palette,
+      # 减少三维图形的边空
+      lattice.options = list(
+        layout.widths = list(
+          left.padding = list(x = -0.5, units = "inches"),
+          right.padding = list(x = -1.0, units = "inches")
+        ),
+        layout.heights = list(
+          bottom.padding = list(x = -1.5, units = "inches"),
+          top.padding = list(x = -1.5, units = "inches")
+        )
+      ),
+      par.settings = list(axis.line = list(col = "transparent")),
+      screen = list(z = 30, x = -65, y = 0)
+    )
+    ```
+
+    ```{r}
+    #| eval: false
+    #| code-fold: true
+    #| echo: !expr knitr::is_html_output()
+
+    fn <- function(x) {
+      exp(sin(50 * x[1])) + sin(60 * exp(x[2])) +
+        sin(70 * sin(x[1])) + sin(sin(80 * x[2])) -
+        sin(10 * (x[1] + x[2])) + (x[1]^2 + x[2]^2)^(sin(x[2])) / 4
+    }
+    gr <- function(x){
+      numDeriv::grad(fn, c(x[1], x[2]))
+    }
+    hin <- function(x){
+      x[1] - ( (cos(x[2]))^x[1] - x[1] )^x[2]
+    }
+    hin.jac <- function(x){
+      numDeriv::grad(hin, c(x[1], x[2]))
+    }
+    # 定义目标优化
+    op <- OP(
+      objective = F_objective(F = fn, n = 2L, G = gr), # 2 个目标变量
+      constraints = F_constraint(
+        F = list(hin = hin),
+        dir = "<=",
+        rhs = 0,
+        J = list(hin.jac = hin.jac)
+      ),
+      bounds = V_bound(ld = -50, ud = 50, nobj = 2L),
+      maximum = FALSE # 求最小
+    )
+    # 全局优化求解器 nloptr.isres，不保证全局最优
+    # 最优解 (20.68497, 37.20738) 处取得局部最优解，目标函数值 -3.053314
+    nlp <- ROI_solve(op, solver = "nloptr.isres", start = c(1, 0))
+    nlp$solution
+    nlp$objval
+    # 局部优化求解器 nloptr.cobyla
+    # 在处 (24.199046, 2.964661) 处取得局部最优解，目标函数值 0.6477342
+    nlp <- ROI_solve(op, solver = "nloptr.cobyla", start = c(1, 0))
+    nlp$solution
+    nlp$objval
+    # nloptr.mma / nloptr.auglag / nloptr.slsqp 容错能力差，都不能求解
+    nlp <- ROI_solve(op, solver = "nloptr.auglag", start = c(1, 0))
+    ```
+
+4.  求解如下非线性约束优化问题。
 
     $$
     \begin{aligned}
@@ -2034,7 +2257,7 @@ fun(x = c(4.999633, 9.734148, -5))
     hin.jac <- function(x) {
       c(cos(x[1]) * cos(x[2]), -sin(x[1]) * sin(x[2]))
     }
-    # 定义目标规划
+    # 定义目标优化
     op <- OP(
       objective = F_objective(F = fn, G = gr, n = 2L),
       # rbind 函数组合多种约束
