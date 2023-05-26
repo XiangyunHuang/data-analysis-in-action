@@ -3,19 +3,19 @@
 ```{r}
 #| message: false
 
-library(nnet) # 多项回归 multinom
-library(glmnet) # 多项回归
-library(kernlab) # 基于核的支持向量机 ksvm
-library(e1071) # 朴素贝叶斯 naiveBayes 和支持向量机 svm
-library(rpart) # 决策树 rpart
-library(MASS) # 线性判别分析 lda
+library(nnet)     # 多项回归 multinom
+library(glmnet)   # 惩罚多项回归 glmnet
+library(kernlab)  # 支持向量机分类 ksvm
+library(e1071)    # 朴素贝叶斯 naiveBayes 和支持向量机 svm
+library(rpart)    # 决策树分类 rpart
+library(MASS)     # 线性判别分析 lda
 library(randomForest) # 随机森林 randomForest
-library(class) # K 最近邻 knn
-library(xgboost) # 集成学习
+library(class)    # K 最近邻 knn
+library(xgboost)  # 集成学习
 library(lattice)
 ```
 
-以 iris 数据集为例，简单，方便模型和算法介绍，定位入门。分类间隔最大化，也是一个优化问题，找一条分界线，一个分割面，一个超平面划分不同的种类。本章篇幅：每个算法 4 页，共计 32 页。8 个算法的介绍按照分类思路，模型，代码和参数说明，分类性能评估。应用案例是手写数字识别。要点不是数据如何复杂，而是怎样把理论写得通俗、准确，看了之后能够应用到复杂的真实数据分析场景中去。理论解释、绘图说明、经验总结。
+以 iris 数据集为例，简单，方便模型和算法介绍，定位入门。分类间隔最大化，也是一个优化问题，找一条分界线，一个分割面，一个超平面划分不同的种类。本章篇幅：每个算法 4 页，共计 40 页。10 个算法的介绍按照分类思路，模型，代码和参数说明，分类性能评估。应用案例是手写数字识别。要点不是数据如何复杂，而是怎样把理论写得通俗、准确，看了之后能够应用到复杂的真实数据分析场景中去。理论解释、绘图说明、经验总结。
 
 -   线性分类器
 
@@ -25,19 +25,12 @@ library(lattice)
 -   非线性分类器
 
     -   二次判别分析
-
     -   朴素贝叶斯
-
     -   支持向量机
-
     -   K 最近邻
-
     -   神经网络
-
     -   决策树
-
     -   随机森林
-
     -   集成学习
 
 ## 多项回归模型 {#sec-multinomial-regression-models}
@@ -260,5 +253,34 @@ table(iris_pred_rf, iris[, 5])
 梯度提升
 
 ```{r}
+# 数据准备
+library(data.table)
+iris_dt <- as.data.table(iris)
+# 数据重编码 分类必须从 0 开始
+iris_dt <- iris_dt[, Species := fcase(
+  Species == "setosa", 0,
+  Species == "versicolor", 1,
+  Species == "virginica", 2
+)]
+
+# 每组随机抽取 35 个样本 35 = 50*.7
+iris_train <- iris_dt[, .SD[sample(x = .N, size = 35, replace = FALSE)], by = Species]
+```
+
+```{r}
 library(xgboost)
+# 输入数据的类型必须是矩阵
+iris_xgb <- xgboost(
+  data = as.matrix(iris_train[, -"Species"]), 
+  label = as.matrix(iris_train[, "Species"]),
+  objective = "multi:softprob", # 多分类目标函数
+  eval_metric = "mlogloss", # 评估指标
+  nrounds = 2,   # 提升迭代的最大次数
+  num_class = 3  # 分类数
+)
+```
+
+```{r}
+# ?predict.xgb.Booster
+iris_pred <- predict(object = iris_xgb, newdata = iris_train_mat)
 ```
