@@ -787,9 +787,17 @@ sol$objval
 
 ## 非线性优化 {#sec-nonlinear-optimization}
 
-非线性优化按是否带有约束，以及约束是线性还是非线性。
+非线性优化按是否带有约束，以及约束是线性还是非线性，分为无约束优化、箱式约束、线性约束优化和非线性约束优化。
 
-R 自带的函数 `nlminb()` 可求解无约束、箱式约束优化问题，`constrOptim()` 还可求解线性不等式约束优化，其中包括带线性约束的二次优化。`optim()` 提供一大类优化算法，且包含随机优化算法---模拟退火算法，可求解无约束、箱式约束优化问题。
+|          | `nlm()` | `nlminb()` | `constrOptim()` | `optim()` |
+|----------|---------|------------|-----------------|-----------|
+| 无约束   | 支持    | 支持       | 不支持          | 支持      |
+| 箱式约束 | 不支持  | 支持       | 支持            | 支持      |
+| 线性约束 | 不支持  | 不支持     | 支持            | 不支持    |
+
+: R 软件内置的非线性优化函数
+
+R 软件内置的 **stats** 包有 4 个数值优化方面的函数，函数 `nlm()` 可求解无约束优化问题，函数 `nlminb()` 可求解无约束、箱式约束优化问题，函数 `constrOptim()` 可求解箱式和线性约束优化。函数 `optim()` 是通用型求解器，包含多个优化算法，可求解无约束、箱式约束优化问题。尽管这些函数在 R 语言中长期存在，在统计中有广泛的使用，如非线性最小二乘 `stats::nls()`，极大似然估计 `stats4::mle()` 和广义最小二乘估计 `nlme::gls()` 等。但是，这些优化函数的求解能力有重合，使用语法不尽相同，对于非线性约束无能为力，下面主要使用 **ROI** 包来求解各类非线性优化问题。
 
 ### 无约束优化
 
@@ -867,7 +875,7 @@ optimize(f = fn, interval = c(-7, 20))
 
 $$
 \begin{aligned}
-\min y = & ~\sin\Big((yx_1 -0.5)^2 + 2x_1 x_2^2 - \frac{y}{10} \Big)\cdot \\
+\min_{\bm{x}} y = & ~\sin\Big((yx_1 -0.5)^2 + 2x_1 x_2^2 - \frac{y}{10} \Big)\cdot \\
 &~\exp\Big(-\Big( \big(x_1 - 0.5 -\exp(-x_2 + y)\big)^2 + x_2^2 - \frac{y}{5} + 3 \Big)\Big)
 \end{aligned}
 $$
@@ -1027,7 +1035,7 @@ $$
 \min_{\bm{x}} \sum_{i=1}^{n}\big(x_i^2 - 10 \cos(2\pi x_i) + 10\big)
 $$
 
-其中，$x_i \in [-4,4]$。计算函数值的 R 代码
+其中，$x_i \in [-4,4]$。计算函数值的 R 代码如下：
 
 ```{r}
 fn <- function(x) {
@@ -1078,21 +1086,43 @@ wireframe(
 )
 ```
 
-设置 10 维的优化
+设置 20 维的优化
 
 ```{r}
 op <- OP(
-  objective = F_objective(fn, n = 10L),
-  bounds = V_bound(ld = -50, ud = 50, nobj = 10L)
+  objective = F_objective(fn, n = 20L),
+  bounds = V_bound(ld = -4, ud = 4, nobj = 20L)
 )
 ```
 
-调全局优化器求解非凸优化问题
+调全局优化器求解优化问题
 
 ```{r}
 nlp <- ROI_solve(op, solver = "nloptr.directL")
 nlp$solution
 nlp$objval
+```
+
+```{r}
+#| eval: false
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
+
+# R 语言内置的非线性优化函数
+# 无约束
+nlm(f = fn, p = rep(1, 20))
+optim(par = rep(1, 20), fn = fn, method = "BFGS")
+optim(par = rep(1, 20), fn = fn, method = "Nelder-Mead")
+
+# 箱式约束
+optim(par = rep(1, 20), fn = fn, 
+      lower = -50, upper = 50, method = "L-BFGS-B")
+nlminb(start = rep(1, 20), objective = fn, lower = -50, upper = 50)
+constrOptim(
+  theta = rep(1, 20), f = fn, grad = NULL,
+  ui = rbind(diag(rep(1, 20)), diag(rep(-1, 20))),
+  ci = c(rep(-50, 20), rep(-50, 20))
+)
 ```
 
 #### 示例 4
@@ -2059,7 +2089,7 @@ fun(x = c(4.999633, 9.734148, -5))
 
 优化建模是一个具有重要商业价值的领域，相关的开源和商业软件有很多，比较流行的有 Python 社区的 [Pyomo](https://github.com/Pyomo/pyomo)，Julia 社区的 [JuMP](https://github.com/jump-dev/JuMP.jl) [@Dunning2017]。比较著名的商业软件有 [Lingo](https://www.lindo.com/)、[Mosek](https://www.mosek.com/)、[Gurobi](https://www.gurobi.com/) 等，而 [AMPL](https://ampl.com/) 一个软件平台，对 20 个开源和商业求解器提供一套统一的建模语言，对 R、Python 等编程语言都提供接口。
 
-相比于 Python 和 Julia 社区，R 语言社区在整合开源的优化建模软件方面，还有较长的路要走，**ROI** 包的出现意味着向整合的路迈出坚实的一步。优化建模的场景具有复杂性和多样性，算法实现更是五花八门，仅线性和整数线性优化方面，就至少有 **lpSolve**、 **Rglpk** 和 **highs** 等包，更别提非线性优化方面。这就出现一个问题，对一个优化问题，采用何种算法及算法实现具有最好的效果，满足可用性、可靠性。尽管涉及数学和统计，但高质量的软件工具更是一个工程问题。
+相比于 Python 和 Julia 社区，R 语言社区在整合开源的优化建模软件方面，还有较长的路要走，**ROI** 包的出现意味着向整合的路迈出坚实的一步。优化建模的场景具有复杂性和多样性，算法实现更是五花八门，仅线性和整数线性优化方面，就至少有 **lpSolve**、 **Rglpk** 和 **highs** 等包，更别提非线性优化方面。这就又出现一个问题，对一个优化问题，采用何种算法及算法实现具有最好的效果，满足可用性、可靠性。尽管涉及数学和统计，但高质量的软件工具更是一个工程问题。
 
 从数据分析的角度来说，无论是 Python，还是 Julia，甚至于底层的 C++ 库，都不过是软件工具，首要问题是将实际问题转化为统计或数学模型，这需要抓住主要问题的关键因素，只有先做好建模的工作才能实现工具到商业价值的转化。
 
