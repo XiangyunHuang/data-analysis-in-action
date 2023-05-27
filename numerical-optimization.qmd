@@ -19,12 +19,14 @@ $$
 
 1.  比较全面地展示各类优化问题的 R 语言实现，其覆盖面之广，远超市面上同类 R 语言书籍。从线性优化到凸优化（包含凸二次优化和凸锥优化），从简单整数优化到混合整数非线性优化，再到一般的非线性优化，触及最前沿的热门话题。
 
-2.  对每类优化问题都给出示例及 R 语言实现，涉及近 10 个各类优化器。大量参考 Lingo 和 1stOpt 等国内外商业优化建模软件的官方示例，部分参考开源软件 Octave （语法大量兼容 Matlab 的科学计算软件）的非线性优化示例，给出 R 语言实现。经过对比，确认 R 语言求解器的效果可以达到同类开源和商业软件的水平。
+2.  对每类优化问题都给出示例及 R 语言实现，涉及 10 余个各类优化器。参考 Lingo 和 1stOpt 等国内外商业优化建模软件的官方示例，也参考开源软件 Octave （语法大量兼容 Matlab 的科学计算软件）的非线性优化示例，给出 R 语言实现。经过对比，发现 R 语言求解器的效果可以达到同类开源和商业软件的水平。
 
-3.  对于 R 语言社区难以求解的复杂优化问题，也都给出了开源替代方案，并总结了实战经验。比如，混合整数非线性优化，通过 **rAMPL** 包连接 [AMPL](https://ampl.com/ce/) 软件，调用开源的优化求解器 [Couenne](https://github.com/coin-or/Couenne) 求解。
+3.  对于 R 语言社区难以求解的复杂优化问题，也都给出了开源替代方案，并总结了实战经验。比如，混合整数非线性优化，通过 **rAMPL** 包连接 [AMPL](https://ampl.com/ce/) 软件，调用开源的优化求解器 [Couenne](https://github.com/coin-or/Couenne) 求解。R 语言相比于商业软件的最大优势是免费易获取，可以随时查找相关 R 包的论文和源码深入研究，了解优化算法的理论和实现过程。
 :::
 
-本章介绍五类典型的优化问题及 R 语言求解过程。除了 R 软件内置一些数值优化求解器，R 语言社区有大量的运筹优化方面的函数和 R 包。本文将重点介绍 **ROI** 包 [@ROI2020]，它通过插件包对 20 多个 R 包提供统一的调用方式，相当于一个运筹优化方面的基础设施平台，极大地方便学习和使用。
+本章介绍五类典型的优化问题及 R 语言求解过程，按从易到难的顺序分别是线性优化、凸二次优化、凸锥优化、非线性优化、整数优化。学习完本章内容，读者可以灵活运用各类软件工具包解决各类标准优化问题。本章内容不涉及优化算法理论，对理论感兴趣的读者可以寻着 R 包参考文献或者相关书籍进一步学习。
+
+除了 R 软件内置一些数值优化求解器，R 语言社区还有大量数值优化方面的函数和 R 包。特别是 **ROI** 包 [@ROI2020]，它通过插件包对 20 多个 R 包提供统一的函数调用方式，相当于一个运筹优化方面的基础设施平台，极大地方便学习和使用。
 
 ```{mermaid}
 %%| label: fig-roi-plugin
@@ -46,25 +48,17 @@ flowchart TB
 
 **ROI** 包通过插件包来实际调用第三方做数值优化的 R 包。**Rglpk** 包 [@Rglpk2023] 可以求解大规模线性优化、整数线性优化和混合整数线性优化，**ROI** 包通过插件包 **ROI.plugin.glpk** 与之连接调用。**nloptr** 包 [@nloptr2023] 可以求解二次优化和非线性优化，**ROI** 包通过插件包 **ROI.plugin.nloptr** 与之连接调用。**scs** 包 [@scs2016] 可以求解凸锥优化，**ROI** 包通过插件包 **ROI.plugin.scs** 与之连接调用。**ECOSolveR** 包 [@ECOSolveR2023] 可以求解含整数变量约束的凸锥优化，**ROI** 包通过插件包 **ROI.plugin.ecos** 与之连接调用。**quadprog** 包 [@quadprog2019] 可以求解凸二次优化，**ROI** 包通过插件包 **ROI.plugin.quadprog** 与之连接调用。本文不能一一概括，相信读者之后可以举一反三。
 
-对大部分常规优化问题，都可以纳入 **ROI** 包的框架内。对少量复杂的优化问题，必须借助开源社区的第三方求解器。
-
--   **对于**含整型变量的凸锥优化问题，**scs** 包不能求解，**ECOSolveR** 包可以，它还可以求解可转化为凸二阶锥优化问题的混合整数二次优化问题。
--   对于特定问题，比如 0-1 整数线性优化中的指派问题，相比于 **ROI** 包的大一统调用方式，**lpSolve** 包 [@lpSolve2023] 给出非常简明的使用语法。对凸二次优化问题，给出 **quadprog** 包的使用语法，补充说明 **nloptr** 包的结果，以及与 **ROI** 包调用语法的差异。
--   对于凸的混合整数二次优化和非凸的混合整数非线性优化问题，借助 **rAMPL** 包 [@rAMPL2023] 分别调用开源的求解器 [Bonmin](https://github.com/coin-or/Bonmin) 和 [Couenne](https://github.com/coin-or/Couenne) 求解。
--   对于复杂的非线性优化问题，因其具有非凸、多模态等特点，求解非常困难。需要引入随机优化算法，比如采用 **GA** 包 [@GA2013] 的遗传算法求解，效果可以达到商业软件的水平。
--   对于凸优化问题，可以求解得又快又好，而对于非凸优化问题，要么只能获得局部最优解，要么可以搜索全局最优解，但不给保证，而且运行时间长。
-
 ```{r}
 #| message: false
 
 library(ROI)
-library(ROI.plugin.glpk)
-library(ROI.plugin.nloptr)
-library(ROI.plugin.scs)
-library(ROI.plugin.ecos)
-library(ROI.plugin.quadprog)
+library(ROI.plugin.glpk)     # 线性和整数线性优化
+library(ROI.plugin.nloptr)   # 非线性优化
+library(ROI.plugin.scs)      # 凸锥优化
+library(ROI.plugin.ecos)     # 可含整数变量的凸锥优化
+library(ROI.plugin.quadprog) # 凸二次优化
 library(lattice)
-# 自定义调色板
+# 自定义作图用的调色板
 custom_palette <- function(irr, ref, height, saturation = 0.9) {
   hsv(
     h = height, s = 1 - saturation * (1 - (1 - ref)^0.5),
@@ -75,7 +69,7 @@ custom_palette <- function(irr, ref, height, saturation = 0.9) {
 
 ## 线性优化 {#sec-linear-optimization}
 
-线性优化是指目标函数和约束条件都是线性的优化问题。
+线性优化是指目标函数和约束条件都是线性的优化问题。考虑如下线性优化问题：
 
 $$
 \begin{aligned}
@@ -89,7 +83,7 @@ $$
 \end{aligned}
 $$
 
-写成矩阵形式
+其中，目标函数是 $-6x_1 -5x_2$，$\min$ 表示求目标函数的最小值，$\bm{x} = (x_1,x_2)^{\top}$ 表示决策变量，无特殊说明，决策变量都取实数。$\text{s.t.}$ 是 subject to 的缩写，专指约束条件。以上线性优化问题写成矩阵形式，如下：
 
 $$
 \begin{aligned}
@@ -136,7 +130,7 @@ op <- OP(
 op
 # 求解优化问题
 res <- ROI_solve(op, solver = "glpk")
-# 可行解
+# 最优解
 res$solution
 # 目标函数值
 res$objval
@@ -307,7 +301,7 @@ sol
 
 ### 非严格凸二次优化
 
-**kernlab** 包[@kernlab2004] 当矩阵 $D$ 为半正定时。
+**kernlab** 包[@kernlab2004] 当矩阵 $D$ 为半正定矩阵时。
 
 ## 凸锥优化 {#sec-cone-optimization}
 
@@ -546,7 +540,7 @@ sol$solution
 sol$objval
 ```
 
-对目标变量 $y_1$ 添加整数约束，则只有 **ECOSolveR** 包可以求解。
+对决策变量 $y_1$ 添加整数约束，则只有 **ECOSolveR** 包可以求解。
 
 ```{r}
 op <- OP(
@@ -559,7 +553,7 @@ op <- OP(
     ),
     cones = K_soc(3), rhs = c(6, 2, 4)
   ), maximum = TRUE, 
-  # 目标变量约束
+  # 决策变量约束
   types = c("I", "C", "C"), 
   bounds = V_bound(ld = -Inf, ui = 3, ub = 9, nobj = 3)
 )
@@ -793,15 +787,23 @@ sol$objval
 
 ## 非线性优化 {#sec-nonlinear-optimization}
 
-非线性优化按是否带有约束，以及约束是线性还是非线性。
+非线性优化按是否带有约束，以及约束是线性还是非线性，分为无约束优化、箱式约束优化、线性约束优化和非线性约束优化。
 
-R 自带的函数 `nlminb()` 可求解无约束、箱式约束优化问题，`constrOptim()` 还可求解线性不等式约束优化，其中包括带线性约束的二次优化。`optim()` 提供一大类优化算法，且包含随机优化算法---模拟退火算法，可求解无约束、箱式约束优化问题。
+|          | `nlm()` | `nlminb()` | `constrOptim()` | `optim()` |
+|----------|---------|------------|-----------------|-----------|
+| 无约束   | 支持    | 支持       | 不支持          | 支持      |
+| 箱式约束 | 不支持  | 支持       | 支持            | 支持      |
+| 线性约束 | 不支持  | 不支持     | 支持            | 不支持    |
+
+: R 软件内置的非线性优化函数
+
+R 软件内置的 **stats** 包有 4 个数值优化方面的函数，函数 `nlm()` 可求解无约束优化问题，函数 `nlminb()` 可求解无约束、箱式约束优化问题，函数 `constrOptim()` 可求解箱式和线性约束优化。函数 `optim()` 是通用型求解器，包含多个优化算法，可求解无约束、箱式约束优化问题。尽管这些函数在 R 语言中长期存在，在统计中有广泛的使用，如非线性最小二乘 `stats::nls()`，极大似然估计 `stats4::mle()` 和广义最小二乘估计 `nlme::gls()` 等。但是，这些优化函数的求解能力有重合，使用语法不尽相同，对于非线性约束无能为力，下面仍然主要使用 **ROI** 包来求解多维非线性优化问题。
 
 ### 无约束优化
 
 #### 示例 1
 
-求如下分段函数的最小值
+求如下一维分段非线性函数的最小值，其函数图像见 @fig-one-dimensional-optimization ，这个函数是不连续的，更不光滑。
 
 $$
 f(x) = 
@@ -858,22 +860,22 @@ curve(
 on.exit(par(op), add = TRUE)
 ```
 
-函数 `optimize()` 求解一元函数的极值问题。
+函数 `optimize()` 可以求解一元函数的极值问题，默认求极小值，参数 `f` 表示目标函数，参数 `interval` 表示搜索在此区间内最小值。函数返回一个列表，元素 `minimum` 表示极小值点，`objective` 表示极值点对应的目标函数值。
 
 ```{r}
-optimize(f = fn, interval = c(-4, 20))
-optimize(f = fn, interval = c(-7, 20))
+optimize(f = fn, interval = c(-4, 20), maximum = FALSE)
+optimize(f = fn, interval = c(-7, 20), maximum = FALSE)
 ```
 
-值得注意，对于不同的区间，可能获得不同的结果。
+值得注意，对于不连续的分段函数，在不同的区间内搜索极值，可能获得不同的结果，可以绘制函数图像帮助选择最小值。
 
 #### 示例 2
 
-求如下隐函数的极值
+求如下隐函数的极值。
 
 $$
 \begin{aligned}
-\min y = & ~\sin\Big((yx_1 -0.5)^2 + 2x_1 x_2^2 - \frac{y}{10} \Big)\cdot \\
+\min_{\bm{x}} y = & ~\sin\Big((yx_1 -0.5)^2 + 2x_1 x_2^2 - \frac{y}{10} \Big)\cdot \\
 &~\exp\Big(-\Big( \big(x_1 - 0.5 -\exp(-x_2 + y)\big)^2 + x_2^2 - \frac{y}{5} + 3 \Big)\Big)
 \end{aligned}
 $$
@@ -993,7 +995,7 @@ heq.jac <- function(x) {
 }
 # 定义目标优化
 op <- OP(
-  # 3 个目标变量
+  # 3 个决策变量
   objective = F_objective(F = fn, G = gr, n = 3L),
   constraints = F_constraint(
     F = list(heq = heq),
@@ -1027,13 +1029,13 @@ nlp$solution
 
 #### 示例 3
 
-Rastrigin 函数是多模态函数，有许多局部极小值。
+Rastrigin 函数是一个 $n$ 维函数。
 
 $$
 \min_{\bm{x}} \sum_{i=1}^{n}\big(x_i^2 - 10 \cos(2\pi x_i) + 10\big)
 $$
 
-其中，$x_i \in [-4,4]$。计算函数值的 R 代码
+计算函数值的 R 代码如下：
 
 ```{r}
 fn <- function(x) {
@@ -1041,7 +1043,7 @@ fn <- function(x) {
 }
 ```
 
-二维 Rastrigin 函数图像
+绘制二维情形下的 Rastrigin 函数图像，如 @fig-rastrigin 所示，这是一个多模态的函数，有许多局部极小值。如果采用 BFGS 算法寻优容易陷入局部极值点。
 
 ```{r}
 #| label: fig-rastrigin
@@ -1084,26 +1086,50 @@ wireframe(
 )
 ```
 
-设置 10 维的优化
+考虑函数维数 $n=20$ ，决策变量 $x_i \in [-4,4], i = 1,2,\ldots,n$ 的情况。
 
 ```{r}
 op <- OP(
-  objective = F_objective(fn, n = 10L),
-  bounds = V_bound(ld = -50, ud = 50, nobj = 10L)
+  objective = F_objective(fn, n = 20L),
+  bounds = V_bound(ld = -4, ud = 4, nobj = 20L)
 )
 ```
 
-调全局优化器求解非凸优化问题
+调全局优化器求解优化问题。
 
 ```{r}
 nlp <- ROI_solve(op, solver = "nloptr.directL")
+# 最优解
 nlp$solution
+# 目标函数值
 nlp$objval
+```
+
+```{r}
+#| eval: false
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
+
+# R 语言内置的非线性优化函数
+# 无约束
+nlm(f = fn, p = rep(1, 20))
+optim(par = rep(1, 20), fn = fn, method = "BFGS")
+optim(par = rep(1, 20), fn = fn, method = "Nelder-Mead")
+
+# 箱式约束
+optim(par = rep(1, 20), fn = fn, 
+      lower = -50, upper = 50, method = "L-BFGS-B")
+nlminb(start = rep(1, 20), objective = fn, lower = -50, upper = 50)
+constrOptim(
+  theta = rep(1, 20), f = fn, grad = NULL,
+  ui = rbind(diag(rep(1, 20)), diag(rep(-1, 20))),
+  ci = c(rep(-50, 20), rep(-50, 20))
+)
 ```
 
 #### 示例 4
 
-有如下复杂的目标函数
+有如下复杂的目标函数。
 
 $$
 \begin{aligned}
@@ -1123,7 +1149,7 @@ fn <- function(x) {
 }
 ```
 
-目标函数的图像见 @fig-super-function ，搜索区域 $[-50, 50] \times [-50, 50]$ 内几乎没有变化的梯度，给寻优过程带来很大困难。
+目标函数的图像见 @fig-super-function ，在区域 $[-50, 50] \times [-50, 50]$ 内几乎没有变化的梯度，给寻优过程带来很大困难。
 
 ```{r}
 #| label: fig-super-function
@@ -1490,7 +1516,7 @@ heq.jac <- function(x) {
 ```{r}
 # 定义目标优化
 op <- OP(
-  # 5 个目标变量
+  # 5 个决策变量
   objective = F_objective(F = fn, n = 5L, G = gr), 
   constraints = F_constraint(
     F = list(heq = heq),
@@ -1570,7 +1596,7 @@ hin.jac <- function(x) {
 }
 # 定义目标优化
 op <- OP(
-  objective = F_objective(F = fn, n = 4L, G = gr), # 4 个目标变量
+  objective = F_objective(F = fn, n = 4L, G = gr), # 4 个决策变量
   constraints = F_constraint(
     F = list(heq = heq, hin = hin),
     dir = c("==", ">="),
@@ -1681,7 +1707,7 @@ res$objval
 
 ### 0-1 整数线性优化
 
-目标函数是线性的，目标变量的取值要么是 0 要么是 1。指派问题属于典型的 0-1 整数优化问题。有 $n$ 个人需要去完成 $n$ 项任务，每个人完成一项任务，每项任务只由一个人完成，每个人单独完成各项任务所需花费（时间、费用）不同。要求设计一个方案，人和任务之间建立一一对应的关系，使得总花费最少。
+目标函数是线性的，决策变量的取值要么是 0 要么是 1。指派问题属于典型的 0-1 整数优化问题。有 $n$ 个人需要去完成 $n$ 项任务，每个人完成一项任务，每项任务只由一个人完成，每个人单独完成各项任务所需花费（时间、费用）不同。要求设计一个方案，人和任务之间建立一一对应的关系，使得总花费最少。
 
 设第 $i$ 个人完成第 $j$ 项任务的花费为 $d_{ij}$ ，当安排第 $i$ 个人完成第 $j$ 项任务时，记为 $x_{ij} = 1$ ，否则，记为 $x_{ij} = 0$ ，指派问题的数学模型如下：
 
@@ -1721,7 +1747,7 @@ sol$objval
 
 ### 混合整数线性优化 {#sec-mixed-integer-linear-optimization}
 
-目标函数是线性的，一部分目标变量是整数。
+目标函数是线性的，一部分决策变量是整数。
 
 $$
 \begin{aligned}
@@ -1796,7 +1822,7 @@ res$objval
 
 ### 混合整数二次优化 {#sec-mixed-integer-quadratic-programming}
 
-目标函数是二次的，一部分目标变量是整数。
+目标函数是二次的，一部分决策变量是整数。
 
 $$
 \begin{aligned}
@@ -1963,7 +1989,7 @@ ampl$getData("z")
 
 ### 混合整数非线性优化 {#sec-mixed-integer-nonlinear-programming}
 
-在 R 语言社区的官方仓库中还没有开源的 R 包可以求解此类问题，开源社区中 [Bonmin](https://github.com/coin-or/Bonmin/) 项目专门求解混合整数非线性优化 MINLP（Mixed Integer NonLinear Programming）问题。数学优化软件 AMPL 封装了 Bonmin 软件，并提供 R 语言接口 [rAMPL](https://github.com/ampl/rAMPL)。AMPL [社区版](https://ampl.com/ce/)可以免费使用打包的开源求解器。
+在 R 语言社区的官方仓库中还没有开源的 R 包可以求解此类问题，开源社区中 [Bonmin](https://github.com/coin-or/Bonmin/) 项目专门求解混合整数非线性优化 MINLP（Mixed Integer Non-Linear Programming）问题。数学优化软件 AMPL 封装了 Bonmin 软件，并提供 R 语言接口 [rAMPL](https://github.com/ampl/rAMPL)。AMPL [社区版](https://ampl.com/ce/)可以免费使用打包的开源求解器。
 
 -   线性优化求解器 [HiGHS](https://github.com/ERGO-Code/HiGHS)。
 -   混合整数线性优化求解器 [cbc](https://github.com/coin-or/Cbc)。
@@ -2050,6 +2076,24 @@ fun(x = c(2.892556, 1.702552, -1))
 # 全局最优解
 fun(x = c(4.999633, 9.734148, -5))
 ```
+
+## 总结 {#sec-numerical-optimization-summary}
+
+对大部分常规优化问题，都可以纳入 **ROI** 包的框架内。对少量复杂的优化问题，目前，必须借助开源社区的第三方求解器。
+
+-   对于含整型变量的凸锥优化问题，**scs** 包不能求解，**ECOSolveR** 包可以，它还可以求解可转化为凸二阶锥优化问题的混合整数二次优化问题。
+-   对于特定问题，比如 0-1 整数线性优化中的指派问题，相比于 **ROI** 包的大一统调用方式，**lpSolve** 包 [@lpSolve2023] 给出非常简明的使用语法。对凸二次优化问题，给出 **quadprog** 包的使用语法，补充说明 **nloptr** 包的结果，以及与 **ROI** 包调用语法的差异。
+-   对于凸的混合整数二次优化和非凸的混合整数非线性优化问题，借助 **rAMPL** 包 [@rAMPL2023] 分别调用开源的求解器 [Bonmin](https://github.com/coin-or/Bonmin) 和 [Couenne](https://github.com/coin-or/Couenne) 求解。
+-   对于复杂的非线性优化问题，因其具有非凸、多模态等特点，求解非常困难。需要引入随机优化算法，比如采用 **GA** 包 [@GA2013] 的遗传算法求解，效果可以达到商业软件的水平。
+-   对于凸优化问题，可以求解得又快又好，而对于非凸优化问题，要么只能获得局部最优解，要么可以搜索全局最优解，但不给保证，而且运行时间长。
+
+优化建模是一个具有基础性和支柱性的任务，几乎每个统计模型和机器学习算法背后都有一个优化问题。在 R 语言社区的优化任务视图[@Schwendinger2023]中，可以看到数以百计的扩展包。非常广阔的应用场景催生了非常丰富的理论。根据目标函数和约束条件的情况，可以从不同的角度划分，如线性和非线性优化，连续和离散优化，确定性和随机优化，凸优化和非凸优化等。相关的理论著作非常多，感兴趣的读者可以根据自身情况找本教材系统性地学习。本章结构是按照优化问题分类组织的，主要涉及确定性的数值优化，因部分优化问题比较复杂，因此，也涉及少量的随机优化方法。
+
+优化建模是一个具有重要商业价值的领域，相关的开源和商业软件有很多，比较流行的有 Python 社区的 [Pyomo](https://github.com/Pyomo/pyomo)，Julia 社区的 [JuMP](https://github.com/jump-dev/JuMP.jl) [@Dunning2017]。比较著名的商业软件有 [Lingo](https://www.lindo.com/)、[Mosek](https://www.mosek.com/)、[Gurobi](https://www.gurobi.com/) 等，而 [AMPL](https://ampl.com/) 一个软件平台，对 20 个开源和商业求解器提供一套统一的建模语言，对 R、Python 等编程语言都提供接口。
+
+相比于 Python 和 Julia 社区，R 语言社区在整合开源的优化建模软件方面，还有较长的路要走，**ROI** 包的出现意味着向整合的路迈出坚实的一步。优化建模的场景具有复杂性和多样性，算法实现更是五花八门，仅线性和整数线性优化方面，就至少有 **lpSolve**、 **Rglpk** 和 **highs** 等包，更别提非线性优化方面。这就又出现一个问题，对一个优化问题，采用何种算法及算法实现具有最好的效果，满足可用性、可靠性。尽管涉及数学和统计，但高质量的软件工具更是一个工程问题。
+
+从数据分析的角度来说，无论是 Python，还是 Julia，甚至于底层的 C++ 库，都不过是软件工具，首要问题是将实际问题转化为统计或数学模型，这需要抓住主要问题的关键因素，只有先做好建模的工作才能实现工具到商业价值的转化。
 
 ## 习题 {#sec-numerical-optimization-exercises}
 
@@ -2179,7 +2223,7 @@ fun(x = c(4.999633, 9.734148, -5))
     }
     # 定义目标优化
     op <- OP(
-      objective = F_objective(F = fn, n = 2L, G = gr), # 2 个目标变量
+      objective = F_objective(F = fn, n = 2L, G = gr), # 2 个决策变量
       constraints = F_constraint(
         F = list(hin = hin),
         dir = "<=",
