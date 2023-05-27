@@ -3,27 +3,25 @@
 ```{r}
 #| message: false
 
-library(nnet)     # 多项回归 multinom
+library(nnet)     # 多项回归/神经网络 multinom / nnet
+library(MASS)     # 线性/二次判别分析 lda / qda
 library(glmnet)   # 惩罚多项回归 glmnet
-library(kernlab)  # 支持向量机分类 ksvm
 library(e1071)    # 朴素贝叶斯 naiveBayes 和支持向量机 svm
-library(rpart)    # 决策树分类 rpart
-library(MASS)     # 线性判别分析 lda
-library(randomForest) # 随机森林 randomForest
+library(kernlab)  # 支持向量机分类 ksvm
 library(class)    # K 最近邻 knn
-library(xgboost)  # 集成学习
+library(rpart)    # 决策树分类 rpart
+library(randomForest) # 随机森林 randomForest
+# library(gbm)        # 梯度提升机
+library(xgboost)      # 集成学习
 library(lattice)
 ```
 
-以 iris 数据集为例，简单，方便模型和算法介绍，定位入门。分类间隔最大化，也是一个优化问题，找一条分界线，一个分割面，一个超平面划分不同的种类。本章篇幅：每个算法 4 页，共计 40 页。10 个算法的介绍按照分类思路，模型，代码和参数说明，分类性能评估。应用案例是手写数字识别。要点不是数据如何复杂，而是怎样把理论写得通俗、准确，看了之后能够应用到复杂的真实数据分析场景中去。理论解释、绘图说明、经验总结。
+以 iris 数据集为例，简单，方便介绍模型和算法，定位入门。分类间隔最大化，也是一个优化问题，找一条分界线，一个分割面，一个超平面划分不同的种类。本章篇幅：每个算法 4 页，共计 40 页。10 个算法的介绍按照分类思路，模型，代码和参数说明，分类性能评估。应用案例是手写数字识别。要点不是数据如何复杂，而是怎样把理论写得通俗、准确，看了之后能够应用到复杂的真实数据分析场景中去。理论解释、绘图说明、经验总结。
 
 -   线性分类器
-
     -   多项回归模型
     -   线性判别分析
-
 -   非线性分类器
-
     -   二次判别分析
     -   朴素贝叶斯
     -   支持向量机
@@ -250,40 +248,73 @@ table(iris_pred_rf, iris[, 5])
 
 ## 集成学习
 
-梯度提升
+在训练模型之前，需要先对数据集做预处理，包括分组采样、类别编码、数据拆分、类型转换等。
+
+制作一个函数对数据集添加新列 grp 作为训练集 train 和测试集 test 的标记，返回数据。
+
+```{r}
+# 输入数据 x 和采样比例 prop
+add_mark <- function(x = iris, prop = 0.7) {
+  idx <- sample(x = nrow(x), size = floor(nrow(x) * prop))
+  rbind(
+    cbind(x[idx, ], mark = "train"),
+    cbind(x[-idx, ], mark = "test")
+  )
+}
+```
+
+为了使采样结果可重复，设置随机数种子，然后对 iris 数据集按列 Species 分组添加采样标记。
+
+```{r}
+set.seed(20232023)
+iris_df <- do.call(rbind, lapply(split(iris, iris$Species), add_mark, prop = 0.7))
+```
+
+为了使用函数 `fcase()` 对分类变量 Species 做重编码操作，加载 **data.table** 包，将数据集 `iris_df` 转为 data.table 类型。值得注意，**xgboost** 包要求分类变量的类别序号必须从 0 开始。
 
 ```{r}
 # 数据准备
 library(data.table)
-iris_dt <- as.data.table(iris)
-# 数据重编码 分类必须从 0 开始
+iris_dt <- as.data.table(iris_df)
 iris_dt <- iris_dt[, Species := fcase(
   Species == "setosa", 0,
   Species == "versicolor", 1,
   Species == "virginica", 2
 )]
-
-# 每组随机抽取 35 个样本 35 = 50*.7
-iris_train <- iris_dt[, .SD[sample(x = .N, size = 35, replace = FALSE)], by = Species]
 ```
+
+将数据 `iris_dt` 拆分成训练集和测试集，并以列表结构存储数据，样本数据及标签以矩阵类型存储。
+
+```{r}
+# 训练数据
+iris_train <- list(
+  data = as.matrix(iris_dt[iris_dt$mark == "train", -c("mark", "Species")]),
+  label = as.matrix(iris_dt[iris_dt$mark == "train", "Species"])
+)
+# 测试数据
+iris_test <- list(
+  data = as.matrix(iris_dt[iris_dt$mark == "test", -c("mark", "Species")]),
+  label = as.matrix(iris_dt[iris_dt$mark == "test", "Species"])
+)
+```
+
+数据准备好后，加载 **xgboost** 包，设置训练参数，开始训练分类模型。
 
 ```{r}
 library(xgboost)
-# 输入数据的类型必须是矩阵
 iris_xgb <- xgboost(
-  data = as.matrix(iris_train[, -"Species"]), 
-  label = as.matrix(iris_train[, "Species"]),
+  data = iris_train$data, 
+  label = iris_train$label,
   objective = "multi:softprob", # 多分类目标函数
-  eval_metric = "mlogloss", # 评估指标
+  eval_metric = "mlogloss",     # 评估指标
   nrounds = 2,   # 提升迭代的最大次数
   num_class = 3  # 分类数
 )
 ```
 
+此分类任务中类别超过 2，是多分类任务，因此目标函数 `objective = "multi:softprob"` ，相应的评估指标是 `eval_metric = "mlogloss"` 。`iris` 数据集的分类变量 `Species` 共有 3 类，所以 `num_class = 3` 。
+
 ```{r}
 # ?predict.xgb.Booster
-iris_pred <- predict(
-  object = iris_xgb,
-  newdata = as.matrix(iris_train[, -"Species"])
-)
+iris_pred <- predict(object = iris_xgb, newdata = iris_train$data)
 ```
