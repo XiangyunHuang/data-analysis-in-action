@@ -250,7 +250,7 @@ table(iris_pred_rf, iris[, 5])
 
 在训练模型之前，需要先对数据集做预处理，包括分组采样、类别编码、数据拆分、类型转换等。
 
-制作一个函数对数据集添加新列 grp 作为训练集 train 和测试集 test 的标记，返回数据。
+制作一个函数对数据集添加新列 `mark` 作为训练集 train 和测试集 test 的采样标记，返回数据。
 
 ```{r}
 # 输入数据 x 和采样比例 prop
@@ -263,14 +263,14 @@ add_mark <- function(x = iris, prop = 0.7) {
 }
 ```
 
-为了使采样结果可重复，设置随机数种子，然后对 iris 数据集按列 Species 分组添加采样标记。
+为了使采样结果可重复，设置随机数种子，然后对 `iris` 数据集按列 `Species` 分组添加采样标记，分组随机抽取 70% 的样本作为训练数据，余下的作为测试数据。就 `iris` 数据集来说，训练集有 `35*3 = 105` 条记录，测试集有 `15*3 = 45` 条记录。
 
 ```{r}
 set.seed(20232023)
 iris_df <- do.call(rbind, lapply(split(iris, iris$Species), add_mark, prop = 0.7))
 ```
 
-为了使用函数 `fcase()` 对分类变量 Species 做重编码操作，加载 **data.table** 包，将数据集 `iris_df` 转为 data.table 类型。值得注意，**xgboost** 包要求分类变量的类别序号必须从 0 开始。
+为了使用函数 `fcase()` 对分类变量 `Species` 做重编码操作，加载 **data.table** 包，将数据集 `iris_df` 转为 `data.table` 类型。值得注意，**xgboost** 包要求分类变量的类别序号必须从 0 开始。
 
 ```{r}
 # 数据准备
@@ -298,23 +298,29 @@ iris_test <- list(
 )
 ```
 
-数据准备好后，加载 **xgboost** 包，设置训练参数，开始训练分类模型。
+数据准备好后，加载 **xgboost** 包，设置训练参数，开始训练分类模型。此分类任务中类别超过 2，是多分类任务，学习任务是分类，目标函数可以是 `objective = "multi:softprob"` 或者 `objective = "multi:softmax"`，相应的评估指标可以是 `eval_metric = "mlogloss"` 或者 `eval_metric = "merror"`。`iris` 数据集的分类变量 `Species` 共有 3 类，所以 `num_class = 3` 。
 
 ```{r}
 library(xgboost)
 iris_xgb <- xgboost(
   data = iris_train$data, 
   label = iris_train$label,
-  objective = "multi:softprob", # 多分类目标函数
+  objective = "multi:softmax",  # 学习任务
   eval_metric = "mlogloss",     # 评估指标
   nrounds = 2,   # 提升迭代的最大次数
   num_class = 3  # 分类数
 )
 ```
 
-此分类任务中类别超过 2，是多分类任务，因此目标函数 `objective = "multi:softprob"` ，相应的评估指标是 `eval_metric = "mlogloss"` 。`iris` 数据集的分类变量 `Species` 共有 3 类，所以 `num_class = 3` 。
+将训练好的模型放在测试集数据上进行预测。
 
 ```{r}
 # ?predict.xgb.Booster
-iris_pred <- predict(object = iris_xgb, newdata = iris_train$data)
+iris_pred <- predict(object = iris_xgb, newdata = iris_test$data)
+```
+
+将预测结果与测试集中的样本标签对比，检查分类效果。
+
+```{r}
+table(iris_test$label, iris_pred)
 ```
