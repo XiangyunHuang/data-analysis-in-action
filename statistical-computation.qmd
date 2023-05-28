@@ -14,15 +14,15 @@ $$
 
 每一个统计模型的背后都有一个优化问题，统计计算的任务就是求解优化问题。
 
-## 优化问题与回归问题 {#sec-regression-optimization}
+## 回归问题与优化问题 {#sec-regression-optimization}
 
 1996 年出现 Lasso [@lasso1996]，由于缺少高效的求解算法，Lasso 在高维小样本特征选择研究中没有广泛流行，最小角回归(Least Angle Regression, LAR)算法 [@lar2004] 的出现有力促进了Lasso在高维小样本数据中的应用。为了解决Lasso的有偏估计问题，自适应 Lasso、松弛 Lasso， SCAD (Smoothly Clipped Absolute Deviation)[@scad2008]，MCP (Minimax Concave Penalty)[@mcp2010] 陆续出现。经典的普通最小二乘、广义最小二乘、岭回归、逐步回归、Lasso 回归、最优子集回归都可转化为优化问题，一般形式如下：
 
 $$
-\underbrace{\hat{\theta}_{\lambda_n}}_{\text{待估参数}} \in \arg \min_{\theta \in \Omega} \left\{ \underbrace{\mathcal{L}(\theta;Z_{1}^{n})}_{\text{损失函数}} + \lambda_n \underbrace{\mathcal{R}(\theta)}_{\text{正则化项}} \right\}.
+\underbrace{\hat{\theta}_{\lambda_n}}_{\text{待估参数}} \in \arg \min_{\theta \in \Omega} \left\{ \underbrace{\mathcal{L}(\theta;Z_{1}^{n})}_{\text{损失函数}} + \lambda_n \underbrace{\mathcal{R}(\theta)}_{\text{惩罚项}} \right\}.
 $$
 
-具体地，一个带 L1 惩罚项的回归模型，其损失函数如下：
+具体地，一个带 L1 惩罚项的回归模型，其对应的优化问题如下：
 
 $$
 \arg \min_{\boldsymbol{\beta},\lambda} ~~ \frac{1}{2} || \bm{y} - X \boldsymbol{\beta} ||_2^2 +  \lambda ||\boldsymbol{\beta}||_1
@@ -155,7 +155,7 @@ $$
 
 $$
 \begin{aligned}
-L(\alpha,\boldsymbol{\beta}) &= \prod_{i=1}^{n} p_i^{y_i}(1 - p_i)^{1 - y_i} \\ 
+\mathcal{L}(\alpha,\boldsymbol{\beta}) &= \prod_{i=1}^{n} p_i^{y_i}(1 - p_i)^{1 - y_i} \\ 
      &= \prod_{i=1}^{n} \Big(\frac{e^{\alpha + \bm{x}_i^{\top}\boldsymbol{\beta}}}{1 + e^{\alpha + \bm{x}_i^{\top}\boldsymbol{\beta}}}\Big)^{y_i}\Big(\frac{1}{e^{\alpha + \bm{x}_i^{\top}\boldsymbol{\beta}}}\Big)^{1-y_i} \\
 \end{aligned}
 $$ {#eq-logit-lik}
@@ -164,7 +164,7 @@ $$ {#eq-logit-lik}
 
 $$
 \begin{aligned}
-\ell(\alpha,\boldsymbol{\beta}) &= \log L(\alpha,\boldsymbol{\beta}) \\
+\ell(\alpha,\boldsymbol{\beta}) &= \log \mathcal{L}(\alpha,\boldsymbol{\beta}) \\
 & = \sum_{i=1}^{n} \Big[y_i \log (p_i) + (1 - y_i) \log(1-p_i)\Big] \\
 &= \sum_{i=1}^{n} \Big[y_i \log \Big(\frac{e^{\alpha + \bm{x}_i\boldsymbol{\beta}}}{1 + e^{\alpha + \bm{x}_i\boldsymbol{\beta}}}\Big) + (1 - y_i) \log\Big(\frac{1}{e^{\alpha + \bm{x}_i\boldsymbol{\beta}}}\Big)\Big]
 \end{aligned}
@@ -354,86 +354,7 @@ coef(fit_r2)
 
 函数 `glm()` 的参数是一个公式，函数 `glm.fit()` 的参数是矩阵、向量，用函数 `glm()` 拟合模型，其内部调用的就是函数 `glm.fit()`。
 
-::: callout-tip
-逻辑回归模型也是最简单的二分类模型，评估模型的分类效果，可以用 AUC 指标或者 ROC 曲线刻画，**pROC** 包提供了非常高效的计算。
-
-```{r}
-#| eval: false
-
-dat <- cbind.data.frame(X, y)
-colnames(dat) <- c(paste0("x", 1:10), "y")
-# 抽取 2000 个样本作为训练集
-idx <- sample(x = 1:nrow(dat), size = 2000, replace = F)
-dat_train <- dat[idx, ]
-# 测试集
-dat_test <- dat[-idx, ]
-# 训练样本
-fit_binom <- glm(y ~ ., data = dat_train, family = binomial(link = "logit"))
-# 返回值均值为 0 在 0 上下波动
-# pred_link <- predict(fit_binom, type = "link")
-# 返回值介于 0 - 1 之间 预测概率
-dat_test$pred <- predict(fit_binom, newdata = dat_test, type = "response")
-# 在测试集上
-# 绘制 ROC 曲线
-pROC::plot.roc(y ~ pred,
-  data = dat_test,
-  col = "dodgerblue", print.auc = TRUE,
-  auc.polygon = TRUE, auc.polygon.col = "#f6f6f6",
-  xlab = "FPR", ylab = "TPR", main = "预测ROC曲线"
-)
-# 计算 AUC 值
-pROC::auc(y ~ pred, data = dat_test)
-```
-
-ROC 曲线越往左上角拱越好， AUC 是 ROC 曲线下的面积，所以 AUC 指标越接近 1 越好。
-
-对每个标签的预测概率指定服从均匀分布，相当于随机猜测，所以最后 ROC 会接近对角线，而且样本量越大越接近，AUC 会越来越接近 0.5。
-
-预测结果比随机猜测要好，Wilcoxon 检验会非常显著，预测 pred 和观测 y 比较接近
-
-```{r}
-#| eval: false
-wilcox.test(pred ~ y, data = dat_test)
-```
-
-```{r}
-#| eval: false
-# 计算 auc 的函数
-# dat is a data.frame as input return AUC value
-comp_auc <- function(dat, show_roc = TRUE) {
-  # order label by predicted probability
-  dat <- dat[order(dat$pred, dat$label, decreasing = TRUE), ]
-
-  # total samples
-  n_total <- length(dat$label)
-
-  # number of positive label 1
-  n_pos <- sum(dat$label)
-
-  # number of negative label 0
-  n_neg <- n_total - n_pos
-
-  # calculate TPR and FPR
-  tpr <- cumsum(dat$label) / n_pos
-  fpr <- (1:n_total - cumsum(dat$label)) / n_neg
-
-  # calculate auc
-  auc <- 0
-  for (i in 1:(n_total - 1)) {
-    auc <- auc + (fpr[i + 1] - fpr[i]) * tpr[i]
-  }
-  # show ROC curve or not?
-  if (show_roc) {
-    plot(fpr, tpr, type = "l")
-  }
-  auc
-} 
-sim_dat = cbind.data.frame(pred = dat_test$pred, label =  dat_test$y) 
-comp_auc(dat = sim_dat, show_roc = FALSE)
-```
-:::
-
-### glmnet {#sec-logit-glmnet}
+### glmnet 包 {#sec-logit-glmnet}
 
 调用 **glmnet** 包的函数 `glmnet()` 拟合模型，指定指数族的具体形式为二项分布，伯努利分布是二项分布的特殊形式，也叫两点分布或0-1分布。
 
@@ -479,3 +400,107 @@ coef(fit_glm, s = 0.0005247159)
 ```
 
 截距 (Intercept) 对应 $\alpha = 0.997741857$，而 $\beta_1 = 3.076358149$ 对应 V1，$\beta_2 = -1.984018387$ 对应 V2，以此类推。
+
+## 评估模型的分类效果 {#sec-evaluation-model-performance}
+
+逻辑回归模型是二分类模型，评估模型的分类效果，两个办法。
+
+1.  可以用 AUC 指标或者 ROC 曲线，**pROC** 包和 **ROCR** 包都可以绘制 ROC 曲线。
+2.  可以用 Wilcoxon 检验，越显著表示分类效果越好。
+
+### ROC 曲线和 AUC 值
+
+随机抽取 2000 个样本作为训练集，余下的数据作为测试集。
+
+```{r}
+dat <- cbind.data.frame(X, y)
+set.seed(20232023)
+idx <- sample(x = 1:nrow(dat), size = 2000, replace = F)
+# 训练集
+dat_train <- dat[idx, ]
+# 测试集
+dat_test <- dat[-idx, ]
+```
+
+函数 `glm()` 拟合训练集数据
+
+```{r}
+fit_binom <- glm(y ~ ., data = dat_train, family = binomial(link = "logit"))
+```
+
+将训练好的模型用于测试集，调用函数 `predict()` 进行预测，`type = "response"` 获得预测概率值，它是对数几率，比值比的对数。
+
+```{r}
+dat_test$pred <- predict(fit_binom, newdata = dat_test, type = "response")
+```
+
+返回值介于 0 - 1 之间，表示预测概率。在测试集上绘制 ROC 曲线。
+
+```{r}
+#| label: fig-logit-roc
+#| fig-cap: ROC 曲线
+#| fig-showtext: true
+#| fig-width: 4
+#| fig-height: 4
+
+pROC::plot.roc(
+  y ~ pred, data = dat_test,
+  col = "dodgerblue", print.auc = TRUE,
+  auc.polygon = TRUE, auc.polygon.col = "#f6f6f6",
+  xlab = "FPR", ylab = "TPR", main = "预测 ROC 曲线"
+)
+```
+
+ROC 曲线越往左上角拱，表示预测效果越好。
+
+```{r}
+# 计算 AUC 值
+pROC::auc(y ~ pred, data = dat_test)
+```
+
+AUC 是 area under curve 的缩写，表示 ROC 曲线下的面积，所以 AUC 指标越接近 1 越好。
+
+### Wilcoxon 检验
+
+对每个标签的预测概率指定服从均匀分布，相当于随机猜测，所以最后 ROC 会接近对角线，而且样本量越大越接近，AUC 会越来越接近 0.5。如果预测结果比随机猜测要好，Wilcoxon 检验会显著，预测效果越好检验会越显著，表示预测 pred 和观测 y 越接近。
+
+```{r}
+wilcox.test(pred ~ y, data = dat_test)
+```
+
+```{r}
+#| eval: false
+#| echo: false
+# 计算 auc 的函数
+# dat is a data.frame as input return AUC value
+comp_auc <- function(dat, show_roc = TRUE) {
+  # order label by predicted probability
+  dat <- dat[order(dat$pred, dat$label, decreasing = TRUE), ]
+
+  # total samples
+  n_total <- length(dat$label)
+
+  # number of positive label 1
+  n_pos <- sum(dat$label)
+
+  # number of negative label 0
+  n_neg <- n_total - n_pos
+
+  # calculate TPR and FPR
+  tpr <- cumsum(dat$label) / n_pos
+  fpr <- (1:n_total - cumsum(dat$label)) / n_neg
+
+  # calculate auc
+  auc <- 0
+  for (i in 1:(n_total - 1)) {
+    auc <- auc + (fpr[i + 1] - fpr[i]) * tpr[i]
+  }
+  # show ROC curve or not?
+  if (show_roc) {
+    plot(fpr, tpr, type = "l")
+  }
+  auc
+} 
+sim_dat = cbind.data.frame(pred = dat_test$pred, label =  dat_test$y) 
+comp_auc(dat = sim_dat, show_roc = FALSE)
+```
