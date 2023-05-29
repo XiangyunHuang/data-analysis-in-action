@@ -209,33 +209,9 @@ gt::gt(titanic_data) |>
   )
 ```
 
-泰坦尼克号处女航乘客数量按船舱、性别、年龄和存活情况分层，用 [**ggalluvial**](https://github.com/corybrunson/ggalluvial/) 包[@Brunson2020]绘制桑基图展示多维分类数据。
+### 数据展示
 
-```{r}
-#| label: fig-titanic-alluvial
-#| fig-cap: "桑基图展示多维分类数据"
-#| fig-showtext: true
-#| fig-width: 7
-#| fig-height: 5
-
-library(ggplot2)
-library(ggalluvial)
-ggplot(
-  data = as.data.frame(Titanic),
-  aes(axis1 = Class, axis2 = Sex, axis3 = Age, y = Freq)
-) +
-  scale_x_discrete(limits = c("Class", "Sex", "Age")) +
-  geom_alluvium(aes(fill = Survived)) +
-  geom_stratum() +
-  geom_text(stat = "stratum", aes(label = after_stat(stratum))) +
-  theme_classic() +
-  labs(
-    x = "分层维度", y = "人数", fill = "存活",
-    title = "泰坦尼克号处女航乘客分层情况"
-  )
-```
-
-百分比堆积柱形图展示多维分类数据 [**ggstats**](https://github.com/larmarange/ggstats/)
+泰坦尼克号处女航乘客数量按船舱、性别、年龄和存活情况分层， [**ggstats**](https://github.com/larmarange/ggstats/)包绘制百分比堆积柱形图展示多维分类数据。
 
 **ggstats** 包提供的图层 `stat_prop()` 是 `stat_count()` 的变种， `as.data.frame(Titanic)` 中 Age 一列会自动聚合吗？ by = Class 按 Class 分组聚合，统计 Survived 的比例，提供 prop 计算的变量，传递给 `geom_text()` 以添加注释，position 设置将注释放在柱子的中间
 
@@ -246,6 +222,7 @@ ggplot(
 #| fig-width: 7
 #| fig-height: 5
 
+library(ggplot2)
 library(ggstats)
 ggplot(as.data.frame(Titanic)) +
   aes(x = Class, fill = Survived, weight = Freq, by = Class) +
@@ -256,7 +233,6 @@ ggplot(as.data.frame(Titanic)) +
   labs(x = "船舱", y = "比例", fill = "存活")
 ```
 
-::: callout-tip
 ```{r}
 #| label: fig-titanic-mosaicplot
 #| fig-cap: "马赛克图展示多维分类数据"
@@ -289,7 +265,37 @@ mosaic(~ Class + Sex + Age + Survived,
   data = Titanic, shade = TRUE, legend = TRUE
 )
 ```
-:::
+
+用 [**ggalluvial**](https://github.com/corybrunson/ggalluvial/) 包[@Brunson2020]绘制桑基图展示多维分类数据。
+
+```{r}
+#| label: fig-titanic-alluvial
+#| fig-cap: "桑基图展示多维分类数据"
+#| fig-showtext: true
+#| fig-width: 7
+#| fig-height: 5
+#| eval: false
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
+
+library(ggplot2)
+library(ggalluvial)
+ggplot(
+  data = as.data.frame(Titanic),
+  aes(axis1 = Class, axis2 = Sex, axis3 = Age, y = Freq)
+) +
+  scale_x_discrete(limits = c("Class", "Sex", "Age")) +
+  geom_alluvium(aes(fill = Survived)) +
+  geom_stratum() +
+  geom_text(stat = "stratum", aes(label = after_stat(stratum))) +
+  theme_classic() +
+  labs(
+    x = "分层维度", y = "人数", fill = "存活",
+    title = "泰坦尼克号处女航乘客分层情况"
+  )
+```
+
+### 数据建模
 
 除了从条件独立性检验的角度，下面从逻辑回归模型的角度分析这个高维列联表数据，由此，我们可以知道假设检验和广义线性模型之间的联系，针对复杂高维列联表数据进行关联分析和解释。
 
@@ -325,4 +331,3 @@ str(titanic_train)
 # 另一个数据源
 data("TitanicSurvival", package = "carData")
 ```
-
