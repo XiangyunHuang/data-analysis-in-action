@@ -1,0 +1,320 @@
+# 分析分类数据 {#sec-analyze-categorical-data}
+
+1.  最常见的两个广义线性模型：泊松和逻辑回归
+2.  理论公式、R 输出及其解释，应用案例
+3.  与计数数据的假设检验的关系
+4.  辛普森悖论，分类数据处理，高维列联表的压缩和分层，边际和条件
+5.  泰坦尼克号 4x2x2x2 高维复杂列联表分析
+
+## 加州伯克利分校的录取情况 {#sec-ucb-admissions}
+
+1973 年加州伯克利分校 6 个最大的院系的录取情况见下 @tbl-ucb-admissions ，研究目标是加州伯克利分校在招生录取工作中是否有性别歧视？
+
+```{r}
+#| label: tbl-ucb-admissions
+#| tbl-cap: "1973 年加州伯克利分校的录取情况"
+#| echo: false
+
+# knitr::kable(as.data.frame(UCBAdmissions),
+#   col.names = c("录取与否", "学生性别", "院系", "人数")
+# )
+# 长格式转宽格式
+dat1 <- reshape(
+  data = as.data.frame(UCBAdmissions), direction = "wide",
+  idvar = c("Dept", "Admit"),
+  timevar = "Gender", v.names = "Freq", sep = "_"
+)
+# 再一次长格式转宽格式
+dat2 <- reshape(
+  data = dat1, direction = "wide",
+  idvar = "Dept", timevar = "Admit",
+  v.names = c("Freq_Male", "Freq_Female"), sep = "_"
+)
+# 面对 HTML 和 PDF 输出 kableExtra 需要两套代码
+# kableExtra 不支持 DOCX 输出
+# knitr::kable(dat2, booktabs = TRUE, row.names = F, col.names = NULL, align = "ccccc") |>
+#   kableExtra::kable_styling(
+#     bootstrap_options = "basic", full_width = TRUE, position = "center"
+#   ) |> 
+#   kableExtra::add_header_above(c("院系" = 1, "男性" = 1, "女性" = 1, "男性" = 1, "女性" = 1)) |>
+#   kableExtra::add_header_above(c(" " = 1, "录取" = 2, "拒绝" = 2))
+
+gt::gt(dat2) |> 
+  gt::cols_label(
+    Dept = "院系",
+    Freq_Male_Admitted = "男性",
+    Freq_Female_Admitted = "女性",
+    Freq_Male_Rejected = "男性",
+    Freq_Female_Rejected = "女性"
+  ) |> 
+  gt::tab_spanner(
+    label = "录取",
+    columns = c(Freq_Male_Admitted, Freq_Female_Admitted)
+  ) |> 
+  gt::tab_spanner(
+    label = "拒绝",
+    columns = c(Freq_Male_Rejected, Freq_Female_Rejected)
+  ) |> 
+  gt::opt_row_striping()
+```
+
+借助马赛克图 @fig-ucb-admissions-mosaicplot 可以更加直观的看出数据中的比例关系。
+
+```{r}
+#| label: fig-ucb-admissions-mosaicplot
+#| fig-width: 7
+#| fig-height: 5
+#| fig-cap: "加州伯克利分校院系录取情况"
+#| fig-showtext: true
+#| echo: false
+#| par: true
+
+# plot(UCBAdmissions, col = "lightblue", border = "white",
+#      main = "", xlab = "性别", ylab = "院系")
+op <- par(mar = c(0.5, 2, 0.5, 0.5))
+mosaicplot(~ Admit + Dept + Gender,
+  data = UCBAdmissions, color = TRUE, border = "white",
+  main = "", xlab = "", ylab = "院系"
+)
+par(op)
+```
+
+接下来进行定量的分析，首先，按性别和录取情况统计人数，如下：
+
+```{r}
+m <- xtabs(Freq ~ Gender + Admit, data = as.data.frame(UCBAdmissions))
+m
+```
+
+可以看到，申请加州伯克利分校的女生当中，只有 $557 / (557 + 1278) = 30.35\%$ 录取了，而男生则有 $1198 / (1198 + 1493) = 44.52\%$ 的录取率。根据皮尔逊 $\chi^2$ 检验：
+
+```{r}
+# 不带耶茨矫正
+chisq.test(m, correct = FALSE)
+```
+
+可知 $\chi^2$ 统计量的值为 $92.205$ 且 P 值远远小于 0.05， 差异达到统计显著性，不是随机因素导致的。因此，加州伯克利分校被指控在招生录取工作中存在性别歧视。然而，当我们细分到各个院系去看录取率（录取人数 / 申请人数），结果显示院系 A 的录取率为 64.41%，院系 B 的录取率为 63.24%，依次类推，各院系情况如下：
+
+```{r}
+proportions(xtabs(Freq ~ Dept + Admit,
+  data = as.data.frame(UCBAdmissions)
+), margin = 1)
+```
+
+```{r}
+#| label: fig-ucb-admissions-fourfoldplot
+#| fig-width: 7
+#| fig-height: 5
+#| fig-cap: "加州伯克利分校各院系录取情况"
+#| fig-showtext: true
+#| echo: false
+#| par: true
+
+fourfoldplot(aperm(UCBAdmissions, c(2, 1, 3)), mfcol = c(2, 3))
+```
+
+对每个院系，单独使用皮尔逊 $\chi^2$ 检验，发现只有 A 系的男女生录取率的差异达到统计显著性，其它系的差异都不显著。辛普森悖论在这里出现了，在分类数据的分析中，常常遇到。
+
+```{r}
+# 以 A 系为例
+ma <- xtabs(Freq ~ Gender + Admit,
+  subset = Dept == "A",
+  data = as.data.frame(UCBAdmissions)
+)
+chisq.test(ma, correct = FALSE)
+```
+
+为了经一步说明此现象的原因，建立对数线性模型来拟合数据，值得一提的是皮尔逊卡方检验可以从对数线性模型的角度来看，而对数线性模型是一种特殊的广义线性模型，针对计数数据建模。
+
+```{r}
+fit_ucb0 <- glm(Freq ~ Dept + Admit + Gender,
+  family = poisson(link = "log"),
+  data = as.data.frame(UCBAdmissions)
+)
+summary(fit_ucb0)
+```
+
+添加性别和院系的交互效应后，对数线性模型的 AIC 下降一半多，说明模型的交互效应是显著的，也就是说性别和院系之间存在非常强的关联。
+
+```{r}
+fit_ucb1 <- glm(Freq ~ Dept + Admit + Gender + Dept * Gender,
+  family = poisson(link = "log"),
+  data = as.data.frame(UCBAdmissions)
+)
+summary(fit_ucb1)
+```
+
+此辛普森悖论现象的解释是女生倾向于申请录取率低的院系，而男生倾向于申请录取率高的院系，最终导致整体上，男生的录取率显著高于女生。至于为什么女生会倾向于申请录取率低的院系？这可能要看具体的院系是哪些，招生政策如何？这已经不是仅仅依靠招生办的统计数字就可以完全解释得了的，更多详情见文献 @Bickel1975 。
+
+::: callout-tip
+对数线性模型的皮尔逊 $\chi^2$ 检验的统计量
+
+```{r}
+sum(residuals(fit_ucb1, type = "pearson")^2)
+```
+
+比较多个广义线性模型的拟合效果，除了看 AIC，还可以看对数似然，它越大越好。可以看到添加性别和院系的交互效应后，对数似然增加了一倍多。
+
+```{r}
+# 基础模型
+logLik(fit_ucb0)
+# 添加交互效应
+logLik(fit_ucb1)
+```
+
+```{r}
+#| eval: false
+#| echo: false
+
+# 似然比、得分和卡方检验，三大检验在此处等价
+anova(fit_ucb1, test = "LRT")
+anova(fit_ucb1, test = "Rao")
+anova(fit_ucb1, test = "Chisq")
+anova(fit_ucb0, fit_ucb1, test = "Chisq")
+# 似然比是渐近卡方分布的
+anova(fit_ucb0, fit_ucb1, test = "LRT")
+```
+:::
+
+## 分析泰坦尼克号乘客生存率 {#sec-titanic}
+
+泰坦尼克号乘客生存死亡统计数据
+
+```{r}
+#| label: tbl-titanic-data
+#| tbl-cap: "泰坦尼克号乘客生存死亡统计数据"
+#| echo: false
+
+# 长格式转宽格式
+titanic_data <- reshape(
+  data = as.data.frame(Titanic), direction = "wide",
+  idvar = c("Class", "Sex", "Age"),
+  timevar = "Survived", v.names = "Freq", sep = "_"
+)
+
+# 制作表格
+gt::gt(titanic_data) |> 
+  gt::cols_label(
+    Freq_Yes = "存活",
+    Freq_No = "死亡",
+    Class = "船舱",
+    Sex = "性别",
+    Age = "年龄"
+  )
+```
+
+泰坦尼克号处女航乘客数量按船舱、性别、年龄和存活情况分层，用 [**ggalluvial**](https://github.com/corybrunson/ggalluvial/) 包[@Brunson2020]绘制桑基图展示多维分类数据。
+
+```{r}
+#| label: fig-titanic-alluvial
+#| fig-cap: "桑基图展示多维分类数据"
+#| fig-showtext: true
+#| fig-width: 7
+#| fig-height: 5
+
+library(ggalluvial)
+ggplot(
+  data = as.data.frame(Titanic),
+  aes(axis1 = Class, axis2 = Sex, axis3 = Age, y = Freq)
+) +
+  scale_x_discrete(limits = c("Class", "Sex", "Age")) +
+  geom_alluvium(aes(fill = Survived)) +
+  geom_stratum() +
+  geom_text(stat = "stratum", aes(label = after_stat(stratum))) +
+  theme_classic() +
+  labs(
+    x = "分层维度", y = "人数", fill = "存活",
+    title = "泰坦尼克号处女航乘客分层情况"
+  )
+```
+
+百分比堆积柱形图展示多维分类数据 [**ggstats**](https://github.com/larmarange/ggstats/)
+
+**ggstats** 包提供的图层 `stat_prop()` 是 `stat_count()` 的变种， `as.data.frame(Titanic)` 中 Age 一列会自动聚合吗？ by = Class 按 Class 分组聚合，统计 Survived 的比例，提供 prop 计算的变量，传递给 `geom_text()` 以添加注释，position 设置将注释放在柱子的中间
+
+```{r}
+#| label: fig-titanic-ggstats
+#| fig-cap: "百分比堆积柱形图展示多维分类数据"
+#| fig-showtext: true
+#| fig-width: 7
+#| fig-height: 5
+
+library(ggstats)
+ggplot(as.data.frame(Titanic)) +
+  aes(x = Class, fill = Survived, weight = Freq, by = Class) +
+  geom_bar(position = "fill") +
+  scale_y_continuous(labels = scales::percent) +
+  geom_text(stat = "prop", position = position_fill(.5)) +
+  facet_grid(~Sex) +
+  labs(x = "船舱", y = "比例", fill = "存活")
+```
+
+::: callout-tip
+```{r}
+#| label: fig-titanic-mosaicplot
+#| fig-cap: "马赛克图展示多维分类数据"
+#| fig-showtext: true
+#| fig-width: 7
+#| fig-height: 5
+#| echo: false
+#| collapse: true
+
+op <- par(mar = c(2.5, 2.5, 1.5, 0.5))
+mosaicplot(~ Class + Sex + Age + Survived,
+  data = Titanic, # shade = TRUE, 
+  color = TRUE, border = "white",
+  xlab = "船舱", ylab = "性别", main = "泰坦尼克号")
+par(op)
+```
+
+[**vcd**](https://cran.r-project.org/package=vcd) 包针对分类数据做了很多专门的可视化工作，内置了很多数据集和绘图函数，在 Base R 绘图基础上，整合了许多统计分析功能，提供了一个统一的可视化框架[@Meyer2006; @Zeileis2007]，更多细节见著作《Discrete Data Analysis with R: Visualization and Modeling Techniques for Categorical and Count Data》及其附带的 R 包 [**vcdExtra**](https://github.com/friendly/vcdExtra)[@Friendly2016]。
+
+```{r}
+#| label: fig-titanic-mosaic
+#| fig-cap: "马赛克图展示多维分类数据"
+#| fig-showtext: true
+#| fig-width: 7
+#| fig-height: 6
+
+library(grid)
+library(vcd)
+mosaic(~ Class + Sex + Age + Survived,
+  data = Titanic, shade = TRUE, legend = TRUE
+)
+```
+:::
+
+除了从条件独立性检验的角度，下面从逻辑回归模型的角度分析这个高维列联表数据，由此，我们可以知道假设检验和广义线性模型之间的联系，针对复杂高维列联表数据进行关联分析和解释。
+
+响应变量是乘客的状态，存活还是死亡，titanic_data 是按船舱 Class、性别 Sex 和年龄 Age 分类汇总统计的数据，因此，下面的逻辑回归模型是对乘客群体的建模。
+
+```{r}
+# 建立模型
+fit_titanic <- glm(cbind(Freq_Yes, Freq_No) ~ Class + Sex + Age,
+  data = titanic_data, family = binomial(link = "logit")
+)
+```
+
+接着，我们查看模型输出的情况
+
+```{r}
+# 模型输出
+summary(fit_titanic)
+```
+
+[**titanic**](https://github.com/paulhendricks/titanic) 包整理了来自 kaggle 的 [Titanic](https://www.kaggle.com/c/titanic/data) 数据集，详细记录了 891 位乘客的信息，它比 Base R 内置的 Titanic 数据集更加原始，细节更多，信息更加丰富。原数据集拆分为训练集 `titanic_train` 和测试集 `titanic_test`。首先来预览一下训练数据集 titanic_train 的情况：
+
+```{r}
+data(titanic_train, package = "titanic")
+str(titanic_train)
+```
+
+因为有每个乘客的原始信息，我们可以在个体水平上建模，采用更加复杂的模型分析泰坦尼克号乘客存活率及其影响因素。
+
+```{r}
+#| eval: false
+#| echo: false
+
+# 另一个数据源
+data("TitanicSurvival", package = "carData")
+```
