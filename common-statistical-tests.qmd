@@ -1,35 +1,101 @@
 # 常见的统计检验 {#sec-common-statistical-tests}
 
-均值（位置参数）检验
+真实数据的情况是复杂多样的，本章按照数据情况对检验方法分类，方便读者根据手头的数据情况，快速从众多的方法中定位最合适的检验方法。依次是单样本检验、两样本检验、多样本检验、计数数据检验、配对样本检验。
 
-```{mermaid}
-%%| label: fig-common-tests-mindmap
-%%| fig-cap: 常见统计检验的关系图
+## 单样本检验 {#sec-one-samples}
 
-flowchart LR
-    A[假设检验] --> B1[两样本]
-    A --> B2[多样本]
-    A --> B3[列联表]
-    
-    B1 --> C{是否配对}
-    C -->|是| D1{是否正态总体}
-    C -->|否| D2{是否正态总体}
-    
-    D1 -->|是| E1[配对 t 检验 \n pairwise.t.test]
-    D1 -->|否| E2[配对 Wilcoxon 检验 \n pairwise.wilcox.test]
-    
-    D2 -->|是| E3{是否同方差}
-    D2 -->|否| E4[Mann-Whitney U 检验]
-    
-    E3 -->|是| F1{样本量是否大于 30}
-    E3 -->|否| F2[Welch t 检验 \n t.test]
-    
-    F1 -->|是| G1[z 检验]
-    F1 -->|否| G2[两样本 t 检验 \n t.test]
-    
-    B2 --> C1{是否正态总体}
-    C1 --> |是| D3{是否同方差}
-    D3 --> |是| E5[方差分析 \n oneway.test]
-    D3 --> |否| E6[混合效应 \n gls]
-    C1 --> |否| D4[Kruskal-Wallis 秩和检验 \n kruskal.test]
-```
+### 均值检验
+
+### 方差检验
+
+## 两样本检验 {#sec-two-samples}
+
+### 正态总体均值检验
+
+#### 方差已知
+
+z 检验
+
+#### 方差未知但相等
+
+t 检验 `t.test(var.equal = TRUE)`
+
+#### 方差未知且不等
+
+Welch t 检验 `t.test(var.equal = FALSE)`
+
+### 正态总体方差检验
+
+方差齐性检验 `kruskal.test()`
+
+### 总体未知均值检验
+
+### 总体未知方差检验
+
+方差齐性检验 `kruskal.test()`
+
+## 多样本检验 {#sec-multi-samples}
+
+### 正态总体均值检验
+
+#### 同方差
+
+讲清楚原假设和备择假设
+
+讲清楚假设检验、方差分析、一般线性模型（包含广义线性模型和线性混合效应模型）的关系
+
+单因素方差分析 `oneway.test()`
+
+双因素方差分析 `aov(y ~ group * sex)`
+
+#### 异方差
+
+线性混合效应模型 `nlme::gls(value ~ 1 + G2, weights =``nlme::``varIdent(form = ~1|group), methods = "ML")`
+
+### 正态总体方差检验
+
+### 总体未知均值检验
+
+### 总体未知方差检验
+
+方差齐性检验 `kruskal.test()`
+
+## 计数数据检验 {#sec-count-data}
+
+### 比例检验 {#sec-prop-test}
+
+`prop.test()`
+
+### 二项检验 {#sec-binom-test}
+
+`binom.test()`
+
+### 泊松检验 {#sec-poisson-test}
+
+`poisson.test()`
+
+### 卡方检验 {#sec-chisq-test}
+
+独立性检验 `chisq.test()`
+
+费舍尔精确检验 `fisher.test()`
+
+McNemar 检验 `mcnemar.test()`
+
+Cochran-Mantel-Haenszel 检验 `mantelhaen.test()`
+
+## 配对样本检验 {#sec-pairwise-data}
+
+### 配对 t 检验 {#sec-pairwise-t-test}
+
+`pairwise.t.test()`
+
+### 配对比例检验 {#sec-pairwise-prop-test}
+
+`pairwise.prop.test()`
+
+### 配对 Wilcoxon 检验 {#sec-pairwise-wilcox-test}
+
+`pairwise.wilcox.test()`
+
+`wilcox.test(paired = TRUE)`
