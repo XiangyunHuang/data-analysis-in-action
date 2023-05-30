@@ -15,7 +15,7 @@ Jacob Cohen 实际谈的是更加深刻的问题。开篇介绍为什么需要�
 真实数据的情况是复杂多样的，本章按照数据情况对检验方法分类，方便读者根据手头的数据情况，快速从众多的方法中定位最合适的检验方法。依次是单样本检验、两样本检验、多样本检验、计数数据检验、配对样本检验。
 
 -   检验方法归类：参数与非参数检验方法，
--   检验计算方式：近似 approximate、精确 Extract、模拟 Simulation 和抽样 Bootstrap 等方式
+-   检验计算方式：近似 approximate、精确 Extract、模拟 Simulation 和重抽样 Bootstrap 等方式
 -   检验对象归类：位置参数和尺度参数的检验
 -   检验总体数量归类：单总体、两个总体和多个总体
 -   检验总体分布归类：正态、二项、泊松、多项分布等
@@ -283,7 +283,8 @@ aov(weight ~ group, data = PlantGrowth)
 线性混合效应模型
 
 ```{r}
-fit <- nlme::gls(weight ~ 1, data = PlantGrowth, method = "ML",
+fit <- nlme::gls(weight ~ 1,
+  data = PlantGrowth, method = "ML",
   weights = nlme::varIdent(form = ~ 1 | group)
 )
 summary(fit)
@@ -328,24 +329,135 @@ fligner.test(weight ~ group, data = PlantGrowth)
 
 ## 计数数据检验 {#sec-count-data}
 
+```{r}
+#| eval: false
+
+# 逻辑回归模型 二分 dichotomous logit regression
+glm(family = binomial(link = "logit"))
+# Probit 回归模型 二分 dichotomous probit regression
+glm(family = binomial(link = "probit"))
+# 多项逻辑回归模型
+nnet::multinom()
+# 比例比/比值比/优势比 有序的多分类模型
+MASS::polr()
+```
+
 ### 比例检验 {#sec-prop-test}
 
-比例检验 `prop.test()` 与比例趋势检验 `prop.trend.test`
+关于比例的检验问题
+
+$$
+\begin{aligned}
+H_0: P_A = P_B \quad vs. \quad H_1: P_A > P_B \\
+H_0: P_A = P_B \quad vs. \quad H_1: P_A < P_B
+\end{aligned}
+$$
+
+$H_0$ 成立的情况下，暗示着两个样本来自同一总体。
+
+比例检验 `prop.test()` 与比例趋势检验 `prop.trend.test`。Wilson 检验统计量 [@Wilson1927] 考虑单样本比例 $p$ 的区间估计问题。
+
+函数 `prop.test` 用来检验两组或多组二项分布的成功概率（比例）是否相等，或等于给定的值。近似检验，多组数据的比例检验，可以理解为比例齐性检验。
+
+原假设：四个组里面病人中吸烟的比例是相同的 备择假设：四个组里面至少有一个组的吸烟比例是不同的
 
 ```{r}
-smokers  <- c( 83, 90, 129, 70 )
-patients <- c( 86, 93, 136, 82 )
+smokers <- c(83, 90, 129, 70)
+patients <- c(86, 93, 136, 82)
 prop.test(smokers, patients)
 prop.trend.test(smokers, patients)
 ```
 
+设随机变量 X 服从参数为 $p$ 的二项分布 $b(n, p)$， $Y$ 服从参数为 $\theta$ 的二项分布 $b(m,\theta)$， $m,n$ 都假定为较大的正整数，检验如下问题
+
+$$
+H_0: P_A \geq P_B \quad vs. \quad H_1: P_A < P_B
+$$
+
+根据中心极限定理
+
+$$
+\frac{\bar{X} - \bar{Y}}{\sqrt{\frac{p(1-p)}{n} + \frac{\theta(1-\theta)}{m}}}
+$$
+
+近似服从标准正态分布 $N(0,1)$。如果用矩估计 $\bar{X}$ 和 $\bar{Y}$ 分别替代总体参数 $p$ 和 $\theta$，构造检验统计量
+
+$$
+T = \frac{\bar{X} - \bar{Y}}{\sqrt{\frac{\bar{X}(1-\bar{X})}{n} + \frac{\bar{Y}(1-\bar{Y})}{m}}}
+$$
+
+根据 Slutsky 定理，检验统计量 $T$ 近似服从标准正态分布，当 $T$ 偏大时，拒绝 $H_0$。该方法的优势在于当 $n,m$ 比较大时，二项分布比较复杂，无法建立统计表，利用标准正态分布表来给出检验所需要的临界值，简便易行！
+
+当 $p$ 和 $\theta$ 都比较小，上述方法检验效果不好，原因在于由中心极限定理对 $\bar{X}$ 和 $\bar{Y}$ 的正态分布近似效果不好，或者间接地导致 $\bar{X}-\bar{Y}$ 的方差偏小，进而 $T$ 的分辨都不好，而且当 $p,\theta$ 很接近 1 时，上述现象也会产生！
+
+下面介绍新的解决办法
+
+上面的检验问题等价于
+
+$$
+H_0: \frac{P_A}{P_B} \geq 1 \quad vs. \quad H_1: \frac{P_A}{P_B} < 1
+$$
+
+引入检验统计量
+
+$$
+T^{\star} = \frac{\bar{X}}{\bar{Y}}
+$$
+
+同样由 Slutsky 定理和中心极限定理可知， $\bar{X}/\bar{Y}$ 近似服从 正态分布$N(1,\frac{1-\theta}{m\theta})$
+
+当 $(T^\star - 1)/\hat\sigma$ 偏大时接受 $H_0$，临界值可通过 $N(0, \hat\sigma^2)$ 分布表计算得到， $\hat\sigma^2$ 是对 $\frac{1-\theta}{m\theta}$ 的估计，比如取 $\hat\sigma^2 = \frac{1-\bar{Y}}{m}\cdot \frac{1}{\bar{Y}}$ 或取 $\hat\sigma^2 = \frac{1-\bar{Y}}{m}\cdot \frac{1}{\bar{X}}$
+
+由于渐近方差形如 $\frac{1-\theta}{m\theta}$，因而在 $\theta$ 较小，渐近方差较大，克服了之前 $\bar{X} - \bar{Y}$的方差较小的问题
+
+$p,\theta$ 很接近 1 时，我们取检验统计量
+
+$$
+T^{\star\star} = \frac{1-\bar{Y}}{1-\bar{X}}
+$$
+
+结论和 $T^\star$ 类似，当 $T^{\star\star}$ 偏大时，拒绝 $H_0$。
+
+两个二项总体成功概率的比较 [@Song2011]
+
 ### 二项检验 {#sec-binom-test}
 
-`binom.test()`
+区间估计与假设检验是有紧密关系的，对于二项分布比例的 11 种区间估计方法的比较 [@Newcombe1998]。函数 `binom.test()` 来做二项检验，函数 `binom.test()` 用来检验伯努利试验中成功概率 $p$ 和给定概率 $p_0$ 的关系，属于精确检验 [@Clopper1934]。
+
+比例 $p$ 的检验， 做 $n$ 次独立试验，样本 $X_1,\ldots,X_n \sim b(1, p)$，事件发生的总次数 $\sum_{i=1}^{n}X_i$。
+
+```{r}
+# 模拟一组样本
+set.seed(20232023)
+x <- sample(x = c(0, 1), size = 100, replace = TRUE, prob = c(0.8, 0.2))
+```
+
+二项分布中成功概率的检验
+
+```{r}
+binom.test(sum(x), n = 100, p = 0.5)
+```
+
+检验成功概率 p 是否等于 0.5， P 值 $5.514 \times 10^{-8}$ 结论是拒绝原假设
+
+```{r}
+binom.test(sum(x), n = 100, p = 0.2)
+```
+
+检验成功概率 p 是否等于 0.2， P 值 0.4534 结论是不能拒绝原假设
+
+切比雪夫不等式（Chebyshev, 1821-1894）。设随机变量 $X$ 的数学期望和方差都存在，则对任意常数 $\epsilon > 0$，有
+
+$$
+\begin{aligned}
+P(|X - EX| \geq \epsilon) & \leq \frac{Var(X)}{\epsilon^2} \\
+P(|X - EX| \leq \epsilon) & \geq 1 - \frac{Var(X)}{\epsilon^2}
+\end{aligned}
+$$
 
 ### 泊松检验 {#sec-poisson-test}
 
-泊松分布是 1837年由法国数学家泊松 (Poisson, 1781-1840) 首次提出
+泊松分布是 1837年由法国数学家泊松 （Poisson, 1781-1840） 首次提出
 
 `poisson.test()` 泊松分布的参数 $\lambda (>0)$ 的精确检验，适用于单样本和两样本
 
@@ -364,11 +476,53 @@ poisson.test(x,
 
 独立性检验 `chisq.test()`
 
+用于计数数据的皮尔逊卡方检验：列联表独立性检验和拟合优度检验
+
+`chisq.test` $\chi^2$ 检验：列联表检验和拟合优度检验
+
 费舍尔精确检验 `fisher.test()`
+
+固定边际的情况下，检验列联表行和列之间的独立性
+
+`fisher.test()` 函数用法，统计原理和公式，适用范围和条件，概念背景和历史
+
+费舍尔精确检验 `fisher.test` 固定边际的情况下，检验列联表行和列之间的独立性
+
+费舍尔 (Sir Ronald Fisher, 1890.2 -- 1962.7)[^common-statistical-tests-1] 和一位女士打赌，女士说能品出奶茶中奶和茶的添加顺序。
+
+[^common-statistical-tests-1]: <https://en.wikipedia.org/wiki/Ronald_Fisher>
+
+计数数据，通俗来说，对象是一个一个或一份一份的、可数的、离散的数据，比如人数。`fisher.test()` 针对计数数据，检验列联表中行和列的独立性
+
+```{r}
+TeaTasting <- matrix(c(3, 1, 1, 3),
+  nrow = 2,
+  dimnames = list(
+    Guess = c("Milk", "Tea"),
+    Truth = c("Milk", "Tea")
+  )
+)
+TeaTasting
+```
+
+```{r}
+# 单边 P 值
+fisher.test(TeaTasting, alternative = "greater")
+# 双边 P 值
+fisher.test(TeaTasting, alternative = "two.sided")
+# 单边 P 值
+sum(dhyper(x = c(3, 4), m = 4, n = 4, k = 4))
+```
 
 McNemar 检验 `mcnemar.test()`
 
+用于计数数据的 McNemar's 卡方检验 McNemar's $\chi^2$ 检验：检验二维列联表行和列的对称性，怎么理解对称性？看帮助实例。
+
 Cochran-Mantel-Haenszel 检验 `mantelhaen.test()`
+
+用于计数数据的 Cochran-Mantel-Haenszel 卡方检验
+
+Performs a Cochran-Mantel-Haenszel chi-squared test of the null that two nominal variables are conditionally independent in each stratum, assuming that there is no three-way interaction.
 
 ## 配对样本检验 {#sec-pairwise-data}
 
@@ -402,9 +556,9 @@ pairwise.t.test(x = sleep$extra, g = sleep$group, paired = T)
 
 > Usually (but not always) doing tests of normality reflect a lack of understanding of the power of rank tests, and an assumption of high power for the tests (qq plots don't always help with that because of their subjectivity). When possible it's good to choose a robust method. Also, doing pre-testing for normality can affect the type I error of the overall analysis.
 >
-> --- Frank Harrell [^common-statistical-tests-1]
+> --- Frank Harrell [^common-statistical-tests-2]
 
-[^common-statistical-tests-1]: <https://stat.ethz.ch/pipermail/r-help/2005-April/070508.html>
+[^common-statistical-tests-2]: <https://stat.ethz.ch/pipermail/r-help/2005-April/070508.html>
 
 检验：拒绝原假设和接受原假设的风险，数据本身和理论的正态分布的距离，抛开 P 值
 
@@ -412,9 +566,9 @@ Shapiro 和 Wilk's 提出的 W 检验 shapiro.test
 
 > The issue really comes down to the fact that the questions: "exactly normal?", and "normal enough?" are 2 very different questions (with the difference becoming greater with increased sample size) and while the first is the easier to answer, the second is generally the more useful one.
 >
-> --- Greg Snow [^common-statistical-tests-2]
+> --- Greg Snow [^common-statistical-tests-3]
 
-[^common-statistical-tests-2]: <https://stat.ethz.ch/pipermail/r-help/2009-May/390164.html>
+[^common-statistical-tests-3]: <https://stat.ethz.ch/pipermail/r-help/2009-May/390164.html>
 
 EP 检验对多种备择假设有较高的效率，利用样本的特征函数和正态分布的特征函数的差的模的平方产生的一个加权积分得到 EP 检验统计量 [@Epps1983]
 
@@ -432,15 +586,15 @@ $$
 
 ### 同分布检验 {#sec-ks-test}
 
-Lilliefors 检验 [^common-statistical-tests-3] 和单样本的 ks 检验的关系
+Lilliefors 检验 [^common-statistical-tests-4] 和单样本的 ks 检验的关系
 
-[^common-statistical-tests-3]: <https://personal.utdallas.edu/~herve/Abdi-Lillie2007-pretty.pdf>
+[^common-statistical-tests-4]: <https://personal.utdallas.edu/~herve/Abdi-Lillie2007-pretty.pdf>
 
 > As to whether you can do a **Lilliefors test** for several groups, that depends entirely on your ability to understand what the underlying question would be (see Adams D 1979).
 >
-> --- Knut M. Wittkowski [^common-statistical-tests-4]
+> --- Knut M. Wittkowski [^common-statistical-tests-5]
 
-[^common-statistical-tests-4]: <https://stat.ethz.ch/pipermail/r-help/2004-February/045597.html>
+[^common-statistical-tests-5]: <https://stat.ethz.ch/pipermail/r-help/2004-February/045597.html>
 
 Kolmogorov-Smirnov 检验：单样本或两样本的同分布检验 ks.test
 
@@ -463,6 +617,49 @@ PP.test(x, lshort = TRUE)
 
 Mauchly 球形检验 `mauchly.test` 检验：Wishart 分布的协方差矩阵是否正比于给定的矩阵。
 
+如果 $X_1, X_2, \cdots, X_m$，$X_i \in \mathbb{R}^p$，$X_i \overset{i.i.d}{\sim} \mathrm{MVN}(0,\Sigma)$，即 $m$ 个样本点都服从均值为 $0$，协方差矩阵为 $\Sigma$ 的 $p$ 维多元正态分布 $\mathrm{MVN}(0,\Sigma)$，且样本点之间相互独立。则 $M = X'X$ 服从参数为 $\Sigma$ 和 $m$ 的 Wishart 分布 $W_p(\Sigma, m)$。
+
+R 语言内置了一个模拟数生成器，可以直接模拟出服从 Wishart 分布 $W_p(\Sigma, m)$ 的样本，即 $n$ 个随机矩阵，$m = \mathrm{df}, \Sigma = \mathrm{Sigma}$。 R 语言命令如下：
+
+``` r
+rWishart(n, df, Sigma)
+```
+
+其中，整型参数 `n` 指定样本量，数值参数 `df` 指定自由度，正定的 $p \times p$ 矩阵 `Sigma` 指定 Wishart 分布的矩阵参数。`rWishart()` 返回一个 $p\times p \times n$ 数组 $R$，其中 $R[,,i]$ 是正定矩阵，是服从 Wishart 分布 $W_p(\Sigma, m)$ 的一个样本点，其中 $m = \mathrm{df}, \Sigma = \mathrm{Sigma}$。
+
+```{r}
+set.seed(2022)
+# 构造 n 个随机矩阵
+S <- matrix(c(1.2, 0.9, 0.9, 1.2), nrow = 2, ncol = 2)
+rWishart(n = 3, df = 2, Sigma = S)
+```
+
+随机矩阵 $M$ 的期望 $\mathsf{E}(M) = m \times \Sigma$，随机矩阵 $M$ 中每个元素的方差
+
+$$
+\mathsf{Var}(M_{ij}) = m (\Sigma_{ij}^2 + \Sigma_{ii}\Sigma_{jj}), \quad S = \Sigma
+$$
+
+若 $p = 1$，即 $\Sigma$ 是一个标量 $\sigma^2$，Wishart 分布退化为自由度为 $\mathrm{df}$ 的卡方分布 $\chi^2$，即 $W_1(\sigma^2, m) = \sigma^2\chi_{m}^2$。下面计算随机矩阵 $M$ 的期望。
+
+```{r}
+set.seed(2022)
+Wish <- rWishart(n = 3000, df = 2, Sigma = S)
+# 计算随机矩阵 M 的期望
+apply(Wish, MARGIN = 1:2, FUN = mean)
+# 随机矩阵 M 的期望理论值
+2 * S
+```
+
+接着计算随机矩阵 $M$ 的方差。
+
+```{r}
+# 样本方差
+apply(Wish, MARGIN = 1:2, var)
+# 理论方差
+2*(S^2 + tcrossprod(diag(S)))
+```
+
 ## 样本量的计算 {#sec-power-of-test}
 
 检验的功效常用于样本量的计算
@@ -473,16 +670,129 @@ Mauchly 球形检验 `mauchly.test` 检验：Wishart 分布的协方差矩阵是
 # power.t.test()
 ```
 
+`power.t.test()` 计算单样本或两样本的 t 检验的功效，或者根据功效计算参数，如样本量
+
+```{r}
+#| label: fig-power-t-test
+#| fig-cap: "t 检验的功效"
+#| fig-width: 4
+#| fig-height: 4
+#| fig-showtext: true
+
+n = 30  # 样本量（只是一个例子）
+x = seq(0, 12, 0.01)
+library(ggplot2)
+dat <- data.frame(xx = x/sqrt(n), yy = 2 * (1 - pt(x, n - 1)))
+ggplot(data = dat, aes(x = xx, y = yy)) +
+  geom_line() +
+  geom_vline(xintercept = c(0.01, 0.2, 0.5, 0.8, 1.2, 2), linetype = 2) +
+  theme_classic() +
+  labs(x = "d = t / sqrt(n)", y = "2 * (1 - pt(x, n - 1))")
+```
+
+```{r}
+power.t.test(
+  n = 100, delta = 2.2,
+  sd = 1, sig.level = 0.05,
+  type = "two.sample",
+  alternative = "two.sided"
+)
+```
+
+| 参数          | 含义                                                                            |
+|:--------------|:-------------------------------------------------------|
+| `n`           | 每个组的样本量                                                                  |
+| `delta`       | 两个组的均值之差                                                                |
+| `sd`          | 标准差，默认值 1                                                                |
+| `sig.level`   | 显著性水平，默认是 0.05 （犯第 I 类错误的概率）                                 |
+| `power`       | 检验的功效（1 - 犯第 II 类错误的概率）                                          |
+| `type`        | t 检验的类型 `"two.sample"` 两样本、`"one.sample"` 单样本或 `"paired"` 配对样本 |
+| `alternative` | 单边或双边检验，取值为 `"two.sided"` 或 `"one.sided"`                           |
+
+: 函数 `power.t.test()` 的参数表 {#tbl-power-t-test}
+
+参数 `n`，`delta`，`power`，`sd` 和 `sig.level` 必须有一个值为 `NULL`，为 `NULL` 的参数是由其它参数决定的。
+
 ### 比例检验的功效
 
 ```{r}
 # power.prop.test()
 ```
 
+`power.prop.test()` 计算两样本比例检验的功效
+
+功效可以用来计算实验所需要的样本量，检验统计量的功效越大/高，检验方法越好，实验所需要的样本量越少
+
+```{r}
+# p1 >= p2 的检验 单边和双边检验
+power.prop.test(
+  p1 = .65, p2 = 0.6, sig.level = .05,
+  power = 0.90, alternative = "one.sided"
+)
+
+power.prop.test(
+  p1 = .65, p2 = 0.6, sig.level = .05,
+  power = 0.90, alternative = "two.sided"
+)
+```
+
+**pwr** 包 `pwr.2p.test()` 函数提供了类似 `power.prop.test()` 函数的功能
+
+```{r}
+library(pwr)
+# 明确 p1 > p2 的检验
+# 单边检验拆分更加明细，分为大于和小于
+pwr.2p.test(
+  h = ES.h(p1 = 0.65, p2 = 0.6),
+  sig.level = 0.05, power = 0.9, alternative = "greater"
+)
+```
+
+已知两样本的样本量不等，检验 H0: $p_1 = p_2$ H1: $p_1 \neq p_2$ 的功效
+
+```{r}
+library(pwr)
+pwr.2p2n.test(
+  h = 0.30, n1 = 80, n2 = 245,
+  sig.level = 0.05, alternative = "greater"
+)
+```
+
+h 表示两个样本的差异，计算得到的功效是 0.75
+
 ### 方差分析的功效
 
 ```{r}
 # power.anova.test()
+```
+
+`power.anova.test()` 计算平衡的单因素方差分析检验的功效
+
+```{r}
+power.anova.test(
+  groups = 4,       #  4 个组  
+  between.var = 1,  # 组间方差为 1
+  within.var = 3,   # 组内方差为 3
+  power = 0.95      # 1 - 犯第二类错误的概率
+)
+```
+
+```{r}
+# 前面 t 检验和方差分析检验的等价功效计算
+library(pwr)
+pwr.t.test(
+  d = 2.2 / 6.4,
+  n = 100,
+  sig.level = 0.05,
+  type = "two.sample",
+  alternative = "two.sided"
+)
+# f 是如何和上面的组间/组内方差等价指定的
+pwr.anova.test(
+  k = 4, # 组数
+  f = 0.5,
+  power = 0.95 # 检验的效
+)
 ```
 
 ## 统计检验方法
