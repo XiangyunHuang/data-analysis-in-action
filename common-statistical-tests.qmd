@@ -1,8 +1,31 @@
 # 常见的统计检验 {#sec-common-statistical-tests}
 
+::: hidden
+$$
+ \def\bm#1{{\boldsymbol #1}}
+$$
+:::
+
+> The Earth is Round ($p < 0.05$)
+>
+> --- Jacob Cohen [@Cohen1994]
+
+Jacob Cohen 实际谈的是更加深刻的问题。开篇介绍为什么需要假设检验，做检验和不做检验有什么区别？杨灿老师在[讨论帖](https://d.cosx.org/d/420930/11)提出检验的作用和实际应用问题。
+
 真实数据的情况是复杂多样的，本章按照数据情况对检验方法分类，方便读者根据手头的数据情况，快速从众多的方法中定位最合适的检验方法。依次是单样本检验、两样本检验、多样本检验、计数数据检验、配对样本检验。
 
-## 单样本检验 {#sec-one-samples}
+-   检验方法归类：参数与非参数检验方法，
+-   检验计算方式：近似 approximate、精确 Extract、模拟 Simulation 和抽样 Bootstrap 等方式
+-   检验对象归类：位置参数和尺度参数的检验
+-   检验总体数量归类：单总体、两个总体和多个总体
+-   检验总体分布归类：正态、二项、泊松、多项分布等
+-   检验总体维度归类：总体分一维和多维的情形
+
+R. A. Fisher 将抽样分布、参数估计和假设检验列为统计推断的三个中心内容，可见假设检验的重要地位。
+
+有了均值和方差，为什么还要位置参数和尺度参数？为了更一般地描述问题，扩展范围。关于检验方法，如有不明白的地方，可以查看维基百科词条。
+
+## 单样本检验 {#sec-one-sample}
 
 ### 均值检验
 
@@ -12,27 +35,222 @@
 
 ### 正态总体均值检验
 
+常见检验问题
+
+$$
+\begin{aligned}
+\mathrm{I}   \quad H_0: \mu_1 - \mu_2 \leq 0 \quad vs. \quad H_1: \mu_1 - \mu_2 > 0 \\
+\mathrm{II}  \quad H_0: \mu_1 - \mu_2 \geq 0 \quad vs. \quad H_1: \mu_1 - \mu_2 < 0 \\
+\mathrm{III} \quad H_0: \mu_1 - \mu_2 = 0 \quad vs. \quad H_1: \mu_1 - \mu_2 \neq 0
+\end{aligned}
+$$
+
 #### 方差已知
 
-z 检验
+$$
+u = \frac{(\bar{X} - \bar{Y}) - (\mu_1 - \mu_2)}{\sqrt{\frac{\sigma^2_1}{m} + \frac{\sigma^2_2}{n}} }
+$$
+
+检验统计量服从标准正态分布 $u \sim N(0,1)$，检验统计量 $u$ 对应的样本值 $u_0$，检验的拒绝域和 $P$ 值如下
+
+$$
+W_1 = \{u \geq u_{1 - \alpha} \}, \quad p_1 = 1 - \varPhi(u_0) 
+$$
+
+```{r}
+m <- 100
+n <- 80
+mu_1 <- 10
+sigma_1 <- 2.5
+mu_2 <- 6
+sigma_2 <- 4.5
+
+set.seed(20232023)
+x1 <- rnorm(m, mean = mu_1, sd = sigma_1)
+y1 <- rnorm(n, mean = mu_2, sd = sigma_2)
+u0 <- (mean(x1) - mean(y1)) / sqrt(sigma_1^2 / m + sigma_2^2 / n)
+u0
+```
+
+对检验问题 I，给定显著性水平 $\alpha = 0.05$，得出拒绝域 $\{ u \geq 1.645\}$，计算样本观察值得到的检验统计量的值 $u_0 = 6.779$，而该值落在拒绝域，所以拒绝原假设，即拒绝 $\mu_1 - \mu_2 \leq 0$，则接受 $\mu_1 - \mu_2 > 0$。
+
+```{r}
+# 计算拒绝域
+qnorm(1 - 0.05)
+# 计算 P 值
+1 - pnorm(u0)
+```
 
 #### 方差未知但相等
 
-t 检验 `t.test(var.equal = TRUE)`
+检验统计量服从自由度为 $m + n - 2$ 的 t 分布，t 检验
+
+```{r}
+s_w <- sqrt(1 / (m + n - 2) * ((m - 1) * var(x1) + (n - 1) * var(y1)))
+t0 <- (mean(x1) - mean(y1)) / (s_w * sqrt(1 / m + 1 / n))
+t0
+```
+
+样本观察值 $t_0 = 8.155 > t_{0.95}(m + n -2) = 1.653$ 落在拒绝域内，对于检验问题 I 我们要拒绝原假设
+
+```{r}
+# 临界值：0.95 分位点对应的分位数
+qt(1 - 0.05, df = m + n - 2)
+# p 值
+1 - pt(t0, df = m + n - 2, lower.tail = TRUE)
+```
+
+利用 R 内置的 `t.test()` 函数计算
+
+```{r}
+t.test(x = x1, y = y1, alternative = "greater", var.equal = TRUE)
+```
+
+检验统计量的值及对应的 P 值都是一样的。
 
 #### 方差未知且不等
 
-Welch t 检验 `t.test(var.equal = FALSE)`
+Welch t 检验
+
+$$
+T = \frac{(\bar{\bm{x}} - \bar{\bm{y}}) - (\mu_1 - \mu_2)}{\sqrt{\frac{s_x^2}{m} + \frac{s_y^2_2}{n}} }
+$$
+
+检验统计量 $T$ 服从自由度为 l 的 t 分布。
+
+$$
+l = \frac{s_0^4}{ \frac{s_x^4}{m^2(m - 1)} + \frac{s_y^4}{n^2(n-1)} }
+$$
+
+其中， $s_0^2 = s_x^2 / m + s_y^2/n$，l 通常不是整数，实际使用时，l 取最近的整数。$s_x^2$ 表示样本 x 的方差 $s_x^2 = \frac{1}{m-1}\sum_{i=1}^{m}(x_i -\bar{x})^2$
+
+```{r}
+s0 <- var(x1) / m + var(y1) / n
+l <- s0^2 / (var(x1)^2 / (m^2 * (m - 1)) + var(y1)^2 / (n^2 * (n - 1)))
+l
+```
+
+所以 l 取 127。检验统计量的值如下
+
+```{r}
+t0 <- (mean(x1) - mean(y1)) / sqrt(s0)
+t0
+```
+
+```{r}
+# 临界值：0.95 分位点对应的分位数
+qt(1 - 0.05, df = 127)
+# p 值
+1 - pt(t0, df = 126, lower.tail = TRUE)
+```
+
+与函数 `t.test()` 比较
+
+```{r}
+t.test(x = x1, y = y1, alternative = "greater", var.equal = FALSE)
+```
+
+$$\frac{(n-1)s^2}{\sigma^2} \sim \chi^2(n-1)$$
+
+$$E(s^2) = \sigma^2, \quad Var(s^2) = \frac{2\sigma^4}{n-1}$$
+
+$$\frac{\bar{x} - \mu}{s/\sqrt{n}} \sim t(n-1)$$
+
+举例：sleep 数据集
+
+```{r}
+#| label: fig-sleep
+#| fig-width: 4
+#| fig-height: 4
+#| fig-cap: 学生睡眠数据的分布
+
+data("sleep")
+library(ggplot2)
+ggplot(aes(x = group, y = extra, color = group), data = sleep) +
+  geom_boxplot() +
+  geom_jitter() +
+  theme_classic()
+```
+
+```{r}
+# 方差未知但相等
+t.test(extra ~ group, data = sleep, var.equal = TRUE)
+# 方差未知且不等
+t.test(extra ~ group, data = sleep, var.equal = FALSE)
+```
+
+1.  两样本的样本量很大，总体方差未知，检验两样本均值的显著性检验，极限分布是正态，$u$ 检验
+2.  两个样本的样本量不是很大，总体方差也未知，检验两样本均值的显著性检验，即著名的 Behrens-Fisher 问题，Welch 在 1938 年提出近似服从自由度为 $\ell$ 的 t 分布。
+
+::: callout-note
+英国统计学家 William Sealy Gosset (1876-1937) 于 1908 年在杂志 《Biometrics》 上以笔名 Student 发表论文《The Probable Error of a Mean》[@Gosset1908]，论文中展示了独立同正态分布的样本 $x_1, \ldots, x_n \stackrel{i.i.d}{\sim} \mathcal{N}(\mu,\sigma^2)$ 的样本方差 $s^2$ 和样本标准差 $s$ 的抽样分布，根据均值和标准差不相关的性质导出 t 分布，宣告 t 分布的诞生，因其在小样本领域的突出贡献，W. S. Gosset 进入世纪名人录 [@Heyde2001]。
+
+Egon Pearson 接过他父亲 Karl Pearson 的职位，担任伦敦大学学院的高尔顿统计教授。许宝騄（Pao-Lu Hsu）在 Jerzy Neyman 和 Egon Pearson 主编的杂志《Statistical Research Memoirs》发表第一篇关于 Behrens-Fisher 问题的论文 [@Hsu1938]，1998 年关于 Behrens-Fisher 问题的综述 [@Kim1998]。陈家鼎和郑忠国一起整理了许宝騄的生平事迹和学术成就，见[《许宝騄先生的生平和学术成就》](https://www.math.pku.edu.cn/misc/probstat/doc.pdf)。钟开涞（Kai-Lai Chung）将许宝騄的论文集整理出版 [@HSU1983]。
+:::
+
+t 检验的影响是如此巨大，以至于广泛存在于具有统计功能的软件中，比如办公软件里的 t 检验。以 MacOS 上的 Numbers 表格软件为例，如 @fig-numbers-ttest 所示，首先打开 Numbers 软件，新建工作表，输入两组数值，然后点击空白处，再从顶部导航栏找到「插入」菜单，「公式」选项，点击扩展选项「新建公式」，在弹出的会话条里输入 TTEST，依次选择第一组，第二组值，检验类型和样本类型，最后点击确认，即可得到两样本 t 检验的 P 值结果。
+
+```{r}
+#| label: fig-numbers-ttest
+#| fig-cap: 办公软件 Numbers 的两样本 T 检验功能
+#| echo: false
+
+knitr::include_graphics("screenshots/number-ttest.png")
+```
+
+微软 Excel 办公软件也提供 t 检验计算器，和 MacOS 系统上的 Numbers 办公软件类似，它提供 `T.TEST` 函数，计算结果也一样，此处从略。R 软件自带 `t.test()` 函数，也是用于做 t 检验，如下：
+
+```{r}
+t.test(x = c(3, 4, 5, 8, 9, 1, 2, 4, 5), y = c(6, 19, 3, 2, 14, 4, 5, 17, 1))
+```
 
 ### 正态总体方差检验
 
-方差齐性检验 `kruskal.test()`
+F 检验比较两个正态总体的方差是否相等
+
+```{r}
+var.test(extra ~ group, data = sleep)
+```
 
 ### 总体未知均值检验
 
+-   wilcox.test 适用于单样本和两样本，单样本 Wilcoxon 秩和检验，两样本 Wilcoxon 符号秩检验，后者也叫 Mann-Whitney 检验
+-   kruskal.test 适用于两样本和多样本
+
+在总体分布未知的情况下，比较均值是否相等的检验
+
+```{r}
+wilcox.test(extra ~ group, data = sleep)
+```
+
+比较多个均值是否相等的检验 `kruskal.test()`
+
+```{r}
+kruskal.test(extra ~ group, data = sleep)
+```
+
 ### 总体未知方差检验
 
-方差齐性检验 `kruskal.test()`
+Bartlett 检验：对总体的分布形式没有要求，检验各个组的方差是否有显著性差异，即方差齐性检验。属于参数检验，适用于多个样本的情况。
+
+```{r}
+# 两样本
+bartlett.test(extra ~ group, data = sleep)
+```
+
+`ansari.test` 和 `mood.test` 是基于秩的两样本尺度参数显著性差异检验，是非参数检验。
+
+```{r}
+ansari.test(extra ~ group, data = sleep)
+mood.test(extra ~ group, data = sleep)
+fligner.test(extra ~ group, data = sleep)
+```
+
+Ansari-Bradley 检验 `ansari.test` 目的是检验两样本的尺度参数是否有显著性差异。就正态分布而言，尺度参数可以理解为方差 $\sigma^2$，位置参数可以理解为均值 $\mu$
+
+Mood's 两样本检验：检验两样本尺度参数的差异是否显著。
+
+Fligner-Killeen (中位数) 检验各个组的样本方差是不是一致的，也是方差齐性检验
 
 ## 多样本检验 {#sec-multi-samples}
 
@@ -40,31 +258,86 @@ Welch t 检验 `t.test(var.equal = FALSE)`
 
 #### 同方差
 
-讲清楚原假设和备择假设
+讲清楚原假设和备择假设。
 
 讲清楚假设检验、方差分析、一般线性模型（包含广义线性模型和线性混合效应模型）的关系
 
-单因素方差分析 `oneway.test()`
+单因素方差分析
 
-双因素方差分析 `aov(y ~ group * sex)`
+```{r}
+data("PlantGrowth")
+# 假设方差相同
+oneway.test(weight ~ group, data = PlantGrowth, var.equal = TRUE)
+# 假设方差不同
+oneway.test(weight ~ group, data = PlantGrowth, var.equal = FALSE)
+```
+
+双因素方差分析 aov 支持双因素方差分析
+
+```{r}
+aov(weight ~ group, data = PlantGrowth)
+```
 
 #### 异方差
 
-线性混合效应模型 `nlme::gls(value ~ 1 + G2, weights =``nlme::``varIdent(form = ~1|group), methods = "ML")`
+线性混合效应模型
+
+```{r}
+fit <- nlme::gls(weight ~ 1, data = PlantGrowth, method = "ML",
+  weights = nlme::varIdent(form = ~ 1 | group)
+)
+summary(fit)
+```
 
 ### 正态总体方差检验
 
 ### 总体未知均值检验
 
+均值齐性检验 `kruskal.test()`
+
+```{r}
+kruskal.test(weight ~ group, data = PlantGrowth)
+```
+
+Friedman 检验是非参数检验。适用于单因素重复测量数据的方差分析，检验是否存在一组值显著高于或低于其他组。术语涉及实验设计，比如完全区组设计 complete block designs
+
+典型场景：n 个品酒师对 k 瓶葡萄酒打分，是否存在一组打分显著高于其他组。检验睡眠质量一组人显著好于另一组人。
+
+```{r}
+friedman.test(extra ~ group | ID, data = sleep)
+```
+
+formula 参数 `a ~ b | c` ，a 表示数据值，b 分组变量 groups，c 表示 blocks。
+
+Quade 检验与 Friedman 检验类似，Quade 检验应用于 unreplicated complete block designs
+
+```{r}
+quade.test(extra ~ group | ID, data = sleep)
+```
+
 ### 总体未知方差检验
 
-方差齐性检验 `kruskal.test()`
+方差齐性检验，三个样本及以上
+
+```{r}
+# 参数检验
+bartlett.test(weight ~ group, data = PlantGrowth)
+# 非参数检验
+fligner.test(weight ~ group, data = PlantGrowth)
+```
 
 ## 计数数据检验 {#sec-count-data}
 
 ### 比例检验 {#sec-prop-test}
 
-`prop.test()`
+比例检验 `prop.test()` 与比例趋势检验 `prop.trend.test`
+
+```{r}
+smokers  <- c( 83, 90, 129, 70 )
+patients <- c( 86, 93, 136, 82 )
+prop.test(smokers, patients)
+prop.trend.test(smokers, patients)
+```
 
 ### 二项检验 {#sec-binom-test}
 
@@ -72,7 +345,20 @@ Welch t 检验 `t.test(var.equal = FALSE)`
 
 ### 泊松检验 {#sec-poisson-test}
 
-`poisson.test()`
+泊松分布是 1837年由法国数学家泊松 (Poisson, 1781-1840) 首次提出
+
+`poisson.test()` 泊松分布的参数 $\lambda (>0)$ 的精确检验，适用于单样本和两样本
+
+```{r}
+#| eval: false
+#| echo: true
+
+poisson.test(x,
+  T = 1, r = 1,
+  alternative = c("two.sided", "less", "greater"),
+  conf.level = 0.95
+)
+```
 
 ### 卡方检验 {#sec-chisq-test}
 
@@ -88,7 +374,11 @@ Cochran-Mantel-Haenszel 检验 `mantelhaen.test()`
 
 ### 配对 t 检验 {#sec-pairwise-t-test}
 
-`pairwise.t.test()`
+配对的 t 检验 `pairwise.t.test()`
+
+```{r}
+pairwise.t.test(x = sleep$extra, g = sleep$group, paired = T)
+```
 
 ### 配对比例检验 {#sec-pairwise-prop-test}
 
@@ -99,3 +389,108 @@ Cochran-Mantel-Haenszel 检验 `mantelhaen.test()`
 `pairwise.wilcox.test()`
 
 `wilcox.test(paired = TRUE)`
+
+### 配对相关性检验 {#sec-cor-test}
+
+配对样本的相关性检验 `cor.test`：Pearson's 相关系数，Kendall's $\tau$ 检验或者 Spearman's $\rho$ 检验
+
+## 关于样本分布的检验
+
+### 正态性检验
+
+> Usually (but not always) doing tests of normality reflect a lack of understanding of the power of rank tests, and an assumption of high power for the tests (qq plots don't always help with that because of their subjectivity). When possible it's good to choose a robust method. Also, doing pre-testing for normality can affect the type I error of the overall analysis.
+>
+> --- Frank Harrell [^common-statistical-tests-1]
+
+[^common-statistical-tests-1]: <https://stat.ethz.ch/pipermail/r-help/2005-April/070508.html>
+
+检验：拒绝原假设和接受原假设的风险，数据本身和理论的正态分布的距离，抛开 P 值
+
+Shapiro 和 Wilk's 提出的 W 检验 shapiro.test
+
+> The issue really comes down to the fact that the questions: "exactly normal?", and "normal enough?" are 2 very different questions (with the difference becoming greater with increased sample size) and while the first is the easier to answer, the second is generally the more useful one.
+>
+> --- Greg Snow [^common-statistical-tests-2]
+
+[^common-statistical-tests-2]: <https://stat.ethz.ch/pipermail/r-help/2009-May/390164.html>
+
+EP 检验对多种备择假设有较高的效率，利用样本的特征函数和正态分布的特征函数的差的模的平方产生的一个加权积分得到 EP 检验统计量 [@Epps1983]
+
+::: callout-tip
+样本量 $n \geq 200$ EP 检验统计量 $T_{EP}$ 非常接近 $n = \infty$ 时 $T_{EP}$ 的分位数。
+:::
+
+设 $x_1, \ldots, x_n$ 是来自正态总体 $N(\mu,\sigma^2)$ 的样本， EP 检验统计量定义为
+
+$$
+T_{EP} = 1 + \frac{n}{\sqrt{3}} + \frac{2}{n}\sum_{i=2}^{n}\sum_{j=1}^{i-1}\exp\big\{ - \frac{(x_j - x_i)^2}{2s^2_{\star}}  \big\} - \sqrt{2} \sum_{i=1}^{n}\exp\big\{- \frac{(x_i - \bar{x})^2}{4s^2_{\star}}  \big\}
+$$
+
+其中 $\bar{x},s^2_{\star}$ 就是样本均值和（除以 $n$ 的）样本方差
+
+### 同分布检验 {#sec-ks-test}
+
+Lilliefors 检验 [^common-statistical-tests-3] 和单样本的 ks 检验的关系
+
+[^common-statistical-tests-3]: <https://personal.utdallas.edu/~herve/Abdi-Lillie2007-pretty.pdf>
+
+> As to whether you can do a **Lilliefors test** for several groups, that depends entirely on your ability to understand what the underlying question would be (see Adams D 1979).
+>
+> --- Knut M. Wittkowski [^common-statistical-tests-4]
+
+[^common-statistical-tests-4]: <https://stat.ethz.ch/pipermail/r-help/2004-February/045597.html>
+
+Kolmogorov-Smirnov 检验：单样本或两样本的同分布检验 ks.test
+
+### 独立性检验 {#sec-Box-test}
+
+时间序列独立性检验 `Box.test` 计算 Box-Pierce 或 Ljung-Box 检验统计量来检查给定时间序列的独立性假设。
+
+### 平稳性检验 {#sec-PP-test}
+
+时间序列单位根检验，检验时间序列平稳性 Phillips-Perron 的单位根检验 `PP.test`
+
+```{r}
+#| eval: false
+#| echo: true
+
+PP.test(x, lshort = TRUE)
+```
+
+### 球形检验 {#sec-mauchly-test}
+
+Mauchly 球形检验 `mauchly.test` 检验：Wishart 分布的协方差矩阵是否正比于给定的矩阵。
+
+## 样本量的计算 {#sec-power-of-test}
+
+检验的功效常用于样本量的计算
+
+### t 检验的功效
+
+```{r}
+# power.t.test()
+```
+
+### 比例检验的功效
+
+```{r}
+# power.prop.test()
+```
+
+### 方差分析的功效
+
+```{r}
+# power.anova.test()
+```
+
+## 统计检验方法
+
+### Wald 检验 {#sec-wald-test}
+
+### Wilks 检验 {#sec-wilks-test}
+
+也叫似然比检验
+
+### Rao 检验 {#sec-rao-test}
+
+也叫得分检验
