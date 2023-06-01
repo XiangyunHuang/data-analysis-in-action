@@ -69,11 +69,28 @@ dplyr::tbl(conn, "iris") |>
   dplyr::explain()
 ```
 
+**glue** 包可以使用 R 环境中的变量，相比于 `sprintf()` 函数，可以组合更大型的 SQL 语句，这在生产环境中广泛使用。
+
+```{r}
+# R 环境中的变量
+group <- "Species"
+# 组合 SQL
+query <- glue::glue("
+  SELECT COUNT(1) AS cnt, Species
+  FROM iris
+  GROUP BY ({group})
+")
+# 将 SQL 语句传递给数据库，执行 SQL 语句
+DBI::dbGetQuery(conn, query)
+```
+
 用完后，关闭连接通道。
 
 ```{r}
 dbDisconnect(conn = conn)
 ```
+
+更多关于 SQL 语句的使用介绍见书籍[《Become a SELECT star》](https://wizardzines.com/zines/sql/)。
 
 ## Base R 操作 {#sec-basic-operator}
 
