@@ -4,19 +4,35 @@
 
 ## 操作工具 {#sec-tools}
 
-本节所用数据来自世界银行，介绍 Base R、data.table、dplyr 的简介、特点、对比
+本节所用数据来自世界银行，介绍 Base R、**data.table**、**dplyr** 的简介、特点、对比
 
 ### Base R {#sec-base-r}
 
 在 data.frame 的基础上，提供一系列辅助函数实现各类数据操作。
 
+```{r}
+aggregate(iris, Sepal.Length ~ Species, FUN = length)
+```
+
 ### data.table {#sec-datatable}
 
-data.table 在 Base R 的基础上，扩展和加强了原有函数的功能，提供一套完整的链式操作语法。
+**data.table** 包在 Base R 的基础上，扩展和加强了原有函数的功能，提供一套完整的链式操作语法。
+
+```{r}
+library(data.table)
+iris_dt <- as.data.table(iris)
+iris_dt[ ,.(cnt = length(Sepal.Length)) , by = "Species"]
+```
 
 ### dplyr {#sec-dplyr}
 
-**dplyr** 包提供一套全新的数据操作语法，与 **purrr** 包和 **tidyr** 包一起形成完备的数据操作功能。
+**dplyr** 包提供一套全新的数据操作语法，与 **purrr** 包和 **tidyr** 包一起形成完备的数据操作功能。在 R 环境下，**dplyr** 包提供一套等价的表示，代码如下：
+
+```{r}
+iris |> 
+  dplyr::group_by(Species) |> 
+  dplyr::count()
+```
 
 ### SQL {#sec-sql}
 
@@ -29,7 +45,7 @@ conn <- DBI::dbConnect(RSQLite::SQLite(),
 )
 ```
 
-按 Species 分组统计数据条数
+按 Species 分组统计数据条数， SQL 查询语句如下：
 
 ```{sql sql-query, connection=conn, output.var="iris_preview"}
 SELECT COUNT(1) AS cnt, Species
@@ -43,30 +59,21 @@ SQL 代码执行的结果如下：
 iris_preview
 ```
 
-以上 SQL 语句，在 R 环境下，**dplyr** 包提供一套等价的表示，代码如下：
+**dplyr** 包能连接数据库，以上 SQL 代码也可以翻译成等价的 **dplyr** 语句。
 
 ```{r}
-iris |> 
+dplyr::tbl(conn, "iris") |> 
   dplyr::group_by(Species) |> 
   dplyr::count()
 ```
 
-**dplyr** 包能连接数据库，以上 **dplyr** 代码也可以翻译成等价的 SQL 语句。
+**dplyr** 包的函数 `show_query()` 可以将 **dplyr** 语句转化为查询语句，这有助于排错。
 
 ```{r}
 dplyr::tbl(conn, "iris") |> 
   dplyr::group_by(Species) |> 
   dplyr::count() |> 
   dplyr::show_query()
-```
-
-SQL 的 EXPLAIN 命令描述查询计划
-
-```{r}
-dplyr::tbl(conn, "iris") |> 
-  dplyr::group_by(Species) |> 
-  dplyr::count() |> 
-  dplyr::explain()
 ```
 
 **glue** 包可以使用 R 环境中的变量，相比于 `sprintf()` 函数，可以组合更大型的 SQL 语句，这在生产环境中广泛使用。
