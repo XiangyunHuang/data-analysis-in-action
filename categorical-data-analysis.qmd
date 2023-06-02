@@ -1,4 +1,4 @@
-# 分类数据分析 {#sec-categorical-data-analysis}
+# 分类数据的分析 {#sec-categorical-data-analysis}
 
 ```{r}
 #| echo: false
@@ -318,6 +318,7 @@ summary(fit_titanic)
 
 ```{r}
 data(titanic_train, package = "titanic")
+data(titanic_test, package = "titanic")
 str(titanic_train)
 ```
 
@@ -329,4 +330,38 @@ str(titanic_train)
 
 # 另一个数据源
 data("TitanicSurvival", package = "carData")
+```
+
+```{r}
+#| eval: false
+#| echo: false
+
+# https://github.com/nhs-r-community/FunnelPlotR
+library(FunnelPlotR)
+
+library(ggplot2)
+
+ucb_dat <- as.data.frame(UCBAdmissions)
+
+fit_ucb <- glm(Freq ~ Dept + Admit + Gender,
+  family = poisson(link = "log"),
+  data = ucb_dat
+)
+summary(fit_ucb)
+
+ucb_dat$preds <- predict(fit_ucb, type = "response")
+
+funnel_plot(
+  numerator = ucb_dat$Freq,
+  denominator = ucb_dat$preds, # 预测值
+  group = ucb_dat$Gender, # 分组
+  title = "Length of Stay Funnel plot for `medpar` data",
+  data_type = "SR", # 标准 standard ratio
+  limit = 99, # 置信限
+  draw_unadjusted = TRUE,
+  draw_adjusted = FALSE, label = "outlier"
+)
+# 泊松分布的均值等于方差，如果不是，则意味着 overdispersion
+# 方差是均值的 125 倍
+sum(fit_ucb$weights * fit_ucb$residuals^2) / fit_ucb$df.residual
 ```
