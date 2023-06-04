@@ -10,26 +10,40 @@ $$
 >
 > --- Jacob Cohen [@Cohen1994]
 
-Jacob Cohen 实际谈的是更加深刻的问题。开篇介绍为什么需要假设检验，做检验和不做检验有什么区别？杨灿老师在[讨论帖](https://d.cosx.org/d/420930/11)提出检验的作用和实际应用问题。
+Jacob Cohen 实际谈的是更加深刻的问题。开篇介绍为什么需要假设检验，做检验和不做检验有什么区别？杨灿老师在[讨论帖](https://d.cosx.org/d/420930/11)提出检验的作用和实际应用问题。R. A. Fisher 将抽样分布、参数估计和假设检验列为统计推断的三个中心内容，可见假设检验的重要地位。
 
-真实数据的情况是复杂多样的，本章按照数据情况对检验方法分类，方便读者根据手头的数据情况，快速从众多的方法中定位最合适的检验方法。依次是单样本检验、两样本检验、多样本检验、计数数据检验、配对样本检验。
+真实数据的情况是复杂多样的，本章按照数据情况对检验方法分类，方便读者根据手头的数据情况，快速从众多的方法中定位最合适的检验方法。依次是单样本检验、两样本检验、多样本检验、计数数据检验、配对样本检验。对参数检验和非参数检验方法都适用的检验问题，非参数检验方法的功效更大，方法更优。在总体未知的情况下，无论是对均值检验还是对方差检验，大部分情况下都需要非参数检验方法。
 
--   检验方法归类：参数与非参数检验方法，
--   检验计算方式：近似 approximate、精确 Extract、模拟 Simulation 和重抽样 Bootstrap 等方式
--   检验对象归类：位置参数和尺度参数的检验
--   检验总体数量归类：单总体、两个总体和多个总体
--   检验总体分布归类：正态、二项、泊松、多项分布等
--   检验总体维度归类：总体分一维和多维的情形
-
-R. A. Fisher 将抽样分布、参数估计和假设检验列为统计推断的三个中心内容，可见假设检验的重要地位。
+-   检验方法归类：参数与非参数检验方法。
+-   检验计算方式：近似 Approximate、精确 Extract、模拟 Simulation 和重抽样 Bootstrap 等方式。
+-   检验对象归类：位置参数和尺度参数的检验。
+-   检验总体数量归类：单总体、两个总体和多个总体。
+-   检验总体分布归类：正态、二项、泊松、多项分布等。
+-   检验总体维度归类：总体分一维和多维的情形。
 
 有了均值和方差，为什么还要位置参数和尺度参数？为了更一般地描述问题，扩展范围。关于检验方法，如有不明白的地方，可以查看维基百科词条。
 
 ## 单样本检验 {#sec-one-sample}
 
-### 均值检验
+### 正态总体均值检验
 
-### 方差检验
+#### 方差已知
+
+Z 检验，检验统计量服从正态分布
+
+#### 方差未知
+
+t 检验，检验统计量服从 t 分布
+
+::: callout-note
+英国统计学家 William Sealy Gosset (1876-1937) 于 1908 年在杂志 《Biometrics》 上以笔名 Student 发表论文《The Probable Error of a Mean》[@Gosset1908]，论文中展示了独立同正态分布的样本 $x_1, \ldots, x_n \stackrel{i.i.d}{\sim} \mathcal{N}(\mu,\sigma^2)$ 的样本方差 $s^2$ 和样本标准差 $s$ 的抽样分布，根据均值和标准差不相关的性质导出 t 分布，宣告 t 分布的诞生，因其在小样本领域的突出贡献，W. S. Gosset 进入世纪名人录 [@Heyde2001]。
+:::
+
+### 正态总体方差检验
+
+### 总体未知均值检验
+
+### 总体未知方差检验
 
 ## 两样本检验 {#sec-two-samples}
 
@@ -113,16 +127,16 @@ t.test(x = x1, y = y1, alternative = "greater", var.equal = TRUE)
 Welch t 检验
 
 $$
-T = \frac{(\bar{\bm{x}} - \bar{\bm{y}}) - (\mu_1 - \mu_2)}{\sqrt{\frac{s_x^2}{m} + \frac{s_y^2}{n}} }
+T = \frac{(\bar{x} - \bar{y}) - (\mu_1 - \mu_2)}{\sqrt{\frac{s_x^2}{m} + \frac{s_y^2}{n}} }
 $$
 
-检验统计量 $T$ 服从自由度为 l 的 t 分布。
+其中，$\bar{x} = \sum_{i=1}^{m}x_i,\bar{y} = \sum_{i=1}^{n}y_i$ 检验统计量 $T$ 服从自由度为 $l$ 的 t 分布。
 
 $$
 l = \frac{s_0^4}{ \frac{s_x^4}{m^2(m - 1)} + \frac{s_y^4}{n^2(n-1)} }
 $$
 
-其中， $s_0^2 = s_x^2 / m + s_y^2/n$，l 通常不是整数，实际使用时，l 取最近的整数。$s_x^2$ 表示样本 x 的方差 $s_x^2 = \frac{1}{m-1}\sum_{i=1}^{m}(x_i -\bar{x})^2$
+其中， $s_0^2 = s_x^2 / m + s_y^2/n$，$l$ 通常不是整数，实际使用时，$l$ 可取最近的整数。$s_x^2$ 表示样本 x 的方差 $s_x^2 = \frac{1}{m-1}\sum_{i=1}^{m}(x_i -\bar{x})^2$ ，$s_y^2$ 表示样本 y 的方差 $s_y^2 = \frac{1}{m-1}\sum_{i=1}^{m}(y_i -\bar{y})^2$ 。
 
 ```{r}
 s0 <- var(x1) / m + var(y1) / n
@@ -130,7 +144,7 @@ l <- s0^2 / (var(x1)^2 / (m^2 * (m - 1)) + var(y1)^2 / (n^2 * (n - 1)))
 l
 ```
 
-所以 l 取 127。检验统计量的值如下
+所以， $l$ 可取 127。检验统计量的值如下
 
 ```{r}
 t0 <- (mean(x1) - mean(y1)) / sqrt(s0)
@@ -150,11 +164,13 @@ qt(1 - 0.05, df = 127)
 t.test(x = x1, y = y1, alternative = "greater", var.equal = FALSE)
 ```
 
-$$\frac{(n-1)s^2}{\sigma^2} \sim \chi^2(n-1)$$
-
-$$E(s^2) = \sigma^2, \quad Var(s^2) = \frac{2\sigma^4}{n-1}$$
-
-$$\frac{\bar{x} - \mu}{s/\sqrt{n}} \sim t(n-1)$$
+$$
+\begin{aligned}
+& \frac{(n-1)s^2}{\sigma^2} \sim \chi^2(n-1) \\
+& \mathsf{E}\{s^2\} = \sigma^2, \quad \mathsf{Var}\{s^2\} = \frac{2\sigma^4}{n-1} \\
+& \frac{\bar{x} - \mu}{s/\sqrt{n}} \sim t(n-1)
+\end{aligned}
+$$
 
 举例：sleep 数据集
 
@@ -184,8 +200,6 @@ t.test(extra ~ group, data = sleep, var.equal = FALSE)
 2.  两个样本的样本量不是很大，总体方差也未知，检验两样本均值的显著性检验，即著名的 Behrens-Fisher 问题，Welch 在 1938 年提出近似服从自由度为 $\ell$ 的 t 分布。
 
 ::: callout-note
-英国统计学家 William Sealy Gosset (1876-1937) 于 1908 年在杂志 《Biometrics》 上以笔名 Student 发表论文《The Probable Error of a Mean》[@Gosset1908]，论文中展示了独立同正态分布的样本 $x_1, \ldots, x_n \stackrel{i.i.d}{\sim} \mathcal{N}(\mu,\sigma^2)$ 的样本方差 $s^2$ 和样本标准差 $s$ 的抽样分布，根据均值和标准差不相关的性质导出 t 分布，宣告 t 分布的诞生，因其在小样本领域的突出贡献，W. S. Gosset 进入世纪名人录 [@Heyde2001]。
-
 Egon Pearson 接过他父亲 Karl Pearson 的职位，担任伦敦大学学院的高尔顿统计教授。许宝騄（Pao-Lu Hsu）在 Jerzy Neyman 和 Egon Pearson 主编的杂志《Statistical Research Memoirs》发表第一篇关于 Behrens-Fisher 问题的论文 [@Hsu1938]，1998 年关于 Behrens-Fisher 问题的综述 [@Kim1998]。陈家鼎和郑忠国一起整理了许宝騄的生平事迹和学术成就，见[《许宝騄先生的生平和学术成就》](https://www.math.pku.edu.cn/misc/probstat/doc.pdf)。钟开涞（Kai-Lai Chung）将许宝騄的论文集整理出版 [@HSU1983]。
 :::
 
@@ -208,7 +222,7 @@ t.test(x = c(3, 4, 5, 8, 9, 1, 2, 4, 5), y = c(6, 19, 3, 2, 14, 4, 5, 17, 1))
 
 ### 正态总体方差检验
 
-F 检验比较两个正态总体的方差是否相等
+比较两个正态总体的方差是否相等，F 检验。
 
 ```{r}
 var.test(extra ~ group, data = sleep)
@@ -216,16 +230,18 @@ var.test(extra ~ group, data = sleep)
 
 ### 总体未知均值检验
 
--   wilcox.test 适用于单样本和两样本，单样本 Wilcoxon 秩和检验，两样本 Wilcoxon 符号秩检验，后者也叫 Mann-Whitney 检验
--   kruskal.test 适用于两样本和多样本
+在总体分布未知的情况下，比较均值是否相等的检验。
 
-在总体分布未知的情况下，比较均值是否相等的检验
+-   `wilcox.test()` 适用于单样本和两样本的均值检验，单样本 Wilcoxon 秩和检验，两样本 Wilcoxon 符号秩检验，后者也叫 Mann-Whitney 检验。
+-   `kruskal.test()` 适用于两样本和多样本，比较多个均值是否相等的检验。
+
+单样本和两样本 `wilcox.test()`。
 
 ```{r}
 wilcox.test(extra ~ group, data = sleep)
 ```
 
-比较多个均值是否相等的检验 `kruskal.test()`
+两样本和多样本 `kruskal.test()` 。
 
 ```{r}
 kruskal.test(extra ~ group, data = sleep)
@@ -233,7 +249,7 @@ kruskal.test(extra ~ group, data = sleep)
 
 ### 总体未知方差检验
 
-对分布没有要求的方差齐性检验有四个，按检验方法和适用范围分类。
+对总体没有分布要求的方差齐性检验方法有四个，按方法类型和适用范围分类，见下 @tbl-bartlett-test 。
 
 |            | 两个样本                        | 多个样本          |
 |------------|---------------------------------|-------------------|
@@ -242,14 +258,14 @@ kruskal.test(extra ~ group, data = sleep)
 
 : 检验方法分类 {#tbl-bartlett-test}
 
-Bartlett 检验：对总体的分布形式没有要求，检验各个组的方差是否有显著性差异，即方差齐性检验。属于参数检验，适用于多个样本的情况。
+Bartlett 检验对总体的分布形式没有要求，检验各个组的方差是否有显著性差异，即方差齐性检验，属于参数检验，适用于多个样本的情况。
 
 ```{r}
 # 两样本
 bartlett.test(extra ~ group, data = sleep)
 ```
 
-`ansari.test` 和 `mood.test` 是基于秩的两样本尺度参数显著性差异检验，是非参数检验。Ansari-Bradley 检验 `ansari.test` 目的是检验两样本的尺度参数是否有显著性差异。Mood's 两样本检验：检验两样本尺度参数的差异是否显著。就正态分布而言，尺度参数可以理解为方差 $\sigma^2$，位置参数可以理解为均值 $\mu$ 。Fligner-Killeen (中位数) 检验各个组的样本方差是不是一致的，也是方差齐性检验，适用于多个样本。
+`ansari.test()` 和 `mood.test()` 属于两样本的非参数检验，检验尺度参数是否相同（齐性）。`fligner.test()` 也属于非参数检验，适用于两样本和多样本的情况。非参数检验常涉及位置参数和尺度参数这一对概念，就正态分布而言，位置参数可以理解为均值 $\mu$ ，尺度参数可以理解为方差 $\sigma^2$ 。
 
 ```{r}
 ansari.test(extra ~ group, data = sleep)
@@ -303,7 +319,7 @@ summary(fit)
 kruskal.test(weight ~ group, data = PlantGrowth)
 ```
 
-Friedman 检验是非参数检验。适用于单因素重复测量数据的方差分析，检验是否存在一组值显著高于或低于其他组。术语涉及实验设计，比如完全区组设计 complete block designs
+Friedman 检验是非参数检验。适用于单因素重复测量数据的方差分析，检验是否存在一组值显著高于或低于其他组。术语涉及实验设计，比如完全区组设计 complete block designs 。
 
 典型场景：n 个品酒师对 k 瓶葡萄酒打分，是否存在一组打分显著高于其他组。检验睡眠质量一组人显著好于另一组人。
 

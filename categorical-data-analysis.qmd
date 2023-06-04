@@ -18,7 +18,7 @@ source("_common.R")
 
 ```{r}
 #| label: tbl-ucb-admissions
-#| tbl-cap: "1973 年加州伯克利分校的录取情况"
+#| tbl-cap: "加州伯克利分校的录取情况"
 #| echo: false
 
 # knitr::kable(as.data.frame(UCBAdmissions),
@@ -73,7 +73,6 @@ gt::gt(dat2) |>
 #| fig-cap: "加州伯克利分校院系录取情况"
 #| fig-showtext: true
 #| echo: false
-#| par: true
 
 # plot(UCBAdmissions, col = "lightblue", border = "white",
 #      main = "", xlab = "性别", ylab = "院系")
@@ -82,7 +81,7 @@ mosaicplot(~ Admit + Dept + Gender,
   data = UCBAdmissions, color = TRUE, border = "white",
   main = "", xlab = "", ylab = "院系"
 )
-par(op)
+on.exit(par(op), add = TRUE) 
 ```
 
 接下来进行定量的分析，首先，按性别和录取情况统计人数，如下：
@@ -182,9 +181,42 @@ anova(fit_ucb0, fit_ucb1, test = "LRT")
 ```
 :::
 
+```{r}
+#| eval: false
+#| echo: false
+
+# https://github.com/nhs-r-community/FunnelPlotR
+library(FunnelPlotR)
+library(ggplot2)
+
+ucb_dat <- as.data.frame(UCBAdmissions)
+
+fit_ucb <- glm(Freq ~ Dept + Admit + Gender,
+  family = poisson(link = "log"),
+  data = ucb_dat
+)
+summary(fit_ucb)
+
+ucb_dat$preds <- predict(fit_ucb, type = "response")
+
+funnel_plot(
+  numerator = ucb_dat$Freq,
+  denominator = ucb_dat$preds, # 预测值
+  group = ucb_dat$Gender, # 分组
+  title = "Length of Stay Funnel plot for `medpar` data",
+  data_type = "SR", # 标准 standard ratio
+  limit = 99, # 置信限
+  draw_unadjusted = TRUE,
+  draw_adjusted = FALSE, label = "outlier"
+)
+# 泊松分布的均值等于方差，如果不是，则意味着 overdispersion
+# 方差是均值的 125 倍
+sum(fit_ucb$weights * fit_ucb$residuals^2) / fit_ucb$df.residual
+```
+
 ## 分析泰坦尼克号乘客生存率 {#sec-titanic}
 
-泰坦尼克号乘客生存死亡统计数据
+泰坦尼克号乘客生存死亡统计数据，分析存活率的影响因素。
 
 ```{r}
 #| label: tbl-titanic-data
@@ -211,7 +243,7 @@ gt::gt(titanic_data) |>
 
 ### 数据展示
 
-泰坦尼克号处女航乘客数量按船舱、性别、年龄和存活情况分层， [**ggstats**](https://github.com/larmarange/ggstats/)包绘制百分比堆积柱形图展示多维分类数据。
+泰坦尼克号处女航乘客数量按船舱、性别、年龄和存活情况分层， [**ggstats**](https://github.com/larmarange/ggstats/) 包绘制百分比堆积柱形图展示多维分类数据。
 
 **ggstats** 包提供的图层 `stat_prop()` 是 `stat_count()` 的变种， `as.data.frame(Titanic)` 中 Age 一列会自动聚合吗？ by = Class 按 Class 分组聚合，统计 Survived 的比例，提供 prop 计算的变量，传递给 `geom_text()` 以添加注释，position 设置将注释放在柱子的中间
 
@@ -312,56 +344,4 @@ fit_titanic <- glm(cbind(Freq_Yes, Freq_No) ~ Class + Sex + Age,
 ```{r}
 # 模型输出
 summary(fit_titanic)
-```
-
-[**titanic**](https://github.com/paulhendricks/titanic) 包整理了来自 kaggle 的 [Titanic](https://www.kaggle.com/c/titanic/data) 数据集，详细记录了 891 位乘客的信息，它比 Base R 内置的 Titanic 数据集更加原始，细节更多，信息更加丰富。原数据集拆分为训练集 `titanic_train` 和测试集 `titanic_test`。首先来预览一下训练数据集 titanic_train 的情况：
-
-```{r}
-data(titanic_train, package = "titanic")
-data(titanic_test, package = "titanic")
-str(titanic_train)
-```
-
-因为有每个乘客的原始信息，我们可以在个体水平上建模，采用更加复杂的模型分析泰坦尼克号乘客存活率及其影响因素。
-
-```{r}
-#| eval: false
-#| echo: false
-
-# 另一个数据源
-data("TitanicSurvival", package = "carData")
-```
-
-```{r}
-#| eval: false
-#| echo: false
-
-# https://github.com/nhs-r-community/FunnelPlotR
-library(FunnelPlotR)
-
-library(ggplot2)
-
-ucb_dat <- as.data.frame(UCBAdmissions)
-
-fit_ucb <- glm(Freq ~ Dept + Admit + Gender,
-  family = poisson(link = "log"),
-  data = ucb_dat
-)
-summary(fit_ucb)
-
-ucb_dat$preds <- predict(fit_ucb, type = "response")
-
-funnel_plot(
-  numerator = ucb_dat$Freq,
-  denominator = ucb_dat$preds, # 预测值
-  group = ucb_dat$Gender, # 分组
-  title = "Length of Stay Funnel plot for `medpar` data",
-  data_type = "SR", # 标准 standard ratio
-  limit = 99, # 置信限
-  draw_unadjusted = TRUE,
-  draw_adjusted = FALSE, label = "outlier"
-)
-# 泊松分布的均值等于方差，如果不是，则意味着 overdispersion
-# 方差是均值的 125 倍
-sum(fit_ucb$weights * fit_ucb$residuals^2) / fit_ucb$df.residual
 ```
