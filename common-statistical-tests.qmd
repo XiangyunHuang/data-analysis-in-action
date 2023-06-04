@@ -493,6 +493,13 @@ poisson.test(x,
 
 ### 卡方检验 {#sec-chisq-test}
 
+几类独立性检验
+
+1.  相互独立 Mutual independence 所有变量之间相互独立，$X \perp Y \perp Z$ 。
+2.  联合独立 Joint independence 两个变量的联合与第三个变量独立，$XY \perp Z$ 。
+3.  边际独立 Marginal independence 当忽略第三个变量时，两个变量是独立的。
+4.  条件独立 Conditional independence 当固定第三个变量时，两个变量是独立的，$X \perp Y | Z$。
+
 计数数据，通俗来说，对象是一个一个或一份一份的、可数的、离散的数据，比如人数。用于计数数据的皮尔逊卡方检验（ Pearson's $\chi^2$ 检验）：列联表独立性检验和拟合优度检验 `chisq.test()` 。
 
 费舍尔精确检验（ Fisher 's Exact 检验）：固定边际的情况下，检验列联表行和列之间的独立性 `fisher.test()` 。
@@ -699,19 +706,21 @@ apply(Wish, MARGIN = 1:2, var)
 ```{r}
 #| label: fig-power-t-test
 #| fig-cap: "t 检验的功效"
-#| fig-width: 5
+#| fig-width: 4
 #| fig-height: 3
 #| fig-showtext: true
 
-n = 30  # 样本量（只是一个例子）
-x = seq(0, 12, 0.01)
+n <- 30 # 样本量（只是一个例子）
+x <- seq(0, 12, 0.01)
 library(ggplot2)
-dat <- data.frame(xx = x/sqrt(n), yy = 2 * (1 - pt(x, n - 1)))
+dat <- data.frame(xx = x / sqrt(n), yy = 2 * (1 - pt(x, n - 1)))
+
 ggplot(data = dat, aes(x = xx, y = yy)) +
   geom_line() +
   geom_vline(xintercept = c(0.01, 0.2, 0.5, 0.8, 1.2, 2), linetype = 2) +
   theme_classic() +
-  labs(x = "d = t / sqrt(n)", y = "2 * (1 - pt(x, n - 1))")
+  labs(x = expression(d == frac(t, sqrt(n))), 
+       y = expression(2 * (1 - pt(x, n - 1))))
 ```
 
 ```{r}
@@ -733,7 +742,7 @@ power.t.test(
 | `type`        | t 检验的类型 `"two.sample"` 两样本、`"one.sample"` 单样本或 `"paired"` 配对样本 |
 | `alternative` | 单边或双边检验，取值为 `"two.sided"` 或 `"one.sided"`                           |
 
-: 函数 `power.t.test()` 的参数表 {#tbl-power-t-test}
+: 函数 `power.t.test()` 的参数及其含义 {#tbl-power-t-test}
 
 参数 `n`，`delta`，`power`，`sd` 和 `sig.level` 必须有一个值为 `NULL`，为 `NULL` 的参数是由其它参数决定的。
 
