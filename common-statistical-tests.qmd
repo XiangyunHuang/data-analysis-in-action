@@ -476,9 +476,9 @@ $$
 
 ### 泊松检验 {#sec-poisson-test}
 
-泊松分布是 1837年由法国数学家泊松 （Poisson, 1781-1840） 首次提出
+泊松分布是 1837年由法国数学家泊松 （Poisson, 1781-1840） 首次提出。
 
-`poisson.test()` 泊松分布的参数 $\lambda (>0)$ 的精确检验，适用于单样本和两样本
+`poisson.test()` 泊松分布的参数 $\lambda (>0)$ 的精确检验，适用于单样本和两样本。
 
 ```{r}
 #| eval: false
@@ -493,25 +493,17 @@ poisson.test(x,
 
 ### 卡方检验 {#sec-chisq-test}
 
-独立性检验 `chisq.test()`
+计数数据，通俗来说，对象是一个一个或一份一份的、可数的、离散的数据，比如人数。用于计数数据的皮尔逊卡方检验（ Pearson's $\chi^2$ 检验）：列联表独立性检验和拟合优度检验 `chisq.test()` 。
 
-用于计数数据的皮尔逊卡方检验：列联表独立性检验和拟合优度检验
+费舍尔精确检验（ Fisher 's Exact 检验）：固定边际的情况下，检验列联表行和列之间的独立性 `fisher.test()` 。
 
-`chisq.test` $\chi^2$ 检验：列联表检验和拟合优度检验
-
-费舍尔精确检验 `fisher.test()`
-
-固定边际的情况下，检验列联表行和列之间的独立性
-
-`fisher.test()` 函数用法，统计原理和公式，适用范围和条件，概念背景和历史
-
-费舍尔精确检验 `fisher.test` 固定边际的情况下，检验列联表行和列之间的独立性
+`fisher.test()` 函数用法，统计原理和公式，适用范围和条件，概念背景和历史。
 
 费舍尔 (Sir Ronald Fisher, 1890.2 -- 1962.7)[^common-statistical-tests-1] 和一位女士打赌，女士说能品出奶茶中奶和茶的添加顺序。
 
 [^common-statistical-tests-1]: <https://en.wikipedia.org/wiki/Ronald_Fisher>
 
-计数数据，通俗来说，对象是一个一个或一份一份的、可数的、离散的数据，比如人数。`fisher.test()` 针对计数数据，检验列联表中行和列的独立性
+`fisher.test()` 针对计数数据，检验列联表中行和列的独立性。
 
 ```{r}
 TeaTasting <- matrix(c(3, 1, 1, 3),
@@ -533,15 +525,28 @@ fisher.test(TeaTasting, alternative = "two.sided")
 sum(dhyper(x = c(3, 4), m = 4, n = 4, k = 4))
 ```
 
-McNemar 检验 `mcnemar.test()`
+用于计数数据的 McNemar's 卡方检验（ McNemar's $\chi^2$ 检验）：检验二维列联表行和列的对称性 `mcnemar.test()`。怎么理解对称性？看帮助实例。
 
-用于计数数据的 McNemar's 卡方检验 McNemar's $\chi^2$ 检验：检验二维列联表行和列的对称性，怎么理解对称性？看帮助实例。
+用于计数数据的 Cochran-Mantel-Haenszel 卡方检验：两个枚举（分类）变量的条件独立性，假定不存在三因素的交互作用。Cochran-Mantel-Haenszel 检验 `mantelhaen.test()`
 
-Cochran-Mantel-Haenszel 检验 `mantelhaen.test()`
+```{r}
+mantelhaen.test(UCBAdmissions)
+```
 
-用于计数数据的 Cochran-Mantel-Haenszel 卡方检验
+没有证据表明院系与性别之间存在关联。
 
-Performs a Cochran-Mantel-Haenszel chi-squared test of the null that two nominal variables are conditionally independent in each stratum, assuming that there is no three-way interaction.
+```{r}
+apply(UCBAdmissions, 3, function(x) (x[1, 1] * x[2, 2]) / (x[1, 2] * x[2, 1]))
+
+woolf <- function(x) {
+  x <- x + 1 / 2
+  k <- dim(x)[3]
+  or <- apply(x, 3, function(x) (x[1, 1] * x[2, 2]) / (x[1, 2] * x[2, 1]))
+  w <- apply(x, 3, function(x) 1 / sum(1 / x))
+  1 - pchisq(sum(w * (log(or) - weighted.mean(log(or), w))^2), k - 1)
+}
+woolf(UCBAdmissions)
+```
 
 ## 配对样本检验 {#sec-pairwise-data}
 
@@ -565,9 +570,9 @@ pairwise.t.test(x = sleep$extra, g = sleep$group, paired = T)
 
 ### 配对相关性检验 {#sec-cor-test}
 
-配对样本的相关性检验 `cor.test`：Pearson's 相关系数，Kendall's $\tau$ 检验或者 Spearman's $\rho$ 检验
+配对样本的相关性检验 `cor.test()`：Pearson's 相关系数，Kendall's $\tau$ 检验或者 Spearman's $\rho$ 检验
 
-## 关于样本分布的检验
+## 关于分布的检验
 
 前面介绍的检验方法都是对总体的某个特征数（均值、方差）进行检验，下面介绍的检验方法是针对分布的性质。比如样本是否来自正态分布，两个样本是否来自同一分布，样本点之间是否相互独立，样本点列是否平稳等。通过检验方法探索样本的分布性质。
 
@@ -615,15 +620,15 @@ Lilliefors 检验 [^common-statistical-tests-4] 和单样本的 ks 检验的关�
 
 [^common-statistical-tests-5]: <https://stat.ethz.ch/pipermail/r-help/2004-February/045597.html>
 
-Kolmogorov-Smirnov 检验：单样本或两样本的同分布检验 ks.test
+Kolmogorov-Smirnov 检验：单样本或两样本的同分布检验 `ks.test()`
 
 ### 独立性检验 {#sec-Box-test}
 
-时间序列独立性检验 `Box.test` 计算 Box-Pierce 或 Ljung-Box 检验统计量来检查给定时间序列的独立性假设。
+时间序列独立性检验 `Box.test()` 计算 Box-Pierce 或 Ljung-Box 检验统计量来检查给定时间序列的独立性假设。
 
 ### 平稳性检验 {#sec-PP-test}
 
-时间序列单位根检验，检验时间序列平稳性 Phillips-Perron 的单位根检验 `PP.test`
+时间序列单位根检验，检验时间序列平稳性 Phillips-Perron 的单位根检验 `PP.test()`
 
 ```{r}
 #| eval: false
@@ -634,7 +639,7 @@ PP.test(x, lshort = TRUE)
 
 ### 球形检验 {#sec-mauchly-test}
 
-Mauchly 球形检验 `mauchly.test` 检验：Wishart 分布的协方差矩阵是否正比于给定的矩阵。
+Mauchly 球形检验 `mauchly.test()` 检验：Wishart 分布的协方差矩阵是否正比于给定的矩阵。
 
 如果 $X_1, X_2, \cdots, X_m$，$X_i \in \mathbb{R}^p$，$X_i \overset{i.i.d}{\sim} \mathrm{MVN}(0,\Sigma)$，即 $m$ 个样本点都服从均值为 $0$，协方差矩阵为 $\Sigma$ 的 $p$ 维多元正态分布 $\mathrm{MVN}(0,\Sigma)$，且样本点之间相互独立。则 $M = X'X$ 服从参数为 $\Sigma$ 和 $m$ 的 Wishart 分布 $W_p(\Sigma, m)$。
 
