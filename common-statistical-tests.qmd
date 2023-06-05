@@ -31,6 +31,7 @@ library(pwr)   # 计算检验的功效和实验样本量
 # library(survival)
 # library(coin)    # 补充更多的检验方法
 # library(rstatix) # 管道操作整合检验方法
+# library(pwrss)   # 常见检验的功效和样本量计算
 ```
 
 ## 单样本检验 {#sec-one-sample}
@@ -41,17 +42,70 @@ library(pwr)   # 计算检验的功效和实验样本量
 
 设 $x_1,\cdots,x_n$ 是来自总体 $\mathcal{N}(\mu,\sigma^2)$ 的样本
 
+$\bar{x} = \frac{\sum_{i=1}^{n}x_i}{n}$ ，$\bar{x} \sim \mathcal{N}(\mu,\sigma^2 / n)$ ，$s^2 = \frac{1}{n-1}\sum_{i=1}^{n}(x_i - \bar{x})^2$
+
+$$
+\begin{aligned}
+\mathrm{I}   \quad H_0: \mu - \mu_0 \leq 0 \quad vs. \quad H_1: \mu - \mu_0 > 0 \\
+\mathrm{II}  \quad H_0: \mu - \mu_0 \geq 0 \quad vs. \quad H_1: \mu - \mu_0 < 0 \\
+\mathrm{III} \quad H_0: \mu - \mu_0 = 0 \quad vs. \quad H_1: \mu - \mu_0 \neq 0
+\end{aligned}
+$$
+
 Z 检验，检验统计量服从正态分布
+
+$$
+u = \frac{\bar{x} - \mu_0}{\sigma / \sqrt{n}}
+$$
+
+假定 $\mu_0 = 1$ 对于检验问题 I 拒绝域 $\{u \geq u_{1-\alpha}\}$
+
+```{r}
+set.seed(20232023)
+n <- 20
+# 样本
+x <- rnorm(n, mean = 1.8, sd = 2)
+# 检验统计量
+u <- (mean(x) - 1) / (2 / sqrt(n))
+# 临界值
+qnorm(p = 1 - 0.05, mean = 0, sd = 1)
+# P 值
+1 - pnorm(q = u)
+```
 
 #### 方差未知
 
 t 检验，检验统计量服从 t 分布
 
 $$
+t = \frac{\bar{x} - \mu_0}{s/\sqrt{n}}
+$$
+
+$t \sim t(n-1)$
+
+$$
+\begin{aligned}
+\mathrm{I}   \quad H_0: \mu - \mu_0 \leq 0 \quad vs. \quad H_1: \mu - \mu_0 > 0 \\
+\mathrm{II}  \quad H_0: \mu - \mu_0 \geq 0 \quad vs. \quad H_1: \mu - \mu_0 < 0 \\
+\mathrm{III} \quad H_0: \mu - \mu_0 = 0 \quad vs. \quad H_1: \mu - \mu_0 \neq 0
+\end{aligned}
+$$
+
+假定 $\mu_0 = 1$ 对于检验问题 I ，拒绝域 $\{t \geq t_{1-\alpha}(n-1)\}$
+
+```{r}
+# 检验统计量
+t0 <- (mean(x) - 1) / sqrt(var(x) / n)
+# 临界值
+qt(p = 1 - 0.05, df = n - 1)
+# P 值
+1 - pt(q = t0, df = n - 1)
+```
+
+$$
 \begin{aligned}
 & \frac{(n-1)s^2}{\sigma^2} \sim \chi^2(n-1) \\
-& \mathsf{E}\{s^2\} = \sigma^2, \quad \mathsf{Var}\{s^2\} = \frac{2\sigma^4}{n-1} \\
-& \frac{\bar{x} - \mu}{s/\sqrt{n}} \sim t(n-1)
+& \mathsf{E}\{s^2\} = \sigma^2 \quad \mathsf{Var}\{s^2\} = \frac{2\sigma^4}{n-1}
 \end{aligned}
 $$
 
@@ -280,10 +334,21 @@ var.test(extra ~ group, data = sleep)
 wilcox.test(extra ~ group, data = sleep)
 ```
 
+```{r}
+signed_rank <- function(x) sign(x) * rank(abs(x))
+fit <- lm(signed_rank(extra) ~ group, data = sleep)
+summary(fit)
+```
+
 两样本和多样本 `kruskal.test()` 。
 
 ```{r}
 kruskal.test(extra ~ group, data = sleep)
+```
+
+```{r}
+fit <- lm(rank(extra) ~ group, data = sleep)
+summary(fit)
 ```
 
 ### 总体未知方差检验
@@ -668,6 +733,12 @@ wilcox.test(extra ~ group, data = sleep, paired = TRUE)
 ### 配对相关性检验 {#sec-cor-test}
 
 配对样本的相关性检验 `cor.test()`：Pearson's 相关系数，Kendall's $\tau$ 检验或者 Spearman's $\rho$ 检验
+
+```{r}
+# cor.test(method = "pearson")  # lm(y ~ 1 + x)
+# cor.test(method = "kendall")
+# cor.test(method = "spearman") # lm(rank(y) ~ 1 + rank(x))
+```
 
 ## 总体分布的检验
 
