@@ -410,21 +410,48 @@ fligner.test(extra ~ group, data = sleep)
 
 ## 多样本检验 {#sec-multi-samples}
 
+本节考虑 Base R 内置的 PlantGrowth 数据集，它收集自 Annette J. Dobson 所著书籍《An Introduction to Statistical Modelling》[@Dobson1983] 第 2 章第 2 节的案例 --- 研究植物在两种不同试验条件下的生长情况，植物通过光合作用吸收土壤的养分和空气中的二氧化碳，完成积累，故以植物的干重来刻画植物的生长情况，首先将几乎相同的种子随机地分配到实验组和对照组，基于完全随机实验设计（completely randomized experimental design），经过预定的时间后，将植物收割，干燥并称重。
+
+```{r}
+str(PlantGrowth)
+```
+
+设立对照组（控制组）ctrl 和实验组 trt1 和 trt2，比较不同的处理方式对植物干重的影响
+
+```{r}
+summary(PlantGrowth)
+```
+
+每个组都有 10 颗植物，生长情况如 @fig-plant-growth 所示
+
+```{r}
+#| label: fig-plant-growth
+#| fig-width: 5
+#| fig-height: 4
+#| fig-cap: "植物干重"
+#| fig-showtext: true
+
+## Annette J. Dobson 扩展的 Plant Weight Data 数据，见 59 页
+library(ggplot2)
+ggplot(data = PlantGrowth, aes(x = group, y = weight, color = group)) +
+  geom_boxplot() +
+  geom_jitter() +
+  theme_minimal()
+```
+
 ### 正态总体均值检验
 
 #### 假定同方差
 
 讲清楚原假设和备择假设。讲清楚假设检验、方差分析、一般线性模型（包含广义线性模型和线性混合效应模型）的关系。
 
-单因素方差分析 `oneway.test()`
+$\sigma_i^2 = \mathsf{Var}\{\epsilon_{ij}\}, i = 1,2,3$ 表示第 $i$ 组的方差，
 
-```{r}
-data("PlantGrowth")
-# 计算各个组的方差
-aggregate(data = PlantGrowth, weight ~ group, FUN = var)
-```
+$$
+y_{ij} = \mu + \epsilon_{ij}, i = 1,2,3
+$$
 
-各个组的方差确实不太相同。
+其中 $\mu$ 是固定的未知参数。单因素方差分析 `oneway.test()`
 
 ```{r}
 # 假设各组方差相同
@@ -434,8 +461,25 @@ oneway.test(weight ~ group, data = PlantGrowth, var.equal = TRUE)
 线性模型也假定各个组的方差是相同的，模型显著性检验的结果和上面是一致的。
 
 ```{r}
-fit <- lm(weight ~ group, data = PlantGrowth)
-summary(fit)
+fit_lm <- lm(weight ~ group, data = PlantGrowth)
+anova(fit_lm) # 或者 summary(fit)
+```
+
+模型输出整理成 @tbl-lm-plant-growth
+
+```{r}
+#| label: tbl-lm-plant-growth
+#| tbl-cap: "线性回归的输出"
+
+# 整理模型输出到数据框
+fit_lm_output <- round(coef(summary(fit_lm)), 4)
+# 指定行名和列名
+rownames(fit_lm_output) <- c("$\\alpha$", "$\\beta_1$", "$\\beta_2$")
+colnames(fit_lm_output)[4] <- "$P(T > |t|)$"
+knitr::kable(fit_lm_output,
+  escape = FALSE, 
+  col.names = c("估计值", "标准差", "t 统计量", "P 值")
+)
 ```
 
 双因素方差分析 `aov()` 支持双因素方差分析
@@ -447,6 +491,13 @@ aov(weight ~ group, data = PlantGrowth)
 #### 假定异方差
 
 ```{r}
+# 计算各个组的方差
+aggregate(data = PlantGrowth, weight ~ group, FUN = var)
+```
+
+各个组的方差确实不太相同。
+
+```{r}
 # 假设各组方差不同
 oneway.test(weight ~ group, data = PlantGrowth, var.equal = FALSE)
 ```
@@ -454,11 +505,18 @@ oneway.test(weight ~ group, data = PlantGrowth, var.equal = FALSE)
 线性混合效应模型，假定每一组（层）有不同的方差。
 
 ```{r}
-fit <- nlme::gls(weight ~ 1,
+fit_gls <- nlme::gls(weight ~ 1,
   data = PlantGrowth, method = "ML",
   weights = nlme::varIdent(form = ~ 1 | group)
 )
-summary(fit)
+summary(fit_gls)
+```
+
+考虑每个组有不同的方差，放开同方差的假设，发现，从对数似然的角度来看，有一定提升。
+
+```{r}
+logLik(fit_lm)
+logLik(fit_gls)
 ```
 
 ### 正态总体方差检验
@@ -497,7 +555,7 @@ quade.test(extra ~ group | ID, data = sleep)
 
 ### 总体未知方差检验
 
-三个及以上样本的方差齐性检验。
+三个及以上样本的方差齐性检验。进一步地，我们在线性模型的基础上考虑每个实验组有不同的方差，先做方差齐性检验。
 
 ```{r}
 # 参数检验
@@ -505,6 +563,8 @@ bartlett.test(weight ~ group, data = PlantGrowth)
 # 非参数检验
 fligner.test(weight ~ group, data = PlantGrowth)
 ```
+
+检验的结果显示，可以认为三个组的方差没有显著差异。
 
 ## 计数数据检验 {#sec-count-data}
 
@@ -925,7 +985,7 @@ power.t.test(
 ```
 
 | 参数          | 含义                                                                            |
-|:----------------|:------------------------------------------------------|
+|:--------------|:--------------------------------------------------------------------------------|
 | `n`           | 每个组的样本量                                                                  |
 | `delta`       | 两个组的均值之差                                                                |
 | `sd`          | 标准差，默认值 1                                                                |
