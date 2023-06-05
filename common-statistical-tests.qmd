@@ -21,7 +21,9 @@ Jacob Cohen 实际谈的是更加深刻的问题。开篇介绍为什么需要�
 -   检验总体分布归类：正态、二项、泊松、多项分布等。
 -   检验总体维度归类：分一维、二维和多维的情形。
 
-有了均值和方差，为什么还要位置参数和尺度参数？为了更一般地描述问题，扩展范围。特别是在总体分布未知或知之甚少的情况下做检验，不再仅限于均值和方差这样的特征量。关于检验方法，如有不明白的地方，可以查看维基百科词条。对每个检验问题，给出原假设和备择假设，检验统计量及其服从的分布，R 语言实现（自编或调用函数，如果调用函数，说明参数及其含义），不讲公式推导过程。本章目的是让读者根据手头数据可以快速地找到最合适的检验方法。
+有了均值和方差，为什么还要位置参数和尺度参数？为了更一般地描述问题，扩展范围。特别是在总体分布未知或知之甚少的情况下做检验，不再仅限于均值和方差这样的特征量。关于检验方法，如有不明白的地方，可以查看维基百科词条。对每个检验问题，给出原假设和备择假设，检验统计量及其服从的分布，R 语言实现（自编或调用函数，如果调用函数，说明参数及其含义），不讲公式推导过程。
+
+本章目的是让读者根据手头数据可以快速地找到最合适的检验方法。单样本检验、两样本检验和多样本检验都只针对连续数据。计数数据检验针对离散数据，不区分总体数量。配对样本检验是两样本检验中的特殊情况，不分连续还是离散，不分两个样本还是多个样本，多个样本就是两两配对检验。前面都是关于某个特征统计量的检验，对分布的检验涉及样本点是否来自正态分布，样本点是否独立和平稳，样本点是否来自某一分布，两个样本是否来自相同分布等。
 
 ## 单样本检验 {#sec-one-sample}
 
@@ -130,7 +132,7 @@ t.test(x = x1, y = y1, alternative = "greater", var.equal = TRUE)
 
 #### 方差未知且不等
 
-Welch t 检验
+Welch（韦尔奇） t 检验
 
 $$
 T = \frac{(\bar{x} - \bar{y}) - (\mu_1 - \mu_2)}{\sqrt{\frac{s_x^2}{m} + \frac{s_y^2}{n}} }
@@ -239,7 +241,7 @@ var.test(extra ~ group, data = sleep)
 在总体分布未知的情况下，比较均值是否相等的检验。
 
 -   `wilcox.test()` 适用于单样本和两样本的均值检验，单样本 Wilcoxon 秩和检验，两样本 Wilcoxon 符号秩检验，后者也叫 Mann-Whitney 检验。
--   `kruskal.test()` 适用于两样本和多样本，比较多个均值是否相等的检验。
+-   `kruskal.test()` 适用于两样本和多样本，比较多个均值是否相等的检验，Kruskal-Wallis 秩和检验。
 
 单样本和两样本 `wilcox.test()`。
 
@@ -264,14 +266,14 @@ kruskal.test(extra ~ group, data = sleep)
 
 : 检验方法分类 {#tbl-bartlett-test}
 
-Bartlett 检验对总体的分布形式没有要求，检验各个组的方差是否有显著性差异，即方差齐性检验，属于参数检验，适用于多个样本的情况。
+Bartlett （巴特利特）检验 `bartlett.test()` 对总体的分布形式没有要求，检验各个组的方差是否有显著性差异，即方差齐性检验，属于参数检验，适用于多个样本的情况。
 
 ```{r}
 # 两样本
 bartlett.test(extra ~ group, data = sleep)
 ```
 
-`ansari.test()` 和 `mood.test()` 属于两样本的非参数检验，检验尺度参数是否相同（齐性）。`fligner.test()` 也属于非参数检验，适用于两样本和多样本的情况。非参数检验常涉及位置参数和尺度参数这一对概念，就正态分布而言，位置参数可以理解为均值 $\mu$ ，尺度参数可以理解为方差 $\sigma^2$ 。
+Ansari-Bradley 检验 `ansari.test()` 和 Mood 检验 `mood.test()` 属于两样本的非参数检验，检验尺度参数是否相同（齐性）。Fligner-Killeen 检验 `fligner.test()` 也属于非参数检验，适用于两样本和多样本的情况。非参数检验常涉及位置参数和尺度参数这一对概念，就正态分布而言，位置参数可以理解为均值 $\mu$ ，尺度参数可以理解为方差 $\sigma^2$ 。
 
 ```{r}
 ansari.test(extra ~ group, data = sleep)
@@ -283,7 +285,7 @@ fligner.test(extra ~ group, data = sleep)
 
 ### 正态总体均值检验
 
-#### 同方差
+#### 假定同方差
 
 讲清楚原假设和备择假设。讲清楚假设检验、方差分析、一般线性模型（包含广义线性模型和线性混合效应模型）的关系。
 
@@ -302,13 +304,20 @@ aggregate(data = PlantGrowth, weight ~ group, FUN = var)
 oneway.test(weight ~ group, data = PlantGrowth, var.equal = TRUE)
 ```
 
+线性模型也假定各个组的方差是相同的，模型显著性检验的结果和上面是一致的。
+
+```{r}
+fit <- lm(weight ~ group, data = PlantGrowth)
+summary(fit)
+```
+
 双因素方差分析 `aov()` 支持双因素方差分析
 
 ```{r}
 aov(weight ~ group, data = PlantGrowth)
 ```
 
-#### 异方差
+#### 假定异方差
 
 ```{r}
 # 假设各组方差不同
@@ -327,9 +336,17 @@ summary(fit)
 
 ### 正态总体方差检验
 
+后面总体分布未知的情况下的方差检验也都可以用在这里。
+
+设 $x_1,\cdots,x_{n_1}$ 是来自总体 $\mathcal{N}(\mu_1,\sigma_1^2)$ 的样本，设 $y_1,\cdots,y_{n_2}$ 是来自总体 $\mathcal{N}(\mu_2,\sigma_2^2)$ 的样本，设 $z_1,\cdots,z_{n_3}$ 是来自总体 $\mathcal{N}(\mu_3,\sigma_3^2)$ 的样本。
+
+$$
+\sigma_1^2 = \sigma_2^2 = \sigma_3^2 \quad vs. \quad \sigma_1^2,\sigma_2^2,\sigma_3^2 \quad  \text{不全相等}
+$$
+
 ### 总体未知均值检验
 
-均值齐性检验 `kruskal.test()`
+Kruskal-Wallis 秩和检验 `kruskal.test()` 检验均值是否齐性。
 
 ```{r}
 kruskal.test(weight ~ group, data = PlantGrowth)
@@ -343,9 +360,9 @@ Friedman 检验是非参数检验。适用于单因素重复测量数据的方�
 friedman.test(extra ~ group | ID, data = sleep)
 ```
 
-formula 参数 `a ~ b | c` ，a 表示数据值，b 分组变量 groups，c 表示 blocks。
+`formula` 参数取值为 `a ~ b | c` ，`a` 表示数据值，`b` 分组变量 groups，`c` 表示 blocks。
 
-Quade 检验与 Friedman 检验类似，Quade 检验应用于 unreplicated complete block designs
+Quade 检验 `quade.test()` 与 Friedman 检验类似，Quade 检验应用于 unreplicated complete block designs。
 
 ```{r}
 quade.test(extra ~ group | ID, data = sleep)
@@ -353,7 +370,7 @@ quade.test(extra ~ group | ID, data = sleep)
 
 ### 总体未知方差检验
 
-方差齐性检验，三个样本及以上
+三个及以上样本的方差齐性检验。
 
 ```{r}
 # 参数检验
@@ -576,10 +593,22 @@ woolf(UCBAdmissions)
 
 ### 配对 t 检验 {#sec-pairwise-t-test}
 
-配对的 t 检验 `pairwise.t.test()`
+两个组的配对 t 检验 `t.test(paired = TRUE)`
 
 ```{r}
-pairwise.t.test(x = sleep$extra, g = sleep$group, paired = T)
+t.test(extra ~ group, data = sleep, paired = TRUE)
+```
+
+两个组的配对 t 检验 `pairwise.t.test()` ，与前面的结果等价。
+
+```{r}
+pairwise.t.test(x = sleep$extra, g = sleep$group, paired = TRUE)
+```
+
+多个组两两配对的 t 检验 `pairwise.t.test()`
+
+```{r}
+pairwise.t.test(x = PlantGrowth$weight, g = PlantGrowth$group, paired = TRUE)
 ```
 
 ### 配对比例检验 {#sec-pairwise-prop-test}
@@ -588,15 +617,28 @@ pairwise.t.test(x = sleep$extra, g = sleep$group, paired = T)
 
 ### 配对 Wilcoxon 检验 {#sec-pairwise-wilcox-test}
 
-`pairwise.wilcox.test()`
+检验的是两个总体的均值是否相等。
 
-`wilcox.test(paired = TRUE)`
+配对 Wilcoxon 检验 `pairwise.wilcox.test()` 适用于两个及以上组的两两配对检验。
+
+```{r}
+pairwise.wilcox.test(x = PlantGrowth$weight, g = PlantGrowth$group)
+```
+
+Wilcoxon 检验 `wilcox.test()` 设置 `paired = TRUE` 也可以做配对检验，但是仅限于两个组。
+
+```{r}
+# 不支持
+# wilcox.test(weight ~ group, data = PlantGrowth, paired = TRUE)
+# 支持
+wilcox.test(extra ~ group, data = sleep, paired = TRUE)
+```
 
 ### 配对相关性检验 {#sec-cor-test}
 
 配对样本的相关性检验 `cor.test()`：Pearson's 相关系数，Kendall's $\tau$ 检验或者 Spearman's $\rho$ 检验
 
-## 关于分布的检验
+## 总体分布的检验
 
 前面介绍的检验方法都是对总体的某个特征数（均值、方差）进行检验，下面介绍的检验方法是针对分布的性质。比如样本是否来自正态分布，两个样本是否来自同一分布，样本点之间是否相互独立，样本点列是否平稳等。通过检验方法探索样本的分布性质。
 
@@ -663,7 +705,7 @@ PP.test(x, lshort = TRUE)
 
 ### 球形检验 {#sec-mauchly-test}
 
-Mauchly 球形检验 `mauchly.test()` 检验：Wishart 分布的协方差矩阵是否正比于给定的矩阵。
+Mauchly 球形检验 `mauchly.test()` 检验：Wishart 分布的协方差矩阵是否正比于给定的矩阵。多元分布的协方差矩阵。
 
 如果 $X_1, X_2, \cdots, X_m$，$X_i \in \mathbb{R}^p$，$X_i \overset{i.i.d}{\sim} \mathrm{MVN}(0,\Sigma)$，即 $m$ 个样本点都服从均值为 $0$，协方差矩阵为 $\Sigma$ 的 $p$ 维多元正态分布 $\mathrm{MVN}(0,\Sigma)$，且样本点之间相互独立。则 $M = X'X$ 服从参数为 $\Sigma$ 和 $m$ 的 Wishart 分布 $W_p(\Sigma, m)$。
 
