@@ -115,11 +115,42 @@ $$
 
 ### 正态总体方差检验
 
-卡方检验 $\chi^2$
+卡方检验 $\chi^2$ 检验统计量服从卡方分布。
+
+$$
+\begin{aligned}
+\mathrm{I}   \quad H_0: \sigma^2 - \sigma^2_0 \leq 0 \quad vs. \quad H_1: \sigma^2 - \sigma^2_0 > 0 \\
+\mathrm{II}  \quad H_0: \sigma^2 - \sigma^2_0 \geq 0 \quad vs. \quad H_1: \sigma^2 - \sigma^2_0 < 0 \\
+\mathrm{III} \quad H_0: \sigma^2 - \sigma^2_0 = 0 \quad vs. \quad H_1: \sigma^2 - \sigma^2_0 \neq 0
+\end{aligned}
+$$
+
+一般假定均值 $\mu$ 是未知的。检验统计量服从卡方分布 $\chi^2(n-1)$
+
+$$
+\chi^2 = \frac{(n-1)s^2}{\sigma^2_0}
+$$
+
+设 $\sigma^2_0 = 1.5^2$ ，考虑检验问题 I
+
+```{r}
+# 检验统计量
+chi <- (n - 1) * var(x) / 1.5^2
+# 临界值
+qchisq(p = 1 - 0.05, df = n -1)
+# P 值
+1 - pchisq(q = chi, df = n -1)
+```
 
 ### 总体未知均值检验
 
-Wilcoxon （威尔科克森）秩和检验 `wilcox.test()`
+考虑前面正态总体均值检验中的假设 I 的形式，若总体的分布形式未知，则需要 Wilcoxon （威尔科克森）秩和检验 `wilcox.test()` 来做均值的比较。
+
+```{r}
+wilcox.test(x = x, mu = 1, alternative = "greater")
+```
+
+相比于 t 检验，P 值更小。
 
 ### 总体未知方差检验
 
@@ -894,7 +925,7 @@ power.t.test(
 ```
 
 | 参数          | 含义                                                                            |
-|:--------------|:-------------------------------------------------------|
+|:----------------|:------------------------------------------------------|
 | `n`           | 每个组的样本量                                                                  |
 | `delta`       | 两个组的均值之差                                                                |
 | `sd`          | 标准差，默认值 1                                                                |
