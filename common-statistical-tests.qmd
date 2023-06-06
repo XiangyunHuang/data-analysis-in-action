@@ -40,10 +40,6 @@ library(pwr)   # 计算检验的功效和实验样本量
 
 #### 方差已知
 
-设 $x_1,\cdots,x_n$ 是来自总体 $\mathcal{N}(\mu,\sigma^2)$ 的样本
-
-$\bar{x} = \frac{\sum_{i=1}^{n}x_i}{n}$ ，$\bar{x} \sim \mathcal{N}(\mu,\sigma^2 / n)$ ，$s^2 = \frac{1}{n-1}\sum_{i=1}^{n}(x_i - \bar{x})^2$
-
 $$
 \begin{aligned}
 \mathrm{I}   \quad H_0: \mu - \mu_0 \leq 0 \quad vs. \quad H_1: \mu - \mu_0 > 0 \\
@@ -52,7 +48,11 @@ $$
 \end{aligned}
 $$
 
-Z 检验，检验统计量服从正态分布
+设 $x_1,\cdots,x_n$ 是来自总体 $\mathcal{N}(\mu,\sigma^2)$ 的样本，样本均值和方差分别
+
+$\bar{x} = \frac{\sum_{i=1}^{n}x_i}{n}$ ，$s^2 = \frac{1}{n-1}\sum_{i=1}^{n}(x_i - \bar{x})^2$
+
+考虑到 $\bar{x} \sim \mathcal{N}(\mu,\sigma^2 / n)$ ，则检验统计量服从正态分布
 
 $$
 u = \frac{\bar{x} - \mu_0}{\sigma / \sqrt{n}}
@@ -75,20 +75,28 @@ qnorm(p = 1 - 0.05, mean = 0, sd = 1)
 
 #### 方差未知
 
-t 检验，检验统计量服从 t 分布
-
-$$
-t = \frac{\bar{x} - \mu_0}{s/\sqrt{n}}
-$$
-
-$t \sim t(n-1)$
-
 $$
 \begin{aligned}
 \mathrm{I}   \quad H_0: \mu - \mu_0 \leq 0 \quad vs. \quad H_1: \mu - \mu_0 > 0 \\
 \mathrm{II}  \quad H_0: \mu - \mu_0 \geq 0 \quad vs. \quad H_1: \mu - \mu_0 < 0 \\
 \mathrm{III} \quad H_0: \mu - \mu_0 = 0 \quad vs. \quad H_1: \mu - \mu_0 \neq 0
 \end{aligned}
+$$
+
+考虑到
+
+$$
+\begin{aligned}
+& \frac{\bar{x} - \mu}{\sigma / \sqrt{n}} \sim \mathcal{N}(0,1) \\
+& \frac{(n-1)s^2}{\sigma^2} \sim \chi^2(n-1) \\
+& \mathsf{E}\{s^2\} = \sigma^2 \quad \mathsf{Var}\{s^2\} = \frac{2\sigma^4}{n-1}
+\end{aligned}
+$$
+
+根据 t 分布的定义，检验统计量服从 t 分布，即 $t \sim t(n-1)$
+
+$$
+t = \frac{\bar{x} - \mu_0}{s/\sqrt{n}}
 $$
 
 假定 $\mu_0 = 1$ 对于检验问题 I ，拒绝域 $\{t \geq t_{1-\alpha}(n-1)\}$
@@ -101,13 +109,6 @@ qt(p = 1 - 0.05, df = n - 1)
 # P 值
 1 - pt(q = t0, df = n - 1)
 ```
-
-$$
-\begin{aligned}
-& \frac{(n-1)s^2}{\sigma^2} \sim \chi^2(n-1) \\
-& \mathsf{E}\{s^2\} = \sigma^2 \quad \mathsf{Var}\{s^2\} = \frac{2\sigma^4}{n-1}
-\end{aligned}
-$$
 
 ::: callout-note
 英国统计学家 William Sealy Gosset (1876-1937) 于 1908 年在杂志 《Biometrics》 上以笔名 Student 发表论文《The Probable Error of a Mean》[@Gosset1908]，论文中展示了独立同正态分布的样本 $x_1, \ldots, x_n \stackrel{i.i.d}{\sim} \mathcal{N}(\mu,\sigma^2)$ 的样本方差 $s^2$ 和样本标准差 $s$ 的抽样分布，根据均值和标准差不相关的性质导出 t 分布，宣告 t 分布的诞生，因其在小样本领域的突出贡献，W. S. Gosset 进入世纪名人录 [@Heyde2001]。
@@ -985,7 +986,7 @@ power.t.test(
 ```
 
 | 参数          | 含义                                                                            |
-|:--------------|:--------------------------------------------------------------------------------|
+|:----------------|:------------------------------------------------------|
 | `n`           | 每个组的样本量                                                                  |
 | `delta`       | 两个组的均值之差                                                                |
 | `sd`          | 标准差，默认值 1                                                                |
@@ -1093,3 +1094,23 @@ pwr.anova.test(
 ### Rao 检验 {#sec-rao-test}
 
 也叫得分检验
+
+## 假设检验与区间估计的关系
+
+区间估计的意义是解决点估计可靠性问题，它用置信系数解决了对估计结果的信心问题，弥补了点估计的不足。置信系数是最大的置信水平。
+
+Base R 提供的 `binom.test()` 函数可以精确计算置信区间，Clopper-Pearson 区间，而 `prop.test()` 函数可近似计算置信区间，Wilson 区间。
+
+以二项分布的比例检验和二项检验为例。近似区间估计
+
+```{r}
+prop.test(x = 2, n = 10, p = 0.95, conf.level = 0.95, correct = TRUE)
+```
+
+精确区间估计
+
+```{r}
+binom.test(x = 2, n = 10, p = 0.95, conf.level = 0.95)
+```
+
+实际达到的置信度水平随真实的未知参数值和样本量的变化而**剧烈**波动，这意味着这种参数估计方法在实际应用中不可靠、真实场景中参数真值是永远未知的，样本量是可控的，并且是可以变化的。根本原因在于这类分布是离散的，比如这里的二项分布。当样本数据服从离散的分布，置信区间的端点也是离散的。这种缺陷是无法避免的，清晰的置信区间和离散的数据之间存在无法调和的冲突。
