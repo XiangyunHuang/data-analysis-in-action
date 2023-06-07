@@ -6,6 +6,14 @@ $$
 $$
 :::
 
+::: callout-tip
+## 本章亮点
+
+1.  比较全面地展示各类统计检验问题的 R 语言实现，其覆盖面之广，远超市面上同类 R 语言书籍。从连续数据到离散数据，从单样本到两样本，再到一般的多样本，触及最前沿的热门话题。
+
+2.  对每类统计检验问题都给出示例及 R 语言实现，涉及近 40 个统计检验方法。在组织结构上，本章按照数据情况对检验方法分类，方便读者根据手头的数据情况，快速从众多的方法中定位最合适的检验方法，符合从数据出发进行分析实战的要求。
+:::
+
 > The Earth is Round ($p < 0.05$)
 >
 > --- Jacob Cohen [@Cohen1994]
@@ -26,8 +34,11 @@ Jacob Cohen 实际谈的是更加深刻的问题。开篇介绍为什么需要�
 本章目的是让读者根据手头数据可以快速地找到最合适的检验方法。单样本检验、两样本检验和多样本检验都只针对连续数据。计数数据检验针对离散数据，不区分总体数量。配对样本检验是两样本检验中的特殊情况，不分连续还是离散，不分两个样本还是多个样本，多个样本就是两两配对检验。前面都是关于某个特征统计量的检验，对分布的检验涉及样本点是否来自正态分布，样本点是否独立和平稳，样本点是否来自某一分布，两个样本是否来自相同分布等。
 
 ```{r}
+#| message: false
+
 library(ggplot2)
-library(pwr)   # 计算检验的功效和实验样本量
+library(pwr)       # 计算检验的功效和实验样本量
+library(MASS)
 # library(survival)
 # library(coin)    # 补充更多的检验方法
 # library(rstatix) # 管道操作整合检验方法
@@ -581,6 +592,8 @@ fligner.test(weight ~ group, data = PlantGrowth)
 
 ## 计数数据检验 {#sec-count-data}
 
+计数数据，通俗来说，对象是一个一个或一份一份的，可数的、离散的数据，比如人数。
+
 ```{r}
 #| eval: false
 #| echo: false
@@ -589,6 +602,8 @@ fligner.test(weight ~ group, data = PlantGrowth)
 glm(family = binomial(link = "logit"))
 # Probit 回归模型 二分 dichotomous probit regression
 glm(family = binomial(link = "probit"))
+# 泊松回归
+glm(family = poisson(link = "log"))
 # 多项逻辑回归模型
 nnet::multinom()
 # 比例比/比值比/优势比 有序的多分类模型
@@ -734,9 +749,117 @@ poisson.test(x,
 3.  边际独立 Marginal independence 当忽略第三个变量时，两个变量是独立的。
 4.  条件独立 Conditional independence 当固定第三个变量时，两个变量是独立的，$X \perp Y | Z$。
 
-计数数据，通俗来说，对象是一个一个或一份一份的、可数的、离散的数据，比如人数。用于计数数据的皮尔逊卡方检验（ Pearson's $\chi^2$ 检验）：列联表独立性检验和拟合优度检验 `chisq.test()` 。
+本节数据来自著作《An Introduction to Categorical Data Analysis》[@Agresti2007] 的第2章习题 2.33，探索 1976-1977 年美国佛罗里达州的凶杀案件中被告肤色和死刑判决的关系。
 
-费舍尔精确检验（ Fisher 's Exact 检验）：固定边际的情况下，检验列联表行和列之间的独立性 `fisher.test()` 。
+```{r}
+#| label: tbl-florida-ethnicity
+#| tbl-cap: "佛罗里达州的凶杀案件统计数据"
+#| echo: false
+
+tbl <- expand.grid(
+  Death = c("Yes", "No"), # 判决结果 是否死刑
+  Defend = c("白人", "黑人"),  # 被告 肤色
+  Victim = c("白人", "黑人")   # 原告 （被害人）肤色
+)
+ethnicity <- data.frame(tbl, Freq = c(19, 132, 11, 52, 0, 9,  6, 97))
+
+# 长格式转宽格式
+dat1 <- reshape(
+  data = ethnicity, direction = "wide",
+  idvar = c("Defend", "Victim"),
+  timevar = "Death", v.names = "Freq", sep = "_"
+)
+# 制作表格
+gt::gt(dat1) |> 
+  gt::cols_label(
+    Freq_Yes = "是",
+    Freq_No = "否",
+    Victim = "被害人",
+    Defend = "被告"
+  ) |> 
+  gt::tab_spanner(
+    label = "死刑",
+    columns = c(Freq_Yes, Freq_No)
+  ) |> 
+  gt::opt_row_striping()
+```
+
+#### 独立性
+
+皮尔逊卡方检验（ Pearson's $\chi^2$ 检验） `chisq.test()` 常用于列联表独立性检验和方差分析模型的拟合优度检验。
+
+```{r}
+# Death 死刑与 Defend （被告）独立性检验
+m = xtabs(Freq ~ Death + Defend, data = ethnicity)
+m
+chisq.test(m, correct = TRUE)
+chisq.test(m, correct = FALSE)
+```
+
+当被告是白人时，死刑判决 19 个，占总的死刑判决数量的 19/36 = 52.78%，当被告是黑人时，死刑判决 17 个，占总的死刑判决数量的 17/36 = 47.22%。判决结果与被告种族没有显著关系，但与原告（受害人）种族是有关系的，请继续往下看。
+
+```{r}
+# Death 死刑与 Victim （原告）独立性检验
+m = xtabs(Freq ~ Death + Victim, data = ethnicity)
+chisq.test(m, correct = TRUE)
+chisq.test(m, correct = FALSE)
+```
+
+当受害人是白人时，死刑判决 30 个，占总的死刑判决数量的 30/36 = 83.33%，当受害人是黑人时，死刑判决 6 个，占总的死刑判决数量的 6/36 = 16.67%。受害人是白人时，死刑判决明显多于黑人。
+
+多维列联表
+
+```{r}
+m <- xtabs(Freq ~ Death + Defend + Victim, data = ethnicity)
+m
+```
+
+判决结果、被告种族、原告种族三者是否存在联合独立性，即考虑 (Victim, Death) 是否与 Defend 独立，(Victim, Defend) 是否与 Death 独立，(Death, Defend) 与 Victim 是否相互独立。
+
+```{r}
+fm <- loglin(m, list(c(1, 2), c(1, 3), c(2, 3)))
+fm 
+# ## 拟合对数线性模型
+# fm <- loglin(m, list(c(1), c(2), c(3)))
+# fm
+```
+
+似然比检验统计量（Likelihood Ratio Test statistic），皮尔逊 $\chi^2$ 统计量（Pearson X-square Test statistic）
+
+```{r}
+1 - pchisq(fm$lrt, fm$df)
+```
+
+拟合对数线性模型
+
+```{r}
+fit_dvp <- glm(Freq ~ ., data = ethnicity, family = poisson(link = "log"))
+```
+
+模型输出
+
+```{r}
+summary(fit_dvp)
+```
+
+Pearson $\chi^2$ 统计量
+
+```{r}
+sum(residuals(fit_dvp, type = "pearson")^2)
+```
+
+模型参数的置信区间
+
+```{r}
+# 需要 MASS 包
+confint(fit_dvp, trace = FALSE)
+```
+
+对于单元格总样本量小于 40 或 T 小于 1 时，需采用费希尔精确检验。
+
+#### 边际独立性
+
+费希尔精确检验（ Fisher 's Exact 检验）：固定边际的情况下，检验列联表行和列之间的独立性 `fisher.test()` 。
 
 `fisher.test()` 函数用法，统计原理和公式，适用范围和条件，概念背景和历史。
 
@@ -766,15 +889,19 @@ fisher.test(TeaTasting, alternative = "two.sided")
 sum(dhyper(x = c(3, 4), m = 4, n = 4, k = 4))
 ```
 
+#### 对称性
+
 用于计数数据的 McNemar's 卡方检验（ McNemar's $\chi^2$ 检验）：检验二维列联表行和列的对称性 `mcnemar.test()`。怎么理解对称性？看帮助实例。
 
-用于计数数据的 Cochran-Mantel-Haenszel 卡方检验：两个枚举（分类）变量的条件独立性，假定不存在三因素的交互作用。Cochran-Mantel-Haenszel 检验 `mantelhaen.test()`
+#### 条件独立性
+
+用于分层分类数据的 Cochran-Mantel-Haenszel 卡方检验：两个枚举（分类）变量的条件独立性，假定不存在三因素的交互作用。Cochran-Mantel-Haenszel 检验 `mantelhaen.test()`
 
 ```{r}
 mantelhaen.test(UCBAdmissions)
 ```
 
-没有证据表明院系与性别之间存在关联。
+没有证据表明院系与性别之间存在关联。给定院系的情况下，是否录取和性别没有显著关系。
 
 ```{r}
 apply(UCBAdmissions, 3, function(x) (x[1, 1] * x[2, 2]) / (x[1, 2] * x[2, 1]))
@@ -998,7 +1125,7 @@ power.t.test(
 ```
 
 | 参数          | 含义                                                                            |
-|:----------------|:------------------------------------------------------|
+|:------------------|:----------------------------------------------------|
 | `n`           | 每个组的样本量                                                                  |
 | `delta`       | 两个组的均值之差                                                                |
 | `sd`          | 标准差，默认值 1                                                                |
