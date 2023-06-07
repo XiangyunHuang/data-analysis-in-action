@@ -672,9 +672,9 @@ $$
 T^{\star} = \frac{\bar{X}}{\bar{Y}}
 $$
 
-同样由 Slutsky 定理和中心极限定理可知， $\bar{X}/\bar{Y}$ 近似服从 正态分布$N(1,\frac{1-\theta}{m\theta})$
+同样由 Slutsky 定理和中心极限定理可知， $\bar{X}/\bar{Y}$ 近似服从 正态分布 $\mathcal{N}(1,\frac{1-\theta}{m\theta})$
 
-当 $(T^\star - 1)/\hat\sigma$ 偏大时接受 $H_0$，临界值可通过 $N(0, \hat\sigma^2)$ 分布表计算得到， $\hat\sigma^2$ 是对 $\frac{1-\theta}{m\theta}$ 的估计，比如取 $\hat\sigma^2 = \frac{1-\bar{Y}}{m}\cdot \frac{1}{\bar{Y}}$ 或取 $\hat\sigma^2 = \frac{1-\bar{Y}}{m}\cdot \frac{1}{\bar{X}}$
+当 $(T^\star - 1)/\hat\sigma$ 偏大时接受 $H_0$，临界值可通过 $\mathcal{N}(0, \hat\sigma^2)$ 分布表计算得到， $\hat\sigma^2$ 是对 $\frac{1-\theta}{m\theta}$ 的估计，比如取 $\hat\sigma^2 = \frac{1-\bar{Y}}{m}\cdot \frac{1}{\bar{Y}}$ 或取 $\hat\sigma^2 = \frac{1-\bar{Y}}{m}\cdot \frac{1}{\bar{X}}$
 
 由于渐近方差形如 $\frac{1-\theta}{m\theta}$，因而在 $\theta$ 较小，渐近方差较大，克服了之前 $\bar{X} - \bar{Y}$的方差较小的问题
 
@@ -746,7 +746,7 @@ poisson.test(x,
 
 1.  相互独立 Mutual independence 所有变量之间相互独立，$X \perp Y \perp Z$ 。
 2.  联合独立 Joint independence 两个变量的联合与第三个变量独立，$XY \perp Z$ 。
-3.  边际独立 Marginal independence 当忽略第三个变量时，两个变量是独立的。
+3.  边际独立 Marginal independence 当忽略第三个变量时，两个变量是独立的。列联表压缩
 4.  条件独立 Conditional independence 当固定第三个变量时，两个变量是独立的，$X \perp Y | Z$。
 
 本节数据来自著作《An Introduction to Categorical Data Analysis》[@Agresti2007] 的第2章习题 2.33，探索 1976-1977 年美国佛罗里达州的凶杀案件中被告肤色和死刑判决的关系。
@@ -786,11 +786,19 @@ gt::gt(dat1) |>
 
 #### 独立性
 
-皮尔逊卡方检验（ Pearson's $\chi^2$ 检验） `chisq.test()` 常用于列联表独立性检验和方差分析模型的拟合优度检验。
+皮尔逊卡方检验（ Pearson's $\chi^2$ 检验） `chisq.test()` 常用于列联表独立性检验和方差分析模型的拟合优度检验。下面是一个 $2 \times 2$ 的列联表。
+
+|        | 第一列 | 第二列 | 合计      |
+|--------|--------|--------|-----------|
+| 第一行 | $a$    | $b$    | $a+b$     |
+| 第二行 | $c$    | $d$    | $c+d$     |
+| 合计   | $a+c$  | $b+d$  | $a+b+c+d$ |
+
+: 卡方独立性检验
 
 ```{r}
 # Death 死刑与 Defend （被告）独立性检验
-m = xtabs(Freq ~ Death + Defend, data = ethnicity)
+m <- xtabs(Freq ~ Death + Defend, data = ethnicity)
 m
 chisq.test(m, correct = TRUE)
 chisq.test(m, correct = FALSE)
@@ -800,7 +808,7 @@ chisq.test(m, correct = FALSE)
 
 ```{r}
 # Death 死刑与 Victim （原告）独立性检验
-m = xtabs(Freq ~ Death + Victim, data = ethnicity)
+m <- xtabs(Freq ~ Death + Victim, data = ethnicity)
 chisq.test(m, correct = TRUE)
 chisq.test(m, correct = FALSE)
 ```
@@ -817,9 +825,9 @@ m
 判决结果、被告种族、原告种族三者是否存在联合独立性，即考虑 (Victim, Death) 是否与 Defend 独立，(Victim, Defend) 是否与 Death 独立，(Death, Defend) 与 Victim 是否相互独立。
 
 ```{r}
-fm <- loglin(m, list(c(1, 2), c(1, 3), c(2, 3)))
+fm <- loglin(table = m, margin = list(c(1, 2), c(1, 3), c(2, 3)), print = FALSE)
 fm 
-# ## 拟合对数线性模型
+# 拟合对数线性模型
 # fm <- loglin(m, list(c(1), c(2), c(3)))
 # fm
 ```
@@ -848,18 +856,18 @@ Pearson $\chi^2$ 统计量
 sum(residuals(fit_dvp, type = "pearson")^2)
 ```
 
-模型参数的置信区间
+**MASS** 包计算模型参数的置信区间
 
 ```{r}
-# 需要 MASS 包
+#| message: false
 confint(fit_dvp, trace = FALSE)
 ```
 
-对于单元格总样本量小于 40 或 T 小于 1 时，需采用费希尔精确检验。
+对于单元格总样本量小于 40 或 T 小于 1 时，需采用费希尔精确检验（ Fisher 's Exact 检验）。
 
 #### 边际独立性
 
-费希尔精确检验（ Fisher 's Exact 检验）：固定边际的情况下，检验列联表行和列之间的独立性 `fisher.test()` 。
+费希尔精确检验：固定边际的情况下，检验列联表行和列之间的独立性 `fisher.test()` 。
 
 `fisher.test()` 函数用法，统计原理和公式，适用范围和条件，概念背景和历史。
 
@@ -893,17 +901,36 @@ sum(dhyper(x = c(3, 4), m = 4, n = 4, k = 4))
 
 用于计数数据的 McNemar's 卡方检验（ McNemar's $\chi^2$ 检验）：检验二维列联表行和列的对称性 `mcnemar.test()`。怎么理解对称性？看帮助实例。
 
+```{r}
+Performance <- matrix(c(794, 86, 150, 570),
+  nrow = 2,
+  dimnames = list(
+    "1st Survey" = c("Approve", "Disapprove"),
+    "2nd Survey" = c("Approve", "Disapprove")
+  )
+)
+Performance
+mcnemar.test(Performance)
+```
+
 #### 条件独立性
 
-用于分层分类数据的 Cochran-Mantel-Haenszel 卡方检验：两个枚举（分类）变量的条件独立性，假定不存在三因素的交互作用。Cochran-Mantel-Haenszel 检验 `mantelhaen.test()`
+用于分层分类数据的 Cochran-Mantel-Haenszel 卡方检验：两个枚举（分类）变量的条件独立性，假定不存在三个因素的交互作用。Cochran-Mantel-Haenszel 检验 `mantelhaen.test()`
+
+```{r}
+str(UCBAdmissions)
+```
+
+`UCBAdmissions` 数据集是一个 $2\times 2 \times 6$ 的三维列联表，R 语言中常用 table 类型表示。实际上，table 类型衍生自 array 数组类型，当把 `UCBAdmissions` 当作一个数组操作时，1、2、3 分别表示 Admit、Gender、Dept 三个维度。
 
 ```{r}
 mantelhaen.test(UCBAdmissions)
 ```
 
-没有证据表明院系与性别之间存在关联。给定院系的情况下，是否录取和性别没有显著关系。
+没有证据表明院系与性别之间存在关联。在给定院系的情况下，是否录取和性别没有显著关系。
 
 ```{r}
+# 按系统计
 apply(UCBAdmissions, 3, function(x) (x[1, 1] * x[2, 2]) / (x[1, 2] * x[2, 1]))
 
 woolf <- function(x) {
@@ -985,7 +1012,13 @@ wilcox.test(extra ~ group, data = sleep, paired = TRUE)
 
 检验：拒绝原假设和接受原假设的风险，数据本身和理论的正态分布的距离，抛开 P 值
 
-Shapiro 和 Wilk's 提出的 W 检验 shapiro.test
+Shapiro 和 Wilk 提出的 W 检验 `shapiro.test()`
+
+```{r}
+set.seed(20232023)
+x <- rnorm(100, mean = 5, sd = 3)
+shapiro.test(x)
+```
 
 > The issue really comes down to the fact that the questions: "exactly normal?", and "normal enough?" are 2 very different questions (with the difference becoming greater with increased sample size) and while the first is the easier to answer, the second is generally the more useful one.
 >
@@ -999,13 +1032,13 @@ EP 检验对多种备择假设有较高的效率，利用样本的特征函数�
 样本量 $n \geq 200$ EP 检验统计量 $T_{EP}$ 非常接近 $n = \infty$ 时 $T_{EP}$ 的分位数。
 :::
 
-设 $x_1, \ldots, x_n$ 是来自正态总体 $N(\mu,\sigma^2)$ 的样本， EP 检验统计量定义为
+设 $x_1, \ldots, x_n$ 是来自正态总体 $\mathcal{N}(\mu,\sigma^2)$ 的样本， EP 检验统计量定义为
 
 $$
 T_{EP} = 1 + \frac{n}{\sqrt{3}} + \frac{2}{n}\sum_{i=2}^{n}\sum_{j=1}^{i-1}\exp\big\{ - \frac{(x_j - x_i)^2}{2s^2_{\star}}  \big\} - \sqrt{2} \sum_{i=1}^{n}\exp\big\{- \frac{(x_i - \bar{x})^2}{4s^2_{\star}}  \big\}
 $$
 
-其中 $\bar{x},s^2_{\star}$ 就是样本均值和（除以 $n$ 的）样本方差
+其中 $\bar{x},s^2_{\star}$ 分别是样本均值和（除以 $n$ 的）样本方差。
 
 ### 同分布检验 {#sec-ks-test}
 
@@ -1020,6 +1053,11 @@ Lilliefors 检验 [^common-statistical-tests-4] 和单样本的 ks 检验的关�
 [^common-statistical-tests-5]: <https://stat.ethz.ch/pipermail/r-help/2004-February/045597.html>
 
 Kolmogorov-Smirnov 检验：单样本或两样本的同分布检验 `ks.test()`
+
+```{r}
+# 数据 x 与正态分布比较
+ks.test(x, y = "pnorm")
+```
 
 ### 独立性检验 {#sec-Box-test}
 
