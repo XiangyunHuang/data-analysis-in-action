@@ -51,6 +51,7 @@ RUN dnf -y install python3-virtualenv \
    texlive-fontawesome \
    texlive-newtx \
    texlive-tcolorbox \
+   texlive-tikz-network \
    texlive-standalone \
    texlive-animate \
    texlive-media9 \
