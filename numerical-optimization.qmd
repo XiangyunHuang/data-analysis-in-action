@@ -2101,7 +2101,31 @@ fun(x = c(4.999633, 9.734148, -5))
 
 1.  求解线性优化和整数线性优化的 R 包有很多，从使用语法、可求解的问题规模和问题类型比较 **lpSolve**、**Rglpk** 和 **highs** 等 R 包。
 
-2.  回顾凸二次优化，当矩阵 $D$ 为半正定矩阵时，二次优化是非严格凸二次优化，**kernlab** 包[@kernlab2004] 可以求解此类问题，找一个真实数据验证一下。
+2.  回顾凸二次优化，当矩阵 $D$ 为半正定矩阵时，二次优化是非严格凸二次优化，改造示例中的矩阵 $D$ ，求解此类问题。
+
+    ```{r}
+    #| eval: false
+    #| code-fold: true
+    #| echo: !expr knitr::is_html_output()
+    # 非严格凸的二次优化问题
+    # 凸二次优化一节的示例 矩阵 D 的行列式为 0
+    Dmat <- matrix(c(2, 1, 4, 2), nrow = 2, byrow = TRUE)
+    dvec <- c(3, -2)
+    Amat <- matrix(c(-1, -1, 1, -1, 0, 1), ncol = 2, byrow = TRUE)
+    bvec <- c(-2, 2, 3)
+    op <- OP(
+      objective = Q_objective(Q = Dmat, L = dvec),
+      constraints = L_constraint(L = Amat, dir = rep("<=", 3), rhs = bvec),
+      maximum = FALSE
+    )
+    op
+    # SLSQP 序列二次规划求解
+    nlp <- ROI_solve(op, solver = "nloptr.slsqp", start = c(1, 2))
+    # 目标函数值 0 
+    nlp$objval
+    # 最优解 (0, 2)
+    nlp$solution
+    ```
 
 3.  求解如下 2 维非线性无约束优化问题。
 
