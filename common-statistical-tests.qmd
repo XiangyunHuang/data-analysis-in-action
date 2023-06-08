@@ -377,25 +377,10 @@ var.test(extra ~ group, data = sleep)
 wilcox.test(extra ~ group, data = sleep)
 ```
 
-与 `wilcox.test()` 等价的线性模型
-
-```{r}
-signed_rank <- function(x) sign(x) * rank(abs(x))
-fit <- lm(signed_rank(extra) ~ group, data = sleep)
-summary(fit)
-```
-
 两样本和多样本 `kruskal.test()` 。
 
 ```{r}
 kruskal.test(extra ~ group, data = sleep)
-```
-
-与 `kruskal.test()` 等价的线性模型表示。
-
-```{r}
-fit <- lm(rank(extra) ~ group, data = sleep)
-summary(fit)
 ```
 
 ### 总体未知方差检验
@@ -561,7 +546,7 @@ fit_lm <- lm(rank(weight) ~ group, data = PlantGrowth)
 anova(fit_lm) # summary(fit_lm)
 ```
 
-Friedman 检验是非参数检验。适用于单因素重复测量数据的方差分析，检验是否存在一组值显著高于或低于其他组。术语涉及实验设计，比如完全区组设计 complete block designs 。
+Friedman 秩和检验是非参数检验。适用于单因素重复测量数据的方差分析，检验是否存在一组值显著高于或低于其他组。针对 unreplicated blocked data
 
 典型场景：n 个品酒师对 k 瓶葡萄酒打分，是否存在一组打分显著高于其他组。检验睡眠质量一组人显著好于另一组人。
 
@@ -574,7 +559,15 @@ friedman.test(extra ~ group | ID, data = sleep)
 Quade 检验 `quade.test()` 与 Friedman 检验类似，Quade 检验应用于 unreplicated complete block designs。
 
 ```{r}
+# 睡眠实验
 quade.test(extra ~ group | ID, data = sleep)
+```
+
+术语涉及实验设计，比如完全区组设计 complete block designs 。
+
+```{r}
+# 光速实验
+quade.test(Speed ~ Expt | Run, data = morley)
 ```
 
 ### 总体未知方差检验
@@ -625,7 +618,7 @@ $H_0$ 成立的情况下，暗示着两个样本来自同一总体。
 
 比例检验 `prop.test()` 与比例趋势检验 `prop.trend.test`。Wilson 检验统计量 [@Wilson1927] 考虑单样本比例 $p$ 的区间估计问题。
 
-函数 `prop.test` 用来检验两组或多组二项分布的成功概率（比例）是否相等，或等于给定的值。近似检验，多组数据的比例检验，可以理解为比例齐性检验。
+函数 `prop.test()` 用来检验两组或多组二项分布的成功概率（比例）是否相等，或等于给定的值。近似检验，多组数据的比例检验，可以理解为比例齐性检验。
 
 原假设：四个组里面病人中吸烟的比例是相同的 备择假设：四个组里面至少有一个组的吸烟比例是不同的
 
@@ -967,7 +960,13 @@ pairwise.t.test(x = PlantGrowth$weight, g = PlantGrowth$group, paired = TRUE)
 
 ### 配对比例检验 {#sec-pairwise-prop-test}
 
-`pairwise.prop.test()`
+配对比例检验 `pairwise.prop.test()`
+
+```{r}
+smokers  <- c( 83, 90, 129, 70 )
+patients <- c( 86, 93, 136, 82 )
+pairwise.prop.test(smokers, patients)
+```
 
 ### 配对 Wilcoxon 检验 {#sec-pairwise-wilcox-test}
 
@@ -1163,7 +1162,7 @@ power.t.test(
 ```
 
 | 参数          | 含义                                                                            |
-|:------------------|:----------------------------------------------------|
+|:--------------|:-------------------------------------------------------|
 | `n`           | 每个组的样本量                                                                  |
 | `delta`       | 两个组的均值之差                                                                |
 | `sd`          | 标准差，默认值 1                                                                |
@@ -1272,7 +1271,14 @@ pwr.anova.test(
 
 也叫得分检验
 
-## 假设检验与区间估计的关系
+## 总结 {#sec-common-statistical-tests-summary}
+
+主要讲两个问题：
+
+1.  假设检验与区间估计的关系
+2.  常见的统计检验是线性模型
+
+### 假设检验与区间估计的关系
 
 区间估计的意义是解决点估计可靠性问题，它用置信系数解决了对估计结果的信心问题，弥补了点估计的不足。置信系数是最大的置信水平。
 
@@ -1291,3 +1297,22 @@ binom.test(x = 2, n = 10, p = 0.95, conf.level = 0.95)
 ```
 
 实际达到的置信度水平随真实的未知参数值和样本量的变化而**剧烈**波动，这意味着这种参数估计方法在实际应用中不可靠、真实场景中参数真值是永远未知的，样本量是可控的，并且是可以变化的。根本原因在于这类分布是离散的，比如这里的二项分布。当样本数据服从离散的分布，置信区间的端点也是离散的。这种缺陷是无法避免的，清晰的置信区间和离散的数据之间存在无法调和的冲突。
+
+### 常见的统计检验是线性模型
+
+两样本的均值检验：非参数检验方法
+
+与 `wilcox.test()` 等价的线性模型
+
+```{r}
+signed_rank <- function(x) sign(x) * rank(abs(x))
+fit <- lm(signed_rank(extra) ~ group, data = sleep)
+summary(fit)
+```
+
+与 `kruskal.test()` 等价的线性模型表示。
+
+```{r}
+fit <- lm(rank(extra) ~ group, data = sleep)
+summary(fit)
+```
