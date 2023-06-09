@@ -26,6 +26,7 @@ Jacob Cohen 实际谈的是更加深刻的问题。开篇介绍为什么需要�
 -   检验总体数量归类：单总体、两个总体和多个总体。
 -   检验总体分布归类：正态、二项、泊松、多项分布等。
 -   检验总体维度归类：分一维、二维和多维的情形。
+-   检验样本的数量：小样本 $n < 30$ 和大样本 $n \geq 30$。
 
 有了均值和方差，为什么还要位置参数和尺度参数？为了更一般地描述问题，扩展范围。特别是在总体分布未知或知之甚少的情况下做检验，不再仅限于均值和方差这样的特征量。关于检验方法，如有不明白的地方，可以查看维基百科词条。对每个检验问题，本章给出原假设和备择假设，检验统计量及其服从的分布，R 语言实现（自编或调用函数，如果调用函数，说明参数及其含义），不讲公式推导过程。
 
@@ -35,12 +36,15 @@ Jacob Cohen 实际谈的是更加深刻的问题。开篇介绍为什么需要�
 #| message: false
 
 library(ggplot2)
-library(pwr)       # 计算检验的功效和实验样本量
+library(pwr)         # 计算检验的功效和实验样本量
 library(MASS)
 # library(survival)
-# library(coin)    # 补充更多的检验方法
-# library(rstatix) # 管道操作整合检验方法
-# library(pwrss)   # 常见检验的功效和样本量计算
+# library(coin)      # 补充更多的检验方法
+# library(dunn.test) # dunn.test
+# library(MKpower)   # power.welch.t.test
+# library(car)       # leveneTest 可替代 bartlett.test
+# library(rstatix)   # 管道操作整合检验方法
+# library(pwrss)     # 常见检验的功效和样本量计算
 ```
 
 ## 单样本检验 {#sec-one-sample}
@@ -446,7 +450,10 @@ t.test(x = c(3, 4, 5, 8, 9, 1, 2, 4, 5), y = c(6, 19, 3, 2, 14, 4, 5, 17, 1))
 比较两个正态总体的方差是否相等，F 检验。
 
 ```{r}
+# 两样本
 var.test(extra ~ group, data = sleep)
+# 或者
+bartlett.test(extra ~ group, data = sleep)
 ```
 
 ### 总体未知均值检验
@@ -472,21 +479,13 @@ kruskal.test(extra ~ group, data = sleep)
 
 ### 总体未知方差检验
 
-对总体没有分布要求的方差齐性检验方法有四个，按方法类型和适用范围分类，见下 @tbl-bartlett-test 。
+对总体没有分布要求的方差齐性检验方法有三个，按适用范围分类，见下 @tbl-fligner-test 。
 
-|            | 两个样本                        | 多个样本          |
-|------------|---------------------------------|-------------------|
-| 参数检验   | `bartlett.test()`               | `bartlett.test()` |
-| 非参数检验 | `ansari.test()` / `mood.test()` | `fligner.test()`  |
+| 两个样本                        | 多个样本         |
+|---------------------------------|------------------|
+| `ansari.test()` / `mood.test()` | `fligner.test()` |
 
-: 检验方法分类 {#tbl-bartlett-test}
-
-Bartlett （巴特利特）检验 `bartlett.test()` 对总体的分布形式没有要求，检验各个组的方差是否有显著性差异，即方差齐性检验，属于参数检验，适用于多个样本的情况。
-
-```{r}
-# 两样本
-bartlett.test(extra ~ group, data = sleep)
-```
+: 检验方法分类 {#tbl-fligner-test}
 
 Ansari-Bradley 检验 `ansari.test()` 和 Mood 检验 `mood.test()` 属于两样本的非参数检验，检验尺度参数是否相同（齐性）。Fligner-Killeen 检验 `fligner.test()` 也属于非参数检验，适用于两样本和多样本的情况。非参数检验常涉及位置参数和尺度参数这一对概念，就正态分布而言，位置参数可以理解为均值 $\mu$ ，尺度参数可以理解为方差 $\sigma^2$ 。
 
@@ -678,6 +677,13 @@ $$
 \sigma_1^2 = \sigma_2^2 = \sigma_3^2 \quad vs. \quad \sigma_1^2,\sigma_2^2,\sigma_3^2 \quad  \text{不全相等}
 $$
 
+Bartlett （巴特利特）检验 `bartlett.test()` 要求总体的分布为正态分布，检验各个组的方差是否有显著性差异，即方差齐性检验，属于参数检验，适用于多个样本的情况。
+
+```{r}
+# 三样本
+bartlett.test(weight ~ group, data = PlantGrowth)
+```
+
 ### 总体未知均值检验
 
 Kruskal-Wallis 秩和检验 `kruskal.test()` 检验均值是否齐性。
@@ -722,8 +728,6 @@ quade.test(Speed ~ Expt | Run, data = morley)
 三个及以上样本的方差齐性检验。进一步地，我们在线性模型的基础上考虑每个实验组有不同的方差，先做方差齐性检验。
 
 ```{r}
-# 参数检验
-bartlett.test(weight ~ group, data = PlantGrowth)
 # 非参数检验
 fligner.test(weight ~ group, data = PlantGrowth)
 ```
