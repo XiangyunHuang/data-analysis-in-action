@@ -343,7 +343,7 @@ qt(1 - 0.05, df = n_1 + n_2 - 2)
 t.test(x = x1, y = y1, alternative = "greater", var.equal = TRUE)
 ```
 
-检验统计量的值及对应的 P 值都是一样的。
+检验统计量的值及对应的 P 值都是一样的。睡眠数据 sleep 记录了两种药物对病人睡眠时间的影响，此数据集由 "Student"（哥塞特的笔名） 收集。
 
 ```{r}
 # 方差未知但相等
@@ -468,6 +468,8 @@ wilcox.test(extra ~ group, data = sleep)
 kruskal.test(extra ~ group, data = sleep)
 ```
 
+能用参数检验的一定也可以用非参数检验，一般来说，非参数检验的功效不小于参数检验，非参数检验不要求分布是正态，比如此时 P 值从 0.07939 降至 0.06372。
+
 ### 总体未知方差检验
 
 对总体没有分布要求的方差齐性检验方法有四个，按方法类型和适用范围分类，见下 @tbl-bartlett-test 。
@@ -585,17 +587,13 @@ knitr::kable(fit_lm_output,
 )
 ```
 
-双因素方差分析 `aov()` 支持双因素方差分析
-
-```{r}
-aov(weight ~ group, data = PlantGrowth)
-```
-
 #### 假定异方差
 
 ```{r}
 # 计算各个组的方差
 aggregate(data = PlantGrowth, weight ~ group, FUN = var)
+# 或者
+with(PlantGrowth, tapply(weight, group, var))
 ```
 
 各个组的方差确实不太相同。
@@ -620,6 +618,54 @@ summary(fit_gls)
 ```{r}
 logLik(fit_lm)
 logLik(fit_gls)
+```
+
+### 单因素一元方差分析
+
+函数 `aov()` 可以做单、双因素一元方差分析
+
+```{r}
+fit_aov <- aov(weight ~ group, data = PlantGrowth)
+```
+
+两两比较，多重比较
+
+```{r}
+TukeyHSD(fit_aov)
+```
+
+### 双因素一元方差分析
+
+```{r}
+#| label: fig-ToothGrowth-interaction-plot
+#| fig-cap: OJ 和 VC 的交互作用
+
+with(ToothGrowth, interaction.plot(supp, dose, len))
+```
+
+如果 dose = 2， 则 len 与提供的方式 supp 没有关系。
+
+```{r}
+fit_aov <- aov(len ~ supp * dose, data = ToothGrowth)
+fit_aov
+```
+
+### 单因素多元方差分析
+
+PlantGrowth 属于一元方差分析，观测变量只有植物干重一个变量。如果推广到多个变量，就是多元方差分析 multivariate analysis of variance
+
+```{r}
+fit <- manova(cbind(Sepal.Length, Sepal.Width, Petal.Length, Petal.Width) ~ Species, data = iris)
+summary(fit, test = "Wilks")
+```
+
+P 值小于 0.0.5，说明 iris 数据集三个组的均值向量有显著差异。关于均值向量的检验方法，请看 `?summary.manova`
+
+按 Species 分组统计各个变量的样本均值、样本方差
+
+```{r}
+aggregate(data = iris, cbind(Sepal.Length, Sepal.Width, Petal.Length, Petal.Width) ~ Species, mean)
+aggregate(data = iris, cbind(Sepal.Length, Sepal.Width, Petal.Length, Petal.Width) ~ Species, var)
 ```
 
 ### 正态总体方差检验
@@ -1056,7 +1102,7 @@ pairwise.t.test(x = sleep$extra, g = sleep$group, paired = TRUE)
 多个组两两配对的 t 检验 `pairwise.t.test()`
 
 ```{r}
-pairwise.t.test(x = PlantGrowth$weight, g = PlantGrowth$group, paired = TRUE)
+with(PlantGrowth, pairwise.t.test(x = weight, g = group, paired = TRUE))
 ```
 
 ### 配对比例检验 {#sec-pairwise-prop-test}
@@ -1076,7 +1122,7 @@ pairwise.prop.test(smokers, patients)
 配对 Wilcoxon 检验 `pairwise.wilcox.test()` 适用于两个及以上组的两两配对检验。
 
 ```{r}
-pairwise.wilcox.test(x = PlantGrowth$weight, g = PlantGrowth$group)
+with(PlantGrowth, pairwise.wilcox.test(x = weight, g = group))
 ```
 
 Wilcoxon 检验 `wilcox.test()` 设置 `paired = TRUE` 也可以做配对检验，但是仅限于两个组。
@@ -1086,6 +1132,15 @@ Wilcoxon 检验 `wilcox.test()` 设置 `paired = TRUE` 也可以做配对检验�
 # wilcox.test(weight ~ group, data = PlantGrowth, paired = TRUE)
 # 支持
 wilcox.test(extra ~ group, data = sleep, paired = TRUE)
+```
+
+**dunn.test** Dunn's Test 秩和检验做多重比较
+
+```{r}
+#| eval: false
+
+library(dunn.test)
+with(PlantGrowth, dunn.test(x = weight, g = group, method = "holm", altp = TRUE))
 ```
 
 ### 配对相关性检验 {#sec-cor-test}
@@ -1227,30 +1282,27 @@ apply(Wish, MARGIN = 1:2, var)
 
 ### t 检验的功效
 
-```{r}
-# power.t.test()
-```
-
 `power.t.test()` 计算单样本或两样本的 t 检验的功效，或者根据功效计算参数，如样本量
 
 ```{r}
 #| label: fig-power-t-test
 #| fig-cap: "t 检验的功效"
-#| fig-width: 4
-#| fig-height: 3
-#| fig-showtext: true
+#| fig-width: 5.5
+#| fig-height: 3.5
+#| dev: 'tikz'
+#| fig-process: !expr to_png
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
 
 n <- 30 # 样本量（只是一个例子）
-x <- seq(0, 12, 0.01)
-library(ggplot2)
+x <- seq(from = 0, to = 12, by = 0.01)
 dat <- data.frame(xx = x / sqrt(n), yy = 2 * (1 - pt(x, n - 1)))
-
 ggplot(data = dat, aes(x = xx, y = yy)) +
-  geom_line() +
+  geom_line(linewidth = 1) +
   geom_vline(xintercept = c(0.01, 0.2, 0.5, 0.8, 1.2, 2), linetype = 2) +
-  theme_classic() +
-  labs(x = expression(d == frac(t, sqrt(n))), 
-       y = expression(2 * (1 - pt(x, n - 1))))
+  theme_classic(base_size = 13) +
+  labs(x = "$d = \\frac{t}{\\sqrt{n}}$", 
+       y = "$2(1 - \\mathrm{pt}(x, n - 1))$")
 ```
 
 ```{r}
@@ -1287,6 +1339,42 @@ pwr.t.test(
   alternative = "two.sided"
 )
 ```
+
+sleep 数据集为例，计算功效
+
+```{r}
+# 分组计算均值
+aggregate(data = sleep, extra ~ group, FUN = mean)
+# 分组计算标准差
+aggregate(data = sleep, extra ~ group, FUN = sd)
+# 代入计算功效
+power.t.test(
+  delta = 2.33 - 0.75,            # 两组均值之差
+  sd = (2.002249 + 1.789010) / 2, # 标准差
+  sig.level = 0.05,         # 显著性水平
+  type = "two.sample",      # 两样本
+  power = 0.95,             # 功效水平
+  alternative = "two.sided" # 双边检验
+)
+```
+
+经检验，上面取两组的平均方差代替共同方差和下面精确计算的结果差不多。各组至少需要 39 个样本。**MKpower** 包精确计算 Welch t 检验的功效
+
+```{r}
+#| eval: false
+
+library(MKpower)
+power.welch.t.test(
+  delta = 2.33 - 0.75,
+  sd1 = 2.002249,
+  sd2 = 1.789010,
+  sig.level = 0.05,
+  power = 0.95,
+  alternative = "two.sided"
+)
+```
+
+我国著名统计学家许宝騄先生对此功效计算方法做出过巨大贡献。
 
 ### 比例检验的功效
 
