@@ -170,6 +170,60 @@ wilcox.test(x = x, mu = 1, alternative = "greater")
 
 ### 正态总体均值检验
 
+```{r}
+#| echo: false
+
+options(
+  tinytex.engine = "xelatex",
+  tikzDefaultEngine = "xetex",
+  tikzDocumentDeclaration = "\\documentclass[tikz]{standalone}\n",
+  tikzXelatexPackages = c(
+    "\\usepackage[fontset=fandol]{ctex}",
+    "\\usepackage{amsfonts,mathrsfs,amssymb}\n"
+  )
+)
+# 用 magick 将 pdf 格式图片转化为 png 格式
+to_png <- function(fig_path) {
+  png_path <- sub("\\.pdf$", ".png", fig_path)
+  magick::image_write(magick::image_read_pdf(fig_path),
+    format = "png", path = png_path,
+    density = 300, quality = 100
+  )
+  return(png_path)
+}
+```
+
+两样本均值之差的检验
+
+```{r}
+#| label: fig-two-samples-means
+#| fig-cap: 两样本均值之差的检验
+#| fig-width: 5.5
+#| fig-height: 3.5
+#| dev: 'tikz'
+#| fig-process: !expr to_png
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
+
+library(ggplot2)
+
+ggplot() +
+  geom_function(
+    fun = dnorm, args = list(mean = 3, sd = 1),
+    aes(colour = "dnorm1"), linewidth = 2, xlim = c(-4, 8)
+  ) +
+  geom_function(
+    fun = dnorm, args = list(mean = 2, sd = 1.5),
+    aes(colour = "dnorm2"), linewidth = 2, xlim = c(-4, 8)
+  ) +
+  scale_color_brewer(palette = "Set1", labels = c(
+    dnorm1 = "$\\mathcal{N}(3, 1^2)$",
+    dnorm2 = "$\\mathcal{N}(2, 1.5^2)$"
+  )) +
+  theme_classic(base_size = 13) +
+  labs(x = "$x$", y = "$f(x)$", color = "正态分布")
+```
+
 常见检验问题
 
 $$
