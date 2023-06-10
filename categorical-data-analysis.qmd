@@ -8,9 +8,367 @@ source("_common.R")
 
 1.  最常见的两个广义线性模型：泊松和逻辑回归
 2.  理论公式、R 输出及其解释，应用案例
-3.  与计数数据的假设检验的关系
+3.  与计数/离散数据的假设检验的关系
 4.  辛普森悖论，分类数据处理，高维列联表的压缩和分层，边际和条件
 5.  泰坦尼克号 4x2x2x2 高维复杂列联表分析
+
+```{r}
+library(MASS)
+```
+
+计数数据，通俗来说，对象是一个一个或一份一份的，可数的、离散的数据，比如人数。列联表来组织数据，分二维和多维的情况。
+
+## 列联表分析 {#sec-contingency-table}
+
+```{r}
+#| eval: false
+#| echo: false
+
+# 逻辑回归模型 二分 dichotomous logit regression
+glm(family = binomial(link = "logit"))
+# Probit 回归模型 二分 dichotomous probit regression
+glm(family = binomial(link = "probit"))
+# 泊松回归
+glm(family = poisson(link = "log"))
+# 多项逻辑回归模型
+nnet::multinom()
+# 比例比/比值比/优势比 有序的多分类模型
+MASS::polr()
+```
+
+### 比例检验 {#sec-prop-test}
+
+关于比例的检验问题
+
+$$
+\begin{aligned}
+H_0: P_A = P_B \quad vs. \quad H_1: P_A > P_B \\
+H_0: P_A = P_B \quad vs. \quad H_1: P_A < P_B
+\end{aligned}
+$$
+
+$H_0$ 成立的情况下，暗示着两个样本来自同一总体。
+
+比例检验 `prop.test()` 与比例趋势检验 `prop.trend.test`。Wilson 检验统计量 [@Wilson1927] 考虑单样本比例 $p$ 的区间估计问题。
+
+函数 `prop.test()` 用来检验两组或多组二项分布的成功概率（比例）是否相等，或等于给定的值。近似检验，多组数据的比例检验，可以理解为比例齐性检验。
+
+原假设：四个组里面病人中吸烟的比例是相同的 备择假设：四个组里面至少有一个组的吸烟比例是不同的
+
+```{r}
+smokers <- c(83, 90, 129, 70)
+patients <- c(86, 93, 136, 82)
+prop.test(smokers, patients)
+prop.trend.test(smokers, patients)
+```
+
+设随机变量 X 服从参数为 $p$ 的二项分布 $b(n, p)$， $Y$ 服从参数为 $\theta$ 的二项分布 $b(m,\theta)$， $m,n$ 都假定为较大的正整数，检验如下问题
+
+$$
+H_0: P_A \geq P_B \quad vs. \quad H_1: P_A < P_B
+$$
+
+根据中心极限定理
+
+$$
+\frac{\bar{X} - \bar{Y}}{\sqrt{\frac{p(1-p)}{n} + \frac{\theta(1-\theta)}{m}}}
+$$
+
+近似服从标准正态分布 $N(0,1)$。如果用矩估计 $\bar{X}$ 和 $\bar{Y}$ 分别替代总体参数 $p$ 和 $\theta$，构造检验统计量
+
+$$
+T = \frac{\bar{X} - \bar{Y}}{\sqrt{\frac{\bar{X}(1-\bar{X})}{n} + \frac{\bar{Y}(1-\bar{Y})}{m}}}
+$$
+
+根据 Slutsky 定理，检验统计量 $T$ 近似服从标准正态分布，当 $T$ 偏大时，拒绝 $H_0$。该方法的优势在于当 $n,m$ 比较大时，二项分布比较复杂，无法建立统计表，利用标准正态分布表来给出检验所需要的临界值，简便易行！
+
+当 $p$ 和 $\theta$ 都比较小，上述方法检验效果不好，原因在于由中心极限定理对 $\bar{X}$ 和 $\bar{Y}$ 的正态分布近似效果不好，或者间接地导致 $\bar{X}-\bar{Y}$ 的方差偏小，进而 $T$ 的分辨都不好，而且当 $p,\theta$ 很接近 1 时，上述现象也会产生！
+
+下面介绍新的解决办法
+
+上面的检验问题等价于
+
+$$
+H_0: \frac{P_A}{P_B} \geq 1 \quad vs. \quad H_1: \frac{P_A}{P_B} < 1
+$$
+
+引入检验统计量
+
+$$
+T^{\star} = \frac{\bar{X}}{\bar{Y}}
+$$
+
+同样由 Slutsky 定理和中心极限定理可知， $\bar{X}/\bar{Y}$ 近似服从 正态分布 $\mathcal{N}(1,\frac{1-\theta}{m\theta})$
+
+当 $(T^\star - 1)/\hat\sigma$ 偏大时接受 $H_0$，临界值可通过 $\mathcal{N}(0, \hat\sigma^2)$ 分布表计算得到， $\hat\sigma^2$ 是对 $\frac{1-\theta}{m\theta}$ 的估计，比如取 $\hat\sigma^2 = \frac{1-\bar{Y}}{m}\cdot \frac{1}{\bar{Y}}$ 或取 $\hat\sigma^2 = \frac{1-\bar{Y}}{m}\cdot \frac{1}{\bar{X}}$
+
+由于渐近方差形如 $\frac{1-\theta}{m\theta}$，因而在 $\theta$ 较小，渐近方差较大，克服了之前 $\bar{X} - \bar{Y}$的方差较小的问题
+
+$p,\theta$ 很接近 1 时，我们取检验统计量
+
+$$
+T^{\star\star} = \frac{1-\bar{Y}}{1-\bar{X}}
+$$
+
+结论和 $T^\star$ 类似，当 $T^{\star\star}$ 偏大时，拒绝 $H_0$。
+
+两个二项总体成功概率的比较 [@Song2011]
+
+### 二项检验 {#sec-binom-test}
+
+区间估计与假设检验是有紧密关系的，对于二项分布比例的 11 种区间估计方法的比较 [@Newcombe1998]。函数 `binom.test()` 来做二项检验，函数 `binom.test()` 用来检验伯努利试验中成功概率 $p$ 和给定概率 $p_0$ 的关系，属于精确检验 [@Clopper1934]。
+
+比例 $p$ 的检验， 做 $n$ 次独立试验，样本 $X_1,\ldots,X_n \sim b(1, p)$，事件发生的总次数 $\sum_{i=1}^{n}X_i$。
+
+```{r}
+# 模拟一组样本
+set.seed(20232023)
+x <- sample(x = c(0, 1), size = 100, replace = TRUE, prob = c(0.8, 0.2))
+```
+
+二项分布中成功概率的检验
+
+```{r}
+binom.test(sum(x), n = 100, p = 0.5)
+```
+
+检验成功概率 p 是否等于 0.5， P 值 $5.514 \times 10^{-8}$ 结论是拒绝原假设
+
+```{r}
+binom.test(sum(x), n = 100, p = 0.2)
+```
+
+检验成功概率 p 是否等于 0.2， P 值 0.4534 结论是不能拒绝原假设
+
+切比雪夫不等式（Chebyshev, 1821-1894）。设随机变量 $X$ 的数学期望和方差都存在，则对任意常数 $\epsilon > 0$，有
+
+$$
+\begin{aligned}
+P(|X - EX| \geq \epsilon) & \leq \frac{Var(X)}{\epsilon^2} \\
+P(|X - EX| \leq \epsilon) & \geq 1 - \frac{Var(X)}{\epsilon^2}
+\end{aligned}
+$$
+
+### 泊松检验 {#sec-poisson-test}
+
+泊松分布是 1837年由法国数学家泊松 （Poisson, 1781-1840） 首次提出。
+
+`poisson.test()` 泊松分布的参数 $\lambda (>0)$ 的精确检验，适用于单样本和两样本。
+
+```{r}
+#| eval: false
+#| echo: true
+
+poisson.test(x,
+  T = 1, r = 1,
+  alternative = c("two.sided", "less", "greater"),
+  conf.level = 0.95
+)
+```
+
+### 卡方检验 {#sec-chisq-test}
+
+列联表中的数据服从多项分布，关于独立性检验，有如下几种常见类型：
+
+1.  相互独立 Mutual independence 所有变量之间相互独立，$X \perp Y \perp Z$ 。
+2.  联合独立 Joint independence 两个变量的联合与第三个变量独立，$XY \perp Z$ 。
+3.  边际独立 Marginal independence 当忽略第三个变量时，两个变量是独立的。列联表压缩
+4.  条件独立 Conditional independence 当固定第三个变量时，两个变量是独立的，$X \perp Y | Z$。
+
+本节数据来自著作《An Introduction to Categorical Data Analysis》[@Agresti2007] 的第2章习题 2.33，探索 1976-1977 年美国佛罗里达州的凶杀案件中被告肤色和死刑判决的关系。
+
+```{r}
+#| label: tbl-florida-ethnicity
+#| tbl-cap: "佛罗里达州的凶杀案件统计数据"
+#| echo: false
+
+tbl <- expand.grid(
+  Death = c("Yes", "No"), # 判决结果 是否死刑
+  Defend = c("白人", "黑人"),  # 被告 肤色
+  Victim = c("白人", "黑人")   # 原告 （被害人）肤色
+)
+ethnicity <- data.frame(tbl, Freq = c(19, 132, 11, 52, 0, 9,  6, 97))
+
+# 长格式转宽格式
+dat1 <- reshape(
+  data = ethnicity, direction = "wide",
+  idvar = c("Defend", "Victim"),
+  timevar = "Death", v.names = "Freq", sep = "_"
+)
+# 制作表格
+gt::gt(dat1) |> 
+  gt::cols_label(
+    Freq_Yes = "是",
+    Freq_No = "否",
+    Victim = "被害人",
+    Defend = "被告"
+  ) |> 
+  gt::tab_spanner(
+    label = "死刑",
+    columns = c(Freq_Yes, Freq_No)
+  ) |> 
+  gt::opt_row_striping()
+```
+
+#### 独立性
+
+皮尔逊卡方检验（ Pearson's $\chi^2$ 检验） `chisq.test()` 常用于列联表独立性检验和方差分析模型的拟合优度检验。下面是一个 $2 \times 2$ 的列联表。
+
+|        | 第一列 | 第二列 | 合计      |
+|--------|--------|--------|-----------|
+| 第一行 | $a$    | $b$    | $a+b$     |
+| 第二行 | $c$    | $d$    | $c+d$     |
+| 合计   | $a+c$  | $b+d$  | $a+b+c+d$ |
+
+: 卡方独立性检验
+
+```{r}
+# Death 死刑与 Defend （被告）独立性检验
+m <- xtabs(Freq ~ Death + Defend, data = ethnicity)
+m
+chisq.test(m, correct = TRUE)
+chisq.test(m, correct = FALSE)
+```
+
+当被告是白人时，死刑判决 19 个，占总的死刑判决数量的 19/36 = 52.78%，当被告是黑人时，死刑判决 17 个，占总的死刑判决数量的 17/36 = 47.22%。判决结果与被告种族没有显著关系，但与原告（受害人）种族是有关系的，请继续往下看。
+
+```{r}
+# Death 死刑与 Victim （原告）独立性检验
+m <- xtabs(Freq ~ Death + Victim, data = ethnicity)
+chisq.test(m, correct = TRUE)
+chisq.test(m, correct = FALSE)
+```
+
+当受害人是白人时，死刑判决 30 个，占总的死刑判决数量的 30/36 = 83.33%，当受害人是黑人时，死刑判决 6 个，占总的死刑判决数量的 6/36 = 16.67%。受害人是白人时，死刑判决明显多于黑人。
+
+多维列联表
+
+```{r}
+m <- xtabs(Freq ~ Death + Defend + Victim, data = ethnicity)
+m
+```
+
+判决结果、被告种族、原告种族三者是否存在联合独立性，即考虑 (Victim, Death) 是否与 Defend 独立，(Victim, Defend) 是否与 Death 独立，(Death, Defend) 与 Victim 是否相互独立。
+
+```{r}
+fm <- loglin(table = m, margin = list(c(1, 2), c(1, 3), c(2, 3)), print = FALSE)
+fm 
+# 拟合对数线性模型
+# fm <- loglin(m, list(c(1), c(2), c(3)))
+# fm
+```
+
+似然比检验统计量（Likelihood Ratio Test statistic），皮尔逊 $\chi^2$ 统计量（Pearson X-square Test statistic）
+
+```{r}
+1 - pchisq(fm$lrt, fm$df)
+```
+
+拟合对数线性模型
+
+```{r}
+fit_dvp <- glm(Freq ~ ., data = ethnicity, family = poisson(link = "log"))
+```
+
+模型输出
+
+```{r}
+summary(fit_dvp)
+```
+
+Pearson $\chi^2$ 统计量
+
+```{r}
+sum(residuals(fit_dvp, type = "pearson")^2)
+```
+
+**MASS** 包计算模型参数的置信区间
+
+```{r}
+#| message: false
+
+confint(fit_dvp, trace = FALSE)
+```
+
+对于单元格总样本量小于 40 或 T 小于 1 时，需采用费希尔精确检验（ Fisher 's Exact 检验）。
+
+#### 边际独立性
+
+费希尔精确检验：固定边际的情况下，检验列联表行和列之间的独立性 `fisher.test()` 。
+
+`fisher.test()` 函数用法，统计原理和公式，适用范围和条件，概念背景和历史。
+
+费舍尔 (Sir Ronald Fisher, 1890.2 -- 1962.7)[^categorical-data-analysis-1] 和一位女士打赌，女士说能品出奶茶中奶和茶的添加顺序。
+
+[^categorical-data-analysis-1]: <https://en.wikipedia.org/wiki/Ronald_Fisher>
+
+`fisher.test()` 针对计数数据，检验列联表中行和列的独立性。
+
+```{r}
+TeaTasting <- matrix(c(3, 1, 1, 3),
+  nrow = 2,
+  dimnames = list(
+    Guess = c("Milk", "Tea"),
+    Truth = c("Milk", "Tea")
+  )
+)
+TeaTasting
+```
+
+```{r}
+# 单边 P 值
+fisher.test(TeaTasting, alternative = "greater")
+# 双边 P 值
+fisher.test(TeaTasting, alternative = "two.sided")
+# 单边 P 值
+sum(dhyper(x = c(3, 4), m = 4, n = 4, k = 4))
+```
+
+#### 对称性
+
+用于计数数据的 McNemar's 卡方检验（ McNemar's $\chi^2$ 检验）：检验二维列联表行和列的对称性 `mcnemar.test()`。怎么理解对称性？看帮助实例。
+
+```{r}
+Performance <- matrix(c(794, 86, 150, 570),
+  nrow = 2,
+  dimnames = list(
+    "1st Survey" = c("Approve", "Disapprove"),
+    "2nd Survey" = c("Approve", "Disapprove")
+  )
+)
+Performance
+mcnemar.test(Performance)
+```
+
+#### 条件独立性
+
+用于分层分类数据的 Cochran-Mantel-Haenszel 卡方检验：两个枚举（分类）变量的条件独立性，假定不存在三个因素的交互作用。Cochran-Mantel-Haenszel 检验 `mantelhaen.test()`
+
+```{r}
+str(UCBAdmissions)
+```
+
+`UCBAdmissions` 数据集是一个 $2\times 2 \times 6$ 的三维列联表，R 语言中常用 table 类型表示。实际上，table 类型衍生自 array 数组类型，当把 `UCBAdmissions` 当作一个数组操作时，1、2、3 分别表示 Admit、Gender、Dept 三个维度。
+
+```{r}
+mantelhaen.test(UCBAdmissions)
+```
+
+没有证据表明院系与性别之间存在关联。在给定院系的情况下，是否录取和性别没有显著关系。
+
+```{r}
+# 按系统计
+apply(UCBAdmissions, 3, function(x) (x[1, 1] * x[2, 2]) / (x[1, 2] * x[2, 1]))
+
+woolf <- function(x) {
+  x <- x + 1 / 2
+  k <- dim(x)[3]
+  or <- apply(x, 3, function(x) (x[1, 1] * x[2, 2]) / (x[1, 2] * x[2, 1]))
+  w <- apply(x, 3, function(x) 1 / sum(1 / x))
+  1 - pchisq(sum(w * (log(or) - weighted.mean(log(or), w))^2), k - 1)
+}
+woolf(UCBAdmissions)
+```
 
 ## 加州伯克利分校的录取情况 {#sec-ucb-admissions}
 
