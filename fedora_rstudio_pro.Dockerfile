@@ -23,7 +23,10 @@ RUN dnf -y upgrade \
    optipng \
    ImageMagick \
    texinfo \
-   cargo \
+ && dnf clean all
+
+# System dependencies required for Quarto Book project
+RUN dnf -y install cargo \
    bzip2 \
    passwd \
    initscripts \
@@ -35,7 +38,7 @@ RUN dnf -y upgrade \
  && echo 'docker:docker123' | chpasswd \
  && dnf clean all
 
-# System dependencies required for Quarto Book project
+# Texlive dependencies required for Quarto Book project
 RUN dnf -y install texlive-sourcecodepro \
    texlive-pdfcrop \
    texlive-dvisvgm \
