@@ -34,3 +34,22 @@ if (xfun::is_macos()) {
 # 设置 Web GL 渲染
 options(rgl.useNULL = TRUE)
 options(rgl.printRglwidget = TRUE)
+
+options(
+  tinytex.engine = "xelatex",
+  tikzDefaultEngine = "xetex",
+  tikzDocumentDeclaration = "\\documentclass[tikz]{standalone}\n",
+  tikzXelatexPackages = c(
+    "\\usepackage[fontset=fandol]{ctex}",
+    "\\usepackage{amsfonts,mathrsfs,amssymb}\n"
+  )
+)
+# 用 magick 将 pdf 格式图片转化为 png 格式
+to_png <- function(fig_path) {
+  png_path <- sub("\\.pdf$", ".png", fig_path)
+  magick::image_write(magick::image_read_pdf(fig_path),
+                      format = "png", path = png_path,
+                      density = 300, quality = 100
+  )
+  return(png_path)
+}

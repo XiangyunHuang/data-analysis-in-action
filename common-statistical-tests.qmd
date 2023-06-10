@@ -1,5 +1,11 @@
 # 常见的统计检验 {#sec-common-statistical-tests}
 
+```{r}
+#| echo: false
+
+source("_common.R")
+```
+
 ::: hidden
 $$
  \def\bm#1{{\boldsymbol #1}}
@@ -205,29 +211,6 @@ flowchart LR
 设 $x_1,\cdots,x_{n_1}$ 是来自总体 $\mathcal{N}(\mu_1,\sigma_1^2)$ 的样本，设 $y_1,\cdots,y_{n_2}$ 是来自总体 $\mathcal{N}(\mu_2,\sigma_2^2)$ 的样本。
 
 ### 正态总体均值检验
-
-```{r}
-#| echo: false
-
-options(
-  tinytex.engine = "xelatex",
-  tikzDefaultEngine = "xetex",
-  tikzDocumentDeclaration = "\\documentclass[tikz]{standalone}\n",
-  tikzXelatexPackages = c(
-    "\\usepackage[fontset=fandol]{ctex}",
-    "\\usepackage{amsfonts,mathrsfs,amssymb}\n"
-  )
-)
-# 用 magick 将 pdf 格式图片转化为 png 格式
-to_png <- function(fig_path) {
-  png_path <- sub("\\.pdf$", ".png", fig_path)
-  magick::image_write(magick::image_read_pdf(fig_path),
-    format = "png", path = png_path,
-    density = 300, quality = 100
-  )
-  return(png_path)
-}
-```
 
 两样本均值之差的检验
 
@@ -617,54 +600,6 @@ logLik(fit_lm)
 logLik(fit_gls)
 ```
 
-### 单因素一元方差分析
-
-函数 `aov()` 可以做单、双因素一元方差分析
-
-```{r}
-fit_aov <- aov(weight ~ group, data = PlantGrowth)
-```
-
-两两比较，多重比较
-
-```{r}
-TukeyHSD(fit_aov)
-```
-
-### 双因素一元方差分析
-
-```{r}
-#| label: fig-ToothGrowth-interaction-plot
-#| fig-cap: OJ 和 VC 的交互作用
-
-with(ToothGrowth, interaction.plot(supp, dose, len))
-```
-
-如果 dose = 2， 则 len 与提供的方式 supp 没有关系。
-
-```{r}
-fit_aov <- aov(len ~ supp * dose, data = ToothGrowth)
-fit_aov
-```
-
-### 单因素多元方差分析
-
-PlantGrowth 属于一元方差分析，观测变量只有植物干重一个变量。如果推广到多个变量，就是多元方差分析 multivariate analysis of variance
-
-```{r}
-fit <- manova(cbind(Sepal.Length, Sepal.Width, Petal.Length, Petal.Width) ~ Species, data = iris)
-summary(fit, test = "Wilks")
-```
-
-P 值小于 0.0.5，说明 iris 数据集三个组的均值向量有显著差异。关于均值向量的检验方法，请看 `?summary.manova`
-
-按 Species 分组统计各个变量的样本均值、样本方差
-
-```{r}
-aggregate(data = iris, cbind(Sepal.Length, Sepal.Width, Petal.Length, Petal.Width) ~ Species, mean)
-aggregate(data = iris, cbind(Sepal.Length, Sepal.Width, Petal.Length, Petal.Width) ~ Species, var)
-```
-
 ### 正态总体方差检验
 
 后面总体分布未知的情况下的方差检验也都可以用在这里。
@@ -928,231 +863,6 @@ apply(Wish, MARGIN = 1:2, var)
 2*(S^2 + tcrossprod(diag(S)))
 ```
 
-## 样本量的计算 {#sec-power-of-test}
-
-检验的功效常用于样本量的计算
-
-### t 检验的功效
-
-`power.t.test()` 计算单样本或两样本的 t 检验的功效，或者根据功效计算参数，如样本量
-
-```{r}
-#| label: fig-power-t-test
-#| fig-cap: "t 检验的功效"
-#| fig-width: 5.5
-#| fig-height: 3.5
-#| dev: 'tikz'
-#| fig-process: !expr to_png
-#| code-fold: true
-#| echo: !expr knitr::is_html_output()
-
-n <- 30 # 样本量（只是一个例子）
-x <- seq(from = 0, to = 12, by = 0.01)
-dat <- data.frame(xx = x / sqrt(n), yy = 2 * (1 - pt(x, n - 1)))
-ggplot(data = dat, aes(x = xx, y = yy)) +
-  geom_line(linewidth = 1) +
-  geom_vline(xintercept = c(0.01, 0.2, 0.5, 0.8, 1.2, 2), linetype = 2) +
-  theme_classic(base_size = 13) +
-  labs(x = "$d = \\frac{t}{\\sqrt{n}}$", 
-       y = "$2(1 - \\mathrm{pt}(x, n - 1))$")
-```
-
-```{r}
-power.t.test(
-  n = 100, delta = 2.2,
-  sd = 1, sig.level = 0.05,
-  type = "two.sample",
-  alternative = "two.sided"
-)
-```
-
-| 参数          | 含义                                                                            |
-|:--------------|:--------------------------------------------------------------------------------|
-| `n`           | 每个组的样本量                                                                  |
-| `delta`       | 两个组的均值之差                                                                |
-| `sd`          | 标准差，默认值 1                                                                |
-| `sig.level`   | 显著性水平，默认是 0.05 （犯第 I 类错误的概率）                                 |
-| `power`       | 检验的功效（1 - 犯第 II 类错误的概率）                                          |
-| `type`        | t 检验的类型 `"two.sample"` 两样本、`"one.sample"` 单样本或 `"paired"` 配对样本 |
-| `alternative` | 单边或双边检验，取值为 `"two.sided"` 或 `"one.sided"`                           |
-
-: 函数 `power.t.test()` 的参数及其含义 {#tbl-power-t-test}
-
-参数 `n`，`delta`，`power`，`sd` 和 `sig.level` 必须有一个值为 `NULL`，为 `NULL` 的参数是由其它参数决定的。
-
-```{r}
-# 前面 t 检验的等价功效计算
-library(pwr)
-pwr.t.test(
-  d = 2.2 / 6.4,
-  n = 100,
-  sig.level = 0.05,
-  type = "two.sample",
-  alternative = "two.sided"
-)
-```
-
-sleep 数据集为例，计算功效
-
-```{r}
-# 分组计算均值
-aggregate(data = sleep, extra ~ group, FUN = mean)
-# 分组计算标准差
-aggregate(data = sleep, extra ~ group, FUN = sd)
-# 代入计算功效
-power.t.test(
-  delta = 2.33 - 0.75,            # 两组均值之差
-  sd = (2.002249 + 1.789010) / 2, # 标准差
-  sig.level = 0.05,         # 显著性水平
-  type = "two.sample",      # 两样本
-  power = 0.95,             # 功效水平
-  alternative = "two.sided" # 双边检验
-)
-```
-
-经检验，上面取两组的平均方差代替共同方差和下面精确计算的结果差不多。各组至少需要 39 个样本。**MKpower** 包精确计算 Welch t 检验的功效
-
-```{r}
-#| eval: false
-
-library(MKpower)
-power.welch.t.test(
-  delta = 2.33 - 0.75,
-  sd1 = 2.002249,
-  sd2 = 1.789010,
-  sig.level = 0.05,
-  power = 0.95,
-  alternative = "two.sided"
-)
-```
-
-我国著名统计学家许宝騄先生对此功效计算方法做出过巨大贡献。
-
-### 比例检验的功效
-
-```{r}
-# power.prop.test()
-```
-
-`power.prop.test()` 计算两样本比例检验的功效
-
-功效可以用来计算实验所需要的样本量，检验统计量的功效越大/高，检验方法越好，实验所需要的样本量越少
-
-```{r}
-# p1 >= p2 的检验 单边和双边检验
-power.prop.test(
-  p1 = .65, p2 = 0.6, sig.level = .05,
-  power = 0.90, alternative = "one.sided"
-)
-
-power.prop.test(
-  p1 = .65, p2 = 0.6, sig.level = .05,
-  power = 0.90, alternative = "two.sided"
-)
-```
-
-**pwr** 包 `pwr.2p.test()` 函数提供了类似 `power.prop.test()` 函数的功能
-
-```{r}
-library(pwr)
-# 明确 p1 > p2 的检验
-# 单边检验拆分更加明细，分为大于和小于
-pwr.2p.test(
-  h = ES.h(p1 = 0.65, p2 = 0.6),
-  sig.level = 0.05, power = 0.9, alternative = "greater"
-)
-```
-
-已知两样本的样本量不等，检验 H_0: $p_1 = p_2$ H_1: $p_1 \neq p_2$ 的功效
-
-```{r}
-pwr.2p2n.test(
-  h = 0.30, n1 = 80, n2 = 245,
-  sig.level = 0.05, alternative = "greater"
-)
-```
-
-h 表示两个样本的差异，计算得到的功效是 0.75
-
-### 方差分析的功效
-
-`power.anova.test()` 计算平衡的单因素方差分析检验的功效
-
-```{r}
-power.anova.test(
-  groups = 4,       #  4 个组  
-  between.var = 1,  # 组间方差为 1
-  within.var = 3,   # 组内方差为 3
-  power = 0.95      # 1 - 犯第二类错误的概率
-)
-```
-
-```{r}
-library(pwr)
-# f 是如何和上面的组间/组内方差等价指定的
-pwr.anova.test(
-  k = 4,            # 组数
-  f = 0.5,          # 效应大小
-  sig.level = 0.05, # 显著性水平
-  power = 0.95      # 检验的效
-)
-```
-
-## 统计检验方法
-
-统计检验的一般方法。
-
-### Wald 检验 {#sec-wald-test}
-
-### Wilks 检验 {#sec-wilks-test}
-
-也叫似然比检验
-
-### Rao 检验 {#sec-rao-test}
-
-也叫得分检验
-
-### 多重比较和方差分析的关系
-
-### 假设检验与区间估计的关系
-
-区间估计的意义是解决点估计可靠性问题，它用置信系数解决了对估计结果的信心问题，弥补了点估计的不足。置信系数是最大的置信水平。
-
-Base R 提供的 `binom.test()` 函数可以精确计算置信区间，Clopper-Pearson 区间，而 `prop.test()` 函数可近似计算置信区间，Wilson 区间。
-
-以二项分布的比例检验和二项检验为例。近似区间估计
-
-```{r}
-prop.test(x = 2, n = 10, p = 0.95, conf.level = 0.95, correct = TRUE)
-```
-
-精确区间估计
-
-```{r}
-binom.test(x = 2, n = 10, p = 0.95, conf.level = 0.95)
-```
-
-实际达到的置信度水平随真实的未知参数值和样本量的变化而**剧烈**波动，这意味着这种参数估计方法在实际应用中不可靠、真实场景中参数真值是永远未知的，样本量是可控的，并且是可以变化的。根本原因在于这类分布是离散的，比如这里的二项分布。当样本数据服从离散的分布，置信区间的端点也是离散的。这种缺陷是无法避免的，清晰的置信区间和离散的数据之间存在无法调和的冲突。
-
-### 常见的统计检验是线性模型
-
-两样本的均值检验：非参数检验方法
-
-与 `wilcox.test()` 等价的线性模型
-
-```{r}
-signed_rank <- function(x) sign(x) * rank(abs(x))
-fit <- lm(signed_rank(extra) ~ group, data = sleep)
-summary(fit)
-```
-
-与 `kruskal.test()` 等价的线性模型表示。
-
-```{r}
-fit <- lm(rank(extra) ~ group, data = sleep)
-summary(fit)
-```
-
 ## 总结 {#sec-common-statistical-tests-summary}
 
 真实数据的情况是复杂多样的，本章按照数据情况对检验方法分类，方便读者根据手头的数据情况，快速从众多的方法中定位最合适的检验方法。依次是单样本检验、两样本检验、多样本检验、计数数据检验、配对样本检验。如果已知符合参数检验的条件，优先考虑参数检验。如果不确定是否符合参数检验的条件，对参数检验和非参数检验方法都适用，非参数检验方法的功效更大，方法更优。在总体分布未知的情况下，无论是对均值检验还是对方差检验，大部分情况下都需要非参数检验方法。
@@ -1169,4 +879,101 @@ flowchart LR
   R_A_Fisher --> E_S_Pearson(E. S. Pearson \n1895-1980)
   J_Neyman --> E_L_Lehmann(E. L. Lehmann\n1917-2009)
   E_S_Pearson --> A_Wald(A. Wald\n1902-1950)
+```
+
+### 多重比较和方差分析的关系
+
+#### 单因素一元方差分析
+
+函数 `aov()` 可以做单、双因素一元方差分析
+
+```{r}
+fit_aov <- aov(weight ~ group, data = PlantGrowth)
+```
+
+两两比较，多重比较
+
+```{r}
+TukeyHSD(fit_aov)
+```
+
+#### 双因素一元方差分析
+
+```{r}
+#| label: fig-ToothGrowth-interaction-plot
+#| fig-cap: OJ 和 VC 的交互作用
+
+with(ToothGrowth, interaction.plot(supp, dose, len))
+```
+
+如果 dose = 2， 则 len 与提供的方式 supp 没有关系。
+
+```{r}
+fit_aov <- aov(len ~ supp * dose, data = ToothGrowth)
+fit_aov
+```
+
+#### 单因素多元方差分析
+
+PlantGrowth 属于一元方差分析，观测变量只有植物干重一个变量。如果推广到多个变量，就是多元方差分析 multivariate analysis of variance
+
+```{r}
+fit <- manova(cbind(Sepal.Length, Sepal.Width, Petal.Length, Petal.Width) ~ Species, data = iris)
+summary(fit, test = "Wilks")
+```
+
+P 值小于 0.0.5，说明 iris 数据集三个组的均值向量有显著差异。关于均值向量的检验方法，请看 `?summary.manova`
+
+按 Species 分组统计各个变量的样本均值、样本方差
+
+```{r}
+aggregate(data = iris, cbind(Sepal.Length, Sepal.Width, Petal.Length, Petal.Width) ~ Species, mean)
+aggregate(data = iris, cbind(Sepal.Length, Sepal.Width, Petal.Length, Petal.Width) ~ Species, var)
+```
+
+### 假设检验与区间估计的关系
+
+区间估计的意义是解决点估计可靠性问题，它用置信系数解决了对估计结果的信心问题，弥补了点估计的不足。置信系数是最大的置信水平。
+
+#### 比例检验
+
+Base R 提供的 `binom.test()` 函数可以精确计算置信区间，Clopper-Pearson 区间，而 `prop.test()` 函数可近似计算置信区间，Wilson 区间。
+
+以二项分布的比例检验和二项检验为例。近似区间估计
+
+```{r}
+prop.test(x = 2, n = 10, p = 0.95, conf.level = 0.95, correct = TRUE)
+```
+
+#### 二项检验
+
+精确区间估计
+
+```{r}
+binom.test(x = 2, n = 10, p = 0.95, conf.level = 0.95)
+```
+
+实际达到的置信度水平随真实的未知参数值和样本量的变化而**剧烈**波动，这意味着这种参数估计方法在实际应用中不可靠、真实场景中参数真值是永远未知的，样本量是可控的，并且是可以变化的。根本原因在于这类分布是离散的，比如这里的二项分布。当样本数据服从离散的分布，置信区间的端点也是离散的。这种缺陷是无法避免的，清晰的置信区间和离散的数据之间存在无法调和的冲突。
+
+### 常见的统计检验是线性模型
+
+两样本的均值检验：非参数检验方法
+
+#### Wilcoxon 符号秩检验
+
+与 `wilcox.test()` 等价的线性模型
+
+```{r}
+signed_rank <- function(x) sign(x) * rank(abs(x))
+fit <- lm(signed_rank(extra) ~ group, data = sleep)
+summary(fit)
+```
+
+#### Kruskal-Wallis 秩和检验
+
+与 `kruskal.test()` 等价的线性模型表示。
+
+```{r}
+fit <- lm(rank(extra) ~ group, data = sleep)
+summary(fit)
 ```
