@@ -28,14 +28,15 @@ RUN dnf -y upgrade \
    passwd \
    initscripts \
    firewalld \
+   python3-virtualenv \
+   google-noto-serif-cjk-fonts \
+   chromium \
  # Setup password use passwd
  && echo 'docker:docker123' | chpasswd \
  && dnf clean all
-   
+
 # System dependencies required for Quarto Book project
-RUN dnf -y install python3-virtualenv \
-   google-noto-serif-cjk-fonts \
-   texlive-sourcecodepro \
+RUN dnf -y install texlive-sourcecodepro \
    texlive-pdfcrop \
    texlive-dvisvgm \
    texlive-dvips \
@@ -51,11 +52,10 @@ RUN dnf -y install python3-virtualenv \
    texlive-fontawesome \
    texlive-newtx \
    texlive-tcolorbox \
-   texlive-tikz-network \
    texlive-standalone \
    texlive-animate \
    texlive-media9 \
-   chromium \
+   texlive-tikz-network \
  && dnf clean all
 
 # Setup R and RStudio Server Open Source
@@ -103,13 +103,11 @@ RUN curl -fLo quarto.tar.gz https://github.com/quarto-dev/quarto-cli/releases/do
  && ln -s /opt/quarto/quarto-${QUARTO_VERSION}/bin/tools/pandoc /usr/bin/pandoc \
  && rm -f quarto.tar.gz
 
-# Set locale
+# Set locale and timezone
 ENV LANG=en_US.UTF-8 \
     LANGUAGE=en_US.UTF-8 \
-    LC_ALL=en_US.UTF-8
-
-# Set default timezone
-ENV TZ=UTC
+    LC_ALL=en_US.UTF-8 \
+    TZ=UTC
 
 WORKDIR /home/docker/
 
