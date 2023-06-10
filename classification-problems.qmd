@@ -139,7 +139,7 @@ iris_ksvm <- ksvm(Species ~ ., data = iris)
 iris_ksvm
 ```
 
-**kernlab** 包的绘图函数 `plot()` 仅支持二分类模型。
+**kernlab** 包 [@kernlab2004] 的绘图函数 `plot()` 仅支持二分类模型。
 
 ```{r}
 iris_pred_svm <- predict(iris_ksvm, iris[, -5], type = "response")
@@ -324,3 +324,22 @@ iris_pred <- predict(object = iris_xgb, newdata = iris_test$data)
 ```{r}
 table(iris_test$label, iris_pred)
 ```
+
+## 总结 {#sec-classification-problems-summary}
+
+不同的分类算法分布在不同的 R 包中，在使用方式上既有相通之处，又有不同之处。下表对多个 R 包的使用做了归纳。R 包之间的不一致性，计算预测分类的概率的语法。
+
+| 函数           | R 包           | 代码                                       |
+|:----------------|:----------------|:-------------------------------------|
+| `lda()`        | **MASS**       | `predict(obj)`                             |
+| `glm()`        | **stats**      | `predict(obj, type = "response")`          |
+| `gbm()`        | **gbm**        | `predict(obj, type = "response", n.trees)` |
+| `mda()`        | **mda**        | `predict(obj, type = "posterior")`         |
+| `rpart()`      | **rpart**      | `predict(obj, type = "prob")`              |
+| `Weka()`       | **RWeka**      | `predict(obj, type = "probability")`       |
+| `logitboost()` | **LogitBoost** | `predict(obj, type = "raw", nIter)`        |
+| `pamr.train()` | **pamr**       | `pamr.predict(obj, type = "posterior")`    |
+
+## 习题 {#sec-exercise-classification}
+
+1.  [**titanic**](https://github.com/paulhendricks/titanic) 包整理了来自 kaggle 的 [Titanic](https://www.kaggle.com/c/titanic/data) 数据集，详细记录了 891 位乘客的信息，它比 Base R 内置的 Titanic 数据集更加原始，细节更多，信息更加丰富。原数据集拆分为训练集 `titanic_train` 和测试集 `titanic_test`。因为有每个乘客的原始信息，我们可以在个体水平上建模，采用更加复杂的模型分析泰坦尼克号乘客存活率及其影响因素。

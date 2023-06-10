@@ -1,0 +1,1042 @@
+# 常见的统计检验 {#sec-common-statistical-tests}
+
+```{r}
+#| echo: false
+
+source("_common.R")
+```
+
+::: hidden
+$$
+ \def\bm#1{{\boldsymbol #1}}
+$$
+:::
+
+::: callout-tip
+## 本章亮点
+
+1.  比较全面地展示各类统计检验问题的 R 语言实现，其覆盖面之广，远超市面上同类 R 语言书籍。从连续数据到离散数据，从单样本到两样本，再到一般的多样本，触及最前沿的热门话题。
+
+2.  对每类统计检验问题都给出示例及 R 语言实现，涉及近 40 个统计检验方法。在组织结构上，本章按照数据情况对检验方法分类，方便读者根据手头的数据情况，快速从众多的方法中定位最合适的检验方法，符合从数据出发进行分析实战的要求。
+:::
+
+> The Earth is Round ($p < 0.05$)
+>
+> --- Jacob Cohen [@Cohen1994]
+
+Jacob Cohen 实际谈的是更加深刻的问题。开篇介绍为什么需要假设检验，做检验和不做检验有什么区别？杨灿老师在[讨论帖](https://d.cosx.org/d/420930/11)提出检验的作用和实际应用问题。R. A. Fisher 将抽样分布、参数估计和假设检验列为统计推断的三个中心内容，可见假设检验的重要地位。经过近百余年的发展，假设检验具有丰富的内容，从不同的角度对检验方法进行归类。
+
+-   检验方法归类：参数与非参数检验方法。
+-   检验计算方式：近似 Approximate、精确 Extract、模拟 Simulation 和重抽样 Bootstrap 等方式。
+-   检验对象归类：位置参数（均值）和尺度参数（方差）的检验。
+-   检验总体数量归类：单总体、两个总体和多个总体。
+-   检验总体分布归类：正态、二项、泊松、多项分布等。
+-   检验总体维度归类：分一维、二维和多维的情形。
+-   检验样本的数量：小样本 $n < 30$ 和大样本 $n \geq 30$。
+
+有了均值和方差，为什么还要位置参数和尺度参数？为了更一般地描述问题，扩展范围。特别是在总体分布未知或知之甚少的情况下做检验，不再仅限于均值和方差这样的特征量。关于检验方法，如有不明白的地方，可以查看维基百科词条。对每个检验问题，本章给出原假设和备择假设，检验统计量及其服从的分布，R 语言实现（自编或调用函数，如果调用函数，说明参数及其含义），不讲公式推导过程。
+
+在 R 语言中，有大量的函数可以对样本数据做检验，每一个函数都对应一个或多个检验方法。为了让读者根据手头数据可以快速地找到最合适的检验方法。单样本检验、两样本检验和多样本检验都只针对连续数据。计数数据检验针对离散数据，不区分总体数量。配对样本检验是两样本检验中的特殊情况，不分连续还是离散，不分两个样本还是多个样本，多个样本就是两两配对检验。前面都是关于某个特征统计量的检验，对分布的检验涉及样本点是否来自正态分布，样本点是否独立和平稳，样本点是否来自某一分布，两个样本是否来自相同分布等。
+
+```{r}
+#| message: false
+
+library(ggplot2)
+library(pwr)         # 计算检验的功效和实验样本量
+library(MASS)
+# library(survival)
+# library(coin)      # 补充更多的检验方法
+# library(dunn.test) # dunn.test
+# library(MKpower)   # power.welch.t.test
+# library(car)       # leveneTest 可替代 bartlett.test
+# library(rstatix)   # 管道操作整合检验方法
+# library(pwrss)     # 常见检验的功效和样本量计算
+```
+
+## 单样本检验 {#sec-one-sample}
+
+```{mermaid}
+%%| label: fig-one-sample
+%%| fig-cap: 单样本检验
+
+flowchart LR
+  A(单样本) --> B1(正态总体)
+  A  --> B2(总体未知)
+  B1 --> C1(均值检验)
+  C1 --> D1(方差已知) --> E1(Z 检验)
+  C1 --> D2(方差未知) --> E2(t 检验)
+  B1 --> C2(方差检验) --> E3(卡方检验)
+  B2 --> C3(均值检验) --> E4(Wilcoxon 秩和检验)
+  B2 --> C4(方差检验) --> E5[无检验方法]
+```
+
+### 正态总体均值检验
+
+#### 方差已知
+
+$$
+\begin{aligned}
+\mathrm{I}   \quad H_0: \mu - \mu_0 \leq 0 \quad vs. \quad H_1: \mu - \mu_0 > 0 \\
+\mathrm{II}  \quad H_0: \mu - \mu_0 \geq 0 \quad vs. \quad H_1: \mu - \mu_0 < 0 \\
+\mathrm{III} \quad H_0: \mu - \mu_0 = 0 \quad vs. \quad H_1: \mu - \mu_0 \neq 0
+\end{aligned}
+$$
+
+设 $x_1,\cdots,x_n$ 是来自总体 $\mathcal{N}(\mu,\sigma^2)$ 的样本，样本均值和方差分别
+
+$\bar{x} = \frac{\sum_{i=1}^{n}x_i}{n}$ ，$s^2 = \frac{1}{n-1}\sum_{i=1}^{n}(x_i - \bar{x})^2$
+
+考虑到 $\bar{x} \sim \mathcal{N}(\mu,\sigma^2 / n)$ ，则检验统计量服从正态分布
+
+$$
+u = \frac{\bar{x} - \mu_0}{\sigma / \sqrt{n}}
+$$
+
+假定 $\mu_0 = 1$ 对于检验问题 I 拒绝域 $\{u \geq u_{1-\alpha}\}$
+
+```{r}
+set.seed(20232023)
+n <- 20
+# 样本
+x <- rnorm(n, mean = 1.8, sd = 2)
+# 检验统计量
+u <- (mean(x) - 1) / (2 / sqrt(n))
+# 临界值
+qnorm(p = 1 - 0.05, mean = 0, sd = 1)
+# P 值
+1 - pnorm(q = u)
+```
+
+#### 方差未知
+
+$$
+\begin{aligned}
+\mathrm{I}   \quad H_0: \mu - \mu_0 \leq 0 \quad vs. \quad H_1: \mu - \mu_0 > 0 \\
+\mathrm{II}  \quad H_0: \mu - \mu_0 \geq 0 \quad vs. \quad H_1: \mu - \mu_0 < 0 \\
+\mathrm{III} \quad H_0: \mu - \mu_0 = 0 \quad vs. \quad H_1: \mu - \mu_0 \neq 0
+\end{aligned}
+$$
+
+考虑到
+
+$$
+\begin{aligned}
+& \frac{\bar{x} - \mu}{\sigma / \sqrt{n}} \sim \mathcal{N}(0,1) \\
+& \frac{(n-1)s^2}{\sigma^2} \sim \chi^2(n-1) \\
+& \mathsf{E}\{s^2\} = \sigma^2 \quad \mathsf{Var}\{s^2\} = \frac{2\sigma^4}{n-1}
+\end{aligned}
+$$
+
+根据 t 分布的定义，检验统计量服从 t 分布，即 $t \sim t(n-1)$
+
+$$
+t = \frac{\bar{x} - \mu_0}{s/\sqrt{n}}
+$$
+
+假定 $\mu_0 = 1$ 对于检验问题 I ，拒绝域 $\{t \geq t_{1-\alpha}(n-1)\}$
+
+```{r}
+# 检验统计量
+t0 <- (mean(x) - 1) / sqrt(var(x) / n)
+# 临界值
+qt(p = 1 - 0.05, df = n - 1)
+# P 值
+1 - pt(q = t0, df = n - 1)
+```
+
+::: callout-note
+英国统计学家 William Sealy Gosset (1876-1937) 于 1908 年在杂志 《Biometrics》 上以笔名 Student 发表论文《The Probable Error of a Mean》[@Gosset1908]，论文中展示了独立同正态分布的样本 $x_1, \ldots, x_n \stackrel{i.i.d}{\sim} \mathcal{N}(\mu,\sigma^2)$ 的样本方差 $s^2$ 和样本标准差 $s$ 的抽样分布，根据均值和标准差不相关的性质导出 t 分布，宣告 t 分布的诞生，因其在小样本领域的突出贡献，W. S. Gosset 进入世纪名人录 [@Heyde2001]。
+:::
+
+### 正态总体方差检验
+
+卡方检验 $\chi^2$ 检验统计量服从卡方分布。
+
+$$
+\begin{aligned}
+\mathrm{I}   \quad H_0: \sigma^2 - \sigma^2_0 \leq 0 \quad vs. \quad H_1: \sigma^2 - \sigma^2_0 > 0 \\
+\mathrm{II}  \quad H_0: \sigma^2 - \sigma^2_0 \geq 0 \quad vs. \quad H_1: \sigma^2 - \sigma^2_0 < 0 \\
+\mathrm{III} \quad H_0: \sigma^2 - \sigma^2_0 = 0 \quad vs. \quad H_1: \sigma^2 - \sigma^2_0 \neq 0
+\end{aligned}
+$$
+
+一般假定均值 $\mu$ 是未知的。检验统计量服从卡方分布 $\chi^2(n-1)$
+
+$$
+\chi^2 = \frac{(n-1)s^2}{\sigma^2_0}
+$$
+
+设 $\sigma^2_0 = 1.5^2$ ，考虑检验问题 I
+
+```{r}
+# 检验统计量
+chi <- (n - 1) * var(x) / 1.5^2
+# 临界值
+qchisq(p = 1 - 0.05, df = n -1)
+# P 值
+1 - pchisq(q = chi, df = n -1)
+```
+
+### 总体未知均值检验
+
+考虑前面正态总体均值检验中的假设 I 的形式，若总体的分布形式未知，则需要 Wilcoxon （威尔科克森）秩和检验 `wilcox.test()` 来做均值的比较。
+
+```{r}
+wilcox.test(x = x, mu = 1, alternative = "greater")
+```
+
+相比于 t 检验，P 值更小。
+
+### 总体未知方差检验
+
+## 两样本检验 {#sec-two-samples}
+
+```{mermaid}
+%%| label: fig-two-samples
+%%| fig-cap: 两样本检验
+
+flowchart LR
+  A(两样本) --> B1(正态总体)
+  A  --> B2(总体未知)
+  B1 --> C1(均值检验)
+  C1 --> D1(方差已知) --> E1(Z 检验)
+  C1 --> D2(方差未知但相等) --> E2(t 检验)
+  C1 --> D3(方差未知且不等) --> E3(Welch t 检验)
+  B1 --> C2(方差检验) --> E4(F 检验)
+  C2 --> E7(Bartlett 检验)
+  B2 --> C3(均值检验) --> E5(Wilcoxon 符号秩检验\nKruskal-Wallis 秩和检验)
+  B2 --> C4(方差检验) --> E8(Ansari-Bradley 检验\nMood 检验\nFligner-Killeen 检验)
+```
+
+设 $x_1,\cdots,x_{n_1}$ 是来自总体 $\mathcal{N}(\mu_1,\sigma_1^2)$ 的样本，设 $y_1,\cdots,y_{n_2}$ 是来自总体 $\mathcal{N}(\mu_2,\sigma_2^2)$ 的样本。
+
+### 正态总体均值检验
+
+两样本均值之差的检验
+
+```{r}
+#| label: fig-two-samples-means
+#| fig-cap: 两样本均值之差的检验
+#| fig-width: 5.5
+#| fig-height: 3.5
+#| dev: 'tikz'
+#| fig-process: !expr to_png
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
+
+library(ggplot2)
+
+ggplot() +
+  geom_function(
+    fun = dnorm, args = list(mean = 3, sd = 1),
+    aes(colour = "dnorm1"), linewidth = 2, xlim = c(-4, 8)
+  ) +
+  geom_function(
+    fun = dnorm, args = list(mean = 2, sd = 1.5),
+    aes(colour = "dnorm2"), linewidth = 2, xlim = c(-4, 8)
+  ) +
+  scale_color_brewer(palette = "Set1", labels = c(
+    dnorm1 = "$\\mathcal{N}(3, 1^2)$",
+    dnorm2 = "$\\mathcal{N}(2, 1.5^2)$"
+  )) +
+  theme_classic(base_size = 13) +
+  labs(x = "$x$", y = "$f(x)$", color = "正态分布")
+```
+
+常见检验问题
+
+$$
+\begin{aligned}
+\mathrm{I}   \quad H_0: \mu_1 - \mu_2 \leq 0 \quad vs. \quad H_1: \mu_1 - \mu_2 > 0 \\
+\mathrm{II}  \quad H_0: \mu_1 - \mu_2 \geq 0 \quad vs. \quad H_1: \mu_1 - \mu_2 < 0 \\
+\mathrm{III} \quad H_0: \mu_1 - \mu_2 = 0 \quad vs. \quad H_1: \mu_1 - \mu_2 \neq 0
+\end{aligned}
+$$
+
+#### 方差已知
+
+$$
+u = \frac{(\bar{X} - \bar{Y}) - (\mu_1 - \mu_2)}{\sqrt{\frac{\sigma^2_1}{n_1} + \frac{\sigma^2_2}{n_2}} }
+$$
+
+检验统计量服从标准正态分布 $u \sim N(0,1)$，检验统计量 $u$ 对应的样本值 $u_0$，检验的拒绝域和 $P$ 值如下
+
+$$
+W_1 = \{u \geq u_{1 - \alpha} \}, \quad p_1 = 1 - \varPhi(u_0) 
+$$
+
+```{r}
+n_1 <- 100
+n_2 <- 80
+mu_1 <- 10
+sigma_1 <- 2.5
+mu_2 <- 6
+sigma_2 <- 4.5
+
+set.seed(20232023)
+x1 <- rnorm(n_1, mean = mu_1, sd = sigma_1)
+y1 <- rnorm(n_2, mean = mu_2, sd = sigma_2)
+u0 <- (mean(x1) - mean(y1)) / sqrt(sigma_1^2 / n_1 + sigma_2^2 / n_2)
+u0
+```
+
+对检验问题 I，给定显著性水平 $\alpha = 0.05$，得出拒绝域 $\{ u \geq 1.645\}$，计算样本观察值得到的检验统计量的值 $u_0 = 6.779$，而该值落在拒绝域，所以拒绝原假设，即拒绝 $\mu_1 - \mu_2 \leq 0$，则接受 $\mu_1 - \mu_2 > 0$。
+
+```{r}
+# 计算拒绝域
+qnorm(1 - 0.05)
+# 计算 P 值
+1 - pnorm(u0)
+```
+
+#### 方差未知但相等
+
+设 $x_1,\cdots,x_{n_1}$ 是来自总体 $\mathcal{N}(\mu_1,\sigma^2)$ 的样本，设 $y_1,\cdots,y_{n_2}$ 是来自总体 $\mathcal{N}(\mu_2,\sigma^2)$ 的样本。
+
+t 检验，检验统计量服从自由度为 $n_1 + n_2 - 2$ 的 t 分布
+
+$$
+t = \frac{\bar{x} -\bar{y}}{s_0\sqrt{\frac{1}{n_1} + \frac{1}{n_2}}}
+$$
+
+其中，
+
+$$
+\begin{aligned}
+& \bar{x} = \sum_{i=1}^{n_1}x_i \quad \bar{y} = \sum_{i=1}^{n_2}y_i \\
+& s_0^2 = \frac{1}{n_1 + n_2 - 2}\big(\sum_{i=1}^{n_1}(x_i - \bar{x})^2 + \sum_{i=1}^{n_2}(y_i - \bar{y})^2\big)
+\end{aligned}
+$$
+
+```{r}
+s_w <- sqrt(1 / (n_1 + n_2 - 2) * ((n_1 - 1) * var(x1) + (n_2 - 1) * var(y1)))
+t0 <- (mean(x1) - mean(y1)) / (s_w * sqrt(1 / n_1 + 1 / n_2))
+t0
+```
+
+样本观察值 $t_0 = 8.155 > t_{0.95}(n_1 + n_2 -2) = 1.653$ 落在拒绝域内，对于检验问题 I 我们要拒绝原假设
+
+```{r}
+# 临界值：0.95 分位点对应的分位数
+qt(1 - 0.05, df = n_1 + n_2 - 2)
+# p 值
+1 - pt(t0, df = n_1 + n_2 - 2, lower.tail = TRUE)
+```
+
+利用 R 内置的 `t.test()` 函数计算
+
+```{r}
+t.test(x = x1, y = y1, alternative = "greater", var.equal = TRUE)
+```
+
+检验统计量的值及对应的 P 值都是一样的。睡眠数据 sleep 记录了两种药物对病人睡眠时间的影响，此数据集由 "Student"（哥塞特的笔名） 收集。
+
+```{r}
+# 方差未知但相等
+t.test(extra ~ group, data = sleep, var.equal = TRUE)
+```
+
+#### 方差未知且不等
+
+设 $x_1,\cdots,x_{n_1}$ 是来自总体 $\mathcal{N}(\mu_1,\sigma_1^2)$ 的样本，设 $y_1,\cdots,y_{n_2}$ 是来自总体 $\mathcal{N}(\mu_2,\sigma_2^2)$ 的样本。
+
+Welch（韦尔奇） t 检验
+
+$$
+T = \frac{(\bar{x} - \bar{y}) - (\mu_1 - \mu_2)}{\sqrt{\frac{s_x^2}{n_1} + \frac{s_y^2}{n_2}} }
+$$
+
+其中，$s_x^2$ 表示样本 x 的方差 $s_x^2 = \frac{1}{n_1-1}\sum_{i=1}^{n_1}(x_i -\bar{x})^2$ ，$s_y^2$ 表示样本 y 的方差 $s_y^2 = \frac{1}{n_2-1}\sum_{i=1}^{n_2}(y_i -\bar{y})^2$ 。检验统计量 $T$ 服从自由度为 $l$ 的 t 分布。
+
+$$
+l = \frac{s_0^4}{ \frac{s_x^4}{n_1^2(n_1 - 1)} + \frac{s_y^4}{n_2^2(n_2-1)} }
+$$
+
+其中， $s_0^2 = s_x^2 / n_1 + s_y^2/n_2$，$l$ 通常不是整数，实际使用时，$l$ 可取最近的整数。
+
+```{r}
+s0 <- var(x1) / n_1 + var(y1) / n_2
+l <- s0^2 / (var(x1)^2 / (n_1^2 * (n_1 - 1)) + var(y1)^2 / (n_2^2 * (n_2 - 1)))
+l
+```
+
+所以， $l$ 可取 127。检验统计量的值如下
+
+```{r}
+t0 <- (mean(x1) - mean(y1)) / sqrt(s0)
+t0
+```
+
+```{r}
+# 临界值：0.95 分位点对应的分位数
+qt(1 - 0.05, df = 127)
+# p 值
+1 - pt(t0, df = 126, lower.tail = TRUE)
+```
+
+与函数 `t.test()` 比较
+
+```{r}
+t.test(x = x1, y = y1, alternative = "greater", var.equal = FALSE)
+```
+
+举例：sleep 数据集
+
+```{r}
+#| label: fig-sleep
+#| fig-width: 5
+#| fig-height: 4
+#| fig-cap: 学生睡眠数据的分布
+#| fig-showtext: true
+#| echo: false
+
+data("sleep")
+library(ggplot2)
+ggplot(aes(x = group, y = extra, color = group), data = sleep) +
+  geom_boxplot() +
+  geom_jitter() +
+  theme_classic()
+```
+
+```{r}
+# 方差未知且不等
+t.test(extra ~ group, data = sleep, var.equal = FALSE)
+```
+
+1.  两样本的样本量很大，总体方差未知，检验两样本均值的显著性检验，极限分布是正态，$u$ 检验
+2.  两个样本的样本量不是很大，总体方差也未知，检验两样本均值的显著性检验，即著名的 Behrens-Fisher 问题，Welch 在 1938 年提出近似服从自由度为 $\ell$ 的 t 分布。
+
+::: callout-note
+Egon Pearson 接过他父亲 Karl Pearson 的职位，担任伦敦大学学院的高尔顿统计教授。许宝騄（Pao-Lu Hsu）在 Jerzy Neyman 和 Egon Pearson 主编的杂志《Statistical Research Memoirs》发表第一篇关于 Behrens-Fisher 问题的论文 [@Hsu1938]，1998 年关于 Behrens-Fisher 问题的综述 [@Kim1998]。陈家鼎和郑忠国一起整理了许宝騄的生平事迹和学术成就，见[《许宝騄先生的生平和学术成就》](https://www.math.pku.edu.cn/misc/probstat/doc.pdf)。钟开涞（Kai-Lai Chung）将许宝騄的论文集整理出版 [@HSU1983]。
+:::
+
+t 检验的影响是如此巨大，以至于广泛存在于具有统计功能的软件中，比如办公软件里的 t 检验。以 MacOS 上的 Numbers 表格软件为例，如 @fig-numbers-ttest 所示，首先打开 Numbers 软件，新建工作表，输入两组数值，然后点击空白处，再从顶部导航栏找到「插入」菜单，「公式」选项，点击扩展选项「新建公式」，在弹出的会话条里输入 TTEST，依次选择第一组，第二组值，检验类型和样本类型，最后点击确认，即可得到两样本 t 检验的 P 值结果。
+
+```{r}
+#| label: fig-numbers-ttest
+#| fig-cap: 办公软件 Numbers 的两样本 t 检验
+#| echo: false
+#| out-width: 80%
+
+knitr::include_graphics(path = "screenshots/number-ttest.png")
+```
+
+微软 Excel 办公软件也提供 t 检验计算器，和 MacOS 系统上的 Numbers 办公软件类似，它提供 `T.TEST` 函数，计算结果也一样，此处从略。R 软件自带 `t.test()` 函数，也是用于做 t 检验，如下：
+
+```{r}
+t.test(x = c(3, 4, 5, 8, 9, 1, 2, 4, 5), y = c(6, 19, 3, 2, 14, 4, 5, 17, 1))
+```
+
+### 正态总体方差检验
+
+比较两个正态总体的方差是否相等，F 检验。
+
+```{r}
+# 两样本
+var.test(extra ~ group, data = sleep)
+# 或者
+bartlett.test(extra ~ group, data = sleep)
+```
+
+### 总体未知均值检验
+
+在总体分布未知的情况下，比较均值是否相等的检验。
+
+-   `wilcox.test()` 适用于单样本和两样本的均值检验，单样本 Wilcoxon 秩和检验，两样本 Wilcoxon 符号秩检验，后者也叫 Mann-Whitney 检验。
+-   `kruskal.test()` 适用于两样本和多样本，比较多个均值是否相等的检验，Kruskal-Wallis 秩和检验。
+
+单样本和两样本 `wilcox.test()`。
+
+```{r}
+wilcox.test(extra ~ group, data = sleep)
+```
+
+两样本和多样本 `kruskal.test()` 。
+
+```{r}
+kruskal.test(extra ~ group, data = sleep)
+```
+
+能用参数检验的一定也可以用非参数检验，一般来说，非参数检验的功效不小于参数检验，非参数检验不要求分布是正态，比如此时 P 值从 0.07939 降至 0.06372。
+
+### 总体未知方差检验
+
+对总体没有分布要求的方差齐性检验方法有三个，按适用范围分类，见下 @tbl-fligner-test 。
+
+| 两个样本                        | 多个样本         |
+|---------------------------------|------------------|
+| `ansari.test()` / `mood.test()` | `fligner.test()` |
+
+: 检验方法分类 {#tbl-fligner-test}
+
+Ansari-Bradley 检验 `ansari.test()` 和 Mood 检验 `mood.test()` 属于两样本的非参数检验，检验尺度参数是否相同（齐性）。Fligner-Killeen 检验 `fligner.test()` 也属于非参数检验，适用于两样本和多样本的情况。非参数检验常涉及位置参数和尺度参数这一对概念，就正态分布而言，位置参数可以理解为均值 $\mu$ ，尺度参数可以理解为方差 $\sigma^2$ 。
+
+```{r}
+ansari.test(extra ~ group, data = sleep)
+mood.test(extra ~ group, data = sleep)
+fligner.test(extra ~ group, data = sleep)
+```
+
+## 多样本检验 {#sec-multi-samples}
+
+```{mermaid}
+%%| label: fig-k-samples
+%%| fig-cap: 多样本检验
+
+flowchart LR
+  A(多样本) --> B1(正态总体)
+  A  --> B2(总体未知)
+  B1 --> C1(均值检验)
+  C1 --> D2(方差相等) --> E2(F 检验)
+  C1 --> D3(方差不等) --> E3(F 检验)
+  B1 --> C2(方差检验) --> E4(Bartlett 检验)
+  B2 --> C3(均值检验) --> E5(Kruskal-Wallis 秩和检验\n Friedman 秩和检验\n Quade 检验)
+  B2 --> C4(方差检验) --> E7(Fligner-Killeen 检验)
+```
+
+本节考虑 Base R 内置的 PlantGrowth 数据集，它收集自 Annette J. Dobson 所著书籍《An Introduction to Statistical Modelling》[@Dobson1983] 第 2 章第 2 节的案例 --- 研究植物在两种不同试验条件下的生长情况，植物通过光合作用吸收土壤的养分和空气中的二氧化碳，完成积累，故以植物的干重来刻画植物的生长情况，首先将几乎相同的种子随机地分配到实验组和对照组，基于完全随机实验设计（completely randomized experimental design），经过预定的时间后，将植物收割，干燥并称重。
+
+```{r}
+str(PlantGrowth)
+```
+
+设立对照组（控制组）ctrl 和实验组 trt1 和 trt2，比较不同的处理方式对植物干重的影响
+
+```{r}
+summary(PlantGrowth)
+```
+
+每个组都有 10 颗植物，生长情况如 @fig-plant-growth 所示
+
+```{r}
+#| label: fig-plant-growth
+#| fig-width: 5
+#| fig-height: 4
+#| fig-cap: "植物干重"
+#| fig-showtext: true
+
+## Annette J. Dobson 扩展的 Plant Weight Data 数据，见 59 页
+library(ggplot2)
+ggplot(data = PlantGrowth, aes(x = group, y = weight, color = group)) +
+  geom_boxplot() +
+  geom_jitter() +
+  theme_minimal()
+```
+
+### 正态总体均值检验
+
+#### 假定同方差
+
+讲清楚原假设和备择假设。讲清楚假设检验、方差分析、一般线性模型（包含广义线性模型和线性混合效应模型）的关系。
+
+$\sigma_i^2 = \mathsf{Var}\{\epsilon_{ij}\}, i = 1,2,3$ 表示第 $i$ 组的方差，
+
+$$
+y_{ij} = \mu + \epsilon_{ij}, i = 1,2,3
+$$
+
+其中 $\mu$ 是固定的未知参数。单因素方差分析 `oneway.test()`
+
+```{r}
+# 假设各组方差相同
+oneway.test(weight ~ group, data = PlantGrowth, var.equal = TRUE)
+```
+
+线性模型也假定各个组的方差是相同的，模型显著性检验的结果和上面是一致的。
+
+```{r}
+fit_lm <- lm(weight ~ group, data = PlantGrowth)
+anova(fit_lm) # 或者 summary(fit)
+```
+
+模型输出整理成 @tbl-lm-plant-growth
+
+```{r}
+#| label: tbl-lm-plant-growth
+#| tbl-cap: "线性回归的输出"
+#| echo: false
+
+# 整理模型输出到数据框
+fit_lm_output <- round(coef(summary(fit_lm)), 4)
+# 指定行名和列名
+rownames(fit_lm_output) <- c("$\\alpha$", "$\\beta_1$", "$\\beta_2$")
+colnames(fit_lm_output)[4] <- "$P(T > |t|)$"
+knitr::kable(fit_lm_output,
+  escape = FALSE, 
+  col.names = c("估计值", "标准差", "t 统计量", "P 值")
+)
+```
+
+#### 假定异方差
+
+```{r}
+# 计算各个组的方差
+aggregate(data = PlantGrowth, weight ~ group, FUN = var)
+# 或者
+with(PlantGrowth, tapply(weight, group, var))
+```
+
+各个组的方差确实不太相同。
+
+```{r}
+# 假设各组方差不同
+oneway.test(weight ~ group, data = PlantGrowth, var.equal = FALSE)
+```
+
+线性混合效应模型，假定每一组（层）有不同的方差。
+
+```{r}
+fit_gls <- nlme::gls(weight ~ 1,
+  data = PlantGrowth, method = "ML",
+  weights = nlme::varIdent(form = ~ 1 | group)
+)
+summary(fit_gls)
+```
+
+考虑每个组有不同的方差，放开同方差的假设，发现，从对数似然的角度来看，有一定提升。
+
+```{r}
+logLik(fit_lm)
+logLik(fit_gls)
+```
+
+### 正态总体方差检验
+
+后面总体分布未知的情况下的方差检验也都可以用在这里。
+
+设 $x_1,\cdots,x_{n_1}$ 是来自总体 $\mathcal{N}(\mu_1,\sigma_1^2)$ 的样本，设 $y_1,\cdots,y_{n_2}$ 是来自总体 $\mathcal{N}(\mu_2,\sigma_2^2)$ 的样本，设 $z_1,\cdots,z_{n_3}$ 是来自总体 $\mathcal{N}(\mu_3,\sigma_3^2)$ 的样本。
+
+$$
+\sigma_1^2 = \sigma_2^2 = \sigma_3^2 \quad vs. \quad \sigma_1^2,\sigma_2^2,\sigma_3^2 \quad  \text{不全相等}
+$$
+
+Bartlett （巴特利特）检验 `bartlett.test()` 要求总体的分布为正态分布，检验各个组的方差是否有显著性差异，即方差齐性检验，属于参数检验，适用于多个样本的情况。相比于 Bartlett 检验，Levene 检验更加稳健。
+
+```{r}
+# 三样本
+bartlett.test(weight ~ group, data = PlantGrowth)
+# 或者
+# library(car)
+# leveneTest(weight ~ group, data = PlantGrowth)
+```
+
+### 总体未知均值检验
+
+Kruskal-Wallis 秩和检验 `kruskal.test()` 检验均值是否齐性。
+
+```{r}
+kruskal.test(weight ~ group, data = PlantGrowth)
+```
+
+等价的线性模型表示
+
+```{r}
+fit_lm <- lm(rank(weight) ~ group, data = PlantGrowth)
+anova(fit_lm) # summary(fit_lm)
+```
+
+Friedman 秩和检验是非参数检验。适用于单因素重复测量数据的方差分析，检验是否存在一组值显著高于或低于其他组。针对 unreplicated blocked data
+
+典型场景：n 个品酒师对 k 瓶葡萄酒打分，是否存在一组打分显著高于其他组。检验睡眠质量一组人显著好于另一组人。
+
+```{r}
+friedman.test(extra ~ group | ID, data = sleep)
+```
+
+`formula` 参数取值为 `a ~ b | c` ，`a` 表示数据值，`b` 分组变量 groups，`c` 表示 blocks。
+
+Quade 检验 `quade.test()` 与 Friedman 检验类似，Quade 检验应用于 unreplicated complete block designs。
+
+```{r}
+# 睡眠实验
+quade.test(extra ~ group | ID, data = sleep)
+```
+
+术语涉及实验设计，比如完全区组设计 complete block designs 。
+
+```{r}
+# 光速实验
+quade.test(Speed ~ Expt | Run, data = morley)
+```
+
+### 总体未知方差检验
+
+三个及以上样本的方差齐性检验。进一步地，我们在线性模型的基础上考虑每个实验组有不同的方差，先做方差齐性检验。
+
+```{r}
+# 非参数检验
+fligner.test(weight ~ group, data = PlantGrowth)
+```
+
+检验的结果显示，可以认为三个组的方差没有显著差异。
+
+## 配对样本检验 {#sec-pairwise-data}
+
+### 配对 t 检验 {#sec-pairwise-t-test}
+
+两个组的配对 t 检验 `t.test(paired = TRUE)`
+
+```{r}
+t.test(extra ~ group, data = sleep, paired = TRUE)
+```
+
+两个组的配对 t 检验 `pairwise.t.test()` ，与前面的结果等价。
+
+```{r}
+pairwise.t.test(x = sleep$extra, g = sleep$group, paired = TRUE)
+```
+
+多个组两两配对的 t 检验 `pairwise.t.test()`
+
+```{r}
+with(PlantGrowth, pairwise.t.test(x = weight, g = group, paired = TRUE))
+```
+
+### 配对比例检验 {#sec-pairwise-prop-test}
+
+配对比例检验 `pairwise.prop.test()`
+
+```{r}
+smokers  <- c( 83, 90, 129, 70 )
+patients <- c( 86, 93, 136, 82 )
+pairwise.prop.test(smokers, patients)
+```
+
+### 配对 Wilcoxon 检验 {#sec-pairwise-wilcox-test}
+
+检验的是两个总体的均值是否相等。
+
+配对 Wilcoxon 检验 `pairwise.wilcox.test()` 适用于两个及以上组的两两配对检验。
+
+```{r}
+with(PlantGrowth, pairwise.wilcox.test(x = weight, g = group))
+```
+
+Wilcoxon 检验 `wilcox.test()` 设置 `paired = TRUE` 也可以做配对检验，但是仅限于两个组。
+
+```{r}
+# 不支持
+# wilcox.test(weight ~ group, data = PlantGrowth, paired = TRUE)
+# 支持
+wilcox.test(extra ~ group, data = sleep, paired = TRUE)
+```
+
+**dunn.test** Dunn's Test 秩和检验做多重比较
+
+```{r}
+#| eval: false
+
+library(dunn.test)
+with(PlantGrowth, dunn.test(x = weight, g = group, method = "holm", altp = TRUE))
+```
+
+### 配对相关性检验 {#sec-cor-test}
+
+配对样本的相关性检验 `cor.test()`：Pearson's 相关系数，Kendall's $\tau$ 检验或者 Spearman's $\rho$ 检验
+
+```{r}
+# cor.test(method = "pearson")  # lm(y ~ 1 + x)
+# cor.test(method = "kendall")
+# cor.test(method = "spearman") # lm(rank(y) ~ 1 + rank(x))
+```
+
+## 总体分布的检验
+
+前面介绍的检验方法都是对总体的某个特征数（均值、方差）进行检验，下面介绍的检验方法是针对分布的性质。比如样本是否来自正态分布，两个样本是否来自同一分布，样本点之间是否相互独立，样本点列是否平稳等。通过检验方法探索样本的分布性质。
+
+### 正态性检验
+
+> Usually (but not always) doing tests of normality reflect a lack of understanding of the power of rank tests, and an assumption of high power for the tests (qq plots don't always help with that because of their subjectivity). When possible it's good to choose a robust method. Also, doing pre-testing for normality can affect the type I error of the overall analysis.
+>
+> --- Frank Harrell [^common-statistical-tests-1]
+
+[^common-statistical-tests-1]: <https://stat.ethz.ch/pipermail/r-help/2005-April/070508.html>
+
+检验：拒绝原假设和接受原假设的风险，数据本身和理论的正态分布的距离，抛开 P 值
+
+Shapiro 和 Wilk 提出的 W 检验 `shapiro.test()`
+
+```{r}
+set.seed(20232023)
+x <- rnorm(100, mean = 5, sd = 3)
+shapiro.test(x)
+```
+
+> The issue really comes down to the fact that the questions: "exactly normal?", and "normal enough?" are 2 very different questions (with the difference becoming greater with increased sample size) and while the first is the easier to answer, the second is generally the more useful one.
+>
+> --- Greg Snow [^common-statistical-tests-2]
+
+[^common-statistical-tests-2]: <https://stat.ethz.ch/pipermail/r-help/2009-May/390164.html>
+
+EP 检验对多种备择假设有较高的效率，利用样本的特征函数和正态分布的特征函数的差的模的平方产生的一个加权积分得到 EP 检验统计量 [@Epps1983]
+
+::: callout-tip
+样本量 $n \geq 200$ EP 检验统计量 $T_{EP}$ 非常接近 $n = \infty$ 时 $T_{EP}$ 的分位数。
+:::
+
+设 $x_1, \ldots, x_n$ 是来自正态总体 $\mathcal{N}(\mu,\sigma^2)$ 的样本， EP 检验统计量定义为
+
+$$
+T_{EP} = 1 + \frac{n}{\sqrt{3}} + \frac{2}{n}\sum_{i=2}^{n}\sum_{j=1}^{i-1}\exp\big\{ - \frac{(x_j - x_i)^2}{2s^2_{\star}}  \big\} - \sqrt{2} \sum_{i=1}^{n}\exp\big\{- \frac{(x_i - \bar{x})^2}{4s^2_{\star}}  \big\}
+$$
+
+其中 $\bar{x},s^2_{\star}$ 分别是样本均值和（除以 $n$ 的）样本方差。
+
+### 同分布检验 {#sec-ks-test}
+
+Lilliefors 检验 [^common-statistical-tests-3] 和单样本的 ks 检验的关系
+
+[^common-statistical-tests-3]: <https://personal.utdallas.edu/~herve/Abdi-Lillie2007-pretty.pdf>
+
+> As to whether you can do a **Lilliefors test** for several groups, that depends entirely on your ability to understand what the underlying question would be (see Adams D 1979).
+>
+> --- Knut M. Wittkowski [^common-statistical-tests-4]
+
+[^common-statistical-tests-4]: <https://stat.ethz.ch/pipermail/r-help/2004-February/045597.html>
+
+Kolmogorov-Smirnov 检验：单样本或两样本的同分布检验 `ks.test()`
+
+```{r}
+# 数据 x 与正态分布比较
+ks.test(x, y = "pnorm")
+```
+
+### 独立性检验 {#sec-Box-test}
+
+时间序列独立性检验 `Box.test()` 计算 Box-Pierce 或 Ljung-Box 检验统计量来检查给定时间序列的独立性假设。
+
+### 平稳性检验 {#sec-PP-test}
+
+时间序列单位根检验，检验时间序列平稳性 Phillips-Perron 的单位根检验 `PP.test()`
+
+```{r}
+#| eval: false
+#| echo: true
+
+PP.test(x, lshort = TRUE)
+```
+
+### 球形检验 {#sec-mauchly-test}
+
+Mauchly 球形检验 `mauchly.test()` 检验：Wishart 分布的协方差矩阵是否正比于给定的矩阵。多元分布的协方差矩阵。
+
+如果 $X_1, X_2, \cdots, X_m$，$X_i \in \mathbb{R}^p$，$X_i \overset{i.i.d}{\sim} \mathrm{MVN}(0,\Sigma)$，即 $m$ 个样本点都服从均值为 $0$，协方差矩阵为 $\Sigma$ 的 $p$ 维多元正态分布 $\mathrm{MVN}(0,\Sigma)$，且样本点之间相互独立。则 $M = X'X$ 服从参数为 $\Sigma$ 和 $m$ 的 Wishart 分布 $W_p(\Sigma, m)$。
+
+R 语言内置了一个模拟数生成器，可以直接模拟出服从 Wishart 分布 $W_p(\Sigma, m)$ 的样本，即 $n$ 个随机矩阵，$m = \mathrm{df}, \Sigma = \mathrm{Sigma}$。 R 语言命令如下：
+
+``` r
+rWishart(n, df, Sigma)
+```
+
+其中，整型参数 `n` 指定样本量，数值参数 `df` 指定自由度，正定的 $p \times p$ 矩阵 `Sigma` 指定 Wishart 分布的矩阵参数。`rWishart()` 返回一个 $p\times p \times n$ 数组 $R$，其中 $R[,,i]$ 是正定矩阵，是服从 Wishart 分布 $W_p(\Sigma, m)$ 的一个样本点，其中 $m = \mathrm{df}, \Sigma = \mathrm{Sigma}$。
+
+```{r}
+set.seed(2022)
+# 构造 n 个随机矩阵
+S <- matrix(c(1.2, 0.9, 0.9, 1.2), nrow = 2, ncol = 2)
+rWishart(n = 3, df = 2, Sigma = S)
+```
+
+随机矩阵 $M$ 的期望 $\mathsf{E}(M) = m \times \Sigma$，随机矩阵 $M$ 中每个元素的方差
+
+$$
+\mathsf{Var}(M_{ij}) = m (\Sigma_{ij}^2 + \Sigma_{ii}\Sigma_{jj}), \quad S = \Sigma
+$$
+
+若 $p = 1$，即 $\Sigma$ 是一个标量 $\sigma^2$，Wishart 分布退化为自由度为 $\mathrm{df}$ 的卡方分布 $\chi^2$，即 $W_1(\sigma^2, m) = \sigma^2\chi_{m}^2$。下面计算随机矩阵 $M$ 的期望。
+
+```{r}
+set.seed(2022)
+Wish <- rWishart(n = 3000, df = 2, Sigma = S)
+# 计算随机矩阵 M 的期望
+apply(Wish, MARGIN = 1:2, FUN = mean)
+# 随机矩阵 M 的期望理论值
+2 * S
+```
+
+接着计算随机矩阵 $M$ 的方差。
+
+```{r}
+# 样本方差
+apply(Wish, MARGIN = 1:2, var)
+# 理论方差
+2*(S^2 + tcrossprod(diag(S)))
+```
+
+## 总结 {#sec-common-statistical-tests-summary}
+
+真实数据的情况是复杂多样的，本章按照数据情况对检验方法分类，方便读者根据手头的数据情况，快速从众多的方法中定位最合适的检验方法。依次是单样本检验、两样本检验、多样本检验、计数数据检验、配对样本检验。如果已知符合参数检验的条件，优先考虑参数检验。如果不确定是否符合参数检验的条件，对参数检验和非参数检验方法都适用，非参数检验方法的功效更大，方法更优。在总体分布未知的情况下，无论是对均值检验还是对方差检验，大部分情况下都需要非参数检验方法。
+
+在假设检验理论方面作出贡献的人非常多，自 Karl Pearson 提出卡方统计量和卡方检验以来，陆续涌现出来一批人，其中，最重要的统计学家及其传承关系见下 @fig-testing-statistical-hypothesis 。
+
+```{mermaid}
+%%| label: fig-testing-statistical-hypothesis
+%%| fig-cap: 假设检验理论的主要贡献者
+
+flowchart LR
+  K_Pearson(K. Pearson\n 1857-1936) --> R_A_Fisher(R. A. Fisher \n 1890-1962)
+  R_A_Fisher --> J_Neyman(J. Neyman\n1894-1981)
+  R_A_Fisher --> E_S_Pearson(E. S. Pearson \n1895-1980)
+  J_Neyman --> E_L_Lehmann(E. L. Lehmann\n1917-2009)
+  E_S_Pearson --> A_Wald(A. Wald\n1902-1950)
+```
+
+### 多重比较和方差分析的关系
+
+#### 单因素一元方差分析
+
+函数 `aov()` 可以做单、双因素一元方差分析
+
+```{r}
+fit_aov <- aov(weight ~ group, data = PlantGrowth)
+```
+
+两两比较，多重比较
+
+```{r}
+TukeyHSD(fit_aov)
+```
+
+自己实现方差分析
+
+```{r}
+# 自由度
+df1 <- 2
+df2 <- 27
+# 每组样本量
+group.size <- 10
+# 组间方差
+sq.between <- sum(tapply(
+  PlantGrowth$weight, PlantGrowth$group,
+  function(x) (mean(x) - mean(PlantGrowth$weight))^2
+)) * group.size
+
+mean.sq.between <- sq.between / df1
+
+# 组内方差
+sq.within <- sum(tapply(
+  PlantGrowth$weight, PlantGrowth$group,
+  function(x) sum((x - mean(x))^2)
+))
+
+mean.sq.within <- sq.within / df2
+# F 统计量
+f.value <- mean.sq.between / mean.sq.within
+f.value
+# P 值
+p.value <- 1 - pf(f.value, df1, df2)
+p.value
+```
+
+从假设检验角度看单因素方差分析，方差分析其实是在比较多个组的均值是否有显著差异。
+
+```{r}
+oneway.test(weight ~ group, data = PlantGrowth, var.equal = TRUE)
+```
+
+方差分析还可以纳入线性模型的框架内
+
+```{r}
+fit <- lm(weight ~ group, data = PlantGrowth)
+summary(fit)
+anova(fit)
+```
+
+假定各个组来自正态总体，且它们的方差相同，从 F 统计量的值和检验的 P 值看，方差分析 `aov()` 、假设检验 `oneway.test()` 和线性模型 `lm()` 在这里等价了。
+
+#### 双因素一元方差分析
+
+```{r}
+#| label: fig-ToothGrowth-interaction-plot
+#| fig-cap: OJ 和 VC 的交互作用
+#| fig-showtext: true
+#| par: true
+#| fig-width: 5
+#| fig-height: 4
+
+with(ToothGrowth, interaction.plot(supp, dose, len))
+```
+
+如果 `dose = 2`， 则 `len` 与提供的方式 `supp` 没有关系。
+
+```{r}
+fit_aov <- aov(len ~ supp * dose, data = ToothGrowth)
+fit_aov
+```
+
+#### 单因素多元方差分析
+
+`PlantGrowth` 属于一元方差分析，观测变量只有植物干重一个变量。如果推广到多个变量，就是多元方差分析 multivariate analysis of variance
+
+```{r}
+fit <- manova(cbind(Sepal.Length, Sepal.Width, Petal.Length, Petal.Width) ~ Species, data = iris)
+summary(fit, test = "Wilks")
+```
+
+P 值小于 0.0.5，说明 iris 数据集三个组的均值向量有显著差异。关于均值向量的检验方法，请看 `?summary.manova`
+
+按 Species 分组统计各个变量的样本均值、样本方差
+
+```{r}
+aggregate(data = iris, cbind(Sepal.Length, Sepal.Width, Petal.Length, Petal.Width) ~ Species, mean)
+aggregate(data = iris, cbind(Sepal.Length, Sepal.Width, Petal.Length, Petal.Width) ~ Species, var)
+```
+
+### 假设检验与区间估计的关系
+
+区间估计的意义是解决点估计可靠性问题，它用置信系数解决了对估计结果的信心问题，弥补了点估计的不足。置信系数是最大的置信水平。
+
+#### 比例检验
+
+Base R 提供的 `binom.test()` 函数可以精确计算置信区间，Clopper-Pearson 区间，而 `prop.test()` 函数可近似计算置信区间，Wilson 区间。
+
+以二项分布的比例检验和二项检验为例。近似区间估计
+
+```{r}
+prop.test(x = 2, n = 10, p = 0.95, conf.level = 0.95, correct = TRUE)
+```
+
+#### 二项检验
+
+精确区间估计
+
+```{r}
+binom.test(x = 2, n = 10, p = 0.95, conf.level = 0.95)
+```
+
+实际达到的置信度水平随真实的未知参数值和样本量的变化而**剧烈**波动，这意味着这种参数估计方法在实际应用中不可靠、真实场景中参数真值是永远未知的，样本量是可控的，并且是可以变化的。根本原因在于这类分布是离散的，比如这里的二项分布。当样本数据服从离散的分布，置信区间的端点也是离散的。这种缺陷是无法避免的，清晰的置信区间和离散的数据之间存在无法调和的冲突。
+
+### 常见的统计检验是线性模型
+
+两样本的均值检验：非参数检验方法
+
+#### Wilcoxon 符号秩检验
+
+与 `wilcox.test()` 等价的线性模型
+
+```{r}
+signed_rank <- function(x) sign(x) * rank(abs(x))
+fit <- lm(signed_rank(extra) ~ group, data = sleep)
+summary(fit)
+```
+
+#### Kruskal-Wallis 秩和检验
+
+与 `kruskal.test()` 等价的线性模型表示。
+
+```{r}
+fit <- lm(rank(extra) ~ group, data = sleep)
+summary(fit)
+```
+
+### 假设检验的工业应用 {#sec-industrial-application}
+
+传统的试验设计为什么不适用于互联网？因为Fisher的实验设计和方差分析，主要针对的是受控对象，比如测试武器、肥料配比、飞机制造等实体的东西。互联网是虚拟经济，实验的对象是人，对平台来说，人的行为是半知半解，更不受控，所以需要成千上万、乃至几十万的样本才能抵消样本内部的随机性。互联网数据的噪声太多、太大了，微小的变化就好像一粒小石子扔进大海里，要获得样本间显著的差异性，需要累积相当的样本量。另一方面，大型的互联网公司，搜索、推荐、广告等业务相对成熟，提升关键指标，拿到好的结果，往往比较困难。成熟的业务几乎不太可能一次实验拿到很好的结果，所以，方向比努力重要，更快地迭代，跑在同行前面，更快地试错（想法），试更多的错（想法），更好地试错（想法），累积更多的经验，做更多地创新，这是 A/B 实验平台的核心价值。
+
+曾经，在学校里，我总想获得一个全局最优解，并且还有这样的情结，到了厂里，发现没人研究全局最优解，大家都在做 A/B 实验优化自己的子业务和方向。有时候这个细分业务方向甚至也就小几万的用户了。 全局最优解和局部最优解，我们不太可能获得全局最优解，一则全局最优解受影响的因素很多，而这些因素变化很快，所以，即使可以获得全局最优解，代价会非常大，那么，怎么办呢？还不如获取局部最优解，研究一个个局部显然比研究全局要简单的多，此外，研究局部的好处是可以快速地随业务迭代。
+
+一个完整的实验周期包含提出问题、设计实验、收集数据、组织数据、统计检验、分析结论、数据解读、数据交流、决策行动、业务价值。这是一个闭环，根据业务中发现的问题，提出解决方法，并设计实验验证。问题有时候就是机会，奋斗的方向，解决问题自然就会带来业务价值。实验又可以按业务问题、数据问题和统计问题划分三个阶段。
+
+-   业务问题：根据目标确定方向，找到有价值的、可以解决的业务问题，再提出合理的统计假设。
+-   数据问题：数据收集、数据组织、数据管理、数据治理，验证数据流的完整性、一致性等。
+-   统计问题：设计实验方案，包括分流、实验周期等，利用假设检验、区间估计和功效分析等统计工具完成显著性分析、可靠性分析，撰写数据分析和评估报告。

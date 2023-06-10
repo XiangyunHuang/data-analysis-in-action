@@ -1,0 +1,286 @@
+# 回归与相关分析 {#sec-regression-and-correlation}
+
+```{r}
+#| echo: false
+
+source("_common.R")
+```
+
+## 子代身高与亲代身高的关系 {#sec-galton}
+
+<!-- 函数型数据探索、分析和可视化，关系 -->
+
+[弗朗西斯·高尔顿](https://galton.org/)（Francis Galton, 1822-1911）是历史上著名的优生学家、心理学家、遗传学家和统计学家，是统计学中相关和回归等一批概念的提出者，是遗传学中回归现象的发现者。1885年，高尔顿以保密和给予金钱报酬的方式，向社会征集了 205 对夫妇及其 928 个成年子女的身高数据[@Galton1886]。
+
+目前，Michael Friendly 从原始文献中整理后，将该数据集命名为 `GaltonFamilies`，放在 R 包 **HistData** [@Friendly2021] 内，方便大家使用。篇幅所限，下 @tbl-galton 展示该数据集的部分内容。
+
+```{r}
+#| echo: false
+#| label: tbl-galton
+#| tbl-cap: "高尔顿收集的 205 对夫妇及其子女的身高数据（部分）"
+
+library(data.table)
+data(GaltonFamilies, package = "HistData")
+GaltonFamilies <- as.data.table(GaltonFamilies)
+
+knitr::kable(head(GaltonFamilies), col.names = c(
+  "家庭编号", "父亲身高", "母亲身高", "中亲身高",
+  "子女数量", "子女编号", "子女性别", "子女身高"
+))
+```
+
+表中子女性别一栏，Male 表示男性，Female 表示女性。表中 1 号家庭父亲身高 78.5 英寸，母亲身高 67.0 英寸，育有 4 个成年子女，1 男 3 女，子女身高依次是 73.2 英寸、 69.2 英寸、 69.0 英寸 和 69.0 英寸。1 英寸相当于 2.54 厘米，78.5 英寸相当于 199.39 厘米，约等于 2 米的身高。
+
+高尔顿提出「中亲」概念，即父母的平均身高，认为子代身高只与父母平均身高相关，而与父母身高差无关，为了消除性别给身高带来的差异，女性身高均乘以 1.08。
+
+根据数据统计的均值和协方差，椭圆 level = 0.95
+
+```{r}
+#| label: fig-galton-gender
+#| fig-cap: "子代身高与亲代身高的关系"
+#| fig-width: 6
+#| fig-height: 5
+#| fig-showtext: true
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
+
+library(ggplot2)
+ggplot(data = GaltonFamilies, aes(x = midparentHeight, y = childHeight, color = gender)) +
+  geom_point(aes(fill = gender), pch = 21, color = "white", 
+             size = 2, alpha = 0.75) +
+  geom_smooth(method = "lm", formula = "y~x", se = FALSE) +
+  stat_ellipse(type = "norm", level = 0.95, linetype = 2) +
+  scale_color_brewer(palette = "Set1", labels = c(male = "男", female = "女")) +
+  scale_fill_brewer(palette = "Set1", labels = c(male = "男", female = "女")) +
+  guides(fill = guide_legend(reverse = TRUE), 
+         color = guide_legend(reverse = TRUE)) +
+  labs(x = "父母平均身高", y = "子女身高", fill = "性别", color = "性别") +
+  theme_classic()
+```
+
+女儿的身高乘以 1.08 后，两条回归线将几乎重合。[@Hanley2004]
+
+```{r}
+#| label: fig-galton
+#| fig-cap: "子代身高与亲代身高的关系"
+#| fig-width: 6
+#| fig-height: 5
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
+#| fig-showtext: true
+
+GaltonFamilies[, height_children := childHeight * c("female" = 1.08, "male" = 1)[gender]] |>
+  ggplot(aes(x = midparentHeight, y = height_children, color = gender)) +
+  geom_smooth(method = "lm", formula = "y~x", se = FALSE) +
+  geom_point(size = 1.5, alpha = 0.75) +
+  stat_ellipse( type = "norm", linetype = 2) +
+  scale_color_brewer(palette = "Set1", labels = c(male = "男", female = "女")) +
+  guides(color = guide_legend(reverse = TRUE)) +
+  labs(x = "父母平均身高", y = "子女身高", color = "性别") +
+  theme_classic()
+```
+
+$$
+\mathrm{height}_{children} = \alpha + \beta * \mathrm{height}_{midparent} + \epsilon
+$$
+
+```{r}
+#| label: tbl-galton-families
+#| tbl-cap: "子女身高向中亲平均身高回归"
+#| echo: false
+
+GaltonFamilies[, height_children := childHeight * c("female" = 1.08, "male" = 1)[gender]][, as.list(coef(lm(height_children ~ midparentHeight))), by = "gender"] |> knitr::kable(col.names = c("性别", "截距", "中亲身高"))
+```
+
+```{r}
+#| label: fig-galton-bivar
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
+#| par: true
+#| fig-cap: "二维核密度估计与二元正态分布"
+#| fig-width: 4.5
+#| fig-height: 4.5
+#| fig-showtext: true
+#| message: false
+
+data(Galton, package = "HistData")
+plot(Galton,
+  pch = 20, panel.first = grid(), cex = 1, ann = FALSE,
+  xlim = c(63.5, 73.5),
+  ylim = c(61, 74.5),
+  col = densCols(Galton,
+    bandwidth = c(1, 1),
+    nbin = c(11L, 11L), colramp = hcl.colors
+  )
+)
+reg <- lm(child ~ parent, data = Galton)
+abline(reg, lwd = 2)
+lines(lowess(x = Galton$parent, y = Galton$child), col = "blue", lwd = 2)
+library(KernSmooth)
+den <- bkde2D(x = Galton, bandwidth = c(1, 1), gridsize = c(11L, 11L))
+contour(den$x1, den$x2, den$fhat, nlevels = 10, add = TRUE, family = "sans")
+title(xlab = "父母平均身高", ylab = "子女身高", family = "Noto Serif CJK SC")
+```
+
+向均值回归现象最早是高尔顿在甜豌豆实验中发现的，实际上，均值回归现象在社会经济和自然界中广泛存在，比如一个人的智力水平受家族平均水平的影响。
+
+## 预期寿命与人均收入的关系 {#sec-state-x77}
+
+<!-- 相关性探索、分析和可视化，关系 -->
+
+生物遗传的回归现象，更确切地说是因果而不是相关，是一种近似的函数关系。与回归紧密相连的是另一个统计概念是相关，主要刻画数量指标之间的关系深浅程度，相关系数是其中一个度量。在经济、社会领域中，很多数据指标存在相关性，接下来的这个例子基于 1977 年美国人口调查局发布的统计数据，篇幅所限，下 @tbl-state-x77 展示美国各州的部分统计数据。
+
+```{r}
+#| echo: false
+#| label: tbl-state-x77
+#| tbl-cap: "1977 年美国人口调查局发布的各州统计数据（部分）"
+
+state_x77 <- data.frame(state.x77,
+  state_name = rownames(state.x77),
+  state_region = state.region,
+  check.names = FALSE
+)
+
+knitr::kable(head(state_x77[, c(
+  "state_name", "state_region", "Population",
+  "Income", "Life Exp"
+)]), col.names = c(
+  "州名", "区域划分", "人口数量",
+  "人均收入", "预期寿命"
+), row.names = FALSE)
+```
+
+该数据集在 R 环境中的结构如下：
+
+```{r}
+str(state_x77)
+```
+
+它是一个 50 行 10 列的数据框，其中，state_name（州名）是字符型变量， state_region（区域划分）是因子型变量。除了这两个变量外，Population（人口数量，单位：1000），Income（人均收入，单位：美元），Life Exp（预期寿命，单位：岁）等都是数值型的变量。下 @fig-state-x77-scatter 展示了1977 年美国各州的预期寿命和人均收入的关系，通过此图，可以初步观察出两个指标存在一些明显的正向相关性，也符合常识。
+
+```{r}
+#| label: fig-state-x77-scatter
+#| fig-cap: "预期寿命与人均收入的关系图"
+#| fig-width: 4.5
+#| fig-height: 3.5
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
+#| fig-showtext: true
+
+library(ggplot2)
+ggplot(data = state_x77, aes(x = Income, y = `Life Exp`)) +
+  geom_point() +
+  labs(
+    x = "人均收入（美元）", y = "预期寿命（年）",
+    title = "1977 年各州预期寿命与人均收入的关系",
+    caption = "数据源：美国人口调查局"
+  ) +
+  theme_classic() +
+  theme(
+    panel.grid = element_line(colour = "gray92"),
+    panel.grid.major = element_line(linewidth = rel(1.0)),
+    panel.grid.minor = element_line(linewidth = rel(0.5))
+  )
+```
+
+为了更加清楚地观察到哪些州预期寿命长，哪些州人均收入高，在 @fig-state-x77-scatter 基础上，在散点旁边添加州名。此外，为了观察各州的地域差异，根据各州所属区域，给散点分类，最后，将各州人口数量映射给散点的大小，形成如下 @fig-state-x77-bubble 所示的分类气泡图。
+
+```{r}
+#| label: fig-state-x77-bubble
+#| fig-cap: "分地域预期寿命与人均收入的气泡图"
+#| fig-width: 7
+#| fig-height: 5.5
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
+#| fig-showtext: true
+
+library(ggplot2)
+library(ggrepel)
+library(scales)
+ggplot(data = state_x77, aes(x = Income, y = `Life Exp`)) +
+  geom_point(aes(size = 1000 * Population, color = state_region)) +
+  geom_text_repel(aes(label = state_name), size = 3, seed = 2022) +
+  scale_size(labels = label_number(scale_cut = cut_short_scale())) +
+  labs(
+    x = "人均收入（美元）", y = "预期寿命（年）",
+    title = "1977 年各州预期寿命与人均收入的关系（分地域）",
+    caption = "数据源：美国人口调查局",
+    size = "人口数量", color = "区域划分"
+  ) +
+  theme_classic() +
+  theme(
+    panel.grid = element_line(colour = "gray92"),
+    panel.grid.major = element_line(linewidth = rel(1.0)),
+    panel.grid.minor = element_line(linewidth = rel(0.5))
+  )
+```
+
+整体来说，预期寿命与人均收入息息相关。
+
+```{r}
+#| label: fig-state-x77-lm
+#| fig-cap: "1977 年美国各州预期寿命与人均收入的关系：回归分析"
+#| fig-width: 7
+#| fig-height: 5.5
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
+#| fig-showtext: true
+
+ggplot(data = state_x77, aes(x = Income, y = `Life Exp`)) +
+  geom_point(aes(size = 1000 * Population, color = state_region)) +
+  geom_smooth(method = "lm", formula = "y~x") +
+  geom_text_repel(aes(label = state_name), size = 3, seed = 2022) +
+  scale_size(labels = label_number(scale_cut = cut_short_scale())) +
+  labs(
+    x = "人均收入（美元）", y = "预期寿命（年）",
+    title = "1977 年各州预期寿命与人均收入的关系",
+    caption = "数据源：美国人口调查局",
+    size = "人口数量", color = "区域划分"
+  ) +
+  theme_classic() +
+  theme(
+    panel.grid = element_line(colour = "gray92"),
+    panel.grid.major = element_line(linewidth = rel(1.0)),
+    panel.grid.minor = element_line(linewidth = rel(0.5))
+  )
+```
+
+::: callout-tip
+从 @fig-state-x77-bubble 到 @fig-state-x77-lm ，尝试初步量化两个变量之间的相关性之前，有没有想过，回归线应该更加陡峭一些，即回归线的斜率应该更大一些，是什么原因导致平缓了这么多？是阿拉斯加州和内华达州的数据偏离集体太远。那又是什么原因导致阿拉斯加州人均收入全美第一，而预期寿命倒数呢？同样的，内华达州的人均收入也不低，但预期寿命为什么上不去呢？
+:::
+
+```{r}
+#| eval: false
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
+
+ggplot(data = state_x77, aes(x = Income, y = `Life Exp`)) +
+  geom_point(aes(size = 1000 * Population, color = state_region)) +
+  geom_smooth(method = "lm", formula = "y~x", color = "red") +
+  geom_smooth(data = function(x) subset(x, !state_name %in% c("Nevada", "Alaska") ), method = "lm", formula = "y~x", color = "green") +
+  geom_text_repel(aes(label = state_name), size = 3, seed = 2022) +
+  scale_size(labels = label_number(scale_cut = cut_short_scale())) +
+  labs(
+    x = "人均收入（美元）", y = "预期寿命（年）",
+    title = "1977 年各州预期寿命与人均收入的关系",
+    caption = "数据源：美国人口调查局",
+    size = "人口数量", color = "区域划分"
+  ) +
+  theme_classic() +
+  theme(
+    panel.grid = element_line(colour = "gray92"),
+    panel.grid.major = element_line(linewidth = rel(1.0)),
+    panel.grid.minor = element_line(linewidth = rel(0.5))
+  )
+```
+
+```{r}
+m <- lm(data = state_x77, `Life Exp` ~ Income)
+summary(m)
+```
+
+输出结果中各个量的计算公式及 R 语言实现，比如方差 Variance、偏差 Deviance/Bias、残差 Residual Error
+
+## 习题 {#sec-exercise-regression-and-correlation}
+
+1.  R 软件内置的数据集 `esoph` 是一份关于法国伊勒-维莱讷地区食道癌的数据，请读者根据这份数据研究年龄组、烟草消费量、酒精消费量（每日喝酒量）和患食道癌的关系。
