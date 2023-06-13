@@ -31,6 +31,8 @@ library(lattice)
     -   随机森林
     -   集成学习
 
+iris 数据集也来自 Base R 自带的 **datasets** 包，由 Anderson Edgar 收集，最早见于 1935 年的文章，后被 Ronald Fisher 在研究分类问题时引用 [@Fisher1936]。到如今，在机器学习的社区里，提及 iris 数据集，一般只知 Fisher 不知 Anderson。
+
 ## 多项回归模型 {#sec-multinomial-regression-models}
 
 ```{r}
@@ -97,22 +99,59 @@ library(MASS)
 # lda
 iris_lda <- lda(Species ~ ., data=iris)
 iris_lda
+# 预测
+iris_lda_pred <- predict(iris_lda, iris[, -5])$class
 ```
 
 ```{r}
-table(predict(iris_lda, iris[, -5])$class, iris[, 5])
+# 预测结果
+table(iris_lda_pred, iris[, 5])
 ```
 
 ## 二次判别分析 {#sec-quadratic-discriminant-analysis}
 
 ```{r}
-# qda
+# Quadratic Discriminant Analysis 二次判别分析
 iris_qda <- qda(Species ~ ., data=iris)
 iris_qda
+# 预测
+iris_qda_pred <- predict(iris_qda, iris[, -5])$class
 ```
 
 ```{r}
-table(predict(iris_qda, iris[, -5])$class, iris[, 5])
+# 预测结果
+table(iris_qda_pred, iris[, 5])
+```
+
+```{r}
+#| eval: false
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
+
+library(mda)
+# Mixture Discriminant Analysis 混合判别分析
+iris_mda <- mda(Species ~ ., data = iris)
+# 预测
+iris_mda_pred <- predict(iris_mda, newdata = iris[, -5])
+# 预测结果
+table(iris_mda_pred, iris[, 5])
+
+# Flexible Discriminant Analysis 灵活判别分析
+iris_fda <- fda(Species ~ ., data = iris)
+# 预测
+iris_fda_pred <- predict(iris_fda, newdata = iris[, -5])
+# 预测结果
+table(iris_fda_pred, iris[, 5])
+
+# Regularized Discriminant Analysis 正则判别分析
+library(klaR)
+iris_rda <- rda(Species ~ ., data = iris, gamma = 0.05, lambda = 0.01)
+# 输出结果
+summary(iris_rda)
+# 预测
+iris_rda_pred <- predict(iris_rda, newdata = iris[, -5])$class
+# 预测结果
+table(iris_rda_pred, iris[, 5])
 ```
 
 ## 朴素贝叶斯 {#sec-naive-bayes}
@@ -121,17 +160,27 @@ table(predict(iris_qda, iris[, -5])$class, iris[, 5])
 library(e1071) # 朴素贝叶斯
 iris_nb <- naiveBayes(Species ~ ., data = iris)
 iris_nb
-# 分类结果
-table(predict(iris_nb, iris), iris[,5])
+# 预测
+iris_nb_pred <- predict(iris_nb, newdata = iris, type = "class")
+# 预测结果
+table(iris_nb_pred, iris[, 5])
 ```
 
 ## 支持向量机 {#sec-support-vector-machines}
+
+**e1071** 包也提供支持向量机
 
 ```{r}
 # e1071
 iris_svm <- svm(Species ~ ., data = iris)
 iris_svm
+# 预测
+iris_svm_pred <- predict(iris_svm, newdata = iris, probability = FALSE)
+# 预测结果
+table(iris_svm_pred, iris[, 5])
 ```
+
+**kernlab** 包提供核支持向量机。
 
 ```{r}
 library(kernlab)
@@ -200,9 +249,70 @@ library(rpart.plot)
 rpart.plot(iris_rpart)
 ```
 
+预测结果，训练误差
+
 ```{r}
+# 预测
 iris_pred_rpart <- predict(iris_rpart, iris[, -5], type = "class")
+# 预测结果
 table(iris_pred_rpart, iris[, 5])
+```
+
+**party** 包和 **partykit** 包也提供类似的功能，前者是基于 C 语言实现，后者基于 R 语言实现。
+
+```{r}
+#| eval: false
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
+
+# 与 rpart 包分类的结果一样
+library(partykit)
+iris_party <- ctree(Species ~ ., data = iris)
+plot(iris_party)
+iris_pred_party <- predict(iris_party, iris[, -5], type = "response")
+table(iris_pred_party, iris[, 5])
+
+# PART 算法
+library(RWeka)
+iris_weka <- PART(Species ~ ., data = iris)
+# 输出拟合结果
+summary(iris_weka)
+# 预测
+iris_pred_weka <- predict(iris_weka, newdata = iris[, -5], type = "class")
+# 预测结果
+table(iris_pred_weka, iris[, 5])
+
+# Bagging CART
+library(ipred)
+iris_ipred <- bagging(Species ~ ., data = iris)
+# 输出拟合结果
+# summary(iris_ipred)
+# 预测
+iris_pred_ipred <- predict(iris_ipred, newdata = iris[, -5], type = "class")
+# 预测结果
+table(iris_pred_ipred, iris[, 5])
+
+# Boosted C5.0
+library(C50)
+iris_C50 <- C5.0(Species ~ ., data = iris)
+# 预测
+iris_pred_C50 <- predict(iris_C50, newdata = iris[, -5])
+# 预测结果
+table(iris_pred_C50, iris[, 5])
+
+# Gradient Boosted Machine
+# Warning message:
+# Setting `distribution = "multinomial"` is ill-advised 
+# as it is currently broken. 
+# It exists only for backwards compatibility. Use at your own risk. 
+library(gbm)
+iris_gbm <- gbm(Species ~ ., data = iris, distribution = "multinomial")
+# 预测
+iris_pred_gbm <- predict(iris_gbm, newdata = iris[, -5], n.trees = 1, type = "response")
+# 转化为与响应变量一样的取值
+pred_gbm <- colnames(iris_pred_gbm)[apply(iris_pred_gbm, 1, which.max)]
+# 预测结果
+table(pred_gbm, iris[, 5])
 ```
 
 ## 随机森林 {#sec-random-forests}
@@ -329,16 +439,19 @@ table(iris_test$label, iris_pred)
 
 不同的分类算法分布在不同的 R 包中，在使用方式上既有相通之处，又有不同之处。下表对多个 R 包的使用做了归纳。R 包之间的不一致性，计算预测分类的概率的语法。
 
-| 函数           | R 包           | 代码                                       |
-|:----------------|:----------------|:-------------------------------------|
-| `lda()`        | **MASS**       | `predict(obj)`                             |
-| `glm()`        | **stats**      | `predict(obj, type = "response")`          |
-| `gbm()`        | **gbm**        | `predict(obj, type = "response", n.trees)` |
-| `mda()`        | **mda**        | `predict(obj, type = "posterior")`         |
-| `rpart()`      | **rpart**      | `predict(obj, type = "prob")`              |
-| `Weka()`       | **RWeka**      | `predict(obj, type = "probability")`       |
-| `logitboost()` | **LogitBoost** | `predict(obj, type = "raw", nIter)`        |
-| `pamr.train()` | **pamr**       | `pamr.predict(obj, type = "posterior")`    |
+| 函数           | R 包         | 代码                                       |
+|:---------------|:-------------|:-------------------------------------------|
+| `lda()`        | **MASS**     | `predict(obj)`                             |
+| `glm()`        | **stats**    | `predict(obj, type = "response")`          |
+| `gbm()`        | **gbm**      | `predict(obj, type = "response", n.trees)` |
+| `naiveBayes()` | **e1071**    | `predict(obj, type = "class")`             |
+| `svm()`        | **e1071**    | `predict(obj, probability = FALSE)`        |
+| `ksvm()`       | **kernlab**  | `predict(obj, type = "response")`          |
+| `mda()`        | **mda**      | `predict(obj, type = "posterior")`         |
+| `rpart()`      | **rpart**    | `predict(obj, type = "prob")`              |
+| `Weka()`       | **RWeka**    | `predict(obj, type = "probability")`       |
+| `ctree()`      | **partykit** | `predict(obj, type = "response")`          |
+| `bagging()`    | **ipred**    | `predict(obj, type = "class")`             |
 
 ## 习题 {#sec-exercise-classification}
 
