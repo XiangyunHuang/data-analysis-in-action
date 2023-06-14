@@ -38,7 +38,7 @@ $\chi^2$ 分布、t 分布和 F 分布作为最基础的三大抽样分布，分
 
 有了均值和方差，为什么还要位置参数和尺度参数？为了更一般地描述问题，扩展范围。特别是在总体分布未知或知之甚少的情况下做检验，不再仅限于均值和方差这样的特征量。关于检验方法，如有不明白的地方，可以查看维基百科词条。对每个检验问题，本章给出原假设和备择假设，检验统计量及其服从的分布，R 语言实现（自编或调用函数，如果调用函数，说明参数及其含义），不讲公式推导过程。
 
-在 R 语言中，有大量的函数可以对样本数据做检验，每一个函数都对应一个或多个检验方法。为了让读者根据手头数据可以快速地找到最合适的检验方法。单样本检验、两样本检验和多样本检验都只针对连续数据。计数数据检验针对离散数据，不区分总体数量。配对样本检验是两样本检验中的特殊情况，不分连续还是离散，不分两个样本还是多个样本，多个样本就是两两配对检验。前面都是关于某个特征统计量的检验，对分布的检验涉及样本点是否来自正态分布，样本点是否独立和平稳，样本点是否来自某一分布，两个样本是否来自相同分布等。
+在 R 语言中，有大量的函数可以对样本数据做检验，每一个函数对应一个或多个检验问题。为了让读者根据手头数据可以快速地找到最合适的检验方法。单样本检验、两样本检验和多样本检验都只针对连续数据。计数数据检验针对离散数据，不区分总体数量。配对样本检验是两样本检验中的特殊情况，不分连续还是离散，不分两个样本还是多个样本，多个样本就是两两配对检验。前面都是关于某个特征统计量的检验，对分布的检验涉及样本点是否来自正态分布，样本点是否独立和平稳，样本点是否来自某一分布，两个样本是否来自相同分布等。
 
 ```{r}
 #| message: false
@@ -46,9 +46,9 @@ $\chi^2$ 分布、t 分布和 F 分布作为最基础的三大抽样分布，分
 library(ggplot2)
 library(pwr)         # 计算检验的功效和实验样本量
 library(dunn.test)   # dunn.test
-# library(car)       # leveneTest 可替代 bartlett.test
-# library(survival)
-# library(coin)      # 补充更多的检验方法
+library(car)       # leveneTest 可替代 bartlett.test
+library(survival)
+library(coin)      # 补充更多的检验方法
 # library(multcomp)  # 多重比较
 # library(MKpower)   # power.welch.t.test
 # library(rstatix)   # 管道操作整合检验方法
@@ -449,13 +449,25 @@ bartlett.test(extra ~ group, data = sleep)
 
 在总体分布未知的情况下，比较均值是否相等的检验。
 
--   `wilcox.test()` 适用于单样本和两样本的均值检验，单样本 Wilcoxon 秩和检验，两样本 Wilcoxon 符号秩检验，后者也叫 Mann-Whitney U 检验。
+-   `wilcox.test()` 适用于单样本和两样本的均值检验，单样本 Wilcoxon 秩和检验，两样本 Wilcoxon 符号秩和检验，后者也叫 Mann-Whitney 检验。
 -   `kruskal.test()` 适用于两样本和多样本，比较多个均值是否相等的检验，Kruskal-Wallis 秩和检验。
 
 单样本和两样本 `wilcox.test()`。
 
 ```{r}
 wilcox.test(extra ~ group, data = sleep)
+```
+
+**coin** 包提供渐进 Wilcoxon-Mann-Whitney 检验
+
+```{r}
+# Asymptotic Wilcoxon-Mann-Whitney Test
+wilcox_test(extra ~ group, data = sleep, conf.int = TRUE)
+# Exact Wilcoxon-Mann-Whitney Test
+wilcox_test(
+  extra ~ group, data = sleep,
+  distribution = "exact", conf.int = TRUE
+)
 ```
 
 两样本和多样本 `kruskal.test()` 。
@@ -679,6 +691,8 @@ fligner.test(weight ~ group, data = PlantGrowth)
 
 ## 配对样本检验 {#sec-pairwise-data}
 
+配对样本检验算是两样本检验的一种特殊情况。若待检验的样本不止两个，则两两配对检验。
+
 ### 配对 t 检验 {#sec-pairwise-t-test}
 
 两个组的配对 t 检验 `t.test(paired = TRUE)`
@@ -690,10 +704,10 @@ t.test(extra ~ group, data = sleep, paired = TRUE)
 两个组的配对 t 检验 `pairwise.t.test()` ，与前面的结果等价。
 
 ```{r}
-pairwise.t.test(x = sleep$extra, g = sleep$group, paired = TRUE)
+with(sleep, pairwise.t.test(x = extra, g = group, paired = TRUE))
 ```
 
-多个组两两配对的 t 检验 `pairwise.t.test()`
+多个组两两配对的 t 检验 `pairwise.t.test()` ，PlantGrowth 数据集包含三个样本。
 
 ```{r}
 with(PlantGrowth, pairwise.t.test(x = weight, g = group, paired = TRUE))
@@ -728,7 +742,7 @@ Wilcoxon 检验 `wilcox.test()` 设置 `paired = TRUE` 也可以做配对检验�
 wilcox.test(extra ~ group, data = sleep, paired = TRUE)
 ```
 
-**dunn.test** 包提供函数 `dunn.test()` 实现 Dunn 检验，将 Kruskal-Wallis 秩和检验用于多重比较。
+**dunn.test** 包提供函数 `dunn.test()` 实现 Dunn 检验，将 Kruskal-Wallis 秩和检验用于两两配对比较。
 
 ```{r}
 library(dunn.test)
@@ -1064,4 +1078,3 @@ summary(fit)
 -   业务问题：根据目标确定方向，找到有价值的、可以解决的业务问题，再提出合理的统计假设。
 -   数据问题：数据收集、数据组织、数据管理、数据治理，验证数据流的完整性、一致性等。
 -   统计问题：设计实验方案，包括分流、实验周期等，利用假设检验、区间估计和功效分析等统计工具完成显著性分析、可靠性分析，撰写数据分析和评估报告。
-
