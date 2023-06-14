@@ -837,13 +837,26 @@ PP.test(x, lshort = TRUE)
 
 ### 球形检验 {#sec-mauchly-test}
 
-Mauchly 球形检验 `mauchly.test()` 检验：Wishart 分布的协方差矩阵是否正比于给定的矩阵。多元分布的协方差矩阵。
+Mauchly 球形检验 `mauchly.test()` 检验：Wishart 分布的协方差矩阵是否正比于给定的矩阵。一组样本来自多元正态分布，样本的协方差矩阵是关于样本的随机矩阵，随机矩阵的分布服从 Wishart 分布。
 
-如果 $X_1, X_2, \cdots, X_m$，$X_i \in \mathbb{R}^p$，$X_i \overset{i.i.d}{\sim} \mathrm{MVN}(0,\Sigma)$，即 $m$ 个样本点都服从均值为 $0$，协方差矩阵为 $\Sigma$ 的 $p$ 维多元正态分布 $\mathrm{MVN}(0,\Sigma)$，且样本点之间相互独立。则 $M = X'X$ 服从参数为 $\Sigma$ 和 $m$ 的 Wishart 分布 $W_p(\Sigma, m)$。
+如果 $\bm{x_1}, \bm{x_2}, \cdots, \bm{x_m}$，$\bm{x_i} \in \mathbb{R}^p$，$\bm{x_i} \overset{i.i.d}{\sim} \mathrm{MVN}(0,\Sigma)$，即 $m$ 个样本点都服从均值为 $0$，协方差矩阵为 $\Sigma$ 的 $p$ 维多元正态分布 $\mathrm{MVN}(0,\Sigma)$，且样本点之间相互独立。则 $X = \bm{x}^{\top}\bm{x}$ 服从参数为 $\Sigma$ ，自由度为 $m$ 的 Wishart 分布 $W_p(\Sigma, m)$。概率密度函数如下
 
-R 语言内置了一个模拟数生成器，可以直接模拟出服从 Wishart 分布 $W_p(\Sigma, m)$ 的样本，即 $n$ 个随机矩阵，$m = \mathrm{df}, \Sigma = \mathrm{Sigma}$。 R 语言命令如下：
+$$
+f(X) = \frac{1}{2^{\frac{mp}{2}}|\Sigma|^{\frac{m}{2}}\Gamma_{p}(\frac{m}{2})}|X|^{(m-p-1)/2}\exp\{-\frac{1}{2}\mathrm{tr}(\Sigma^{-1}X)\}
+$$
 
-``` r
+其中， $\Gamma_p$ 是多元伽马函数，定义如下
+
+$$
+\Gamma_p(\frac{m}{2}) = \pi^{p(p-1)/4}\prod_{j=1}^{p}\Gamma(\frac{m}{2} - \frac{j-1}{2})
+$$
+
+R 语言内置了一个模拟数生成器，可以直接模拟出服从 Wishart 分布 $W_p(\Sigma, m)$ 的样本，$m = \mathrm{df}, \Sigma = \mathrm{Sigma}$。 R 语言命令如下：
+
+```{r}
+#| eval: false
+#| echo: true
+
 rWishart(n, df, Sigma)
 ```
 
@@ -882,7 +895,7 @@ apply(Wish, MARGIN = 1:2, var)
 2*(S^2 + tcrossprod(diag(S)))
 ```
 
-## 总结 {#sec-common-statistical-tests-summary}
+## 假设检验的一些注记 {#sec-common-statistical-tests-notes}
 
 真实数据的情况是复杂多样的，本章按照数据情况对检验方法分类，方便读者根据手头的数据情况，快速从众多的方法中定位最合适的检验方法。依次是单样本检验、两样本检验、多样本检验、计数数据检验、配对样本检验。如果已知符合参数检验的条件，优先考虑参数检验。如果不确定是否符合参数检验的条件，对参数检验和非参数检验方法都适用，非参数检验方法的功效更大，方法更优。在总体分布未知的情况下，无论是对均值检验还是对方差检验，大部分情况下都需要非参数检验方法。
 
@@ -1022,23 +1035,14 @@ aggregate(data = iris, cbind(Sepal.Length, Sepal.Width, Petal.Length, Petal.Widt
 
 ### 假设检验与区间估计的关系
 
-区间估计的意义是解决点估计可靠性问题，它用置信系数解决了对估计结果的信心问题，弥补了点估计的不足。置信系数是最大的置信水平。以比例检验和二项检验为例。
+区间估计的意义是解决点估计可靠性问题，它用置信系数解决了对估计结果的信心问题，弥补了点估计的不足。置信系数是最大的置信水平。
 
-#### 比例检验
-
-Base R 提供的 `binom.test()` 函数可以精确计算置信区间，Clopper-Pearson 区间，而 `prop.test()` 函数可近似计算置信区间，Wilson 区间。
-
-以二项分布的比例检验和二项检验为例。近似区间估计
+Base R 提供的 `binom.test()` 函数可以精确计算置信区间，即所谓的 Clopper-Pearson 区间，而 `prop.test()` 函数可近似计算置信区间，即所谓的 Wilson 区间。以单样本的比例检验为例。
 
 ```{r}
+# 近似区间估计
 prop.test(x = 2, n = 10, p = 0.95, conf.level = 0.95, correct = TRUE)
-```
-
-#### 二项检验
-
-精确区间估计
-
-```{r}
+# 精确区间估计
 binom.test(x = 2, n = 10, p = 0.95, conf.level = 0.95)
 ```
 
