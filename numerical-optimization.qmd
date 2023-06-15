@@ -83,7 +83,7 @@ $$
 \end{aligned}
 $$
 
-其中，目标函数是 $-6x_1 -5x_2$，$\min$ 表示求目标函数的最小值，$\bm{x} = (x_1,x_2)^{\top}$ 表示决策变量，无特殊说明，决策变量都取实数。$\text{s.t.}$ 是 subject to 的缩写，专指约束条件。以上线性优化问题写成矩阵形式，如下：
+其中，目标函数是 $-6x_1 -5x_2$，$\min$ 表示求目标函数的最小值，$\bm{x} = (x_1,x_2)^{\top}$ 表示决策变量，无特殊说明，决策变量都取实数。$\text{s.t.}$ 是 subject to 的缩写，专指约束条件。上述线性优化问题写成矩阵形式，如下：
 
 $$
 \begin{aligned}
@@ -110,10 +110,24 @@ $$
 \end{aligned} 
 $$
 
+用 $\bm{d}$ 表示目标函数的系数向量，$A$ 表示约束矩阵，$\bm{b}$ 表示右手边的向量。
+
+$$
+\begin{aligned}
+\min_{\bm{x}} \quad &
+  \bm{d}^{\top} \bm{x} \\
+\text{s.t.} \quad & 
+  A\bm{x} \leq
+  \bm{b}
+\end{aligned} 
+$$
+
+用 **ROI** 包提供的一套使用语法表示线性优化问题，代码如下：
+
 ```{r}
 # 定义优化问题
 op <- OP(
-  objective = L_objective(c(-6, -5)),
+  objective = L_objective(L = c(-6, -5)),
   constraints = L_constraint(
     L = matrix(c(
       1, 4,
@@ -138,10 +152,23 @@ res$objval
 
 函数 `OP()` 定义一个优化问题，参数如下：
 
--   `objective` ：线性目标函数的系数，数值型向量。
--   `constraints` ：约束矩阵 $A$ ，约束分量的方向 `>=` 、`<=` 或 `=` ，右手边的向量 $b$ 。
--   `types` ：变量的类型，如 `"B"` 表示 0-1 变量，字母 B 是 binary 的意思，`"I"` 表示整型变量，字母 I 是 integer 的意思，`"C"` 表示数值型变量，字母 C 是 continuous 的意思。本例中，两个变量都是连续型的，`types = c("C", "C")` 。
--   `maximum` ：目标函数需要求极大还是极小，默认求极小，取值为逻辑值 `TRUE` 或 `FALSE`。
+-   `objective` ：指定目标函数，用函数 `L_objective()` 表示线性优化中的目标函数，函数名中 L 表示 Linear（线性），包含数值型向量。
+-   `constraints` ：指定约束条件，用函数 `L_constraint()` 表示线性优化中的约束条件，函数名中 L 表示 Linear（线性），包含约束矩阵 $A$ ，约束分量的方向可为 `>=` 、`<=` 或 `=` ，本例中为 `<=`，右手边的向量 $b$ 。
+-   `types` ：指定决策变量的类型，分三种情况， `B` 表示 0-1 变量，字母 B 是 binary 的意思，`I` 表示整型变量，字母 I 是 integer 的意思，`C` 表示数值型变量，字母 C 是 continuous 的意思。本例中，两个变量都是连续型的，`types = c("C", "C")` 。
+-   `maximum` ：指定目标函数需要求极大还是极小，默认求极小，取值为逻辑值 `TRUE` 或 `FALSE`。
+
+不同类型的目标函数和约束条件组合在一起可以构成非常丰富的优化问题。**ROI** 包支持的目标函数、约束条件及相应的代码见下表。后续将根据优化问题，逐个介绍用法。
+
+| 目标函数   | 代码            | 约束条件   | 代码             |
+|------------|-----------------|------------|------------------|
+| 线性函数   | `L_objective()` | 无约束     | 留空             |
+| 二次函数   | `Q_objective()` | 箱式约束   | `V_bound()`      |
+| 非线性函数 | `F_objective()` | 线性约束   | `L_constraint()` |
+|            |                 | 二次约束   | `Q_constraint()` |
+|            |                 | 锥约束     | `C_constraint()` |
+|            |                 | 非线性约束 | `F_constraint()` |
+
+: **ROI** 包可以表示的目标函数和约束条件
 
 ## 凸二次优化 {#sec-quadratic-optimization}
 
@@ -1441,13 +1468,15 @@ optim(
 下面通过 **ROI** 包，分别调用求解器 `nloptr.lbfgs` 和 `nloptr.directL` ，发现前者同样陷入局部最优解，而后者可以获得与 `nlminb()` 函数一致的结果。
 
 ```{r}
-# 调用改进的 BFGS 算法
+# 调用 BFGS 算法
 op <- OP(
   objective = F_objective(fn, n = 25L, G = gr),
   bounds = V_bound(ld = 2, ud = 4, nobj = 25L)
 )
 nlp <- ROI_solve(op, solver = "nloptr.lbfgs", start = rep(3, 25))
+# 目标函数值
 nlp$objval
+# 最优解
 nlp$solution
 ```
 
@@ -1455,7 +1484,9 @@ nlp$solution
 
 ```{r}
 nlp <- ROI_solve(op, solver = "nloptr.directL")
+# 目标函数值
 nlp$objval
+# 最优解
 nlp$solution
 ```
 
