@@ -7,7 +7,8 @@ knitr::knit_hooks$set(par = function(before, options, envir) {
 })
 
 knitr::opts_chunk$set(
-  comment = "#>"
+  comment = "#>",
+  fig.pos = 'H'
 )
 
 if (xfun::is_macos()) {
