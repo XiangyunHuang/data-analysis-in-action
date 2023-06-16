@@ -1149,7 +1149,7 @@ constrOptim(
 
 #### 示例 2
 
-有如下复杂的目标函数。
+下面这个优化问题来自 1stOpt 软件帮助手册，是一个无约束非线性优化问题，它的目标函数非常复杂，一般的求解器都无法求解。最优解在 $(7.999982, 7.999982)$ 取得，目标函数值为 -7.978832。
 
 $$
 \begin{aligned}
@@ -1157,24 +1157,29 @@ $$
 \end{aligned}
 $$
 
+目标函数分两步计算，先计算累加部分的通项，然后代入计算目标函数。
+
 ```{r}
 subfun <- function(i, m) {
   (-1)^i * i * 2 * exp(-500 * ((m[1] - i * 2)^2 + (m[2] - i * 2)^2))
 }
-
 fn <- function(x) {
   cos(x[1]) * cos(x[2]) -
     sum(mapply(FUN = subfun, i = 1:5, MoreArgs = list(m = x)))
 }
 ```
 
-直观起见，绘制目标函数在区域 $[-50, 50] \times [-50, 50]$ 内的图像，见 @fig-super-function ，可以看到几乎没有变化的梯度，给寻优过程带来很大困难。
+直观起见，绘制目标函数在区域 $[-50, 50] \times [-50, 50]$ 内的图像，如 @fig-super-function-1 所示，可以看到几乎没有变化的梯度，给寻优过程带来很大困难。再将区域 $[0, 12] \times [0, 12]$ 上的三维图像绘制出来，如 @fig-super-function-2 所示，可见，有不少局部陷阱，且分布在 $x_2 = x_1$ 的直线上。
 
 ```{r}
 #| label: fig-super-function
 #| fig-width: 4.5
 #| fig-height: 4.5
-#| fig-cap: 函数图像
+#| fig-cap: 局部放大前后的函数图像
+#| fig-subcap: 
+#| - 区域 $[-50,50]\times[-50,50]$ 内的函数图像
+#| - 区域 $[0,12]\times[0,12]$ 内的函数图像
+#| layout-ncol: 1
 #| fig-showtext: true
 #| code-fold: true
 #| echo: !expr knitr::is_html_output()
@@ -1208,24 +1213,11 @@ wireframe(
   par.settings = list(axis.line = list(col = "transparent")),
   screen = list(z = 30, x = -65, y = 0)
 )
-```
-
-将区域 $[0, 12] \times [0, 12]$ 上的三维图像绘制出来，可见，有不少局部陷阱，且分布在 $x_2 = x_1$ 的直线上。
-
-```{r}
-#| label: fig-zoom-super-function
-#| fig-cap: 局部放大的函数图像
-#| fig-width: 4.5
-#| fig-height: 4.5
-#| fig-showtext: true
-#| code-fold: true
-#| echo: !expr knitr::is_html_output()
 
 df <- expand.grid(
   x = seq(0, 12, length.out = 151),
   y = seq(0, 12, length.out = 151)
 )
-
 df$fnxy <- apply(df, 1, fn)
 wireframe(
   data = df, fnxy ~ x * y,
@@ -1253,13 +1245,7 @@ wireframe(
 )
 ```
 
-实际上，该优化问题的最优解在 $(7.999982, 7.999982)$ 取得，目标函数值为 -7.978832。
-
-```{r}
-fn(x = c(7.999982, 7.999982))
-```
-
-不失一般性，下面考虑 $x_1,x_2 \in [-50,50]$ ，面对如此复杂的函数，调用全局优化器寻优。
+不失一般性，下面考虑 $x_1,x_2 \in [-50,50]$ ，面对如此复杂的函数，调用全局优化器 `nloptr.directL` 寻优。
 
 ```{r}
 op <- OP(
