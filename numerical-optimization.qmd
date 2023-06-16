@@ -888,7 +888,7 @@ optimize(f = fn, interval = c(-7, 20), maximum = FALSE)
 
 ### 多元隐函数优化 {#sec-implicit-function-optimization}
 
-求如下隐函数的极值。
+这个优化问题来自 1stOpt 软件的帮助文档，下面利用 R 语言来求该多元隐函数的极值。
 
 $$
 \begin{aligned}
@@ -979,14 +979,14 @@ wireframe(
 最后，获得暴力网格搜索的结果，目标函数在 $(2.8,-0.9)$ 处取得最小值 $-0.02159723$。总的来说，这是一个近似结果，如果进一步缩小搜索区域，将网格划分得越细，搜索的结果将越接近全局最小值。
 
 ```{r}
-df[df$fn == min(df$fn),]
+df[df$fn == min(df$fn), ]
 ```
 
 将求隐函数极值的问题转为含非线性等式约束的非线性优化问题。
 
 $$
 \begin{aligned}
-\min \quad & y \\
+\min_{\bm{x}} \quad & y \\
 \text{s.t.} \quad & f(x_1,x_2,y) = 0
 \end{aligned}
 $$
@@ -994,12 +994,6 @@ $$
 由于等式约束非常复杂，手动计算等式约束的雅可比矩阵不可行，可以用 **numDeriv** 包的函数 `jacobian()` 计算等式约束的雅可比矩阵。考虑到本例中仅含有一个等式约束，雅可比矩阵退化为梯度向量，这可以用 **numDeriv** 包的另一个函数 `grad()` 计算。
 
 ```{r}
-# 目标函数
-fn <- function(x) x[3]
-# 目标函数的梯度
-gr <- function(x) {
-  c(0, 0, 1)
-}
 # 等式约束
 heq <- function(x) {
   f1 <- (x[1] * x[3] - 0.5)^2 + 2 * x[1] * x[2]^2 - x[3] / 10
@@ -1010,15 +1004,20 @@ heq <- function(x) {
 heq.jac <- function(x) {
   numDeriv::grad(func = heq, x = x)
 }
-# 定义目标优化
+```
+
+函数 `L_objective()` 表示含 1 个决策变量的线性目标函数，函数 `F_constraint()` 表示非线性等式约束。
+
+```{r}
+# 定义优化问题
 op <- OP(
-  # 3 个决策变量
-  objective = F_objective(F = fn, G = gr, n = 3L),
+  objective = L_objective(L = c(0, 0, 1)),
   constraints = F_constraint(
+    # 等式约束
     F = list(heq = heq),
     dir = "==",
     rhs = 0,
-    # 等式约束的梯度
+    # 等式约束的雅可比
     J = list(heq.jac = heq.jac)
   ),
   bounds = V_bound(
@@ -1036,10 +1035,12 @@ op
 
 ```{r}
 nlp <- ROI_solve(op,
-  solver = "nloptr.slsqp",
-  start = c(2.8, -0.9, -0.02159723)
+  solver = "nloptr.slsqp", start = c(2.8, -0.9, -0.02159723)
 )
+# 最优解
 nlp$solution
+# 目标函数值
+nlp$objval
 ```
 
 可以发现，更优的目标函数值 $-0.02335$ 在 $(2.898,-0.8573)$ 取得。
@@ -1148,7 +1149,7 @@ constrOptim(
 
 #### 示例 2
 
-有如下复杂的目标函数。
+下面这个优化问题来自 1stOpt 软件帮助手册，是一个无约束非线性优化问题，它的目标函数非常复杂，一般的求解器都无法求解。最优解在 $(7.999982, 7.999982)$ 取得，目标函数值为 -7.978832。
 
 $$
 \begin{aligned}
@@ -1156,24 +1157,29 @@ $$
 \end{aligned}
 $$
 
+目标函数分两步计算，先计算累加部分的通项，然后代入计算目标函数。
+
 ```{r}
 subfun <- function(i, m) {
   (-1)^i * i * 2 * exp(-500 * ((m[1] - i * 2)^2 + (m[2] - i * 2)^2))
 }
-
 fn <- function(x) {
   cos(x[1]) * cos(x[2]) -
     sum(mapply(FUN = subfun, i = 1:5, MoreArgs = list(m = x)))
 }
 ```
 
-直观起见，绘制目标函数在区域 $[-50, 50] \times [-50, 50]$ 内的图像，见 @fig-super-function ，可以看到几乎没有变化的梯度，给寻优过程带来很大困难。
+直观起见，绘制目标函数在区域 $[-50, 50] \times [-50, 50]$ 内的图像，如 @fig-super-function-1 所示，可以看到几乎没有变化的梯度，给寻优过程带来很大困难。再将区域 $[0, 12] \times [0, 12]$ 上的三维图像绘制出来，如 @fig-super-function-2 所示，可见，有不少局部陷阱，且分布在 $x_2 = x_1$ 的直线上。
 
 ```{r}
 #| label: fig-super-function
 #| fig-width: 4.5
 #| fig-height: 4.5
-#| fig-cap: 函数图像
+#| fig-cap: 局部放大前后的函数图像
+#| fig-subcap: 
+#| - 区域 $[-50,50]\times[-50,50]$ 内的函数图像
+#| - 区域 $[0,12]\times[0,12]$ 内的函数图像
+#| layout-ncol: 1
 #| fig-showtext: true
 #| code-fold: true
 #| echo: !expr knitr::is_html_output()
@@ -1207,24 +1213,11 @@ wireframe(
   par.settings = list(axis.line = list(col = "transparent")),
   screen = list(z = 30, x = -65, y = 0)
 )
-```
-
-将区域 $[0, 12] \times [0, 12]$ 上的三维图像绘制出来，可见，有不少局部陷阱，且分布在 $x_2 = x_1$ 的直线上。
-
-```{r}
-#| label: fig-zoom-super-function
-#| fig-cap: 局部放大的函数图像
-#| fig-width: 4.5
-#| fig-height: 4.5
-#| fig-showtext: true
-#| code-fold: true
-#| echo: !expr knitr::is_html_output()
 
 df <- expand.grid(
   x = seq(0, 12, length.out = 151),
   y = seq(0, 12, length.out = 151)
 )
-
 df$fnxy <- apply(df, 1, fn)
 wireframe(
   data = df, fnxy ~ x * y,
@@ -1252,13 +1245,7 @@ wireframe(
 )
 ```
 
-实际上，该优化问题的最优解在 $(7.999982, 7.999982)$ 取得，目标函数值为 -7.978832。
-
-```{r}
-fn(x = c(7.999982, 7.999982))
-```
-
-不失一般性，下面考虑 $x_1,x_2 \in [-50,50]$ ，面对如此复杂的函数，调用全局优化器寻优。
+不失一般性，下面考虑 $x_1,x_2 \in [-50,50]$ ，面对如此复杂的函数，调用全局优化器 `nloptr.directL` 寻优。
 
 ```{r}
 op <- OP(
@@ -1582,7 +1569,7 @@ sol
 
 #### 非线性等式约束
 
-示例来自 Octave 的[非线性优化帮助文档](https://octave.org/doc/v8.2.0/Nonlinear-Programming.html)，Octave 函数 `sqp()` 使用序列二次优化求解器（successive quadratic programming solver）解非线性优化问题，示例中该优化问题包含多个非线性等式约束。
+下面这个示例来自 Octave 软件的[非线性优化帮助文档](https://octave.org/doc/v8.2.0/Nonlinear-Programming.html)，Octave 中的函数 `sqp()` 使用序列二次优化求解器（successive quadratic programming solver）求解非线性优化问题，示例中该优化问题包含多个非线性等式约束。
 
 $$
 \begin{aligned}
@@ -1596,7 +1583,7 @@ $$
 \end{aligned}
 $$
 
-目标函数是非线性的，包含 5 个变量，约束条件是非线性的，有 3 个等式约束。先手动计算目标函数的梯度，等式约束的雅可比矩阵。
+目标函数是非线性的，有 5 个变量，约束条件也是非线性的，有 3 个等式约束。先手动计算目标函数的梯度，等式约束的雅可比矩阵。
 
 ```{r}
 # 目标函数
@@ -1651,14 +1638,16 @@ op <- OP(
 op
 ```
 
-调用 SQP（序列二次优化） 求解器
+调用 SQP（序列二次优化） 求解器 `nloptr.slsqp` 。
 
 ```{r}
 nlp <- ROI_solve(op,
   solver = "nloptr.slsqp",
   start = c(-1.8, 1.7, 1.9, -0.8, -0.8)
 )
+# 最优解
 nlp$solution
+# 目标函数值
 nlp$objval
 ```
 

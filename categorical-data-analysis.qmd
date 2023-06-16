@@ -24,8 +24,6 @@ library(MASS)
 
 计数数据，通俗来说，对象是一个一个或一份一份的，可数的、离散的数据，比如人数。列联表来组织数据，分二维和多维的情况。
 
-## 列联表分析 {#sec-contingency-table}
-
 ```{r}
 #| eval: false
 #| echo: false
@@ -42,94 +40,19 @@ nnet::multinom()
 MASS::polr()
 ```
 
-### 比例检验 {#sec-prop-test}
+## 比例检验 {#sec-prop-test}
 
-关于比例的检验问题
+### 单样本检验
 
-$$
-\begin{aligned}
-H_0: P_A = P_B \quad vs. \quad H_1: P_A > P_B \\
-H_0: P_A = P_B \quad vs. \quad H_1: P_A < P_B
-\end{aligned}
-$$
+比例检验函数 `prop.test()` 检验比例是否等于给定的值。单样本的比例检验结果中比例的区间估计与 Wilson 区间估计 [@Wilson1927] 是相关的。区间估计与假设检验是有紧密关系的，对于二项分布比例的 11 种区间估计方法的比较 [@Newcombe1998]。
 
-$H_0$ 成立的情况下，暗示着两个样本来自同一总体。
+#### 近似检验
 
-比例检验函数 `prop.test()` 用来检验两组或多组二项分布的成功概率（比例）是否相等，或检验比例是否等于给定的值。对多组数据的比例检验，可以理解为比例齐性检验。单样本的比例检验结果中比例的区间估计与 Wilson 区间估计 [@Wilson1927] 是相关的。
+#### 精确检验
 
-比例趋势检验函数 `prop.trend.test()` 的原假设：四个组里面病人中吸烟的比例是相同的。备择假设：四个组的吸烟比例是有趋势的。
+函数 `binom.test()` 来做二项检验，函数 `binom.test()` 用来检验伯努利试验中成功概率 $p$ 和给定概率 $p_0$ 的关系，属于精确检验 [@Clopper1934]。
 
-$$
-\begin{aligned}
-& H_0: P_1 = P_2 = P_3 = P_4 \\
-& H_1: P_1 < P_2 < P_3 < P_4 ~\text{或者}~ P_1 > P_2 > P_3 > P_4
-\end{aligned}
-$$
-
-```{r}
-smokers <- c(83, 90, 129, 70)
-patients <- c(86, 93, 136, 82)
-prop.test(smokers, patients)
-prop.trend.test(smokers, patients)
-```
-
-设随机变量 X 服从参数为 $p$ 的二项分布 $b(n, p)$， $Y$ 服从参数为 $\theta$ 的二项分布 $b(m,\theta)$， $m,n$ 都假定为较大的正整数，检验如下问题
-
-$$
-H_0: P_A \geq P_B \quad vs. \quad H_1: P_A < P_B
-$$
-
-根据中心极限定理
-
-$$
-\frac{\bar{X} - \bar{Y}}{\sqrt{\frac{p(1-p)}{n} + \frac{\theta(1-\theta)}{m}}}
-$$
-
-近似服从标准正态分布 $N(0,1)$。如果用矩估计 $\bar{X}$ 和 $\bar{Y}$ 分别替代总体参数 $p$ 和 $\theta$，构造检验统计量
-
-$$
-T = \frac{\bar{X} - \bar{Y}}{\sqrt{\frac{\bar{X}(1-\bar{X})}{n} + \frac{\bar{Y}(1-\bar{Y})}{m}}}
-$$
-
-根据 Slutsky 定理，检验统计量 $T$ 近似服从标准正态分布，当 $T$ 偏大时，拒绝 $H_0$。该方法的优势在于当 $n,m$ 比较大时，二项分布比较复杂，无法建立统计表，利用标准正态分布表来给出检验所需要的临界值，简便易行！
-
-当 $p$ 和 $\theta$ 都比较小，上述方法检验效果不好，原因在于由中心极限定理对 $\bar{X}$ 和 $\bar{Y}$ 的正态分布近似效果不好，或者间接地导致 $\bar{X}-\bar{Y}$ 的方差偏小，进而 $T$ 的分辨都不好，而且当 $p,\theta$ 很接近 1 时，上述现象也会产生！
-
-下面介绍新的解决办法
-
-上面的检验问题等价于
-
-$$
-H_0: \frac{P_A}{P_B} \geq 1 \quad vs. \quad H_1: \frac{P_A}{P_B} < 1
-$$
-
-引入检验统计量
-
-$$
-T^{\star} = \frac{\bar{X}}{\bar{Y}}
-$$
-
-同样由 Slutsky 定理和中心极限定理可知， $\bar{X}/\bar{Y}$ 近似服从 正态分布 $\mathcal{N}(1,\frac{1-\theta}{m\theta})$
-
-当 $(T^\star - 1)/\hat\sigma$ 偏大时接受 $H_0$，临界值可通过 $\mathcal{N}(0, \hat\sigma^2)$ 分布表计算得到， $\hat\sigma^2$ 是对 $\frac{1-\theta}{m\theta}$ 的估计，比如取 $\hat\sigma^2 = \frac{1-\bar{Y}}{m}\cdot \frac{1}{\bar{Y}}$ 或取 $\hat\sigma^2 = \frac{1-\bar{Y}}{m}\cdot \frac{1}{\bar{X}}$
-
-由于渐近方差形如 $\frac{1-\theta}{m\theta}$，因而在 $\theta$ 较小，渐近方差较大，克服了之前 $\bar{X} - \bar{Y}$的方差较小的问题
-
-$p,\theta$ 很接近 1 时，我们取检验统计量
-
-$$
-T^{\star\star} = \frac{1-\bar{Y}}{1-\bar{X}}
-$$
-
-结论和 $T^\star$ 类似，当 $T^{\star\star}$ 偏大时，拒绝 $H_0$。
-
-两个二项总体成功概率的比较 [@Song2011]
-
-### 二项检验 {#sec-binom-test}
-
-区间估计与假设检验是有紧密关系的，对于二项分布比例的 11 种区间估计方法的比较 [@Newcombe1998]。函数 `binom.test()` 来做二项检验，函数 `binom.test()` 用来检验伯努利试验中成功概率 $p$ 和给定概率 $p_0$ 的关系，属于精确检验 [@Clopper1934]。
-
-比例 $p$ 的检验， 做 $n$ 次独立试验，样本 $X_1,\ldots,X_n \sim b(1, p)$，事件发生的总次数 $\sum_{i=1}^{n}X_i$。
+比例 $p$ 的检验，做 $n$ 次独立试验，样本 $X_1,\ldots,X_n \sim b(1, p)$，事件发生的总次数 $\sum_{i=1}^{n}X_i$。
 
 ```{r}
 # 模拟一组样本
@@ -160,11 +83,108 @@ P(|X - EX| \leq \epsilon) & \geq 1 - \frac{Var(X)}{\epsilon^2}
 \end{aligned}
 $$
 
-### 泊松检验 {#sec-poisson-test}
+### 两样本检验
+
+关于两样本的比例检验问题
+
+$$
+\begin{aligned}
+H_0: P_A = P_B \quad vs. \quad H_1: P_A > P_B \\
+H_0: P_A = P_B \quad vs. \quad H_1: P_A < P_B
+\end{aligned}
+$$
+
+$H_0$ 成立的情况下，暗示着两个样本来自同一总体。
+
+比例检验函数 `prop.test()` 用来检验两组或多组二项分布的成功概率（比例）是否相等。
+
+设随机变量 X 服从参数为 $p$ 的二项分布 $b(n, p)$， $Y$ 服从参数为 $\theta$ 的二项分布 $b(m,\theta)$， $m,n$ 都假定为较大的正整数，检验如下问题
+
+$$
+H_0: P_A \geq P_B \quad vs. \quad H_1: P_A < P_B
+$$
+
+根据中心极限定理
+
+$$
+\frac{\bar{X} - \bar{Y}}{\sqrt{\frac{p(1-p)}{n} + \frac{\theta(1-\theta)}{m}}}
+$$
+
+近似服从标准正态分布 $N(0,1)$。如果用矩估计 $\bar{X}$ 和 $\bar{Y}$ 分别替代总体参数 $p$ 和 $\theta$，构造检验统计量
+
+$$
+T = \frac{\bar{X} - \bar{Y}}{\sqrt{\frac{\bar{X}(1-\bar{X})}{n} + \frac{\bar{Y}(1-\bar{Y})}{m}}}
+$$
+
+根据 Slutsky 定理，检验统计量 $T$ 近似服从标准正态分布，当 $T$ 偏大时，拒绝 $H_0$。该方法的优势在于当 $n,m$ 比较大时，二项分布比较复杂，无法建立统计表，利用标准正态分布表来给出检验所需要的临界值，简便易行！
+
+当 $p$ 和 $\theta$ 都比较小，上述方法检验效果不好，原因在于由中心极限定理对 $\bar{X}$ 和 $\bar{Y}$ 的正态分布近似效果不好，或者间接地导致 $\bar{X}-\bar{Y}$ 的方差偏小，进而 $T$ 的分辨都不好，而且当 $p,\theta$ 很接近 1 时，上述现象也会产生！
+
+下面介绍新的解决办法，办法来自两个二项总体成功概率的比较 [@Song2011]。
+
+上面的检验问题等价于
+
+$$
+H_0: \frac{P_A}{P_B} \geq 1 \quad vs. \quad H_1: \frac{P_A}{P_B} < 1
+$$
+
+引入检验统计量
+
+$$
+T^{\star} = \frac{\bar{X}}{\bar{Y}}
+$$
+
+同样由 Slutsky 定理和中心极限定理可知， $\bar{X}/\bar{Y}$ 近似服从 正态分布 $\mathcal{N}(1,\frac{1-\theta}{m\theta})$
+
+当 $(T^\star - 1)/\hat\sigma$ 偏大时接受 $H_0$，临界值可通过 $\mathcal{N}(0, \hat\sigma^2)$ 分布表计算得到， $\hat\sigma^2$ 是对 $\frac{1-\theta}{m\theta}$ 的估计，比如取 $\hat\sigma^2 = \frac{1-\bar{Y}}{m}\cdot \frac{1}{\bar{Y}}$ 或取 $\hat\sigma^2 = \frac{1-\bar{Y}}{m}\cdot \frac{1}{\bar{X}}$
+
+由于渐近方差形如 $\frac{1-\theta}{m\theta}$，因而在 $\theta$ 较小，渐近方差较大，克服了之前 $\bar{X} - \bar{Y}$的方差较小的问题
+
+$p,\theta$ 很接近 1 时，我们取检验统计量
+
+$$
+T^{\star\star} = \frac{1-\bar{Y}}{1-\bar{X}}
+$$
+
+结论和 $T^\star$ 类似，当 $T^{\star\star}$ 偏大时，拒绝 $H_0$。
+
+### 多样本检验
+
+#### 比例齐性检验
+
+对多组数据的比例检验，可以理解为比例齐性检验。
+
+#### 比例趋势检验
+
+比例趋势检验函数 `prop.trend.test()` 的原假设：四个组里面病人中吸烟的比例是相同的。备择假设：四个组的吸烟比例是有趋势的。
+
+$$
+\begin{aligned}
+& H_0: P_1 = P_2 = P_3 = P_4 \\
+& H_1: P_1 < P_2 < P_3 < P_4 ~\text{或者}~ P_1 > P_2 > P_3 > P_4
+\end{aligned}
+$$
+
+```{r}
+smokers <- c(83, 90, 129, 70)
+patients <- c(86, 93, 136, 82)
+prop.test(smokers, patients)
+prop.trend.test(smokers, patients)
+```
+
+## 泊松检验 {#sec-poisson-test}
 
 泊松分布是 1837年由法国数学家泊松 （Poisson, 1781-1840） 首次提出。
 
-`poisson.test()` 泊松分布的参数 $\lambda (>0)$ 的精确检验，适用于单样本和两样本。
+$$
+p(x) = \frac{\lambda^x\exp(-\lambda)}{x!}, x = 0, 1, \cdots .
+$$
+
+泊松分布的期望和方差都是 $\lambda$ ，一般要求 $\lambda > 0$。
+
+### 单样本
+
+`poisson.test()` 泊松分布的参数 $\lambda$ 的精确检验，适用于单样本和两样本。
 
 ```{r}
 #| eval: false
@@ -177,7 +197,141 @@ poisson.test(x,
 )
 ```
 
-### 卡方检验 {#sec-chisq-test}
+参数 `T` 数据的时间单位
+
+### 两样本
+
+## 列联表描述
+
+泰坦尼克号乘客生存死亡统计数据，Titanic 数据集
+
+```{r}
+Titanic
+```
+
+### 行列分组表格
+
+```{r}
+#| label: tbl-titanic-data
+#| tbl-cap: "泰坦尼克号乘客生存死亡统计数据"
+#| code-fold: true
+#| echo: true
+
+# 长格式转宽格式
+titanic_data <- reshape(
+  data = as.data.frame(Titanic), direction = "wide",
+  idvar = c("Class", "Sex", "Age"),
+  timevar = "Survived", v.names = "Freq", sep = "_"
+)
+
+# 制作表格
+gt::gt(titanic_data) |> 
+  gt::cols_label(
+    Freq_Yes = "存活",
+    Freq_No = "死亡",
+    Class = "船舱",
+    Sex = "性别",
+    Age = "年龄"
+  )
+```
+
+### 百分比堆积图
+
+泰坦尼克号处女航乘客数量按船舱、性别、年龄和存活情况分层， [**ggstats**](https://github.com/larmarange/ggstats/) 包绘制百分比堆积柱形图展示多维分类数据。
+
+```{r}
+#| label: fig-titanic-ggstats
+#| fig-cap: "百分比堆积柱形图展示多维分类数据"
+#| fig-showtext: true
+#| fig-width: 7
+#| fig-height: 5
+#| code-fold: true
+#| echo: true
+
+library(ggplot2)
+library(ggstats)
+ggplot(as.data.frame(Titanic)) +
+  aes(x = Class, fill = Survived, weight = Freq, by = Class) +
+  geom_bar(position = "fill") +
+  scale_y_continuous(labels = scales::label_percent()) +
+  geom_text(stat = "prop", position = position_fill(.5)) +
+  facet_grid(~Sex) +
+  labs(x = "船舱", y = "比例", fill = "存活")
+```
+
+**ggstats** 包提供的图层 `stat_prop()` 是 `stat_count()` 的变种， `as.data.frame(Titanic)` 中 Age 一列会自动聚合吗？ by = Class 按 Class 分组聚合，统计 Survived 的比例，提供 prop 计算的变量，传递给 `geom_text()` 以添加注释，position 设置将注释放在柱子的中间
+
+### 桑基图
+
+用 [**ggalluvial**](https://github.com/corybrunson/ggalluvial/) 包[@Brunson2020]绘制桑基图展示多维分类数据。
+
+```{r}
+#| label: fig-titanic-alluvial
+#| fig-cap: "桑基图展示多维分类数据"
+#| fig-showtext: true
+#| fig-width: 7
+#| fig-height: 5
+#| code-fold: true
+#| echo: true
+
+library(ggplot2)
+library(ggalluvial)
+ggplot(
+  data = as.data.frame(Titanic),
+  aes(axis1 = Class, axis2 = Sex, axis3 = Age, y = Freq)
+) +
+  scale_x_discrete(limits = c("Class", "Sex", "Age")) +
+  geom_alluvium(aes(fill = Survived)) +
+  geom_stratum() +
+  geom_text(stat = "stratum", aes(label = after_stat(stratum))) +
+  theme_classic() +
+  labs(
+    x = "分层维度", y = "人数", fill = "存活",
+    title = "泰坦尼克号处女航乘客分层情况"
+  )
+```
+
+### 马赛克图
+
+```{r}
+#| label: fig-titanic-mosaicplot
+#| fig-cap: "马赛克图展示多维分类数据"
+#| fig-showtext: true
+#| fig-width: 7
+#| fig-height: 5
+#| code-fold: true
+#| collapse: true
+#| echo: true
+
+op <- par(mar = c(2.5, 2.5, 1.5, 0.5))
+mosaicplot(~ Class + Sex + Age + Survived,
+  data = Titanic, # shade = TRUE, 
+  color = TRUE, border = "white",
+  xlab = "船舱", ylab = "性别", main = "泰坦尼克号")
+par(op)
+```
+
+[**vcd**](https://cran.r-project.org/package=vcd) 包针对分类数据做了很多专门的可视化工作，内置了很多数据集和绘图函数，在 Base R 绘图基础上，整合了许多统计分析功能，提供了一个统一的可视化框架[@Meyer2006; @Zeileis2007]，更多细节见著作《Discrete Data Analysis with R: Visualization and Modeling Techniques for Categorical and Count Data》及其附带的 R 包 [**vcdExtra**](https://github.com/friendly/vcdExtra)[@Friendly2016]。
+
+```{r}
+#| label: fig-titanic-mosaic
+#| fig-cap: "马赛克图展示多维分类数据"
+#| fig-showtext: true
+#| fig-width: 7
+#| fig-height: 6
+#| code-fold: true
+#| echo: true
+
+library(grid)
+library(vcd)
+mosaic(~ Class + Sex + Age + Survived,
+  data = Titanic, shade = TRUE, legend = TRUE
+)
+```
+
+## 列联表分析 {#sec-chisq-test}
+
+是否应该按照列联表的维度分类？还是应该从分析的目的和作用出发？比如我的目的是检验独立性。二者似乎也并不冲突。
 
 列联表中的数据服从多项分布，关于独立性检验，有如下几种常见类型：
 
@@ -191,7 +345,8 @@ poisson.test(x,
 ```{r}
 #| label: tbl-florida-ethnicity
 #| tbl-cap: "佛罗里达州的凶杀案件统计数据"
-#| echo: false
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
 
 tbl <- expand.grid(
   Death = c("Yes", "No"), # 判决结果 是否死刑
@@ -221,7 +376,7 @@ gt::gt(dat1) |>
   gt::opt_row_striping()
 ```
 
-#### 独立性
+### 相互独立性
 
 皮尔逊卡方检验（ Pearson's $\chi^2$ 检验） `chisq.test()` 常用于列联表独立性检验和方差分析模型的拟合优度检验。下面是一个 $2 \times 2$ 的列联表。
 
@@ -303,7 +458,7 @@ confint(fit_dvp, trace = FALSE)
 
 对于单元格总样本量小于 40 或 T 小于 1 时，需采用费希尔精确检验（ Fisher 's Exact 检验）。
 
-#### 边际独立性
+### 边际独立性
 
 费希尔精确检验：固定边际的情况下，检验列联表行和列之间的独立性 `fisher.test()` 。
 
@@ -335,9 +490,9 @@ fisher.test(TeaTasting, alternative = "two.sided")
 sum(dhyper(x = c(3, 4), m = 4, n = 4, k = 4))
 ```
 
-#### 对称性
+### 对称性
 
-用于计数数据的 McNemar's 卡方检验（ McNemar's $\chi^2$ 检验）：检验二维列联表行和列的对称性 `mcnemar.test()`。怎么理解对称性？看帮助实例。
+用于计数数据的 McNemar 卡方检验（ McNemar $\chi^2$ 检验）：检验二维列联表行和列的对称性 `mcnemar.test()`。怎么理解对称性？其实是配对检验。看帮助实例。
 
 ```{r}
 Performance <- matrix(c(794, 86, 150, 570),
@@ -351,7 +506,7 @@ Performance
 mcnemar.test(Performance)
 ```
 
-#### 条件独立性
+### 条件独立性
 
 用于分层分类数据的 Cochran-Mantel-Haenszel 卡方检验：两个枚举（分类）变量的条件独立性，假定不存在三个因素的交互作用。Cochran-Mantel-Haenszel 检验 `mantelhaen.test()`
 
@@ -585,117 +740,7 @@ sum(fit_ucb$weights * fit_ucb$residuals^2) / fit_ucb$df.residual
 
 ## 分析泰坦尼克号乘客生存率 {#sec-titanic}
 
-泰坦尼克号乘客生存死亡统计数据，分析存活率的影响因素。
-
-```{r}
-#| label: tbl-titanic-data
-#| tbl-cap: "泰坦尼克号乘客生存死亡统计数据"
-#| echo: false
-
-# 长格式转宽格式
-titanic_data <- reshape(
-  data = as.data.frame(Titanic), direction = "wide",
-  idvar = c("Class", "Sex", "Age"),
-  timevar = "Survived", v.names = "Freq", sep = "_"
-)
-
-# 制作表格
-gt::gt(titanic_data) |> 
-  gt::cols_label(
-    Freq_Yes = "存活",
-    Freq_No = "死亡",
-    Class = "船舱",
-    Sex = "性别",
-    Age = "年龄"
-  )
-```
-
-### 数据展示
-
-泰坦尼克号处女航乘客数量按船舱、性别、年龄和存活情况分层， [**ggstats**](https://github.com/larmarange/ggstats/) 包绘制百分比堆积柱形图展示多维分类数据。
-
-**ggstats** 包提供的图层 `stat_prop()` 是 `stat_count()` 的变种， `as.data.frame(Titanic)` 中 Age 一列会自动聚合吗？ by = Class 按 Class 分组聚合，统计 Survived 的比例，提供 prop 计算的变量，传递给 `geom_text()` 以添加注释，position 设置将注释放在柱子的中间
-
-```{r}
-#| label: fig-titanic-ggstats
-#| fig-cap: "百分比堆积柱形图展示多维分类数据"
-#| fig-showtext: true
-#| fig-width: 7
-#| fig-height: 5
-
-library(ggplot2)
-library(ggstats)
-ggplot(as.data.frame(Titanic)) +
-  aes(x = Class, fill = Survived, weight = Freq, by = Class) +
-  geom_bar(position = "fill") +
-  scale_y_continuous(labels = scales::percent) +
-  geom_text(stat = "prop", position = position_fill(.5)) +
-  facet_grid(~Sex) +
-  labs(x = "船舱", y = "比例", fill = "存活")
-```
-
-```{r}
-#| label: fig-titanic-mosaicplot
-#| fig-cap: "马赛克图展示多维分类数据"
-#| fig-showtext: true
-#| fig-width: 7
-#| fig-height: 5
-#| echo: false
-#| collapse: true
-
-op <- par(mar = c(2.5, 2.5, 1.5, 0.5))
-mosaicplot(~ Class + Sex + Age + Survived,
-  data = Titanic, # shade = TRUE, 
-  color = TRUE, border = "white",
-  xlab = "船舱", ylab = "性别", main = "泰坦尼克号")
-par(op)
-```
-
-[**vcd**](https://cran.r-project.org/package=vcd) 包针对分类数据做了很多专门的可视化工作，内置了很多数据集和绘图函数，在 Base R 绘图基础上，整合了许多统计分析功能，提供了一个统一的可视化框架[@Meyer2006; @Zeileis2007]，更多细节见著作《Discrete Data Analysis with R: Visualization and Modeling Techniques for Categorical and Count Data》及其附带的 R 包 [**vcdExtra**](https://github.com/friendly/vcdExtra)[@Friendly2016]。
-
-```{r}
-#| label: fig-titanic-mosaic
-#| fig-cap: "马赛克图展示多维分类数据"
-#| fig-showtext: true
-#| fig-width: 7
-#| fig-height: 6
-
-library(grid)
-library(vcd)
-mosaic(~ Class + Sex + Age + Survived,
-  data = Titanic, shade = TRUE, legend = TRUE
-)
-```
-
-用 [**ggalluvial**](https://github.com/corybrunson/ggalluvial/) 包[@Brunson2020]绘制桑基图展示多维分类数据。
-
-```{r}
-#| label: fig-titanic-alluvial
-#| fig-cap: "桑基图展示多维分类数据"
-#| fig-showtext: true
-#| fig-width: 7
-#| fig-height: 5
-#| code-fold: true
-#| echo: !expr knitr::is_html_output()
-
-library(ggplot2)
-library(ggalluvial)
-ggplot(
-  data = as.data.frame(Titanic),
-  aes(axis1 = Class, axis2 = Sex, axis3 = Age, y = Freq)
-) +
-  scale_x_discrete(limits = c("Class", "Sex", "Age")) +
-  geom_alluvium(aes(fill = Survived)) +
-  geom_stratum() +
-  geom_text(stat = "stratum", aes(label = after_stat(stratum))) +
-  theme_classic() +
-  labs(
-    x = "分层维度", y = "人数", fill = "存活",
-    title = "泰坦尼克号处女航乘客分层情况"
-  )
-```
-
-### 数据建模
+分析存活率的影响因素。
 
 除了从条件独立性检验的角度，下面从逻辑回归模型的角度分析这个高维列联表数据，由此，我们可以知道假设检验和广义线性模型之间的联系，针对复杂高维列联表数据进行关联分析和解释。
 
