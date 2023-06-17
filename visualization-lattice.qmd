@@ -1,6 +1,12 @@
 # lattice 入门 {#sec-basic-lattice}
 
 ```{r}
+#| echo: false
+
+source("_common.R")
+```
+
+```{r}
 #| message: false
 
 library(lattice)
@@ -85,14 +91,14 @@ scales::show_col(colours = c("#4285f4", "#34A853", "#FBBC05", "#EA4335"))
 
 ```{r}
 #| label: fig-lattice-smoother
-#| fig-width: 4
-#| fig-height: 3
+#| fig-width: 4.5
+#| fig-height: 4
 #| fig-cap: 曲线图
 #| fig-showtext: true
 
 library(splines)
 library(mgcv)
-xyplot(dist ~ speed, data = cars,
+xyplot(dist ~ speed, data = cars, scales = "free",
   panel = function(x, y, ...) {
     panel.xyplot(x, y, ...)
     panel.smoother(y ~ x, col.line = "#EA4335", 
@@ -111,8 +117,8 @@ xyplot(dist ~ speed, data = cars,
 
 ```{r}
 #| label: fig-lattice-bwplot
-#| fig-width: 4
-#| fig-height: 3
+#| fig-width: 4.5
+#| fig-height: 4
 #| fig-cap: 箱线图
 #| fig-showtext: true
 
@@ -124,7 +130,7 @@ bwplot(count ~ spray, data = InsectSprays)
 ```{r}
 #| label: fig-lattice-barchart
 #| fig-width: 6
-#| fig-height: 8
+#| fig-height: 6
 #| fig-cap: 柱形图
 #| fig-showtext: true
 
@@ -173,8 +179,8 @@ ecdfplot(~height | voice.part, data = singer)
 ```{r}
 #| label: fig-lattice-facet
 #| fig-cap: 分面图
-#| fig-width: 4
-#| fig-height: 3
+#| fig-width: 8
+#| fig-height: 6
 #| fig-showtext: true
 
 depth.ord <- rev(order(quakes$depth))
@@ -187,7 +193,7 @@ levelplot(depth ~ long + lat | Magnitude, data = quakes.ordered,
 )
 ```
 
-### 曲面图 {#sec-lattice-wireframe}
+### 透视图 {#sec-lattice-wireframe}
 
 $$
 \begin{aligned}
@@ -203,7 +209,6 @@ $$
 ```{r}
 #| label: fig-levelplot-wireframe 
 #| fig-cap: 三维透视图
-#| out-width: 65%
 #| fig-width: 4.5
 #| fig-height: 4.5
 #| fig-showtext: true
@@ -231,22 +236,21 @@ wireframe(kz(um, vm) ~ kx(um, vm) + ky(um, vm),
   zlab = list(expression(
     italic(f) ~ group("(", list(x[1], x[2]), ")")
   ), rot = 90),
-  screen = list(z = 170, x = -60),
   alpha = 0.75, panel.aspect = 0.6, aspect = c(1, 0.4),
   scales = list(arrows = FALSE, col = "black"),
+  # 减少三维图形的边空
   lattice.options = list(
     layout.widths = list(
-      left.padding = list(x = -.6, units = "inches"),
+      left.padding = list(x = -0.5, units = "inches"),
       right.padding = list(x = -1.0, units = "inches")
     ),
     layout.heights = list(
-      bottom.padding = list(x = -.8, units = "inches"),
-      top.padding = list(x = -1.0, units = "inches")
+      bottom.padding = list(x = -1.5, units = "inches"),
+      top.padding = list(x = -1.5, units = "inches")
     )
   ),
-  par.settings = list(
-    axis.line = list(col = "transparent")
-  )
+  par.settings = list(axis.line = list(col = "transparent")),
+  screen = list(z = 30, x = -65, y = 0)
 )
 ```
 
