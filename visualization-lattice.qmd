@@ -6,6 +6,14 @@
 source("_common.R")
 ```
 
+> If you imagine that this pen is Trellis, then Lattice is not this pen.
+>
+> --- Paul Murrell [^visualization-lattice-1]
+
+[^visualization-lattice-1]: Paul 在 DSC 2001 大会上的幻灯片 见<https://www.stat.auckland.ac.nz/~paul/Talks/dsc2001.pdf>
+
+本章主要介绍 **lattice** 包 [@Deepayan2008] 及其相关的 **latticeExtra** 包。
+
 ```{r}
 #| message: false
 
@@ -28,10 +36,51 @@ library(RColorBrewer)
 #| fig-showtext: true
 #| fig-cap: 分组散点图
 
-xyplot(Sepal.Length ~ Petal.Length,
+xyplot(x = Sepal.Length ~ Petal.Length,
   groups = Species, scales = "free", data = iris,
   xlab = "萼片长度", ylab = "花瓣长度"
 )
+```
+
+-   参数 `x` 表示 R 语言语法中的公式表达式，示例中为 `Sepal.Length ~ Petal.Length` 。
+
+-   参数 `groups` 表示分组变量
+
+-   参数 `scales` 表示坐标轴刻度
+
+-   参数 `data` 表示绘图数据
+
+-   参数 `xlab` 和参数 `ylab` 分别表示横纵坐标轴标签。
+
+还有许多其它参数
+
+`xyplot()` 还是一个泛型函数
+
+```{r}
+methods(xyplot)
+```
+
+1949-1960 年每月月粒度的数据
+
+```{r}
+xyplot(AirPassengers, scales = "free", 
+       xlab = "年份", ylab = "航空乘客数量")
+```
+
+函数 `stl()` 分解一元时间序列数据
+
+```{r}
+air_stl <- stl(x = AirPassengers, s.window = 12)
+xyplot(air_stl, scales = "free", xlab = "年份")
+```
+
+原始数据、季节性（周期）、趋势性和残余的部分。
+
+```{r}
+ar(AirPassengers)
+arima(AirPassengers)
+acf(AirPassengers)
+pacf(AirPassengers)
 ```
 
 ## 图形参数 {#sec-lattice-par}
@@ -45,10 +94,10 @@ xyplot(Sepal.Length ~ Petal.Length,
 #| fig-showtext: true
 
 show.settings(x = trellis.par.set(list(
-  axis.text = list(fontfamily = "sans"), # 轴标签字体
+  axis.text = list(fontfamily = "sans"),      # 轴标签字体
   add.text = list(fontfamily = "mono"),
   par.main.text = list(fontfamily = "serif"), # 主标题字体
-  par.sub.text = list(fontfamily = "serif") # 副标题字体
+  par.sub.text = list(fontfamily = "serif")   # 副标题字体
 )))
 ```
 
@@ -390,3 +439,27 @@ mapplot(rownames(votes_repub) ~ `1964` + `1968`,
 ```
 
 图中以由红到蓝的颜色变化表示由低到高的得票率，1964 年共和党在东南一隅得票率较高，在其它地方得票率普遍较低，形成一边倒的情况，最终由民主党的林登·约翰逊当选美国第36任总统。1968 年共和党在东南部得票率最低，与 1964 年相比，整个反过来了，最终由共和党的理查德·尼克松当选美国第37任总统。
+
+## 总结 {#sec-basic-lattice-summary}
+
+现在回过头来看，无论是图形样式还是绘图语法， **lattice** 可以看作是介于 Base R 和 **ggplot2** 之间的一种绘图风格。举例来说，下面比较 Base R 和 **lattice** 的图形样式。
+
+```{r}
+#| label: fig-lattice-vs-base
+#| fig-width: 4
+#| fig-height: 4
+#| fig-showtext: true
+#| fig-cap: 分组散点图
+#| layout-ncol: 2
+#| par: true
+#| fig-subcap: 
+#| - Base R 图形
+#| - lattice 图形
+
+plot(Sepal.Length ~ Petal.Length, col = Species, data = iris,
+     xlab = "萼片长度", ylab = "花瓣长度")
+xyplot(x = Sepal.Length ~ Petal.Length,
+  groups = Species, scales = "free", data = iris,
+  xlab = "萼片长度", ylab = "花瓣长度"
+)
+```
