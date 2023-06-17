@@ -15,6 +15,7 @@ ARG GITHUB_PAT=abc123
 RUN dnf -y upgrade \
   && echo "install_weak_deps=False" >> /etc/dnf/dnf.conf \
   && dnf -y install dnf-plugins-core \
+  && dnf -y install --setopt=tsflags= R-core \
   && dnf -y install glibc-langpack-en \
    R-devel \
    R-littler \
@@ -67,7 +68,7 @@ RUN ln -s /usr/lib64/R/library/littler/examples/install.r /usr/bin/install.r \
  && ln -s /usr/lib64/R/library/littler/examples/installGithub.r /usr/bin/installGithub.r \
  && ln -s /usr/lib64/R/library/littler/examples/testInstalled.r /usr/bin/testInstalled.r \
  && mkdir -p /usr/local/lib/R/site-library \
- # Set group authority
+ # Setup group authority
  && chown -R docker:staff /usr/local/lib/R/site-library \
  && echo "options(repos = c(CRAN = 'https://cran.r-project.org/'))" | tee -a /usr/lib64/R/etc/Rprofile.site \
  && chmod a+r /usr/lib64/R/etc/Rprofile.site \
@@ -82,9 +83,17 @@ RUN ln -s /usr/lib64/R/library/littler/examples/install.r /usr/bin/install.r \
  && cp /usr/lib/systemd/system/rstudio-server.service /etc/init.d/ \
  && chmod +x /etc/init.d/rstudio-server.service \
  && systemctl enable rstudio-server \
- && dnf clean all
+ && dnf clean all \
+ # Setup Quarto and Pandoc
+ && RUN curl -fLo quarto.tar.gz https://github.com/quarto-dev/quarto-cli/releases/download/v${QUARTO_VERSION}/quarto-${QUARTO_VERSION}-linux-amd64.tar.gz \
+ && mkdir -p /opt/quarto/ \
+ && tar -xzf quarto.tar.gz -C /opt/quarto/ \
+ && ln -s /opt/quarto/quarto-${QUARTO_VERSION}/bin/quarto /usr/bin/quarto \
+ && mv -f /usr/bin/pandoc /usr/bin/pandoc.bak \
+ && ln -s /opt/quarto/quarto-${QUARTO_VERSION}/bin/tools/pandoc /usr/bin/pandoc \
+ && rm -f quarto.tar.gz
 
-# Set Extra R Packages
+# Install Extra R Packages
 COPY DESCRIPTION DESCRIPTION
 COPY desc_pkgs.txt desc_pkgs.txt
 RUN dnf -y copr enable iucar/cran \
@@ -97,16 +106,7 @@ RUN dnf -y copr enable iucar/cran \
   && Rscript -e "remotes::install_deps('.', dependencies = TRUE)" \
   && rm -f DESCRIPTION desc_pkgs.txt
 
-# Set Quarto and Pandoc
-RUN curl -fLo quarto.tar.gz https://github.com/quarto-dev/quarto-cli/releases/download/v${QUARTO_VERSION}/quarto-${QUARTO_VERSION}-linux-amd64.tar.gz \
- && mkdir -p /opt/quarto/ \
- && tar -xzf quarto.tar.gz -C /opt/quarto/ \
- && ln -s /opt/quarto/quarto-${QUARTO_VERSION}/bin/quarto /usr/bin/quarto \
- && mv -f /usr/bin/pandoc /usr/bin/pandoc.bak \
- && ln -s /opt/quarto/quarto-${QUARTO_VERSION}/bin/tools/pandoc /usr/bin/pandoc \
- && rm -f quarto.tar.gz
-
-# Set locale and timezone
+# Setup locale and timezone
 ENV LANG=en_US.UTF-8 \
     LANGUAGE=en_US.UTF-8 \
     LC_ALL=en_US.UTF-8 \
