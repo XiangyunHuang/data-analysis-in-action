@@ -1,0 +1,318 @@
+# lattice 入门 {#sec-basic-lattice}
+
+```{r}
+#| message: false
+
+library(lattice)
+library(latticeExtra)
+library(splines)
+library(nlme)
+library(mgcv)
+library(maps)
+library(sf)
+```
+
+## 图形参数 {#sec-lattice-par}
+
+```{r}
+#| label: fig-lattice-theme
+#| fig-cap: lattice 图形参数设置
+#| echo: false
+#| fig-width: 6.5
+#| fig-height: 6.5
+#| fig-showtext: true
+
+show.settings(x = trellis.par.set(list(
+  axis.text = list(fontfamily = "sans"), # 轴标签字体
+  add.text = list(fontfamily = "mono"),
+  par.main.text = list(fontfamily = "serif"), # 主标题字体
+  par.sub.text = list(fontfamily = "serif") # 副标题字体
+)))
+```
+
+## 曲线图 {#sec-lattice-smoother}
+
+-   **splines** 自然立方样条 `ns()`
+-   **mgcv** 广义可加模型 `s()`
+
+```{r}
+#| label: fig-lattice-bwplot
+#| fig-width: 4
+#| fig-height: 3
+#| fig-cap: 曲线图
+#| fig-showtext: true
+
+# c("#4285f4", "#34A853", "#FBBC05", "#EA4335")
+library(splines)
+library(mgcv)
+xyplot(dist ~ speed, data = cars,
+  panel = function(x, y, ...) {
+    panel.xyplot(x, y, ...)
+    panel.smoother(y ~ x, col.line = "#EA4335", 
+                   method = "lm", ...)
+    panel.smoother(y ~ x, col.line = "#4285f4", 
+                   method = "loess", span = 0.9, ...)
+    panel.smoother(y ~ ns(x, 5), col.line = "#34A853", 
+                   method = "lm", ...)
+    panel.smoother(y ~ s(x), col.line = "#FBBC05", 
+                   method = "gam", ...)
+  }
+)
+```
+
+## 箱线图 {#sec-lattice-boxplot}
+
+```{r}
+#| label: fig-lattice-bwplot
+#| fig-width: 4
+#| fig-height: 3
+#| fig-cap: 箱线图
+#| fig-showtext: true
+
+bwplot(count ~ spray, data = InsectSprays)
+```
+
+## 柱形图 {#sec-lattice-barchart}
+
+```{r}
+#| label: fig-lattice-barchart
+#| fig-width: 6
+#| fig-height: 8
+#| fig-cap: 柱形图
+#| fig-showtext: true
+
+data(Insurance, package = "MASS")
+barchart(Claims / Holders ~ Age | Group,
+  groups = District, data = Insurance,
+  main = "Claims frequency",
+  auto.key = list(
+    space = "top", columns = 4,
+    title = "District", cex.title = 1
+  )
+)
+```
+
+## 点线图 {#sec-lattice-segplot}
+
+添加背景网格线作为参考线，置信区间
+
+```{r}
+#| label: fig-lattice-segplot
+#| fig-width: 6
+#| fig-height: 8
+#| fig-cap: 点线图
+#| fig-showtext: true
+
+segplot(reorder(county, rate.male) ~ LCL95.male + UCL95.male,
+  data = subset(USCancerRates, state == "New York"),
+  draw.bands = FALSE, centers = rate.male
+)
+```
+
+## 阶梯图 {#sec-lattice-step}
+
+阶梯图表示经验累积分布
+
+```{r}
+#| label: fig-lattice-ecdfplot
+#| fig-showtext: true
+#| fig-cap: 阶梯图
+
+ecdfplot(~height | voice.part, data = singer)
+```
+
+## 分面图 {#sec-lattice-facet}
+
+```{r}
+#| label: fig-lattice-facet
+#| fig-cap: 分面图
+#| fig-width: 4
+#| fig-height: 3
+#| fig-showtext: true
+
+depth.ord <- rev(order(quakes$depth))
+quakes$Magnitude <- equal.count(quakes$mag, 4)
+quakes.ordered <- quakes[depth.ord, ]
+
+levelplot(depth ~ long + lat | Magnitude, data = quakes.ordered,
+  panel = panel.levelplot.points, type = c("p", "g"),
+  aspect = "iso", prepanel = prepanel.default.xyplot
+)
+```
+
+## 曲面图 {#sec-lattice-wireframe}
+
+$$
+\begin{aligned}
+x(u,v) &= \cos(u)\big(r + \cos(u / 2)\big) \\
+y(u,v) &= \sin(u)\big(r + \cos(u / 2)\sin(tv) - \sin(u / 2)\sin(2tv)\big)\sin(tv) -
+    \sin(u / 2)\sin(2tv) \\
+z(u,v) &= \sin(u / 2) \sin(tv) + \cos(u / 2) \sin(tv)
+\end{aligned}
+$$
+
+其中，$u$ 和 $v$ 是参数，$\frac{u}{2\pi} \in [0.3,1.25], \frac{v}{2\pi} \in [0,1]$，$r$ 和 $t$ 是常量，不妨设 $r = 2$ 和 $t=1$ 。
+
+```{r}
+#| label: fig-levelplot-wireframe 
+#| fig-cap: 三维透视图
+#| out-width: 65%
+#| fig-width: 4.5
+#| fig-height: 4.5
+#| fig-showtext: true
+
+# lattice 书 6.3.1 节 参数
+kx <- function(u, v) cos(u) * (r + cos(u / 2))
+ky <- function(u, v) {
+  sin(u) * (r + cos(u / 2) * sin(t * v) -
+    sin(u / 2) * sin(2 * t * v)) * sin(t * v) -
+    sin(u / 2) * sin(2 * t * v)
+}
+kz <- function(u, v) sin(u / 2) * sin(t * v) + cos(u / 2) * sin(t * v)
+n <- 50
+u <- seq(0.3, 1.25, length = n) * 2 * pi
+v <- seq(0, 1, length = n) * 2 * pi
+um <- matrix(u, length(u), length(u))
+vm <- matrix(v, length(v), length(v), byrow = TRUE)
+r <- 2
+t <- 1
+
+wireframe(kz(um, vm) ~ kx(um, vm) + ky(um, vm),
+  shade = TRUE, drape = FALSE, 
+  xlab = expression(x[1]),
+  ylab = expression(x[2]),
+  zlab = list(expression(
+    italic(f) ~ group("(", list(x[1], x[2]), ")")
+  ), rot = 90),
+  screen = list(z = 170, x = -60),
+  alpha = 0.75, panel.aspect = 0.6, aspect = c(1, 0.4),
+  scales = list(arrows = FALSE, col = "black"),
+  lattice.options = list(
+    layout.widths = list(
+      left.padding = list(x = -.6, units = "inches"),
+      right.padding = list(x = -1.0, units = "inches")
+    ),
+    layout.heights = list(
+      bottom.padding = list(x = -.8, units = "inches"),
+      top.padding = list(x = -1.0, units = "inches")
+    )
+  ),
+  par.settings = list(
+    axis.line = list(col = "transparent")
+  )
+)
+```
+
+## 轮廓图 {#sec-lattice-contour}
+
+```{r}
+#| label: fig-levelplot-volcano 
+#| fig-cap: 奥克兰火山等值地形图
+#| out-width: 65%
+#| fig-width: 5
+#| fig-height: 3.5
+#| fig-showtext: true
+
+levelplot(volcano,
+  col.regions = hcl.colors, # gray.colors,
+  # 去掉图形上、右边多余的刻度线
+  scales = list(
+    x = list(alternating = 1, tck = c(1, 0)),
+    y = list(alternating = 1, tck = c(1, 0))
+  ),
+  par.settings = list(
+    # x/y 轴标签字体，刻度标签字体
+    par.xlab.text = list(fontfamily = "Noto Serif CJK SC"),
+    par.ylab.text = list(fontfamily = "Noto Serif CJK SC"),
+    axis.text = list(fontfamily = "sans")
+  ),
+  useRaster = TRUE,
+  xlab = "南北方向", ylab = "东西方向"
+)
+```
+
+`panel.2dsmoother()` 面板函数来自 **latticeExtra** 包
+
+```{r}
+#| label: fig-levelplot-topo
+#| fig-width: 4.5
+#| fig-height: 4
+#| fig-showtext: true
+#| fig-cap: 轮廓图
+#| message: false
+
+library(mgcv)
+data(topo, package = "MASS")
+levelplot(z ~ x * y, data = topo,
+  panel = panel.2dsmoother, scales = "free",
+  form = z ~ s(x, y), method = "gam",
+  contour = TRUE
+)
+```
+
+## 聚类图 {#sec-lattice-ellipse}
+
+```{r}
+#| label: fig-lattice-ellipse
+#| fig-width: 4
+#| fig-height: 4
+#| fig-showtext: true
+#| fig-cap: 分组
+
+xyplot(Sepal.Length ~ Petal.Length,
+  groups = Species, data = iris, scales = "free",
+  par.settings = list(
+    superpose.symbol = list(pch = 16),
+    superpose.line = list(lwd = 2, lty = 3)
+  ),
+  panel = function(x, y, ...) {
+    panel.xyplot(x, y, ...)
+    panel.ellipse(x, y, ...)
+  },
+  auto.key = list(x = .1, y = .8, corner = c(0, 0))
+)
+```
+
+## 面量图 {#sec-lattice-choropleth}
+
+```{r}
+#| message: false
+
+library(sf)
+us_state_sf <- readRDS("data/us-state-map-2010.rds")
+# sf 转 sp
+us_state_sp <- as(us_state_sf, "Spatial")
+library(maps)
+# sp 转 map 
+us_state_map <- SpatialPolygons2map(us_state_sp, namefield = "NAME")
+# 准备观测数据
+data(votes.repub)
+# 转为 data.frame 类型
+votes_repub <- as.data.frame(votes.repub)
+```
+
+地区分布图
+
+```{r}
+#| label: fig-lattice-choropleth
+#| fig-showtext: true
+#| fig-width: 5
+#| fig-cap: 地区分布图
+
+library(latticeExtra)
+mapplot(rownames(votes_repub) ~ `1972` + `1976`,
+  data = votes_repub, 
+  # 去掉边界线
+  border = NA,
+  # 地图
+  map = us_state_map,
+  # 调色板
+  colramp = viridisLite::plasma,
+  # 多图布局 2 行 1 列
+  layout = c(1, 2),
+  # 去掉刻度
+  scales = list(draw = F),
+  # 去掉横纵坐标轴标签
+  xlab = "", ylab = ""
+)
+```
