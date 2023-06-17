@@ -140,26 +140,62 @@ xyplot(Sepal.Length ~ Petal.Length,
 scales::show_col(colours = c("#4285f4", "#34A853", "#FBBC05", "#EA4335"))
 ```
 
+@fig-lattice-smoother 中用不同的回归模型拟合数据中的趋势。1920s 汽车行驶距离和速度的关系图。
+
 ```{r}
 #| label: fig-lattice-smoother
 #| fig-width: 4.5
 #| fig-height: 4
-#| fig-cap: 曲线图
+#| layout-ncol: 2
+#| layout-nrow: 2
+#| fig-cap: 回归拟合曲线图
+#| fig-subcap: 
+#| - 线性回归
+#| - 局部多项式回归
+#| - 自然样条回归
+#| - 广义可加回归
 #| fig-showtext: true
 
 library(splines)
 library(mgcv)
 xyplot(dist ~ speed, data = cars, scales = "free",
+  xlab = "速度", ylab = "距离",
   panel = function(x, y, ...) {
     panel.xyplot(x, y, ...)
-    panel.smoother(y ~ x, col.line = "#EA4335", 
-                   method = "lm", ...)
-    panel.smoother(y ~ x, col.line = "#4285f4", 
-                   method = "loess", span = 0.9, ...)
-    panel.smoother(y ~ ns(x, 5), col.line = "#34A853", 
-                   method = "lm", ...)
-    panel.smoother(y ~ s(x), col.line = "#FBBC05", 
-                   method = "gam", ...)
+    panel.smoother(y ~ x,
+      col.line = "#EA4335",
+      method = "lm", ...
+    )
+  }
+)
+xyplot(dist ~ speed, data = cars, scales = "free",
+  xlab = "速度", ylab = "距离",
+  panel = function(x, y, ...) {
+    panel.xyplot(x, y, ...)
+    panel.smoother(y ~ x,
+      col.line = "#4285f4",
+      method = "loess", span = 0.9, ...
+    )
+  }
+)
+xyplot(dist ~ speed, data = cars, scales = "free",
+  xlab = "速度", ylab = "距离",
+  panel = function(x, y, ...) {
+    panel.xyplot(x, y, ...)
+    panel.smoother(y ~ ns(x, 5),
+      col.line = "#34A853",
+      method = "lm", ...
+    )
+  }
+)
+xyplot(dist ~ speed, data = cars, scales = "free",
+  xlab = "速度", ylab = "距离",
+  panel = function(x, y, ...) {
+    panel.xyplot(x, y, ...)
+    panel.smoother(y ~ s(x),
+      col.line = "#FBBC05",
+      method = "gam", ...
+    )
   }
 )
 ```
