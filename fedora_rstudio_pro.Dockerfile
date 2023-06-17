@@ -14,8 +14,10 @@ ARG GITHUB_PAT=abc123
 # System dependencies required for R packages
 RUN dnf -y upgrade \
   && echo "install_weak_deps=False" >> /etc/dnf/dnf.conf \
+  && sed -i 's/tsflags=nodocs/tsflags=/g' /etc/dnf/dnf.conf \
   && dnf -y install dnf-plugins-core \
-  && dnf -y install --setopt=tsflags= R-core \
+  && dnf -y install R-core \
+  && sed -i 's/tsflags=/tsflags=nodocs/g' /etc/dnf/dnf.conf \
   && dnf -y install glibc-langpack-en \
    R-devel \
    R-littler \
@@ -85,7 +87,7 @@ RUN ln -s /usr/lib64/R/library/littler/examples/install.r /usr/bin/install.r \
  && systemctl enable rstudio-server \
  && dnf clean all \
  # Setup Quarto and Pandoc
- && RUN curl -fLo quarto.tar.gz https://github.com/quarto-dev/quarto-cli/releases/download/v${QUARTO_VERSION}/quarto-${QUARTO_VERSION}-linux-amd64.tar.gz \
+ && curl -fLo quarto.tar.gz https://github.com/quarto-dev/quarto-cli/releases/download/v${QUARTO_VERSION}/quarto-${QUARTO_VERSION}-linux-amd64.tar.gz \
  && mkdir -p /opt/quarto/ \
  && tar -xzf quarto.tar.gz -C /opt/quarto/ \
  && ln -s /opt/quarto/quarto-${QUARTO_VERSION}/bin/quarto /usr/bin/quarto \
