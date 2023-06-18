@@ -36,8 +36,10 @@ library(RColorBrewer)
 #| fig-showtext: true
 #| fig-cap: 分组散点图
 
-xyplot(x = Sepal.Length ~ Petal.Length, groups = Species, scales = "free", 
-       data = iris, xlab = "萼片长度", ylab = "花瓣长度"
+library(lattice)
+xyplot(
+  x = Sepal.Length ~ Petal.Length, groups = Species, scales = "free",
+  data = iris, xlab = "萼片长度", ylab = "花瓣长度"
 )
 ```
 
@@ -60,10 +62,10 @@ xyplot(x = Sepal.Length ~ Petal.Length, groups = Species, scales = "free",
 #| fig-showtext: true
 
 show.settings(x = trellis.par.set(list(
-  axis.text = list(fontfamily = "sans"),      # 轴标签字体
+  axis.text = list(fontfamily = "sans"), # 轴标签字体
   add.text = list(fontfamily = "mono"),
   par.main.text = list(fontfamily = "serif"), # 主标题字体
-  par.sub.text = list(fontfamily = "serif")   # 副标题字体
+  par.sub.text = list(fontfamily = "serif") # 副标题字体
 )))
 ```
 
@@ -74,7 +76,8 @@ show.settings(x = trellis.par.set(list(
 #| fig-showtext: true
 #| fig-cap: 分组散点图
 
-xyplot(Sepal.Length ~ Petal.Length, groups = Species, data = iris,
+xyplot(Sepal.Length ~ Petal.Length,
+  groups = Species, data = iris,
   scales = "free", xlab = "萼片长度", ylab = "花瓣长度",
   par.settings = list(
     superpose.symbol = list(pch = 16),
@@ -105,7 +108,7 @@ xyplot(Sepal.Length ~ Petal.Length, groups = Species, data = iris,
 scales::show_col(colours = c("#4285f4", "#34A853", "#FBBC05", "#EA4335"))
 ```
 
-@fig-lattice-smoother 中用不同的回归模型拟合数据中的趋势。1920s 汽车行驶距离和速度的关系图。
+@fig-lattice-smoother 中用不同的回归模型拟合数据中的趋势。1920s 汽车行驶距离和速度的关系图。函数 `panel.smoother()` 来自 **latticeExtra** 包
 
 ```{r}
 #| label: fig-lattice-smoother
@@ -114,7 +117,7 @@ scales::show_col(colours = c("#4285f4", "#34A853", "#FBBC05", "#EA4335"))
 #| layout-ncol: 2
 #| layout-nrow: 2
 #| fig-cap: 回归拟合曲线图
-#| fig-subcap: 
+#| fig-subcap:
 #| - 线性回归
 #| - 局部多项式回归
 #| - 自然样条回归
@@ -123,7 +126,9 @@ scales::show_col(colours = c("#4285f4", "#34A853", "#FBBC05", "#EA4335"))
 
 library(splines)
 library(mgcv)
-xyplot(dist ~ speed, data = cars, scales = "free", xlab = "速度", ylab = "距离",
+library(latticeExtra)
+xyplot(dist ~ speed,
+  data = cars, scales = "free", xlab = "速度", ylab = "距离",
   panel = function(x, y, ...) {
     panel.xyplot(x, y, ...)
     panel.smoother(y ~ x,
@@ -131,7 +136,8 @@ xyplot(dist ~ speed, data = cars, scales = "free", xlab = "速度", ylab = "距�
     )
   }
 )
-xyplot(dist ~ speed, data = cars, scales = "free", xlab = "速度", ylab = "距离",
+xyplot(dist ~ speed,
+  data = cars, scales = "free", xlab = "速度", ylab = "距离",
   panel = function(x, y, ...) {
     panel.xyplot(x, y, ...)
     panel.smoother(y ~ x,
@@ -139,7 +145,8 @@ xyplot(dist ~ speed, data = cars, scales = "free", xlab = "速度", ylab = "距�
     )
   }
 )
-xyplot(dist ~ speed, data = cars, scales = "free", xlab = "速度", ylab = "距离",
+xyplot(dist ~ speed,
+  data = cars, scales = "free", xlab = "速度", ylab = "距离",
   panel = function(x, y, ...) {
     panel.xyplot(x, y, ...)
     panel.smoother(y ~ ns(x, 5),
@@ -147,7 +154,8 @@ xyplot(dist ~ speed, data = cars, scales = "free", xlab = "速度", ylab = "距�
     )
   }
 )
-xyplot(dist ~ speed, data = cars, scales = "free", xlab = "速度", ylab = "距离",
+xyplot(dist ~ speed,
+  data = cars, scales = "free", xlab = "速度", ylab = "距离",
   panel = function(x, y, ...) {
     panel.xyplot(x, y, ...)
     panel.smoother(y ~ s(x),
@@ -166,8 +174,10 @@ xyplot(dist ~ speed, data = cars, scales = "free", xlab = "速度", ylab = "距�
 #| fig-cap: 箱线图
 #| fig-showtext: true
 
-bwplot(Petal.Length ~ Species, data = iris, scales = "free",
-       xlab = "鸢尾花种类", ylab = "花瓣长度")
+bwplot(Petal.Length ~ Species,
+  data = iris, scales = "free",
+  xlab = "鸢尾花种类", ylab = "花瓣长度"
+)
 ```
 
 ### 柱形图 {#sec-lattice-barchart}
@@ -189,7 +199,7 @@ str(Insurance)
 #| fig-showtext: true
 
 barchart(
-  Claims / Holders ~ Age | Group, groups = District, 
+  Claims / Holders ~ Age | Group, groups = District,
   data = Insurance, xlab = "年龄段", ylab = "理赔频度",
   auto.key = list(space = "top", columns = 4, title = "地区", cex.title = 1)
 )
@@ -211,7 +221,7 @@ barchart(
 segplot(reorder(county, rate.male) ~ LCL95.male + UCL95.male,
   data = subset(USCancerRates, state == "New Jersey"),
   draw.bands = FALSE, centers = rate.male,
-  scales = list(x = list(alternating = 1, tck = c(1, 0))), 
+  scales = list(x = list(alternating = 1, tck = c(1, 0))),
   xlab = "癌症死亡率", ylab = "郡县"
 )
 ```
@@ -227,7 +237,7 @@ segplot(reorder(county, rate.male) ~ LCL95.male + UCL95.male,
 #| fig-width: 6
 #| fig-height: 4
 
-ecdfplot(~Petal.Length | Species, data = iris, scales = "free", xlab = "花瓣长度")
+ecdfplot(~ Petal.Length | Species, data = iris, scales = "free", xlab = "花瓣长度")
 ```
 
 ### 分面图 {#sec-lattice-facet}
@@ -244,9 +254,10 @@ quakes$Magnitude <- equal.count(quakes$mag, 4)
 quakes.ordered <- quakes[depth.ord, ]
 
 levelplot(depth ~ long + lat | Magnitude,
-  data = quakes.ordered, scales = "free", 
-  panel = panel.levelplot.points, type = c("p", "g"),
-  layout = c(2, 2), prepanel = prepanel.default.xyplot
+  data = quakes.ordered, scales = "free",
+  panel = panel.levelplot.points, 
+  prepanel = prepanel.default.xyplot, 
+  type = c("p", "g"), layout = c(2, 2)
 )
 ```
 
@@ -269,7 +280,7 @@ $$
 其中，$u$ 和 $v$ 是参数，$\frac{u}{2\pi} \in [0.3,1.25], \frac{v}{2\pi} \in [0,1]$，$r$ 和 $t$ 是常量，不妨设 $r = 2$ 和 $t=1$ 。
 
 ```{r}
-#| label: fig-levelplot-wireframe 
+#| label: fig-levelplot-wireframe
 #| fig-cap: 三维透视图
 #| fig-width: 4.5
 #| fig-height: 4.5
@@ -292,7 +303,7 @@ r <- 2
 t <- 1
 
 wireframe(kz(um, vm) ~ kx(um, vm) + ky(um, vm),
-  shade = TRUE, drape = FALSE, 
+  shade = TRUE, drape = FALSE,
   xlab = expression(x[1]), ylab = expression(x[2]),
   zlab = list(expression(
     italic(f) ~ group("(", list(x[1], x[2]), ")")
@@ -319,13 +330,14 @@ wireframe(kz(um, vm) ~ kx(um, vm) + ky(um, vm),
 奥克兰火山地形图
 
 ```{r}
-#| label: fig-levelplot-volcano 
+#| label: fig-levelplot-volcano
 #| fig-cap: 地形轮廓图
 #| fig-width: 6
 #| fig-height: 4
 #| fig-showtext: true
 
-levelplot(volcano, col.regions = hcl.colors, useRaster = TRUE,
+levelplot(volcano,
+  col.regions = hcl.colors, useRaster = TRUE,
   # 去掉图形上、右边多余的刻度线
   scales = list(
     x = list(alternating = 1, tck = c(1, 0)),
@@ -343,7 +355,7 @@ levelplot(volcano, col.regions = hcl.colors, useRaster = TRUE,
 
 参数 `col.regions` 需要传递一个函数，示例中函数 `hcl.colors()` 默认使用 viridis 调色板，其它常见的还有函数 `gray.colors()` 、`terrain.colors()` 和 `topo.colors()` 等，还可以用函数 `colorRampPalette()` 构造调色板函数。
 
-**latticeExtra** 包的函数 `panel.2dsmoother()` 二维 `tp` thin plate regression spline 回归样条
+函数 `panel.2dsmoother()` 来自 **latticeExtra** 包，数据的二维分布，默认采用 `tp` thin plate regression spline 回归样条方法平滑。
 
 ```{r}
 #| label: fig-levelplot-topo
@@ -355,7 +367,8 @@ levelplot(volcano, col.regions = hcl.colors, useRaster = TRUE,
 
 library(mgcv)
 data(topo, package = "MASS")
-levelplot(z ~ x * y, data = topo, scales = "free",
+levelplot(z ~ x * y,
+  data = topo, scales = "free",
   panel = panel.2dsmoother, contour = TRUE,
   form = z ~ s(x, y), method = "gam",
   xlab = "水平方向", ylab = "垂直方向"
@@ -363,6 +376,8 @@ levelplot(z ~ x * y, data = topo, scales = "free",
 ```
 
 ### 聚类图 {#sec-lattice-ellipse}
+
+函数 `panel.ellipse()` 来自 **latticeExtra** 包
 
 ```{r}
 #| label: fig-lattice-ellipse
@@ -388,7 +403,18 @@ xyplot(Sepal.Length ~ Petal.Length,
 
 ### 面量图 {#sec-lattice-choropleth}
 
-面量图，也叫地区分布图。
+最后一个想要介绍的是地区分布图，也叫面量图、围栏图，描述空间栅格数据的分布，常见的一种情况是展示各个地区的人口、社会、经济指标。下面通过 **tigris** 包可以下载美国人口调查局发布的数据，本想下载与观测数据年份最近的地图数据，但是 2009 年及以前的地图数据缺失，因此，笔者下载了 2010 年的地图数据，它与得票率数据最近。
+
+```{r}
+#| eval: false
+#| echo: true
+
+library(tigris)
+us_state_map <- states(cb = TRUE, year = 2010, resolution = "20m", class = "sf")
+us_state_map <- shift_geometry(us_state_map, geoid_column = "STATE", position = "below")
+```
+
+第一行代码用 **tigris** 包的函数 `states()` 下载 2010 年比例尺为 1:20000000 的多边形州边界矢量地图数据，返回一个 simple feature 类型的空间数据类型。第二行代码用该包的另一个函数 `shift_geometry()` 移动离岸的州和领地，将它们移动到主体部分的下方。
 
 ```{r}
 #| message: false
@@ -398,7 +424,7 @@ us_state_sf <- readRDS("data/us-state-map-2010.rds")
 # sf 转 sp
 us_state_sp <- as(us_state_sf, "Spatial")
 library(maps)
-# sp 转 map 
+# sp 转 map
 us_state_map <- SpatialPolygons2map(us_state_sp, namefield = "NAME")
 # 准备观测数据
 data(votes.repub)
@@ -406,36 +432,25 @@ data(votes.repub)
 votes_repub <- as.data.frame(votes.repub)
 ```
 
-数据集 `votes.repub` 记录 1856-1976 年美国历届大选中共和党在各州的得票率。
+数据集 `votes.repub` 记录 1856-1976 年美国历届大选中共和党在各州的得票率。图中以由红到蓝的颜色变化表示由低到高的得票率，1964 年共和党在东南一隅得票率较高，在其它地方得票率普遍较低，形成一边倒的情况，最终由民主党的林登·约翰逊当选美国第36任总统。1968 年共和党在东南部得票率最低，与 1964 年相比，整个反过来了，最终由共和党的理查德·尼克松当选美国第37任总统。
 
 ```{r}
 #| label: fig-lattice-choropleth
 #| fig-showtext: true
 #| fig-width: 5
 #| fig-height: 5
-#| fig-cap: 美国共和党在各州的得票率
+#| fig-cap: 共和党在各州的得票率
 
-library(latticeExtra)
 library(RColorBrewer)
 rdbu_pal <- colorRampPalette(colors = brewer.pal(n = 11, name = "RdBu"))
 mapplot(rownames(votes_repub) ~ `1964` + `1968`,
-  data = votes_repub, 
-  # 去掉边界线
-  border = NA,
-  # 地图
-  map = us_state_map,
-  # 调色板
-  colramp = rdbu_pal,
-  # 多图布局 2 行 1 列
-  layout = c(1, 2),
-  # 去掉刻度
-  scales = list(draw = FALSE),
-  # 去掉横纵坐标轴标签
-  xlab = "", ylab = ""
+  data = votes_repub,
+  border = NA, map = us_state_map, colramp = rdbu_pal, layout = c(1, 2),
+  scales = list(draw = FALSE), xlab = "", ylab = ""
 )
 ```
 
-图中以由红到蓝的颜色变化表示由低到高的得票率，1964 年共和党在东南一隅得票率较高，在其它地方得票率普遍较低，形成一边倒的情况，最终由民主党的林登·约翰逊当选美国第36任总统。1968 年共和党在东南部得票率最低，与 1964 年相比，整个反过来了，最终由共和党的理查德·尼克松当选美国第37任总统。
+参数 `border` 设置州边界线的颜色，NA 表示去掉边界线。参数 `map` 设置州边界地图数据。参数 `colramp` 设置一个调色板，用于将得票率与调色板上的颜色映射起来。美国历届大选，共和党和民主党竞争总统职位，最终由得票率决定，用红蓝对抗型调色板表现竞争关系。基于 **RColorBrewer** 包的 `RdBu` 调色板，用函数 `colorRampPalette()` 构造一个新的红蓝调色板。参数 `layout` 将多个子图按照一定顺序排列，图中设置 2 行 1 列的多图布局。参数 `scales` 用来调整刻度，设置 `list(draw = FALSE)` 将图中的刻度去掉了。参数 `xlab` 设置一个空字符，即 `xlab = ""` 可去掉横坐标轴标签，参数 `ylab` 应用于设置纵坐标，用法与参数 `xlab` 一样。图中，主要表现得票率在各州的分布，因此，坐标轴刻度和标签都不太重要，可以去掉。
 
 ## 总结 {#sec-basic-lattice-summary}
 
@@ -449,14 +464,36 @@ mapplot(rownames(votes_repub) ~ `1964` + `1968`,
 #| fig-cap: 分组散点图
 #| layout-ncol: 2
 #| par: true
-#| fig-subcap: 
+#| fig-subcap:
 #| - Base R 图形
 #| - lattice 图形
 
-plot(Sepal.Length ~ Petal.Length, col = Species, data = iris,
-     xlab = "萼片长度", ylab = "花瓣长度")
-xyplot(Sepal.Length ~ Petal.Length, groups = Species, data = iris,
-       scales = "free", xlab = "萼片长度", ylab = "花瓣长度")
+plot(Sepal.Length ~ Petal.Length,
+  col = Species, data = iris,
+  xlab = "萼片长度", ylab = "花瓣长度"
+)
+xyplot(Sepal.Length ~ Petal.Length,
+  groups = Species, data = iris,
+  scales = "free", xlab = "萼片长度", ylab = "花瓣长度"
+)
 ```
 
 与函数 `plot()` 对应的是函数 `xyplot()` ，它们共用一套公式语法，参数 `data` 的含义也是一样的。与参数 `col` 对应的是参数 `groups` ，作用是添加数据分组标识。在两个函数中，添加横纵坐标轴标签都是用参数 `xlab` 和 `ylab` 。函数 `xyplot()` 中参数 `scales` 的作用是对坐标轴刻度的调整，参数值 `"free"` 表示去掉图形上边和右边的刻度线，默认情况下是有刻度线的。
+
+本章主要介绍 **lattice** 包和 **latticeExtra** 包
+
+| R 包             | 函数                 | 含义   | 作用         |
+|------------------|----------------------|--------|--------------|
+| **lattice**      | `xyplot()`           | 散点图 | 描述关系     |
+| **lattice**      | `bwplot()`           | 箱线图 | 描述分布     |
+| **lattice**      | `barchart()`         | 柱形图 | 描述对比     |
+| **lattice**      | `levelplot()`        | 轮廓图 | 描述趋势     |
+| **lattice**      | `wireframe()`        | 透视图 | 描述趋势     |
+| **latticeExtra** | `segplot()`          | 点线图 | 描述不确定性 |
+| **latticeExtra** | `panel.smoother()`   | 曲线图 | 描述趋势     |
+| **latticeExtra** | `panel.2dsmoother()` | 轮廓图 | 描述趋势     |
+| **latticeExtra** | `ecdfplot()`         | 阶梯图 | 描述分布     |
+| **latticeExtra** | `panel.ellipse()`    | 聚类图 | 描述分布     |
+| **latticeExtra** | `mapplot()`          | 面量图 | 描述分布     |
+
+: lattice 和 latticeExtra 包的部分函数 {#tbl-lattice-extra}
