@@ -27,7 +27,7 @@ library(sf)
 library(RColorBrewer)
 ```
 
-## 散点图 {#sec-lattice-xyplot}
+## 分组散点图 {#sec-lattice-xyplot}
 
 ```{r}
 #| label: fig-lattice-xyplot
@@ -76,8 +76,7 @@ show.settings(x = trellis.par.set(list(
 #| fig-showtext: true
 #| fig-cap: 分组散点图
 
-xyplot(Sepal.Length ~ Petal.Length,
-  groups = Species, data = iris,
+xyplot(Sepal.Length ~ Petal.Length, groups = Species, data = iris,
   scales = "free", xlab = "萼片长度", ylab = "花瓣长度",
   par.settings = list(
     superpose.symbol = list(pch = 16),
@@ -92,7 +91,7 @@ xyplot(Sepal.Length ~ Petal.Length,
 
 ## 常见图形 {#sec-common-lattice}
 
-### 曲线图 {#sec-lattice-smoother}
+### 回归曲线图 {#sec-lattice-smoother}
 
 -   **splines** 自然立方样条 `ns()`
 -   **mgcv** 广义可加模型 `s()`
@@ -116,7 +115,7 @@ scales::show_col(colours = c("#4285f4", "#34A853", "#FBBC05", "#EA4335"))
 #| fig-height: 4
 #| layout-ncol: 2
 #| layout-nrow: 2
-#| fig-cap: 回归拟合曲线图
+#| fig-cap: 回归曲线图
 #| fig-subcap:
 #| - 线性回归
 #| - 局部多项式回归
@@ -165,13 +164,13 @@ xyplot(dist ~ speed,
 )
 ```
 
-### 箱线图 {#sec-lattice-boxplot}
+### 分组箱线图 {#sec-lattice-boxplot}
 
 ```{r}
 #| label: fig-lattice-bwplot
 #| fig-width: 4.5
 #| fig-height: 4
-#| fig-cap: 箱线图
+#| fig-cap: 分组箱线图
 #| fig-showtext: true
 
 bwplot(Petal.Length ~ Species,
@@ -180,7 +179,7 @@ bwplot(Petal.Length ~ Species,
 )
 ```
 
-### 柱形图 {#sec-lattice-barchart}
+### 分组柱形图 {#sec-lattice-barchart}
 
 本节所用数据集 `Insurance` 来自 **MASS** 包，记录一家保险公司面临风险的投保人数量，以及在 1973 年第 3 季度他们提出汽车理赔的数量。数据类型、各个变量的类型及部分预览数据如下：
 
@@ -195,7 +194,7 @@ str(Insurance)
 #| label: fig-lattice-barchart
 #| fig-width: 6
 #| fig-height: 6
-#| fig-cap: 柱形图
+#| fig-cap: 分组柱形图
 #| fig-showtext: true
 
 barchart(
@@ -207,15 +206,15 @@ barchart(
 
 函数 `barchart()` 中的公式 `Claims / Holders ~ Age | Group` ，斜杠 `/` 表示除法，波浪线 `~` 表示响应变量与自变量的分界，竖线 `|` 表示分面。
 
-### 点线图 {#sec-lattice-segplot}
+### 置信区间图 {#sec-lattice-segplot}
 
-各个郡县每 10 万人当中因癌症死亡的人数。
+各个郡县每 10 万人当中因癌症死亡的人数。`USCancerRates` 数据集来自 **latticeExtra** 包，记录各个郡县的癌症死亡率及其置信区间，下图展示新泽西州各个郡县的癌症死亡率及其置信区间。
 
 ```{r}
 #| label: fig-lattice-segplot
 #| fig-width: 6
 #| fig-height: 5
-#| fig-cap: 点线图
+#| fig-cap: 置信区间图
 #| fig-showtext: true
 
 segplot(reorder(county, rate.male) ~ LCL95.male + UCL95.male,
@@ -226,25 +225,26 @@ segplot(reorder(county, rate.male) ~ LCL95.male + UCL95.male,
 )
 ```
 
-### 阶梯图 {#sec-lattice-step}
+### 经验分布图 {#sec-lattice-step}
 
-经验累积分布用阶梯图表示，不同种类的鸢尾花，花瓣长度的分布明显不同。
+用阶梯图表示累积经验分布图，纵轴表示累积概率，不同种类的鸢尾花，花瓣长度的分布明显不同。根据 Glivenko--Cantelli 定理，经验分布函数以概率 1 收敛至累积分布函数。
 
 ```{r}
 #| label: fig-lattice-ecdfplot
 #| fig-showtext: true
-#| fig-cap: 阶梯图
+#| fig-cap: 经验分布图
 #| fig-width: 6
 #| fig-height: 4
 
-ecdfplot(~ Petal.Length | Species, data = iris, scales = "free", xlab = "花瓣长度")
+ecdfplot(~ Petal.Length | Species, data = iris, scales = "free", 
+         xlab = "花瓣长度", ylab = "累积概率")
 ```
 
-### 分面图 {#sec-lattice-facet}
+### 分面水平图 {#sec-lattice-facet}
 
 ```{r}
 #| label: fig-lattice-facet
-#| fig-cap: 分面图
+#| fig-cap: 分面水平图
 #| fig-width: 6.5
 #| fig-height: 6
 #| fig-showtext: true
@@ -261,7 +261,7 @@ levelplot(depth ~ long + lat | Magnitude,
 )
 ```
 
-### 透视图 {#sec-lattice-wireframe}
+### 三维透视图 {#sec-lattice-wireframe}
 
 有如下参数方程
 
@@ -325,13 +325,13 @@ wireframe(kz(um, vm) ~ kx(um, vm) + ky(um, vm),
 )
 ```
 
-### 轮廓图 {#sec-lattice-contour}
+### 地形轮廓图 {#sec-lattice-contour}
 
 奥克兰火山地形图
 
 ```{r}
 #| label: fig-levelplot-volcano
-#| fig-cap: 地形轮廓图
+#| fig-cap: 奥克兰火山的地形轮廓图
 #| fig-width: 6
 #| fig-height: 4
 #| fig-showtext: true
@@ -367,24 +367,23 @@ levelplot(volcano,
 
 library(mgcv)
 data(topo, package = "MASS")
-levelplot(z ~ x * y,
-  data = topo, scales = "free",
+levelplot(z ~ x * y, data = topo, scales = "free",
   panel = panel.2dsmoother, contour = TRUE,
   form = z ~ s(x, y), method = "gam",
   xlab = "水平方向", ylab = "垂直方向"
 )
 ```
 
-### 聚类图 {#sec-lattice-ellipse}
+### 置信椭圆图 {#sec-lattice-ellipse}
 
-函数 `panel.ellipse()` 来自 **latticeExtra** 包
+**latticeExtra** 包的函数 `panel.ellipse()` 可以绘制置信椭圆。二维数据
 
 ```{r}
 #| label: fig-lattice-ellipse
 #| fig-width: 4.5
 #| fig-height: 4.5
 #| fig-showtext: true
-#| fig-cap: 分组聚类图
+#| fig-cap: 分组置信椭圆图
 
 xyplot(Sepal.Length ~ Petal.Length,
   groups = Species, data = iris, scales = "free",
@@ -401,7 +400,7 @@ xyplot(Sepal.Length ~ Petal.Length,
 )
 ```
 
-### 面量图 {#sec-lattice-choropleth}
+### 地区分布图 {#sec-lattice-choropleth}
 
 最后一个想要介绍的是地区分布图，也叫面量图、围栏图，描述空间栅格数据的分布，常见的一种情况是展示各个地区的人口、社会、经济指标。下面通过 **tigris** 包可以下载美国人口调查局发布的数据，本想下载与观测数据年份最近的地图数据，但是 2009 年及以前的地图数据缺失，因此，笔者下载了 2010 年的地图数据，它与得票率数据最近。
 
@@ -443,8 +442,7 @@ votes_repub <- as.data.frame(votes.repub)
 
 library(RColorBrewer)
 rdbu_pal <- colorRampPalette(colors = brewer.pal(n = 11, name = "RdBu"))
-mapplot(rownames(votes_repub) ~ `1964` + `1968`,
-  data = votes_repub,
+mapplot(rownames(votes_repub) ~ `1964` + `1968`, data = votes_repub,
   border = NA, map = us_state_map, colramp = rdbu_pal, layout = c(1, 2),
   scales = list(draw = FALSE), xlab = "", ylab = ""
 )
@@ -461,19 +459,17 @@ mapplot(rownames(votes_repub) ~ `1964` + `1968`,
 #| fig-width: 4
 #| fig-height: 4
 #| fig-showtext: true
-#| fig-cap: 分组散点图
+#| fig-cap: 对比 Base R 和 lattice 制作的分组散点图
 #| layout-ncol: 2
 #| par: true
 #| fig-subcap:
 #| - Base R 图形
 #| - lattice 图形
 
-plot(Sepal.Length ~ Petal.Length,
-  col = Species, data = iris,
+plot(Sepal.Length ~ Petal.Length, col = Species, data = iris,
   xlab = "萼片长度", ylab = "花瓣长度"
 )
-xyplot(Sepal.Length ~ Petal.Length,
-  groups = Species, data = iris,
+xyplot(Sepal.Length ~ Petal.Length, groups = Species, data = iris,
   scales = "free", xlab = "萼片长度", ylab = "花瓣长度"
 )
 ```
@@ -482,18 +478,18 @@ xyplot(Sepal.Length ~ Petal.Length,
 
 本章主要介绍 **lattice** 包和 **latticeExtra** 包
 
-| R 包             | 函数                 | 含义   | 作用         |
-|------------------|----------------------|--------|--------------|
-| **lattice**      | `xyplot()`           | 散点图 | 描述关系     |
-| **lattice**      | `bwplot()`           | 箱线图 | 描述分布     |
-| **lattice**      | `barchart()`         | 柱形图 | 描述对比     |
-| **lattice**      | `levelplot()`        | 轮廓图 | 描述趋势     |
-| **lattice**      | `wireframe()`        | 透视图 | 描述趋势     |
-| **latticeExtra** | `segplot()`          | 点线图 | 描述不确定性 |
-| **latticeExtra** | `panel.smoother()`   | 曲线图 | 描述趋势     |
-| **latticeExtra** | `panel.2dsmoother()` | 轮廓图 | 描述趋势     |
-| **latticeExtra** | `ecdfplot()`         | 阶梯图 | 描述分布     |
-| **latticeExtra** | `panel.ellipse()`    | 聚类图 | 描述分布     |
-| **latticeExtra** | `mapplot()`          | 面量图 | 描述分布     |
+| R 包             | 函数                 | 图形       | 作用         |
+|------------------|----------------------|------------|--------------|
+| **lattice**      | `xyplot()`           | 分组散点图 | 描述关系     |
+| **lattice**      | `bwplot()`           | 分组箱线图 | 描述分布     |
+| **lattice**      | `barchart()`         | 分组柱形图 | 描述对比     |
+| **lattice**      | `levelplot()`        | 地形轮廓图 | 描述趋势     |
+| **lattice**      | `wireframe()`        | 三维透视图 | 描述趋势     |
+| **latticeExtra** | `segplot()`          | 置信区间图 | 描述不确定性 |
+| **latticeExtra** | `panel.smoother()`   | 回归曲线图 | 描述趋势     |
+| **latticeExtra** | `panel.2dsmoother()` | 地形轮廓图 | 描述趋势     |
+| **latticeExtra** | `ecdfplot()`         | 经验分布图 | 描述分布     |
+| **latticeExtra** | `panel.ellipse()`    | 置信椭圆图 | 描述分布     |
+| **latticeExtra** | `mapplot()`          | 地区分布图 | 描述分布     |
 
 : lattice 和 latticeExtra 包的部分函数 {#tbl-lattice-extra}
