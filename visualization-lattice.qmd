@@ -178,6 +178,15 @@ bwplot(Petal.Length ~ Species, data = iris, scales = "free",
 
 ### 柱形图 {#sec-lattice-barchart}
 
+本节所用数据集 `Insurance` 来自 **MASS** 包，记录一家保险公司面临风险的投保人数量，以及在 1973 年第 3 季度他们提出汽车理赔的数量。数据类型、各个变量的类型及部分预览数据如下：
+
+```{r}
+data(Insurance, package = "MASS")
+str(Insurance)
+```
+
+其中，District 表示投保人居住的地区，因子型变量。Group 汽车按油箱大小分组的变量，有序的因子型变量。Age 投保人的年龄段标签，有序的因子型变量。Holders 投保人数量，整型变量。Claims 理赔数量，整型变量。下 @fig-lattice-barchart 先按投保人的汽车类型分面，再按投保人所在地区分组，展示理赔频度与投保人年龄的关系。
+
 ```{r}
 #| label: fig-lattice-barchart
 #| fig-width: 6
@@ -185,16 +194,17 @@ bwplot(Petal.Length ~ Species, data = iris, scales = "free",
 #| fig-cap: 柱形图
 #| fig-showtext: true
 
-data(Insurance, package = "MASS")
 barchart(Claims / Holders ~ Age | Group,
   groups = District, data = Insurance,
-  main = "Claims frequency",
+  xlab = "年龄段", ylab = "理赔频度",
   auto.key = list(
-    space = "top", columns = 4,
-    title = "District", cex.title = 1
+    space = "top", columns = 4, 
+    title = "地区", cex.title = 1
   )
 )
 ```
+
+函数 `barchart()` 中的公式 `Claims / Holders ~ Age | Group` ，斜杠 `/` 表示除法，波浪线 `~` 表示响应变量与自变量的分界，竖线 `|` 表示分面。
 
 ### 点线图 {#sec-lattice-segplot}
 
@@ -217,7 +227,7 @@ segplot(reorder(county, rate.male) ~ LCL95.male + UCL95.male,
 
 ### 阶梯图 {#sec-lattice-step}
 
-阶梯图表示经验累积分布，不同种类的鸢尾花，花瓣长度的分布明显不同。
+经验累积分布用阶梯图表示，不同种类的鸢尾花，花瓣长度的分布明显不同。
 
 ```{r}
 #| label: fig-lattice-ecdfplot
@@ -244,10 +254,9 @@ quakes$Magnitude <- equal.count(quakes$mag, 4)
 quakes.ordered <- quakes[depth.ord, ]
 
 levelplot(depth ~ long + lat | Magnitude,
-  data = quakes.ordered,
+  data = quakes.ordered, scales = "free", 
   panel = panel.levelplot.points, type = c("p", "g"),
-  scales = "free", layout = c(2, 2),
-  prepanel = prepanel.default.xyplot
+  layout = c(2, 2), prepanel = prepanel.default.xyplot
 )
 ```
 
@@ -294,8 +303,7 @@ t <- 1
 
 wireframe(kz(um, vm) ~ kx(um, vm) + ky(um, vm),
   shade = TRUE, drape = FALSE, 
-  xlab = expression(x[1]),
-  ylab = expression(x[2]),
+  xlab = expression(x[1]), ylab = expression(x[2]),
   zlab = list(expression(
     italic(f) ~ group("(", list(x[1], x[2]), ")")
   ), rot = 90), alpha = 0.75,
@@ -328,7 +336,7 @@ wireframe(kz(um, vm) ~ kx(um, vm) + ky(um, vm),
 #| fig-showtext: true
 
 levelplot(volcano,
-  col.regions = hcl.colors, # 
+  col.regions = hcl.colors, useRaster = TRUE,
   # 去掉图形上、右边多余的刻度线
   scales = list(
     x = list(alternating = 1, tck = c(1, 0)),
@@ -340,7 +348,6 @@ levelplot(volcano,
     par.ylab.text = list(fontfamily = "Noto Serif CJK SC"),
     axis.text = list(fontfamily = "sans")
   ),
-  useRaster = TRUE,
   xlab = "南北方向", ylab = "东西方向"
 )
 ```
@@ -373,7 +380,7 @@ levelplot(z ~ x * y, data = topo, scales = "free",
 #| fig-width: 4.5
 #| fig-height: 4.5
 #| fig-showtext: true
-#| fig-cap: 分组
+#| fig-cap: 分组聚类图
 
 xyplot(Sepal.Length ~ Petal.Length,
   groups = Species, data = iris, scales = "free",
@@ -459,8 +466,6 @@ mapplot(rownames(votes_repub) ~ `1964` + `1968`,
 
 plot(Sepal.Length ~ Petal.Length, col = Species, data = iris,
      xlab = "萼片长度", ylab = "花瓣长度")
-xyplot(x = Sepal.Length ~ Petal.Length,
-  groups = Species, scales = "free", data = iris,
-  xlab = "萼片长度", ylab = "花瓣长度"
-)
+xyplot(Sepal.Length ~ Petal.Length, groups = Species, data = iris,
+       scales = "free", xlab = "萼片长度", ylab = "花瓣长度")
 ```
