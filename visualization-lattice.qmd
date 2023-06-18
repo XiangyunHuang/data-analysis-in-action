@@ -32,16 +32,17 @@ library(RColorBrewer)
 ## 分组散点图 {#sec-lattice-xyplot}
 
 ```{r}
-#| label: fig-lattice-xyplot
-#| fig-width: 4
-#| fig-height: 4
+#| label: fig-lattice-xyplot-1
+#| fig-width: 4.5
+#| fig-height: 4.5
 #| fig-showtext: true
 #| fig-cap: 分组散点图
 
 library(lattice)
 xyplot(
   x = Sepal.Length ~ Petal.Length, groups = Species, scales = "free",
-  data = iris, xlab = "萼片长度", ylab = "花瓣长度"
+  data = iris, grid = TRUE, xlab = "萼片长度", ylab = "花瓣长度",
+  auto.key = list(space = "top", columns = 3)
 )
 ```
 
@@ -49,14 +50,16 @@ xyplot(
 -   参数 `groups` 指定分组变量，此处为 `Species` 变量，表示鸢尾花种类。
 -   参数 `scales` 设置坐标轴刻度， `scales = "free"` 表示去掉边框上面和右面的刻度线。
 -   参数 `data` 指定绘图数据，此处为 `iris` 数据集。
+-   参数 `grid` 控制是否添加背景网格线，此处为 `TRUE` 表示添加背景网格线。
 -   参数 `xlab` 和参数 `ylab` 分别指定横、纵坐标轴标签。
+-   参数 `auto.key` 设置图例，示例中将图例置于图形上方，条目排成 3 列。
 
 除了上面介绍的几个参数，还有许多其它参数，其中一部分会在后续介绍其它种类的图形时顺带介绍，剩余的部分请感兴趣的读者查看函数 `xyplot()` 的帮助文档。
 
 ## 图形参数 {#sec-lattice-par}
 
 ```{r}
-#| label: fig-lattice-theme
+#| label: fig-lattice-par
 #| fig-cap: lattice 图形参数设置
 #| echo: false
 #| fig-width: 6.5
@@ -64,30 +67,30 @@ xyplot(
 #| fig-showtext: true
 
 show.settings(x = trellis.par.set(list(
-  axis.text = list(fontfamily = "sans"), # 轴标签字体
-  add.text = list(fontfamily = "mono"),
-  par.main.text = list(fontfamily = "serif"), # 主标题字体
-  par.sub.text = list(fontfamily = "serif") # 副标题字体
+  axis.text = list(fontfamily = "serif"), # 轴标签字体
+  add.text = list(fontfamily = "mono"), # 注释文本字体
+  par.main.text = list(fontfamily = "sans"), # 主标题字体
+  par.sub.text = list(fontfamily = "sans") # 副标题字体
 )))
 ```
+
+在之前的 @fig-lattice-xyplot-1 的基础上，添加回归线。通过图形参数 `par.settings` 设置各类绘图元素的符号类型和大小，该参数接受一个列表类型的数据，列表的元素还是列表，列表的层层嵌套实现图中元素的精细控制。列表元素 `superpose.symbol` 控制点的符号，`pch = 16` 设置为 16，相比于默认的点要大一号。列表元素 `superpose.line` 控制线，`lwd = 2` 设置宽度为 2，比默认的宽度大一倍，`lty = 3` 设置线的类型为 3，表示虚线。
 
 ```{r}
 #| label: fig-lattice-xyplot-2
 #| fig-width: 4.5
 #| fig-height: 4.5
 #| fig-showtext: true
-#| fig-cap: 分组散点图
+#| fig-cap: 调整点线基础元素
 
-xyplot(Sepal.Length ~ Petal.Length, groups = Species, data = iris,
-  scales = "free", xlab = "萼片长度", ylab = "花瓣长度",
+xyplot(
+  x = Sepal.Length ~ Petal.Length, groups = Species, scales = "free",
+  data = iris, grid = TRUE, xlab = "萼片长度", ylab = "花瓣长度",
+  auto.key = list(space = "top", columns = 3), type = c("p", "r"),
   par.settings = list(
     superpose.symbol = list(pch = 16),
     superpose.line = list(lwd = 2, lty = 3)
-  ),
-  panel = function(x, y, ...) {
-    panel.xyplot(x, y, ...)
-  },
-  auto.key = list(space = "top", columns = 3)
+  )
 )
 ```
 
