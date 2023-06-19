@@ -98,6 +98,15 @@ xyplot(
 **lattice** 包常用图形参数。
 
 ```{r}
+# 当前图形参数设置
+tp <- trellis.par.get()
+# 有哪些参数可以设置
+names(tp)
+# 每个参数又有哪些选项 superpose.symbol 符号设置
+tp$superpose.symbol
+```
+
+```{r}
 #| label: fig-lattice-par
 #| fig-cap: 常用图形参数
 #| fig-width: 6
@@ -186,6 +195,37 @@ xyplot(
     superpose.symbol = list(pch = 16),
     superpose.line = list(lwd = 2, lty = 3)
   )
+)
+```
+
+**latticeExtra** 包有两个函数专门用来设置图形风格，分别是 `theEconomist.theme()` 和 `ggplot2like()` ，这两个主题函数提供一系列预设的图形参数，前者来自《经济学人》杂志的图形主题，后者来自 **ggplot2** 包的默认绘图主题。
+
+```{r}
+#| label: fig-lattice-extra-themes
+#| fig-width: 4.5
+#| fig-height: 4.5
+#| fig-showtext: true
+#| fig-cap: latticeExtra 内置的两个主题
+#| layout-ncol: 2
+#| fig-subcap:
+#| - ggplot2 包默认的绘图主题
+#| - 《经济学人》杂志的绘图主题
+
+library(latticeExtra)
+xyplot(
+  Sepal.Length ~ Petal.Length, groups = Species, data = iris,
+  scales = "free", grid = TRUE, type = c("p", "r"),
+  xlab = "萼片长度", ylab = "花瓣长度", 
+  auto.key = list(space = "top", columns = 3), 
+  par.settings = ggplot2like()
+)
+
+xyplot(
+  Sepal.Length ~ Petal.Length, groups = Species, data = iris,
+  scales = "free", grid = TRUE, type = c("p", "r"),
+  xlab = "萼片长度", ylab = "花瓣长度", 
+  auto.key = list(space = "top", columns = 3), 
+  par.settings = theEconomist.theme()
 )
 ```
 
@@ -377,7 +417,7 @@ xyplot(Sepal.Length ~ Petal.Length,
 
 ```{r}
 # 震级区间
-quakes$Magnitude <- equal.count(quakes$mag, 4)
+quakes$Magnitude <- equal.count(quakes$mag, numbers = 4)
 # 震深
 depth.ord <- rev(order(quakes$depth))
 quakes.ordered <- quakes[depth.ord, ]
@@ -393,6 +433,14 @@ Intervals:
 
 Overlap between adjacent intervals:
 [1] 293 306 217
+```
+
+如果没有重叠
+
+```{r}
+#| eval: false
+
+quakes$Magnitude <- equal.count(quakes$mag, number = 4, overlap = 0)
 ```
 
 ```{r}
