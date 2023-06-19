@@ -95,16 +95,20 @@ xyplot(
 
 ## 图形参数 {#sec-lattice-par}
 
-**lattice** 包常用图形参数。
+类似 Base R 绘图系统中的图形参数设置函数 `par()`和 **ggplot2** 包中的主题设置函数 `theme()`， **lattice** 包也有图形参数设置函数 `trellis.par.set()` ，而图形参数查询函数为 `trellis.par.get()` 。可设置的图形参数非常多，仅常用的也不少。首先来看看有哪些图形参数可以设置。
 
 ```{r}
-# 当前图形参数设置
 tp <- trellis.par.get()
-# 有哪些参数可以设置
 names(tp)
-# 每个参数又有哪些选项 superpose.symbol 符号设置
+```
+
+可以看到，图形参数着实非常多，知道了这么多图形参数，而每个参数又有哪些选项可取呢？不忙，再看看图形参数 `superpose.symbol` 的结构。
+
+```{r}
 tp$superpose.symbol
 ```
+
+这是一个列表，有 6 个元素，每个元素设置符号的不同属性，依次是透明度 `alpha`、大小 `cex`、颜色 `col`、填充色 `fill`、字型 `font` 和类型 `pch` ，这些属性的含义与函数 `par()` 是一致的。下 @fig-lattice-par 展示所有的常用图形参数及其可设置的选项。
 
 ```{r}
 #| label: fig-lattice-par
@@ -159,7 +163,7 @@ levelplot(z ~ y * x,
 )
 ```
 
-**lattice** 包图形参数效果预览。
+现在，知道了图形设置参数及其结构，还需要知道它们究竟在绘图时起什么作用，也就是说它们控制图形中的哪部分元素及效果。下 @fig-lattice-settings 展示 **lattice** 包图形参数效果。由图可知，图形参数 `superpose.symbol` 是控制散点图中的点，点可以是普通的点，也可以是任意的字母符号。
 
 ```{r}
 #| label: fig-lattice-settings
@@ -202,11 +206,11 @@ xyplot(
 
 ```{r}
 #| label: fig-lattice-extra-themes
-#| fig-width: 4.5
-#| fig-height: 4.5
+#| fig-width: 6.5
+#| fig-height: 4
 #| fig-showtext: true
 #| fig-cap: latticeExtra 内置的两个主题
-#| layout-ncol: 2
+#| layout-ncol: 1
 #| fig-subcap:
 #| - ggplot2 包默认的绘图主题
 #| - 《经济学人》杂志的绘图主题
@@ -219,7 +223,6 @@ xyplot(
   auto.key = list(space = "top", columns = 3), 
   par.settings = ggplot2like()
 )
-
 xyplot(
   Sepal.Length ~ Petal.Length, groups = Species, data = iris,
   scales = "free", grid = TRUE, type = c("p", "r"),
@@ -435,7 +438,7 @@ Overlap between adjacent intervals:
 [1] 293 306 217
 ```
 
-如果没有重叠
+函数 `equal.count()` 内部调用函数 `co.intervals()` ，还有两个参数 `number` 和 `overlap`。如果要没有重叠的话，得设置 `overlap = 0` 。
 
 ```{r}
 #| eval: false
