@@ -10,7 +10,7 @@ source("_common.R")
 >
 > --- Paul Murrell [^visualization-lattice-1]
 
-[^visualization-lattice-1]: Paul 在 DSC 2001 大会上的幻灯片 见<https://www.stat.auckland.ac.nz/~paul/Talks/dsc2001.pdf>
+[^visualization-lattice-1]: Paul 在 DSC 2001 大会上的[幻灯片](https://www.stat.auckland.ac.nz/~paul/Talks/dsc2001.pdf)。
 
 **lattice** 最初是受到商业统计软件 S/S-Plus 中的 Trellis 组件启发，打算在 R 软件中重新实现一套新的绘图系统，在使用接口上保持与 Trellis 兼容，Trellis 使用文档也同样适用于 **lattice**。
 
@@ -70,7 +70,7 @@ xyplot(
 #| - 图例位于内内部
 
 xyplot(
-  x = Sepal.Length ~ Petal.Length, groups = Species, data = iris,
+  Sepal.Length ~ Petal.Length, groups = Species, data = iris,
   scales = "free", grid = TRUE, type = c("p", "r"),
   xlab = "萼片长度", ylab = "花瓣长度", 
   auto.key = list(space = "right", columns = 1), 
@@ -80,7 +80,7 @@ xyplot(
   )
 )
 xyplot(
-  x = Sepal.Length ~ Petal.Length, groups = Species, data = iris,
+  Sepal.Length ~ Petal.Length, groups = Species, data = iris,
   scales = "free", grid = TRUE, type = c("p", "r"),
   xlab = "萼片长度", ylab = "花瓣长度", 
   auto.key = list(x = 0, y = 0.95, corner = c(0, 1)),
@@ -153,7 +153,7 @@ levelplot(z ~ y * x,
 **lattice** 包图形参数效果预览。
 
 ```{r}
-#| label: fig-lattice-par-settings
+#| label: fig-lattice-settings
 #| fig-cap: 图形参数效果预览
 #| echo: false
 #| fig-width: 6.5
@@ -178,7 +178,7 @@ show.settings(x = trellis.par.set(list(
 #| fig-cap: 调整点线基础元素
 
 xyplot(
-  x = Sepal.Length ~ Petal.Length, groups = Species, data = iris,
+  Sepal.Length ~ Petal.Length, groups = Species, data = iris,
   scales = "free", grid = TRUE, type = c("p", "r"),
   xlab = "萼片长度", ylab = "花瓣长度", 
   auto.key = list(space = "top", columns = 3), 
@@ -190,6 +190,63 @@ xyplot(
 ```
 
 ## 常见图形 {#sec-common-lattice}
+
+### 分组柱形图 {#sec-lattice-barchart}
+
+本节所用数据集 `Insurance` 来自 **MASS** 包，记录一家保险公司面临风险的投保人数量，以及在 1973 年第 3 季度他们提出汽车理赔的数量。数据类型、各个变量的类型及部分预览数据如下：
+
+```{r}
+data(Insurance, package = "MASS")
+str(Insurance)
+```
+
+其中，District 表示投保人居住的地区，因子型变量。Group 汽车按油箱大小分组的变量，有序的因子型变量。Age 投保人的年龄段标签，有序的因子型变量。Holders 投保人数量，整型变量。Claims 理赔数量，整型变量。下 @fig-lattice-barchart 先按投保人的汽车类型分面，再按投保人所在地区分组，展示理赔频度与投保人年龄的关系。
+
+```{r}
+#| label: fig-lattice-barchart
+#| fig-width: 6
+#| fig-height: 6
+#| fig-cap: 分组柱形图
+#| fig-showtext: true
+
+barchart(
+  Claims / Holders ~ Age | Group, groups = District,
+  data = Insurance, xlab = "年龄段", ylab = "理赔频度",
+  auto.key = list(space = "top", columns = 4, title = "地区", cex.title = 1)
+)
+```
+
+函数 `barchart()` 中的公式 `Claims / Holders ~ Age | Group` ，斜杠 `/` 表示除法，波浪线 `~` 表示响应变量与自变量的分界，竖线 `|` 表示分面。
+
+### 分组箱线图 {#sec-lattice-boxplot}
+
+```{r}
+#| label: fig-lattice-bwplot
+#| fig-width: 4.5
+#| fig-height: 4
+#| fig-cap: 分组箱线图
+#| fig-showtext: true
+
+bwplot(Petal.Length ~ Species, data = iris, scales = "free",
+  xlab = "鸢尾花种类", ylab = "花瓣长度"
+)
+```
+
+### 经验分布图 {#sec-lattice-step}
+
+用阶梯图表示累积经验分布图，纵轴表示累积概率，不同种类的鸢尾花，花瓣长度的分布明显不同。根据 Glivenko--Cantelli 定理，经验分布函数以概率 1 收敛至累积分布函数。
+
+```{r}
+#| label: fig-lattice-ecdfplot
+#| fig-showtext: true
+#| fig-cap: 经验分布图
+#| fig-width: 6
+#| fig-height: 4
+
+library(latticeExtra)
+ecdfplot(~ Petal.Length | Species, data = iris, scales = "free", 
+         xlab = "花瓣长度", ylab = "累积概率")
+```
 
 ### 回归曲线图 {#sec-lattice-smoother}
 
@@ -222,10 +279,11 @@ scales::show_col(colours = c("#4285f4", "#34A853", "#FBBC05", "#EA4335"))
 #| - 自然样条回归
 #| - 广义可加回归
 #| fig-showtext: true
+#| message: false
 
 library(splines)
+library(nlme)
 library(mgcv)
-library(latticeExtra)
 xyplot(dist ~ speed,
   data = cars, scales = "free", xlab = "速度", ylab = "距离",
   panel = function(x, y, ...) {
@@ -264,48 +322,6 @@ xyplot(dist ~ speed,
 )
 ```
 
-### 分组箱线图 {#sec-lattice-boxplot}
-
-```{r}
-#| label: fig-lattice-bwplot
-#| fig-width: 4.5
-#| fig-height: 4
-#| fig-cap: 分组箱线图
-#| fig-showtext: true
-
-bwplot(Petal.Length ~ Species,
-  data = iris, scales = "free",
-  xlab = "鸢尾花种类", ylab = "花瓣长度"
-)
-```
-
-### 分组柱形图 {#sec-lattice-barchart}
-
-本节所用数据集 `Insurance` 来自 **MASS** 包，记录一家保险公司面临风险的投保人数量，以及在 1973 年第 3 季度他们提出汽车理赔的数量。数据类型、各个变量的类型及部分预览数据如下：
-
-```{r}
-data(Insurance, package = "MASS")
-str(Insurance)
-```
-
-其中，District 表示投保人居住的地区，因子型变量。Group 汽车按油箱大小分组的变量，有序的因子型变量。Age 投保人的年龄段标签，有序的因子型变量。Holders 投保人数量，整型变量。Claims 理赔数量，整型变量。下 @fig-lattice-barchart 先按投保人的汽车类型分面，再按投保人所在地区分组，展示理赔频度与投保人年龄的关系。
-
-```{r}
-#| label: fig-lattice-barchart
-#| fig-width: 6
-#| fig-height: 6
-#| fig-cap: 分组柱形图
-#| fig-showtext: true
-
-barchart(
-  Claims / Holders ~ Age | Group, groups = District,
-  data = Insurance, xlab = "年龄段", ylab = "理赔频度",
-  auto.key = list(space = "top", columns = 4, title = "地区", cex.title = 1)
-)
-```
-
-函数 `barchart()` 中的公式 `Claims / Holders ~ Age | Group` ，斜杠 `/` 表示除法，波浪线 `~` 表示响应变量与自变量的分界，竖线 `|` 表示分面。
-
 ### 置信区间图 {#sec-lattice-segplot}
 
 各个郡县每 10 万人当中因癌症死亡的人数。`USCancerRates` 数据集来自 **latticeExtra** 包，记录各个郡县的癌症死亡率及其置信区间，下图展示新泽西州各个郡县的癌症死亡率及其置信区间。
@@ -325,33 +341,66 @@ segplot(reorder(county, rate.male) ~ LCL95.male + UCL95.male,
 )
 ```
 
-### 经验分布图 {#sec-lattice-step}
+### 置信椭圆图 {#sec-lattice-ellipse}
 
-用阶梯图表示累积经验分布图，纵轴表示累积概率，不同种类的鸢尾花，花瓣长度的分布明显不同。根据 Glivenko--Cantelli 定理，经验分布函数以概率 1 收敛至累积分布函数。
+**latticeExtra** 包的函数 `panel.ellipse()` 可以绘制置信椭圆。二维数据，置信水平为 0.95 时，置信椭圆。
 
 ```{r}
-#| label: fig-lattice-ecdfplot
-#| fig-showtext: true
-#| fig-cap: 经验分布图
-#| fig-width: 6
+#| label: fig-lattice-ellipse
+#| fig-width: 4.5
 #| fig-height: 4
+#| fig-showtext: true
+#| fig-cap: 分组置信椭圆图
 
-ecdfplot(~ Petal.Length | Species, data = iris, scales = "free", 
-         xlab = "花瓣长度", ylab = "累积概率")
+xyplot(Sepal.Length ~ Petal.Length,
+  groups = Species, data = iris, scales = "free",
+  xlab = "萼片长度", ylab = "花瓣长度",
+  par.settings = list(
+    superpose.symbol = list(pch = 16),
+    superpose.line = list(lwd = 2, lty = 3)
+  ),
+  panel = function(x, y, ...) {
+    panel.xyplot(x, y, ...)
+    panel.ellipse(x, y, level = 0.95, ...)
+  },
+  auto.key = list(space = "top", columns = 3)
+)
 ```
 
-### 分面水平图 {#sec-lattice-facet}
+### 切片水平图 {#sec-lattice-facet}
+
+按照深度降序排列，根据震级 mag 划分 4 个区间，每个区间内数据点的数量比较平衡，相邻区间之间有重叠部分。对数据进行切片，观察连续的切片数据，增加一个维度。
+
+对震深排序的目的是让数据点按照一定的顺序绘制在图上，数据点相距较近容易互相覆盖。使得在二维平面上，通过对数据点的染色，也能体现地震深度在空间中的层次变化。
+
+不同的震级下，地震深度在空间中的变化是一致的。
 
 ```{r}
-#| label: fig-lattice-facet
+# 震级区间
+quakes$Magnitude <- equal.count(quakes$mag, 4)
+# 震深
+depth.ord <- rev(order(quakes$depth))
+quakes.ordered <- quakes[depth.ord, ]
+```
+
+```         
+Intervals:
+   min  max count
+1 3.95 4.55   484
+2 4.25 4.75   492
+3 4.45 4.95   425
+4 4.65 6.45   415
+
+Overlap between adjacent intervals:
+[1] 293 306 217
+```
+
+```{r}
+#| label: fig-lattice-levelplot
 #| fig-cap: 分面水平图
 #| fig-width: 6.5
 #| fig-height: 6
 #| fig-showtext: true
-
-depth.ord <- rev(order(quakes$depth))
-quakes$Magnitude <- equal.count(quakes$mag, 4)
-quakes.ordered <- quakes[depth.ord, ]
 
 levelplot(depth ~ long + lat | Magnitude,
   data = quakes.ordered, scales = "free",
@@ -380,7 +429,7 @@ $$
 其中，$u$ 和 $v$ 是参数，$\frac{u}{2\pi} \in [0.3,1.25], \frac{v}{2\pi} \in [0,1]$，$r$ 和 $t$ 是常量，不妨设 $r = 2$ 和 $t=1$ 。
 
 ```{r}
-#| label: fig-levelplot-wireframe
+#| label: fig-lattice-wireframe
 #| fig-cap: 三维透视图
 #| fig-width: 4.5
 #| fig-height: 4.5
@@ -463,40 +512,12 @@ levelplot(volcano,
 #| fig-height: 4
 #| fig-showtext: true
 #| fig-cap: 地形轮廓图
-#| message: false
 
-library(mgcv)
 data(topo, package = "MASS")
 levelplot(z ~ x * y, data = topo, scales = "free",
   panel = panel.2dsmoother, contour = TRUE,
   form = z ~ s(x, y), method = "gam",
   xlab = "水平方向", ylab = "垂直方向"
-)
-```
-
-### 置信椭圆图 {#sec-lattice-ellipse}
-
-**latticeExtra** 包的函数 `panel.ellipse()` 可以绘制置信椭圆。二维数据
-
-```{r}
-#| label: fig-lattice-ellipse
-#| fig-width: 4.5
-#| fig-height: 4
-#| fig-showtext: true
-#| fig-cap: 分组置信椭圆图
-
-xyplot(Sepal.Length ~ Petal.Length,
-  groups = Species, data = iris, scales = "free",
-  xlab = "萼片长度", ylab = "花瓣长度",
-  par.settings = list(
-    superpose.symbol = list(pch = 16),
-    superpose.line = list(lwd = 3, lty = 3)
-  ),
-  panel = function(x, y, ...) {
-    panel.xyplot(x, y, ...)
-    panel.ellipse(x, y, ...)
-  },
-  auto.key = list(space = "top", columns = 3)
 )
 ```
 
@@ -583,12 +604,12 @@ xyplot(Sepal.Length ~ Petal.Length, groups = Species, data = iris,
 | **lattice**      | `xyplot()`           | （分组）散点图 | 描述关系     |
 | **lattice**      | `bwplot()`           | （分组）箱线图 | 描述分布     |
 | **lattice**      | `barchart()`         | （分组）柱形图 | 描述对比     |
-| **lattice**      | `levelplot()`        | 地形轮廓图     | 描述趋势     |
+| **lattice**      | `levelplot()`        | 切片水平图     | 描述趋势     |
 | **lattice**      | `wireframe()`        | 三维透视图     | 描述趋势     |
-| **latticeExtra** | `segplot()`          | 置信区间图     | 描述不确定性 |
 | **latticeExtra** | `panel.smoother()`   | 回归曲线图     | 描述趋势     |
 | **latticeExtra** | `panel.2dsmoother()` | 地形轮廓图     | 描述趋势     |
 | **latticeExtra** | `ecdfplot()`         | 经验分布图     | 描述分布     |
+| **latticeExtra** | `segplot()`          | 置信区间图     | 描述不确定性 |
 | **latticeExtra** | `panel.ellipse()`    | 置信椭圆图     | 描述不确定性 |
 | **latticeExtra** | `mapplot()`          | 地区分布图     | 描述分布     |
 
