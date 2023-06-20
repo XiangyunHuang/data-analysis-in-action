@@ -229,22 +229,38 @@ flowchart LR
 #| echo: !expr knitr::is_html_output()
 
 library(ggplot2)
-
+# 绘制虚线所需的数据
+const <- 1 / sqrt(2 * pi)
+dat <- data.frame(
+  x = c(-1, -1, 3, 3),
+  y = c(const, 0, const / 1.5, 0),
+  group = c("dnorm1", "dnorm1", "dnorm2", "dnorm2"),
+  upper = c(const, 0, const / 1.5, 0),
+  lower = c(0, 0, 0, 0)
+)
 ggplot() +
   geom_function(
-    fun = dnorm, args = list(mean = 3, sd = 1),
-    aes(colour = "dnorm1"), linewidth = 2, xlim = c(-4, 8)
+    fun = dnorm, args = list(mean = -1, sd = 1),
+    aes(colour = "dnorm1"), linewidth = 1.5, xlim = c(-5, 10)
   ) +
   geom_function(
-    fun = dnorm, args = list(mean = 2, sd = 1.5),
-    aes(colour = "dnorm2"), linewidth = 2, xlim = c(-4, 8)
+    fun = dnorm, args = list(mean = 3, sd = 1.5),
+    aes(colour = "dnorm2"), linewidth = 1.5, xlim = c(-5, 10)
   ) +
   scale_color_brewer(palette = "Set1", labels = c(
-    dnorm1 = "$\\mathcal{N}(3, 1^2)$",
-    dnorm2 = "$\\mathcal{N}(2, 1.5^2)$"
+    dnorm1 = "$\\mathcal{N}(\\mu_1, \\sigma_1^2)$",
+    dnorm2 = "$\\mathcal{N}(\\mu_2, \\sigma_2^2)$"
   )) +
+  geom_linerange(
+    aes(x = x, y = y, ymin = lower, ymax = upper, colour = group),
+    linewidth = 2, lty = 2, show.legend = FALSE, data = dat
+  ) +
+  annotate("text", x = -1, y = 0, label = "$\\mu_1$", vjust = 2.5) +
+  annotate("text", x = 3, y = 0, label = "$\\mu_2$", vjust = 2.5) +
   theme_classic(base_size = 13) +
-  labs(x = "$x$", y = "$f(x)$", color = "正态分布")
+  theme(legend.position = c(0.9, 0.9)) +
+  labs(x = "$x$", y = "$f(x)$", color = "正态分布") +
+  coord_cartesian(clip = "off")
 ```
 
 常见检验问题
