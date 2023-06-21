@@ -1,5 +1,7 @@
 # 常见的统计检验 {#sec-common-statistical-tests}
 
+\index{统计检验}
+
 ```{r}
 #| echo: false
 
@@ -34,7 +36,7 @@ Jacob Cohen 实际谈的是更加深刻的问题。开篇介绍为什么需要�
 -   检验总体维度归类：分一维、二维和多维的情形。
 -   检验样本的数量：小样本 $n < 30$ 和大样本 $n \geq 30$。
 
-$\chi^2$ 分布、t 分布和 F 分布作为最基础的三大抽样分布，分别是由 K. Pearson、W. S. Gosset、R. A. Fisher 提出，并以他们的名字命名的。在假设检验中，也有许多检验方法是以提出者的名字命名的。本来名字具有突出效果，由检验方法联系人物名称，可以帮助记忆，但如此之多，以至于很难一一记住。因此，本文也不按检验方法罗列，但是，推荐读者了解这些统计大师的工作和故事，相信会加深对这些检验方法的理解。
+$\chi^2$ 分布、t 分布和 F 分布作为最基础的三大抽样分布，分别是由 K. Pearson 卡尔·皮尔逊、W. S. Gosset 哥塞特、R. A. Fisher 费舍尔提出，并以他们的名字命名的。在假设检验中，也有许多检验方法是以提出者的名字命名的。本来名字具有突出效果，由检验方法联系人物名称，可以帮助记忆，但如此之多，以至于很难一一记住。因此，本文也不按检验方法罗列，但是，推荐读者了解这些统计大师的工作和故事，相信会加深对这些检验方法的理解。
 
 有了均值和方差，为什么还要位置参数和尺度参数？为了更一般地描述问题，扩展范围。特别是在总体分布未知或知之甚少的情况下做检验，不再仅限于均值和方差这样的特征量。关于检验方法，如有不明白的地方，可以查看维基百科词条。对每个检验问题，本章给出原假设和备择假设，检验统计量及其服从的分布，R 语言实现（自编或调用函数，如果调用函数，说明参数及其含义），不讲公式推导过程。
 
@@ -229,22 +231,38 @@ flowchart LR
 #| echo: !expr knitr::is_html_output()
 
 library(ggplot2)
-
+# 绘制虚线所需的数据
+const <- 1 / sqrt(2 * pi)
+dat <- data.frame(
+  x = c(-1, -1, 3, 3),
+  y = c(const, 0, const / 1.5, 0),
+  group = c("dnorm1", "dnorm1", "dnorm2", "dnorm2"),
+  upper = c(const, 0, const / 1.5, 0),
+  lower = c(0, 0, 0, 0)
+)
 ggplot() +
   geom_function(
-    fun = dnorm, args = list(mean = 3, sd = 1),
-    aes(colour = "dnorm1"), linewidth = 2, xlim = c(-4, 8)
+    fun = dnorm, args = list(mean = -1, sd = 1),
+    aes(colour = "dnorm1"), linewidth = 1.5, xlim = c(-5, 10)
   ) +
   geom_function(
-    fun = dnorm, args = list(mean = 2, sd = 1.5),
-    aes(colour = "dnorm2"), linewidth = 2, xlim = c(-4, 8)
+    fun = dnorm, args = list(mean = 3, sd = 1.5),
+    aes(colour = "dnorm2"), linewidth = 1.5, xlim = c(-5, 10)
   ) +
   scale_color_brewer(palette = "Set1", labels = c(
-    dnorm1 = "$\\mathcal{N}(3, 1^2)$",
-    dnorm2 = "$\\mathcal{N}(2, 1.5^2)$"
+    dnorm1 = "$\\mathcal{N}(\\mu_1, \\sigma_1^2)$",
+    dnorm2 = "$\\mathcal{N}(\\mu_2, \\sigma_2^2)$"
   )) +
+  geom_linerange(
+    aes(x = x, y = y, ymin = lower, ymax = upper, colour = group),
+    linewidth = 2, lty = 2, show.legend = FALSE, data = dat
+  ) +
+  annotate("text", x = -1, y = 0, label = "$\\mu_1$", vjust = 2.5) +
+  annotate("text", x = 3, y = 0, label = "$\\mu_2$", vjust = 2.5) +
   theme_classic(base_size = 13) +
-  labs(x = "$x$", y = "$f(x)$", color = "正态分布")
+  theme(legend.position = c(0.9, 0.9)) +
+  labs(x = "$x$", y = "$f(x)$", color = "正态分布") +
+  coord_cartesian(clip = "off")
 ```
 
 常见检验问题
@@ -260,10 +278,10 @@ $$
 #### 方差已知
 
 $$
-u = \frac{(\bar{X} - \bar{Y}) - (\mu_1 - \mu_2)}{\sqrt{\frac{\sigma^2_1}{n_1} + \frac{\sigma^2_2}{n_2}} }
+u = \frac{(\bar{x} - \bar{y}) - (\mu_1 - \mu_2)}{\sqrt{\frac{\sigma^2_1}{n_1} + \frac{\sigma^2_2}{n_2}} }
 $$
 
-检验统计量服从标准正态分布 $u \sim N(0,1)$，检验统计量 $u$ 对应的样本值 $u_0$，检验的拒绝域和 $P$ 值如下
+检验统计量服从标准正态分布 $u \sim \mathcal{N}(0,1)$，检验统计量 $u$ 对应的样本值 $u_0$，检验的拒绝域和 $P$ 值如下
 
 $$
 W_1 = \{u \geq u_{1 - \alpha} \}, \quad p_1 = 1 - \varPhi(u_0) 
@@ -300,7 +318,7 @@ qnorm(1 - 0.05)
 t 检验，检验统计量服从自由度为 $n_1 + n_2 - 2$ 的 t 分布
 
 $$
-t = \frac{\bar{x} -\bar{y}}{s_0\sqrt{\frac{1}{n_1} + \frac{1}{n_2}}}
+t = \frac{(\bar{x} -\bar{y})-(\mu_1 - \mu_2)}{s_0\sqrt{\frac{1}{n_1} + \frac{1}{n_2}}}
 $$
 
 其中，
@@ -344,7 +362,7 @@ t.test(extra ~ group, data = sleep, var.equal = TRUE)
 
 两个样本的样本量不是很大，总体方差也未知，两样本均值之差的显著性检验，即著名的 Behrens-Fisher 问题，Welch 在 1938 年提出近似服从自由度为 $l$ 的 t 分布。
 
-两样本的样本量很大，尽管总体方差未知，两样本均值之差的显著性检验，极限分布是正态分布，可以用 Z 检验。两样本的样本量很大的情况下，Welch t 检验也可以用。
+两样本的样本量很大，尽管总体方差未知，两样本均值之差的显著性检验，极限分布是正态分布，可以用 Z 检验。在样本量很大的情况下，Welch t 检验也可以用。
 
 设 $x_1,\cdots,x_{n_1}$ 是来自总体 $\mathcal{N}(\mu_1,\sigma_1^2)$ 的 IID 样本，设 $y_1,\cdots,y_{n_2}$ 是来自总体 $\mathcal{N}(\mu_2,\sigma_2^2)$ 的 IID 样本。
 
@@ -443,7 +461,7 @@ var.test(extra ~ group, data = sleep)
 bartlett.test(extra ~ group, data = sleep)
 ```
 
-函数 `bartlett.test()` 支持多样本情况。
+注意：函数 `bartlett.test()` 支持多样本情况。
 
 ### 总体未知均值检验
 

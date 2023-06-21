@@ -10,6 +10,10 @@ library(rpart)   # 决策树
 library(randomForest)  # 随机森林
 library(xgboost)       # 梯度提升
 library(lattice)
+# Root Mean Squared Error 均方根误差
+rmse <- function(y, y_pred) {
+  sqrt(mean((y - y_pred)^2))
+}
 ```
 
 本章基于波士顿郊区房价数据集 Boston 介绍处理回归问题的 10 种方法。数据集 Boston 来自 R 软件内置的 **MASS** 包，一共 506 条记录 14 个变量，由 Boston Standard Metropolitan Statistical Area (SMSA) 在 1970 年收集。
@@ -45,41 +49,249 @@ str(Boston)
 ### 普通最小二乘回归 {#sec-ordinary-least-square-regression}
 
 ```{r}
-# lm ols
+fit_lm <- lm(medv ~ ., data = Boston)
+summary(fit_lm)
 ```
 
 ### 向前向后逐步回归 {#sec-stepwise-regression}
 
 ```{r}
-# step()
+fit_step <- step(fit_lm, direction = "both")
+summary(fit_step)
 ```
 
 ### 偏最小二乘回归 {#sec-partial-least-square-regression}
 
 ```{r}
-# pls::plsr()
+fit_pls <- pls::plsr(medv ~ ., ncomp = 6, data = Boston, validation = "CV")
+summary(fit_pls)
 ```
 
 ### 主成分回归 {#sec-principal-component-regression}
 
 ```{r}
-# pls::pcr()
+fit_pcr <- pls::pcr(medv ~ ., ncomp = 6, data = Boston, validation = "CV")
+summary(fit_pcr)
 ```
 
 ## 惩罚回归 {#sec-penalty-regression}
 
 ### 岭回归 {#sec-ridge-regression}
 
+```{r}
+library(glmnet)
+fit_ridge <- glmnet(x = Boston[, -14], y = Boston[, "medv"], family = "gaussian", alpha = 0)
+```
+
+```{r}
+#| label: fig-ridge-glmnet
+#| fig-cap: "回归系数的迭代路径"
+#| fig-width: 5
+#| fig-height: 5
+#| fig-showtext: true
+
+plot(fit_ridge)
+```
+
+```{r}
+#| label: fig-ridge-lambda
+#| fig-cap: "惩罚系数的迭代路径"
+#| fig-width: 5
+#| fig-height: 5
+#| fig-showtext: true
+
+plot(fit_ridge$lambda,
+  ylab = expression(lambda), xlab = "迭代次数",
+  main = "惩罚系数的迭代路径"
+)
+```
+
+```{r}
+fit_ridge$lambda[60]
+coef(fit_ridge, s = 28.00535)
+```
+
 ### Lasso 回归 {#sec-lasso-regression}
+
+Group Lasso
+
+```{r}
+fit_lasso <- glmnet(x = Boston[, -14], y = Boston[, "medv"], family = "gaussian", alpha = 1)
+```
+
+```{r}
+#| label: fig-lasso-glmnet
+#| fig-cap: "回归系数的迭代路径"
+#| fig-width: 5
+#| fig-height: 5
+#| fig-showtext: true
+
+plot(fit_lasso)
+```
+
+```{r}
+#| label: fig-lasso-lambda
+#| fig-cap: "惩罚系数的迭代路径"
+#| fig-width: 5
+#| fig-height: 5
+#| fig-showtext: true
+
+plot(fit_lasso$lambda,
+  ylab = expression(lambda), xlab = "迭代次数",
+  main = "惩罚系数的迭代路径"
+)
+```
+
+```{r}
+fit_lasso$lambda[60]
+coef(fit_lasso, s = 0.02800535)
+```
 
 ### 弹性网络 {#sec-elastic-net-regression}
 
+```{r}
+fit_elasticnet <- glmnet(x = Boston[, -14], y = Boston[, "medv"], family = "gaussian")
+```
+
+```{r}
+#| label: fig-elasticnet-glmnet
+#| fig-cap: "回归系数的迭代路径"
+#| fig-width: 5
+#| fig-height: 5
+#| fig-showtext: true
+
+plot(fit_elasticnet)
+```
+
+```{r}
+#| label: fig-elasticnet-lambda
+#| fig-cap: "惩罚系数的迭代路径"
+#| fig-width: 5
+#| fig-height: 5
+#| fig-showtext: true
+
+plot(fit_elasticnet$lambda,
+  ylab = expression(lambda), xlab = "迭代次数",
+  main = "惩罚系数的迭代路径"
+)
+```
+
+```{r}
+fit_elasticnet$lambda[60]
+coef(fit_elasticnet, s = 0.02800535)
+```
+
 ## 支持向量机
+
+```{r}
+library(kernlab)
+fit_ksvm <- ksvm(medv ~ ., data = Boston)
+fit_ksvm
+```
+
+```{r}
+# 预测
+pred_medv_svm <- predict(fit_ksvm, newdata = Boston)
+# RMSE
+rmse(Boston$medv, pred_medv_svm)
+```
 
 ## 神经网络
 
+单隐藏层的神经网络
+
+```{r}
+library(nnet)
+fit_nnet <- nnet(medv ~ .,
+  data = Boston, trace = FALSE,
+  size = 12, # 隐藏层单元数量
+  maxit = 500, # 最大迭代次数
+  linout = TRUE, # 线性输出单元
+  decay = 0.01 # 权重下降的参数
+)
+pred_medv_nnet <- predict(fit_nnet, newdata = Boston[, -14], type = "raw")
+rmse(Boston$medv, pred_medv_nnet)
+```
+
 ## 决策树
+
+```{r}
+library(rpart)
+fit_rpart <- rpart(medv ~ .,
+  data = Boston, control = rpart.control(minsplit = 5)
+)
+
+pred_medv_rpart <- predict(fit_rpart, newdata = Boston[, -14])
+
+rmse(Boston$medv, pred_medv_rpart)
+```
+
+```{r}
+#| label: fig-Boston-rpart
+#| fig-width: 5
+#| fig-height: 4
+#| fig-cap: 分类回归树
+#| fig-showtext: true
+
+library(rpart.plot)
+rpart.plot(fit_rpart)
+```
 
 ## 随机森林
 
+```{r}
+library(randomForest)
+fit_rf <- randomForest(medv ~ ., data = Boston)
+print(fit_rf)
+
+pred_medv_rf <- predict(fit_rf, newdata = Boston[, -14])
+rmse(Boston$medv, pred_medv_rf)
+```
+
 ## 集成学习
+
+```{r}
+# 输入数据 x 和采样比例 prop
+add_mark <- function(x = Boston, prop = 0.7) {
+  idx <- sample(x = nrow(x), size = floor(nrow(x) * prop))
+  rbind(
+    cbind(x[idx, ], mark = "train"),
+    cbind(x[-idx, ], mark = "test")
+  )
+}
+
+set.seed(20232023)
+Boston_df <- add_mark(Boston, prop = 0.7)
+
+library(data.table)
+Boston_dt <- as.data.table(Boston_df)
+
+# 训练数据
+Boston_train <- list(
+  data = as.matrix(Boston_dt[Boston_dt$mark == "train", -c("mark", "medv")]),
+  label = as.matrix(Boston_dt[Boston_dt$mark == "train", "medv"])
+)
+# 测试数据
+Boston_test <- list(
+  data = as.matrix(Boston_dt[Boston_dt$mark == "test", -c("mark", "medv")]),
+  label = as.matrix(Boston_dt[Boston_dt$mark == "test", "medv"])
+)
+```
+
+```{r}
+library(xgboost)
+Boston_xgb <- xgboost(
+  data = Boston_train$data, 
+  label = Boston_train$label,
+  objective = "reg:squarederror",  # 学习任务
+  eval_metric = "rmse",    # 评估指标
+  nrounds = 6
+)
+```
+
+```{r}
+# ?predict.xgb.Booster
+Boston_pred <- predict(object = Boston_xgb, newdata = Boston_test$data)
+# RMSE
+rmse(Boston_test$label, Boston_pred)
+```

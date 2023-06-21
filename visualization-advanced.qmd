@@ -638,51 +638,37 @@ ggraph(graph, layout = "kk") +
 
 ## 描述不确定性 {#sec-visualize-data-uncertainty}
 
-```{=html}
-<!-- 
-可视化不确定性，这属于高级篇内容，阐述一些常用、常见的统计概念
-https://github.com/wilkelab/ungeviz
-https://wilkelab.org/SDS375/schedule.html
+统计是一门研究不确定性的学科，由不确定性引出许多的基本概念，比如用置信区间描述点估计的不确定性，用覆盖概率描述区间估计方法的优劣。下面以二项分布参数的点估计与区间估计为例，通过可视化图形介绍这一系列统计概念。就点估计来说，描述不确定性可以用标准差、置信区间。
 
-Psychology of Data Visualization 2021 Michael Friendly
-http://euclid.psych.yorku.ca/www/psy6135/
+[**ggdist**](https://github.com/mjskay/ggdist) 包可视化分布和不确定性 [@ggdist2022]
 
-Visualizing the uncertainty of point estimates.
-Uncertainty is expressed as standard error, confidence interval, or credible interval
-https://wilkelab.org/SDS375/slides/visualizing-uncertainty.html#1
+-   Michael Friendly 2021 年的课程 [Psychology of Data Visualization](http://euclid.psych.yorku.ca/www/psy6135/)
+-   Claus O. Wilke 2023 年的课程 [SDS 375 Schedule Spring 2023](https://wilkelab.org/SDS375/schedule.html)
 
-[ggdist](https://github.com/mjskay/ggdist) Visualizations of distributions and uncertainty [@ggdist2022]
--->
-```
 ### 置信区间 {#sec-confidence-interval}
 
-```{=html}
-<!-- 
-描述点估计的不确定性
-二项分布参数 p 的点估计与区间估计，与后续覆盖概率联系起来
--->
-```
 | 0     | 1     | 2     | $\cdots$ | n     |
 |:------|:------|:------|:---------|:------|
 | $p_0$ | $p_1$ | $p_2$ | $\cdots$ | $p_n$ |
 
 : 二项分布的分布列 {#tbl-binom}
 
-二项分布 $\mathrm{Bin}(n,p)$ 的参数 $p$ 的精确区间估计如下：
+二项分布 $\mathrm{Binomial}(n,p)$ 的参数 $p$ 的精确区间估计如下：
 
 $$
-(B(\frac{\alpha}{2}; x, n-x+1), B(1-\frac{\alpha}{2}; x+1, n-x))
+\big(\mathrm{Beta}(\frac{\alpha}{2}; x, n-x+1), \mathrm{Beta}(1-\frac{\alpha}{2}; x+1, n-x)\big)
 $$ {#eq-clopper-ci}
 
-$x$ 是成功次数，$n$ 是实验次数，$B(p;v,w)$ 是形状参数为 v 和 w 的 Beta 分布的 p 分位数，p 的置信区间的上下限 $P_L,P_U$ 满足
+其中， $x$ 表示成功次数，$n$ 表示实验次数，$\mathrm{Beta}(p;v,w)$ 表示形状参数为 $v$ 和 $w$ 的 Beta 贝塔分布的 $p$ 分位数，参数 $p$ 的置信区间的上下限 $P_L,P_U$ 满足
 
-```{=tex}
-\begin{align}
+$$
+\begin{aligned}
 \frac{\Gamma(n+1)}{\Gamma(x)\Gamma(n-x+1)}\int_{0}^{P_L}t^{x-1}(1-t)^{n-x}\mathrm{dt} &= \frac{\alpha}{2} \\
 \frac{\Gamma(n+1)}{\Gamma(x+1)\Gamma(n-x)}\int_{0}^{P_U}t^{x}(1-t)^{n-x-1}\mathrm{dt} &= 1-\frac{\alpha}{2}
-\end{align}
-```
-$p_x$ 表示二项分布 $\mathrm{Bin}(n,p)$ 第 $x$ 项的概率，$x$ 的取值为 $0,1,\cdots,n$
+\end{aligned}
+$$
+
+$p_x$ 表示二项分布 $\mathrm{Binomial}(n,p)$ 第 $x$ 项的概率，$x$ 的取值为 $0,1,\cdots,n$
 
 $$p_x = \binom{n}{x}p^x(1-p)^{n-x}, \quad x = 0,1,\cdots,n$$
 
@@ -692,13 +678,14 @@ $$S_k = \sum_{x=0}^{k} p_x$$
 
 $S_k$ 服从形状参数为 $n-k,k+1$ 的贝塔分布 $I_x(a,b)$，对应于 R 函数 `pbeta(x,a,b)`。 $S_k$ 看作贝塔分布的随机变量 $X$
 
-```{=tex}
-\begin{align}
+$$
+\begin{aligned}
 B_x(a,b) &=\int_{0}^{x}t^{a-1}(1-t)^{b-1}\mathrm{dt} \\
 I_x(a,b) &= \frac{B_x(a,b)}{B(a,b)}, \quad B(a,b) = B_1(a,b)
-\end{align}
-```
-考虑二项总体的参数 $p=0.7$，重复模拟 50 次，每次模拟获得的比例 $\hat{p}$ 及其置信区间，如 @fig-clopper-pearson-ci 所示，置信区间覆盖真值的情况用不同颜色表示，覆盖用 TRUE 表示，没有覆盖用 FALSE 表示
+\end{aligned}
+$$
+
+考虑二项总体的参数 $p=0.7$，重复模拟 50 次，每次模拟获得的比例 $\hat{p}$ 及其置信区间，如 @fig-clopper-pearson-ci 所示，置信区间覆盖真值的情况用不同颜色表示，覆盖用 `TRUE` 表示，没有覆盖用 `FALSE` 表示
 
 ```{r}
 #| label: fig-clopper-pearson-ci
@@ -729,15 +716,9 @@ ggplot(data = dat, aes(x = 1:50, y = nd / 10, colour = cover)) +
 
 ### 假设检验 {#sec-hypothesis-tests}
 
-```{=html}
-<!-- 
-描述检验统计假设的不确定性  P 值和功效
-对一个统计假设，我有一套方法来检验其正确性，但结论具有不确定性（小概率原理，P 值和风险联系），同一个统计假设，同一组数据，不同的检验方法有不同的 P 值，是检验方法的功效不同。
+假设检验的目的是做决策，决策是有风险的，是可能发生错误的，为了控制犯第一类错误的可能性，我们用 P 值描述检验统计假设的不确定性，用功效描述检验方法的优劣。对同一个统计假设，同一组数据，不同的检验方法有不同的 P 值，本质是检验方法的功效不同。
 
-[ggpubr](https://github.com/kassambara/ggpubr) 制作出版级统计图形，两样本均值的比较
--->
-```
-[**ggpval**](https://github.com/s6juncheng/ggpval) 在图上添加检验的 P 值结果，[**ggsignif**](https://github.com/const-ae/ggsignif) [@ggsignif2021] 在图上添加显著性注释。[**ggstatsplot**](https://github.com/IndrajeetPatil/ggstatsplot) [@Indrajeet2021] 可视化统计检验、模型的结果，描述功效变化。
+[**ggpval**](https://github.com/s6juncheng/ggpval) 在图上添加检验的 P 值结果，[**ggsignif**](https://github.com/const-ae/ggsignif) [@ggsignif2021] 在图上添加显著性注释。[**ggstatsplot**](https://github.com/IndrajeetPatil/ggstatsplot) [@Indrajeet2021] 可视化统计检验、模型的结果，描述功效变化。[**ggpubr**](https://github.com/kassambara/ggpubr) 制作出版级统计图形，两样本均值的比较。
 
 ```{r}
 #| label: fig-plant-growth
@@ -800,11 +781,10 @@ ggplot(data = PlantGrowth, aes(x = group, y = weight)) +
 
 ### 模型预测 {#sec-model-predictions}
 
+描述模型预测的不确定性，预测的方差、预测区间。线性回归来说，回归线及置信带。
+
 ```{=html}
 <!-- 
-描述模型预测/曲线拟合的不确定性
-趋势拟合和描述关系中添加回归线及置信带
-
 rgl 广义可加模型可视化
 https://menugget.blogspot.com/2016/02/visualizing-model-predictions-in-3d.html
 
