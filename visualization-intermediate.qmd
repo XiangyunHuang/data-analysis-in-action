@@ -855,7 +855,7 @@ ggplot(data = china_age_sex, aes(x = `性别比（女=100）`, y = `年龄`, fil
 
 ### 点线图 {#sec-cleveland}
 
-<!-- 克利夫兰点图 dotchart 在条形图的基础上，省略了条形图的宽度，可以容纳更多的数据点。 -->
+克利夫兰点图 `dotchart()` 在条形图的基础上，省略了条形图的宽度，可以容纳更多的数据点。
 
 ```{r}
 #| label: fig-dotchart
@@ -872,14 +872,9 @@ ggplot(data = china_age_sex, aes(x = `性别比（女=100）`, y = `年龄`, col
 
 ### 词云图 {#sec-wordcloud}
 
-```{=html}
-<!-- 
-根据代码提交的说明制作词云图。根据各位开发者提交的代码量制作
--->
-```
-词云图帮助我们从众多的因素中展现出影响力比较大的主题。目前，R 语言社区官方发布的 R 包超过 18000 个，这些 R 包都是干什么的呢？热门的方向是什么呢？根据 R 包的标题内容分词，统计词频就可以帮助我们初步了解一些信息。
+词云图帮助我们从众多的因素中展现出影响力比较大的主题。目前，R 语言社区官方发布的 R 包超过 18000 个，这些 R 包都是干什么的呢？热门的方向是什么呢？根据 R 包的标题内容分词，统计词频就可以帮助我们初步了解一些信息。根据各位开发者提交的代码量制作。
 
-[ggwordcloud](https://github.com/lepennec/ggwordcloud) 包提供词云图层 `geom_text_wordcloud()`
+[**ggwordcloud**](https://github.com/lepennec/ggwordcloud) 包提供词云图层 `geom_text_wordcloud()` 根据代码提交的说明制作词云图。
 
 ```{r}
 #| label: fig-wordcloud
@@ -935,7 +930,7 @@ aggregate(data = svn_trunk_log, revision ~ author, FUN = length) |>
   transform(label = paste0(round(revision / sum(revision), digits = 4) * 100, "%")) |>
   ggplot(aes(x = 1, fill = reorder(author2, revision), y = revision)) +
   geom_col(position = "fill", show.legend = FALSE, color = "white") +
-  scale_y_continuous(labels = scales::percent) +
+  scale_y_continuous(labels = scales::label_percent()) +
   coord_polar(theta = "y") +
   geom_text(aes(x = 1.2, label = author2),
     position = position_fill(vjust = 0.5), color = "black"
@@ -962,7 +957,7 @@ aggregate(data = svn_trunk_log, revision ~ author, FUN = length) |>
   transform(label = paste0(round(revision / sum(revision), digits = 4) * 100, "%")) |> 
   ggplot(aes(x = 1, fill = reorder(author2, revision)  , y = revision)) +
   geom_col(position = "fill", show.legend = FALSE, color = "white") +
-  scale_y_continuous(labels = scales::percent) +
+  scale_y_continuous(labels = scales::label_percent()) +
   coord_polar(theta = "y") +
   geom_text(aes(x = 1.2, label = author2),
     position = position_fill(vjust = 0.5), color = "black"
@@ -1056,7 +1051,7 @@ aggregate(data = svn_trunk_log, revision ~ author, FUN = length) |>
   transform(label = paste0(round(revision / sum(revision), digits = 4) * 100, "%")) |> 
   ggplot(aes(x = 1, fill = author2, y = revision)) +
   geom_col(position = "fill", show.legend = FALSE, color = "white") +
-  scale_y_continuous(labels = scales::percent) +
+  scale_y_continuous(labels = scales::label_percent()) +
   coord_polar(theta = "y") +
   geom_text(aes(x = 1.2, label = author2),
     position = position_fill(vjust = 0.5), color = "black"
@@ -1130,7 +1125,7 @@ aggregate(data = svn_trunk_log, revision ~ year + author, FUN = length) |>
 aggregate(data = svn_trunk_log, revision ~ year + author, FUN = length) |> 
   ggplot(aes(x = year, y = revision, fill = author)) +
   geom_col(position = "fill") +
-  scale_y_continuous(labels = scales::percent) +
+  scale_y_continuous(labels = scales::label_percent()) +
   theme_classic() +
   coord_cartesian(expand = FALSE) +
   labs(x = "年份", y = "提交量", fill = "开发者")
@@ -1240,3 +1235,84 @@ ggplot(G20, aes(
   theme(legend.position = "bottom") +
   labs(title = "G20 主要经济体", fill = "区域")
 ```
+
+### Likert Scale 图 {#sec-likert-scale}
+
+展示调查研究中的用户态度。量表在市场调查，问卷调查，App 用户体验反馈等方面应用十分广泛，已经成为调查研究中的黄金标准。量表由心理学家 Rensis Likert 于 1932 年提出 [@Likert1932]，[Likert Scale](https://en.wikipedia.org/wiki/Likert_scale) 就是以他的名字命名的。
+
+量表在互联网产品中应用非常广泛，比如美团App里消息页面中的反馈框，用以收集用户使用产品的体验情况，如 @tbl-info-feedback 所示，从极其困难到极其方便，将用户反馈分成7个等级，目的是收集用户的反馈，以期改善产品的体验。
+
+| 1        | 2        | 3        | 4    | 5        | 6        | 7        |
+|:---------|:---------|:---------|:-----|:---------|:---------|:---------|
+| 极其困难 | 非常困难 | 比较困难 | 一般 | 比较方便 | 非常方便 | 极其方便 |
+
+: 您觉得在本页面，找想看的消息方便吗？ {#tbl-info-feedback}
+
+量表中的问题、观点的描述极其简单明了，对回答、表明态度的任何人都不会造成歧义，以确保不受文化差异、学历差异等的影响，受调查的人只需在待选的几个选项中圈选即可。候选项一般为 5-7 个，下面是一组典型的选项：
+
+1.  Strongly disagree （强烈反对），
+2.  Disagree（反对），
+3.  Neither agree nor disagree（中立），
+4.  Agree（同意），
+5.  Strongly agree（强烈同意）。
+
+Jason M. Bryer 开发了一个 R 包[**likert**](https://github.com/jbryer/likert)，特别适合调查研究数据可视化，将研究对象的态度以直观有效的方式展示出来，内置多个数据集，其中 @tbl-math-anxiety 是一个数学焦虑量表调查的结果，调查数据来自统计课上的 20 个学生。
+
+调查对象是 78 个来自不同学科的本科生，样本含有 36 个男性和 42 个女性，64% 的样本的年龄在 18 至 24 岁，36% 的样本年龄 25 岁及以上。更多数据背景信息 [@Bai2009]。
+
+| 观点                                                                      | 强烈反对 | 反对 | 中立 | 同意 | 强烈同意 |
+|:----------------------------------|-------:|-------:|-------:|-------:|-------:|
+| I find math interesting.                                                  |       10 |   15 |   10 |   35 |       30 |
+| I get uptight during math tests.                                          |       10 |   20 |   20 |   25 |       25 |
+| I think that I will use math in the future.                               |        0 |    0 |   20 |   25 |       55 |
+| Mind goes blank and I am unable to think clearly when doing my math test. |       30 |   30 |   15 |   10 |       15 |
+| Math relates to my life.                                                  |        5 |   20 |   10 |   40 |       25 |
+| I worry about my ability to solve math problems.                          |       20 |   20 |   20 |   30 |       10 |
+| I get a sinking feeling when I try to do math problems.                   |       35 |   10 |   15 |   35 |        5 |
+| I find math challenging.                                                  |        5 |   10 |   15 |   45 |       25 |
+| Mathematics makes me feel nervous.                                        |       20 |   25 |   15 |   25 |       15 |
+| I would like to take more math classes.                                   |       20 |   25 |   30 |   20 |        5 |
+| Mathematics makes me feel uneasy.                                         |       25 |   15 |   20 |   25 |       15 |
+| Math is one of my favorite subjects.                                      |       35 |   15 |   25 |   20 |        5 |
+| I enjoy learning with mathematics.                                        |       15 |   25 |   30 |   20 |       10 |
+| Mathematics makes me feel confused.                                       |       15 |   20 |   15 |   35 |       15 |
+
+: 你对数学感到焦虑吗？ {#tbl-math-anxiety}
+
+相比于 **ggplot2** 绘制的普通条形图， @fig-likert 有一些独特之处：对立型的渐变色表示两个不同方向的态度，左右两侧以中立态度为中间位置，非常形象，并且按照其中一个方向的态度数据排序，显得比较整齐有序，便于理解。
+
+```{r}
+#| label: fig-likert-scale
+#| fig-cap: "你喜欢数学吗"
+#| fig-width: 8.5
+#| fig-height: 5
+#| fig-showtext: true
+
+# 数据来自 likert 包
+MathAnxiety <- readRDS(file = "data/MathAnxiety.rds")
+
+# 宽转长格式
+MathAnxiety_df <- reshape(data = MathAnxiety, 
+    varying = c(
+    "Strongly Disagree", "Disagree", "Neutral",
+    "Agree", "Strongly Agree"
+  ),
+  times = c(
+    "Strongly Disagree", "Disagree", "Neutral",
+    "Agree", "Strongly Agree"
+  ),
+  timevar = "Attitude",
+  v.names = "Numbers", 
+  idvar = "Item", 
+  new.row.names = 1:(5 * 14),
+  direction = "long"
+ )
+
+ggplot(data = MathAnxiety_df, aes(x = Numbers, y = Item, fill = Attitude)) +
+  geom_col(position = "fill") +
+  scale_x_continuous(labels = scales::label_percent()) +
+  theme_classic() +
+  labs(x = "占比", y = "问题", fill = "态度")
+```
+
+**ggstats** 包的函数 `gglikert()` 适合对明细的调查数据绘图，而 **likert** 包的函数 `likert()` 适合对聚合的调查数据绘图。
