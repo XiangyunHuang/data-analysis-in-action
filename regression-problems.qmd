@@ -2,8 +2,11 @@
 
 ```{r}
 #| message: false
+
+library(MASS)
 # library(pls)   # pcr 主成分回归 plsr 偏最小二乘回归
 library(glmnet)  # 惩罚回归
+library(ncvreg)  # MCP / SCAD
 library(kernlab) # 基于核的支持向量机 ksvm
 library(nnet)    # 神经网络 nnet
 library(rpart)   # 决策树
@@ -181,7 +184,92 @@ fit_elasticnet$lambda[60]
 coef(fit_elasticnet, s = 0.02800535)
 ```
 
-## 支持向量机
+### MCP {#sec-mcp-regression}
+
+**ncvreg** 包 [@Breheny2011] 提供额外的两种惩罚类型，分别是 MCP （minimax concave penalty）和 SCAD（smoothly clipped absolute deviation）。
+
+```{r}
+library(ncvreg)
+fit_mcp <- ncvreg(X = Boston[, -14], y = Boston[, "medv"], penalty = "MCP")
+```
+
+```{r}
+#| label: fig-mcp-ncvreg
+#| fig-cap: "回归系数的迭代路径"
+#| fig-width: 5
+#| fig-height: 5
+#| fig-showtext: true
+
+plot(fit_mcp)
+```
+
+回归系数
+
+```{r}
+coef(fit_mcp, lambda = 0.85)
+summary(fit_mcp, lambda = 0.85)
+```
+
+10 折交叉验证，选择超参数 $\lambda$
+
+```{r}
+fit_mcp_cv <- cv.ncvreg(X = Boston[, -14], y = Boston[, "medv"], penalty = "MCP", seed = 20232023)
+summary(fit_mcp_cv)
+```
+
+在 $\lambda = 0.1362$ 时，交叉验证的误差最小，非 0 回归系数 11 个。
+
+```{r}
+#| label: fig-mcp-lambda
+#| fig-cap: "惩罚系数的迭代路径"
+#| fig-width: 5
+#| fig-height: 5
+#| fig-showtext: true
+
+plot(fit_mcp_cv)
+```
+
+### SCAD {#sec-scad-regression}
+
+```{r}
+fit_scad <- ncvreg(X = Boston[, -14], y = Boston[, "medv"], penalty = "SCAD")
+```
+
+```{r}
+#| label: fig-scad-ncvreg
+#| fig-cap: "回归系数的迭代路径"
+#| fig-width: 5
+#| fig-height: 5
+#| fig-showtext: true
+
+plot(fit_scad)
+```
+
+```{r}
+coef(fit_scad, lambda = 0.85)
+summary(fit_scad, lambda = 0.85)
+```
+
+10 折交叉验证，选择超参数 $\lambda$
+
+```{r}
+fit_scad_cv <- cv.ncvreg(X = Boston[, -14], y = Boston[, "medv"], penalty = "SCAD", seed = 20232023)
+summary(fit_scad_cv)
+```
+
+在 $\lambda = 0.1362$ 时，交叉验证的误差最小，非 0 回归系数 11 个。
+
+```{r}
+#| label: fig-scad-lambda
+#| fig-cap: "惩罚系数的迭代路径"
+#| fig-width: 5
+#| fig-height: 5
+#| fig-showtext: true
+
+plot(fit_scad_cv)
+```
+
+## 支持向量机 {#sec-svm-regression}
 
 ```{r}
 library(kernlab)
@@ -196,7 +284,7 @@ pred_medv_svm <- predict(fit_ksvm, newdata = Boston)
 rmse(Boston$medv, pred_medv_svm)
 ```
 
-## 神经网络
+## 神经网络 {#sec-nnet-regression}
 
 单隐藏层的神经网络
 
@@ -213,7 +301,7 @@ pred_medv_nnet <- predict(fit_nnet, newdata = Boston[, -14], type = "raw")
 rmse(Boston$medv, pred_medv_nnet)
 ```
 
-## 决策树
+## 决策树 {#sec-rpart-regression}
 
 ```{r}
 library(rpart)
@@ -237,7 +325,7 @@ library(rpart.plot)
 rpart.plot(fit_rpart)
 ```
 
-## 随机森林
+## 随机森林 {#sec-rf-regression}
 
 ```{r}
 library(randomForest)
@@ -248,7 +336,7 @@ pred_medv_rf <- predict(fit_rf, newdata = Boston[, -14])
 rmse(Boston$medv, pred_medv_rf)
 ```
 
-## 集成学习
+## 集成学习 {#sec-boosting-regression}
 
 ```{r}
 # 输入数据 x 和采样比例 prop

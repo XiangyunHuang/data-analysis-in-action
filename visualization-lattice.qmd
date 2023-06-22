@@ -553,7 +553,13 @@ levelplot(volcano,
 
 参数 `col.regions` 需要传递一个函数，示例中函数 `hcl.colors()` 默认使用 viridis 调色板，其它常见的还有函数 `gray.colors()` 、`terrain.colors()` 和 `topo.colors()` 等，还可以用函数 `colorRampPalette()` 构造调色板函数。
 
-函数 `panel.2dsmoother()` 来自 **latticeExtra** 包，数据的二维分布，默认采用 `tp` thin plate regression spline 回归样条方法平滑。
+函数 `panel.2dsmoother()` 来自 **latticeExtra** 包，数据的二维分布，默认采用 `tp`
+
+-   `tp` thin plate regression spline 回归样条方法平滑。
+
+-   `cr` Cubic regression spline 立方回归样条
+
+-   `gp` Gaussian process smooths 高斯过程平滑，默认为全秩 Full Rank，指定 k 低秩近似 Low Rank。
 
 ```{r}
 #| label: fig-levelplot-topo
@@ -565,7 +571,7 @@ levelplot(volcano,
 data(topo, package = "MASS")
 levelplot(z ~ x * y, data = topo, scales = "free",
   panel = panel.2dsmoother, contour = TRUE,
-  form = z ~ s(x, y), method = "gam",
+  form = z ~ s(x, y, bs = "gp", k = 50), method = "gam",
   xlab = "水平方向", ylab = "垂直方向"
 )
 ```
