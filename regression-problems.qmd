@@ -1,5 +1,11 @@
 # 回归问题 {#sec-regression-problems}
 
+::: hidden
+$$
+ \def\bm#1{{\boldsymbol #1}}
+$$
+:::
+
 ```{r}
 #| message: false
 
@@ -184,9 +190,137 @@ fit_elasticnet$lambda[60]
 coef(fit_elasticnet, s = 0.02800535)
 ```
 
+### 自适应 Lasso {#sec-adaptive-lasso}
+
+$$
+\mathcal{L}(\bm{\beta}) = \sum_{i=1}^{n}(y_i - \bm{x}_i^{\top}\bm{\beta})^2 + \lambda_n\sum_{j=1}^{p}\frac{1}{w_j}|\beta_j|
+$$
+
+普通最小二乘估计或岭回归估计的结果作为适应性 Lasso 回归的权重。其中 $w_j = (|\hat{\beta}_{ols_j}|)^{\gamma}$ 或 $w_j = (|\hat{\beta}_{ridge_j}|)^{\gamma}$ ， $\gamma$ 是一个用于调整自适应权重向量的正常数，一般建议的正常数是 0.5，1 或 2。
+
+```{r}
+# 岭权重 gamma = 1
+g <- 1
+set.seed(20232023)
+## 岭回归
+ridge_model <- cv.glmnet(
+  x = as.matrix(Boston[, -14]),
+  y = Boston[, 14], alpha = 0
+)
+ridge_coef <- as.matrix(coef(ridge_model, s = ridge_model$lambda.min))
+ridge_weight <- 1 / (abs(ridge_coef[-1, ]))^g
+
+## Adaptive Lasso
+set.seed(20232023)
+fit_adaptive_lasso <- cv.glmnet(
+  x = as.matrix(Boston[, -14]),
+  y = Boston[, 14], alpha = 1,
+  penalty.factor = ridge_weight # 惩罚权重
+)
+```
+
+岭回归和自适应 Lasso 回归模型的超参数
+
+```{r}
+#| label: fig-adaptive-lasso
+#| fig-width: 4
+#| fig-height: 4
+#| fig-showtext: true
+#| fig-cap: 自适应 Lasso 回归模型的超参数选择
+#| layout-ncol: 2
+#| par: true
+#| fig-subcap:
+#| - 岭回归
+#| - 自适应 Lasso 回归
+
+plot(ridge_model)
+plot(fit_adaptive_lasso)
+```
+
+$\lambda$ 超参数
+
+```{r}
+fit_adaptive_lasso$lambda.min
+```
+
+自适应 Lasso 回归参数
+
+```{r}
+coef(fit_adaptive_lasso, s = fit_adaptive_lasso$lambda.min)
+```
+
+预测
+
+```{r}
+pred_medv_adaptive_lasso <- predict(
+  fit_adaptive_lasso, newx = as.matrix(Boston[, -14]),
+  s = fit_adaptive_lasso$lambda.min, type = "response"
+)
+```
+
+预测的均方根误差
+
+```{r}
+rmse(Boston[, 14], pred_medv_adaptive_lasso)
+```
+
+### 松弛 Lasso {#sec-relaxed-lasso}
+
+Lasso 回归倾向于将回归系数压缩到 0，松弛 Lasso
+
+$$
+\hat{\beta}_{relax}(\lambda,\gamma) = \gamma \hat{\beta}_{lasso}(\lambda) + (1 - \gamma)\hat{\beta}_{ols}(\lambda)
+$$
+
+其中，$\gamma \in[0,1]$ 是一个超参数
+
+```{r}
+fit_relax_lasso <- cv.glmnet(
+  x = as.matrix(Boston[, -14]), 
+  y = Boston[, "medv"], relax = TRUE
+)
+```
+
+```{r}
+#| label: fig-relax-lasso
+#| fig-cap: "回归系数的迭代路径"
+#| fig-width: 5
+#| fig-height: 5
+#| fig-showtext: true
+
+plot(fit_relax_lasso)
+```
+
+CV 交叉验证筛选出来的超参数 $\lambda$ 和 $\gamma$ ，$\gamma = 0$ 意味着松弛 Lasso 退化为 OLS 估计
+
+```{r}
+fit_relax_lasso$relaxed$lambda.min
+fit_relax_lasso$relaxed$gamma.min
+```
+
+松弛 Lasso 回归系数与 OLS 估计的结果一样
+
+```{r}
+coef(fit_relax_lasso, s = "lambda.min", gamma = "gamma.min")
+```
+
+松弛 Lasso 预测
+
+```{r}
+pred_medv_relax_lasso <- predict(
+  fit_relax_lasso,
+  newx = as.matrix(Boston[, -14]),
+  s = "lambda.min", gamma = "gamma.min"
+)
+```
+
+```{r}
+rmse(Boston[, 14], pred_medv_relax_lasso)
+```
+
 ### MCP {#sec-mcp-regression}
 
-**ncvreg** 包 [@Breheny2011] 提供额外的两种惩罚类型，分别是 MCP （minimax concave penalty）和 SCAD（smoothly clipped absolute deviation）。
+**ncvreg** 包 [@Breheny2011] 提供额外的两种非凸/凹惩罚类型，分别是 MCP （minimax concave penalty）和 SCAD（smoothly clipped absolute deviation）。
 
 ```{r}
 library(ncvreg)
@@ -199,6 +333,7 @@ fit_mcp <- ncvreg(X = Boston[, -14], y = Boston[, "medv"], penalty = "MCP")
 #| fig-width: 5
 #| fig-height: 5
 #| fig-showtext: true
+#| par: true
 
 plot(fit_mcp)
 ```
@@ -213,7 +348,10 @@ summary(fit_mcp, lambda = 0.85)
 10 折交叉验证，选择超参数 $\lambda$
 
 ```{r}
-fit_mcp_cv <- cv.ncvreg(X = Boston[, -14], y = Boston[, "medv"], penalty = "MCP", seed = 20232023)
+fit_mcp_cv <- cv.ncvreg(
+  X = Boston[, -14], y = Boston[, "medv"], 
+  penalty = "MCP", seed = 20232023
+)
 summary(fit_mcp_cv)
 ```
 
@@ -241,6 +379,7 @@ fit_scad <- ncvreg(X = Boston[, -14], y = Boston[, "medv"], penalty = "SCAD")
 #| fig-width: 5
 #| fig-height: 5
 #| fig-showtext: true
+#| par: true
 
 plot(fit_scad)
 ```
@@ -253,7 +392,10 @@ summary(fit_scad, lambda = 0.85)
 10 折交叉验证，选择超参数 $\lambda$
 
 ```{r}
-fit_scad_cv <- cv.ncvreg(X = Boston[, -14], y = Boston[, "medv"], penalty = "SCAD", seed = 20232023)
+fit_scad_cv <- cv.ncvreg(
+  X = Boston[, -14], y = Boston[, "medv"], 
+  penalty = "SCAD", seed = 20232023
+)
 summary(fit_scad_cv)
 ```
 
