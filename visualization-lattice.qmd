@@ -459,6 +459,41 @@ levelplot(depth ~ long + lat | Magnitude,
 )
 ```
 
+### 三维散点图 {#sec-lattice-cloud}
+
+三维散点图
+
+```{r}
+#| label: fig-lattice-cloud
+#| fig-cap: 三维散点图
+#| fig-width: 4.5
+#| fig-height: 4.5
+#| fig-showtext: true
+
+cloud(Sepal.Length ~ Sepal.Width + Petal.Length,
+  groups = Species, data = iris,
+  # 去掉方向箭头
+  scales = list(arrows = FALSE, col = "black"),
+  xlab = list("萼片宽度", rot = 30),
+  ylab = list("花瓣长度", rot = -35),
+  zlab = list("萼片长度", rot = 90),
+  # 减少三维图形的边空
+  lattice.options = list(
+    layout.widths = list(
+      left.padding = list(x = -0.5, units = "inches"),
+      right.padding = list(x = -1.0, units = "inches")
+    ),
+    layout.heights = list(
+      bottom.padding = list(x = -1.5, units = "inches"),
+      top.padding = list(x = -1.5, units = "inches")
+    )
+  ),
+  # 去掉外框线
+  par.settings = list(axis.line = list(col = "transparent")),
+  screen = list(z = 30, x = -65, y = 0)
+)
+```
+
 ### 三维透视图 {#sec-lattice-wireframe}
 
 有如下参数方程
@@ -523,9 +558,44 @@ wireframe(kz(um, vm) ~ kx(um, vm) + ky(um, vm),
 )
 ```
 
+矩阵类型的数据
+
+```{r}
+#| label: fig-wireframe-volcano
+#| fig-cap: 奥克兰火山地形图
+#| fig-width: 6
+#| fig-height: 5.5
+#| fig-showtext: true
+
+wireframe(volcano,
+  drape = TRUE, colorkey = FALSE, shade = TRUE,
+  xlab = list("南北方向", rot = -40),
+  ylab = list("东西方向", rot = 45),
+  zlab = list("高度", rot = 90),
+  # 减少三维图形的边空
+  lattice.options = list(
+    layout.widths = list(
+      left.padding = list(x = -.6, units = "inches"),
+      right.padding = list(x = -1.0, units = "inches")
+    ),
+    layout.heights = list(
+      bottom.padding = list(x = -.8, units = "inches"),
+      top.padding = list(x = -1.0, units = "inches")
+    )
+  ),
+  # 设置坐标轴字体大小
+  par.settings = list(
+    axis.line = list(col = "transparent"),
+    fontsize = list(text = 12, points = 10)
+  ),
+  scales = list(arrows = FALSE, col = "black"), 
+  screen = list(z = -45, x = -50, y = 0)
+)
+```
+
 ### 地形轮廓图 {#sec-lattice-contour}
 
-奥克兰火山地形图
+奥克兰火山地形图，矩阵类型的数据
 
 ```{r}
 #| label: fig-levelplot-volcano
@@ -556,9 +626,7 @@ levelplot(volcano,
 函数 `panel.2dsmoother()` 来自 **latticeExtra** 包，数据的二维分布，默认采用 `tp`
 
 -   `tp` thin plate regression spline 回归样条方法平滑。
-
 -   `cr` Cubic regression spline 立方回归样条
-
 -   `gp` Gaussian process smooths 高斯过程平滑，默认为全秩 Full Rank，指定 k 低秩近似 Low Rank。
 
 ```{r}
@@ -659,6 +727,7 @@ xyplot(Sepal.Length ~ Petal.Length, groups = Species, data = iris,
 | **lattice**      | `barchart()`         | （分组）柱形图 | 描述对比     |
 | **lattice**      | `levelplot()`        | 切片水平图     | 描述趋势     |
 | **lattice**      | `wireframe()`        | 三维透视图     | 描述趋势     |
+| **lattice**      | `cloud()`            | 三维散点图     | 描述分布     |
 | **latticeExtra** | `panel.smoother()`   | 回归曲线图     | 描述趋势     |
 | **latticeExtra** | `panel.2dsmoother()` | 地形轮廓图     | 描述趋势     |
 | **latticeExtra** | `ecdfplot()`         | 经验分布图     | 描述分布     |
