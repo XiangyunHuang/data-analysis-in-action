@@ -19,6 +19,7 @@ library(MASS)
 # library(pls)   # pcr 主成分回归 plsr 偏最小二乘回归
 library(glmnet)  # 惩罚回归
 library(ncvreg)  # MCP / SCAD
+library(abess)   # Best subset
 library(kernlab) # 基于核的支持向量机 ksvm
 library(nnet)    # 神经网络 nnet
 library(rpart)   # 决策树
@@ -441,39 +442,39 @@ $$
 ```{r}
 library(abess)
 fit_abess <- abess(medv ~ ., data = Boston, family = "gaussian", 
-                   tune.type = "cv", nfolds = 5, seed = 20232023)
+                   tune.type = "cv", nfolds = 10, seed = 20232023)
 ```
 
-系数的迭代路径
+参数 `tune.type = "cv"` 表示交叉验证的方式确定超参数来筛选变量，参数 `nfolds = 10` 表示将数据划分为 10 份，采用 10 折交叉验证，参数 `seed` 用来设置随机数，以便可重复交叉验证 CV 的结果。惩罚系数的迭代路径见下图。
 
 ```{r}
 #| label: fig-abess-lambda
-#| fig-cap: "惩罚系数的迭代路径"
+#| fig-cap: 惩罚系数的迭代路径
 #| fig-width: 5
-#| fig-height: 4
+#| fig-height: 5
 #| fig-showtext: true
-#| par: true
 
-plot(fit_abess, label = TRUE)
+plot(fit_abess, label = TRUE, main = "惩罚系数的迭代路径")
 ```
 
-交叉验证，筛选变量个数
+使用交叉验证筛选变量个数，不同的 support size 表示进入模型中的变量数目。
 
 ```{r}
 #| label: fig-tune-lambda
-#| fig-cap: "变量个数"
+#| fig-cap: 交叉验证筛选变量个数
 #| fig-width: 5
-#| fig-height: 4
+#| fig-height: 5
 #| fig-showtext: true
 #| par: true
 
-plot(fit_abess, type = "tune")
+plot(fit_abess, type = "tune", main = "交叉验证筛选变量个数")
 ```
 
-从上图可以看出，选择 6 个变量比较合适。
+从上图可以看出，选择 6 个变量是比较合适的，作为最终的模型。
 
 ```{r}
 best_model <- extract(fit_abess, support.size = 6)
+# 模型的结果，惩罚参数值、各个变量的系数
 str(best_model)
 ```
 
