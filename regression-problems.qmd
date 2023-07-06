@@ -431,6 +431,68 @@ summary(fit_scad_cv)
 plot(fit_scad_cv)
 ```
 
+### 最小角回归 {#sec-least-angle}
+
+**lars** 包提供 Lasso 回归和最小角（Least Angle）回归
+
+```{r}
+#| message: false
+
+library(lars)
+# Lasso 回归
+fit_lars_lasso <- lars(
+  x = as.matrix(Boston[, -14]), y = as.matrix(Boston[, "medv"]),
+  type = "lasso", trace = FALSE, normalize = TRUE, intercept = TRUE
+)
+# LAR 回归
+fit_lars_lar <- lars(
+  x = as.matrix(Boston[, -14]), y = as.matrix(Boston[, "medv"]),
+  type = "lar", trace = FALSE, normalize = TRUE, intercept = TRUE
+)
+```
+
+参数 `type = "lasso"` 表示采用 Lasso 回归，参数 `trace = FALSE` 表示不显示迭代过程，参数 `normalize = TRUE` 表示每个变量都标准化，使得它们的 L2 范数为 1，参数 `intercept = TRUE` 表示模型中包含截距项，且不参与惩罚。
+
+Lasso 和最小角回归系数的迭代路径见下图。
+
+```{r}
+#| label: fig-lars-lasso
+#| fig-width: 4
+#| fig-height: 4
+#| fig-showtext: true
+#| fig-cap: Lasso 和最小角回归系数的迭代路径
+#| layout-ncol: 2
+#| fig-subcap:
+#| - Lasso 回归
+#| - 最小角回归
+
+plot(fit_lars_lasso)
+plot(fit_lars_lar)
+```
+
+采用 10 折交叉验证筛选变量
+
+```{r}
+#| label: fig-cv-lars
+#| fig-cap: 交叉验证均方误差的变化
+#| fig-width: 5
+#| fig-height: 5
+#| fig-showtext: true
+#| layout-ncol: 2
+#| fig-subcap:
+#| - Lasso 回归
+#| - 最小角回归
+
+cv.lars(
+  x = as.matrix(Boston[, -14]), y = as.matrix(Boston[, "medv"]),
+  type = "lasso", trace = FALSE, plot.it = TRUE, K = 10
+)
+cv.lars(
+  x = as.matrix(Boston[, -14]), y = as.matrix(Boston[, "medv"]),
+  type = "lar", trace = FALSE, plot.it = TRUE, K = 10
+)
+```
+
 ### 最优子集回归 {#sec-best-subset}
 
 $$
