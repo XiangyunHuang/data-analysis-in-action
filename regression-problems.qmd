@@ -93,6 +93,10 @@ summary(fit_pcr)
 
 ### 岭回归 {#sec-ridge-regression}
 
+$$
+\mathcal{L}(\bm{\beta}) = \sum_{i=1}^{n}(y_i - \bm{x}_i^{\top}\bm{\beta})^2 + \lambda\|\bm{\beta}\|_2^2
+$$
+
 ```{r}
 library(glmnet)
 fit_ridge <- glmnet(x = Boston[, -14], y = Boston[, "medv"], family = "gaussian", alpha = 0)
@@ -128,7 +132,9 @@ coef(fit_ridge, s = 28.00535)
 
 ### Lasso 回归 {#sec-lasso-regression}
 
-Group Lasso
+$$
+\mathcal{L}(\bm{\beta}) = \sum_{i=1}^{n}(y_i - \bm{x}_i^{\top}\bm{\beta})^2 + \lambda\|\bm{\beta}\|_1
+$$
 
 ```{r}
 fit_lasso <- glmnet(x = Boston[, -14], y = Boston[, "medv"], family = "gaussian", alpha = 1)
@@ -163,6 +169,10 @@ coef(fit_lasso, s = 0.02800535)
 ```
 
 ### 弹性网络 {#sec-elastic-net-regression}
+
+$$
+\mathcal{L}(\bm{\beta}) = \sum_{i=1}^{n}(y_i - \bm{x}_i^{\top}\bm{\beta})^2 + \lambda(\frac{1-\alpha}{2}\|\bm{\beta}\|_2^2 + \alpha \|\bm{\beta}\|_1)
+$$
 
 ```{r}
 fit_elasticnet <- glmnet(x = Boston[, -14], y = Boston[, "medv"], family = "gaussian")
@@ -414,6 +424,53 @@ summary(fit_scad_cv)
 #| fig-showtext: true
 
 plot(fit_scad_cv)
+```
+
+### 最优子集回归 {#sec-best-subset}
+
+$$
+\mathcal{L}(\bm{\beta}) = \sum_{i=1}^{n}(y_i - \bm{x}_i^{\top}\bm{\beta})^2 + \lambda\|\bm{\beta}\|_0
+$$
+
+最优子集回归，添加 L0 惩罚，[abess](https://github.com/abess-team/abess) 包 [@abess2022] 支持线性回归、泊松回归、逻辑回归、多项回归等模型，可以非常高效地做最优子集筛选变量。
+
+```{r}
+library(abess)
+fit_abess <- abess(medv ~ ., data = Boston, family = "gaussian", 
+                   tune.type = "cv", nfolds = 5, seed = 20232023)
+```
+
+系数的迭代路径
+
+```{r}
+#| label: fig-abess-lambda
+#| fig-cap: "惩罚系数的迭代路径"
+#| fig-width: 5
+#| fig-height: 5
+#| fig-showtext: true
+#| par: true
+
+plot(fit_abess, label = TRUE)
+```
+
+交叉验证，筛选变量个数
+
+```{r}
+#| label: fig-tune-lambda
+#| fig-cap: "变量个数"
+#| fig-width: 5
+#| fig-height: 5
+#| fig-showtext: true
+#| par: true
+
+plot(fit_abess, type = "tune")
+```
+
+从上图可以看出，选择 6 个变量比较合适。
+
+```{r}
+best_model <- extract(fit_abess, support.size = 6)
+str(best_model)
 ```
 
 ## 支持向量机 {#sec-svm-regression}
