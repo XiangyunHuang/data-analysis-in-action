@@ -96,7 +96,27 @@ summary(fit_pcr)
 
 ## 惩罚回归 {#sec-penalty-regression}
 
+本节主要介绍 4 个 R 包的使用，分别是 **glmnet** 包 [@Friedman2010]、 **ncvreg** 包 [@Breheny2011] 、 **lars** 包 [@Efron2004] 和 **abess** 包 [@abess2022]。
+
+| R 包       | 惩罚方法          | 函数实现                       |
+|------------|-------------------|--------------------------------|
+| **glmnet** | 岭回归            | `glmnet(...,alpha = 0)`        |
+| **glmnet** | Lasso 回归        | `glmnet(...,alpha = 1)`        |
+| **glmnet** | 弹性网络回归      | `glmnet(...)`                  |
+| **glmnet** | 自适应 Lasso 回归 | `glmnet(...,penalty.factor)`   |
+| **glmnet** | 松驰 Lasso 回归   | `glmnet(...,relax = TRUE)`     |
+| **ncvreg** | MCP               | `ncvreg(...,penalty = "MCP")`  |
+| **ncvreg** | SCAD              | `ncvreg(...,penalty = "SCAD")` |
+| **lars**   | 最小角回归        | `lars(...,type = "lar")`       |
+| **abess**  | 最优子集回归      | `abess()`                      |
+
+: 惩罚回归的 R 包实现 {#tbl-penalty}
+
+函数 `glmnet()` 的参数 `penalty.factor` 表示惩罚因子，默认值为全 1 向量，自适应 Lasso 回归中需要指定。弹性网络回归要求参数 `alpha` 介于 0-1 之间。
+
 ### 岭回归 {#sec-ridge-regression}
+
+岭回归
 
 $$
 \mathcal{L}(\bm{\beta}) = \sum_{i=1}^{n}(y_i - \bm{x}_i^{\top}\bm{\beta})^2 + \lambda\|\bm{\beta}\|_2^2
@@ -137,6 +157,8 @@ coef(fit_ridge, s = 28.00535)
 
 ### Lasso 回归 {#sec-lasso-regression}
 
+Lasso 回归
+
 $$
 \mathcal{L}(\bm{\beta}) = \sum_{i=1}^{n}(y_i - \bm{x}_i^{\top}\bm{\beta})^2 + \lambda\|\bm{\beta}\|_1
 $$
@@ -175,6 +197,8 @@ coef(fit_lasso, s = 0.02800535)
 
 ### 弹性网络 {#sec-elastic-net-regression}
 
+弹性网络 [@Zou2005]
+
 $$
 \mathcal{L}(\bm{\beta}) = \sum_{i=1}^{n}(y_i - \bm{x}_i^{\top}\bm{\beta})^2 + \lambda(\frac{1-\alpha}{2}\|\bm{\beta}\|_2^2 + \alpha \|\bm{\beta}\|_1)
 $$
@@ -212,6 +236,8 @@ coef(fit_elasticnet, s = 0.02800535)
 ```
 
 ### 自适应 Lasso {#sec-adaptive-lasso}
+
+自适应 Lasso [@Zou2006]
 
 $$
 \mathcal{L}(\bm{\beta}) = \sum_{i=1}^{n}(y_i - \bm{x}_i^{\top}\bm{\beta})^2 + \lambda_n\sum_{j=1}^{p}\frac{1}{w_j}|\beta_j|
@@ -292,7 +318,7 @@ $$
 \hat{\beta}_{relax}(\lambda,\gamma) = \gamma \hat{\beta}_{lasso}(\lambda) + (1 - \gamma)\hat{\beta}_{ols}(\lambda)
 $$
 
-其中，$\gamma \in[0,1]$ 是一个超参数
+其中，$\gamma \in[0,1]$ 是一个超参数。
 
 ```{r}
 fit_relax_lasso <- cv.glmnet(
@@ -433,7 +459,7 @@ plot(fit_scad_cv)
 
 ### 最小角回归 {#sec-least-angle}
 
-**lars** 包提供 Lasso 回归和最小角（Least Angle）回归
+**lars** 包提供 Lasso 回归和最小角（Least Angle）回归[@Efron2004]。
 
 ```{r}
 #| message: false
@@ -483,10 +509,12 @@ plot(fit_lars_lar)
 #| - Lasso 回归
 #| - 最小角回归
 
+set.seed(20232023)
 cv.lars(
   x = as.matrix(Boston[, -14]), y = as.matrix(Boston[, "medv"]),
   type = "lasso", trace = FALSE, plot.it = TRUE, K = 10
 )
+set.seed(20232023)
 cv.lars(
   x = as.matrix(Boston[, -14]), y = as.matrix(Boston[, "medv"]),
   type = "lar", trace = FALSE, plot.it = TRUE, K = 10
