@@ -459,6 +459,44 @@ levelplot(depth ~ long + lat | Magnitude,
 )
 ```
 
+### 三维散点图 {#sec-lattice-cloud}
+
+**lattice** 包的函数 `cloud()` 三维散点图
+
+```{r}
+#| label: fig-lattice-cloud
+#| fig-cap: 三维散点图
+#| fig-width: 4.5
+#| fig-height: 4.5
+#| fig-showtext: true
+
+cloud(Sepal.Length ~ Sepal.Width + Petal.Length,
+  groups = Species, data = iris,
+  # 去掉方向箭头
+  scales = list(arrows = FALSE, col = "black"),
+  xlab = list("萼片宽度", rot = 30),
+  ylab = list("花瓣长度", rot = -35),
+  zlab = list("萼片长度", rot = 90),
+  # 减少三维图形的边空
+  lattice.options = list(
+    layout.widths = list(
+      left.padding = list(x = -0.5, units = "inches"),
+      right.padding = list(x = -1.0, units = "inches")
+    ),
+    layout.heights = list(
+      bottom.padding = list(x = -1.5, units = "inches"),
+      top.padding = list(x = -1.5, units = "inches")
+    )
+  ),
+  par.settings = list(
+    # 点的类型
+    superpose.symbol = list(pch = 16),
+    # 去掉外框线
+    axis.line = list(col = "transparent")
+  )
+)
+```
+
 ### 三维透视图 {#sec-lattice-wireframe}
 
 有如下参数方程
@@ -523,9 +561,44 @@ wireframe(kz(um, vm) ~ kx(um, vm) + ky(um, vm),
 )
 ```
 
+绘图函数 `wireframe()` 支持使用公式语法，也支持矩阵类型的数据绘制透视图。
+
+```{r}
+#| label: fig-wireframe-volcano
+#| fig-cap: 奥克兰火山地形图
+#| fig-width: 6
+#| fig-height: 5.5
+#| fig-showtext: true
+
+wireframe(volcano,
+  drape = TRUE, colorkey = FALSE, shade = TRUE,
+  xlab = list("南北方向", rot = -40),
+  ylab = list("东西方向", rot = 45),
+  zlab = list("高度", rot = 90),
+  # 减少三维图形的边空
+  lattice.options = list(
+    layout.widths = list(
+      left.padding = list(x = -.6, units = "inches"),
+      right.padding = list(x = -1.0, units = "inches")
+    ),
+    layout.heights = list(
+      bottom.padding = list(x = -.8, units = "inches"),
+      top.padding = list(x = -1.0, units = "inches")
+    )
+  ),
+  # 设置坐标轴字体大小
+  par.settings = list(
+    axis.line = list(col = "transparent"),
+    fontsize = list(text = 12, points = 10)
+  ),
+  scales = list(arrows = FALSE, col = "black"), 
+  screen = list(z = -45, x = -50, y = 0)
+)
+```
+
 ### 地形轮廓图 {#sec-lattice-contour}
 
-奥克兰火山地形图
+绘图函数 `levelplot()` 支持使用公式语法，也支持矩阵类型的数据绘制轮廓图。基于奥克兰火山地形数据 volcano 绘制轮廓图，volcano 是矩阵类型的数据。
 
 ```{r}
 #| label: fig-levelplot-volcano
@@ -534,8 +607,7 @@ wireframe(kz(um, vm) ~ kx(um, vm) + ky(um, vm),
 #| fig-height: 4
 #| fig-showtext: true
 
-levelplot(volcano,
-  col.regions = hcl.colors, useRaster = TRUE,
+levelplot(volcano, useRaster = TRUE,
   # 去掉图形上、右边多余的刻度线
   scales = list(
     x = list(alternating = 1, tck = c(1, 0)),
@@ -551,22 +623,14 @@ levelplot(volcano,
 )
 ```
 
-参数 `col.regions` 需要传递一个函数，示例中函数 `hcl.colors()` 默认使用 viridis 调色板，其它常见的还有函数 `gray.colors()` 、`terrain.colors()` 和 `topo.colors()` 等，还可以用函数 `colorRampPalette()` 构造调色板函数。
-
-函数 `panel.2dsmoother()` 来自 **latticeExtra** 包，数据的二维分布，默认采用 `tp`
-
--   `tp` thin plate regression spline 回归样条方法平滑。
-
--   `cr` Cubic regression spline 立方回归样条
-
--   `gp` Gaussian process smooths 高斯过程平滑，默认为全秩 Full Rank，指定 k 低秩近似 Low Rank。
+函数 `levelplot()` 的参数 `col.regions` 需要传递一个函数，示例中使用的默认设置。常见的函数有 `hcl.colors()` 、 `gray.colors()` 、`terrain.colors()` 、`cm.colors()` 和 `topo.colors()` 等，函数 `hcl.colors()` 默认使用 `viridis` 调色板，还可以用函数 `colorRampPalette()` 构造调色板函数。
 
 ```{r}
 #| label: fig-levelplot-topo
 #| fig-width: 4.5
 #| fig-height: 4
 #| fig-showtext: true
-#| fig-cap: 地形轮廓图
+#| fig-cap: 奥克兰火山的地形轮廓图
 
 data(topo, package = "MASS")
 levelplot(z ~ x * y, data = topo, scales = "free",
@@ -576,7 +640,13 @@ levelplot(z ~ x * y, data = topo, scales = "free",
 )
 ```
 
-### 地区分布图 {#sec-lattice-choropleth}
+函数 `panel.2dsmoother()` 来自 **latticeExtra** 包，数据的二维分布，默认采用 `tp`
+
+-   `tp` thin plate regression spline 回归样条方法平滑。
+-   `cr` Cubic regression spline 立方回归样条。
+-   `gp` Gaussian process smooths 高斯过程平滑，默认为全秩 Full Rank，指定 k 低秩近似 Low Rank。
+
+### 地区分布图 {#sec-lattice-mapplot}
 
 最后一个想要介绍的是地区分布图，也叫面量图、围栏图，描述空间栅格数据的分布，常见的一种情况是展示各个地区的人口、社会、经济指标。下面通过 **tigris** 包可以下载美国人口调查局发布的数据，本想下载与观测数据年份最近的地图数据，但是 2009 年及以前的地图数据缺失，因此，笔者下载了 2010 年的地图数据，它与得票率数据最近。
 
@@ -659,6 +729,7 @@ xyplot(Sepal.Length ~ Petal.Length, groups = Species, data = iris,
 | **lattice**      | `barchart()`         | （分组）柱形图 | 描述对比     |
 | **lattice**      | `levelplot()`        | 切片水平图     | 描述趋势     |
 | **lattice**      | `wireframe()`        | 三维透视图     | 描述趋势     |
+| **lattice**      | `cloud()`            | 三维散点图     | 描述分布     |
 | **latticeExtra** | `panel.smoother()`   | 回归曲线图     | 描述趋势     |
 | **latticeExtra** | `panel.2dsmoother()` | 地形轮廓图     | 描述趋势     |
 | **latticeExtra** | `ecdfplot()`         | 经验分布图     | 描述分布     |

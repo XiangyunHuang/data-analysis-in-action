@@ -1,12 +1,26 @@
 # 回归问题 {#sec-regression-problems}
 
+::: hidden
+$$
+ \def\bm#1{{\boldsymbol #1}}
+$$
+:::
+
+```{r}
+#| echo: false
+
+source("_common.R")
+```
+
 ```{r}
 #| message: false
 
 library(MASS)
-# library(pls)   # pcr 主成分回归 plsr 偏最小二乘回归
+library(pls)     # PC / PLS
 library(glmnet)  # 惩罚回归
 library(ncvreg)  # MCP / SCAD
+library(lars)    # LAR
+library(abess)   # Best subset
 library(kernlab) # 基于核的支持向量机 ksvm
 library(nnet)    # 神经网络 nnet
 library(rpart)   # 决策树
@@ -41,36 +55,64 @@ str(Boston)
 -   ptratio: 城镇的师生比例 pupil-teacher ratio by town. 教育
 -   black: 城镇黑人比例 $1000(Bk - 0.63)^2$ where Bk is the proportion of blacks by town. 安全
 -   lstat: 较低的人口状况（百分比）lower status of the population (percent).
--   medv: 自住房屋的中位数为 1000 美元 median value of owner-occupied homes in \$1000s. 房价，这是响应变量
-
-按照环境、交通、教育因素进一步分类。
+-   medv: 自住房屋的中位数为 1000 美元 median value of owner-occupied homes in \$1000s. 房价，这是响应变量。
 
 ## 线性回归 {#sec-linear-regressions}
 
 对于线性回归问题，为了处理变量之间的相关关系，衍生出许多处理办法。有的办法是线性的，有的办法是非线性的。
 
-### 普通最小二乘回归 {#sec-ordinary-least-square-regression}
+### 最小二乘回归 {#sec-ordinary-least-square-regression}
+
+$$
+\mathcal{L}(\bm{\beta}) = \sum_{i=1}^{n}(y_i - \bm{x}_i^{\top}\bm{\beta})^2
+$$
 
 ```{r}
 fit_lm <- lm(medv ~ ., data = Boston)
 summary(fit_lm)
 ```
 
-### 向前向后逐步回归 {#sec-stepwise-regression}
+### 逐步回归 {#sec-stepwise-regression}
+
+逐步回归是筛选变量，有向前、向后和两个方向同时进行三个方法。
+
+-   `direction = "both"` 双向
+-   `direction = "backward"` 向后
+-   `direction = "forward"` 向前
 
 ```{r}
-fit_step <- step(fit_lm, direction = "both")
+fit_step <- step(fit_lm, direction = "both", trace = 0)
 summary(fit_step)
 ```
 
 ### 偏最小二乘回归 {#sec-partial-least-square-regression}
+
+偏最小二乘回归适用于存在多重共线性问题或变量个数远大于样本量的情况。
+
+10 折交叉验证，`ncomp = 6` 表示 6 个主成分，拟合方法 `kernelpls` 表示核算法，`validation = "CV"` 表示采用交叉验证的方式调整参数。
 
 ```{r}
 fit_pls <- pls::plsr(medv ~ ., ncomp = 6, data = Boston, validation = "CV")
 summary(fit_pls)
 ```
 
+交叉验证的方法还可选留一交叉验证 `validation = "LOO"` 。预测的均方根误差 RMSEP 来评估交叉验证的结果。
+
+```{r}
+#| label: fig-pls
+#| fig-cap: RMSE 随成分数量的变化
+#| fig-width: 5
+#| fig-height: 5
+#| fig-showtext: true
+
+pls::validationplot(fit_pls, val.type = "RMSEP")
+```
+
 ### 主成分回归 {#sec-principal-component-regression}
+
+主成分回归采用降维的方法处理高维和多重共线性问题。
+
+10 折交叉验证，6 个主成分，拟合方法 `svdpc` 表示奇异值分解算法。
 
 ```{r}
 fit_pcr <- pls::pcr(medv ~ ., ncomp = 6, data = Boston, validation = "CV")
@@ -79,7 +121,31 @@ summary(fit_pcr)
 
 ## 惩罚回归 {#sec-penalty-regression}
 
+本节主要介绍 4 个 R 包的使用，分别是 **glmnet** 包 [@Friedman2010]、 **ncvreg** 包 [@Breheny2011] 、 **lars** 包 [@Efron2004] 和 **abess** 包 [@abess2022]。
+
+| R 包       | 惩罚方法          | 函数实现                       |
+|------------|-------------------|--------------------------------|
+| **glmnet** | 岭回归            | `glmnet(...,alpha = 0)`        |
+| **glmnet** | Lasso 回归        | `glmnet(...,alpha = 1)`        |
+| **glmnet** | 弹性网络回归      | `glmnet(...,alpha)`            |
+| **glmnet** | 自适应 Lasso 回归 | `glmnet(...,penalty.factor)`   |
+| **glmnet** | 松驰 Lasso 回归   | `glmnet(...,relax = TRUE)`     |
+| **ncvreg** | MCP               | `ncvreg(...,penalty = "MCP")`  |
+| **ncvreg** | SCAD              | `ncvreg(...,penalty = "SCAD")` |
+| **lars**   | 最小角回归        | `lars(...,type = "lar")`       |
+| **abess**  | 最优子集回归      | `abess()`                      |
+
+: 惩罚回归的 R 包实现 {#tbl-penalty}
+
+函数 `glmnet()` 的参数 `penalty.factor` 表示惩罚因子，默认值为全 1 向量，自适应 Lasso 回归中需要指定。弹性网络回归要求参数 `alpha` 介于 0-1 之间。
+
 ### 岭回归 {#sec-ridge-regression}
+
+岭回归
+
+$$
+\mathcal{L}(\bm{\beta}) = \sum_{i=1}^{n}(y_i - \bm{x}_i^{\top}\bm{\beta})^2 + \lambda\|\bm{\beta}\|_2^2
+$$
 
 ```{r}
 library(glmnet)
@@ -116,7 +182,11 @@ coef(fit_ridge, s = 28.00535)
 
 ### Lasso 回归 {#sec-lasso-regression}
 
-Group Lasso
+Lasso 回归
+
+$$
+\mathcal{L}(\bm{\beta}) = \sum_{i=1}^{n}(y_i - \bm{x}_i^{\top}\bm{\beta})^2 + \lambda\|\bm{\beta}\|_1
+$$
 
 ```{r}
 fit_lasso <- glmnet(x = Boston[, -14], y = Boston[, "medv"], family = "gaussian", alpha = 1)
@@ -152,6 +222,12 @@ coef(fit_lasso, s = 0.02800535)
 
 ### 弹性网络 {#sec-elastic-net-regression}
 
+弹性网络 [@Zou2005]
+
+$$
+\mathcal{L}(\bm{\beta}) = \sum_{i=1}^{n}(y_i - \bm{x}_i^{\top}\bm{\beta})^2 + \lambda(\frac{1-\alpha}{2}\|\bm{\beta}\|_2^2 + \alpha \|\bm{\beta}\|_1)
+$$
+
 ```{r}
 fit_elasticnet <- glmnet(x = Boston[, -14], y = Boston[, "medv"], family = "gaussian")
 ```
@@ -184,9 +260,138 @@ fit_elasticnet$lambda[60]
 coef(fit_elasticnet, s = 0.02800535)
 ```
 
+### 自适应 Lasso {#sec-adaptive-lasso}
+
+自适应 Lasso [@Zou2006]
+
+$$
+\mathcal{L}(\bm{\beta}) = \sum_{i=1}^{n}(y_i - \bm{x}_i^{\top}\bm{\beta})^2 + \lambda_n\sum_{j=1}^{p}\frac{1}{w_j}|\beta_j|
+$$
+
+普通最小二乘估计或岭回归估计的结果作为适应性 Lasso 回归的权重。其中 $w_j = (|\hat{\beta}_{ols_j}|)^{\gamma}$ 或 $w_j = (|\hat{\beta}_{ridge_j}|)^{\gamma}$ ， $\gamma$ 是一个用于调整自适应权重向量的正常数，一般建议的正常数是 0.5，1 或 2。
+
+```{r}
+# 岭权重 gamma = 1
+g <- 1
+set.seed(20232023)
+## 岭回归
+ridge_model <- cv.glmnet(
+  x = as.matrix(Boston[, -14]),
+  y = Boston[, 14], alpha = 0
+)
+ridge_coef <- as.matrix(coef(ridge_model, s = ridge_model$lambda.min))
+ridge_weight <- 1 / (abs(ridge_coef[-1, ]))^g
+
+## Adaptive Lasso
+set.seed(20232023)
+fit_adaptive_lasso <- cv.glmnet(
+  x = as.matrix(Boston[, -14]),
+  y = Boston[, 14], alpha = 1,
+  penalty.factor = ridge_weight # 惩罚权重
+)
+```
+
+岭回归和自适应 Lasso 回归模型的超参数
+
+```{r}
+#| label: fig-adaptive-lasso
+#| fig-width: 4
+#| fig-height: 4
+#| fig-showtext: true
+#| fig-cap: 自适应 Lasso 回归模型的超参数选择
+#| layout-ncol: 2
+#| fig-subcap:
+#| - 岭回归
+#| - 自适应 Lasso 回归
+
+plot(ridge_model)
+plot(fit_adaptive_lasso)
+```
+
+$\lambda$ 超参数
+
+```{r}
+fit_adaptive_lasso$lambda.min
+```
+
+自适应 Lasso 回归参数
+
+```{r}
+coef(fit_adaptive_lasso, s = fit_adaptive_lasso$lambda.min)
+```
+
+预测
+
+```{r}
+pred_medv_adaptive_lasso <- predict(
+  fit_adaptive_lasso, newx = as.matrix(Boston[, -14]),
+  s = fit_adaptive_lasso$lambda.min, type = "response"
+)
+```
+
+预测的均方根误差
+
+```{r}
+rmse(Boston[, 14], pred_medv_adaptive_lasso)
+```
+
+### 松弛 Lasso {#sec-relaxed-lasso}
+
+Lasso 回归倾向于将回归系数压缩到 0，松弛 Lasso
+
+$$
+\hat{\beta}_{relax}(\lambda,\gamma) = \gamma \hat{\beta}_{lasso}(\lambda) + (1 - \gamma)\hat{\beta}_{ols}(\lambda)
+$$
+
+其中，$\gamma \in[0,1]$ 是一个超参数。
+
+```{r}
+fit_relax_lasso <- cv.glmnet(
+  x = as.matrix(Boston[, -14]), 
+  y = Boston[, "medv"], relax = TRUE
+)
+```
+
+```{r}
+#| label: fig-relax-lasso
+#| fig-cap: "回归系数的迭代路径"
+#| fig-width: 6
+#| fig-height: 5
+#| fig-showtext: true
+
+plot(fit_relax_lasso)
+```
+
+CV 交叉验证筛选出来的超参数 $\lambda$ 和 $\gamma$ ，$\gamma = 0$ 意味着松弛 Lasso 退化为 OLS 估计
+
+```{r}
+fit_relax_lasso$relaxed$lambda.min
+fit_relax_lasso$relaxed$gamma.min
+```
+
+松弛 Lasso 回归系数与 OLS 估计的结果一样
+
+```{r}
+coef(fit_relax_lasso, s = "lambda.min", gamma = "gamma.min")
+```
+
+松弛 Lasso 预测
+
+```{r}
+pred_medv_relax_lasso <- predict(
+  fit_relax_lasso,
+  newx = as.matrix(Boston[, -14]),
+  s = "lambda.min", gamma = "gamma.min"
+)
+```
+
+```{r}
+rmse(Boston[, 14], pred_medv_relax_lasso)
+```
+
 ### MCP {#sec-mcp-regression}
 
-**ncvreg** 包 [@Breheny2011] 提供额外的两种惩罚类型，分别是 MCP （minimax concave penalty）和 SCAD（smoothly clipped absolute deviation）。
+**ncvreg** 包 [@Breheny2011] 提供额外的两种非凸/凹惩罚类型，分别是 MCP （minimax concave penalty）和 SCAD（smoothly clipped absolute deviation）。
 
 ```{r}
 library(ncvreg)
@@ -197,8 +402,9 @@ fit_mcp <- ncvreg(X = Boston[, -14], y = Boston[, "medv"], penalty = "MCP")
 #| label: fig-mcp-ncvreg
 #| fig-cap: "回归系数的迭代路径"
 #| fig-width: 5
-#| fig-height: 5
+#| fig-height: 4
 #| fig-showtext: true
+#| par: true
 
 plot(fit_mcp)
 ```
@@ -213,7 +419,10 @@ summary(fit_mcp, lambda = 0.85)
 10 折交叉验证，选择超参数 $\lambda$
 
 ```{r}
-fit_mcp_cv <- cv.ncvreg(X = Boston[, -14], y = Boston[, "medv"], penalty = "MCP", seed = 20232023)
+fit_mcp_cv <- cv.ncvreg(
+  X = Boston[, -14], y = Boston[, "medv"], 
+  penalty = "MCP", seed = 20232023
+)
 summary(fit_mcp_cv)
 ```
 
@@ -239,8 +448,9 @@ fit_scad <- ncvreg(X = Boston[, -14], y = Boston[, "medv"], penalty = "SCAD")
 #| label: fig-scad-ncvreg
 #| fig-cap: "回归系数的迭代路径"
 #| fig-width: 5
-#| fig-height: 5
+#| fig-height: 4
 #| fig-showtext: true
+#| par: true
 
 plot(fit_scad)
 ```
@@ -253,7 +463,10 @@ summary(fit_scad, lambda = 0.85)
 10 折交叉验证，选择超参数 $\lambda$
 
 ```{r}
-fit_scad_cv <- cv.ncvreg(X = Boston[, -14], y = Boston[, "medv"], penalty = "SCAD", seed = 20232023)
+fit_scad_cv <- cv.ncvreg(
+  X = Boston[, -14], y = Boston[, "medv"], 
+  penalty = "SCAD", seed = 20232023
+)
 summary(fit_scad_cv)
 ```
 
@@ -267,6 +480,117 @@ summary(fit_scad_cv)
 #| fig-showtext: true
 
 plot(fit_scad_cv)
+```
+
+### 最小角回归 {#sec-least-angle}
+
+**lars** 包提供 Lasso 回归和最小角（Least Angle）回归[@Efron2004]。
+
+```{r}
+#| message: false
+
+library(lars)
+# Lasso 回归
+fit_lars_lasso <- lars(
+  x = as.matrix(Boston[, -14]), y = as.matrix(Boston[, "medv"]),
+  type = "lasso", trace = FALSE, normalize = TRUE, intercept = TRUE
+)
+# LAR 回归
+fit_lars_lar <- lars(
+  x = as.matrix(Boston[, -14]), y = as.matrix(Boston[, "medv"]),
+  type = "lar", trace = FALSE, normalize = TRUE, intercept = TRUE
+)
+```
+
+参数 `type = "lasso"` 表示采用 Lasso 回归，参数 `trace = FALSE` 表示不显示迭代过程，参数 `normalize = TRUE` 表示每个变量都标准化，使得它们的 L2 范数为 1，参数 `intercept = TRUE` 表示模型中包含截距项，且不参与惩罚。
+
+Lasso 和最小角回归系数的迭代路径见下图。
+
+```{r}
+#| label: fig-lars-lasso
+#| fig-width: 4
+#| fig-height: 4
+#| fig-showtext: true
+#| fig-cap: Lasso 和最小角回归系数的迭代路径
+#| layout-ncol: 2
+#| fig-subcap:
+#| - Lasso 回归
+#| - 最小角回归
+
+plot(fit_lars_lasso)
+plot(fit_lars_lar)
+```
+
+采用 10 折交叉验证筛选变量
+
+```{r}
+#| label: fig-cv-lars
+#| fig-cap: 交叉验证均方误差的变化
+#| fig-width: 5
+#| fig-height: 5
+#| fig-showtext: true
+#| layout-ncol: 2
+#| fig-subcap:
+#| - Lasso 回归
+#| - 最小角回归
+
+set.seed(20232023)
+cv.lars(
+  x = as.matrix(Boston[, -14]), y = as.matrix(Boston[, "medv"]),
+  type = "lasso", trace = FALSE, plot.it = TRUE, K = 10
+)
+set.seed(20232023)
+cv.lars(
+  x = as.matrix(Boston[, -14]), y = as.matrix(Boston[, "medv"]),
+  type = "lar", trace = FALSE, plot.it = TRUE, K = 10
+)
+```
+
+### 最优子集回归 {#sec-best-subset}
+
+$$
+\mathcal{L}(\bm{\beta}) = \sum_{i=1}^{n}(y_i - \bm{x}_i^{\top}\bm{\beta})^2 + \lambda\|\bm{\beta}\|_0
+$$
+
+最优子集回归，添加 L0 惩罚，[abess](https://github.com/abess-team/abess) 包 [@abess2022] 支持线性回归、泊松回归、逻辑回归、多项回归等模型，可以非常高效地做最优子集筛选变量。
+
+```{r}
+library(abess)
+fit_abess <- abess(medv ~ ., data = Boston, family = "gaussian", 
+                   tune.type = "cv", nfolds = 10, seed = 20232023)
+```
+
+参数 `tune.type = "cv"` 表示交叉验证的方式确定超参数来筛选变量，参数 `nfolds = 10` 表示将数据划分为 10 份，采用 10 折交叉验证，参数 `seed` 用来设置随机数，以便可重复交叉验证 CV 的结果。惩罚系数的迭代路径见下图。
+
+```{r}
+#| label: fig-abess-lambda
+#| fig-cap: 惩罚系数的迭代路径
+#| fig-width: 5
+#| fig-height: 5
+#| fig-showtext: true
+
+plot(fit_abess, label = TRUE, main = "惩罚系数的迭代路径")
+```
+
+使用交叉验证筛选变量个数，不同的 support size 表示进入模型中的变量数目。
+
+```{r}
+#| label: fig-tune-lambda
+#| fig-cap: 交叉验证筛选变量个数
+#| fig-width: 5
+#| fig-height: 5
+#| fig-showtext: true
+#| par: true
+
+plot(fit_abess, type = "tune", main = "交叉验证筛选变量个数")
+```
+
+从上图可以看出，选择 6 个变量是比较合适的，作为最终的模型。
+
+```{r}
+best_model <- extract(fit_abess, support.size = 6)
+# 模型的结果，惩罚参数值、各个变量的系数
+str(best_model)
 ```
 
 ## 支持向量机 {#sec-svm-regression}
@@ -320,6 +644,7 @@ rmse(Boston$medv, pred_medv_rpart)
 #| fig-height: 4
 #| fig-cap: 分类回归树
 #| fig-showtext: true
+#| par: true
 
 library(rpart.plot)
 rpart.plot(fit_rpart)
