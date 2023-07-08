@@ -42,14 +42,14 @@ library(quantmod)
 meituan <- readRDS(file = "data/meituan.rds")
 ```
 
-先来看数据的类型，数据类型颇为复杂，是由 `xts` 和 `zoo` 两种类型复合而成，xts 类型是继承自 zoo 类型的。
+先来看数据的类型，数据类型颇为复杂，是由 `xts` 和 `zoo` 两种类型复合而成，`xts` 类型是继承自 `zoo` 类型的。
 
 ```{r}
 class(meituan)
 str(meituan)
 ```
 
-数据集 meituan 是一个 xts 类型的时间序列数据对象，时间范围是 2018-09-20 至 2022-05-27，包含 4 个成分，分别如下
+数据集 `meituan` 是一个 `xts` 类型的时间序列数据对象，时间范围是 2018-09-20 至 2022-05-27，包含 4 个成分，分别如下
 
 -   Data 部分显示为 906 行 6 列的双精度浮点存储的数值。
 -   Columns 部分显示列名，依次是 3690.HK.Open、3690.HK.High、 3690.HK.Low 和 3690.HK.Close 等，当列数很多时，显示时会省略。
@@ -88,14 +88,7 @@ xts(x, order.by = idx)
 
 ## 数据探索
 
-**zoo** 包提供 S3 范型函数 `autoplot.zoo()` 专门可视化 `zoo` 类型的数据，它接受一个 `zoo` 类型的数据对象，返回一个 `ggplot2` 数据对象，然后用户可以添加自定义的绘图设置
-
-```{r}
-library(zoo)
-library(xts)
-```
-
-更多详情见帮助文档 `?autoplot.zoo()`
+**zoo** 包提供 S3 范型函数 `autoplot.zoo()` 专门可视化 `zoo` 类型的数据，它接受一个 `zoo` 类型的数据对象，返回一个 `ggplot2` 数据对象，然后用户可以添加自定义的绘图设置，更多详情见帮助文档 `?autoplot.zoo()` 。
 
 ```{r}
 #| label: fig-meituan-ggplot2
@@ -109,14 +102,12 @@ autoplot(meituan[, "3690.HK.Adjusted"]) +
   labs(x = "日期", y = "股价")
 ```
 
-**zoo** 包还提供另一个范型函数 `fortify()` 将 `zoo` 数据对象转化为 `data.frame` ，这可以方便使用 **ggplot2** 包来展示数据。
+**zoo** 包还提供另一个范型函数 `fortify()` 将 `zoo` 数据对象转化为 `data.frame` ，这可以方便使用 **ggplot2** 包来展示数据。参数 `melt = TRUE` 意味着重塑原数据集，将数据从宽格式转长格式。参数 `names = c(Index = "Date")` 表示将 Index 列重命名为 date 列。
 
 ```{r}
-library(xts) # Index 保持日期类型 Date
-# zoo 转化为 data.frame
-meituan_df <- fortify(meituan[, c("3690.HK.Adjusted", "3690.HK.High")],
-  melt = TRUE,  # 宽格式转长格式 重塑原数据集
-  names = c(Index = "Date") #  重命名表示顺序的日期列
+meituan_df <- fortify(
+  meituan[, c("3690.HK.Adjusted", "3690.HK.High")],
+  melt = TRUE, names = c(Index = "Date")
 )
 ```
 
@@ -243,9 +234,7 @@ lag(AirPassengers, k = 1)
 
 ```{r}
 # 延迟 1 期 1 阶差分
-diff(AirPassengers)
-# 延迟 1 期 2 阶差分
-diff(AirPassengers, lag = 1, differences = 2)
+diff(AirPassengers, lag = 1, differences = 1)
 ```
 
 ### 单位根检验 {#sec-unitroot-test}
