@@ -208,8 +208,8 @@ autoplot(AirPassengers, ts.geom = "line") +
 #| label: fig-airpassengers-acf
 #| fig-cap: 乘客数量自相关图
 #| fig-showtext: true
-#| fig-width: 4
-#| fig-height: 5
+#| fig-width: 5
+#| fig-height: 4
 
 autoplot(acf(AirPassengers, plot = FALSE)) +
   theme_classic()
@@ -221,8 +221,8 @@ autoplot(acf(AirPassengers, plot = FALSE)) +
 #| label: fig-airpassengers-pacf
 #| fig-cap: 乘客数量偏自相关图
 #| fig-showtext: true
-#| fig-width: 4
-#| fig-height: 5
+#| fig-width: 5
+#| fig-height: 4
 
 autoplot(pacf(AirPassengers, plot = FALSE)) +
   theme_classic()
@@ -230,7 +230,25 @@ autoplot(pacf(AirPassengers, plot = FALSE)) +
 
 ### 延迟算子 {#sec-lag-operator}
 
+```{r}
+# 延迟前
+AirPassengers
+# 延迟二期
+lag(AirPassengers, k = 2)
+```
+
 ### 差分算子 {#sec-diff-operator}
+
+函数 `diff()` 实现差分算子，默认参数 `lag = 1` ，`differences = 1` 表示延迟期数为 1 的一阶差分。
+
+```{r}
+# 差分前
+AirPassengers
+# 差分后
+diff(AirPassengers)
+# 延迟一期的二阶差分
+diff(AirPassengers, lag = 1, differences = 2)
+```
 
 ### 单位根检验 {#sec-unitroot-test}
 
@@ -240,7 +258,21 @@ autoplot(pacf(AirPassengers, plot = FALSE)) +
 
 ### 单指数平滑
 
-`filter()`
+函数 `filter()` 实现一元时间序列的线性过滤，或者对多元时间序列的单个序列分别做线性变换。
+
+-   递归过滤
+
+$$
+y_{i} = x_{i} + f_1 y_{i-1} +\cdots+ f_p y_{i-p}
+$$
+
+-   卷积过滤
+
+$$
+y_{i} = f_1 x_{i+o} + \cdots + f_p x_{i+o-(p-1)}
+$$
+
+其中 $o$ 代表 offset 漂移。
 
 ### 双指数平滑
 
@@ -252,8 +284,8 @@ air_passengers_exp <- HoltWinters(AirPassengers, gamma = FALSE, beta = FALSE)
 #| label: fig-airpassengers-exp-fitted
 #| fig-cap: 双指数平滑模型拟合
 #| fig-showtext: true
-#| fig-width: 4
-#| fig-height: 5
+#| fig-width: 5
+#| fig-height: 4
 
 autoplot(air_passengers_exp) +
   theme_classic()
@@ -271,8 +303,8 @@ air_passengers_pred <- predict(air_passengers_exp, n.ahead = 5, prediction.inter
 #| label: fig-airpassengers-exp-pred
 #| fig-cap: 双指数平滑模型预测
 #| fig-showtext: true
-#| fig-width: 4
-#| fig-height: 5
+#| fig-width: 5
+#| fig-height: 4
 
 plot(air_passengers_exp, air_passengers_pred)
 ```
@@ -313,8 +345,8 @@ air_passengers_add <- HoltWinters(AirPassengers, seasonal = "additive")
 #| label: fig-airpassengers-add-fitted
 #| fig-cap: 可加 Holt-Winters 平滑模型拟合
 #| fig-showtext: true
-#| fig-width: 4
-#| fig-height: 5
+#| fig-width: 5
+#| fig-height: 4
 
 autoplot(air_passengers_add) +
   theme_classic()
@@ -328,8 +360,8 @@ air_passengers_mult <- HoltWinters(AirPassengers, seasonal = "mult")
 #| label: fig-airpassengers-mult-fitted
 #| fig-cap: 可乘 Holt-Winters 平滑模型拟合
 #| fig-showtext: true
-#| fig-width: 4
-#| fig-height: 5
+#| fig-width: 5
+#| fig-height: 4
 
 autoplot(air_passengers_mult) +
   theme_classic()
@@ -408,9 +440,9 @@ AIC=1017.85   AICc=1018.17   BIC=1029.35
 
 ## 贝叶斯可加时间序列预测 {#sec-bayesian-additive-models}
 
-### 谷歌 的 Boom 框架 {#sec-google-boom}
+### 谷歌的 Boom 框架 {#sec-google-boom}
 
-### 脸书 的 Prophet 框架 {#sec-facebook-prophet}
+### 脸书的 Prophet 框架 {#sec-facebook-prophet}
 
 ## 神经网络算法 {#sec-neural-network}
 
