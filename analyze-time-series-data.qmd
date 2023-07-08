@@ -208,8 +208,10 @@ autoplot(AirPassengers, ts.geom = "line") +
 #| label: fig-airpassengers-acf
 #| fig-cap: 乘客数量自相关图
 #| fig-showtext: true
+#| fig-width: 4
+#| fig-height: 5
 
-autoplot(acf(AirPassengers)) +
+autoplot(acf(AirPassengers, plot = FALSE)) +
   theme_classic()
 ```
 
@@ -219,10 +221,20 @@ autoplot(acf(AirPassengers)) +
 #| label: fig-airpassengers-pacf
 #| fig-cap: 乘客数量偏自相关图
 #| fig-showtext: true
+#| fig-width: 4
+#| fig-height: 5
 
-autoplot(pacf(AirPassengers)) +
+autoplot(pacf(AirPassengers, plot = FALSE)) +
   theme_classic()
 ```
+
+### 延迟算子 {#sec-lag-operator}
+
+### 差分算子 {#sec-diff-operator}
+
+### 单位根检验 {#sec-unitroot-test}
+
+### Granger 因果检验 {#sec-granger-causality-test}
 
 ## 指数平滑模型 {#sec-exponential-smoothing}
 
@@ -232,9 +244,98 @@ autoplot(pacf(AirPassengers)) +
 
 ### 双指数平滑
 
+```{r}
+air_passengers_exp <- HoltWinters(AirPassengers, gamma = FALSE, beta = FALSE)
+```
+
+```{r}
+#| label: fig-airpassengers-exp-fitted
+#| fig-cap: 双指数平滑模型拟合
+#| fig-showtext: true
+#| fig-width: 4
+#| fig-height: 5
+
+autoplot(air_passengers_exp) +
+  theme_classic()
+```
+
+向前预测 5 期
+
+```{r}
+air_passengers_pred <- predict(air_passengers_exp, n.ahead = 5, prediction.interval = TRUE)
+```
+
+预测值及其预测区间
+
+```{r}
+#| label: fig-airpassengers-exp-pred
+#| fig-cap: 双指数平滑模型预测
+#| fig-showtext: true
+#| fig-width: 4
+#| fig-height: 5
+
+plot(air_passengers_exp, air_passengers_pred)
+```
+
 ### Holt-Winter 平滑 {#sec-holt-winters}
 
-`HoltWinters()`
+根据趋势和季节性的关系，Holt-Winter 平滑模型分为可加 Holt-Winters 平滑和可乘 Holt-Winters 平滑。R 提供函数 `HoltWinters()` 拟合 Holt-Winter 平滑模型[@Holt2004; @Winters1960]。
+
+可加 Holt-Winters 平滑模型如下
+
+$$
+\begin{aligned}
+\hat{y}_{t+h} &= a_{t} + h \times b_{t} + s_{t - p + 1 + (h - 1) \mod p} \\
+a_{t} &= \alpha (y_{t} - s_{t-p}) + (1-\alpha) (a_{t-1} + b_{t-1}) \\
+b_{t} &= \beta (a_{t} - a_{t-1}) + (1-\beta) b_{t-1} \\
+s_{t} &= \gamma (y_{t} - a_{t}) + (1-\gamma) s_{t-p}
+\end{aligned}
+$$
+
+可乘 Holt-Winters 平滑模型如下
+
+$$
+\begin{aligned}
+\hat{y}_{t+h} &= (a_{t} + h \times b_{t}) \times s_{t - p + 1 + (h - 1) \mod p} \\
+a_{t} &= \alpha (y_{t} / s_{t-p}) + (1-\alpha) (a_{t-1} + b_{t-1}) \\
+b_{t} &= \beta (a_{t} - a_{t-1}) + (1-\beta) b_{t-1} \\
+s_{t} &= \gamma (y_{t} / a_{t}) + (1-\gamma) s_{t-p}
+\end{aligned}
+$$
+
+其中 $\alpha, \beta, \gamma$ 是参数，$p$ 为周期长度，$a_{t}, b_{t}, s_{t}$ 分别代表截距项、趋势成分和季节性成分。
+
+```{r}
+air_passengers_add <- HoltWinters(AirPassengers, seasonal = "additive")
+```
+
+```{r}
+#| label: fig-airpassengers-add-fitted
+#| fig-cap: 可加 Holt-Winters 平滑模型拟合
+#| fig-showtext: true
+#| fig-width: 4
+#| fig-height: 5
+
+autoplot(air_passengers_add) +
+  theme_classic()
+```
+
+```{r}
+air_passengers_mult <- HoltWinters(AirPassengers, seasonal = "mult")
+```
+
+```{r}
+#| label: fig-airpassengers-mult-fitted
+#| fig-cap: 可乘 Holt-Winters 平滑模型拟合
+#| fig-showtext: true
+#| fig-width: 4
+#| fig-height: 5
+
+autoplot(air_passengers_mult) +
+  theme_classic()
+```
+
+做一个 Shiny 应用展示参数 $\alpha, \beta, \gamma$ 对 Holt-Winters 平滑预测的影响。
 
 ## 时间序列分解 {#sec-time-series-decomposition}
 
@@ -260,13 +361,7 @@ autoplot(air_stl) +
 
 ### 季节性成分
 
-## 自回归移动平均模型 {#sec-autoregressive-moving-average-models}
-
-函数 `arima()` 拟合 ARIMA 模型
-
-```{r}
-arima(AirPassengers, order = c(1, 1, 3))
-```
+## 经典时间序列模型 {#sec-classic-time-series-models}
 
 ### 自回归模型 {#sec-autoregressive-models}
 
@@ -282,6 +377,14 @@ ar(AirPassengers, order.max = 3)
 
 ```{r}
 arima(AirPassengers, order = c(0, 1, 3))
+```
+
+### 自回归移动平均模型 {#sec-autoregressive-moving-average-models}
+
+函数 `arima()` 拟合 ARIMA 模型
+
+```{r}
+arima(AirPassengers, order = c(1, 1, 3))
 ```
 
 **forecast** 包提供函数 `auto.arima()` 自动选择合适的自回归、差分和移动平均的阶来拟合数据。
