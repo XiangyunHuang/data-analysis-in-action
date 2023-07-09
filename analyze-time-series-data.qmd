@@ -2,6 +2,22 @@
 
 预测是非常古老的话题，几乎人人都想拥有预测未来的能力，唐朝袁天罡和李淳风的故事至今还广为流传。事实上，古时候只有至高无上的皇帝才可以去问钦天监了解星辰大海和国运命脉。时间序列数据的分析，以及根据分析得到的一般规律进行预测是经久不衰的命题。预测既包含一般规律指向的确定性，又有无法预知的不确定性，且**同时**包含认知局限带来的不确定性，后者往往更大。无休止地渴求往往伴随着巨大的挑战，而更大的挑战则是预测效果常常不能满足期待。
 
+```{r}
+#| message: false
+
+library(quantmod)  # 获取数据
+library(ggplot2)   # 可视化
+library(ggfortify) # 静态展示
+# library(dygraphs)  # 交互展示
+# library(Boom)
+# library(BoomSpikeSlab)# BayesNnet 贝叶斯前馈神经网络
+# library(bsts)         # 谷歌公司的预测框架
+# library(prophet)      # 脸书公司的预测框架
+library(nnet)         # 前馈神经网络
+# library(tensorflow)   # 深度学习框架
+# library(keras)        # LSTM 模型
+```
+
 ## 数据获取
 
 Joshua M. Ulrich 开发维护的 [**quantmod**](https://github.com/joshuaulrich/quantmod) 包可以下载国内外股票市场的数据。首先用 **quantmod** 包 [@quantmod2022] 获取美团上市至 2022年5月27日每天的股价数据，包含 Open 开盘价、High 最高价、Low 最低价、Close 闭市价、Adjusted 调整价和 Volume 成交量数据。
@@ -26,34 +42,53 @@ library(quantmod)
 meituan <- readRDS(file = "data/meituan.rds")
 ```
 
-先来看看获取的数据及其类型结构
+先来看数据的类型，数据类型颇为复杂，是由 `xts` 和 `zoo` 两种类型复合而成，`xts` 类型是继承自 `zoo` 类型的。
 
 ```{r}
 class(meituan)
-```
-
-数据类型颇为复杂，是由 `xts` 和 `zoo` 两种类型复合而成。
-
-```{r}
 str(meituan)
 ```
 
-再看看具体的一些数据情况
+数据集 `meituan` 是一个 `xts` 类型的时间序列数据对象，时间范围是 2018-09-20 至 2022-05-27，包含 4 个成分，分别如下
+
+-   Data 部分显示为 906 行 6 列的双精度浮点存储的数值。
+-   Columns 部分显示列名，依次是 3690.HK.Open、3690.HK.High、 3690.HK.Low 和 3690.HK.Close 等，当列数很多时，显示时会省略。
+-   Index 部分表示索引列，有序是时间序列数据的本质特点。示例中索引存储数据点产生的先后顺序，索引是用日期来表示的，日期所在的时区是 "UTC"。
+-   xts 部分是数据类型的一些属性（元数据），说明数据集的来源，什么时候制作的数据。示例中数据是从雅虎财经下载的，下载时间是 2022-05-29 17:19:24。
+
+与时间序列数据相关的数据类型有很多，比如 Base R 提供的 Date 和 POSIX 等，扩展包 **timeDate** 和 **chron** 也都有自己的一套数据类型及处理方法。[**xts**](https://github.com/joshuaulrich/xts) 包是处理时间序列数据的主要工具之一，xts 是 eXtensible Time Series 的缩写。为了进一步了解用法，下面举个例子，使用该 R 包的函数 `xts()` 构造时间序列对象。
+
+``` r
+xts(x = NULL,
+    order.by = index(x),
+    frequency = NULL,
+    unique = TRUE,
+    tzone = Sys.getenv("TZ"),
+    ...)
+```
+
+-   参数 `x` 表示数据。
+-   参数 `order.by` 表示索引数据。
+-   参数 `frequency` 表示频率。
+-   参数 `unique` 表示唯一。
+-   参数 `tzone` 表示时区。
 
 ```{r}
-head(meituan)
+#| message: false
+
+library(zoo)
+library(xts)
+# 数据矩阵
+x <- matrix(1:4, ncol = 2, nrow = 2)
+# 日期索引
+idx <- as.Date(c("2018-01-01", "2019-12-12"))
+# xts = matrix + index
+xts(x, order.by = idx)
 ```
 
 ## 数据探索
 
-**zoo** 包提供 S3 范型函数 `autoplot.zoo()` 专门可视化 `zoo` 类型的数据，它接受一个 `zoo` 类型的数据对象，返回一个 `ggplot2` 数据对象，然后用户可以添加自定义的绘图设置
-
-```{r}
-library(zoo)
-library(xts)
-```
-
-更多详情见帮助文档 `?autoplot.zoo()`
+**zoo** 包提供 S3 范型函数 `autoplot.zoo()` 专门可视化 `zoo` 类型的数据，它接受一个 `zoo` 类型的数据对象，返回一个 `ggplot2` 数据对象，然后用户可以添加自定义的绘图设置，更多详情见帮助文档 `?autoplot.zoo()` 。
 
 ```{r}
 #| label: fig-meituan-ggplot2
@@ -63,56 +98,51 @@ library(xts)
 # xts 包需要先加载，否则 Index 不是日期类型而是数值类型
 library(ggplot2)
 autoplot(meituan[, "3690.HK.Adjusted"]) +
-  theme_minimal()
+  theme_classic() +
+  labs(x = "日期", y = "股价")
 ```
 
-**zoo** 包还提供另一个范型函数 `fortify()` 将 `zoo` 数据对象转化为 `data.frame`
+**zoo** 包还提供另一个范型函数 `fortify()` 将 `zoo` 数据对象转化为 `data.frame` ，这可以方便使用 **ggplot2** 包来展示数据。参数 `melt = TRUE` 意味着重塑原数据集，将数据从宽格式转长格式。参数 `names = c(Index = "Date")` 表示将 Index 列重命名为 date 列。
 
 ```{r}
-library(xts) # Index 保持日期类型 Date
-# zoo 转化为 data.frame
-meituan_df <- fortify(meituan[, c("3690.HK.Adjusted", "3690.HK.High")],
-  melt = TRUE,  # 宽格式转长格式 重塑原数据集
-  names = c(Index = "Date") #  重命名表示顺序的日期列
+meituan_df <- fortify(
+  meituan[, c("3690.HK.Adjusted", "3690.HK.High")],
+  melt = TRUE, names = c(Index = "Date")
 )
 ```
 
-查看转化后的数据类型
+数据集 `meituan_df` 中的 Series 列是因子型的，将其标签 `3690.HK.Adjusted` 、`3690.HK.High` 调整为调整价、最高价。根据日期字段 `Date` 提取年份字段 `year` 和一年中的第几天的字段 `day_of_year`。
 
 ```{r}
-str(meituan_df)
-```
-
-```{r}
-# 日期字段 Date 获取年份
 meituan_df <- within(meituan_df, {
+  # 调整 Series 的标签
+  Series <- factor(Series, labels = c("调整价", "最高价"))
+  # 日期字段 Date 获取年份
   year <- format(Date, "%Y")
+  # 日期字段 Date 一年中的第几天
   day_of_year <- as.integer(format(Date, "%j"))
 })
 ```
+
+调用 **ggplot2** 包绘制分面、分组时间序列图，以 `day_of_year` 为横轴，股价 `Value` 为纵轴，按 `year` 分组，按 `Series` 分面。
 
 ```{r}
 #| label: fig-meituan-by-year
 #| fig-cap: "美团调整的股价逐年走势"
 #| fig-showtext: true
 
-ggplot(data = meituan_df, aes(
-  x = day_of_year,
-  y = Value,
-  color = year
-)) +
-  geom_line() +
-  theme_minimal() +
-  facet_wrap(~Series) + 
-  labs(
-    x = "Decimal day of the year",
-    y = "Adjusted Stock Price"
-  )
+ggplot(data = meituan_df, aes(x = day_of_year, y = Value)) +
+  geom_line(aes(color = year)) +
+  facet_wrap(~Series, ncol = 1) + 
+  theme_classic() +
+  labs(x = "一年中的第几天", y = "调整的股价", color = "年份")
 ```
 
 2019 年底开始出现疫情，2020 年整年陆续有疫情，美团股价一路狂飙突进，因疫情，利好外卖业务，市场看好外卖业务。2021 年政府去杠杆，互联网监管趋严，又监又管，受外部大环境，逆全球化趋势影响，整年股价一路走低。进入 2022 年，股价在 200 附近徘徊。
 
 ## 数据展示
+
+### xts
 
 ```{r}
 library(xts)
@@ -125,9 +155,7 @@ library(xts)
 #| fig-cap: "美团在香港上市以来的股价走势"
 #| fig-showtext: true
 
-plot(meituan[, "3690.HK.Adjusted"],
-  main = "Adjusted Stock Price"
-)
+plot(meituan[, "3690.HK.Adjusted"], main = "调整的股价")
 ```
 
 还可以任意选择一个时间窗口，展示相关数据
@@ -138,18 +166,19 @@ plot(meituan[, "3690.HK.Adjusted"],
 #| fig-showtext: true
 
 plot(meituan[, "3690.HK.Adjusted"],
-  subset = "2021-01-01/2021-12-31",
-  main = "Adjusted Stock Price"
+  subset = "2021-01-01/2021-12-31", main = "调整的股价"
 )
 ```
 
 元旦节三天不开市，所以假期没有数据。
 
-**ggfortify** [@Tang2016] 支持快速地可视化 `ts`、`timeSeries` 、`stl` 等多种类型的时序数据， **ggplot2** 做数据探索会有一些帮助。
+### ggfortify
+
+**ggfortify** [@Tang2016] 支持快速地可视化 `ts`、`timeSeries` 、`stl` 等多种类型的时序数据， **ggplot2** 做数据探索会有一些帮助。1949-1960 国际航班乘客数量月度变化趋势
 
 ```{r}
-#| label: fig-air-passengers
-#| fig-cap: "1949-1960 国际航班乘客数量月度变化趋势"
+#| label: fig-airpassengers
+#| fig-cap: 1949-1960 国际航班乘客数量月度变化趋势
 #| fig-showtext: true
 
 library(ggfortify)
@@ -159,18 +188,191 @@ autoplot(AirPassengers, ts.geom = "line") +
     date_minor_breaks = "4 months",
     date_labels = "%b\n%Y"
   ) +
-  theme_minimal()
+  theme_classic()
 ```
+
+## 平稳性诊断
+
+### 自相关图
+
+```{r}
+#| label: fig-airpassengers-acf
+#| fig-cap: 乘客数量自相关图
+#| fig-showtext: true
+#| fig-width: 5
+#| fig-height: 4
+
+autoplot(acf(AirPassengers, plot = FALSE)) +
+  theme_classic()
+```
+
+### 偏自相关图
+
+```{r}
+#| label: fig-airpassengers-pacf
+#| fig-cap: 乘客数量偏自相关图
+#| fig-showtext: true
+#| fig-width: 5
+#| fig-height: 4
+
+autoplot(pacf(AirPassengers, plot = FALSE)) +
+  theme_classic()
+```
+
+### 延迟算子 {#sec-lag-operator}
+
+```{r}
+# 原始序列
+AirPassengers
+# 延迟 1 期
+lag(AirPassengers, k = 1)
+```
+
+### 差分算子 {#sec-diff-operator}
+
+函数 `diff()` 实现差分算子，默认参数 `lag = 1` ，`differences = 1` 表示延迟期数为 1 的一阶差分。
+
+```{r}
+# 延迟 1 期 1 阶差分
+diff(AirPassengers, lag = 1, differences = 1)
+```
+
+### 单位根检验 {#sec-unitroot-test}
+
+### Granger 因果检验 {#sec-granger-causality-test}
 
 ## 指数平滑模型 {#sec-exponential-smoothing}
 
-### Holt-Winter 平滑 {#sec-holt-winters}
+### 单指数平滑
 
-`HoltWinters()`
+函数 `filter()` 实现一元时间序列的线性过滤，或者对多元时间序列的单个序列分别做线性变换。
+
+-   递归过滤
+
+$$
+y_{i} = x_{i} + f_1 y_{i-1} +\cdots+ f_p y_{i-p}
+$$
+
+-   卷积过滤
+
+$$
+y_{i} = f_1 x_{i+o} + \cdots + f_p x_{i+o-(p-1)}
+$$
+
+其中 $o$ 代表 offset 漂移。
+
+### 双指数平滑
+
+```{r}
+air_passengers_exp <- HoltWinters(AirPassengers, gamma = FALSE, beta = FALSE)
+```
+
+```{r}
+#| label: fig-airpassengers-exp-fitted
+#| fig-cap: 双指数平滑模型拟合
+#| fig-showtext: true
+#| fig-width: 5
+#| fig-height: 4
+
+autoplot(air_passengers_exp) +
+  theme_classic()
+```
+
+向前预测 5 期
+
+```{r}
+air_passengers_pred <- predict(air_passengers_exp, n.ahead = 10, prediction.interval = TRUE)
+```
+
+预测值及其预测区间
+
+```{r}
+#| label: fig-airpassengers-exp-pred
+#| fig-cap: 双指数平滑模型预测
+#| fig-showtext: true
+#| fig-width: 5
+#| fig-height: 5
+
+plot(air_passengers_exp, air_passengers_pred)
+```
+
+### Holt-Winters 平滑 {#sec-holt-winters}
+
+根据趋势和季节性的关系，Holt-Winters 平滑模型分为可加 Holt-Winters 平滑和可乘 Holt-Winters 平滑。R 提供函数 `HoltWinters()` 拟合 Holt-Winters 平滑模型[@Holt2004; @Winters1960]。
+
+可加 Holt-Winters 平滑模型如下
+
+$$
+\begin{aligned}
+\hat{y}_{t+h} &= a_{t} + h \times b_{t} + s_{t - p + 1 + (h - 1) \mod p} \\
+a_{t} &= \alpha (y_{t} - s_{t-p}) + (1-\alpha) (a_{t-1} + b_{t-1}) \\
+b_{t} &= \beta (a_{t} - a_{t-1}) + (1-\beta) b_{t-1} \\
+s_{t} &= \gamma (y_{t} - a_{t}) + (1-\gamma) s_{t-p}
+\end{aligned}
+$$
+
+可乘 Holt-Winters 平滑模型如下
+
+$$
+\begin{aligned}
+\hat{y}_{t+h} &= (a_{t} + h \times b_{t}) \times s_{t - p + 1 + (h - 1) \mod p} \\
+a_{t} &= \alpha (y_{t} / s_{t-p}) + (1-\alpha) (a_{t-1} + b_{t-1}) \\
+b_{t} &= \beta (a_{t} - a_{t-1}) + (1-\beta) b_{t-1} \\
+s_{t} &= \gamma (y_{t} / a_{t}) + (1-\gamma) s_{t-p}
+\end{aligned}
+$$
+
+其中 $\alpha, \beta, \gamma$ 是参数，$p$ 为周期长度，$a_{t}, b_{t}, s_{t}$ 分别代表水平、趋势和季节性成分。
+
+```{r}
+air_passengers_add <- HoltWinters(AirPassengers, seasonal = "additive")
+```
+
+```{r}
+#| label: fig-airpassengers-add-fitted
+#| fig-cap: 可加 Holt-Winters 平滑模型拟合
+#| fig-showtext: true
+#| fig-width: 5
+#| fig-height: 4
+
+autoplot(air_passengers_add) +
+  theme_classic()
+```
+
+```{r}
+air_passengers_mult <- HoltWinters(AirPassengers, seasonal = "mult")
+```
+
+```{r}
+#| label: fig-airpassengers-mult-fitted
+#| fig-cap: 可乘 Holt-Winters 平滑模型拟合
+#| fig-showtext: true
+#| fig-width: 5
+#| fig-height: 4
+
+autoplot(air_passengers_mult) +
+  theme_classic()
+```
+
+做一个 Shiny 应用展示参数 $\alpha, \beta, \gamma$ 对 Holt-Winters 平滑预测的影响。
 
 ## 时间序列分解 {#sec-time-series-decomposition}
 
-`stl()`
+函数 `stl()` 将时间序列分解为季节性/周期性、趋势性和不规则/剩余的部分
+
+```{r}
+air_stl <- stl(x = AirPassengers, s.window = 12)
+```
+
+```{r}
+#| label: fig-airpassengers-stl
+#| fig-cap: 变化趋势的分解
+#| fig-showtext: true
+#| fig-height: 6
+
+autoplot(air_stl) +
+  theme_classic()
+```
 
 ### 趋势性成分
 
@@ -178,27 +380,87 @@ autoplot(AirPassengers, ts.geom = "line") +
 
 ### 季节性成分
 
-## 自回归移动平均模型 {#sec-autoregressive-moving-average-models}
-
-`arima()`
+## 经典时间序列模型 {#sec-classic-time-series-models}
 
 ### 自回归模型 {#sec-autoregressive-models}
 
-`ar()`
+函数 `ar()` 拟合 AR 模型
+
+```{r}
+ar(AirPassengers, order.max = 3)
+```
 
 ### 移动平均模型 {#sec-moving-average-models}
 
+将自回归的阶设为 0，函数 `arima()` 也可以用来拟合 MA 模型。
+
+```{r}
+arima(AirPassengers, order = c(0, 1, 3))
+```
+
+### 自回归移动平均模型 {#sec-autoregressive-moving-average-models}
+
+函数 `arima()` 拟合 ARIMA 模型
+
+```{r}
+arima(AirPassengers, order = c(1, 1, 3))
+```
+
+**forecast** 包提供函数 `auto.arima()` 自动选择合适的自回归、差分和移动平均的阶来拟合数据。
+
+``` r
+forecast::auto.arima(AirPassengers)
+```
+
+```         
+Series: AirPassengers 
+ARIMA(2,1,1)(0,1,0)[12] 
+
+Coefficients:
+         ar1     ar2      ma1
+      0.5960  0.2143  -0.9819
+s.e.  0.0888  0.0880   0.0292
+
+sigma^2 = 132.3:  log likelihood = -504.92
+AIC=1017.85   AICc=1018.17   BIC=1029.35
+```
+
 ## 贝叶斯可加时间序列预测 {#sec-bayesian-additive-models}
 
-### Google 的 Boom {#sec-google-boom}
+### 谷歌的 Boom 框架 {#sec-google-boom}
 
-### Facebook 的 Prophet {#sec-facebook-prophet}
+[CausalImpact](https://github.com/google/CausalImpact) 借助贝叶斯分析方法推断时间序列中的因果关系，比如广告促销带来的点击效果。
+
+### 脸书的 Prophet 框架 {#sec-facebook-prophet}
+
+[prophet](https://github.com/facebook/prophet) 基于贝叶斯可加模型的时间序列预测。
 
 ## 神经网络算法 {#sec-neural-network}
 
-多层感知机是一种前馈神经网络，**nnet** 包实现了单隐藏层的简单神经网络
+### 多层感知机 {#sec-multilayer-perceptron}
+
+多层感知机是一种前馈神经网络，**nnet** 包的函数 `nnet()` 实现了单隐藏层的简单神经网络。
 
 ```{r}
 library(nnet)
-# ?nnet
 ```
+
+### 长短期记忆神经网络 {#sec-long-short-term-memory-network}
+
+前面介绍的模型都具有非常强的可解释性，比如各个参数对模型的作用。对于复杂的时间序列数据，比较适合用复杂的模型来拟合，看重模型的泛化能力，而不那么关注模型的机理。下面用长短期记忆神经网络来训练美团股价数据，预测未来一周的股价趋势。
+
+```{r}
+# library(tensorflow)
+# library(keras)
+# tf$abs(x = c(-1, 1, 2))
+```
+
+## 总结 {#sec-time-series-summary}
+
+在时间序列数据的可视化方面，除了 Base R 提供的绘图方法外，静态的时序图 **lattice** 和 **ggplot2** 都不错，而交互式图形推荐使用 **plotly** 和 **dygraphs**。
+
+**PortfolioAnalytics** 包做投资组合优化，均值-方差，收益和风险权衡。 [Rmetrics](https://www.rmetrics.org/) 提供系列时间序列数据分析和建模的 R 包，包括投资组合优化 **fPortfolio**、多元分析 **fMultivar、**自回归条件异方差模型 **fGarch**、二元相依结构的 Copulae 分析 **fCopulae** 、市场和基础统计 **fBasics** 。
+
+**fable** 一元到多元时间序列预测问题，提供 ETS、ARIMA、TSLM 等模型，并有书籍时间序列预测原则。值得一提， **forecast** 包开发者 Rob J Hyndman 称已不再开发新的功能，推荐大家使用 **fable** 包。**feasts** 包辅助特征抽取、序列分解、汇总统计和绘制图形等， 插件包 **fable.prophet** 接入 Prophet 的预测能力。**timetk** 时间序列数据处理、分析、预测和可视化工具箱，提供一致的操作方式，试图形成完成的解决方案。The Rmetrics Association 开发了一系列 R 包专门处理金融时间序列数据，比如 **fGarch** 包提供条件自回归异方差模型。
+
+Prophet 贝叶斯可加时间序列预测，特别适合日粒度的数据，年、周季节性、节假日和非线性趋势都能拟合得很好。MARSS [@Holmes2012] 多元自回归状态空间模型（或动态线性模型），R 包手册《多元时间序列分析》和相关书籍《Applied Time Series Analysis for Fisheries and Environmental Sciences》。**bayesdfa** [@Ward2019] 贝叶斯动态因子分析，可以识别多元时间序列数据中的异常情况，模型构建和求解基于 Stan 语言。结合深度神经网络模型的时间序列预测，推荐 **tensorflow** 等框架。使用深度还是传统的统计模型取决于实际数据和业务场景，一般来讲，细粒度大规模近实时的数据常采用深度模型，粗粒度趋势周期稳定的数据且要求解释性的采用统计模型。
