@@ -1,0 +1,622 @@
+# 矩阵运算 {#sec-matrix-operations}
+
+::: hidden
+$$
+ \def\bm#1{{\boldsymbol #1}}
+$$
+:::
+
+> There's probably some examples, but there are some examples of people using `solve(t(X) %*% W %*% X) %*% W %*% Y` to compute regression coefficients, too.
+>
+> --- Thomas Lumley [^matrix-operations-1]
+
+[^matrix-operations-1]: <https://stat.ethz.ch/pipermail/r-help/2006-March/101596.html>
+
+本文主要介绍 Base R 提供的矩阵运算，包括加、减、乘等基础矩阵运算和常用的矩阵分解方法，总结 Base R 、**Matrix** 包和 Eigen 库对应的矩阵运算函数，分别对应基础、进阶和高阶的读者。最后，介绍矩阵运算在线性回归中的应用。
+
+```{r}
+library(Matrix)
+```
+
+## 基础运算 {#sec-basic-operations}
+
+### 加、减、乘、幂
+
+矩阵 $A$
+
+```{r}
+A <- matrix(c(1, 1.2, 1.2, 3), nrow = 2)
+A
+B <- matrix(c(1, 2, 3, 4), nrow =2)
+B
+```
+
+```{r}
+A + A # 对应元素相加
+A - A # 对应元素相减
+A %*% A # 矩阵乘法
+A^2 # 每个元素平方 A ** 2
+A ** A # 每个元素的幂运算
+2^A # 每个元素的 2 次幂
+exp(A) # 每个元素的 exp 次幂
+```
+
+矩阵 $A$ 的指数 $\mathrm{e}^{A}$
+
+$$
+\mathrm{e}^{A} = \sum_{k=1}^{\infty}\frac{A^k}{k!}
+$$
+
+```{r}
+expm::expm(A)
+```
+
+**expm** 包还提供矩阵开方、取对数等计算
+
+### 迹、秩、条件数
+
+若
+
+$$
+A = \begin{bmatrix}
+ a_{11} & a_{12}  & a_{13} \\ 
+ a_{21} & a_{22}  & a_{23} \\ 
+ a_{31} & a_{32}  & a_{33} 
+\end{bmatrix}
+$$
+
+则矩阵 $A$ 的迹 $\operatorname{tr}(A) = \sum_{i=1}^{n}a_{ii}$
+
+```{r}
+sum(diag(A))
+qr(A)$rank
+kappa(A)
+```
+
+### 求逆与广义逆
+
+Moore-Penrose generalized inverse 广义逆，如果 A 可逆则，广义逆就是逆
+
+```{r}
+solve(A)
+MASS::ginv(A)
+```
+
+### 行列式与伴随 {#sec-det-adjust}
+
+矩阵必须是方阵
+
+伴随矩阵 $A*A^{\star} = A^{\star} *A = |A|*I, A^{\star} = |A|*A^{-1}$
+
+-   $|A^{\star}| = |A|^{n-1}, A \in \mathbb{R}^{n\times n},n \geq 2$
+-   $(A^{\star})^{\star} = |A|^{n-2}A, A \in \mathbb{R}^{n\times n},n \geq 2$
+-   $(A^{\star})^{\star}$ A 的 n 次伴随是？
+
+```{r}
+det(A)
+det(A) * solve(A)
+```
+
+### 外积、直积与交叉积 {#sec-crossproduct}
+
+通常的矩阵乘法也叫矩阵内积
+
+```{r}
+A %*% B
+```
+
+外积
+
+```{r}
+A %o% B # outer(A, B, FUN = "*")
+```
+
+直积/克罗内克积
+
+```{r}
+A %x% B # kronecker(A, B, FUN = "*")
+```
+
+交叉积 $A^{\top}A$
+
+```{r}
+crossprod(A, A)  #  t(x) %*% y
+tcrossprod(A, A) #  x %*% t(y)
+```
+
+### Hadamard 积 {#subsec-hadamard-product}
+
+Hadamard 积（法国数学家 Jacques Hadamard）也叫 Schur 积（德国数学家 Issai Schur ）或 entrywise 积是两个维数相同的矩阵对应元素相乘，特别地，$A^2$ 表示将矩阵 $A$ 的每个元素平方
+
+$$
+(A\circ B)_{ij} = (A)_{ij}(B)_{ij}
+$$
+
+$$
+\begin{bmatrix}
+ a_{11} & a_{12}  & a_{13} \\ 
+ a_{21} & a_{22}  & a_{23} \\ 
+ a_{31} & a_{32}  & a_{33} 
+\end{bmatrix}
+\circ
+\begin{bmatrix}
+ b_{11} & b_{12}  & b_{13} \\ 
+ b_{21} & b_{22}  & b_{23} \\ 
+ b_{31} & b_{32}  & b_{33} 
+\end{bmatrix}
+= 
+\begin{bmatrix}
+ a_{11}b_{11} & a_{12}b_{12}  & a_{13}b_{13} \\ 
+ a_{21}b_{21} & a_{22}b_{22}  & a_{23}b_{23} \\ 
+ a_{31}b_{31} & a_{32}b_{32}  & a_{33}b_{33} 
+\end{bmatrix}
+$$
+
+```{r}
+fastmatrix::hadamard(A, B)
+```
+
+### 矩阵乘方 {#sec-matrix-exp}
+
+矩阵 A 首先是一个方阵，对称性和正定性未知，n 个 矩阵 A 相乘
+
+统计之都论坛讨论如何求矩阵的乘方 <https://d.cosx.org/d/5619-svd>
+
+``` r
+"%^%" <- function(mat, pow) {
+  if (!is.matrix(mat)) mat <- as.matrix(mat)
+  stopifnot(!diff(dim(mat)))
+  if (pow < 0) {
+    pow <- -pow
+    mat <- solve(mat)
+  }
+  pow <- round(pow)
+  switch(pow + 1, return(diag(1, nrow(mat))), return(mat))
+  get.exponents <- function(pow)
+    if (pow == 0) NULL else c(k <- 2^floor(log2(pow)), get.exponents(pow - k))
+  ans <- diag(nrow(mat))
+  dlog2exp <- rev(-diff(c(log2(get.exponents(pow)), 0)))
+  for (j in 1:length(dlog2exp)) {
+    if (dlog2exp[j]) for (i in 1:dlog2exp[j]) mat <- mat %*% mat
+    ans <- ans %*% mat
+  }
+  ans
+}
+```
+
+奇异值分解
+
+```{r}
+s <- svd(A)
+```
+
+### 矩阵范数 {#subsec-matrix-norm}
+
+矩阵的范数，包括 1，2，无穷范数
+
+$1$-范数
+
+:   列和绝对值最大的
+
+$2$ - 范数
+
+:   又称谱范数，矩阵最大的奇异值，如果是方阵，就是最大的特征值
+
+$\infty$ - 范数
+
+:   行和绝对值最大的
+
+Frobenius - 范数
+
+:   Euclidean 范数
+
+$M$ - 范数
+
+:   矩阵里模最大的元素，矩阵里面的元素可能含有复数，所以取模最大
+
+```{r}
+norm(A, type = "1") # max(abs(colSums(A)))
+norm(A, type = "I") # max(abs(rowSums(A)))
+norm(A, type = "F")
+norm(A, type = "M") #
+norm(A, type = "2") # max(svd(A)$d)
+```
+
+### 转置、旋转、正交、投影 {#sec-transpose-ratate-orthogonal-projection}
+
+矩阵 $A$
+
+```{r}
+t(A) # 转置
+```
+
+### Givens 变换(\*) {#sec-matrix-givens}
+
+-   [Givens 旋转](https://www.wikiwand.com/en/Givens_rotation)
+-   帽子矩阵在统计中的应用，回归与方差分析 [@David1978]
+
+### Householder 变换(\*) {#sec-matrix-householder}
+
+Householder 变换是平面反射的一般情况： 要计算 $N\times P$ 维矩阵 $X$ 的 QR 分解，我们采用 Householder 变换
+
+$$
+\mathbf{H}_{u} = \mathbf{I} -2\mathbf{u}\mathbf{u}^{\top}
+$$
+
+其中 $I$ 是 $N\times N$ 维的单位矩阵，$u$ 是 $N$ 维单位向量，即 $\| \mathbf{u}\| = \sqrt{\mathbf{u}\mathbf{u}^{\top}} = 1$。则 $H_u$ 是对称正交的，因为
+
+$$
+\mathbf{H}_{u}^{\top} = \mathbf{I}^{\top} - 2\mathbf{u}\mathbf{u}^{\top} = \mathbf{H}_{u}
+$$
+
+并且
+
+$$
+\mathbf{H}_{u}^{\top}\mathbf{H}_{u} =  \mathbf{I} -4\mathbf{u}\mathbf{u}^{\top} + 4\mathbf{u}\mathbf{u}^{\top}\mathbf{u}\mathbf{u}^{\top} = \mathbf{I}
+$$
+
+让 $\mathbf{H}_{u}$ 乘以向量 $\mathbf{y}$，即
+
+$$
+\mathbf{H}_{u}\mathbf{y} = \mathbf{y} - 2\mathbf{u}\mathbf{u}^{\top}\mathbf{y}
+$$
+
+它是 $y$ 关于垂直于过原点的 $u$ 的直线的反射，只要
+
+$$
+\begin{aligned}
+\mathbf{u} = \frac{\mathbf{y} - \| \mathbf{y} \|\mathbf{e}_{1}}{\| \mathbf{y} - \| \mathbf{y} \|\mathbf{e}_{1}\|}
+\end{aligned} 
+$$ {#eq-householder-negative}
+
+或者
+
+$$
+\begin{aligned}
+\mathbf{u} = \frac{\mathbf{y} + \| \mathbf{y} \|\mathbf{e}_{1}}{\| \mathbf{y} + \| \mathbf{y} \|\mathbf{e}_{1}\|}
+\end{aligned} 
+$$ {#eq-householder-positive}
+
+其中 $\mathbf{e}_{1} = (1,0,\ldots,0)^{\top}$，Householder 变换使得向量 $y$ 成为 $x$ 轴，在新的坐标系统中，向量 $H_{u}y$ 的坐标为 $(\pm\|y\|, 0, \ldots, 0)^\top$
+
+举个例子
+
+借助 Householder 变换做 QR 分解的优势：
+
+1.  更快、数值更稳定比直接构造 Q，特别当 N 大于 P 的时候
+2.  相比于存储矩阵 Q 的 $N^2$ 个元素，Householder 变换只存储 P 个向量 $u_1,\ldots,u_P$
+3.  QR 分解的真实实现，比如在 LINPACK 中，定义 $u$ 的时候， @eq-householder-negative 或 @eq-householder-positive 的选择基于 $y$ 的第一个坐标的符号。如果坐标是负的，使用 @eq-householder-negative ，如果是正的，使用 @eq-householder-positive ， 这个做法可以使得数值计算更加稳定。
+
+用 Householder 变换做 QR 分解 [@Bates1988] 及其 R 语言、Eigen 实现 <https://rpubs.com/aaronsc32/qr-decomposition-householder>
+
+### 单位矩阵 {#sec-identity-matrix}
+
+矩阵对角线上全是1，其余位置都是0
+
+$$
+A = \begin{bmatrix}
+ 1 & 0  & 0 \\ 
+ 0 & 1  & 0 \\ 
+ 0 & 0  & 1 
+\end{bmatrix}
+$$
+
+```{r}
+diag(rep(3))
+```
+
+而全1矩阵是所有元素都是1的矩阵，可以借助外积运算构造，如3阶全1矩阵
+
+```{r}
+rep(1,3) %o% rep(1,3) 
+```
+
+### 对角矩阵 {#sec-matrix-diagonals}
+
+```{r}
+diag(A)       # 矩阵的对角
+diag(x = c(1, 2, 3)) # 构造对角矩阵
+```
+
+### 稀疏矩阵 {#sec-sparse-matrix}
+
+稀疏矩阵的典型构造方式是通过三元组。
+
+```{r}
+i <- c(1, 3:8) # 行指标
+j <- c(2, 9, 6:10) # 列指标
+x <- 7 * (1:7) # 数据
+Matrix::sparseMatrix(i, j, x = x)
+```
+
+### 上、下三角矩阵 {#sec-upper-matrix}
+
+```{r}
+m <- A
+m
+upper.tri(m) # 矩阵上三角
+m[upper.tri(m)]
+m[lower.tri(m)] <- 0 # 获得上三角矩阵
+m
+```
+
+矩阵 A 的下三角矩阵
+
+```{r}
+m <- matrix(c(1, 2, 2, 3), nrow = 2)
+m[row(m) < col(m)] <- 0
+m
+```
+
+## 矩阵分解 {#sec-matrix-decomposition}
+
+### LU 分解 {#sec-lu}
+
+矩阵 $A$ 的 LU 分解 $A = LU$ ， $L$ 是下三角矩阵，$U$ 是上三角矩阵
+
+```{r}
+Matrix::lu(A)
+```
+
+### Schur 分解 {#sec-schur}
+
+矩阵 $A$ 的 Schur 分解 $A = QTQ^{\top}$
+
+```{r}
+(res <- Matrix::Schur(A))
+```
+
+其中 $Q$ 是一个正交矩阵 $QQ = I$ ，$T$ 是一个分块上三角矩阵
+
+```{r}
+res$Q %*% t(res$Q)
+```
+
+```{r}
+res$Q %*% res$T %*% t(res$Q)
+```
+
+### QR 分解 {#sec-qr}
+
+矩阵 $A$ 的 QR 分解 $A = QR$
+
+```{r}
+(res <- qr(A))
+```
+
+QR 分解结果中的 Q
+
+```{r}
+qr.Q(res)
+```
+
+QR 分解结果中的 R
+
+```{r}
+qr.R(res)
+```
+
+恢复矩阵 $A$
+
+```{r}
+qr.Q(res) %*% qr.R(res)
+```
+
+### Cholesky 分解 {#sec-cholesky}
+
+矩阵 $A$ 的 Cholesky 分解 $A = L^{\top}L$
+
+```{r}
+res <- chol(A)
+```
+
+```{r}
+t(res) %*% res
+```
+
+### 特征值分解 {#sec-spectral}
+
+特征值分解（Eigenvalues Decomposition）也叫谱分解（Spectral Decomposition）
+
+矩阵 $A$ 的特征值分解 $A = V\Lambda V^{-1}$
+
+```{r}
+(res <- eigen(A))
+```
+
+返回值列表中的元素 vectors 就是 $V$
+
+```{r}
+res$vectors %*% diag(res$values) %*% solve(res$vectors)
+```
+
+计算特征值，即求解如下方程
+
+$|A - \lambda I| = 0$
+
+```{r}
+rootSolve::uniroot.all(
+  f = function(x) (x - 1) * (x - 3) - 1.2^2,
+  lower = -10, upper = 10
+)
+```
+
+### SVD 分解 {#sec-svd}
+
+矩阵 $A$ 的 SVD 分解 $A = UDV^{\top}$ ，U 和 V 都是正交矩阵， D 是对角矩阵，对角元素是按降序排列的奇异值。
+
+当矩阵是对称矩阵时，SVD 分解和特征值分解结果是一样的。
+
+```{r}
+(res <- svd(A))
+```
+
+```{r}
+# A = U D V'
+res$u %*% diag(res$d) %*% t(res$v)
+```
+
+## Eigen 库 {#sec-eigen-library}
+
+Eigen 是一个高性能的线性代数计算库，基于 C++ 编写，有 R 语言接口 **RcppEigen** 包。下面介绍如何借助 **RcppEigen** 包调用 Eigen 库做 SVD 矩阵分解。
+
+``` {.cpp filename="code/rcpp_eigen.cpp"}
+#include <RcppEigen.h>
+
+// [[Rcpp::depends(RcppEigen)]]
+
+using Eigen::Map;                       // 'maps' rather than copies
+using Eigen::MatrixXd;                  // variable size matrix, double precision
+using Eigen::VectorXd;                  // variable size vector, double precision
+using Eigen::SelfAdjointEigenSolver;    // one of the eigenvalue solvers
+
+// [[Rcpp::export]]
+VectorXd getEigenValues(Map<MatrixXd> M) {
+  SelfAdjointEigenSolver<MatrixXd> es(M);
+  return es.eigenvalues();
+}
+// [[Rcpp::export]]
+MatrixXd getEigenVectors(Map<MatrixXd> M) {
+  SelfAdjointEigenSolver<MatrixXd> es(M);
+  return es.eigenvectors();
+}
+```
+
+`// [[Rcpp::depends(RcppEigen)]]` 可以看作一种标记，表示依赖 **RcppEigen** 包提供的 C++ 头文件，并导入到 C++ 命名空间中。
+
+`// [[Rcpp::export]]` 也可以看作一种标记，表示下面的函数需要导出到 R 语言环境中，这样 C++ 中定义的函数可以在 R 语言环境中使用。
+
+`MatrixXd` 和 `VectorXd` 分别是 Eigen 库中定义的可变大小的双精度矩阵、向量类型。
+
+`getEigenValues` 和 `getEigenVectors` 是用户自定义的两个函数名称，分别计算特征值和特征向量。
+
+`SelfAdjoint` 是伴随的意思，矩阵 $A$ 的伴随记为 $A^{\star}$ ，矩阵 $A$ 的伴随矩阵如下
+
+```{r}
+det(A)*solve(A)
+```
+
+`SelfAdjointEigenSolver` 是求解矩阵 $A$ 的伴随矩阵 $A^{\star}$ 的特征值分解。伴随矩阵的特征值分解和原矩阵的特征值分解有何关系？为什么不直接求原矩阵的特征值分解呢？
+
+1.  伴随矩阵的特征值是一样的。
+2.  伴随矩阵的特征向量有一个符号差异。
+
+`SelfAdjointEigenSolver` 是 Eigen 库中关于特征值分解方法中的一个求解器，特征值分解结果有两部分：一个是由特征值构成的向量，一个是特征向量构成的矩阵。
+
+特征值分解器 `SelfAdjointEigenSolver` 在 **RcppEigen** 包的源码路径如下：
+
+`RcppEigen/inst/include/Eigen/src/Eigenvalues/SelfAdjointEigenSolver.h`
+
+在 Eigen 库的源码路径如下：
+
+`Eigen/src/Eigenvalues/SelfAdjointEigenSolver.h` 。
+
+编译代码，获得在 R 语言环境中可直接使用的函数 `getEigenValues()` 。
+
+```{r}
+#| message: false
+# 编译代码
+Rcpp::sourceCpp(file = "code/rcpp_eigen.cpp")
+```
+
+然后，函数 `getEigenValues()` 计算特征值，返回一个向量。
+
+```{r}
+# 计算特征值
+getEigenValues(A)
+```
+
+返回一个矩阵，列是特征向量。
+
+```{r}
+# 计算特征向量
+getEigenVectors(A)
+```
+
+根据 Eigen 计算的结果，计算矩阵 A 的伴随矩阵 $A^{\star}$ 。
+
+```{r}
+t(getEigenVectors(A)) %*% diag(getEigenValues(A)) %*% getEigenVectors(A)
+```
+
+## 应用 {#sec-matrix-linear-regression}
+
+以线性模型为例讲述一些初步的计算性能提升办法，线性回归的矩阵表示
+
+$$
+\begin{aligned}
+&\bm{y} = X\bm{\beta} + \bm{\epsilon} \\
+&\bm{\epsilon} \sim \mathrm{MVN}(\bm{0}, \sigma^2I)
+\end{aligned}
+$$
+
+模型中 $\bm{\beta}, \sigma^2$ 是待估的参数，它们的最小二乘估计 $\hat{\bm{\beta}},\hat{\sigma^2}$ 。
+
+$$
+\begin{aligned}
+\hat{\bm{\beta}} &= (X^{\top}X)^{-1}X^{\top}\bm{y} \\
+\hat{\sigma^2} &= \frac{\bm{y}^{\top}(I - X(X^{\top}X)^{-1}X^{\top})\bm{y}}{n - \mathrm{rank}(X)}
+\end{aligned}
+$$
+
+在获得参数的估计后，响应变量 $\bm{y}$ 的预测 $\hat{\bm{y}}$ 及其预测方差 $\mathsf{Var}(\hat{\bm{y}})$ 如下。
+
+$$
+\begin{aligned}
+\hat{\bm{y}} &= X(X^{\top}X)^{-1}X^{\top}\bm{y} \\
+\mathsf{Var}(\hat{\bm{y}}) & = \sigma^2 X(X^{\top}X)^{-1}X^{\top}
+\end{aligned}
+$$
+
+```{r}
+set.seed(2023)
+n <- 200
+p <- 50
+x <- matrix(rnorm(n * p), n)
+y <- rnorm(n)
+lm(y ~ x + 0)
+lm.fit(x, y)
+```
+
+下面不同的计算方法来自文献 [@Tsagris2018]，回归问题，从慢到快的优化方法 [@Tsagris2022] 计算预测值 $\hat{\bm{y}}$ 。
+
+```{r}
+# 教科书版
+fit_base = function(x, y) {
+  x %*% solve(t(x) %*% x) %*% t(x) %*% y
+}
+```
+
+```{r}
+# 先向量计算，然后矩阵计算
+fit_vector = function(x, y) {
+  x %*% (solve(t(x) %*% x) %*% (t(x) %*% y))
+}
+```
+
+```{r}
+# X'X 是对称的，防止求逆
+fit_inv = function(x, y) {
+  x %*% solve(crossprod(x), crossprod(x, y))
+}
+```
+
+QR 分解 $X_{n\times p} = Q_{n\times p} R_{p\times p}$，$n > p$，$Q^{\top}Q = I$，$R$ 是上三角矩阵，$\hat{Y} = X(X^{\top}X)^{-1}X^{\top}y = QQ^{\top}y$
+
+```{r}
+fit_qr <- function(x, y) {
+  decomp <- qr(x)
+  qr.qy(decomp, qr.qty(decomp, y))
+}
+```
+
+若 $A = X^{\top}X$ 是正定矩阵，则 $A = LL^{\top}$，$L$ 是下三角矩阵
+
+```{r}
+fit_chol <- function(x, y) {
+  decomp <- chol(crossprod(x))
+  lxy <- backsolve(decomp, crossprod(x, y), transpose = TRUE)
+  b <- backsolve(decomp, lxy)
+  x %*% b
+}
+```
