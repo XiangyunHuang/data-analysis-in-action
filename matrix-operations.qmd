@@ -482,28 +482,19 @@ MatrixXd getEigenVectors(Map<MatrixXd> M) {
 }
 ```
 
-`// [[Rcpp::depends(RcppEigen)]]` 可以看作一种标记，表示依赖 **RcppEigen** 包提供的 C++ 头文件，并导入到 C++ 命名空间中。
+对上面的代码做几点说明：
 
-`// [[Rcpp::export]]` 也可以看作一种标记，表示下面的函数需要导出到 R 语言环境中，这样 C++ 中定义的函数可以在 R 语言环境中使用。
+1.  `// [[Rcpp::depends(RcppEigen)]]` 可以看作一种标记，表示依赖 **RcppEigen** 包提供的 C++ 头文件，并导入到 C++ 命名空间中。`// [[Rcpp::export]]` 也可以看作一种标记，表示下面的函数需要导出到 R 语言环境中，这样 C++ 中定义的函数可以在 R 语言环境中使用。
+2.  `MatrixXd` 和 `VectorXd` 分别是 Eigen 库中定义的可变大小的双精度矩阵、向量类型。
+3.  `SelfAdjointEigenSolver` 是 Eigen 库中关于特征值分解方法中的一个求解器，特征值分解的结果有两个部分：一个是由特征值构成的向量，一个是特征向量构成的矩阵。求解器 `SelfAdjointEigenSolver` 名称中 `SelfAdjoint` 是伴随的意思，它是做矩阵 $A$ 的伴随矩阵 $A^{\star}$ 的特征值分解。
+4.  `getEigenValues` 和 `getEigenVectors` 是用户自定义的两个函数名称，分别计算特征值和特征向量。
 
-`MatrixXd` 和 `VectorXd` 分别是 Eigen 库中定义的可变大小的双精度矩阵、向量类型。
+伴随矩阵的特征值分解和原矩阵的特征值分解有何关系？为什么不直接求原矩阵的特征值分解呢？
 
-`getEigenValues` 和 `getEigenVectors` 是用户自定义的两个函数名称，分别计算特征值和特征向量。
-
-`SelfAdjoint` 是伴随的意思，矩阵 $A$ 的伴随记为 $A^{\star}$ ，矩阵 $A$ 的伴随矩阵如下
-
-```{r}
-det(A)*solve(A)
-```
-
-`SelfAdjointEigenSolver` 是求解矩阵 $A$ 的伴随矩阵 $A^{\star}$ 的特征值分解。伴随矩阵的特征值分解和原矩阵的特征值分解有何关系？为什么不直接求原矩阵的特征值分解呢？
-
-1.  伴随矩阵的特征值是一样的。
+1.  伴随矩阵的特征值与原矩阵是一样的。
 2.  伴随矩阵的特征向量有一个符号差异。
 
-`SelfAdjointEigenSolver` 是 Eigen 库中关于特征值分解方法中的一个求解器，特征值分解结果有两部分：一个是由特征值构成的向量，一个是特征向量构成的矩阵。
-
-特征值分解器 `SelfAdjointEigenSolver` 在 **RcppEigen** 包的源码路径如下：
+**RcppEigen** 包封装了 Eigen 库，它在 **RcppEigen** 包的源码路径为
 
 `RcppEigen/inst/include/Eigen/src/Eigenvalues/SelfAdjointEigenSolver.h`
 
@@ -511,7 +502,7 @@ det(A)*solve(A)
 
 `Eigen/src/Eigenvalues/SelfAdjointEigenSolver.h` 。
 
-编译代码，获得在 R 语言环境中可直接使用的函数 `getEigenValues()` 。
+如何使用 **RcppEigen** 包加速计算？还是要看 Eigen 库的文档和源码，通过阅读源码，可以知道有哪些求解器，比如名称 `SelfAdjointEigenSolver` ，以及求解器包含的方法，比如 `eigenvalues()` 和 `eigenvectors()`，还有参数和返回值类型等。以特征值分解器 `SelfAdjointEigenSolver` 为例，编译上面的 C++ 代码，获得在 R 语言环境中可直接使用的函数 `getEigenValues()` 。
 
 ```{r}
 #| message: false
@@ -574,8 +565,7 @@ n <- 200
 p <- 50
 x <- matrix(rnorm(n * p), n)
 y <- rnorm(n)
-lm(y ~ x + 0)
-lm.fit(x, y)
+fit_lm <- lm(y ~ x + 0)
 ```
 
 下面不同的计算方法来自文献 [@Tsagris2018]，回归问题，从慢到快的优化方法 [@Tsagris2022] 计算预测值 $\hat{\bm{y}}$ 。
@@ -608,6 +598,7 @@ fit_qr <- function(x, y) {
   decomp <- qr(x)
   qr.qy(decomp, qr.qty(decomp, y))
 }
+fit_qr2 <- lm.fit(x, y)
 ```
 
 若 $A = X^{\top}X$ 是正定矩阵，则 $A = LL^{\top}$，$L$ 是下三角矩阵
