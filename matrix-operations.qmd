@@ -158,9 +158,7 @@ fastmatrix::hadamard(A, B)
 
 ### 矩阵乘方 {#sec-matrix-exp}
 
-矩阵 A 首先是一个方阵，对称性和正定性未知，n 个 矩阵 A 相乘
-
-统计之都论坛讨论如何求矩阵的乘方 <https://d.cosx.org/d/5619-svd>
+矩阵 A 首先是一个方阵，它的对称性和正定性未知，计算 n 个 矩阵 A 相乘，统计之都论坛给出一个求[矩阵的乘方](https://d.cosx.org/d/5619)的方法。
 
 ``` r
 "%^%" <- function(mat, pow) {
@@ -184,7 +182,7 @@ fastmatrix::hadamard(A, B)
 }
 ```
 
-奇异值分解
+先做奇异值分解
 
 ```{r}
 s <- svd(A)
@@ -287,7 +285,7 @@ $$ {#eq-householder-positive}
 2.  相比于存储矩阵 Q 的 $N^2$ 个元素，Householder 变换只存储 P 个向量 $u_1,\ldots,u_P$
 3.  QR 分解的真实实现，比如在 LINPACK 中，定义 $u$ 的时候， @eq-householder-negative 或 @eq-householder-positive 的选择基于 $y$ 的第一个坐标的符号。如果坐标是负的，使用 @eq-householder-negative ，如果是正的，使用 @eq-householder-positive ， 这个做法可以使得数值计算更加稳定。
 
-用 Householder 变换做 QR 分解 [@Bates1988] 及其 R 语言、Eigen 实现 <https://rpubs.com/aaronsc32/qr-decomposition-householder>
+用 Householder 变换做 QR 分解 [@Bates1988] 及其 [R 语言](https://rpubs.com/aaronsc32/qr-decomposition-householder)、Eigen 实现。
 
 ### 单位矩阵 {#sec-identity-matrix}
 
@@ -407,7 +405,7 @@ qr.Q(res) %*% qr.R(res)
 矩阵 $A$ 的 Cholesky 分解 $A = L^{\top}L$
 
 ```{r}
-res <- chol(A)
+(res <- chol(A))
 ```
 
 ```{r}
@@ -430,7 +428,7 @@ t(res) %*% res
 res$vectors %*% diag(res$values) %*% solve(res$vectors)
 ```
 
-计算特征值，即求解如下方程
+计算特征值，即求解如下一元 $n$ 次方程
 
 $|A - \lambda I| = 0$
 
@@ -458,7 +456,7 @@ res$u %*% diag(res$d) %*% t(res$v)
 
 ## Eigen 库 {#sec-eigen-library}
 
-Eigen 是一个高性能的线性代数计算库，基于 C++ 编写，有 R 语言接口 **RcppEigen** 包。下面介绍如何借助 **RcppEigen** 包调用 Eigen 库做 SVD 矩阵分解。
+Eigen 是一个高性能的线性代数计算库，基于 C++ 编写，有 R 语言接口 **RcppEigen** 包。示例来自 **RcppEigen** 包，本文增加了特征向量，下面介绍如何借助 **RcppEigen** 包调用 Eigen 库做 SVD 矩阵分解。
 
 ``` {.cpp filename="code/rcpp_eigen.cpp"}
 #include <RcppEigen.h>
@@ -524,7 +522,7 @@ getEigenValues(A)
 getEigenVectors(A)
 ```
 
-根据 Eigen 计算的结果，计算矩阵 A 的伴随矩阵 $A^{\star}$ 。
+根据上述分解结果计算矩阵 A 的伴随矩阵 $A^{\star}$ 。
 
 ```{r}
 t(getEigenVectors(A)) %*% diag(getEigenValues(A)) %*% getEigenVectors(A)
