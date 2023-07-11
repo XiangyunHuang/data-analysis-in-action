@@ -20,6 +20,16 @@ library(Matrix)
 
 ## 基础运算 {#sec-basic-operations}
 
+约定符号
+
+$$
+A = \begin{bmatrix}
+ a_{11} & a_{12}  & a_{13} \\ 
+ a_{21} & a_{22}  & a_{23} \\ 
+ a_{31} & a_{32}  & a_{33} 
+\end{bmatrix}
+$$
+
 ### 加、减、乘
 
 矩阵 $A$
@@ -45,17 +55,24 @@ A %*% A # 矩阵乘法
 expm::logm(A)
 ```
 
-矩阵 $A$ 的指数 $\mathrm{e}^{A}$
+矩阵 $A$ 的指数 $\mathrm{e}^{A}$ 的定义
 
 $$
 \mathrm{e}^{A} = \sum_{k=1}^{\infty}\frac{A^k}{k!}
 $$
 
+**expm** 包可以计算矩阵的指数、开方、对数等。
+
 ```{r}
 expm::expm(A)
 ```
 
-**expm** 包还提供矩阵开方、取对数等计算
+或者使用奇异值分解 $A = UDV^{\top}$ ，则 $\mathrm{e}^A = U\mathrm{e}^DV^{\top}$ ，其中，D 是对角矩阵。
+
+```{r}
+(res <- svd(A))
+res$u %*% diag(exp(res$d)) %*% res$v
+```
 
 矩阵 $A$ 的 $n$ 次幂 $A^n$ ，利用奇异值分解 $A = UDV^{\top}$
 
@@ -69,23 +86,12 @@ $$
 计算 $A^3$
 
 ```{r}
-(res <- svd(A))
 res$u %*% (diag(res$d)^3) %*% res$v
 ```
 
 ### 迹、秩、条件数
 
-若
-
-$$
-A = \begin{bmatrix}
- a_{11} & a_{12}  & a_{13} \\ 
- a_{21} & a_{22}  & a_{23} \\ 
- a_{31} & a_{32}  & a_{33} 
-\end{bmatrix}
-$$
-
-则矩阵 $A$ 的迹 $\operatorname{tr}(A) = \sum_{i=1}^{n}a_{ii}$
+矩阵 $A$ 的迹 $\operatorname{tr}(A) = \sum_{i=1}^{n}a_{ii}$
 
 ```{r}
 sum(diag(A))
