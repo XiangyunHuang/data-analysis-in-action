@@ -20,7 +20,7 @@ library(Matrix)
 
 ## 基础运算 {#sec-basic-operations}
 
-### 加、减、乘、幂
+### 加、减、乘
 
 矩阵 $A$
 
@@ -35,10 +35,14 @@ B
 A + A # 对应元素相加
 A - A # 对应元素相减
 A %*% A # 矩阵乘法
-A^2 # 每个元素平方 A ** 2
-A ** A # 每个元素的幂运算
-2^A # 每个元素的 2 次幂
-exp(A) # 每个元素的 exp 次幂
+```
+
+### 对数、指数与幂 {#sec-log-exp}
+
+矩阵 $A$ 的对数 $\log A$ ，就是找一个矩阵 $L$ 使得 $A = \mathrm{e}^L$
+
+```{r}
+expm::logm(A)
 ```
 
 矩阵 $A$ 的指数 $\mathrm{e}^{A}$
@@ -52,6 +56,22 @@ expm::expm(A)
 ```
 
 **expm** 包还提供矩阵开方、取对数等计算
+
+矩阵 $A$ 的 $n$ 次幂 $A^n$ ，利用奇异值分解 $A = UDV^{\top}$
+
+$$
+\begin{aligned}
+A^n &= A \times A \times \cdots \times A \\
+& = UDV^{\top} UDV^{\top} \cdots UDV^{\top} 
+\end{aligned}
+$$
+
+计算 $A^3$
+
+```{r}
+(res <- svd(A))
+res$u %*% (diag(res$d)^3) %*% res$v
+```
 
 ### 迹、秩、条件数
 
@@ -75,11 +95,17 @@ kappa(A)
 
 ### 求逆与广义逆
 
-Moore-Penrose generalized inverse 广义逆，如果 A 可逆则，广义逆就是逆
+Moore-Penrose Generalized Inverse 摩尔广义逆 $A^-$。
+
+$$
+A^- = (A^{\top}A)^{-1}A
+$$
+
+如果 A 可逆，则广义逆就是逆。
 
 ```{r}
-solve(A)
-MASS::ginv(A)
+solve(A) # 逆
+MASS::ginv(A) # 广义逆
 ```
 
 ### 行列式与伴随 {#sec-det-adjust}
@@ -156,36 +182,11 @@ $$
 fastmatrix::hadamard(A, B)
 ```
 
-### 矩阵乘方 {#sec-matrix-exp}
-
-矩阵 A 首先是一个方阵，它的对称性和正定性未知，计算 n 个 矩阵 A 相乘，统计之都论坛给出一个求[矩阵的乘方](https://d.cosx.org/d/5619)的方法。
-
-``` r
-"%^%" <- function(mat, pow) {
-  if (!is.matrix(mat)) mat <- as.matrix(mat)
-  stopifnot(!diff(dim(mat)))
-  if (pow < 0) {
-    pow <- -pow
-    mat <- solve(mat)
-  }
-  pow <- round(pow)
-  switch(pow + 1, return(diag(1, nrow(mat))), return(mat))
-  get.exponents <- function(pow)
-    if (pow == 0) NULL else c(k <- 2^floor(log2(pow)), get.exponents(pow - k))
-  ans <- diag(nrow(mat))
-  dlog2exp <- rev(-diff(c(log2(get.exponents(pow)), 0)))
-  for (j in 1:length(dlog2exp)) {
-    if (dlog2exp[j]) for (i in 1:dlog2exp[j]) mat <- mat %*% mat
-    ans <- ans %*% mat
-  }
-  ans
-}
-```
-
-先做奇异值分解
-
 ```{r}
-s <- svd(A)
+A^2     # 每个元素平方 a_ij ^ 2
+A ** A  # 每个元素的幂 a_ij ^ a_ij
+2^A     # 每个元素的指数 2 ^ a_ij
+exp(A)  # 每个元素的指数 exp(a_ij)
 ```
 
 ### 矩阵范数 {#subsec-matrix-norm}
@@ -220,12 +221,24 @@ norm(A, type = "M") #
 norm(A, type = "2") # max(svd(A)$d)
 ```
 
-### 转置、旋转、正交、投影 {#sec-transpose-ratate-orthogonal-projection}
+### 转置与旋转 {#sec-transpose-ratate}
 
 矩阵 $A$
 
 ```{r}
 t(A) # 转置
+```
+
+### 正交与投影 {#sec-orthogonal-projection}
+
+矩阵 $A$ 的投影
+
+$$
+I - A(A^{\top}A)^{-1}A^{\top}
+$$
+
+```{r}
+diag(rep(1, 2)) - A %*% solve(t(A) %*% A) %*% t(A)
 ```
 
 ### Givens 变换(\*) {#sec-matrix-givens}
@@ -441,7 +454,7 @@ rootSolve::uniroot.all(
 
 ### SVD 分解 {#sec-svd}
 
-矩阵 $A$ 的 SVD 分解 $A = UDV^{\top}$ ，U 和 V 都是正交矩阵， D 是对角矩阵，对角元素是按降序排列的奇异值。
+矩阵 $A$ 的 SVD 分解 $A = UDV^{\top}$ ，矩阵 U 和 V 是正交的，矩阵 D 是对角的，矩阵 D 的对角元素是按降序排列的奇异值。
 
 当矩阵是对称矩阵时，SVD 分解和特征值分解结果是一样的。
 
@@ -452,6 +465,12 @@ rootSolve::uniroot.all(
 ```{r}
 # A = U D V'
 res$u %*% diag(res$d) %*% t(res$v)
+# D = U'AV
+t(res$u) %*% A %*% res$v
+# I = VV'
+res$v %*% t(res$v)
+# I = UU'
+res$u %*% t(res$u)
 ```
 
 ## Eigen 库 {#sec-eigen-library}
