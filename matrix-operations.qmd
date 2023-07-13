@@ -18,7 +18,7 @@ $$
 library(Matrix)
 ```
 
-## 基础运算 {#sec-basic-operations}
+## 基础运算 {#sec-basic-matrix-operations}
 
 约定符号
 
@@ -483,7 +483,7 @@ res$u %*% t(res$u)
 
 Eigen 是一个高性能的线性代数计算库，基于 C++ 编写，有 R 语言接口 **RcppEigen** 包。示例来自 **RcppEigen** 包，本文增加了特征向量，下面介绍如何借助 **RcppEigen** 包调用 Eigen 库做 SVD 矩阵分解。
 
-``` {.cpp filename="code/rcpp_eigen.cpp"}
+``` {#rcpp-eigen .cpp}
 #include <RcppEigen.h>
 
 // [[Rcpp::depends(RcppEigen)]]
@@ -559,26 +559,26 @@ t(getEigenVectors(A)) %*% diag(getEigenValues(A)) %*% getEigenVectors(A)
 
 $$
 \begin{aligned}
-&\bm{y} = X\bm{\beta} + \bm{\epsilon} \\
-&\bm{\epsilon} \sim \mathrm{MVN}(\bm{0}, \sigma^2I)
+&\boldsymbol{y} = X\boldsymbol{\beta} + \boldsymbol{\epsilon} \\
+&\boldsymbol{\epsilon} \sim \mathrm{MVN}(\boldsymbol{0}, \sigma^2I)
 \end{aligned}
 $$
 
-模型中 $\bm{\beta}, \sigma^2$ 是待估的参数，它们的最小二乘估计分别记为 $\hat{\bm{\beta}},\hat{\sigma^2}$ 。
+模型中 $\boldsymbol{\beta}, \sigma^2$ 是待估的参数，它们的最小二乘估计分别记为 $\hat{\boldsymbol{\beta}},\hat{\sigma^2}$ 。
 
 $$
 \begin{aligned}
-\hat{\bm{\beta}} &= (X^{\top}X)^{-1}X^{\top}\bm{y} \\
-\hat{\sigma^2} &= \frac{\bm{y}^{\top}(I - X(X^{\top}X)^{-1}X^{\top})\bm{y}}{n - \mathrm{rank}(X)}
+\hat{\boldsymbol{\beta}} &= (X^{\top}X)^{-1}X^{\top}\boldsymbol{y} \\
+\hat{\sigma^2} &= \frac{\boldsymbol{y}^{\top}(I - X(X^{\top}X)^{-1}X^{\top})\boldsymbol{y}}{n - \mathrm{rank}(X)}
 \end{aligned}
 $$
 
-在获得参数的估计后，响应变量 $\bm{y}$ 的预测 $\hat{\bm{y}}$ 及其预测方差 $\mathsf{Var}(\hat{\bm{y}})$ 如下。
+在获得参数的估计后，响应变量 $\boldsymbol{y}$ 的预测 $\hat{\boldsymbol{y}}$ 及其预测方差 $\mathsf{Var}(\hat{\boldsymbol{y}})$ 如下。
 
 $$
 \begin{aligned}
-\hat{\bm{y}} &= X(X^{\top}X)^{-1}X^{\top}\bm{y} \\
-\mathsf{Var}(\hat{\bm{y}}) & = \sigma^2 X(X^{\top}X)^{-1}X^{\top}
+\hat{\boldsymbol{y}} &= X(X^{\top}X)^{-1}X^{\top}\boldsymbol{y} \\
+\mathsf{Var}(\hat{\boldsymbol{y}}) & = \sigma^2 X(X^{\top}X)^{-1}X^{\top}
 \end{aligned}
 $$
 
@@ -591,7 +591,7 @@ y <- rnorm(n)
 fit_lm <- lm(y ~ x + 0)
 ```
 
-下面不同的方法来计算预测值 $\hat{\bm{y}}$ ，从慢到快地优化。教科书版就是从左至右依次计算。
+下面不同的方法来计算预测值 $\hat{\boldsymbol{y}}$ ，从慢到快地优化。教科书版就是从左至右依次计算。
 
 ```{r}
 fit_base = function(x, y) {
@@ -602,7 +602,7 @@ fit_base = function(x, y) {
 矩阵乘向量比矩阵乘矩阵快。虽然矩阵乘法没有交换律，但是有结合律。先向量计算，然后矩阵计算。
 
 $$
-\hat{\bm{y}} = X(X^{\top}X)^{-1}X^{\top}\bm{y}
+\hat{\boldsymbol{y}} = X(X^{\top}X)^{-1}X^{\top}\boldsymbol{y}
 $$
 
 ```{r}
@@ -614,7 +614,7 @@ fit_vector = function(x, y) {
 解线性方程组比求逆快。 $X^{\top}X$ 是对称的，通过解线性方程组来避免求逆。
 
 $$
-\hat{\bm{y}} = X(X^{\top}X)^{-1}X^{\top}\bm{y}
+\hat{\boldsymbol{y}} = X(X^{\top}X)^{-1}X^{\top}\boldsymbol{y}
 $$
 
 ```{r}
@@ -627,10 +627,10 @@ QR 分解。 $X_{n\times p} = Q_{n\times p} R_{p\times p}$，$n > p$，$Q^{\top}
 
 $$
 \begin{aligned}
-\hat{\bm{y}} &= X(X^{\top}X)^{-1}X^{\top}\bm{y} \\
-& = QR \big((QR)^{\top}QR\big)^{-1}(QR)^{\top}\bm{y} \\
-& = QR(R^{\top}R)^{-1}R^{\top}Q^{\top}\bm{y} \\
-& = QQ^{\top}\bm{y}
+\hat{\boldsymbol{y}} &= X(X^{\top}X)^{-1}X^{\top}\boldsymbol{y} \\
+& = QR \big((QR)^{\top}QR\big)^{-1}(QR)^{\top}\boldsymbol{y} \\
+& = QR(R^{\top}R)^{-1}R^{\top}Q^{\top}\boldsymbol{y} \\
+& = QQ^{\top}\boldsymbol{y}
 \end{aligned}
 $$
 
@@ -648,9 +648,9 @@ Cholesky 分解。记 $A = X^{\top}X$ ，若 $A$ 是正定矩阵，则 $A$ 可�
 
 $$
 \begin{aligned}
-\hat{\bm{y}} &= X(X^{\top}X)^{-1}X^{\top}\bm{y} \\
-& = X\big(L^{\top}L\big)^{-1}X^{\top}\bm{y} \\
-& = XL^{-1}(L^{\top})^{-1}X^{\top}\bm{y}
+\hat{\boldsymbol{y}} &= X(X^{\top}X)^{-1}X^{\top}\boldsymbol{y} \\
+& = X\big(L^{\top}L\big)^{-1}X^{\top}\boldsymbol{y} \\
+& = XL^{-1}(L^{\top})^{-1}X^{\top}\boldsymbol{y}
 \end{aligned}
 $$
 
