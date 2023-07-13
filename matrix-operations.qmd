@@ -421,7 +421,7 @@ qr.Q(res) %*% qr.R(res)
 
 ### Cholesky 分解 {#sec-cholesky}
 
-矩阵 $A$ 的 Cholesky 分解 $A = L^{\top}L$
+矩阵 $A$ 的 Cholesky 分解 $A = L^{\top}L$ ，其中 $L$ 是上三角矩阵
 
 ```{r}
 (res <- chol(A))
@@ -555,7 +555,7 @@ t(getEigenVectors(A)) %*% diag(getEigenValues(A)) %*% getEigenVectors(A)
 
 ## 应用 {#sec-matrix-linear-regression}
 
-以线性模型为例讲述一些初步的计算性能提升办法，线性回归的矩阵表示
+以线性模型为例讲述一些初步的计算性能提升办法。回顾一下线性回归的矩阵表示。
 
 $$
 \begin{aligned}
@@ -564,7 +564,7 @@ $$
 \end{aligned}
 $$
 
-模型中 $\bm{\beta}, \sigma^2$ 是待估的参数，它们的最小二乘估计 $\hat{\bm{\beta}},\hat{\sigma^2}$ 。
+模型中 $\bm{\beta}, \sigma^2$ 是待估的参数，它们的最小二乘估计分别记为 $\hat{\bm{\beta}},\hat{\sigma^2}$ 。
 
 $$
 \begin{aligned}
@@ -591,30 +591,48 @@ y <- rnorm(n)
 fit_lm <- lm(y ~ x + 0)
 ```
 
-下面不同的计算方法来自文献 [@Tsagris2018]，回归问题，从慢到快的优化方法 [@Tsagris2022] 计算预测值 $\hat{\bm{y}}$ 。
+下面不同的方法来计算预测值 $\hat{\bm{y}}$ ，从慢到快地优化。教科书版就是从左至右依次计算。
 
 ```{r}
-# 教科书版
 fit_base = function(x, y) {
   x %*% solve(t(x) %*% x) %*% t(x) %*% y
 }
 ```
 
+矩阵乘向量比矩阵乘矩阵快。虽然矩阵乘法没有交换律，但是有结合律。先向量计算，然后矩阵计算。
+
+$$
+\hat{\bm{y}} = X(X^{\top}X)^{-1}X^{\top}\bm{y}
+$$
+
 ```{r}
-# 先向量计算，然后矩阵计算
 fit_vector = function(x, y) {
   x %*% (solve(t(x) %*% x) %*% (t(x) %*% y))
 }
 ```
 
+解线性方程组比求逆快。 $X^{\top}X$ 是对称的，通过解线性方程组来避免求逆。
+
+$$
+\hat{\bm{y}} = X(X^{\top}X)^{-1}X^{\top}\bm{y}
+$$
+
 ```{r}
-# X'X 是对称的，防止求逆
 fit_inv = function(x, y) {
   x %*% solve(crossprod(x), crossprod(x, y))
 }
 ```
 
-QR 分解 $X_{n\times p} = Q_{n\times p} R_{p\times p}$，$n > p$，$Q^{\top}Q = I$，$R$ 是上三角矩阵，$\hat{Y} = X(X^{\top}X)^{-1}X^{\top}y = QQ^{\top}y$
+QR 分解。 $X_{n\times p} = Q_{n\times p} R_{p\times p}$，$n > p$，$Q^{\top}Q = I$，$R$ 是上三角矩阵。
+
+$$
+\begin{aligned}
+\hat{\bm{y}} &= X(X^{\top}X)^{-1}X^{\top}\bm{y} \\
+& = QR \big((QR)^{\top}QR\big)^{-1}(QR)^{\top}\bm{y} \\
+& = QR(R^{\top}R)^{-1}R^{\top}Q^{\top}\bm{y} \\
+& = QQ^{\top}\bm{y}
+\end{aligned}
+$$
 
 ```{r}
 fit_qr <- function(x, y) {
@@ -624,7 +642,17 @@ fit_qr <- function(x, y) {
 fit_qr2 <- lm.fit(x, y)
 ```
 
-若 $A = X^{\top}X$ 是正定矩阵，则 $A = LL^{\top}$，$L$ 是下三角矩阵
+其中，函数 `qr.qy(decomp, y)` 表示 `Q %*% y` ，函数 `qr.qty(decomp, y)` 表示 `t(Q) %*% y` 。实际上，Base R 提供的线性回归拟合函数 `lm()` 就采用 QR 分解。
+
+Cholesky 分解。记 $A = X^{\top}X$ ，若 $A$ 是正定矩阵，则 $A$ 可做 Cholesky 分解。不妨设$A = L^{\top}L$，其中 $L$ 是上三角矩阵。
+
+$$
+\begin{aligned}
+\hat{\bm{y}} &= X(X^{\top}X)^{-1}X^{\top}\bm{y} \\
+& = X\big(L^{\top}L\big)^{-1}X^{\top}\bm{y} \\
+& = XL^{-1}(L^{\top})^{-1}X^{\top}\bm{y}
+\end{aligned}
+$$
 
 ```{r}
 fit_chol <- function(x, y) {
@@ -634,3 +662,5 @@ fit_chol <- function(x, y) {
   x %*% b
 }
 ```
+
+函数 `backsolve()` 求解上三角线性方程组。
