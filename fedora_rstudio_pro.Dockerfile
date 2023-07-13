@@ -26,6 +26,7 @@ RUN dnf -y upgrade \
    optipng \
    ImageMagick \
    texinfo \
+   git \
  && dnf clean all
 
 # System dependencies required for Quarto Book project
