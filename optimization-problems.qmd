@@ -8,12 +8,6 @@ source("_common.R")
 Sys.setenv(ROI_LOAD_PLUGINS = FALSE)
 ```
 
-::: hidden
-$$
- \def\bm#1{{\boldsymbol #1}}
-$$
-:::
-
 ```{r}
 #| message: false
 
@@ -147,12 +141,12 @@ ggplot() +
 
 $$
 \begin{aligned}
-\min_{\bm{w}} \quad & \bm{w}^{\top}\hat{\Sigma}\bm{w} \\
-\text{s.t.} \quad & A\bm{w}^{\top} \leq \bm{b}
+\min_{\boldsymbol{w}} \quad & \boldsymbol{w}^{\top}\hat{\Sigma}\boldsymbol{w} \\
+\text{s.t.} \quad & A\boldsymbol{w}^{\top} \leq \boldsymbol{b}
 \end{aligned}
 $$
 
-其中，$\bm{w}$ 是权重向量，每个分量代表对投资对象的投资比例，$\hat{\Sigma}$ 是关于投资对象的协方差矩阵，约束条件中包含两个部分，一个是权重之和为 1，一个是投资组合的收益率达到预期值。下面基于 12个科技公司公开的股价数据介绍此组合优化问题。
+其中，$\boldsymbol{w}$ 是权重向量，每个分量代表对投资对象的投资比例，$\hat{\Sigma}$ 是关于投资对象的协方差矩阵，约束条件中包含两个部分，一个是权重之和为 1，一个是投资组合的收益率达到预期值。下面基于 12个科技公司公开的股价数据介绍此组合优化问题。
 
 首先利用 **quantmod** 包获取微软、谷歌、亚马逊、惠普、甲骨文、英特尔、威瑞森、eBay、AT&T、Apple、Adobe 和 IBM 等 12 支股票的历史股价数据。根据 2022-11-01 至 2022-12-01 期间的股票调整价，计算各支股票天粒度的收益率。收益率可以看作一个随机变量，收益率的波动变化，即随机变量的方差，可以看作风险。
 
@@ -193,13 +187,13 @@ sqrt(t(w) %*% cov(DD) %*% w)
 
 $$
 \begin{aligned}
-\max_{\bm{w}} \quad & \bm{w}^{\top}\hat{\bm{\mu}} \\
-\text{s.t.} \quad & A\bm{w} \leq \bm{b} \\
-\quad & \bm{w}^{\top}\hat{\Sigma}\bm{w} \leq \sigma
+\max_{\boldsymbol{w}} \quad & \boldsymbol{w}^{\top}\hat{\boldsymbol{\mu}} \\
+\text{s.t.} \quad & A\boldsymbol{w} \leq \boldsymbol{b} \\
+\quad & \boldsymbol{w}^{\top}\hat{\Sigma}\boldsymbol{w} \leq \sigma
 \end{aligned}
 $$
 
-其中，目标函数中 $\hat{\bm{\mu}}$ 表示根据历史数据获得的投资对象的收益率，约束条件中 $\sigma$ 表示投资者可以接受的投资风险，其他符号的含义同前。在给定风险约束 $\sigma$ 下，求取回报最大的组合。线性约束也可以用函数 `Q_constraint()` 来表示，这样线性约束和二次约束可以整合在一起，代码如下：
+其中，目标函数中 $\hat{\boldsymbol{\mu}}$ 表示根据历史数据获得的投资对象的收益率，约束条件中 $\sigma$ 表示投资者可以接受的投资风险，其他符号的含义同前。在给定风险约束 $\sigma$ 下，求取回报最大的组合。线性约束也可以用函数 `Q_constraint()` 来表示，这样线性约束和二次约束可以整合在一起，代码如下：
 
 ```{r}
 # 风险阈值
@@ -296,19 +290,19 @@ w %*% colMeans(DD)
 高斯过程回归模型如下：
 
 $$
-\bm{y}(x) = D\bm{\beta} + S(x)
+\boldsymbol{y}(x) = D\boldsymbol{\beta} + S(x)
 $$
 
-其中，$\bm{\beta}$ 是一个 $p\times 1$ 维列向量，随机过程 $S(x)$ 是均值为零，协方差为 $V_{\bm{\theta}}$ 的平稳高斯过程，协方差矩阵 $V_{\bm{\theta}}$ 的元素如下：
+其中，$\boldsymbol{\beta}$ 是一个 $p\times 1$ 维列向量，随机过程 $S(x)$ 是均值为零，协方差为 $V_{\boldsymbol{\theta}}$ 的平稳高斯过程，协方差矩阵 $V_{\boldsymbol{\theta}}$ 的元素如下：
 
 $$
 \mathsf{Cov}\{S(x_i), S(x_j)\} = \sigma^2 \exp(-\|x_i - x_j\| / \phi)
 $$
 
-其中， $\bm{\theta} = (\sigma^2,\phi)$ 表示与协方差矩阵相关的参数，随机过程 $S(x)$ 的一个实现服从多元正态分布 $\mathrm{MVN}(\bm{0},V_{\bm{\theta}})$ ，则 $\bm{y}(x)$ 也服从多元正态分布 $\mathrm{MVN}(D\bm{\beta},V_{\bm{\theta}})$ 。参数 $\bm{\beta}$ 的广义最小二乘估计为 $\hat{\bm{\beta}}(\bm{\theta}) = (D^{\top}V_{\bm{\theta}}^{-1}D)^{-1} D^{\top}V_{\bm{\theta}}^{-1}\bm{y}$ ，关于参数 $\bm{\theta}$ 的剖面对数似然函数如下：
+其中， $\boldsymbol{\theta} = (\sigma^2,\phi)$ 表示与协方差矩阵相关的参数，随机过程 $S(x)$ 的一个实现服从多元正态分布 $\mathrm{MVN}(\boldsymbol{0},V_{\boldsymbol{\theta}})$ ，则 $\boldsymbol{y}(x)$ 也服从多元正态分布 $\mathrm{MVN}(D\boldsymbol{\beta},V_{\boldsymbol{\theta}})$ 。参数 $\boldsymbol{\beta}$ 的广义最小二乘估计为 $\hat{\boldsymbol{\beta}}(\boldsymbol{\theta}) = (D^{\top}V_{\boldsymbol{\theta}}^{-1}D)^{-1} D^{\top}V_{\boldsymbol{\theta}}^{-1}\boldsymbol{y}$ ，关于参数 $\boldsymbol{\theta}$ 的剖面对数似然函数如下：
 
 $$
-\log \mathcal{L}(\bm{\theta}) = -\frac{n}{2}\log (2\pi) - \frac{1}{2}\log (\det V_{\bm{\theta}}) -\frac{1}{2}\bm{y}^{\top}V_{\bm{\theta}}^{-1}\big(I - D(D^{\top}V_{\bm{\theta}}^{-1}D)^{-1}D^{\top}V_{\bm{\theta}}^{-1}\big)\bm{y}
+\log \mathcal{L}(\boldsymbol{\theta}) = -\frac{n}{2}\log (2\pi) - \frac{1}{2}\log (\det V_{\boldsymbol{\theta}}) -\frac{1}{2}\boldsymbol{y}^{\top}V_{\boldsymbol{\theta}}^{-1}\big(I - D(D^{\top}V_{\boldsymbol{\theta}}^{-1}D)^{-1}D^{\top}V_{\boldsymbol{\theta}}^{-1}\big)\boldsymbol{y}
 $$
 
 下面考虑一个来自 **MASS** 包真实数据 `topo`。topo 数据集最初来自 John C. Davis （1973年）所著的书《Statistics and Data Analysis in Geology》。后来， J. J. Warnes 和 B. D. Ripley （1987年）以该数据集为例指出空间高斯过程的协方差函数的似然估计中存在的问题[@Ripley1987]，并将其作为数据集 `topo` 放在 **MASS** 包里。Paulo J. Ribeiro Jr 和 Peter J. Diggle （2001年）将该数据集打包成自定义的 `geodata` 数据类型，放在 **geoR** 包里，并在他俩合著的书《Model-based Geostatistics》中多次出现。`topo` 是空间地形数据集，包含有 52 行 3 列，数据点是 310 平方英尺范围内的海拔高度数据，`x` 坐标每单位 50 英尺，`y` 坐标单位同 `x` 坐标，海拔高度 `z` 单位是英尺。
@@ -319,7 +313,7 @@ data(topo)
 str(topo)
 ```
 
-根据 `topo` 数据集， $D = \bm{1}$ 是一个 $52 \times 1$ 的列向量，$\bm{\beta} = \beta$ 是一个截距项。设置参数初值 $(\sigma,\phi) = (65,2)$ 。为了与 Ripley 的论文中的图比较，下面扔掉了对数似然函数中常数项，用 R 语言编码的似然函数如下：
+根据 `topo` 数据集， $D = \boldsymbol{1}$ 是一个 $52 \times 1$ 的列向量，$\boldsymbol{\beta} = \beta$ 是一个截距项。设置参数初值 $(\sigma,\phi) = (65,2)$ 。为了与 Ripley 的论文中的图比较，下面扔掉了对数似然函数中常数项，用 R 语言编码的似然函数如下：
 
 ```{r}
 log_lik <- function(x) {
