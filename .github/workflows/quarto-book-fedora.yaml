@@ -35,6 +35,16 @@ jobs:
       - name: Render Book
         run: |
           quarto render --to html
+        shell: bash
+
+      - name: Deploy book to bookdown.org
+        if: contains(env.isExtPR, 'false')
+        env:
+          CONNECT_API_KEY: ${{ secrets.RSC_BOOKDOWN_TOKEN }}
+          CONTENT_ID: ${{ secrets.RSC_BOOKDOWN_APP_ID }}
+        run: |
+          Rscript '_deploy.R'
+        shell: bash
 
       - name: Deploy to Netlify
         if: contains(env.isExtPR, 'false')
