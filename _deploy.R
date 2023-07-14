@@ -4,6 +4,7 @@ rsconnect::connectApiUser(
   account = "xiangyun", server = "bookdown.org",
   apiKey = Sys.getenv("CONNECT_API_KEY")
 )
+rsconnect::addServer(url = "https://bookdown.org/__api__/", name = "bookdown.org")
 quarto::quarto_publish_site(
   name = "data-analysis-in-action", render = "none",
   server = "bookdown.org", account = "xiangyun",
