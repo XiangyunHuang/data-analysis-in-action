@@ -243,9 +243,37 @@ diff(AirPassengers, lag = 1, differences = 1)
 
 ## 指数平滑模型 {#sec-exponential-smoothing}
 
-### 单指数平滑
+### 指数平滑
 
-单指数平滑，其实是单参数的指数平滑，平滑模型只含有一个参数。函数 `filter()` 实现一元时间序列的线性过滤，或者对多元时间序列的单个序列分别做线性变换，它只是根据既定的平滑模型变换数据，没有拟合数据。函数 `filter()` 实现递归过滤和卷积过滤两种数据变换方式，分别对应自回归和移动平均两种时间序列平滑模型。
+首先来回答何为指数平滑？用历史数据的线性组合预测下一个时期的值，线性组合的权重随距离变远而按指数衰减。不妨设观测序列数据为 $\{x_i\}$ ，预测序列数据为 $\{y_i\}$，用数学公式表达，如下：
+
+$$
+y_h(1) = wx_h + w^2x_{h-1} + \cdots = \sum_{j=1}^{\infty} w^j x_{h+1-j}
+$$
+
+其中，权重 $0 < w < 1$ ，权重越小表示距离远的历史数据对当前预测的贡献越小。线性组合的权重之和等于 1，所以
+
+$$
+\sum_{j=1}^{\infty} w^j = \frac{w}{1-w}
+$$
+
+则第 $j$ 个权重应为
+
+$$
+\frac{w^j}{\frac{w}{1-w}} = (1-w)w^{j-1},j=1,2,\ldots
+$$
+
+则根据历史的 $h$ 期数据预测未来的 1 期数据 $y_h(1)$ 如下：
+
+$$
+y_h(1) = (1-w)(x_h + wx_{h-1} + w^2x_{h-2} + \cdots) = (1-w)\sum_{j=0}^{\infty}w^j x_{h-j}
+$$
+
+以上就是指数平滑（exponential smoothing），在早期应用中，权重 $w$ 的选取主要依靠经验。适用于没有明显趋势性、季节性、周期性的时间序列数据。
+
+### 函数 `filter()`
+
+函数 `filter()` 实现一元时间序列的线性过滤，或者对多元时间序列的单个序列分别做线性变换，它只是根据既定的平滑模型变换数据，没有拟合数据。函数 `filter()` 实现递归过滤和卷积过滤两种数据变换方式，分别对应自回归和移动平均两种时间序列平滑模型。
 
 -   递归过滤（自回归）
 
@@ -318,19 +346,47 @@ $$
 2/3 * 4 + 1/6 * 3 + 1/6 * 2
 ```
 
-### 双指数平滑
+**TTR** 包提供许多移动平均的计算函数，比如 `SMA()` ，下面计算过去 3 个观察值的算术平均。
+
+```{r}
+library(TTR)
+SMA(x, n = 3)
+```
+
+### 简单指数平滑
+
+当时间序列不含趋势和季节性成分的时候，可以用简单指数平滑模型来拟合和预测。简单指数平滑模型如下：
+
+$$
+\begin{aligned}
+\hat{y}_{t+h} &= a_{t} + h \times b_{t} + s_{t - p + 1 + (h - 1) \mod p} \\
+a_{t} &= \alpha (y_{t} - s_{t-p}) + (1-\alpha) (a_{t-1} + b_{t-1}) \\
+b_{t} &= b_{t-1} \\
+s_{t} &= s_{t-p}
+\end{aligned}
+$$
+
+其中，周期 $p$
 
 ```{r}
 air_passengers_exp <- HoltWinters(AirPassengers, gamma = FALSE, beta = FALSE)
+air_passengers_exp
+```
+
+预测的残差平方和 SSE sum-of-squared-errors
+
+```{r}
+air_passengers_exp$SSE
 ```
 
 ```{r}
 #| label: fig-airpassengers-exp-fitted
-#| fig-cap: 双指数平滑模型拟合
+#| fig-cap: 简单指数平滑模型
 #| fig-showtext: true
 #| fig-width: 5
 #| fig-height: 4
 
+# plot(air_passengers_exp)
 autoplot(air_passengers_exp) +
   theme_classic()
 ```
@@ -345,7 +401,7 @@ air_passengers_pred <- predict(air_passengers_exp, n.ahead = 10, prediction.inte
 
 ```{r}
 #| label: fig-airpassengers-exp-pred
-#| fig-cap: 双指数平滑模型预测
+#| fig-cap: 简单指数平滑模型预测
 #| fig-showtext: true
 #| fig-width: 5
 #| fig-height: 5
@@ -353,11 +409,41 @@ air_passengers_pred <- predict(air_passengers_exp, n.ahead = 10, prediction.inte
 plot(air_passengers_exp, air_passengers_pred)
 ```
 
-### Holt-Winters 平滑 {#sec-holt-winters}
+### Holt 指数平滑 {#sec-holt}
 
-根据趋势和季节性的关系，Holt-Winters 平滑模型分为可加 Holt-Winters 平滑和可乘 Holt-Winters 平滑。R 提供函数 `HoltWinters()` 拟合 Holt-Winters 平滑模型[@Holt2004; @Winters1960]。
+当时间序列不含季节性成分，可以用 Holt 指数平滑模型拟合和预测 [@Holt2004] 。
 
-可加 Holt-Winters 平滑模型如下
+$$
+\begin{aligned}
+\hat{y}_{t+h} &= a_{t} + h \times b_{t} + s_{t - p + 1 + (h - 1) \mod p} \\
+a_{t} &= \alpha (y_{t} - s_{t-p}) + (1-\alpha) (a_{t-1} + b_{t-1}) \\
+b_{t} &= \beta (a_{t} - a_{t-1}) + (1-\beta) b_{t-1} \\
+s_{t} &= s_{t-p}
+\end{aligned}
+$$
+
+```{r}
+air_passengers_holt <- HoltWinters(AirPassengers, gamma = FALSE)
+air_passengers_holt
+```
+
+可知，$\alpha = 1,\beta = 0.0032$
+
+```{r}
+#| label: fig-airpassengers-holt-fitted
+#| fig-cap: holt 指数平滑模型
+#| fig-showtext: true
+#| fig-width: 5
+#| fig-height: 4
+
+plot(air_passengers_holt)
+```
+
+### Holt-Winters 指数平滑 {#sec-holt-winters}
+
+时间序列同时含有趋势成分、季节性成分、随机成分，可以用 Holt-Winters 平滑模型来拟合和预测。根据趋势和季节性的关系，Holt-Winters 平滑模型分为可加 Holt-Winters 平滑和可乘 Holt-Winters 平滑。R 提供函数 `HoltWinters()` 拟合 Holt-Winters 平滑模型[@Holt2004; @Winters1960]。
+
+可加 Holt-Winters 平滑模型如下：
 
 $$
 \begin{aligned}
@@ -368,7 +454,7 @@ s_{t} &= \gamma (y_{t} - a_{t}) + (1-\gamma) s_{t-p}
 \end{aligned}
 $$
 
-可乘 Holt-Winters 平滑模型如下
+可乘 Holt-Winters 平滑模型如下：
 
 $$
 \begin{aligned}
@@ -383,7 +469,10 @@ $$
 
 ```{r}
 air_passengers_add <- HoltWinters(AirPassengers, seasonal = "additive")
+air_passengers_add
 ```
+
+可知，$\alpha = 0.248,\beta = 0.0345,\gamma = 1$
 
 ```{r}
 #| label: fig-airpassengers-add-fitted
@@ -415,7 +504,57 @@ autoplot(air_passengers_mult) +
 
 ## 时间序列分解 {#sec-time-series-decomposition}
 
-函数 `stl()` 将时间序列分解为季节性/周期性、趋势性和不规则/剩余的部分
+-   可加模型
+
+$$
+y_t = T_t + S_t + e_t
+$$
+
+-   可乘模型
+
+$$
+y_t = T_t \times S_t \times e_t
+$$
+
+对时间序列 $\{y_t\}$ 分解，趋势性成分 $T_t$、季节性成分 $S_t$、剩余成分 $e_t$
+
+### 函数 `decompose()` {#sec-decompose}
+
+函数 `decompose()` 分解
+
+```{r}
+air_decomp_add <- decompose(x = AirPassengers, type = "additive")
+```
+
+函数返回一个列表，包含 6 个元素，分别是 `x` 原始序列，`seasonal` 季节性成分，`figure` 估计的季节图，`trend` 趋势成分，`random` 剩余成分，`type` 分解方法。
+
+```{r}
+#| label: fig-airpassengers-decomp
+#| fig-cap: 变化趋势的分解
+#| fig-showtext: true
+#| fig-height: 6
+
+# plot(air_decomp_add)
+autoplot(air_decomp_add) +
+  theme_classic()
+```
+
+去掉季节性部分
+
+```{r}
+#| label: fig-airpassengers-adjusted
+#| fig-cap: 季节性调整
+#| fig-showtext: true
+#| fig-width: 5
+#| fig-height: 4
+
+AirPassengers_adjusted <- AirPassengers - air_decomp_add$seasonal
+plot(AirPassengers_adjusted)
+```
+
+### 函数 `stl()` {#sec-stl}
+
+函数 `stl()` 将时间序列分解为趋势性成分、季节性成分（周期性）、剩余成分。
 
 ```{r}
 air_stl <- stl(x = AirPassengers, s.window = 12)
@@ -430,12 +569,6 @@ air_stl <- stl(x = AirPassengers, s.window = 12)
 autoplot(air_stl) +
   theme_classic()
 ```
-
-### 趋势性成分
-
-### 周期性成分
-
-### 季节性成分
 
 ## 经典时间序列模型 {#sec-classic-time-series-models}
 
