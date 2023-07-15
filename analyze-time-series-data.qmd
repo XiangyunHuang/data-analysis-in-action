@@ -190,7 +190,7 @@ library(ggfortify)
 autoplot(meituan[, "3690.HK.Adjusted"], ts.geom = "line") +
   scale_x_date(
     date_breaks = "1 year",
-    date_minor_breaks = "4 months",
+    date_minor_breaks = "6 months",
     date_labels = "%b\n%Y"
   ) +
   theme_classic()
@@ -710,11 +710,11 @@ AIC=1017.85   AICc=1018.17   BIC=1029.35
 
 ### 谷歌的 Boom 框架 {#sec-google-boom}
 
-[CausalImpact](https://github.com/google/CausalImpact) 借助贝叶斯分析方法推断时间序列中的因果关系，比如广告促销带来的点击效果。
+Steven L. Scott 提出贝叶斯结构时间序列模型，用于推断因果效应[@Scott2015]，该分析方法被谷歌 GA 套件中的预测模块采用。之后开发了 [**Boom**](https://github.com/steve-the-bayesian/BOOM) 框架，基于该框架的 [**bsts**](https://github.com/steve-the-bayesian/BOOM/tree/master/Interfaces/R) 包提供贝叶斯可加时间序列模型拟合和预测的功能。
 
 ### 脸书的 Prophet 框架 {#sec-facebook-prophet}
 
-[prophet](https://github.com/facebook/prophet) 基于贝叶斯可加模型的时间序列预测。
+[**prophet**](https://github.com/facebook/prophet) 基于贝叶斯可加模型的时间序列预测。深入模型，理解 Stan 代码，并且能够改造模型和代码。
 
 ## 机器学习算法 {#sec-forecast-machine-learning}
 
@@ -740,6 +740,16 @@ library(nnet)
 # tf$abs(x = c(-1, 1, 2))
 ```
 
+## 干预效应处理 {#sec-causal-impact}
+
+### 双重差分法 {#sec-difference-in-difference}
+
+[CausalImpact](https://github.com/google/CausalImpact) 借助贝叶斯分析方法推断时间序列中的因果关系，比如广告促销带来的点击效果。根据时间序列数据，度量干预作用的影响。
+
+### 倾向性得分 {#sec-propensity-scores}
+
+[MatchIt](https://github.com/kosukeimai/MatchIt)
+
 ## 总结 {#sec-time-series-summary}
 
 方法没有好坏，只有适合与否。Holt-Winter 适合预警任务，算法简单，可以及时出预测结果，仅需要一步预测，不需要给出多步预测，要求快，以便迅速作出反应。Prophet 实现的贝叶斯结构可加模型适合短期预测任务，只要在可容许的时间范围内出结果即可，可以迅速出结果当然更好，需要给出多步预测结果，且结果需要强解释性，以便提前做一些商家供给、平台资源的分配。商分模型常常需要比较强的可解释性，算法策略模型重在预测精准度，对可解释性要求不高。
@@ -751,7 +761,5 @@ library(nnet)
 **fable** 一元到多元时间序列预测问题，提供 ETS、ARIMA、TSLM 等模型，并有书籍时间序列预测原则。值得一提， **forecast** 包开发者 Rob J Hyndman 称已不再开发新的功能，推荐大家使用 **fable** 包。**feasts** 包辅助特征抽取、序列分解、汇总统计和绘制图形等， 插件包 **fable.prophet** 接入 Prophet 的预测能力。[**timetk**](https://github.com/business-science/timetk) 时间序列数据处理、分析、预测和可视化工具箱，提供一致的操作方式，试图形成完成的解决方案。The Rmetrics Association 开发了一系列 R 包专门处理金融时间序列数据，比如 **fGarch** 包提供条件自回归异方差模型。
 
 Prophet 贝叶斯可加时间序列预测，特别适合日粒度的数据，年、周季节性、节假日和非线性趋势都能拟合得很好。MARSS [@Holmes2012] 多元自回归状态空间模型（或动态线性模型），R 包手册《多元时间序列分析》和相关书籍《Applied Time Series Analysis for Fisheries and Environmental Sciences》。**bayesdfa** [@Ward2019] 贝叶斯动态因子分析，可以识别多元时间序列数据中的异常情况，模型构建和求解基于 Stan 语言。结合深度神经网络模型的时间序列预测，推荐 **tensorflow** 等框架。使用深度还是传统的统计模型取决于实际数据和业务场景，一般来讲，细粒度大规模近实时的数据常采用深度模型，粗粒度趋势周期稳定的数据且要求解释性的采用统计模型。
-
-[AnomalyDetection](https://github.com/twitter/AnomalyDetection) 时间序列数据中的异常值检测。
 
 从时间序列中寻找规律，这样才是真的数据建模，从数据到模型，而不是相反 [Finding Patterns in Time Series](https://mason.gmu.edu/~jgentle/papers/FindingPatternsTimeSeriesDraft.pdf)，识别金融时间序列的模式和统计规律。
