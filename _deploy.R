@@ -5,8 +5,12 @@ rsconnect::connectApiUser(
   apiKey = Sys.getenv("CONNECT_API_KEY")
 )
 rsconnect::addServer(url = "https://bookdown.org/__api__/", name = "quarto")
-quarto::quarto_publish_site(
-  name = "data-analysis-in-action", render = "none",
+rsconnect::deployApp(
+  appDir = "_book",
+  appId = Sys.getenv("CONTENT_ID"),
+  contentCategory = "site",
+  appName = "data-analysis-in-action",
+  appTitle = "Data Analysis in Action",
   server = "quarto", account = "xiangyun",
-  title = "Data Analysis in Action"
+  forceUpdate = TRUE
 )
