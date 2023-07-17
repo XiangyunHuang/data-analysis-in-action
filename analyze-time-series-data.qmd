@@ -4,23 +4,28 @@
 
 ```{r}
 #| message: false
+#| eval: false
 
-library(quantmod)  # 获取数据
-library(ggplot2)   # 可视化
-library(ggfortify) # 静态展示
-# library(dygraphs)  # 交互展示
-# library(Boom)
-# library(BoomSpikeSlab)# BayesNnet 贝叶斯前馈神经网络
-# library(bsts)         # 谷歌公司的预测框架
-# library(prophet)      # 脸书公司的预测框架
+library(quantmod)    # 获取数据
+library(ggplot2)     # 可视化
+library(ggfortify)   # 静态展示
+library(lmtest)      # 格兰杰因果检验
+library(fGarch)      # ARCH GARCH
+library(dygraphs)    # 交互展示
+library(Boom)
+library(BoomSpikeSlab)# BayesNnet 贝叶斯前馈神经网络
+library(bsts)         # 谷歌公司的预测框架
+library(prophet)      # 脸书公司的预测框架
 library(nnet)         # 前馈神经网络
-# library(tensorflow)   # 深度学习框架
-# library(keras)        # LSTM 模型
+library(tensorflow)   # 深度学习框架
+library(keras)        # LSTM 模型
 ```
+
+本章主要从以下几个方面展开：数据获取、数据探索、平稳性诊断、时间序列分解、模型拟合和预测。
 
 ## 数据获取
 
-Joshua M. Ulrich 开发维护的 [**quantmod**](https://github.com/joshuaulrich/quantmod) 包可以下载国内外股票市场的数据。首先用 **quantmod** 包 [@quantmod2022] 获取美团上市至 2022年5月27日每天的股价数据，包含 Open 开盘价、High 最高价、Low 最低价、Close 闭市价、Adjusted 调整价和 Volume 成交量数据。
+Joshua M. Ulrich 开发维护的 [**quantmod**](https://github.com/joshuaulrich/quantmod) 包可以下载国内外股票市场的数据。本节主要以美团股价数据为例，美团自 2018-09-20 在香港挂牌上市，股票代码 3690.HK。首先用 **quantmod** 包 [@quantmod2022] 获取美团上市至 2022-05-27 每天的股价数据，包含 Open 开盘价、High 最高价、Low 最低价、Close 闭市价、Adjusted 调整价和 Volume 成交量数据。
 
 ```{r}
 #| label: downlaod-yahoo-data
@@ -49,12 +54,12 @@ class(meituan)
 str(meituan)
 ```
 
-数据集 `meituan` 是一个 `xts` 类型的时间序列数据对象，时间范围是 2018-09-20 至 2022-05-27，包含 4 个成分，分别如下
+数据集 `meituan` 是一个 `xts` 类型的时间序列数据对象，时间范围是 2018-09-20 至 2023-07-14，包含 4 个成分，分别如下
 
 -   Data 部分显示为 906 行 6 列的双精度浮点存储的数值。
 -   Columns 部分显示列名，依次是 3690.HK.Open、3690.HK.High、 3690.HK.Low 和 3690.HK.Close 等，当列数很多时，显示时会省略。
 -   Index 部分表示索引列，有序是时间序列数据的本质特点。示例中索引存储数据点产生的先后顺序，索引是用日期来表示的，日期所在的时区是 "UTC"。
--   xts 部分是数据类型的一些属性（元数据），说明数据集的来源，什么时候制作的数据。示例中数据是从雅虎财经下载的，下载时间是 2022-05-29 17:19:24。
+-   xts 部分是数据类型的一些属性（元数据），说明数据集的来源，什么时候制作的数据。示例中数据是从雅虎财经下载的，下载时间是 2023-07-15 11:19:34。
 
 与时间序列数据相关的数据类型有很多，比如 Base R 提供的 Date 和 POSIX 等，扩展包 **timeDate** 和 **chron** 也都有自己的一套数据类型及处理方法。[**xts**](https://github.com/joshuaulrich/xts) 包是处理时间序列数据的主要工具之一，xts 是 eXtensible Time Series 的缩写。为了进一步了解用法，下面举个例子，使用该 R 包的函数 `xts()` 构造时间序列对象。
 
@@ -87,6 +92,8 @@ xts(x, order.by = idx)
 ```
 
 ## 数据探索
+
+### zoo
 
 **zoo** 包提供 S3 范型函数 `autoplot.zoo()` 专门可视化 `zoo` 类型的数据，它接受一个 `zoo` 类型的数据对象，返回一个 `ggplot2` 数据对象，然后用户可以添加自定义的绘图设置，更多详情见帮助文档 `?autoplot.zoo()` 。
 
@@ -140,8 +147,6 @@ ggplot(data = meituan_df, aes(x = day_of_year, y = Value)) +
 
 2019 年底开始出现疫情，2020 年整年陆续有疫情，美团股价一路狂飙突进，因疫情，利好外卖业务，市场看好外卖业务。2021 年政府去杠杆，互联网监管趋严，又监又管，受外部大环境，逆全球化趋势影响，整年股价一路走低。进入 2022 年，股价在 200 附近徘徊。
 
-## 数据展示
-
 ### xts
 
 ```{r}
@@ -166,7 +171,7 @@ plot(meituan[, "3690.HK.Adjusted"], main = "调整的股价")
 #| fig-showtext: true
 
 plot(meituan[, "3690.HK.Adjusted"],
-  subset = "2021-01-01/2021-12-31", main = "调整的股价"
+  subset = "2022-01-01/2022-12-31", main = "调整的股价"
 )
 ```
 
@@ -174,22 +179,79 @@ plot(meituan[, "3690.HK.Adjusted"],
 
 ### ggfortify
 
-**ggfortify** [@Tang2016] 支持快速地可视化 `ts`、`timeSeries` 、`stl` 等多种类型的时序数据， **ggplot2** 做数据探索会有一些帮助。1949-1960 国际航班乘客数量月度变化趋势
+**ggfortify** [@Tang2016] 支持快速地可视化 `ts`、`timeSeries` 、`stl` 等多种类型的时序数据， **ggplot2** 做数据探索会有一些帮助。
 
 ```{r}
-#| label: fig-airpassengers
-#| fig-cap: 1949-1960 国际航班乘客数量月度变化趋势
+#| label: fig-meituan-ggfortify
+#| fig-cap: 美团股价走势
 #| fig-showtext: true
 
 library(ggfortify)
-autoplot(AirPassengers, ts.geom = "line") +
+autoplot(meituan[, "3690.HK.Adjusted"], ts.geom = "line") +
   scale_x_date(
-    date_breaks = "2 year",
-    date_minor_breaks = "4 months",
+    date_breaks = "1 year",
+    date_minor_breaks = "6 months",
     date_labels = "%b\n%Y"
   ) +
   theme_classic()
 ```
+
+### dygraphs
+
+[**dygraphs**](https://github.com/rstudio/dygraphs) 包专门绘制交互式时间序列图形，它封装了时序数据可视化库 [dygraphs](https://github.com/danvk/dygraphs) ，更多情况见 <https://dygraphs.com/>。下面以美团股价为例，展示时间窗口筛选、坐标轴名称、刻度标签、注释、事件标注、缩放等功能。
+
+```{r}
+#| label: fig-meituan-dygraphs
+#| fig-cap: 美团股价变化趋势
+#| fig-width: 6
+#| fig-height: 4
+#| echo: true
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+
+library(dygraphs)
+# 缩放
+dyUnzoom <- function(dygraph) {
+  dyPlugin(
+    dygraph = dygraph,
+    name = "Unzoom",
+    path = system.file("plugins/unzoom.js", package = "dygraphs")
+  )
+}
+
+# 年月
+getYearMonth <- '
+  function(d) {
+    var monthNames = ["01", "02", "03", "04", "05", "06","07", "08", "09", "10", "11", "12"];
+    date = new Date(d);
+    return date.getFullYear() + "-" + monthNames[date.getMonth()]; 
+  }'
+
+# 绘图
+dygraph(meituan[, "3690.HK.Adjusted"], main = "美团股价走势") |>
+  dyRangeSelector(dateWindow = c(format(Sys.Date(), "%Y-01-01"), as.character(Sys.Date()))) |>
+  dyAxis(name = "x", axisLabelFormatter = getYearMonth) |>
+  dyAxis("y", valueRange = c(0, 500), label = "美团股价") |>
+  dyEvent("2020-01-23", "武汉封城", labelLoc = "bottom") |>
+  dyShading(from = "2020-01-23", to = "2020-04-08", color = "#FFE6E6") |>
+  dyAnnotation("2020-01-23", text = "武汉封城", tooltip = "武汉封城", width = 60) |>
+  dyAnnotation("2020-04-08", text = "武汉解封", tooltip = "武汉解封", width = 60) |>
+  dyHighlight(highlightSeriesOpts = list(strokeWidth = 2)) |>
+  dySeries(label = "调整股价") |>
+  dyLegend(show = "follow", hideOnMouseOut = FALSE) |>
+  dyOptions(fillGraph = TRUE, drawGrid = FALSE, gridLineColor = "lightblue") |>
+  dyUnzoom()
+```
+
+```{r}
+#| label: fig-meituan-dygraphs-img
+#| echo: false
+#| fig-cap: 美团股价变化趋势
+#| eval: !expr knitr::is_latex_output()
+
+knitr::include_graphics(path = "screenshots/meituan-stocks.png")
+```
+
+上图默认展示 YTD 数据，在一个动态的时间窗口内显示数据，假如今天是 2023-07-15，则展示 2023-01-01 至 2023-07-15 的股价数据。在函数 `dyRangeSelector()` 中设定时间窗口参数 `dateWindow`，实现数据范围的筛选。
 
 ## 平稳性诊断
 
@@ -239,41 +301,156 @@ diff(AirPassengers, lag = 1, differences = 1)
 
 ### 单位根检验 {#sec-unitroot-test}
 
-### Granger 因果检验 {#sec-granger-causality-test}
+### 格兰杰因果检验 {#sec-granger-causality-test}
+
+1969 年 Clive Granger 提出格兰杰因果检验，R 语言中 **lmtest** 包的函数 `grangertest()` 可以检验序列中变量之间的时间落差的相关性。
 
 ## 指数平滑模型 {#sec-exponential-smoothing}
 
-### 单指数平滑
+### 指数平滑
 
-函数 `filter()` 实现一元时间序列的线性过滤，或者对多元时间序列的单个序列分别做线性变换。
+首先来回答何为指数平滑？用历史数据的线性组合预测下一个时期的值，线性组合的权重随距离变远而按指数衰减。不妨设观测序列数据为 $\{x_i\}$ ，预测序列数据为 $\{y_i\}$，用数学公式表达，如下：
 
--   递归过滤
+$$
+y_h(1) = wx_h + w^2x_{h-1} + \cdots = \sum_{j=1}^{\infty} w^j x_{h+1-j}
+$$
+
+其中，权重 $0 < w < 1$ ，权重越小表示距离远的历史数据对当前预测的贡献越小。线性组合的权重之和等于 1，所以
+
+$$
+\sum_{j=1}^{\infty} w^j = \frac{w}{1-w}
+$$
+
+则第 $j$ 个权重应为
+
+$$
+\frac{w^j}{\frac{w}{1-w}} = (1-w)w^{j-1},j=1,2,\ldots
+$$
+
+则根据历史的 $h$ 期数据预测未来的 1 期数据 $y_h(1)$ 如下：
+
+$$
+y_h(1) = (1-w)(x_h + wx_{h-1} + w^2x_{h-2} + \cdots) = (1-w)\sum_{j=0}^{\infty}w^j x_{h-j}
+$$
+
+以上就是指数平滑（exponential smoothing），在早期应用中，权重 $w$ 的选取主要依靠经验。适用于没有明显趋势性、季节性、周期性的时间序列数据。
+
+### 函数 `filter()`
+
+函数 `filter()` 实现一元时间序列的线性过滤，或者对多元时间序列的单个序列分别做线性变换，它只是根据既定的平滑模型变换数据，没有拟合数据。函数 `filter()` 实现递归过滤和卷积过滤两种数据变换方式，分别对应自回归和移动平均两种时间序列平滑模型。
+
+-   递归过滤（自回归）
 
 $$
 y_{i} = x_{i} + f_1 y_{i-1} +\cdots+ f_p y_{i-p}
-$$
+$$ {#eq-filter-recursive}
 
--   卷积过滤
+-   卷积过滤（移动平均）
 
 $$
 y_{i} = f_1 x_{i+o} + \cdots + f_p x_{i+o-(p-1)}
+$$ {#eq-filter-convolution}
+
+其中，$p$ 代表模型的阶数， $o$ 代表漂移项，O 表示英文单词 offset 的首字母。下面举个具体的例子来说明函数 `filter()` 的作用，设输入序列 $\{x_i\}$ 是从 1 至 10 的整数。首先考虑自回归的情况，代码如下：
+
+```{r}
+x <- 1:10
+# 自回归
+filter(x, filter = c(2 / 3, 1 / 6, 1 / 6), method = "recursive")
+```
+
+参数 `x` 指定输入的时间序列 $\{x_i\}$，参数 `method` 指定平滑的方法，`method = "recursive"` 表示使用自回归方法，参数 `filter` 表示自回归的系数，系数向量的长度代表模型 @eq-filter-recursive 中的 $p$ ，`filter = c(2 / 3, 1 / 6, 1 / 6)` 对应的模型如下：
+
+$$
+\begin{aligned}
+y_1 &= x_1 \\
+y_2 &= x_2 + \frac{2}{3} y_1 \\
+y_3 &= x_3 + \frac{2}{3} y_2 + \frac{1}{6} y_1 \\
+y_i &= x_i + \frac{2}{3} y_{i-1} + \frac{1}{6} y_{i - 2} + \frac{1}{6} y_{i - 3}, \quad i \geq 4 \\
+\end{aligned}
 $$
 
-其中 $o$ 代表 offset 漂移。
+其中，序列 $\{y_i\}$ 表示函数 `filter()` 的输出结果，由上述方程不难看出自回归模型的递归的特点。为了理解自回归和递归的过程，下面依次计算 $y_1$ 至 $y_4$ 。
 
-### 双指数平滑
+```{r}
+# y1
+1
+# y2
+2 + 2/3 * 1
+# y3
+3 + 2/3 * (2 + 2/3 * 1) + 1/6 * 1
+# y4
+4 + 2/3 * (3 + 2/3 * (2 + 2/3 * 1) + 1/6 * 1) + 1/6 *(2 + 2/3 * 1) + 1/6 * 1
+```
+
+接下来，考虑移动平均的情况，代码如下：
+
+```{r}
+# 移动平均
+filter(x, filter = c(2 / 3, 1 / 6, 1 / 6), method = "convolution", sides = 1)
+```
+
+参数 `method = "convolution"` 表示使用移动平均。参数 `sides` 仅适用于卷积过滤，`sides = 1` 表示系数都是作用于过去的值。为了对比自回归和移动平均，不妨设移动平均的系数同自回归的系数，则移动平均模型如下：
+
+$$
+\begin{aligned}
+y_1 &~~ \text{不存在}\\
+y_2 &~~ \text{不存在}\\
+y_3 &= \frac{2}{3} x_{3} + \frac{1}{6} x_2 + \frac{1}{6} x_1\\
+y_i &= \frac{2}{3} x_{i} + \frac{1}{6} x_{i - 1} + \frac{1}{6} x_{i - 2}, \quad i \geq 3
+\end{aligned}
+$$
+
+比照模型 @eq-filter-convolution ，漂移项参数 $o$ 为 0，也就是没有漂移，移动平均作用于过去的 3 期数据，也就是 $p = 3$ 。因输出序列 $\{y_i\}$ 中 $y_1,y_2$ 不存在，下面仅计算 $y_3,y_4$ 。
+
+```{r}
+# y3
+2/3 * 3 + 1/6 * 2 + 1/6 * 1
+# y4
+2/3 * 4 + 1/6 * 3 + 1/6 * 2
+```
+
+**TTR** 包提供许多移动平均的计算函数，比如 `SMA()` ，下面计算过去 3 个观察值的算术平均。
+
+```{r}
+library(TTR)
+SMA(x, n = 3)
+```
+
+### 简单指数平滑
+
+当时间序列不含趋势和季节性成分的时候，可以用简单指数平滑模型来拟合和预测。简单指数平滑模型如下：
+
+$$
+\begin{aligned}
+\hat{y}_{t+h} &= a_{t} + h \times b_{t} + s_{t - p + 1 + (h - 1) \mod p} \\
+a_{t} &= \alpha (y_{t} - s_{t-p}) + (1-\alpha) (a_{t-1} + b_{t-1}) \\
+b_{t} &= b_{t-1} \\
+s_{t} &= s_{t-p}
+\end{aligned}
+$$
+
+其中，周期 $p$
 
 ```{r}
 air_passengers_exp <- HoltWinters(AirPassengers, gamma = FALSE, beta = FALSE)
+air_passengers_exp
+```
+
+预测的残差平方和 SSE sum-of-squared-errors
+
+```{r}
+air_passengers_exp$SSE
 ```
 
 ```{r}
 #| label: fig-airpassengers-exp-fitted
-#| fig-cap: 双指数平滑模型拟合
+#| fig-cap: 简单指数平滑模型
 #| fig-showtext: true
 #| fig-width: 5
 #| fig-height: 4
 
+# plot(air_passengers_exp)
 autoplot(air_passengers_exp) +
   theme_classic()
 ```
@@ -288,7 +465,7 @@ air_passengers_pred <- predict(air_passengers_exp, n.ahead = 10, prediction.inte
 
 ```{r}
 #| label: fig-airpassengers-exp-pred
-#| fig-cap: 双指数平滑模型预测
+#| fig-cap: 简单指数平滑模型预测
 #| fig-showtext: true
 #| fig-width: 5
 #| fig-height: 5
@@ -296,11 +473,41 @@ air_passengers_pred <- predict(air_passengers_exp, n.ahead = 10, prediction.inte
 plot(air_passengers_exp, air_passengers_pred)
 ```
 
-### Holt-Winters 平滑 {#sec-holt-winters}
+### Holt 指数平滑 {#sec-holt}
 
-根据趋势和季节性的关系，Holt-Winters 平滑模型分为可加 Holt-Winters 平滑和可乘 Holt-Winters 平滑。R 提供函数 `HoltWinters()` 拟合 Holt-Winters 平滑模型[@Holt2004; @Winters1960]。
+当时间序列不含季节性成分，可以用 Holt 指数平滑模型拟合和预测 [@Holt2004] 。
 
-可加 Holt-Winters 平滑模型如下
+$$
+\begin{aligned}
+\hat{y}_{t+h} &= a_{t} + h \times b_{t} + s_{t - p + 1 + (h - 1) \mod p} \\
+a_{t} &= \alpha (y_{t} - s_{t-p}) + (1-\alpha) (a_{t-1} + b_{t-1}) \\
+b_{t} &= \beta (a_{t} - a_{t-1}) + (1-\beta) b_{t-1} \\
+s_{t} &= s_{t-p}
+\end{aligned}
+$$
+
+```{r}
+air_passengers_holt <- HoltWinters(AirPassengers, gamma = FALSE)
+air_passengers_holt
+```
+
+可知，$\alpha = 1,\beta = 0.0032$
+
+```{r}
+#| label: fig-airpassengers-holt-fitted
+#| fig-cap: holt 指数平滑模型
+#| fig-showtext: true
+#| fig-width: 5
+#| fig-height: 5
+
+plot(air_passengers_holt)
+```
+
+### Holt-Winters 指数平滑 {#sec-holt-winters}
+
+时间序列同时含有趋势成分、季节性成分、随机成分，可以用 Holt-Winters 平滑模型来拟合和预测。根据趋势和季节性的关系，Holt-Winters 平滑模型分为可加 Holt-Winters 平滑和可乘 Holt-Winters 平滑。R 提供函数 `HoltWinters()` 拟合 Holt-Winters 平滑模型[@Holt2004; @Winters1960]。
+
+可加 Holt-Winters 平滑模型如下：
 
 $$
 \begin{aligned}
@@ -311,7 +518,7 @@ s_{t} &= \gamma (y_{t} - a_{t}) + (1-\gamma) s_{t-p}
 \end{aligned}
 $$
 
-可乘 Holt-Winters 平滑模型如下
+可乘 Holt-Winters 平滑模型如下：
 
 $$
 \begin{aligned}
@@ -326,7 +533,10 @@ $$
 
 ```{r}
 air_passengers_add <- HoltWinters(AirPassengers, seasonal = "additive")
+air_passengers_add
 ```
+
+可知，$\alpha = 0.248,\beta = 0.0345,\gamma = 1$
 
 ```{r}
 #| label: fig-airpassengers-add-fitted
@@ -358,7 +568,57 @@ autoplot(air_passengers_mult) +
 
 ## 时间序列分解 {#sec-time-series-decomposition}
 
-函数 `stl()` 将时间序列分解为季节性/周期性、趋势性和不规则/剩余的部分
+-   可加模型
+
+$$
+y_t = T_t + S_t + e_t
+$$
+
+-   可乘模型
+
+$$
+y_t = T_t \times S_t \times e_t
+$$
+
+对时间序列 $\{y_t\}$ 分解，趋势性成分 $T_t$、季节性成分 $S_t$、剩余成分 $e_t$
+
+### 函数 `decompose()` {#sec-decompose}
+
+函数 `decompose()` 分解
+
+```{r}
+air_decomp_add <- decompose(x = AirPassengers, type = "additive")
+```
+
+函数返回一个列表，包含 6 个元素，分别是 `x` 原始序列，`seasonal` 季节性成分，`figure` 估计的季节图，`trend` 趋势成分，`random` 剩余成分，`type` 分解方法。
+
+```{r}
+#| label: fig-airpassengers-decomp
+#| fig-cap: 变化趋势的分解
+#| fig-showtext: true
+#| fig-height: 6
+
+# plot(air_decomp_add)
+autoplot(air_decomp_add) +
+  theme_classic()
+```
+
+去掉季节性部分
+
+```{r}
+#| label: fig-airpassengers-adjusted
+#| fig-cap: 季节性调整
+#| fig-showtext: true
+#| fig-width: 5
+#| fig-height: 5
+
+AirPassengers_adjusted <- AirPassengers - air_decomp_add$seasonal
+plot(AirPassengers_adjusted)
+```
+
+### 函数 `stl()` {#sec-stl}
+
+函数 `stl()` 将时间序列分解为趋势性成分、季节性成分（周期性）、剩余成分。
 
 ```{r}
 air_stl <- stl(x = AirPassengers, s.window = 12)
@@ -374,11 +634,13 @@ autoplot(air_stl) +
   theme_classic()
 ```
 
-### 趋势性成分
+剩余成分不是平稳序列，是异方差的。
 
-### 周期性成分
+**xts** 包的 `periodicity()` 函数可以检测时间序列数据的周期，但时序数据对象最好是在 **xts** 框架内。
 
-### 季节性成分
+```{r}
+xts::periodicity(AirPassengers)
+```
 
 ## 经典时间序列模型 {#sec-classic-time-series-models}
 
@@ -427,21 +689,32 @@ AIC=1017.85   AICc=1018.17   BIC=1029.35
 
 ### 自回归条件异方差模型 {#sec-arch}
 
+[《金融时间序列分析讲义》](https://www.math.pku.edu.cn/teachers/lidf/course/fts/ftsnotes/html/_ftsnotes/index.html)
+
 自回归条件异方差模型（Autoregressive Conditional Heteroskedasticity，简称 ARCH）
+
+```{r}
+# library(fGarch)
+```
 
 ### 广义自回归条件异方差模型 {#sec-garch}
 
 广义自回归条件异方差模型 （Generalized Autoregressive Conditional Heteroskedasticity，简称 GARCH ）
 
+```{r}
+# library(fGarch)
+# garchFit
+```
+
 ## 贝叶斯可加时间序列预测 {#sec-bayesian-additive-models}
 
 ### 谷歌的 Boom 框架 {#sec-google-boom}
 
-[CausalImpact](https://github.com/google/CausalImpact) 借助贝叶斯分析方法推断时间序列中的因果关系，比如广告促销带来的点击效果。
+Steven L. Scott 提出贝叶斯结构时间序列模型，用于推断因果效应[@Scott2015]，该分析方法被谷歌 GA 套件中的预测模块采用。之后开发了 [**Boom**](https://github.com/steve-the-bayesian/BOOM) 框架，基于该框架的 [**bsts**](https://github.com/steve-the-bayesian/BOOM/tree/master/Interfaces/R) 包提供贝叶斯可加时间序列模型拟合和预测的功能。
 
 ### 脸书的 Prophet 框架 {#sec-facebook-prophet}
 
-[prophet](https://github.com/facebook/prophet) 基于贝叶斯可加模型的时间序列预测。
+[**prophet**](https://github.com/facebook/prophet) 基于贝叶斯可加模型的时间序列预测。深入模型，理解 Stan 代码，并且能够改造模型和代码。
 
 ## 机器学习算法 {#sec-forecast-machine-learning}
 
@@ -467,7 +740,19 @@ library(nnet)
 # tf$abs(x = c(-1, 1, 2))
 ```
 
+## 干预效应处理 {#sec-causal-impact}
+
+### 双重差分法 {#sec-difference-in-difference}
+
+[CausalImpact](https://github.com/google/CausalImpact) 借助贝叶斯分析方法推断时间序列中的因果关系，比如广告促销带来的点击效果。根据时间序列数据，度量干预作用的影响。
+
+### 倾向性得分 {#sec-propensity-scores}
+
+[MatchIt](https://github.com/kosukeimai/MatchIt)
+
 ## 总结 {#sec-time-series-summary}
+
+方法没有好坏，只有适合与否。Holt-Winter 适合预警任务，算法简单，可以及时出预测结果，仅需要一步预测，不需要给出多步预测，要求快，以便迅速作出反应。Prophet 实现的贝叶斯结构可加模型适合短期预测任务，只要在可容许的时间范围内出结果即可，可以迅速出结果当然更好，需要给出多步预测结果，且结果需要强解释性，以便提前做一些商家供给、平台资源的分配。商分模型常常需要比较强的可解释性，算法策略模型重在预测精准度，对可解释性要求不高。
 
 在时间序列数据的可视化方面，除了 Base R 提供的绘图方法外，静态的时序图 **lattice** 和 **ggplot2** 都不错，而交互式图形推荐使用 **plotly** 和 **dygraphs**。
 
@@ -476,7 +761,5 @@ library(nnet)
 **fable** 一元到多元时间序列预测问题，提供 ETS、ARIMA、TSLM 等模型，并有书籍时间序列预测原则。值得一提， **forecast** 包开发者 Rob J Hyndman 称已不再开发新的功能，推荐大家使用 **fable** 包。**feasts** 包辅助特征抽取、序列分解、汇总统计和绘制图形等， 插件包 **fable.prophet** 接入 Prophet 的预测能力。[**timetk**](https://github.com/business-science/timetk) 时间序列数据处理、分析、预测和可视化工具箱，提供一致的操作方式，试图形成完成的解决方案。The Rmetrics Association 开发了一系列 R 包专门处理金融时间序列数据，比如 **fGarch** 包提供条件自回归异方差模型。
 
 Prophet 贝叶斯可加时间序列预测，特别适合日粒度的数据，年、周季节性、节假日和非线性趋势都能拟合得很好。MARSS [@Holmes2012] 多元自回归状态空间模型（或动态线性模型），R 包手册《多元时间序列分析》和相关书籍《Applied Time Series Analysis for Fisheries and Environmental Sciences》。**bayesdfa** [@Ward2019] 贝叶斯动态因子分析，可以识别多元时间序列数据中的异常情况，模型构建和求解基于 Stan 语言。结合深度神经网络模型的时间序列预测，推荐 **tensorflow** 等框架。使用深度还是传统的统计模型取决于实际数据和业务场景，一般来讲，细粒度大规模近实时的数据常采用深度模型，粗粒度趋势周期稳定的数据且要求解释性的采用统计模型。
-
-[AnomalyDetection](https://github.com/twitter/AnomalyDetection) 时间序列数据中的异常值检测。
 
 从时间序列中寻找规律，这样才是真的数据建模，从数据到模型，而不是相反 [Finding Patterns in Time Series](https://mason.gmu.edu/~jgentle/papers/FindingPatternsTimeSeriesDraft.pdf)，识别金融时间序列的模式和统计规律。

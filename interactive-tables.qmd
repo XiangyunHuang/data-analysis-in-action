@@ -85,8 +85,46 @@ datatable(
 )
 ```
 
+Base R 内置的 R 包含有丰富的数据集，非常适合演示图形和阐述统计理论，后面技术和理论部分的介绍大多围绕内置的数据集展开，数据集及其描述如下表所示：
+
+```{r}
+#| label: tbl-datasets
+#| tbl-cap: Base R 包内置的数据集
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+
+# 抽取 R 包信息
+Pkgs <- sapply(list.files(R.home("library")), function(x) {
+  packageDescription(pkg = x, fields = "Priority")
+})
+# 抽取内置 R 包列表
+CorePkgs <- names(Pkgs[Pkgs %in% c("base", "recommended") & !is.na(Pkgs)])
+# 抽取 R 包的数据集
+BaseDataSets <- data(package = CorePkgs)$results[, c("Package", "Item", "Title")]
+
+library(DT)
+datatable(BaseDataSets,
+  rownames = FALSE, # 不显示行名
+  extensions = c("Buttons", "RowGroup"),
+  options = list(
+    pageLength = 10, # 每页显示的行数
+    language = list(url = "//cdn.datatables.net/plug-ins/1.10.11/i18n/Chinese.json"), # 汉化
+    dom = "Bfrtp", # 去掉显示行数 i、过滤 f 的能力，翻页用 p 表示
+    ordering = F, # 去掉列排序
+    buttons = c("copy", "csv", "excel", "print"), # 提供打印按钮
+    rowGroup = list(dataSrc = 0), # 按 Package 列分组
+    columnDefs = list(
+      list(className = "dt-center", targets = 0), # 不显示行名，则 targets 从 0 开始，否则从 1 开始
+      list(visible = FALSE, targets = 0) # 不显示 Package 列
+    )
+  ),
+  caption = "Base R 包内置的数据集"
+)
+```
+
 ## 扩展功能 {#sec-table-extend}
 
 ### 汉化表格 {#sec-table-chinese}
 
 ### 下载数据 {#sec-table-download}
+
+## 其它工具 {#sec-table-reactable}
