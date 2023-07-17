@@ -49,13 +49,22 @@ knitr::kable(matrix(grep("add_*", x = ls("package:plotly"), value = T), ncol = 3
 下面以散点图为例，使用方式非常类似 **ggplot2** 包，函数 `plot_ly()` 类似 `ggplot()`，而函数 `add_markers()` 类似 `geom_point()`，效果如 @fig-plotly-markers 所示。
 
 ```{r}
-#| label: fig-plotly-markers
-#| eval: !expr knitr::is_html_output(excludes = 'epub')
-#| fig-cap: "默认风格的简单散点图"
+#| label: fig-plotly-markers-html
+#| eval: false
+#| echo: true
 
 # https://plotly.com/r/reference/scatter/
 plotly::plot_ly(data = quakes, x = ~long, y = ~lat) |> 
   plotly::add_markers()
+```
+
+```{r}
+#| label: fig-plotly-markers
+#| fig-cap: "默认风格的简单散点图"
+#| out-width: 70%
+#| echo: false
+
+knitr::include_graphics(path = "images/plotly-formula.png")
 ```
 
 或者使用函数 `add_trace()`，层层添加图形元素，效果和上 @fig-plotly-markers 是一样的。
@@ -191,9 +200,9 @@ plotly::plot_ly(
 @fig-scatter 展示斐济及其周边的地震分布
 
 ```{r}
-#| label: fig-scatter
-#| eval: !expr knitr::is_html_output(excludes = 'epub')
-#| fig-cap: "普通散点图"
+#| label: fig-scatter-html
+#| eval: false
+#| echo: true
 
 plotly::plot_ly(
   data = quakes, x = ~long, y = ~lat,
@@ -203,6 +212,15 @@ plotly::plot_ly(
     xaxis = list(title = "经度"),
     yaxis = list(title = "纬度")
   )
+```
+
+```{r}
+#| label: fig-scatter
+#| fig-cap: "普通散点图"
+#| out-width: 70%
+#| echo: false
+
+knitr::include_graphics(path = "images/plotly-scatter.png")
 ```
 
 ### 柱形图 {#sec-plotly-bar}
@@ -261,9 +279,9 @@ plotly::plot_ly(
 地震次数随震级的分布变化，下 @fig-quakes-mag 为频数分布图
 
 ```{r}
-#| label: fig-quakes-mag
-#| fig-cap: "地震震级的频数分布图"
-#| eval: !expr knitr::is_html_output(excludes = 'epub')
+#| label: fig-quakes-mag-html
+#| eval: false
+#| echo: true
 
 # https://plotly.com/r/reference/histogram/
 plotly::plot_ly(quakes, x = ~mag, type = "histogram") |> 
@@ -273,12 +291,21 @@ plotly::plot_ly(quakes, x = ~mag, type = "histogram") |>
   )
 ```
 
+```{r}
+#| label: fig-quakes-mag
+#| fig-cap: "地震震级的频数分布图"
+#| out-width: 70%
+#| echo: false
+
+knitr::include_graphics(path = "images/plotly-quakes-mag.png")
+```
+
 地震震级的概率分布，下 @fig-quakes-mag-prob 为频率分布图
 
 ```{r}
-#| label: fig-quakes-mag-prob
-#| fig-cap: "地震震级的频率分布图"
-#| eval: !expr knitr::is_html_output(excludes = 'epub')
+#| label: fig-quakes-mag-prob-html
+#| eval: false
+#| echo: true
 
 plotly::plot_ly(
   data = quakes, x = ~mag, type = "histogram",
@@ -294,12 +321,21 @@ plotly::plot_ly(
   )
 ```
 
+```{r}
+#| label: fig-quakes-mag-prob
+#| fig-cap: "地震震级的频率分布图"
+#| out-width: 70%
+#| echo: false
+
+knitr::include_graphics(path = "images/plotly-quakes-mag-prob.png")
+```
+
 `histnorm = "probability"` 意味着纵轴表示频率，即每个窗宽下地震次数占总地震次数的比例。地震常常发生在地下，不同的深度对应着不同的地质构造、不同的地震成因，下 @fig-quakes-depth-hist 展示海平面下不同深度的地震震级分布。
 
 ```{r}
-#| label: fig-quakes-depth-hist
-#| fig-cap: "不同深度下地震震级的分布"
-#| eval: !expr knitr::is_html_output(excludes = 'epub')
+#| label: fig-quakes-depth-hist-html
+#| eval: false
+#| echo: true
 
 quakes$depth_bin <- cut(quakes$depth, breaks = 150 * 0:5)
 plotly::plot_ly(quakes,
@@ -310,6 +346,15 @@ plotly::plot_ly(quakes,
     xaxis = list(title = "震级"),
     yaxis = list(title = "次数")
   )
+```
+
+```{r}
+#| label: fig-quakes-depth-hist
+#| fig-cap: "地震震级的频率分布图"
+#| out-width: 70%
+#| echo: false
+
+knitr::include_graphics(path = "images/plotly-quakes-depth-hist.png")
 ```
 
 ### 箱线图 {#sec-plotly-boxplot}
@@ -351,9 +396,9 @@ plotly::plot_ly(quakes,
 plotly 整合了开源的 [Mapbox GL JS](https://github.com/mapbox/mapbox-gl-js)，可以使用 Mapbox 提供的瓦片地图服务（Mapbox Tile Maps），对空间点数据做核密度估计，展示热力分布，如 @fig-densitymap 所示。图左上角为所罗门群岛（Solomon Islands）、瓦努阿图（Vanuatu）和新喀里多尼亚（New Caledonia），图下方为新西兰北部的威灵顿（Wellington）和奥克兰（Auckland），图中部为斐济（Fiji）。
 
 ```{r}
-#| label: fig-densitymap
-#| eval: !expr knitr::is_html_output(excludes = 'epub')
-#| fig-cap: "空间点数据的核密度估计"
+#| label: fig-densitymap-html
+#| eval: false
+#| echo: true
 
 plotly::plot_ly(
   data = quakes, lat = ~lat, lon = ~long, radius = 10,
@@ -368,6 +413,15 @@ plotly::plot_ly(
   )
 ```
 
+```{r}
+#| label: fig-densitymap
+#| fig-cap: "空间点数据的核密度估计"
+#| out-width: 70%
+#| echo: false
+
+knitr::include_graphics(path = "images/plotly-densitymap.png")
+```
+
 图中设置瓦片地图的风格 `style` 为 `"stamen-terrain"`，还可以使用其他开放的栅格瓦片地图服务，比如 `"open-street-map"` 和 `"carto-positron"`。如果使用 MapBox 提供的矢量瓦片地图服务，则需要访问令牌 Mapbox Access Token。图中设置中心坐标 `center` 以及缩放倍数 `zoom`，目的是突出图片中的数据区域。设置调色板 Viridis 展示热力分布，黄色团块的地方表示地震频次高。
 
 ### 面量图 {#sec-plotly-choropleth-maps}
@@ -375,9 +429,9 @@ plotly::plot_ly(
 在之前我们介绍过用 ggplot2 绘制地区分布图，实际上，地区分布图还有别名，如围栏图、面量图等。本节使用 plotly 绘制交互式的地区分布图，如 @fig-choropleth-map 所示。
 
 ```{r}
-#| label: fig-choropleth-map
-#| eval: !expr knitr::is_html_output(excludes = 'epub')
-#| fig-cap: "1974 年美国各州的人均收入"
+#| label: fig-choropleth-map-html
+#| eval: false
+#| echo: true
 
 # https://plotly.com/r/reference/choropleth/
 dat <- data.frame(state.x77,
@@ -398,6 +452,15 @@ plotly::plot_ly(
     geo = list(scope = "usa"),
     title = "1974年美国各州的人均收入"
   )
+```
+
+```{r}
+#| label: fig-choropleth-map
+#| fig-cap: "1974 年美国各州的人均收入"
+#| out-width: 70%
+#| echo: false
+
+knitr::include_graphics(path = "images/plotly-choropleth-map.png")
 ```
 
 ### 动态图 {#sec-plotly-animation}
@@ -583,9 +646,9 @@ plotly::save_image(p, "plotly-quakes.svg")
 quakes 是一个包含空间位置的数据集，plotly 的 `scattergeo` 图层 针对空间数据提供多边形矢量边界地图数据，支持设定坐标参考系。下 @fig-scattergeo 增加了地震震级维度，在空间坐标参考系下绘制散点。
 
 ```{r}
-#| label: fig-scattergeo
-#| eval: !expr knitr::is_html_output(excludes = 'epub')
-#| fig-cap: "空间点数据图"
+#| label: fig-scattergeo-html
+#| eval: false
+#| echo: true
 
 plotly::plot_ly(
   data = quakes,
@@ -621,6 +684,15 @@ plotly::plot_ly(
       dtick = 5
     )
   ))
+```
+
+```{r}
+#| label: fig-plotly-scattergeo
+#| fig-cap: "空间点数据图"
+#| out-width: 70%
+#| echo: false
+
+knitr::include_graphics(path = "images/plotly-scattergeo.png")
 ```
 
 ### 添加水印 {#sec-plotly-watermark}
