@@ -1,64 +1,258 @@
-# LaTeX 文档 {#sec-documents-latex}
+# PDF 文档 {#sec-documents-latex}
 
+在国内外，有不少使用场景需要用到 LaTeX 排版，在期刊论文、毕业论文、毕业答辩、学术报告、课程作业、课程笔记、学术专著等科技写作方面，LaTeX 编辑的 PDF 文档。近 10 年来，可重复性研究成为一个热门的话题，不少权威期刊的投稿论文要求公开数据处理的过程，图表的生成代码等。走在前列的《R Journal》杂志，采用 R Markdown 投稿，整篇论文可以一键生成。经过 10 年的发展，R Markdown 生态已经比较成熟，为了进一步降低学习和使用的成本，基于 Pandoc ，Quarto 统一了论文排版，学术论文、演示报告等应用场景，提供一整套科技写作的解决方案。LaTeX 、R Markdown 和 Quarto 建立了紧密的联系，Pandoc 在其间起了非常重要的桥梁作用。Pandoc 将 Markdown 语法转为 LaTeX 语法，Pandoc 在 R Markdown 和 Quarto 中的作用类似。
 
-## 文档元素 {#sec-tex-elements}
+## LaTeX 基础 {#sec-tex-elements}
 
+LaTeX 是一个非常方便用户使用的排版工具，提供一套精确的编程语言，下面是一个简单示例。短短 14 行代码展示了大量的常用功能，生成文章标题、作者、目录，设置文档布局、排版公式、交叉引用等。
 
-### 中英字体 {#sec-tex-fonts}
-
-LaTeX 是一个非常方便用户使用的排版工具，提供一套精确的编程语言，下面是一个简单示例。短短 18 行代码展示了大量的常用功能，有文章标题、作者、目录，文档布局、公式排版、代码抄录等。
-
-```tex
+``` tex
 \documentclass[b5paper]{article}
-\usepackage{amsmath} % boldsymbol
-\title{Math in LaTeX}
-\author{Zhang San}
+\usepackage[heading=true, UTF8]{ctex} % 设置中文环境
+\usepackage{amsmath,bm} % 处理数学公式
+\title{LaTeX 入门}
+\author{张三}
 \begin{document}
 \maketitle
 \tableofcontents
-\section{Math}
-\begin{align}
-\boldsymbol{x},\mathbf{x},\mathsf{x},x
+\section{线性模型} \label{sec:lm}
+第 \ref{sec:lm} 节是线性模型。
+\begin{align} \label{eq:lm}
+\bm{\mathsf{y}} = \bm{\mathsf{X}}\bm{\beta} + \bm{\epsilon}
 \end{align}
-\begin{verbatim}
-require(stats) # for lowess, rpois, rnorm
-require(graphics) # for plot methods
-plot(cars)
-lines(lowess(cars))
-\end{verbatim}
+公式 \ref{eq:lm} 是线性模型的矩阵表示。
 \end{document}
 ```
 
-LaTeX 提供很多字体宏包，支持英文字体、数学字体单独设定，在加载 amsmath 宏包后，添加如下四行，mathpazo 设置数学字体，palatino 设置正文中的英文字体，courier 设置代码中的等宽字体，fontenc 设置字体编码方式。
+接下来，逐行解释上面的 LaTeX 代码。
 
-```tex
-\usepackage{mathpazo}
-\usepackage{palatino}
-\usepackage{courier}
-\usepackage[T1]{fontenc}
+-   `\documentclass` 命令用来加载文类，常用的有 article、 report、 book 等，文类的选项 b5paper 表示布局为 B5 纸。
+-   `\usepackage` 命令用来加载 LaTeX 宏包，上面的第2行设置中文环境，加载了 ctex 宏包，并设置了两个选项 `heading=true` 和 `UTF8` 。
+-   `\title` 和 `\author` 命令分别用来设置文档标题和作者。`\documentclass` 和 `\begin{document}` 之间的部分叫导言区，常常用来加载宏包和自定义 LaTeX 命令。`\begin{document}` 和 `\end{document}` 之间的部分叫正文。
+-   `\maketitle` 和 `\tableofcontents` 命令分别用来生成标题和文档目录。`\section` 命令设置小节的标题。`\label` 命令设置小节标签，用于交叉引用。
+-   `\begin{align}` 和 `\end{align}` 是一个公式环境，其间的命令 `\bm` 来自 bm 宏包，用于加粗数学符号，命令 `\mathsf` 、 `\beta` 和 `\epsilon` 都来自 amsmath 宏包。
+-   `\begin{align}` 之后的命令 `\label{eq:lm}` 设置公式标签，`eq:lm` 是用户指定的唯一标识符，不同公式不能重复使用同一标签，`\ref{eq:lm}` 在正文中交叉引用公式。
+
+所有的 LaTeX 命令都是以反斜杠 `\` 开头的。文类和红包的选项说明可查看其帮助文档。
+
+### 中英字体 {#sec-tex-fonts}
+
+大部分情况下，加载 **ctex** 宏包就够了，但也有的场景需要使用特定的中文字体，比如学位论文排版、项目申请书等，这些对文档格式有极其严格的要求。此时，可以在导言区使用 **xecjk** 宏包配置字体。
+
+``` tex
+\usepackage[heading=true, fontset=none, UTF8]{ctex} % 设置中文环境
 ```
 
-大部分情况下，可以加载 **ctex** 宏包处理中文。有的场景下，对文档格式有极其严格的要求，比如学位论文排版、项目申请书等。此时，可以使用 LaTeX 宏包 **xecjk** 配置字体。在 LaTeX 文档里使用 Windows 系统上的黑体、宋体、仿宋、楷体四款中文字体。
+下面的代码表示在 LaTeX 文档里使用黑体、宋体、仿宋、楷体四款中文字体。正文字体是宋体，中文没有斜体，倾斜中文使用楷体，加粗中文使用黑体，等宽字体使用仿宋。
 
-```tex
+``` tex
 \setCJKmainfont[ItalicFont={KaiTi_GB2312}, BoldFont={SimHei}]{SimSun}
 \setCJKsansfont{SimHei}
 \setCJKmonofont{FangSong_GB2312}
-
+% 黑体
 \setCJKfamilyfont{heiti}{SimHei}             
 \newcommand{\heiti}{\CJKfamily{heiti}}
-
+% 楷体 GB2312
 \setCJKfamilyfont{kaishu}{KaiTi_GB2312}             
 \newcommand{\kaishu}{\CJKfamily{kaishu}}
-
+% 宋体
 \setCJKfamilyfont{songti}{SimSun}             
 \newcommand{\songti}{\CJKfamily{songti}}
-
+% 仿宋 GB2312
 \setCJKfamilyfont{fangsong}{FangSong_GB2312}             
 \newcommand{\fangsong}{\CJKfamily{fangsong}}
 ```
 
+LaTeX 提供很多字体宏包，支持英文字体、数学字体单独设定。在加载 amsmath 宏包后，加载 mathpazo 设置数学字体，加载 palatino 设置正文中的英文字体，加载 courier 设置代码中的等宽字体，加载 fontenc 设置字体编码方式。确保已安装 dvips 宏包，它用来处理字体文件。
 
-### 插入表格 {#sec-tex-table}
+``` tex
+\usepackage{mathpazo} % 数学符号
+\usepackage{palatino} % 英文衬线字体
+\usepackage{courier}  % 英文无衬线字体
+\usepackage[T1]{fontenc} % 字体编码 T1
+```
 
+### 数学公式 {#sec-tex-math-fonts}
 
+排版数学公式分三部分，其一是排版的环境，其二是使用的符号、其三是使用的字体。公式环境都是由成对的命令组成，前面已经提及 align 环境，这是一个可对公式编号的适用于对齐多行公式的排版环境。
+
+| 可编号   | 无编号     | 作用                              |
+|----------|------------|-----------------------------------|
+| align    | align\*    | 多行公式对齐                      |
+| equation | equation\* | 可与 split / cases 等环境嵌套使用 |
+| multline | multline\* | 长公式折行                        |
+| gather   | gather\*   | 多行公式居中                      |
+
+: LaTeX 公式排版环境
+
+不可编号的排版环境，行内公式排版，用一对美元符号 `$` `$`或一对小括号 `\(` `\)`。行间公式排版，用一对双美元符号 `$$` `$$` 或一对中括号 `\[` `\]` 。
+
+LaTeX 支持丰富的数学符号大、小写英文字母，大、小写希腊字母，字母可以加粗、倾斜，字母也可以设置为等宽字体或衬线字体，还可以设置花体、空心体等。一些常用的数学符号样式见下表。
+
+|               |              |                       |                   |                   |
+|---------------|---------------|---------------|---------------|---------------|
+| 大写          | 小写         | 加粗                  | 无衬线            | 衬线              |
+| $X$           | $x$          | $\boldsymbol{X}$      | $\mathsf{X}$      | $\mathrm{X}$      |
+| 花体          | 空心体       | 火星体                | 花体              | 花体              |
+| $\mathcal{X}$ | $\mathbb{X}$ | $\mathfrak{X}$        | $\mathcal{X}$     | $\mathscr{X}$     |
+| 大写          | 小写         | 加粗                  | 无衬线            | 衬线              |
+| $\Gamma$      | $\gamma$     | $\boldsymbol{\gamma}$ | $\mathsf{\Gamma}$ | $\mathrm{\Gamma}$ |
+
+``` tex
+\[
+\Bigg(\sqrt{\frac{M}{1 - \big(\frac{r}{\widetilde{x_1 + \cdots + u_N}} \big)^2}
+\big(\sum_{\beta =1}^{N} \sum_{i=1}^{n}\frac{\partial u_{\beta}}{\partial x_i} + 1 \big) } 
++ \sqrt{XY} \Bigg)^3
+\]
+```
+
+amsmath 宏包渲染效果如下：
+
+$$
+\Bigg(\sqrt{\frac{M}{1 - \big(\frac{r}{\widetilde{x_1 + \cdots + u_N}} \big)^2} \big(\sum_{\beta =1}^{N} \sum_{i=1}^{n}\frac{\partial u_{\beta}}{\partial x_i} + 1 \big) } + \sqrt{XY} \Bigg)^3
+$$
+
+newtxtext 和 newtxmath 宏包常组合在一起，提供一套 New Times 字体风格的文本和数学公式。
+
+``` tex
+\documentclass[b5paper]{article}
+\usepackage{amsmath}
+\usepackage{newtxtext,newtxmath}
+\begin{document}
+\[
+\Bigg(\sqrt{\frac{M}{1 - \big(\frac{r}{\widetilde{x_1 + \cdots + u_N}} \big)^2}
+\big(\sum_{\beta =1}^{N} \sum_{i=1}^{n}\frac{\partial u_{\beta}}{\partial x_i} + 1 \big) } 
++ \sqrt{XY} \Bigg)^3
+\]
+\end{document}
+```
+
+### 代码抄录 {#sec-tex-verbatim}
+
+verbatim 环境是用来抄录代码的
+
+```         
+\begin{verbatim}
+library(stats) % 提供 lowess, rpois, rnorm 等函数
+library(graphics) % 提供 plot 方法
+plot(cars)
+lines(lowess(cars))
+\end{verbatim}
+```
+
+listings 宏包
+
+```         
+\usepackage{xcolor}
+\definecolor{shadecolor}{rgb}{.97, .97, .97}
+
+\usepackage{listings}
+\lstset{
+  basicstyle=\ttfamily, % 代码是等宽字体
+  backgroundcolor=\color{shadecolor},  % 代码块的背景颜色
+  breaklines=true, % 可以段行
+  numbers=left,    % 行序号
+  numberstyle=\footnotesize, % 行序号字体大小
+  commentstyle=\ttfamily     % 注释是等宽字体
+}
+```
+
+启用 lstlisting 环境抄录代码，设置参数 `language=R` 指定抄录环境中的编程语言类型，以便提供语法高亮。
+
+```         
+\begin{lstlisting}[language=R]
+library(stats)    % 提供 lowess, rpois, rnorm 等函数
+library(graphics) % 提供 plot 方法
+plot(cars)
+lines(lowess(cars))
+\end{lstlisting}
+```
+
+### 插入图表 {#sec-tex-table-figures}
+
+```         
+\begin{figure}[ht]
+
+\end{figure}
+```
+
+表格
+
+```         
+\begin{table}[h!]
+\centering
+ \begin{tabular}{|c c c|} 
+ \hline
+ 列1 & 列2 & 列3 \\ 
+ \hline
+ 1 & 6 & 77 \\ 
+ 2 & 7 & 15 \\
+ 3 & 8 & 44 \\
+ \hline
+ \end{tabular}
+\caption{表格的标题}
+\label{tbl:demo}
+\end{table}
+```
+
+-   `\begin{table}[h!]` 表格环境
+-   `\centering` 表格居中
+-   `\begin{tabular}{|c c c|}` 表格各个列居中
+-   `\hline` 水平线
+-   `\\` 换行
+-   `\caption` 表格的标题
+-   `\label` 表格标识符
+
+渲染出来的效果
+
+| 列 1 | 列 2 | 列 3 |
+|------|------|------|
+| 1    | 6    | 77   |
+| 2    | 7    | 15   |
+| 3    | 8    | 44   |
+
+: 表格的标题 {#tbl:demo}
+
+### 交叉引用 {#sec-tex-cross-references}
+
+`\ref` 命令用于图、表、公式的交叉引用，引用表格 `\ref{tbl:demo}` 、引用公式 `\ref{eq:lm}` 。
+
+## R Markdown 基础 {#sec-rmarkdown-elements}
+
+### 中英字体 {#sec-rmarkdown-fonts}
+
+### 数学公式 {#sec-rmarkdown-math}
+
+### 代码抄录 {#sec-rmarkdown-verbatim}
+
+### 插入图表 {#sec-rmarkdown-table-figure}
+
+```         
+![An Elephant](elephant.png){#fig-elephant}
+
+This is illustrated well by @fig-elephant.
+```
+
+```         
+| Default | Left | Right | Center |
+|---------|:-----|------:|:------:|
+| 12      | 12   |    12 |   12   |
+| 123     | 123  |   123 |  123   |
+| 1       | 1    |     1 |   1    |
+
+: Demonstration of pipe table syntax
+```
+
+### 交叉引用 {#sec-rmarkdown-cross-references}
+
+## Quarto 基础 {#sec-quarto-elements}
+
+### 中英字体 {#sec-quarto-fonts}
+
+### 数学公式 {#sec-quarto-math}
+
+### 代码抄录 {#sec-quarto-verbatim}
+
+### 插入图表 {#sec-quarto-table-figure}
+
+### 交叉引用 {#sec-quarto-cross-references}
