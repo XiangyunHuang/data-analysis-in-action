@@ -47,6 +47,7 @@ RUN dnf -y install texlive-sourcecodepro \
    texlive-dvisvgm \
    texlive-dvips \
    texlive-dvipng \
+   texlive-draftwatermark \
    texlive-ctex \
    texlive-fandol \
    texlive-xetex \
@@ -58,6 +59,7 @@ RUN dnf -y install texlive-sourcecodepro \
    texlive-fontawesome \
    texlive-newtx \
    texlive-tcolorbox \
+   texlive-tocbibind \
    texlive-standalone \
    texlive-animate \
    texlive-media9 \
