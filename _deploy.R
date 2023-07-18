@@ -8,5 +8,5 @@ rsconnect::deploySite(
   siteName = "data-analysis-in-action",
   siteTitle = "Data Analysis in Action",
   server = "quarto", account = "xiangyun",
-  render = "none"
+  render = "none", forceUpdate = TRUE
 )
