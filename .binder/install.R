@@ -1,4 +1,8 @@
 install.packages(c(
-  "ggplot2", "patchwork", "rnaturalearth", "quarto", "rsconnect",
-  "downlit", "xml2", "magick", "rnaturalearthdata", "ragg"
+  "gganimate", "ggrepel", "ggraph",
+  "ggridges", "ggsignif", "ggforce", "ggdensity",
+  "ggbeeswarm", "ggeffects", "ggnewscale",
+  "patchwork", "plotly", "DT",
+  "gt", "glmnet", "lme4", "xgboost",
+  "showtext", "gifski", "magick"
 ))
