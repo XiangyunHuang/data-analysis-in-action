@@ -29,6 +29,14 @@
 
 2.  然后，即可在 RStudio IDE 内运行书籍内任意代码和示例，甚至编译整本书籍。
 
+<details>
+
+<summary>点击了解更多</summary>
+
+![Binder 环境](https://github.com/XiangyunHuang/data-analysis-in-action/assets/12031874/238765fd-a348-416f-b68f-b8e751de3244)
+
+</details>
+
 ## 本地编译网页书籍
 
 ### 方法 1（推荐）
