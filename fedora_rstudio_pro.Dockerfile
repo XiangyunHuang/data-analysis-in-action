@@ -63,6 +63,7 @@ RUN dnf -y install texlive-sourcecodepro \
    texlive-standalone \
    texlive-animate \
    texlive-media9 \
+   texlive-pgfplots \
    texlive-tikz-network \
  && dnf clean all
 
