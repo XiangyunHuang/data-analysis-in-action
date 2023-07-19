@@ -1,9 +1,17 @@
 # TikZ 入门 {#sec-basic-tikz}
 
+```{r}
+#| echo: false
+
+options(tinytex.engine = "xetex")
+```
+
 正因为有所不足，所以我也不会纠结于工具层面的东西，什么好用用什么！三维图 @fig-tikz-plot3d 是用 LaTeX 里的优秀绘图工具 TikZ 制作的，细心的读者会发现本书多次用到这个工具。
 
 -   [TikZ 绘制神经网络图](https://github.com/mvoelk/nn_graphics)
 -   [TikZ 案例网站](https://texample.net/tikz/examples/)
+
+## PGF
 
 LaTeX 宏包 [PGF](https://ctan.org/pkg/pgf) 绘制曲线图
 
@@ -43,7 +51,9 @@ LaTeX 宏包 [PGF](https://ctan.org/pkg/pgf) 绘制曲线图
 \end{tikzpicture}
 ```
 
-**pgfplots** 包基于 [PGF](https://ctan.org/pkg/pgf)
+## pgfplots
+
+[**pgfplots**](https://ctan.org/pkg/pgfplots) 包基于 PGF
 
 ```{tikz}
 #| label: fig-tikz-plot3d
@@ -63,5 +73,85 @@ LaTeX 宏包 [PGF](https://ctan.org/pkg/pgf) 绘制曲线图
 { sin(deg(sqrt(x^2+y^2)))/sqrt(x^2+y^2) };
 \addlegendentry{$\frac{\sin(r)}{r}$}
 \end{axis}
+\end{tikzpicture}
+```
+
+## tikz-network
+
+[tikz-network](https://ctan.org/pkg/tikz-network)
+
+```{r}
+#| label: fig-network-seven-bridges
+#| engine: "tikz"
+#| fig-cap: "柯尼斯堡七桥问题"
+#| engine-opts: !expr list(extra.preamble=c("\\usepackage{tikz-network}"))
+
+\begin{tikzpicture}
+\Vertex[IdAsLabel, x=5, color=gray, size=1, fontsize=\large]{A}
+\Vertex[IdAsLabel, x=10, color=gray, size=1, fontsize=\large]{B}
+\Vertex[IdAsLabel, x=15, color=gray, size=1, fontsize=\large]{C}
+\Vertex[IdAsLabel, x=10, y=6, color=gray, size=1, fontsize=\large]{D}
+
+\Edge[label=2, bend=45, fontscale=2](A)(B)
+\Edge[label=6, bend=30, fontscale=2](A)(D)
+\Edge[label=3, bend=45, fontscale=2](B)(A)
+\Edge[label=5, bend=45, fontscale=2](B)(C)
+\Edge[label=4, bend=45, fontscale=2](C)(B)
+\Edge[label=7, bend=30, fontscale=2](D)(C)
+\Edge[label=1, fontscale=2](D)(B)
+\end{tikzpicture}
+```
+
+## mindmap
+
+TikZ 绘制思维导图是通过 mindmap 库实现的，它是 PGF 的一个库。
+
+```{tikz}
+#| label: fig-tikz-mindmap
+#| fig-cap: TikZ 绘制思维导图
+#| engine-opts: !expr list(classoption="dvipsnames,tikz", extra.preamble=c("\\usepackage{pgfplots}","\\usepackage[fontset=fandol]{ctex}","\\usetikzlibrary{mindmap}"))
+
+\begin{tikzpicture}[
+    mindmap, every node/.style=concept, concept color=orange, text=white,
+    level 1/.append style={level distance=5cm, sibling angle=60, font=\large},
+    level 2/.append style={level distance=3cm, sibling angle=45}
+  ]
+
+  \node{\textbf{\huge{数据科学}}} [clockwise from=0]
+  child [concept color=Gold, text=black] {
+      node {第一章} [clockwise from=60]
+      child { node {Lagrangian \& Hamiltonian}}
+      child { node {Chaos Theory}}
+      child { node {Gases \& Fluids}}
+      child { node {Electro\-dynamics}}
+    }
+  child [concept color=DarkBlue] {
+      node {第二章} [counterclockwise from=250]
+      child { node {Atomic Physics}}
+      child { node {Molecular Physics}}
+      child { node {Chemistry}}
+    }
+  child [concept color=teal] {
+      node {第三章} [clockwise from=270]
+      child { node {Special}}
+      child { node {General}}
+    }
+  child [concept color=red] {
+      node {第四章} [counterclockwise from=140]
+      child { node {Thermo\-dynamics}}
+      child { node {Kinetic Gas Theory}}
+      child { node {Condensed Matter}}
+    }
+  child [concept color=purple] {
+      node {第五章} [counterclockwise from=80]
+      child { node {Quantum Field Theory}}
+      child { node {Particle Physics}}
+      child { node {Nuclear Physics}}
+    }
+  child [concept color=DarkGreen] {
+      node {第六章} [counterclockwise from=40]
+      child { node {Astronomy}}
+      child { node {Early Universe}}
+    };
 \end{tikzpicture}
 ```
