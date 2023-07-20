@@ -54,6 +54,7 @@ RUN dnf -y install texlive-sourcecodepro \
    texlive-framed \
    texlive-titling \
    texlive-fira \
+   texlive-pst-arrow \
    texlive-awesomebox \
    texlive-fontawesome5 \
    texlive-fontawesome \
