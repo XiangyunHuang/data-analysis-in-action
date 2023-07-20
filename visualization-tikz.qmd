@@ -6,12 +6,51 @@
 options(tinytex.engine = "xetex")
 ```
 
-正因为有所不足，所以我也不会纠结于工具层面的东西，什么好用用什么！三维图 @fig-tikz-plot3d 是用 LaTeX 里的优秀绘图工具 TikZ 制作的，细心的读者会发现本书多次用到这个工具。
+TikZ 绘图的优势有很多，语法简单、易于上手、功能强大、资源丰富、成熟稳定等，可以说几乎是集所有优点于一身。正因如此，**knitr** 包和 **tikzDevice** 包将其引入 R 语言社区中。**knitr** 包的 `tikz` 引擎是用来编译 tikz 代码的，默认使用的是 standalone 文类。
 
--   [TikZ 绘制神经网络图](https://github.com/mvoelk/nn_graphics)
--   [TikZ 案例网站](https://texample.net/tikz/examples/)
+R 语言绘图遇到公式时，略显不足，而排版公式是 LaTeX 的优势。正因为有所不足，所以我也不会纠结于工具层面的东西，什么好用用什么！三维图 @fig-tikz-plot3d 是用 LaTeX 里的优秀绘图工具 TikZ 制作的，细心的读者会发现本书多次用到这个工具。
 
-## PGF
+## standalone 文类
+
+最常见的 LaTeX 文档类有 article、report、beamer、book，分别对应文章、报告、演示和书籍。有的宏包在此基础上扩展功能，比如 ctex 宏包提供中文支持，有四个文档类 ctexart、 ctexrep 、ctexbeamer 和 ctexbook 与之对应起来。standalone 宏包提供 standalone 文类主要用于绘制独立的图片，默认情况下，文档四周多余的空白部分会被裁剪掉。在 LaTeX 环境中，推荐使用 tikz 来绘图。standalone 文类可与 tikz 一起使用，生成一张张由 tikz 代码绘制的独立图片。下面举个简单的例子，用 tikz 绘制两个坐标轴。
+
+``` latex
+\documentclass[tikz,border=1mm]{standalone}
+\begin{document}
+\begin{tikzpicture}
+\draw[<->] (6,0) -- (0,0) -- (0,6);
+\end{tikzpicture}
+\end{document}
+```
+
+standalone 文类启用 `tikz` 选项来绘图，选项 `border=1mm` 表示图片四周的边空保留 1 毫米，文档内容放在 document 环境里，tikz 绘图代码放在 tikzpicture 环境中，命令 `\draw` 负责绘制具体的图形，用 XeLaTeX 编译，效果如 @fig-tikz 所示。
+
+```{tikz}
+#| label: fig-tikz
+#| fig-cap: standalone 文类和 tikz 代码绘图
+#| engine-opts: !expr list(classoption="tikz,border=1mm")
+#| fig-width: 3
+#| fig-height: 3
+#| echo: false
+
+\begin{tikzpicture}
+\draw[<->] (6,0) -- (0,0) -- (0,6);
+\end{tikzpicture}
+```
+
+standalone 文类有很多选项，下面介绍 4 个选项的常用内容。
+
+-   `class` 选项指定绘图环境，默认值为 article 文类，这也是最常用的一个，表示在 article 文类中绘图出来的效果，其它选项还有 beamer 文类，适合在演示环境中绘图。
+
+-   `tikz=true|false` 选项是否启用 tikz 绘图，默认值是 `false` 。当显式地在 standalone 文类中启用 `tikz` 选项，就表示用 tikz 绘图，将自动加载 tikz 宏包。与之类似的选项 `pstricks=true|false` ，表示是否启用 pstricks 绘图，pstricks 是LaTeX 社区中一套语法不同于 tikz 的绘图工具，本文不涉及。
+
+-   `crop=true|false` 选项是否裁剪变空，默认值是 `true` ，表示绘图区域以外的部分都裁剪掉。
+
+-   `border` 选项指定边空大小，默认值是 0，表示无边空。当 `crop=true` 时，再指定 `border` 选项，比如 `border=1mm` 表示图片四周的边空保留 1 毫米。
+
+其它选项和更多详细介绍见 standalone 宏包帮助文档。
+
+## PGF 宏包
 
 LaTeX 宏包 [PGF](https://ctan.org/pkg/pgf) 绘制曲线图
 
@@ -25,7 +64,7 @@ LaTeX 宏包 [PGF](https://ctan.org/pkg/pgf) 绘制曲线图
 ```{tikz}
 #| label: fig-tikz-pgf1
 #| fig-cap: PGF 绘制曲线图
-#| fig-width: 2
+#| fig-width: 3
 #| fig-height: 3
 
 \begin{tikzpicture}
@@ -58,7 +97,7 @@ LaTeX 宏包 [PGF](https://ctan.org/pkg/pgf) 绘制曲线图
 \end{tikzpicture}
 ```
 
-## pgfplots
+## pgfplots 宏包
 
 [**pgfplots**](https://ctan.org/pkg/pgfplots) 包基于 PGF
 
@@ -93,7 +132,7 @@ LaTeX 宏包 [PGF](https://ctan.org/pkg/pgf) 绘制曲线图
 \end{tikzpicture}
 ```
 
-## tikz-network
+## tikz-network 宏包
 
 [tikz-network](https://ctan.org/pkg/tikz-network)
 
@@ -128,7 +167,7 @@ LaTeX 宏包 [PGF](https://ctan.org/pkg/pgf) 绘制曲线图
 \end{tikzpicture}
 ```
 
-## mindmap
+## mindmap 库
 
 TikZ 绘制思维导图是通过 mindmap 库实现的，它是 PGF 的一个库。
 
@@ -165,7 +204,6 @@ TikZ 绘制思维导图是通过 mindmap 库实现的，它是 PGF 的一个库�
       child { node {ggplot2 入门}}
       child { node {基础图形}}
       child { node {统计图形}}
-      child { node {lattice 入门}}
     }
   child [concept color=Brown] {
       node {\textit{数据交流}} [clockwise from=-30]
