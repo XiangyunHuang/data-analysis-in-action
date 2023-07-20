@@ -1,0 +1,151 @@
+# graphics 入门 {#sec-basic-graphics}
+
+```{r}
+#| echo: false
+
+source("_common.R")
+```
+
+## 绘图元素 {#sec-graphics-elements}
+
+基础绘图系统制作示意图是优势。利用点、线等基础元素从零开始绘图。
+
+```{r}
+#| label: fig-math-annotation
+#| fig-cap: 正态总体下两样本均值之差的检验
+#| fig-width: 6
+#| fig-height: 4.5
+#| fig-showtext: true
+
+x <- seq(-10, 10, length = 400)
+y1 <- dnorm(x)
+y2 <- dnorm(x, m = 3)
+op <- par(mar = c(5, 4, 2, 1))
+plot(x, y2,
+  xlim = c(-3, 8), type = "n",
+  xlab = quote(Z == frac(mu[1] - mu[2], sigma / sqrt(n))),
+  ylab = "Density"
+)
+polygon(c(1.96, 1.96, x[240:400], 10),
+  c(0, dnorm(1.96, m = 3), y2[240:400], 0),
+  col = "grey80", lty = 0
+)
+lines(x, y2)
+lines(x, y1)
+polygon(c(-1.96, -1.96, x[161:1], -10),
+  c(0, dnorm(-1.96, m = 0), y1[161:1], 0),
+  col = "grey30", lty = 0
+)
+polygon(c(1.96, 1.96, x[240:400], 10),
+  c(0, dnorm(1.96, m = 0), y1[240:400], 0),
+  col = "grey30"
+)
+legend(x = 4.2, y = .4,
+  fill = c("grey80", "grey30"),
+  legend = expression(
+    P(abs(Z) > 1.96, H[1]) == 0.85,
+    P(abs(Z) > 1.96, H[0]) == 0.05
+  ), bty = "n"
+)
+text(0, .2, quote(H[0]:~ ~ mu[1] == mu[2]))
+text(3, .2, quote(H[1]:~ ~ mu[1] == mu[2] + delta))
+on.exit(par(op), add = TRUE)
+```
+
+## 多图布局 {#sec-graphics-layout}
+
+```{r}
+#| label: fig-anscombe
+#| fig-cap: 数据可视化很重要
+#| fig-width: 6
+#| fig-height: 6
+#| fig-showtext: true
+
+data(anscombe)
+form <- sprintf("y%d ~ x%d", 1:4, 1:4)
+fit <- lapply(form, lm, data = anscombe)
+op <- par(mfrow = c(2, 2), mgp = c(2, 0.7, 0), 
+          mar = c(3, 3, 1, 1) + 0.1, oma = c(0, 0, 2, 0))
+for (i in 1:4) {
+  plot(as.formula(form[i]),
+    data = anscombe, col = "black",
+    pch = 20, xlim = c(3, 19), ylim = c(3, 13),
+    xlab = as.expression(substitute(x[i], list(i = i))),
+    ylab = as.expression(substitute(y[i], list(i = i))),
+    family = "sans"
+  )
+  abline(fit[[i]], col = "black")
+  text(
+    x = 7, y = 12, family = "sans",
+    labels = bquote(R^2 == .(round(summary(fit[[i]])$r.squared, 3)))
+  )
+}
+mtext("数据集的四重奏", outer = TRUE, family = "Noto Serif CJK SC")
+on.exit(par(op), add = TRUE)
+```
+
+## 等值线图 {#sec-graphics-contour}
+
+`filled.contour()` 讲一讲背后的原理，相比第一版技术更加深入一些，以下面的为例
+
+```{r}
+#| label: fig-filled-contour
+#| fig-cap: 填充等值线图
+#| out-width: 85%
+#| fig-width: 6
+#| fig-height: 4.5
+#| fig-showtext: true
+
+y <- x <- 1:12
+filled.contour(
+  x = x, y = y,
+  z = outer(x, y, FUN = function(x, y) sin(x * y)),
+  color.palette = hcl.colors,
+  plot.title = {
+    par(family = "Noto Serif CJK SC")
+    title(
+      main = "二维函数的填充等值线图",
+      xlab = "水平方向", ylab = "垂直方向"
+    )
+  },
+  plot.axes = {
+    par(family = "sans")
+    axis(2)
+    axis(1, at = x, labels = x)
+    grid(col = "blue")
+    points(10, 10)
+  },
+  key.axes = {
+    par(family = "sans")
+    axis(4, seq(-1, 1, length.out = 5))
+  }
+)
+```
+
+## 三维透视图 {#sec-graphics-persp}
+
+值得一提的是，**plotrix** [@Lemon2006]、**scatterplot3d** [@Uwe2003]、**misc3d** [@misc3d2008] 和 **plot3D** [@plot3D2021] 加强了 Base R 在制作三维图形方面的能力。但归根结底，很多时候束缚住自己的不是工具，而是视野和思维。奥克兰 Maunga Whau 火山 **plot3D** 包依赖 **misc3d** ，而 **misc3d** 基于 **tcltk** 包。
+
+```{r}
+#| label: fig-volcano-plot3d
+#| fig-cap: 奥克兰火山等值地形图
+#| fig-width: 5
+#| fig-height: 3.5
+#| fig-showtext: true
+
+library(plot3D)
+image2D(volcano,
+  shade = 0.2, rasterImage = TRUE,
+  xlab = "南北方向", ylab = "东西方向",
+  main = "奥克兰 Maunga Whau 地形图",
+  contour = FALSE,
+  colkey = list(
+    at = seq(90, 190, by = 20),
+    labels = seq(90, 190, by = 20),
+    length = 1, width = 1
+  ),
+  family = "Noto Serif CJK SC",
+  clab = "高度\n(米)",
+  col = hcl.colors(100)
+)
+```
