@@ -197,7 +197,7 @@ TikZ 是 TikZ ist kein Zeichenprogramm 的简写，命名有 Linux 哲学意味�
 
 ## tikz-network 宏包
 
-[tikz-network](https://ctan.org/pkg/tikz-network)
+绘制网络图用 [tikz-network](https://ctan.org/pkg/tikz-network) 宏包，也是 PGF 的一个扩展包。图结构是根据顶点和边来定义的，图的复杂程度也可以用顶点和边的规模来衡量。图描述一种非线性的关系，有自己的一套语言，定义顶点 `\Vertex` 和边 `\Edge` 的两个命令是最基础的。下面绘制柯尼斯堡七桥问题对应的图。
 
 ``` latex
 \documentclass[tikz]{standalone}
@@ -207,10 +207,9 @@ TikZ 是 TikZ ist kein Zeichenprogramm 的简写，命名有 Linux 哲学意味�
 \end{document}
 ```
 
-```{r}
+```{tikz}
 #| label: fig-network-seven-bridges
-#| engine: "tikz"
-#| fig-cap: "柯尼斯堡七桥问题"
+#| fig-cap: 柯尼斯堡七桥
 #| engine-opts: !expr list(extra.preamble=c("\\usepackage{tikz-network}"))
 #| fig-width: 5
 
@@ -230,9 +229,15 @@ TikZ 是 TikZ ist kein Zeichenprogramm 的简写，命名有 Linux 哲学意味�
 \end{tikzpicture}
 ```
 
+-   `\Vertex` 命令定义顶点（含标签），参数 `IdAsLabel` 表示顶点 ID 作为标签，参数 `x` 和 `y` 表示坐标位置，参数 `color` 表示顶点的填充色，参数 `size` 表示顶点的大小，参数 `fontsize` 表示标签文本的大小。
+
+-   `\Edge` 命令在已有顶点的基础上定义边，`(A)(B)` 表示从顶点 A 到顶点 B 有一条边，参数`label` 表示边上的标签文本，参数 `bend` 表示边的弧度，参数 `fontscale` 表示标签文本的大小。
+
+不难看出，无论是顶点还是边，都有颜色、大小、标签等参数，尽管参数名称有所不同。
+
 ## mindmap 库
 
-TikZ 绘制思维导图是通过 mindmap 库实现的，它是 PGF 的一个库。
+思维导图是非常常见的一种树状图，用于梳理层次关系。TikZ 绘制思维导图是通过 mindmap 库实现的，它是 PGF 的一个库。如 @fig-tikz-mindmap 所示，看着和脑神经网络有某种相似性，所以，有时候，思维导图也叫脑图。
 
 ``` latex
 \documentclass[tikz,svgnames]{standalone}
@@ -246,7 +251,7 @@ TikZ 绘制思维导图是通过 mindmap 库实现的，它是 PGF 的一个库�
 ```{tikz}
 #| label: fig-tikz-mindmap
 #| fig-cap: TikZ 绘制思维导图
-#| engine-opts: !expr list(classoption="tikz,svgnames", extra.preamble=c("\\usepackage{pgfplots}","\\usepackage[fontset=fandol]{ctex}","\\usetikzlibrary{mindmap}"))
+#| engine-opts: !expr list(classoption="tikz,svgnames", extra.preamble=c("\\usepackage[fontset=fandol]{ctex}","\\usetikzlibrary{mindmap}"))
 
 \begin{tikzpicture}[
     mindmap, every node/.style=concept, concept color=orange, text=white,
@@ -254,7 +259,7 @@ TikZ 绘制思维导图是通过 mindmap 库实现的，它是 PGF 的一个库�
     level 2/.append style={level distance=3.5cm, sibling angle=45, font=\large}
   ]
 
-  \node{\huge{\textsf{数据科学}}} [clockwise from=60]
+  \node{\huge{\textsf{数据分析}}} [clockwise from=60]
   child [concept color=DarkMagenta] {
       node {\textit{数据准备}} [clockwise from=120]
       child { node {数据对象}}
@@ -294,3 +299,23 @@ TikZ 绘制思维导图是通过 mindmap 库实现的，它是 PGF 的一个库�
     };
 \end{tikzpicture}
 ```
+
+根节点视为一层，则该思维导图有三层。不同的颜色和字体来区分不同的层次或分类，数据分析划分为不同的部分，每个部分有若干章。根节点字体为黑体、第二、三级节点分别为楷体、宋体。
+
+``` latex
+\node{\huge{\textsf{数据科学}}} [clockwise from=60]
+```
+
+定义根节点，节点的文本设置为黑体，大小设置为 `\huge` 。由根节点向外辐射生成 6 个子节点，每隔 60 度设置一个子节点。
+
+``` latex
+  child [concept color=DarkMagenta] {
+      node {\textit{数据准备}} [clockwise from=120]
+      child { node {数据对象}}
+      child { node {数据获取}}
+      child { node {数据清洗}}
+      child { node {数据操作}}
+    }
+```
+
+第一个子节点，颜色为饱和的紫色 DarkMagenta，二级子节点为「数据准备」，三级子节点有 4 个，逆时针 120 度的位置设置第一个三级子节点「数据对象」，然后顺时针往下，依次是「数据获取」、「数据清洗」和「数据操作」。
