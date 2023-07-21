@@ -6,9 +6,11 @@
 source("_common.R")
 ```
 
+基础绘图系统。相比于 ggplot2 和 lattice，graphics 制作示意图是优势。
+
 ## 绘图元素 {#sec-graphics-elements}
 
-基础绘图系统制作示意图是优势。利用点、线等基础元素从零开始绘图。
+利用点、线等基础元素从零开始绘图。
 
 ```{r}
 #| label: fig-math-annotation
@@ -80,43 +82,103 @@ for (i in 1:4) {
     labels = bquote(R^2 == .(round(summary(fit[[i]])$r.squared, 3)))
   )
 }
-mtext("数据集的四重奏", outer = TRUE, family = "Noto Serif CJK SC")
+mtext("数据集的四重奏", outer = TRUE)
 on.exit(par(op), add = TRUE)
 ```
 
 ## 等值线图 {#sec-graphics-contour}
 
-`filled.contour()` 讲一讲背后的原理，相比第一版技术更加深入一些，以下面的为例
+地理上，常用等高线图描述地形，等高线图和等值线图其实是一个意思。
+
+$$
+f(x,y) = 
+\begin{cases}
+\frac{\sin(\sqrt{x^2 + y^2})}{\sqrt{x^2 + y^2}}, & (x,y) \neq (0,0)\\
+1, & (x,y) = (0,0)
+\end{cases}
+$$
+
+```{r}
+y <- x <- seq(from = -8, to = 8, length.out = 51)
+z <- outer(x, y, FUN = function(x, y) sin(sqrt(x^2 + y^2)) / sqrt(x^2 + y^2))
+z[26, 26] <- 1
+```
+
+将绘图区域划分成网格，每个小网格对应一个颜色值。
+
+```{r}
+#| label: fig-image
+#| fig-cap: 颜色图
+#| fig-width: 5.5
+#| fig-height: 6
+#| fig-showtext: true
+#| dev: 'tikz'
+#| fig-process: !expr to_png
+
+image(
+  x = x, y = y, z = z, main = "二维函数的颜色图",
+  xlab = "$x$", ylab = "$y$"
+)
+```
+
+```{r}
+#| label: fig-persp
+#| fig-cap: 透视图
+#| fig-width: 5.5
+#| fig-height: 6
+#| dev: 'tikz'
+#| fig-process: !expr to_png
+
+persp(
+  x = x, y = y, z = z, main = "二维函数的透视图",
+  theta = 30, phi = 30, expand = 0.5, col = "lightblue",
+  xlab = "$x$", ylab = "$y$", zlab = "$f(x,y)$"
+)
+```
+
+函数 `contour()` 绘制等值线图。
+
+```{r}
+#| label: fig-contour
+#| fig-cap: 等值线图
+#| fig-width: 5.5
+#| fig-height: 6
+#| dev: 'tikz'
+#| fig-process: !expr to_png
+
+contour(
+  x = x, y = y, z = z, main = "二维函数的等值线图",
+  xlab = "$x$", ylab = "$y$"
+)
+```
+
+函数 `filled.contour()` 绘制填充等值线图。
 
 ```{r}
 #| label: fig-filled-contour
 #| fig-cap: 填充等值线图
 #| fig-width: 6.5
 #| fig-height: 6
-#| fig-showtext: true
+#| dev: 'tikz'
+#| fig-process: !expr to_png
 
-y <- x <- -8:8
 filled.contour(
-  x = x, y = y, asp = 1,
-  z = outer(x, y, FUN = function(x, y) sin(sqrt(x^2 + y^2)) / sqrt(x^2 + y^2)),
+  x = x, y = y, z = z, asp = 1,
   color.palette = hcl.colors,
   plot.title = {
-    par(family = "Noto Serif CJK SC")
     title(
       main = "二维函数的填充等值线图",
-      xlab = "水平方向", ylab = "垂直方向"
+      xlab = "$x$", ylab = "$y$"
     )
   },
   plot.axes = {
-    par(family = "sans")
     grid(col = "gray")
     axis(1, at = 2 * -4:4, labels = 2 * -4:4)
     axis(2, at = 2 * -4:4, labels = 2 * -4:4)
     points(0, 0, col = "blue", pch = 16)
   },
   key.axes = {
-    par(family = "sans")
-    axis(4, seq(-0.2, 1.2, length.out = 9))
+    axis(4, seq(-0.2, 1, length.out = 9))
   }
 )
 ```
@@ -131,7 +193,7 @@ filled.contour(
 #| fig-width: 6
 #| fig-height: 5
 #| fig-showtext: true
-#| message: false
+#| warning: false
 
 library(plot3D)
 image2D(volcano,
@@ -139,7 +201,6 @@ image2D(volcano,
   xlab = "南北方向", ylab = "东西方向",
   main = "奥克兰 Maunga Whau 地形图", clab = "高度\n(米)",
   contour = FALSE, col = hcl.colors(100),
-  family = "Noto Serif CJK SC",
   colkey = list(
     at = 90 + 20 * 0:5, labels = 90 + 20 * 0:5,
     length = 1, width = 1
