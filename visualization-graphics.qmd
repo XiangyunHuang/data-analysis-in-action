@@ -10,9 +10,176 @@ source("_common.R")
 
 基础绘图系统。相比于 **ggplot2** 和 **lattice**，**graphics** 制作示意图是优势。
 
-## 绘图元素 {#sec-graphics-elements}
+## 绘图基础 {#sec-graphics-elements}
 
 利用点、线等基础元素从零开始绘图。
+
+### `plot()` {#sec-elements-plot}
+
+函数 `plot()` 快速作图
+
+```{r}
+plot(Sepal.Length ~ Sepal.Width, data = iris)
+```
+
+### 标签 {#sec-elements-label}
+
+```{r}
+plot(
+  Sepal.Length ~ Sepal.Width,
+  data = iris, xlab = "Sepal Width", ylab = "Sepal Length",
+  main = "Edgar Anderson's Iris Data"
+)
+```
+
+```{r}
+plot(Sepal.Length ~ Sepal.Width, data = iris, ann = F)
+title(main = "Edgar Anderson's Iris Data",
+      xlab = "Sepal Width", ylab = "Sepal Length")
+```
+
+### 分组 {#sec-elements-group}
+
+高亮显示某一部分数据达到区分的目的，分组
+
+```{r}
+plot(Sepal.Length ~ Sepal.Width, data = iris)
+points(Sepal.Length ~ Sepal.Width,
+  col = "#EA4335", pch = 16,
+  data = subset(iris, Species == "setosa")
+)
+```
+
+`col` 参数传递一个数据列
+
+```{r}
+plot(Sepal.Length ~ Sepal.Width, data = iris, col = Species, pch = 16)
+```
+
+### 配色 {#sec-elements-color}
+
+经过探查，知道 Species 有三种取值，设置一个超过 3 种颜色的调色板，实现自定义配色
+
+```{r}
+palette()
+palette(value = c("#EA4335", "#4285f4", "#34A853", "#FBBC05"))
+palette()
+```
+
+```{r}
+plot(Sepal.Length ~ Sepal.Width, data = iris, col = Species, pch = 16)
+```
+
+### 注释 {#sec-elements-annotation}
+
+```{r}
+plot(Sepal.Length ~ Sepal.Width, data = iris)
+text(x = 4, y = 6.5, labels = "Flower")
+```
+
+### 图例 {#sec-elements-legend}
+
+函数 `legend()`
+
+```{r}
+#| label: fig-iris-legend
+#| fig-cap: 图例
+#| fig-width: 5
+#| fig-height: 4
+#| fig-showtext: true
+
+plot(
+  Sepal.Length ~ Sepal.Width,
+  data = iris, col = Species, pch = 16,
+  main = "Edgar Anderson's Iris Data"
+)
+legend("topright", title = "Species",
+  legend = unique(iris$Species), box.col = "gray",
+  pch = 16, col = c("#EA4335", "#4285f4", "#34A853")
+)
+```
+
+图例放置在绘图区域以外的边空区域
+
+```{r}
+plot(
+  Sepal.Length ~ Sepal.Width,
+  data = iris, col = Species, pch = 16,
+  main = "Edgar Anderson's Iris Data"
+)
+text(x = 6, y = 7, labels = "setosa", col = "#EA4335", xpd = T)
+
+mtext(text = "setosa", side = 4, line = 0, outer = T)
+mtext(text = "versicolor", side = 4, line = 0, outer = T)
+mtext(text = "virginica", side = 4, line = 0, outer = T)
+```
+
+先申请一个较宽的区域
+
+```{r}
+range(iris$Sepal.Width)
+range(iris$Sepal.Length)
+
+plot(x = c(2, 6), y = range(iris$Sepal.Length), ann = F, type = "n")
+points(Sepal.Length ~ Sepal.Width,
+  col = Species, pch = 16, data = iris
+)
+legend("right", title = "Species",
+  legend = unique(iris$Species), box.col = "gray",
+  pch = 16, col = c("#EA4335", "#4285f4", "#34A853")
+)
+```
+
+### 统计 {#sec-elements-reg}
+
+添加分组线性回归线
+
+```{r}
+lapply(
+  lapply(
+    split(iris, ~Species), lm,
+    formula = Sepal.Length ~ Sepal.Width
+  ),
+  coef
+)
+```
+
+往往是各方面比较清楚，分类数量、调色板都确定下来了
+
+```{r}
+#| label: fig-iris-lm
+#| fig-cap: 分组线性回归
+#| fig-width: 5
+#| fig-height: 4
+#| fig-showtext: true
+
+iris_lm <- lapply(
+  split(iris, ~Species), lm,
+  formula = Sepal.Length ~ Sepal.Width
+)
+
+cols <- c(
+  "setosa" = "#EA4335",
+  "versicolor" = "#4285f4",
+  "virginica" = "#34A853"
+)
+
+plot(
+  Sepal.Length ~ Sepal.Width,
+  data = iris, col = Species, pch = 16,
+  main = "Edgar Anderson's Iris Data"
+)
+
+for (species in c("setosa", "versicolor", "virginica")) {
+  abline(iris_lm[[species]], col = cols[species])
+}
+```
+
+## 绘图进阶 {#sec-graphics-advanced}
+
+### 组合图形 {#sec-graphics-composite}
+
+点、线、多边形组合
 
 ```{r}
 #| label: fig-math-annotation
@@ -56,7 +223,7 @@ text(3, .2, quote(H[1]:~ ~ mu[1] == mu[2] + delta))
 on.exit(par(op), add = TRUE)
 ```
 
-## 多图布局 {#sec-graphics-layout}
+### 多图布局 {#sec-graphics-layout}
 
 布局函数 `layout()` 和图形参数设置函数 `par()`
 
@@ -90,9 +257,11 @@ mtext("数据集的四重奏", outer = TRUE)
 on.exit(par(op), add = TRUE)
 ```
 
+## 图形选择 {#sec-graphics-choose}
+
 以不同的二维或三维图形可视化同一份多元数据。颜色图、透视图、等值线图和填充等值线图存在某种相似性，又有区别。
 
-## 颜色图 {#sec-color-image}
+### 颜色图 {#sec-color-image}
 
 $$
 f(x,y) = 
@@ -124,7 +293,7 @@ image(
 )
 ```
 
-## 透视图 {#sec-graphics-persp}
+### 透视图 {#sec-graphics-persp}
 
 函数 `persp()` 绘制透视图
 
@@ -145,7 +314,7 @@ persp(
 on.exit(par(op), add = TRUE)
 ```
 
-## 等值线图 {#sec-graphics-contour}
+### 等值线图 {#sec-graphics-contour}
 
 地理上，常用等高线图描述地形，等高线图和等值线图其实是一个意思。函数 `contour()` 绘制等值线图。
 
@@ -163,7 +332,7 @@ contour(
 )
 ```
 
-## 填充等值线图 {#sec-graphics-filled-contour}
+### 填充等值线图 {#sec-graphics-filled-contour}
 
 函数 `filled.contour()` 绘制填充等值线图。
 
@@ -220,13 +389,27 @@ filled.contour(
 
 library(plot3D)
 image2D(volcano,
-  shade = 0.2, rasterImage = TRUE,
+  shade = 0.2, rasterImage = TRUE, asp = 0.7,
   xlab = "南北方向", ylab = "东西方向",
-  main = "奥克兰 Maunga Whau 地形图", clab = "高度\n(米)",
+  main = "奥克兰 Maunga Whau 地形图", clab = "高度",
   contour = FALSE, col = hcl.colors(100),
   colkey = list(
     at = 90 + 20 * 0:5, labels = 90 + 20 * 0:5,
     length = 1, width = 1
   )
+)
+```
+
+```{r}
+#| label: fig-volcano-persp3d
+#| fig-cap: 奥克兰火山地形图
+#| fig-width: 6
+#| fig-height: 5
+#| fig-showtext: true
+
+persp3D(
+  x = 1:87, y = 1:61, z = volcano, col = hcl.colors(100),
+  ticktype = "detailed", colkey = FALSE, expand = 0.6,
+  xlab = "\n南北方向", ylab = "\n东西方向", zlab = "\n高度"
 )
 ```
