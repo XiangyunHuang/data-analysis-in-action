@@ -556,8 +556,11 @@ write.table(volcano,
 ```
 
 ```{python}
-#| eval: false
-#| echo: false
+#| label: fig-volcano-py
+#| fig-cap: matplotlib 绘制三维透视图
+#| fig-width: 5.5
+#| fig-height: 5
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
 
 from matplotlib import cm
 from matplotlib.colors import LightSource
@@ -565,14 +568,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-plt.rcParams.update({
-    "text.usetex": True,
-    "pgf.texsystem": "xelatex",
-    "pgf.preamble": "\n".join([
-         r"\usepackage[fontset=fandol]{ctex}",
-         r"\usepackage{amsfonts,mathrsfs,amssymb}",
-    ]),
-})
 # 读取数据
 volcano = pd.read_csv("data/volcano.csv", header=None)
 # DataFrame 转 Array
@@ -590,9 +585,9 @@ fig, ax = plt.subplots(subplot_kw=dict(projection='3d'))
 ax.view_init(azim=30, elev=30)
 # 设置长宽比 x:y:z
 ax.set_box_aspect((0.85, 1, 0.9))
-ax.set_xlabel(r'$\mathsf{X}$')
-ax.set_ylabel(r'$\mathsf{Y}$')
-ax.set_zlabel(r'$Z$')
+ax.set_xlabel(r'东西方向',fontdict={'family': 'Noto Serif CJK SC'}, rotation=45)
+ax.set_ylabel(r'南北方向',fontdict={'family': 'Noto Serif CJK SC'},rotation=-15)
+ax.set_zlabel(r'海拔',fontdict={'family': 'Noto Serif CJK SC'},rotation=90)
 # 去掉多余的边空
 fig.set_tight_layout(True)
 # 光源照射的角度
@@ -605,46 +600,12 @@ surf = ax.plot_surface(xv, yv, z, rstride=1, cstride=1, facecolors=rgb,
 plt.show()
 ```
 
-```{python}
-#| label: fig-volcano-py
+```{r}
+#| label: fig-volcano-plt
 #| fig-cap: matplotlib 绘制三维透视图
-#| fig-width: 5.5
-#| fig-height: 5
+#| out-width: 80%
+#| eval: !expr "!knitr::is_html_output(excludes = 'epub')"
+#| echo: false
 
-from matplotlib import cm
-from matplotlib.colors import LightSource
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-
-# 读取数据
-volcano = pd.read_csv("data/volcano.csv", header=None)
-# DataFrame 转 Array
-z = volcano.to_numpy()
-# 数据行、列数
-ncols, nrows = z.shape
-# 线性序列
-x = np.linspace(1, 61, nrows)
-y = np.linspace(1, 87, ncols)
-# 类似 expand.grid()
-xv, yv = np.meshgrid(x, y)
-# 设置主题
-fig, ax = plt.subplots(subplot_kw=dict(projection='3d'))
-# 观察视角
-ax.view_init(azim=30, elev=30)
-# 设置长宽比 x:y:z
-ax.set_box_aspect((0.85, 1, 0.9))
-ax.set_xlabel(r'X')
-ax.set_ylabel(r'Y')
-ax.set_zlabel(r'Z')
-# 去掉多余的边空
-fig.set_tight_layout(True)
-# 光源照射的角度
-ls = LightSource(270, 45)
-# 自定义调色板
-rgb = ls.shade(z, cmap=cm.viridis, vert_exag=0.1, blend_mode='soft')
-surf = ax.plot_surface(xv, yv, z, rstride=1, cstride=1, facecolors=rgb,
-                       linewidth=0, antialiased=False, shade=False)
-# 渲染
-plt.show()
+knitr::include_graphics(path = "images/volcano-plt.png")
 ```
