@@ -16,18 +16,25 @@ source("_common.R")
 
 ### `plot()` {#sec-elements-plot}
 
-函数 `plot()` 快速作图
+函数 `plot()` 采用公式语法可以快速作图。
 
 ```{r}
-#| label: fig-iris-default
-#| fig-cap: 散点图
+#| label: fig-iris-plot
+#| fig-cap: 函数 plot
 #| fig-width: 5
 #| fig-height: 4.5
 #| fig-showtext: true
 #| par: true
+#| fig-subcap:
+#| - 公式语法绘制散点图
+#| - 带背景参考线的散点图
+#| layout-ncol: 2
 
 plot(Sepal.Length ~ Sepal.Width, data = iris)
+plot(iris$Sepal.Width, iris$Sepal.Length, panel.first = grid())
 ```
+
+函数 `plot()` 是一个泛型函数，传递不同类型的参数值会调用不同的绘图方法，而不同的绘图方法的参数是不同的。当采用公式语法绘图时，会自动调用函数 `plot.formula()` ，此时，参数 `panel.first` 就不起作用。当不使用公式语法时，会调用函数 `plot.default()` ，此时，参数 `panel.first` 就起作用，利用该参数可以添加背景参考线。
 
 ### 标签 {#sec-elements-label}
 
@@ -39,8 +46,8 @@ plot(Sepal.Length ~ Sepal.Width, data = iris)
 #| fig-showtext: true
 
 plot(
-  Sepal.Length ~ Sepal.Width,
-  data = iris, xlab = "Sepal Width", ylab = "Sepal Length",
+  Sepal.Length ~ Sepal.Width, data = iris, 
+  xlab = "Sepal Width", ylab = "Sepal Length",
   main = "Edgar Anderson's Iris Data"
 )
 ```
@@ -114,7 +121,7 @@ text(x = 4, y = 6.5, labels = "Flower", col = "#EA4335")
 
 ### 图例 {#sec-elements-legend}
 
-函数 `legend()`
+函数 `plot()` 不会自动添加图例，需要使用函数 `legend()` 添加图例。
 
 ```{r}
 #| label: fig-iris-legend1
@@ -128,13 +135,13 @@ plot(
   data = iris, col = Species, pch = 16,
   main = "Edgar Anderson's Iris Data"
 )
-legend("topright", title = "Species",
+legend(x = "topright", title = "Species",
   legend = unique(iris$Species), box.col = "gray",
   pch = 16, col = c("#EA4335", "#4285f4", "#34A853")
 )
 ```
 
-图例放置在绘图区域以外的边空区域
+图例放置在绘图区域以外，比如右边空区域。此时，通过点和文本构造图例。
 
 ```{r}
 #| label: fig-iris-legend2
@@ -158,7 +165,7 @@ text(x = 4.7, y = 6.1, labels = "virginica", pos = 4, col = "#34A853", xpd = T)
 on.exit(par(op), add = TRUE)
 ```
 
-先申请一个较宽的区域
+在函数 `plot()` 内设置较宽的坐标轴范围，获得一个较宽的绘图区域，再用函数 `points()` 添加数据点，最后，使用函数 `legend()` 添加图例。
 
 ```{r}
 #| label: fig-iris-legend3
@@ -175,8 +182,7 @@ plot(
 points(Sepal.Length ~ Sepal.Width,
   col = Species, pch = 16, data = iris
 )
-legend("right",
-  title = "Species",
+legend(x = "right", title = "Species",
   legend = unique(iris$Species), box.col = "gray",
   pch = 16, col = c("#EA4335", "#4285f4", "#34A853")
 )
@@ -184,7 +190,7 @@ legend("right",
 
 ### 统计 {#sec-elements-reg}
 
-添加分组线性回归线
+添加分组线性回归线。按鸢尾花种类分组，线性回归模型拟合数据，抽取回归系数。首先，使用函数 `split()` 将数据集 iris 按变量 Species 分组拆分，得到一个列表，每个元素都是数据框。接着，调用函数 `lapply()` 将函数 `lm()` 作用到列表的每个元素上，得到一个列表，每个元素都是线性拟合对象。最后，再调函数 `lapply()` 将函数 `coef()` 应用到列表的每个元素上，得到回归模型的系数向量。
 
 ```{r}
 lapply(
@@ -196,35 +202,44 @@ lapply(
 )
 ```
 
-往往是各方面比较清楚，分类数量、调色板都确定下来了
+走到绘图这一步，往往是画什么内容比较清楚，分类数量、调色板都确定下来了。大致来说分 6 步：第一步，实现分组线性回归拟合；第二步，绘制分组散点图；第三步，添加分组回归线；第四步，添加图例并调整图例的位置；第五步，设置图形边界等绘图参数；第六步，添加背景网格线。输入线性拟合对象给函数 `abline()` 可以直接绘制回归线，不需要从拟合对象中提取回归系数。调用函数 `par()` 设置图形边界，特别是增加图形右侧边界以容纳图例，调用函数 `legend()` 要设置 `xpd = TRUE` 以允许图例超出绘图区域。
 
 ```{r}
 #| label: fig-iris-lm
 #| fig-cap: 分组线性回归
 #| fig-width: 5
-#| fig-height: 5
+#| fig-height: 6
 #| fig-showtext: true
 
+# 分组线性拟合
 iris_lm <- lapply(
-  split(iris, ~Species), lm,
-  formula = Sepal.Length ~ Sepal.Width
+  split(iris, ~Species), lm, formula = Sepal.Length ~ Sepal.Width
 )
-
-cols <- c(
-  "setosa" = "#EA4335",
-  "versicolor" = "#4285f4",
-  "virginica" = "#34A853"
-)
-
+# 将分组变量和颜色映射
+cols <- c("setosa" = "#EA4335",  "versicolor" = "#4285f4", "virginica" = "#34A853")
+# 设置图形边界以容纳标签和图例
+op <- par(mar = c(4, 4, 3, 8))
+# 绘制分组散点图
 plot(
   Sepal.Length ~ Sepal.Width,
   data = iris, col = Species, pch = 16,
+  xlab = "Sepal Width", ylab = "Sepal Length",
   main = "Edgar Anderson's Iris Data"
 )
-
+# 添加背景参考线
+grid()
+# 添加回归线
 for (species in c("setosa", "versicolor", "virginica")) {
-  abline(iris_lm[[species]], col = cols[species])
+  abline(iris_lm[[species]], col = cols[species], lwd = 2)
 }
+# 添加图例
+legend(
+  x = "right", title = "Species", inset = -0.3, xpd = TRUE,
+  legend = unique(iris$Species), box.col = NA, lty = 1, lwd = 2,
+  pch = 16, col = c("#EA4335", "#4285f4", "#34A853")
+)
+# 恢复图形参数设置
+on.exit(par(op), add = TRUE)
 ```
 
 ## 绘图进阶 {#sec-graphics-advanced}
