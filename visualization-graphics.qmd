@@ -16,20 +16,47 @@ source("_common.R")
 
 ### `plot()` {#sec-elements-plot}
 
-函数 `plot()` 快速作图
+本节将主要基于鸢尾花数据集介绍 R 语言基础绘图系统。
 
 ```{r}
-#| label: fig-iris-default
-#| fig-cap: 散点图
-#| fig-width: 5
-#| fig-height: 4.5
-#| fig-showtext: true
-#| par: true
-
-plot(Sepal.Length ~ Sepal.Width, data = iris)
+summary(iris)
 ```
 
+鸢尾花是非常漂亮的一种花，在统计和机器学习社区家喻户晓，更别提在植物界的名声。其实，远不止于此，在绘画艺术界也是如雷贯耳，意大利印象派大师梵高画了一系列鸢尾花作品。下面先让我们一睹芳容，图片来自维基百科鸢尾花词条。
+
+::: {#fig-iris layout-ncol="3"}
+![versicolor 杂色鸢尾](images/iris-versicolor.jpeg){#fig-iris-versicolor width="30%"}
+
+![setosa 山鸢尾](images/iris-setosa.jpeg){#fig-iris-setosa width="40%"}
+
+![virginica 弗吉尼亚鸢尾](images/iris-virginica.jpeg){#fig-iris-virginica width="30%"}
+
+三种鸢尾花
+:::
+
+函数 `plot()` 采用公式语法可以快速作图。
+
+```{r}
+#| label: fig-iris-plot
+#| fig-cap: 快速作图函数 `plot()`
+#| fig-width: 4
+#| fig-height: 4
+#| fig-showtext: true
+#| par: true
+#| fig-subcap:
+#| - 公式语法绘制散点图
+#| - 带背景参考线的散点图
+#| layout-ncol: 2
+
+plot(Sepal.Length ~ Sepal.Width, data = iris)
+plot(iris$Sepal.Width, iris$Sepal.Length, panel.first = grid())
+```
+
+函数 `plot()` 是一个泛型函数，传递不同类型的参数值会调用不同的绘图方法，而不同的绘图方法的参数是不同的。当采用公式语法绘图时，会自动调用函数 `plot.formula()` ，此时，参数 `panel.first` 就不起作用。当不使用公式语法时，会调用函数 `plot.default()` ，此时，参数 `panel.first` 就起作用，利用该参数可以添加背景参考线。
+
 ### 标签 {#sec-elements-label}
+
+函数 `plot()` 的参数 `xlab` 、`ylab` 和 `main` 可以分别设置坐标轴横、纵标签和图主标题。
 
 ```{r}
 #| label: fig-iris-label
@@ -39,59 +66,98 @@ plot(Sepal.Length ~ Sepal.Width, data = iris)
 #| fig-showtext: true
 
 plot(
-  Sepal.Length ~ Sepal.Width,
-  data = iris, xlab = "Sepal Width", ylab = "Sepal Length",
+  Sepal.Length ~ Sepal.Width, data = iris, 
+  xlab = "Sepal Width", ylab = "Sepal Length",
   main = "Edgar Anderson's Iris Data"
+)
+```
+
+### 字体 {#sec-elements-fonts}
+
+作图函数 `plot()` 和 `title()` 都有参数 `family` ，设置该参数可以调整图形中的字体。下 @fig-iris-fonts 的横纵坐标轴标签和图标题设为宋体，坐标轴刻度标签设为无衬线字体。
+
+```{r}
+#| label: fig-iris-fonts
+#| fig-cap: 字体
+#| fig-width: 5
+#| fig-height: 5
+#| fig-showtext: true
+
+plot(Sepal.Length ~ Sepal.Width, data = iris, ann = FALSE, family = "sans")
+title(
+  xlab = "萼片宽度", ylab = "萼片长度",
+  main = "埃德加·安德森的鸢尾花数据", family = "Noto Serif CJK SC"
 )
 ```
 
 ### 分组 {#sec-elements-group}
 
-高亮显示某一部分数据达到区分的目的，分组
+分组有两种方式，其一按照数据中的分类变量分组，其二按照一定的规则分组。而图形表达的方式可以借助颜色或图形元素的样式。
+
+函数 `plot()` 的参数 `col` 和 `pch` 都可以用来分组，前者通过颜色，后者通过点的类型。简单起见，将数据集 `iris` 中的 `Species` 列传递给参数 `col` ，实现不同种类的鸢尾花配以不同的颜色。
 
 ```{r}
 #| label: fig-iris-group1
 #| fig-cap: 分组
-#| fig-width: 5
-#| fig-height: 4.5
-#| fig-showtext: true
-#| par: true
-
-plot(Sepal.Length ~ Sepal.Width, data = iris)
-points(Sepal.Length ~ Sepal.Width,
-  col = "#EA4335", pch = 16,
-  data = subset(iris, Species == "setosa")
-)
-```
-
-`col` 参数传递一个数据列
-
-```{r}
-#| label: fig-iris-group2
-#| fig-cap: 分组
-#| fig-width: 5
-#| fig-height: 4.5
+#| fig-width: 4
+#| fig-height: 4
 #| fig-showtext: true
 #| par: true
 
 plot(Sepal.Length ~ Sepal.Width, data = iris, col = Species, pch = 16)
 ```
 
+下面采用一个简单规则将数据分成两组，将鸢尾花中 setosa 山毛榉类型且 Sepal.Length 萼片长度大于 5 厘米的分成一组，以红色填充散点代表这部分数据，与余下的散点形成对比，达到区分的目的。
+
+```{r}
+#| label: fig-iris-group2
+#| fig-cap: 分组
+#| fig-width: 4
+#| fig-height: 4
+#| fig-showtext: true
+#| par: true
+
+plot(Sepal.Length ~ Sepal.Width, data = iris)
+points(Sepal.Length ~ Sepal.Width, data = iris, 
+  col = "#EA4335", pch = 16,
+  subset = Species == "setosa" & Sepal.Length > 5
+)
+```
+
 ### 配色 {#sec-elements-color}
 
-经过探查，知道 Species 有三种取值，设置一个超过 3 种颜色的调色板，实现自定义配色
+经过探查，知道数据集 `iris` 中的 `Species` 列有三种取值。调用函数 `palette()` 设置一个超过 3 种颜色的调色板可以实现自定义配色。首先来看看当前调色板的颜色。
 
 ```{r}
 palette()
-palette(value = c("#EA4335", "#4285f4", "#34A853", "#FBBC05"))
-palette()
 ```
+
+一共是 8 种颜色，效果预览见 @fig-graphics-palette 。
+
+```{r}
+#| label: fig-graphics-palette
+#| fig-width: 3
+#| fig-height: 3
+#| fig-cap: 默认调色板
+#| fig-showtext: true
+#| echo: false
+
+scales::show_col(colours = palette())
+```
+
+设置新的调色板也是用函数 `palette()` ，参数 `value` 设置新的颜色值向量，下面依次是红、蓝、绿、黄四种颜色。
+
+```{r}
+palette(value = c("#EA4335", "#4285f4", "#34A853", "#FBBC05"))
+```
+
+函数 `plot()` 的调色板默认来自函数 `palette()` ，经过上面的调整，同一行绘图代码出来不同的效果，即 @fig-iris-group1 变成 @fig-iris-color 。
 
 ```{r}
 #| label: fig-iris-color
 #| fig-cap: 配色
-#| fig-width: 5
-#| fig-height: 4.5
+#| fig-width: 4
+#| fig-height: 4
 #| fig-showtext: true
 #| par: true
 
@@ -100,41 +166,42 @@ plot(Sepal.Length ~ Sepal.Width, data = iris, col = Species, pch = 16)
 
 ### 注释 {#sec-elements-annotation}
 
+函数 `text()` 可以在图上任意位置添加文本或公式。下图在位置 (4,6.5) 处添加红色的文字 flower。
+
 ```{r}
 #| label: fig-iris-text
 #| fig-cap: 注释
-#| fig-width: 5
-#| fig-height: 4.5
+#| fig-width: 4
+#| fig-height: 4
 #| fig-showtext: true
 #| par: true
 
 plot(Sepal.Length ~ Sepal.Width, data = iris)
-text(x = 4, y = 6.5, labels = "Flower", col = "#EA4335")
+text(x = 4, y = 6.5, labels = "flower", col = "#EA4335")
 ```
 
 ### 图例 {#sec-elements-legend}
 
-函数 `legend()`
+函数 `plot()` 不会自动添加图例，需要使用函数 `legend()` 添加图例。
 
 ```{r}
 #| label: fig-iris-legend1
 #| fig-cap: 图例
 #| fig-width: 5
-#| fig-height: 5
+#| fig-height: 4.5
 #| fig-showtext: true
+#| par: true
 
 plot(
-  Sepal.Length ~ Sepal.Width,
-  data = iris, col = Species, pch = 16,
-  main = "Edgar Anderson's Iris Data"
+  Sepal.Length ~ Sepal.Width, data = iris, col = Species, pch = 16
 )
-legend("topright", title = "Species",
-  legend = unique(iris$Species), box.col = "gray",
+legend(x = "topright", title = "Species",
+  legend = unique(iris$Species), box.col = NA, bg = NA,
   pch = 16, col = c("#EA4335", "#4285f4", "#34A853")
 )
 ```
 
-图例放置在绘图区域以外的边空区域
+图例放置在绘图区域以外，比如右边空区域。此时，通过点和文本构造图例。
 
 ```{r}
 #| label: fig-iris-legend2
@@ -158,7 +225,7 @@ text(x = 4.7, y = 6.1, labels = "virginica", pos = 4, col = "#34A853", xpd = T)
 on.exit(par(op), add = TRUE)
 ```
 
-先申请一个较宽的区域
+在函数 `plot()` 内设置较宽的坐标轴范围，获得一个较宽的绘图区域，再用函数 `points()` 添加数据点，最后，使用函数 `legend()` 添加图例。
 
 ```{r}
 #| label: fig-iris-legend3
@@ -175,16 +242,15 @@ plot(
 points(Sepal.Length ~ Sepal.Width,
   col = Species, pch = 16, data = iris
 )
-legend("right",
-  title = "Species",
-  legend = unique(iris$Species), box.col = "gray",
+legend(x = "right", title = "Species",
+  legend = unique(iris$Species), box.col = NA, bg = NA,
   pch = 16, col = c("#EA4335", "#4285f4", "#34A853")
 )
 ```
 
 ### 统计 {#sec-elements-reg}
 
-添加分组线性回归线
+添加分组线性回归线。按鸢尾花种类分组，线性回归模型拟合数据，抽取回归系数。首先，使用函数 `split()` 将数据集 iris 按变量 Species 分组拆分，得到一个列表，每个元素都是数据框。接着，调用函数 `lapply()` 将函数 `lm()` 作用到列表的每个元素上，得到一个列表，每个元素都是线性拟合对象。最后，再调函数 `lapply()` 将函数 `coef()` 应用到列表的每个元素上，得到回归模型的系数向量。
 
 ```{r}
 lapply(
@@ -196,35 +262,44 @@ lapply(
 )
 ```
 
-往往是各方面比较清楚，分类数量、调色板都确定下来了
+走到绘图这一步，往往是画什么内容比较清楚，分类数量、调色板都确定下来了。大致来说分 6 步：第一步，实现分组线性回归拟合；第二步，绘制分组散点图；第三步，添加分组回归线；第四步，添加图例并调整图例的位置；第五步，设置图形边界等绘图参数；第六步，添加背景网格线。输入线性拟合对象给函数 `abline()` 可以直接绘制回归线，不需要从拟合对象中提取回归系数。调用函数 `par()` 设置图形边界，特别是增加图形右侧边界以容纳图例，再调用函数 `legend()` 要设置 `xpd = TRUE` 以允许图例超出绘图区域。
 
 ```{r}
 #| label: fig-iris-lm
 #| fig-cap: 分组线性回归
-#| fig-width: 5
+#| fig-width: 6
 #| fig-height: 5
 #| fig-showtext: true
 
+# 分组线性拟合
 iris_lm <- lapply(
-  split(iris, ~Species), lm,
-  formula = Sepal.Length ~ Sepal.Width
+  split(iris, ~Species), lm, formula = Sepal.Length ~ Sepal.Width
 )
-
-cols <- c(
-  "setosa" = "#EA4335",
-  "versicolor" = "#4285f4",
-  "virginica" = "#34A853"
-)
-
+# 将分组变量和颜色映射
+cols <- c("setosa" = "#EA4335",  "versicolor" = "#4285f4", "virginica" = "#34A853")
+# 设置图形边界以容纳标签和图例
+op <- par(mar = c(4, 4, 3, 8))
+# 绘制分组散点图
 plot(
   Sepal.Length ~ Sepal.Width,
   data = iris, col = Species, pch = 16,
+  xlab = "Sepal Width", ylab = "Sepal Length",
   main = "Edgar Anderson's Iris Data"
 )
-
+# 添加背景参考线
+grid()
+# 添加回归线
 for (species in c("setosa", "versicolor", "virginica")) {
-  abline(iris_lm[[species]], col = cols[species])
+  abline(iris_lm[[species]], col = cols[species], lwd = 2)
 }
+# 添加图例
+legend(
+  x = "right", title = "Species", inset = -0.4, xpd = TRUE,
+  legend = unique(iris$Species), box.col = NA, bg = NA, lty = 1, lwd = 2,
+  pch = 16, col = c("#EA4335", "#4285f4", "#34A853")
+)
+# 恢复图形参数设置
+on.exit(par(op), add = TRUE)
 ```
 
 ## 绘图进阶 {#sec-graphics-advanced}
