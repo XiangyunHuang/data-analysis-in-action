@@ -488,67 +488,13 @@ filled.contour(
 )
 ```
 
-```{r}
-#| eval: false
-#| echo: false
-
-write.table(volcano,
-  file = "data/volcano.csv", sep = ",",
-  row.names = FALSE, col.names = F, quote = F
-)
-```
-
-```{python}
-#| label: fig-volcano-py
-#| fig-cap: matplotlib 绘制三维透视图
-#| eval: false
-#| echo: false
-
-from matplotlib import cm
-from matplotlib.colors import LightSource
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-
-# 读取数据
-volcano = pd.read_csv("data/volcano.csv", header=None)
-# DataFrame 转 Array
-z = volcano.to_numpy()
-# 数据行、列数
-ncols, nrows = z.shape
-# 线性序列
-x = np.linspace(1, 61, nrows)
-y = np.linspace(1, 87, ncols)
-# 类似 expand.grid()
-xv, yv = np.meshgrid(x, y)
-# 设置主题
-fig, ax = plt.subplots(subplot_kw=dict(projection='3d'))
-# 观察视角
-ax.view_init(azim=30, elev=30)
-# 设置长宽比 x:y:z
-ax.set_box_aspect((0.85, 1, 0.9))
-# 去掉多余的边空
-fig.set_tight_layout(True)
-# 光源照射的角度
-ls = LightSource(270, 45)
-# 自定义调色板
-rgb = ls.shade(z, cmap=cm.viridis, vert_exag=0.1, blend_mode='soft')
-surf = ax.plot_surface(xv, yv, z, rstride=1, cstride=1, facecolors=rgb,
-                       linewidth=0, antialiased=False, shade=False)
-# 渲染
-plt.show()
-```
-
 ## 总结 {#sec-graphics-summary}
 
 虽然不提倡大量使用三维图形，但如何绘制三维图形却是生生不息的命题，以下仅是 R 语言社区的冰山一角。
 
 -   **plotrix** [@Lemon2006] 一个坐落于 R 的红灯区的 R 包。基于 Base R 各类绘图函数。
-
 -   **scatterplot3d** [@Uwe2003] 基于 Base R 绘制三维散点图。
-
 -   **misc3d** [@misc3d2008] 绘制三维图形的杂项，支持通过 Base R、 **tcltk** 包和 **rgl** 包渲染图形。
-
 -   **plot3D** [@plot3D2021] 依赖 **misc3d** 包，加强 Base R 在制作三维图形方面的能力。
 
 举个比较新颖的一个例子，**plot3D 包**的函数 `image2D()` 绘制二维颜色图，细看又和 image() 函数不同，渲染出来的图形有三维的立体感。归根结底，很多时候束缚住自己的不是工具，而是视野和思维。以奥克兰 Maunga Whau 火山地形数据 `volcano` 为例。
@@ -588,4 +534,75 @@ persp3D(
   xlab = "\n南北方向", ylab = "\n东西方向", zlab = "\n高度"
 )
 on.exit(par(op), add = TRUE)
+```
+
+```{r}
+#| echo: false
+
+library(reticulate)
+knitr::opts_chunk$set(python.reticulate = TRUE)
+reticulate::use_virtualenv(virtualenv = Sys.getenv("RETICULATE_PYTHON_ENV"), required = TRUE)
+```
+
+```{r}
+#| eval: false
+#| echo: false
+
+# 保存数据
+write.table(volcano,
+  file = "data/volcano.csv", sep = ",",
+  row.names = FALSE, col.names = F, quote = F
+)
+```
+
+```{python}
+#| label: fig-volcano-py
+#| fig-cap: matplotlib 绘制三维透视图
+#| fig-width: 5.5
+#| fig-height: 5
+
+from matplotlib import cm
+from matplotlib.colors import LightSource
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+
+plt.rcParams.update({
+    "text.usetex": True,
+    "pgf.texsystem": "xelatex",
+    "pgf.preamble": "\n".join([
+         r"\usepackage[fontset=fandol]{ctex}",
+         r"\usepackage{amsfonts,mathrsfs,amssymb}",
+    ]),
+})
+# 读取数据
+volcano = pd.read_csv("data/volcano.csv", header=None)
+# DataFrame 转 Array
+z = volcano.to_numpy()
+# 数据行、列数
+ncols, nrows = z.shape
+# 线性序列
+x = np.linspace(1, 61, nrows)
+y = np.linspace(1, 87, ncols)
+# 类似 expand.grid()
+xv, yv = np.meshgrid(x, y)
+# 设置主题
+fig, ax = plt.subplots(subplot_kw=dict(projection='3d'))
+# 观察视角
+ax.view_init(azim=30, elev=30)
+# 设置长宽比 x:y:z
+ax.set_box_aspect((0.85, 1, 0.9))
+ax.set_xlabel(r'$\mathsf{X}$')
+ax.set_ylabel(r'$\mathsf{Y}$')
+ax.set_zlabel(r'$Z$')
+# 去掉多余的边空
+fig.set_tight_layout(True)
+# 光源照射的角度
+ls = LightSource(270, 45)
+# 自定义调色板
+rgb = ls.shade(z, cmap=cm.viridis, vert_exag=0.1, blend_mode='soft')
+surf = ax.plot_surface(xv, yv, z, rstride=1, cstride=1, facecolors=rgb,
+                       linewidth=0, antialiased=False, shade=False)
+# 渲染
+plt.show()
 ```
