@@ -113,6 +113,16 @@ RUN dnf -y copr enable iucar/cran \
   && Rscript -e "remotes::install_deps('.', dependencies = TRUE)" \
   && rm -f DESCRIPTION desc_pkgs.txt
 
+# Setup Python Env
+COPY requirements.txt requirements.txt
+RUN mkdir -p /opt/.virtualenvs/r-tensorflow \
+  && chown -R $(whoami):staff /opt/.virtualenvs/r-tensorflow \
+  && export RETICULATE_PYTHON_ENV=/opt/.virtualenvs/r-tensorflow \
+  && virtualenv -p /usr/bin/python3 $RETICULATE_PYTHON_ENV \
+  && source $RETICULATE_PYTHON_ENV/bin/activate \
+  && pip install -r requirements.txt \
+  && deactivate
+
 # Setup locale and timezone
 ENV LANG=en_US.UTF-8 \
     LANGUAGE=en_US.UTF-8 \
