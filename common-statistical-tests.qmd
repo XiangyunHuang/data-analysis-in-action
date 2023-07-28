@@ -45,6 +45,7 @@ $\chi^2$ 分布、t 分布和 F 分布作为最基础的三大抽样分布，分
 ```{r}
 #| message: false
 
+library(nlme)
 library(ggplot2)
 library(pwr)         # 计算检验的功效和实验样本量
 library(dunn.test)   # dunn.test
@@ -724,6 +725,22 @@ t.test(extra ~ group, data = sleep, paired = TRUE)
 ```{r}
 with(sleep, pairwise.t.test(x = extra, g = group, paired = TRUE))
 ```
+
+配对 t 检验与变截距的线性混合效应模型等价。
+
+```{r}
+library(nlme)
+m <- lme(fixed = extra ~ group, random = ~ 1 | ID, data = sleep)
+summary(m)
+```
+
+输出结果中，固定效应部分 `group2` 意味着相对于第 1 组，第 2 组的增加值，其为 1.58，对应的 t 统计量的值为 4.062127， P 值为 0.0028。调用 **nlme** 包的函数 `intervals()` 计算固定效应部分 95% 的置信区间。
+
+```{r}
+intervals(m, which = "fixed")
+```
+
+`group2` 对应的 95% 的置信区间是 $(0.7001140, 2.459886)$ 。
 
 多个组两两配对的 t 检验 `pairwise.t.test()` ，PlantGrowth 数据集包含三个样本。
 
