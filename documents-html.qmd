@@ -12,7 +12,17 @@
 
 ### 图片 {#sec-doc-figure}
 
-其一插入代码生成的图片，其二导入外部制作好的现成图片。
+其一插入现成的图片，其二插入代码生成的图片
+
+::: {#fig-doc-iris layout-ncol="3"}
+![versicolor 杂色鸢尾](images/iris-versicolor.jpeg){#fig-doc-versicolor width="30%"}
+
+![setosa 山鸢尾](images/iris-setosa.jpeg){#fig-doc-setosa width="40%"}
+
+![virginica 弗吉尼亚鸢尾](images/iris-virginica.jpeg){#fig-doc-virginica width="30%"}
+
+三种鸢尾花
+:::
 
 ```{mermaid}
 %%| label: fig-flowchart
@@ -31,7 +41,7 @@ ggplot2 图形
 
 ```{r}
 #| label: fig-iris-ggplot2
-#| fig-cap: "一幅简单的 ggplot2 图形"
+#| fig-cap: 一幅简单的 ggplot2 图形
 #| fig-width: 5
 #| fig-height: 3
 #| echo: true
@@ -45,7 +55,20 @@ ggplot(data = iris, aes(x = Sepal.Length, y = Sepal.Width)) +
 
 ### 表格 {#sec-doc-table}
 
-Markdown 表格、knitr 制作的表格
+Markdown 原生支持的表格和 **knitr** 包制作的表格。
+
+| Sepal.Length | Sepal.Width | Petal.Length | Petal.Width | Species |
+|-------------:|------------:|-------------:|------------:|:--------|
+|          5.1 |         3.5 |          1.4 |         0.2 | setosa  |
+|          4.9 |         3.0 |          1.4 |         0.2 | setosa  |
+|          4.7 |         3.2 |          1.3 |         0.2 | setosa  |
+
+```{r}
+#| label: tbl-doc-iris
+#| tbl-cap: 鸢尾花数据集
+
+knitr::kable(head(iris, 3))
+```
 
 ### 列表 {#sec-doc-list}
 
@@ -98,36 +121,48 @@ Markdown 表格、knitr 制作的表格
 
 ### 公式 {#sec-doc-math}
 
-行内公式一对美元符号 $\alpha$ ，行间公式 $$\alpha$$ ，如 @eq-likelihood
+公式分两种情况，其一是行内公式，其二是行间公式。前者一对美元符号夹住数学公式，美元符号与字母之间不能有空格，比如 `$\beta$` 渲染出来的效果是 $\beta$ 。后者是两对美元符号夹住公式，比如 `$$\beta$$` 渲染出来的效果如下：
 
-$$
-L(\beta,\boldsymbol{\theta}) = f(y;\beta,\boldsymbol{\theta}) = \int_{\mathbb{R}^{n}}N(t;D\beta,\Sigma(\boldsymbol{\theta}))f(y|t)dt 
-$$ {#eq-likelihood}
+$$\beta$$
 
-多行公式逐行编号，多行公式中对某一（些）行编号都不支持。多行公式共用一个编号，如 @eq-likelihood2 。
+行内公式一般用来写数学符号，行间公式一般用来排版数学公式，特别是多行公式。
+
+$$\mathbf{y} = X\boldsymbol{\beta} + \boldsymbol{\epsilon}$$
+
+排版行间公式又很多不同的 LaTeX 环境，最常见的又有两种，一种是多个公式逐行排，一种是长公式折行，常常要求对齐。线性模型的两种表示方式，一种是矩阵向量式，一种是数据结构式，见 @eq-doc-lm 。
 
 $$
 \begin{aligned}
-L(\beta,\boldsymbol{\theta})
-& = \int_{\mathbb{R}^{n}} \frac{N(t;D\beta,\Sigma(\boldsymbol{\theta}))f(y|t)}{N(t;D\beta_{0},\Sigma(\boldsymbol{\theta}_{0}))f(y|t)}f(y,t)dt\\
-& \varpropto \int_{\mathbb{R}^{n}} \frac{N(t;D\beta,\Sigma(\boldsymbol{\theta}))}{N(t;D\beta_{0},\Sigma(\boldsymbol{\theta}_{0}))}f(t|y)dt \\
-&= E_{T|y}\left[\frac{N(t;D\beta,\Sigma(\boldsymbol{\theta}))}{N(t;D\beta_{0},\Sigma(\boldsymbol{\theta}_{0}))}\right] 
+\mathbf{y} &= X\boldsymbol{\beta} + \boldsymbol{\epsilon} \\
+y_i &= \mathbf{x}_i\boldsymbol{\beta} + \epsilon_i
 \end{aligned}
-$$ {#eq-likelihood2}
+$$ {#eq-doc-lm}
 
-推荐在 `equation` 公式中，使用 `split` 环境，意思是一个公式很长，需要拆成多行，如 @eq-var-beta 。
+在行间公式中，使用 `split` 环境排版需要拆成多行的一个长公式。线性模型回归系数的最小二乘估计的方差的计算过程，见 @eq-doc-beta 。
 
 $$
 \begin{split}
-\mathrm{Var}(\hat{\beta}) & =\mathrm{Var}((X'X)^{-1}X'y)\\
- & =(X'X)^{-1}X'\mathrm{Var}(y)((X'X)^{-1}X')'\\
- & =(X'X)^{-1}X'\mathrm{Var}(y)X(X'X)^{-1}\\
- & =(X'X)^{-1}X'\sigma^{2}IX(X'X)^{-1}\\
- & =(X'X)^{-1}\sigma^{2}
+\mathsf{Var}\{\hat{\boldsymbol{\beta}}\} & =\mathsf{Var}\{(X{^\top}X)^{-1}X{^\top}\mathbf{y}\}\\
+ & =(X{^\top}X)^{-1}X{^\top}\mathsf{Var}\{\mathbf{y}\}\big((X{^\top}X)^{-1}X{^\top}\big){^\top}\\
+ & =(X{^\top}X)^{-1}X{^\top}\mathsf{Var}\{\mathbf{y}\}X(X{^\top}X)^{-1}\\
+ & =(X{^\top}X)^{-1}X{^\top}\sigma^{2}IX(X{^\top}X)^{-1}\\
+ & =(X{^\top}X)^{-1}\sigma^{2}
 \end{split}
-$$ {#eq-var-beta}
+$$ {#eq-doc-beta}
 
-注意，`\mathbf` 只对字母 $a,b,c,A,B,C$ 加粗，mathjax 不支持公式中使用 `\bm` 对 $\theta,\alpha,\beta,\ldots,\gamma$ 加粗，应该使用 `\boldsymbol`
+值得注意，
+
+1.  LaTeX 命令 `\mathbf` 只对英文字母 $a,b,c,A,B,C$ 加粗，对希腊字母 $\theta,\alpha,\beta,\ldots,\gamma$ 加粗应该使用命令 `\boldsymbol`。
+
+2.  Quarto 文档中将行间公式中成对 `$$` 转化为 LaTeX 中的 `equation` 环境。Quarto 不支持在多行公式逐行编号，也不支持在多行公式中对某一（些）行编号。而在 LaTeX 文档中，这些全都支持，可以说公式排版是 LaTeX 最突出的优势。
+
+3.  MathJax 支持公式宏定义，如定义命令 `\bm` 对希腊字母加粗。在 Quarto 文档中插入如下代码，用命令 `\boldsymbol` 定义一个新的命令 `\bm`，这种做法很常见，用来简少公式排版的工作量。
+
+    ```         
+    $$
+    \def\bm#1{{\boldsymbol #1}}
+    $$
+    ```
 
 ## 制作报告 {#sec-quarto-report}
 
