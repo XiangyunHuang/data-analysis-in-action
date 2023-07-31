@@ -203,24 +203,73 @@ do.call(
 
 掌握此等基础性的工具，再去了解新工具也不难，更重要的是，只要将一种工具掌握的足够好，也就足以应付绝大多数的情况。
 
-1.  介绍 data.table 基础语法，对标 Base R，介绍基础操作，同时给出等价的 dplyr 实现，但不运行代码。
+1.  介绍 **data.table** 基础语法，对标 Base R，介绍基础操作，同时给出等价的 **dplyr** 实现，但不运行代码。
 
-2.  data.table 扩展 Base R 数据操作，介绍常用的操作 8 个，讲清楚出现的具体场景，同时给出等价的 dplyr 实现，但不运行代码。
+2.  **data.table** 扩展 Base R 数据操作，介绍常用的操作 8 个，讲清楚出现的具体场景，同时给出等价的 dplyr 实现，但不运行代码。
 
-3.  data.table 特有的高级数据操作 on .SD .I .J 等。
+3.  **data.table** 特有的高级数据操作 `on`、`.SD` 、`.I` 、`.J` 等。
 
 ### 筛选 {#sec-dt-select}
 
-`[`
+data.table 扩展了函数 `[` 功能，简化 `iris$Species == "setosa"` 代码 `Species == "setosa"`
+
+```{r}
+iris_dt[Species == "setosa" & Sepal.Length > 5.5, c("Sepal.Length", "Sepal.Width")]
+```
 
 ### 变换 {#sec-dt-transform}
 
-`:`
+变换操作可以用函数 `:=`
+
+```{r}
+iris_dt[, Species_N := as.integer(Species)]
+str(iris_dt)
+```
 
 ### 排序 {#sec-dt-order}
 
+排序操作可以用函数 `order()`
+
+```{r}
+iris_dt[order(Sepal.Length, decreasing = FALSE)[1:3], ]
+```
+
 ### 聚合 {#sec-dt-aggregate}
+
+聚合操作用函数 `.()` 和 `by` 组合
+
+```{r}
+iris_dt[, .(mean = mean(Sepal.Length)), by = "Species"]
+```
+
+### 合并 {#sec-dt-merge}
+
+合并操作也是用函数 `merge()` 来实现。
+
+```{r}
+dt1 <- data.table(a1 = c(1, 2, 3), a2 = c("A", "B", "C"))
+dt2 <- data.table(b1 = c(2, 3, 4), b2 = c("A", "B", "D"))
+# LEFT JOIN
+merge(x = dt1, y = dt2, by.x = "a2", by.y = "b2", all.x = TRUE)
+# RIGHT JOIN
+merge(x = dt1, y = dt2, by.x = "a2", by.y = "b2", all.y = TRUE)
+# INNER JOIN
+merge(x = dt1, y = dt2, by.x = "a2", by.y = "b2", all = FALSE)
+# FULL JOIN
+merge(x = dt1, y = dt2, by.x = "a2", by.y = "b2", all = TRUE)
+```
 
 ### 重塑 {#sec-dt-reshape}
 
-### 合并 {#sec-dt-merge}
+将数据集从宽格式转为长格式，可以用函数 `dcast()` 实现，反之，可以用函数 `melt()` 实现。
+
+```{r}
+# 长格式
+dt3 <- data.table(
+  extra = c(0.7, -1.6, -0.2, -1.2, -0.1, 3.4),
+  group = c("A", "A", "A", "B", "B", "B"),
+  id = c(1, 2, 3, 1, 2, 3)
+)
+# 长转宽
+dcast(dt3, id ~ group, value.var = "extra")
+```
