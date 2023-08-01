@@ -1,2 +1,182 @@
 # 交互应用 {#sec-interactive-applications}
 
+一个简单示例，介绍一个 Shiny 应用的各个常见组成部分。一个快速改变风格的主题包。介绍交互表格、交互图形与 Shiny 集成，如 DT plotly leaflet 等。介绍 Shiny 工业化应用的开发过程。
+
+## 简单示例 {#sec-shiny-demo}
+
+## Shiny 组件 {#sec-shiny-components}
+
+筛选器
+
+## Shiny 主题 {#sec-shiny-themes}
+
+## Shiny 生态 {#sec-shiny-extensions}
+
+### 交互表格 {#sec-shiny-tables}
+
+下面在 Shiny 应用中插入 DT 包制作的交互表格
+
+```{r}
+#| eval: false
+
+library(magrittr)
+# ui.R 前端
+library(shiny)
+shinyUI(fluidPage(
+  # 应用的标题名称
+  titlePanel("鸢尾花数据集"),
+  # 边栏
+  fluidRow(
+    column(12, DT::dataTableOutput("table"))
+  )
+))
+
+# server.R 服务端
+library(shiny)
+shinyServer(function(input, output, session) {
+  iris_renamed <- `colnames<-`(iris, gsub("\\.", "_", tolower(colnames(iris))))
+  output$table <- DT::renderDataTable(iris_renamed,
+    options = list(
+      pageLength = 5, # 每页显示5行
+      initComplete = I("function(settings, json) {alert('Done.');}")
+    ), server = F
+  )
+})
+```
+
+在 server.R 里我们对数据集 iris 做了重命列名的操作，如果不使用管道操作，通常是下面这样操作。
+
+```{r}
+#| eval: false
+colnames(iris) <- gsub("\\.", "_", tolower(colnames(iris)))
+```
+
+换成管道操作，函数 `colnames()` 要换成 `colnames<-`，这其实类似于 `1 + 2` 换成 `+`(1, 2)，保持函数在左边，参数值在右边的一致性。
+
+::: callout-important
+加载 shiny 包后再加载 DT 包，函数 `dataTableOutput()` 和`renderDataTable()` 显示冲突，因为两个 R 包都有这两个函数。在创建 shiny 应用的过程中，如果我们需要呈现动态表格，就需要使用 DT 包的 `DT::dataTableOutput()` 和 `DT::renderDataTable()` ，否则会报错，详见 <https://github.com/rstudio/shiny/issues/2653>。
+:::
+
+[reactable](https://github.com/glin/reactable) 基于 JS 库 [React Table](https://github.com/tannerlinsley/react-table) 提供交互式表格渲染，和 shiny 无缝集成，是替代 DT 的不二选择，在 app.R 用 reactable 包的 `reactableOutput()` 和 `renderReactable()` 函数替代 shiny 里面的 `dataTableOutput()` 和 `renderDataTable()`。 再也不用忍受 DT 和 shiny 的函数冲突了，且其覆盖测试达到 99%。
+
+```{r}
+library(shiny)
+```
+
+下面在 Shiny 应用中插入 **reactable** 包制作的交互表格
+
+```{r}
+#| eval: false
+
+library(shiny)
+library(reactable)
+
+ui <- fluidPage(
+  reactableOutput("table")
+)
+
+server <- function(input, output) {
+  output$table <- renderReactable({
+    reactable(iris,
+      filterable = TRUE, # 过滤
+      searchable = TRUE, # 搜索
+      showPageSizeOptions = TRUE, # 页面大小
+      pageSizeOptions = c(5, 10, 15), # 页面大小可选项
+      defaultPageSize = 10, # 默认显示10行
+      highlight = TRUE, # 高亮选择
+      striped = TRUE, # 隔行高亮
+      fullWidth = FALSE, # 默认不要全宽填充，适应数据框的宽度
+      defaultSorted = list(
+        Sepal.Length = "asc", # 由小到大排序
+        Petal.Length = "desc" # 由大到小
+      ),
+      columns = list(
+        Sepal.Width = colDef(style = function(value) { 
+          # Sepal.Width 添加颜色标记
+          if (value > 3.5) {
+            color <- "#008000"
+          } else if (value > 2) {
+            color <- "#e00000"
+          } else {
+            color <- "#777"
+          }
+          list(color = color, fontWeight = "bold") # 字体加粗
+        })
+
+      )
+    )
+  })
+}
+
+shinyApp(ui, server)
+```
+
+除了 DT 和 reactable 包，其它支持 Shiny 集成的 R 包还有 [gt](https://github.com/rstudio/gt) 、[formattable](https://github.com/renkun-ken/formattable) 和 kableExtra 等。
+
+### 交互图形 {#sec-shiny-plots}
+
+## Shiny 部署 {#sec-shiny-deploy}
+
+## 总结 {#sec-shiny-summary}
+
+```{r}
+#| label: shiny-nomnoml
+#| eval: false
+#| echo: false
+# 截图
+# 安装 nomnoml install.packages("nomnoml")
+# 安装 PhantomJS brew install --cask phantomjs 
+nomnoml::nomnoml(" 
+#stroke: #26A63A
+#.box: dashed visual=ellipse
+#direction: down
+
+[<box>HTML]       -> [网页三剑客]
+[<box>JavaScript] -> [网页三剑客]
+[<box>CSS]        -> [<table>网页三剑客|htmlwidgets|htmltools||sass|bslib||thematic|jquerylib]
+
+[设计布局|bs4Dash|flexdashboard|shinydashboard] -> [<actor>开发应用|R Shiny]
+[设计交互|waiter|shinyFeedback|shinyToastify] -> [<actor>开发应用|R Shiny]
+[权限代理|shinyproxy|shinyauthr|shinymanager] -> [<actor>开发应用|R Shiny]
+
+[网页三剑客]  -> [<actor>开发应用|R Shiny]
+[网页三剑客]  -> [<actor>开发应用|R Shiny]
+[网页三剑客]  -> [<actor>开发应用|R Shiny]
+
+[开发应用] <- [<table>处理数据|Base R|SQL||data.table|dplyr||tidyr|purrr]
+[开发应用] <- [<table>制作表格|DT|gt||reactable|formattable||kableExtra|sparkline]
+[开发应用] <- [<table>制作图形|ggplot2|plotly||echarts4r|leaflet||dygraphs|visNetwork]
+", png = "shiny-app.png")
+```
+
+```{r}
+#| label: shiny-ecosystem
+#| fig-cap: Shiny 生态系统
+#| echo: false
+
+knitr::include_graphics(path = "screenshots/shiny-app.png")
+```
+
+-   连接数据库。根据数据库的情况选择相应的 R 接口包，比如连接 MySQL 数据库可以用 RMySQL 包，值得一提， odbc 包支持连接相当多的数据库。
+-   数据操作。根据需要处理的数据规模，可以选择 Base R、 data.table 或者 dplyr 做数据操作，推荐和管道操作一起使用，增加代码可读性。
+-   交互表格。推荐 reactable 和 DT 包做数据呈现。
+-   交互图形。推荐功能强大的 plotly 包，可以先用 [ggplot2](https://github.com/tidyverse/ggplot2) 绘制，然后调用 [plotly](https://github.com/ropensci/plotly) 包的 `ggplotly()` 函数将静态图转化为交互图。
+-   针对特定应用场景的其它交互可视化工具包，比如 [leaflet](https://github.com/rstudio/leaflet) 可以将地图嵌入 Shiny 应用， [dygraphs](https://github.com/rstudio/dygraphs) 可以将时间序列塞进去。
+-   Shiny 组件。[shinyFeedback](https://github.com/merlinoa/shinyFeedback) 提供用户输入的反馈。[shinyWidgets](https://github.com/dreamRs/shinyWidgets) 提供自定义 widget 的功能。
+-   Shiny 主题。比如 shinythemes 包 可以统一配色，[dashboardthemes](https://github.com/nik01010/dashboardthemes) 提供更加深度的主题，[shinytableau](https://github.com/rstudio/shinytableau) 提供仿 [Tableau](https://www.tableau.com/) 的 dashboard 框架。[sass](https://github.com/rstudio/sass) 在 CSS 样式层面重定义风格。
+-   Shiny 权限。[shinymanager](https://github.com/datastorm-open/shinymanager) 支持单个 shiny 应用的权限管理，[firebase](https://github.com/JohnCoene/firebase) 提供访问权限设置 <https://firebase.john-coene.com/>。
+-   Shiny 框架。[ShinyStudio](https://github.com/clevr-dev/ShinyStudio) 打造基于容器架构的协作开发环境的开源解决方案，[golem](https://github.com/ThinkR-open/golem) 构建企业级 shiny 应用的框架，[RinteRface](https://github.com/RinteRface) 开发的系列 R 包也试图打造一套完整的解决方案，并配有速查小抄 [cheatsheets](https://github.com/RinteRface/cheatsheets)。
+-   Shiny 部署。[shiny-server](https://github.com/rstudio/shiny-server) 以网络服务的方式支持 shiny 应用，[shinyproxy](https://github.com/openanalytics/shinyproxy) 提供企业级部署 shiny 应用的开源解决方案。
+
+Shiny 生态非常庞大，资源非常丰富。
+
+-   Shiny 入门 <https://shiny.posit.co/r/getstarted/shiny-basics/lesson1/index.html>
+-   Shiny 扩展包 <https://github.com/nanxstats/awesome-shiny-extensions>。
+-   Shiny 常用技巧和提示 <https://github.com/daattali/advanced-shiny>。
+-   Shiny 各类资源列表 <https://github.com/grabear/awesome-rshiny>。
+
+特别值得一提，Shiny 方面的三本专著。
+
+-   Hadley Wickham 的书 [Mastering Shiny](https://mastering-shiny.org/)
+-   Colin Fay, Sébastien Rochette, Vincent Guyader, Cervan Girard 的书 [Engineering Production-Grade Shiny Apps](https://engineering-shiny.org/)
+-   David Granjon 的书[Outstanding User Interfaces with Shiny](https://unleash-shiny.rinterface.com/)。
