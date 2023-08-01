@@ -66,6 +66,7 @@ RUN dnf -y install texlive-sourcecodepro \
    texlive-animate \
    texlive-media9 \
    texlive-pgfplots \
+   texlive-smartdiagram \
    texlive-tikz-network \
  && dnf clean all
 
