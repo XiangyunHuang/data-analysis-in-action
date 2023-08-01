@@ -176,12 +176,12 @@ TikZ 是 TikZ ist kein Zeichenprogramm 的简写，命名有 Linux 哲学意味�
 \begin{tikzpicture}
 \begin{axis}[
     hide axis,
-    colormap/viridis,
+    colormap/viridis
 ]
 \addplot3[
     mesh,
     samples=50,
-    domain=-8:8,
+    domain=-8:8
 ]
 { sin(deg(sqrt(x^2+y^2)))/sqrt(x^2+y^2) };
 \addlegendentry{$\frac{\sin(r)}{r}$}
@@ -198,12 +198,12 @@ TikZ 是 TikZ ist kein Zeichenprogramm 的简写，命名有 Linux 哲学意味�
 \begin{tikzpicture}
 \begin{axis}[
     hide axis,
-    colormap/jet,
+    colormap/jet
 ]
 \addplot3[
     mesh,
     samples=50,
-    domain=-8:8,
+    domain=-8:8
 ]
 { sin(deg(sqrt(x^2+y^2)))/sqrt(x^2+y^2) };
 \addlegendentry{$\frac{\sin(r)}{r}$}
@@ -211,9 +211,33 @@ TikZ 是 TikZ ist kein Zeichenprogramm 的简写，命名有 Linux 哲学意味�
 \end{tikzpicture}
 ```
 
--   `\begin{axis}` 和 `\end{axis}` 环境，参数 `[hide axis, colormap/viridis,]` 表示隐藏坐标轴，三维图形的调色板采用 viridis 。
--   `\addplot3` 绘制函数 `sin(deg(sqrt(x^2+y^2)))/sqrt(x^2+y^2)` ，即函数 $f(x,y)=\frac{\sin(\sqrt{x^2 + y^2})}{\sqrt{x^2 + y^2}}$ 的三维图像。参数 `[mesh,samples=50,domain=-8:8,]` 表示三维图形是网格状，网格密度是 50，范围是 $[-8,8]$ 。
--   `\addlegendentry` 添加图例，图例标签是 $\frac{\sin(r)}{r}$ 。
+```{tikz}
+#| label: fig-tikz-cool
+#| fig-cap: TikZ 绘制三维图 cool 调色板
+#| engine-opts: !expr list(extra.preamble=c("\\usepackage{pgfplots}","\\pgfplotsset{width=7cm,compat=1.18}"))
+#| fig-width: 4
+
+\begin{tikzpicture}
+\begin{axis}[
+    hide axis,
+    colormap/cool,
+    colorbar sampled,
+    domain=-8:8
+]
+\addplot3[
+    contour filled={
+      number=20,
+    },
+    ]{sin(deg(sqrt(x^2+y^2)))/sqrt(x^2+y^2)};
+\addlegendentry{$\frac{\sin(r)}{r}$}
+\end{axis}
+\end{tikzpicture}
+```
+
+-   `\begin{axis}` 和 `\end{axis}` 环境有很多配置选项，参数值 `[hide axis, colormap/viridis]` 中 `hide axis` 表示隐藏坐标轴，`colormap/viridis` 表示三维图形的调色板采用 viridis 。`colormap` 支持很多不同的调色板，上面列举了两个。其实还可以增加不同的选项，比如添加选项 `colorbar sampled` 会生成一个颜色条。
+-   可以在导言区加载 `\usetikzlibrary{pgfplots.colorbrewer}` 导入 ColorBrewer 系列调色板，方便后续绘图时调用。作用与 R 语言中的 RColorBrewer 包类似，调色板名称略有不同，前者 `PuBu-9` 对应后者 `PuBu` 。
+-   `\addplot3` 命令绘制函数 `sin(deg(sqrt(x^2+y^2)))/sqrt(x^2+y^2)` 的三维图像，即函数 $f(x,y)=\frac{\sin(\sqrt{x^2 + y^2})}{\sqrt{x^2 + y^2}}$ 的三维图像。参数值 `[mesh, samples=50, domain=-8:8]` 中 `mesh` 表示三维图形是网格状，其它可选值还有曲面图 `surf` 、填充等值线图 `contour filled` 等，`samples=50` 表示网格密度是 50，`domain=-8:8` 表示横纵坐标的范围都是 $[-8,8]$ 。
+-   `\addlegendentry` 添加图例，图例标签是 $\frac{\sin(r)}{r}$ ，颜色会随着调色板变化。
 
 ## 网络图 {#sec-tikz-network}
 
