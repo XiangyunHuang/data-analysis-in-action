@@ -1249,7 +1249,7 @@ ggplot(G20, aes(
 
 ### 量表图 {#sec-likert-scale}
 
-展示调查研究中的用户态度。量表在市场调查，问卷调查，App 用户体验反馈等方面应用十分广泛，已经成为调查研究中的黄金标准。量表由心理学家 Rensis Likert 于 1932 年提出 [@Likert1932]，[Likert Scale](https://en.wikipedia.org/wiki/Likert_scale) 就是以他的名字命名的。
+展示调查研究中的用户态度。量表在市场调查，问卷调查，App 用户体验反馈等方面应用十分广泛，已经成为调查研究中的金标准。量表由心理学家 Rensis Likert 于 1932 年提出 [@Likert1932]，[Likert Scale](https://en.wikipedia.org/wiki/Likert_scale) 就是以他的名字命名的。
 
 量表在互联网产品中应用非常广泛，比如美团App里消息页面中的反馈框，用以收集用户使用产品的体验情况，如 @tbl-info-feedback 所示，从极其困难到极其方便，将用户反馈分成7个等级，目的是收集用户的反馈，以期改善产品的体验。
 
@@ -1267,12 +1267,12 @@ ggplot(G20, aes(
 4.  Agree（同意），
 5.  Strongly agree（强烈同意）。
 
-Jason M. Bryer 开发了一个 R 包[**likert**](https://github.com/jbryer/likert)，特别适合调查研究数据可视化，将研究对象的态度以直观有效的方式展示出来，内置多个数据集，其中 @tbl-math-anxiety 是一个数学焦虑量表调查的结果，调查数据来自统计课上的 20 个学生。
+Jason M. Bryer 开发了一个 R 包 [**likert**](https://github.com/jbryer/likert)，特别适合调查研究数据可视化，将研究对象的态度以直观有效的方式展示出来，内置多个数据集，其中 @tbl-math-anxiety 是一个数学焦虑量表调查的结果，调查数据来自统计课上的 20 个学生。
 
 调查对象是 78 个来自不同学科的本科生，样本含有 36 个男性和 42 个女性，64% 的样本的年龄在 18 至 24 岁，36% 的样本年龄 25 岁及以上。更多数据背景信息 [@Bai2009]。
 
 | 观点                                                                      | 强烈反对 | 反对 | 中立 | 同意 | 强烈同意 |
-|:----------------------------------|-------:|-------:|-------:|-------:|-------:|
+|:---------------|----------:|----------:|----------:|----------:|----------:|
 | I find math interesting.                                                  |       10 |   15 |   10 |   35 |       30 |
 | I get uptight during math tests.                                          |       10 |   20 |   20 |   25 |       25 |
 | I think that I will use math in the future.                               |        0 |    0 |   20 |   25 |       55 |
@@ -1301,7 +1301,6 @@ Jason M. Bryer 开发了一个 R 包[**likert**](https://github.com/jbryer/liker
 
 # 数据来自 likert 包
 MathAnxiety <- readRDS(file = "data/MathAnxiety.rds")
-
 # 宽转长格式
 MathAnxiety_df <- reshape(data = MathAnxiety, 
     varying = c(
@@ -1319,12 +1318,56 @@ MathAnxiety_df <- reshape(data = MathAnxiety,
   direction = "long"
  )
 
-ggplot(data = MathAnxiety_df, aes(x = Numbers, y = Item, fill = Attitude)) +
-  geom_col(position = "fill") +
+ggplot(data = MathAnxiety_df, aes(x = Numbers, y = Item)) +
+  geom_col(aes(fill = Attitude), position = "fill") +
   scale_x_continuous(labels = scales::label_percent()) +
   scale_y_discrete(labels = scales::label_wrap(25)) +
   theme_classic() +
   labs(x = "占比", y = "问题", fill = "态度")
 ```
 
-**ggstats** 包的函数 `gglikert()` 适合对明细的调查数据绘图，而 **likert** 包的函数 `likert()` 适合对聚合的调查数据绘图。
+[**likert**](http://github.com/jbryer/likert) 包的函数 `likert()` 适合对聚合的调查数据绘图。
+
+```{r}
+#| label: fig-likert-math
+#| fig-width: 7
+#| fig-height: 5
+#| eval: false
+#| echo: true
+#| fig-cap: Likert 图
+
+library(likert)
+lmath <- likert(summary = MathAnxiety)
+plot(lmath)
+```
+
+而 [**ggstats**](https://github.com/larmarange/ggstats/) 包的函数 `gglikert()` 适合对明细的调查数据绘图。下面模拟一次调查收集到的数据，共计 150 人回答 6 个问题，每个问题都有 5 个候选项构成。
+
+```{r}
+library(ggstats)
+likert_levels <- c("强烈反对", "反对", "中立", "同意", "强烈同意")
+set.seed(2023)
+library(data.table)
+df <- data.table(
+  q1 = sample(likert_levels, 150, replace = TRUE),
+  q2 = sample(likert_levels, 150, replace = TRUE, prob = 5:1),
+  q3 = sample(likert_levels, 150, replace = TRUE, prob = 1:5),
+  q4 = sample(likert_levels, 150, replace = TRUE, prob = 1:5),
+  q5 = sample(c(likert_levels, NA), 150, replace = TRUE),
+  q6 = sample(likert_levels, 150, replace = TRUE, prob = c(1, 0, 1, 1, 0))
+)
+fkt <- paste0("q", 1:6)
+df[, (fkt) := lapply(.SD, factor, levels = likert_levels), .SDcols = fkt]
+```
+
+一个调查问卷共有 6 个题目，150 个人对 6 个问题的回答构成一个数据框 `df` 。
+
+```{r}
+#| label: fig-likert-fake
+#| fig-cap: Likert 图
+#| fig-width: 5
+#| fig-height: 5
+#| fig-showtext: true
+
+gglikert(df)
+```
