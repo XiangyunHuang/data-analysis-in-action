@@ -10,7 +10,7 @@ options(tinytex.engine = "xetex")
 
 TikZ 绘图的优势有很多，语法简单、易于上手、功能强大、资源丰富、成熟稳定等，可以说几乎是集所有优点于一身。正因如此，**knitr** 包和 **tikzDevice** 包将其引入 R 语言社区中。**knitr** 包的 `tikz` 引擎是用来编译 TikZ 代码的，默认使用的是 standalone 文类。
 
-R 语言绘图遇到公式时，略显不足，而排版公式是 LaTeX 的优势。正因为有所不足，所以我也不会纠结于工具层面的东西，什么好用用什么！三维图 @fig-tikz-plot3d 是用 LaTeX 里的优秀绘图工具 TikZ 制作的，细心的读者会发现本书多次用到这个工具。
+R 语言绘图遇到公式时，略显不足，而排版公式是 LaTeX 的优势。正因为有所不足，所以我也不会纠结于工具层面的东西，什么好用用什么！三维图 @fig-tikz-viridis 是用 LaTeX 里的优秀绘图工具 TikZ 制作的，细心的读者会发现本书多次用到这个工具。
 
 ## standalone 宏包 {#sec-tikz-standalone}
 
@@ -168,20 +168,20 @@ TikZ 是 TikZ ist kein Zeichenprogramm 的简写，命名有 Linux 哲学意味�
 首先加载 pgfplots 宏包，设置全局的绘图参数，`width=7cm` 表示绘图页面宽度，`compat=1.18` 表示使用 pgfplots 的版本。
 
 ```{tikz}
-#| label: fig-tikz-plot3d
-#| fig-cap: TikZ 绘制三维图
+#| label: fig-tikz-viridis
+#| fig-cap: TikZ 绘制三维图 viridis 调色板
 #| engine-opts: !expr list(extra.preamble=c("\\usepackage{pgfplots}","\\pgfplotsset{width=7cm,compat=1.18}"))
-#| fig-width: 5
+#| fig-width: 4
 
 \begin{tikzpicture}
 \begin{axis}[
     hide axis,
-    colormap/viridis,
+    colormap/viridis
 ]
 \addplot3[
     mesh,
     samples=50,
-    domain=-8:8,
+    domain=-8:8
 ]
 { sin(deg(sqrt(x^2+y^2)))/sqrt(x^2+y^2) };
 \addlegendentry{$\frac{\sin(r)}{r}$}
@@ -189,9 +189,55 @@ TikZ 是 TikZ ist kein Zeichenprogramm 的简写，命名有 Linux 哲学意味�
 \end{tikzpicture}
 ```
 
--   `\begin{axis}` 和 `\end{axis}` 环境，参数 `[hide axis, colormap/viridis,]` 表示隐藏坐标轴，三维图形的调色板采用 viridis 。
--   `\addplot3` 绘制函数 `sin(deg(sqrt(x^2+y^2)))/sqrt(x^2+y^2)` ，即函数 $f(x,y)=\frac{\sin(\sqrt{x^2 + y^2})}{\sqrt{x^2 + y^2}}$ 的三维图像。参数 `[mesh,samples=50,domain=-8:8,]` 表示三维图形是网格状，网格密度是 50，范围是 $[-8,8]$ 。
--   `\addlegendentry` 添加图例，图例标签是 $\frac{\sin(r)}{r}$ 。
+```{tikz}
+#| label: fig-tikz-jet
+#| fig-cap: TikZ 绘制三维图 jet 调色板
+#| engine-opts: !expr list(extra.preamble=c("\\usepackage{pgfplots}","\\pgfplotsset{width=7cm,compat=1.18}"))
+#| fig-width: 4
+
+\begin{tikzpicture}
+\begin{axis}[
+    hide axis,
+    colormap/jet
+]
+\addplot3[
+    mesh,
+    samples=50,
+    domain=-8:8
+]
+{ sin(deg(sqrt(x^2+y^2)))/sqrt(x^2+y^2) };
+\addlegendentry{$\frac{\sin(r)}{r}$}
+\end{axis}
+\end{tikzpicture}
+```
+
+```{tikz}
+#| label: fig-tikz-cool
+#| fig-cap: TikZ 绘制三维图 cool 调色板
+#| engine-opts: !expr list(extra.preamble=c("\\usepackage{pgfplots}","\\pgfplotsset{width=7cm,compat=1.18}"))
+#| fig-width: 5
+
+\begin{tikzpicture}
+\begin{axis}[
+    hide axis,
+    colormap/cool,
+    colorbar sampled,
+    domain=-8:8
+]
+\addplot3[
+    contour filled={
+      number=20,
+    },
+    ]{sin(deg(sqrt(x^2+y^2)))/sqrt(x^2+y^2)};
+\addlegendentry{$\frac{\sin(r)}{r}$}
+\end{axis}
+\end{tikzpicture}
+```
+
+-   `\begin{axis}` 和 `\end{axis}` 环境有很多配置选项，参数值 `[hide axis, colormap/viridis]` 中 `hide axis` 表示隐藏坐标轴，`colormap/viridis` 表示三维图形的调色板采用 viridis 。`colormap` 支持很多不同的调色板，上面列举了两个。其实还可以增加不同的选项，比如添加选项 `colorbar sampled` 会生成一个颜色条，还可以添加选项 `colorbar horizontal` 来水平放置颜色条。
+-   可以在导言区加载 `\usetikzlibrary{pgfplots.colorbrewer}` 导入 [ColorBrewer](https://colorbrewer2.org/) 系列调色板，方便后续绘图时调用。作用与 R 语言中的 **RColorBrewer** 包类似，调色板名称略有不同，前者 `PuBu-9` 对应后者 `PuBu` 。
+-   `\addplot3` 命令绘制函数 `sin(deg(sqrt(x^2+y^2)))/sqrt(x^2+y^2)` 的三维图像，即函数 $f(x,y)=\frac{\sin(\sqrt{x^2 + y^2})}{\sqrt{x^2 + y^2}}$ 的三维图像。参数值 `[mesh, samples=50, domain=-8:8]` 中 `mesh` 表示三维图形是网格状，其它可选值还有曲面图 `surf` 、填充等值线图 `contour filled` 等，`samples=50` 表示网格密度是 50，`domain=-8:8` 表示横纵坐标的范围都是 $[-8,8]$ 。
+-   `\addlegendentry` 添加图例，图例标签是 $\frac{\sin(r)}{r}$ ，颜色会随着调色板变化。
 
 ## 网络图 {#sec-tikz-network}
 
@@ -317,3 +363,40 @@ TikZ 是 TikZ ist kein Zeichenprogramm 的简写，命名有 Linux 哲学意味�
 ```
 
 第一个子节点，颜色为饱和的紫色 DarkMagenta，二级子节点为「数据准备」，三级子节点有 4 个，逆时针 120 度的位置设置第一个三级子节点「数据对象」，然后顺时针往下，依次是「数据获取」、「数据清洗」和「数据操作」。
+
+## SmartArt 图 {#sec-smart-diagram}
+
+Office 办公软件中有一个 SmartArt 绘图模块，专门用来绘制各类示意图。LaTeX 宏包 [smartdiagram](https://ctan.org/pkg/smartdiagram) 基于 TikZ 定制了一套风格类似的绘图库。 smartdiagram 宏包的主要绘图命令是 `\smartdiagram[参数值]` ，设置不同的参数值可以绘制不同的图形，如气泡图 `bubble diagram` 和描述图 `descriptive diagram` 等。
+
+```{tikz}
+#| label: fig-smartdiagram-bubble
+#| fig-cap: 气泡图
+#| fig-width: 4
+#| fig-height: 4
+#| engine-opts: !expr list(extra.preamble=c("\\usepackage[fontset=fandol]{ctex}","\\usepackage{smartdiagram}"))
+
+\smartdiagram[bubble diagram]{
+  Pandoc,
+  编程语言~\\ (Python\\R/Julia\\JavaScript), 
+  编译引擎~\\ (Jupyter\\Knitr\\Observable), 
+  扩展Pandoc~\\ (交叉引用\\悬浮引用\\布局面板), 
+  文档项目~\\ (批量渲染\\共享配置),
+  扩展接口~\\ (RStudio\\VS Code\\JupyterLab) 
+}
+```
+
+```{tikz}
+#| label: fig-smartdiagram-descriptive
+#| fig-cap: 描述图
+#| fig-width: 4
+#| fig-height: 4
+#| engine-opts: !expr list(extra.preamble=c("\\usepackage[fontset=fandol]{ctex}","\\usepackage{smartdiagram}"))
+
+\smartdiagram[descriptive diagram]{
+  {编程语言, {Python、R、Julia、JavaScript}}, 
+  {编译引擎, {Jupyter、Knitr、Observable}}, 
+  {扩展Pandoc, {交叉引用、悬浮引用、布局面板}}, 
+  {文档项目, {批量渲染、共享配置}},
+  {扩展接口, {RStudio、VS Code、JupyterLab}},
+}
+```

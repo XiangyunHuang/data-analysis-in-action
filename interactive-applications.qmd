@@ -1,2 +1,604 @@
 # 交互应用 {#sec-interactive-applications}
 
+一个简单示例，介绍一个 Shiny 应用的各个常见组成部分。一个快速改变风格的主题包。介绍交互表格、交互图形与 Shiny 集成，如 **DT**、**plotly**、 **leaflet** 等。介绍 Shiny 工业化应用的开发过程。
+
+## 简单示例 {#sec-shiny-demo}
+
+```{r}
+#| eval: false
+
+library(shiny)
+
+ui <- fluidPage(
+  sliderInput(inputId = "n", label = "观测记录的数目", 
+              min = 1, max = nrow(faithful), value = 100),
+  plotOutput("plot")
+)
+
+server <- function(input, output) {
+  output$plot <- renderPlot({
+    hist(faithful$eruptions[seq_len(input$n)],
+      breaks = 40,
+      main = "美国黄石公园喷泉",
+      xlab = "喷发持续时间"
+    )
+  })
+}
+
+shinyApp(ui, server)
+```
+
+### UI 前端 {#sec-shiny-ui}
+
+### Server 后端 {#sec-shiny-server}
+
+## Shiny 组件 {#sec-shiny-widget}
+
+组件又很多，下面想重点介绍 4 个，它们使用频次很高，很有代表性。
+
+### 筛选器 {#sec-widget-filter}
+
+单个筛选器、独立筛选器、筛选器联动
+
+### 输入框 {#sec-widget-input}
+
+数值型、文本型
+
+### 动作按钮 {#sec-widget-button}
+
+提交按钮、响应按钮
+
+### 书签 {#sec-widget-bookmark}
+
+书签记录输入状态，链接可以指向页面状态
+
+```{r}
+#| eval: false
+
+library(shiny)
+
+ui <- fluidPage(
+  sliderInput(inputId = "n", label = "观测记录的数目", 
+              min = 1, max = nrow(faithful), value = 100),
+  plotOutput("plot"),
+  bookmarkButton(id = "bookmark1", label = "书签", title = "记录、分享此时应用的状态")
+)
+
+server <- function(input, output) {
+  output$plot <- renderPlot({
+    hist(faithful$eruptions[seq_len(input$n)],
+      breaks = 40,
+      main = "美国黄石公园喷泉",
+      xlab = "喷发持续时间"
+    )
+  })
+}
+
+enableBookmarking(store = "url")
+shinyApp(ui, server)
+```
+
+## Shiny 扩展 {#sec-shiny-extensions}
+
+页面布局
+
+-   [shinydashboard](https://github.com/rstudio/shinydashboard) / [shinydashboardPlus](https://github.com/RinteRface/shinydashboardPlus) Shiny 应用
+-   [flexdashboard](https://github.com/rstudio/flexdashboard/) R Markdown 文档中制作 Shiny 应用
+-   [bs4Dash](https://github.com/RinteRface/bs4Dash)
+
+交互表格
+
+-   DT
+-   reactable
+
+交互图形
+
+-   plotly
+-   ggiraph
+
+### 页面布局 {#sec-shiny-layout}
+
+### 交互表格 {#sec-shiny-tables}
+
+下面在 Shiny 应用中插入 DT 包制作的交互表格
+
+```{r}
+#| eval: false
+
+# 前端
+library(shiny)
+ui <- fluidPage(
+  # 应用的标题名称
+  titlePanel("鸢尾花数据集"),
+  # 边栏
+  fluidRow(
+    column(12, DT::dataTableOutput("table"))
+  )
+)
+
+# 服务端
+server <- function(input, output, session) {
+  output$table <- DT::renderDataTable(iris,
+    options = list(
+      pageLength = 5, # 每页显示5行
+      initComplete = I("function(settings, json) {alert('Done.');}")
+    ), server = F
+  )
+}
+
+shinyApp(ui, server)
+```
+
+::: callout-important
+加载 shiny 包后再加载 DT 包，函数 `dataTableOutput()` 和`renderDataTable()` 显示冲突，因为两个 R 包都有这两个函数。在创建 shiny 应用的过程中，如果我们需要呈现动态表格，就需要使用 DT 包的 `DT::dataTableOutput()` 和 `DT::renderDataTable()` ，否则会报错，详见 <https://github.com/rstudio/shiny/issues/2653>。
+:::
+
+[reactable](https://github.com/glin/reactable) 基于 JS 库 [React Table](https://github.com/tannerlinsley/react-table) 提供交互式表格渲染，和 **shiny** 无缝集成，是替代 **DT** 的不二选择，在 app.R 用 reactable 包的 `reactableOutput()` 和 `renderReactable()` 函数替代 **shiny** 里面的 `dataTableOutput()` 和 `renderDataTable()`。 再也不用忍受 **DT** 和 **shiny** 的函数冲突了，且其覆盖测试达到 99%。
+
+```{r}
+library(shiny)
+```
+
+下面在 Shiny 应用中插入 **reactable** 包制作的交互表格
+
+```{r}
+#| eval: false
+
+library(shiny)
+library(reactable)
+
+ui <- fluidPage(
+  reactableOutput("table")
+)
+
+server <- function(input, output) {
+  output$table <- renderReactable({
+    reactable(iris,
+      filterable = TRUE, # 过滤
+      searchable = TRUE, # 搜索
+      showPageSizeOptions = TRUE, # 页面大小
+      pageSizeOptions = c(5, 10, 15), # 页面大小可选项
+      defaultPageSize = 10, # 默认显示10行
+      highlight = TRUE, # 高亮选择
+      striped = TRUE, # 隔行高亮
+      fullWidth = FALSE, # 默认不要全宽填充，适应数据框的宽度
+      defaultSorted = list(
+        Sepal.Length = "asc", # 由小到大排序
+        Petal.Length = "desc" # 由大到小
+      ),
+      columns = list(
+        Sepal.Width = colDef(style = function(value) { 
+          # Sepal.Width 添加颜色标记
+          if (value > 3.5) {
+            color <- "#008000"
+          } else if (value > 2) {
+            color <- "#e00000"
+          } else {
+            color <- "#777"
+          }
+          list(color = color, fontWeight = "bold") # 字体加粗
+        })
+
+      )
+    )
+  })
+}
+
+shinyApp(ui, server)
+```
+
+除了 **DT** 和 **reactable** 包，其它支持 Shiny 集成的 R 包还有 [gt](https://github.com/rstudio/gt) 、[formattable](https://github.com/renkun-ken/formattable) 和 **kableExtra** 等。
+
+### 交互图形 {#sec-shiny-plots}
+
+**ggiraph** 包
+
+```{r}
+#| label: fig-ggiraph
+#| fig-cap: Shiny 应用中包含 ggiraph 创建的交互图形
+#| fig-width: 8
+#| fig-height: 4
+#| eval: !expr knitr::is_html_output(excludes = 'epub')
+#| echo: false
+
+knitr::include_app('https://xiangyun.shinyapps.io/01-iris-ggiraph/')
+```
+
+## Shiny 仪表盘 {#sec-shiny-dashboard}
+
+dashboard 翻译过来叫仪表盘，就是驾驶仓的那个玩意，形象地表达作为掌舵者应该关注的对象。R 包 shiny 出现后，仪表盘的制作显得非常容易，也很快形成了一个生态，比如 [shinydashboard](https://rstudio.github.io/shinydashboard)、 [flexdashboard](https://github.com/rstudio/flexdashboard) 等，此外 [bs4Dash](https://github.com/RinteRface/bs4Dash) 基于 Bootstrap 4 的仪表盘，目前 shiny 和 rmarkdown 都在向 Bootstrap 4 升级，这是未来的方向。 [shinydashboardPlus](https://github.com/RinteRface/shinydashboardPlus) 主要目的在于扩展 **shinydashboard** 包
+
+### shinydashboard 包
+
+将如下内容保存为 app.R 文件。
+
+```{r}
+#| eval: false
+
+library(shiny)
+library(shinydashboard)
+ui <- dashboardPage(
+  dashboardHeader(title = "Basic dashboard"),
+  ## 边栏
+  dashboardSidebar(
+    sidebarMenu(
+      menuItem("Dashboard", tabName = "dashboard", icon = icon("dashboard")),
+      menuItem("Widgets", tabName = "widgets", icon = icon("th"))
+    )
+  ),
+  ## 主体内容
+  dashboardBody(
+    tabItems(
+      # 第一个 Tab 页内容
+      tabItem(
+        tabName = "dashboard",
+        fluidRow(
+          box(plotOutput("plot1", height = 250)),
+          box(
+            title = "Controls",
+            sliderInput("slider", "Number of observations:", 1, 100, 50)
+          )
+        )
+      ),
+
+      # 第二个 Tab 页内容
+      tabItem(
+        tabName = "widgets",
+        h2("Widgets tab content")
+      )
+    )
+  )
+)
+
+server <- function(input, output) {
+  set.seed(122)
+  histdata <- rnorm(500)
+
+  output$plot1 <- renderPlot({
+    data <- histdata[seq_len(input$slider)]
+    hist(data)
+  })
+}
+
+shinyApp(ui, server)
+```
+
+### shinydashboardPlus 包
+
+**shinydashboardPlus** 包的函数 `descriptionBlock()`
+
+```{r}
+#| eval: false
+
+library(shiny)
+library(shinydashboard)
+library(shinydashboardPlus)
+
+shinyApp(
+  ui = dashboardPage(
+    dashboardHeader(),
+    dashboardSidebar(),
+    dashboardBody(
+      box(
+        solidHeader = FALSE,
+        title = "状态概览",
+        background = NULL,
+        width = 4,
+        status = "danger",
+        footer = fluidRow(
+          column(
+            width = 6,
+            descriptionBlock(
+              number = "17%",
+              numberColor = "green",
+              numberIcon = "fa fa-caret-up",
+              header = "$35,210.43",
+              text = "总收入",
+              rightBorder = TRUE,
+              marginBottom = FALSE
+            )
+          ),
+          column(
+            width = 6,
+            descriptionBlock(
+              number = "18%",
+              numberColor = "red",
+              numberIcon = "fa fa-caret-down",
+              header = "1200",
+              text = "目标完成",
+              rightBorder = FALSE,
+              marginBottom = FALSE
+            )
+          )
+        )
+      )
+    ),
+    title = "Description Blocks"
+  ),
+  server = function(input, output) { }
+)
+```
+
+### bs4Dash 包
+
+```{r}
+#| eval: false
+
+library(bs4Dash)
+ui <- dashboardPage(
+  dashboardHeader(title = "Basic dashboard"),
+  dashboardSidebar(),
+  dashboardBody(
+    # Boxes need to be put in a row (or column)
+    fluidRow(
+      box(plotOutput("plot1", height = 250)),
+      
+      box(
+        title = "Controls",
+        sliderInput("slider", "Number of observations:", 1, 100, 50)
+      )
+    )
+  )
+)
+
+server <- function(input, output) {
+  set.seed(122)
+  histdata <- rnorm(500)
+  
+  output$plot1 <- renderPlot({
+    data <- histdata[seq_len(input$slider)]
+    hist(data)
+  })
+}
+
+shinyApp(ui, server)
+```
+
+### miniUI 包
+
+**miniUI** 包制作迷你版 Shiny 应用，适用于小屏幕显示。
+
+```{r}
+#| eval: false
+
+library(shiny)
+library(miniUI)
+library(leaflet)
+library(ggplot2)
+
+ui <- miniPage(
+  gadgetTitleBar("Shiny gadget example"),
+  miniTabstripPanel(
+    miniTabPanel(title = "参数",
+      icon = icon("sliders"),
+      miniContentPanel(
+        sliderInput("year", "年份", 1978, 2010, c(2000, 2010), sep = "")
+      )
+    ),
+    miniTabPanel(title = "可视化",
+      icon = icon("area-chart"),
+      miniContentPanel(
+        plotOutput("quakes", height = "100%")
+      )
+    ),
+    miniTabPanel(title = "地图",
+      icon = icon("map-o"),
+      miniContentPanel(
+        padding = 0,
+        leafletOutput("map", height = "100%")
+      ),
+      miniButtonBlock(
+        actionButton("resetMap", "Reset")
+      )
+    ),
+    miniTabPanel(title = "数据",
+      icon = icon("table"),
+      miniContentPanel(
+        DT::dataTableOutput("table")
+      )
+    ),
+    selected = "Map"
+  )
+)
+
+server <- function(input, output, session) {
+  output$quakes <- renderPlot({
+    ggplot(quakes, aes(long, lat)) +
+      geom_point()
+  })
+
+  output$map <- renderLeaflet({
+    force(input$resetMap)
+
+    leaflet(quakes, height = "100%") |>
+      addTiles() |>
+      addMarkers(lng = ~long, lat = ~lat)
+  })
+
+  output$table <- DT::renderDataTable({
+    quakes
+  })
+
+  observeEvent(input$done, {
+    stopApp(TRUE)
+  })
+}
+
+shinyApp(ui, server)
+```
+
+## Shiny 主题 {#sec-shiny-themes}
+
+### bslib 包
+
+-   [bslib](https://github.com/rstudio/bslib)
+
+### shinymaterial 包
+
+[shinymaterial](https://github.com/ericrayanderson/shinymaterial) 包实现 Material Design
+
+```{r}
+#| eval: false
+
+library(shiny)
+library(shinymaterial)
+
+ui <- material_page(
+  title = "用户画像",
+  nav_bar_fixed = TRUE,
+  # 每个 sidebar 内容
+  material_side_nav(
+    fixed = TRUE,
+    # Place side-nav tabs within side-nav
+    material_side_nav_tabs(
+      side_nav_tabs = c(
+        "数据汇总" = "tab_1",
+        "趋势信息" = "tab_2"
+      ),
+      icons = c("cast", "insert_chart")
+    )
+  ),
+  # 每个 tab 页面的内容
+  material_side_nav_tab_content(
+    side_nav_tab_id = "tab_1",
+    tags$h2("第一个tab页")
+  ),
+  material_side_nav_tab_content(
+    side_nav_tab_id = "tab_2",
+    tags$h2("第二个tab页")
+  )
+)
+
+server <- function(input, output) {
+
+}
+shinyApp(ui = ui, server = server)
+```
+
+## Shiny 部署 {#sec-shiny-deployment}
+
+### promises 并发
+
+shiny 异步编程实现并发访问，多人同时访问 Shiny 应用的情况下，解决必须等另一个人完成访问的情况下才能继续访问的问题。
+
+```{r}
+#| eval: false
+
+library(shiny)
+library(future)
+library(promises)
+
+plan(multiprocess)
+
+ui <- fluidPage(
+  h2("测试异步下载"),
+  tags$ol(
+    tags$li("Verify that plot appears below"),
+    tags$li("Verify that pressing Download results in 5 second delay, then rock.csv being downloaded"),
+    tags$li("Check 'Throw on download?' checkbox and verify that pressing Download results in 5 second delay, then error, as well as stack traces in console")
+  ),
+  hr(),
+  checkboxInput("throw", "Throw on download?"),
+  downloadButton("download", "下载 (等待5秒)"),
+  plotOutput("plot")
+)
+
+server <- function(input, output, session) {
+  output$download <- downloadHandler("rock.csv", function(file) {
+    future({Sys.sleep(5)}) %...>%
+      {
+        if (input$throw) {
+          stop("boom")
+        } else {
+          write.csv(rock, file)
+        }
+      }
+  })
+
+  output$plot <- renderPlot({
+    plot(cars)
+  })
+}
+
+shinyApp(ui, server)
+```
+
+## Shiny 替代品 {#sec-shiny-alternative}
+
+R Markdown 文档
+
+-   crosstalk 交互
+-   flexdashboard 布局
+-   DT 交互表格
+-   leaflet 交互地图
+-   ggiraph 交互图形
+
+Quarto 文档
+
+## Shiny 案例 {#sec-shiny-showcases}
+
+-   [radiant](https://github.com/radiant-rstats/radiant) 探索性数据分析解决方案
+
+## 总结 {#sec-shiny-summary}
+
+```{r}
+#| label: shiny-nomnoml
+#| eval: false
+#| echo: false
+# 截图
+# 安装 nomnoml install.packages("nomnoml")
+# 安装 PhantomJS brew install --cask phantomjs 
+nomnoml::nomnoml(" 
+#stroke: #26A63A
+#.box: dashed visual=ellipse
+#direction: down
+
+[<box>HTML]       -> [网页三剑客]
+[<box>JavaScript] -> [网页三剑客]
+[<box>CSS]        -> [<table>网页三剑客|htmlwidgets|htmltools||sass|bslib||thematic|jquerylib]
+
+[设计布局|bs4Dash|flexdashboard|shinydashboard] -> [<actor>开发应用|R Shiny]
+[设计交互|waiter|shinyFeedback|shinyToastify] -> [<actor>开发应用|R Shiny]
+[权限代理|shinyproxy|shinyauthr|shinymanager] -> [<actor>开发应用|R Shiny]
+
+[网页三剑客]  -> [<actor>开发应用|R Shiny]
+[网页三剑客]  -> [<actor>开发应用|R Shiny]
+[网页三剑客]  -> [<actor>开发应用|R Shiny]
+
+[开发应用] <- [<table>处理数据|Base R|SQL||data.table|dplyr||tidyr|purrr]
+[开发应用] <- [<table>制作表格|DT|gt||reactable|formattable||kableExtra|sparkline]
+[开发应用] <- [<table>制作图形|ggplot2|plotly||echarts4r|leaflet||dygraphs|visNetwork]
+", png = "shiny-app.png")
+```
+
+```{r}
+#| label: fig-shiny-ecosystem
+#| fig-cap: Shiny 生态系统
+#| echo: false
+
+knitr::include_graphics(path = "screenshots/shiny-app.png")
+```
+
+-   连接数据库。根据数据库的情况选择相应的 R 接口包，比如连接 MySQL 数据库可以用 RMySQL 包，值得一提， odbc 包支持连接相当多的数据库。
+-   数据操作。根据需要处理的数据规模，可以选择 Base R、 data.table 或者 dplyr 做数据操作，推荐和管道操作一起使用，增加代码可读性。
+-   交互表格。推荐 reactable 和 DT 包做数据呈现。
+-   交互图形。推荐功能强大的 plotly 包，可以先用 [ggplot2](https://github.com/tidyverse/ggplot2) 绘制，然后调用 [plotly](https://github.com/ropensci/plotly) 包的 `ggplotly()` 函数将静态图转化为交互图。
+-   针对特定应用场景的其它交互可视化工具包，比如 [leaflet](https://github.com/rstudio/leaflet) 可以将地图嵌入 Shiny 应用， [dygraphs](https://github.com/rstudio/dygraphs) 可以将时间序列塞进去。
+-   Shiny 组件。[shinyFeedback](https://github.com/merlinoa/shinyFeedback) 提供用户输入的反馈。[shinyWidgets](https://github.com/dreamRs/shinyWidgets) 提供自定义 widget 的功能。
+-   Shiny 主题。比如 shinythemes 包 可以统一配色，[dashboardthemes](https://github.com/nik01010/dashboardthemes) 提供更加深度的主题，[shinytableau](https://github.com/rstudio/shinytableau) 提供仿 [Tableau](https://www.tableau.com/) 的 dashboard 框架。[sass](https://github.com/rstudio/sass) 在 CSS 样式层面重定义风格。
+-   Shiny 权限。[shinymanager](https://github.com/datastorm-open/shinymanager) 支持单个 shiny 应用的权限管理，[firebase](https://github.com/JohnCoene/firebase) 提供访问权限设置 <https://firebase.john-coene.com/>。
+-   Shiny 框架。[ShinyStudio](https://github.com/clevr-dev/ShinyStudio) 打造基于容器架构的协作开发环境的开源解决方案，[golem](https://github.com/ThinkR-open/golem) 构建企业级 shiny 应用的框架，[RinteRface](https://github.com/RinteRface) 开发的系列 R 包也试图打造一套完整的解决方案，并配有速查小抄 [cheatsheets](https://github.com/RinteRface/cheatsheets)。
+-   Shiny 部署。[shiny-server](https://github.com/rstudio/shiny-server) 以网络服务的方式支持 shiny 应用，[shinyproxy](https://github.com/openanalytics/shinyproxy) 提供企业级部署 shiny 应用的开源解决方案。
+
+Shiny 生态非常庞大，资源非常丰富。
+
+-   Shiny 入门 <https://shiny.posit.co/r/getstarted/>。
+-   Shiny 扩展包 <https://github.com/nanxstats/awesome-shiny-extensions>。
+-   Shiny 常用技巧和提示 <https://github.com/daattali/advanced-shiny>。
+-   Shiny 各类资源列表 <https://github.com/grabear/awesome-rshiny>。
+
+特别值得一提，Shiny 方面的三本专著。
+
+-   Hadley Wickham 的书 [Mastering Shiny](https://mastering-shiny.org/)。
+-   Colin Fay, Sébastien Rochette, Vincent Guyader, Cervan Girard 的书 [Engineering Production-Grade Shiny Apps](https://engineering-shiny.org/)。
+-   David Granjon 的书 [Outstanding User Interfaces with Shiny](https://unleash-shiny.rinterface.com/)。

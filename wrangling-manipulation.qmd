@@ -105,54 +105,177 @@ dbDisconnect(conn = conn)
 
 ### 筛选 {#sec-select}
 
-subset / `[`
+筛选操作可以用函数 `subset()` 或 `[` 实现
+
+```{r}
+subset(iris, subset = Species == "setosa" & Sepal.Length > 5.5, select = c("Sepal.Length", "Sepal.Width"))
+```
+
+```{r}
+iris[iris$Species == "setosa" & iris$Sepal.Length > 5.5, c("Sepal.Length", "Sepal.Width")]
+```
 
 ### 变换 {#sec-transform}
 
-最常见的变换操作是类型转化，比如从字符串型转为因子型、整型或日期型等。
+变换操作可以用函数 `within()`/`transform()` 实现。最常见的变换操作是类型转化，比如从字符串型转为因子型、整型或日期型等。
 
-within/transform
+```{r}
+# iris2 <- transform(iris, Species_N = as.integer(Species))[1:3, ]
+iris2 <- within(iris, {
+  Species_N <- as.integer(Species)
+})
+str(iris2)
+```
 
 ### 排序 {#sec-order}
 
-order
+排序操作可以用函数 `order()` 实现
+
+```{r}
+iris[order(iris$Sepal.Length, decreasing = FALSE)[1:3], ]
+```
 
 ### 聚合 {#sec-aggregation}
 
-aggregate
+聚合操作可以用函数 `aggregate()` 实现
+
+```{r}
+aggregate(iris, Sepal.Length ~ Species, mean)
+```
 
 ### 合并 {#sec-merge}
 
-merge
+两个数据框的合并操作可以用函数 `merge()` 实现
+
+```{r}
+df1 <- data.frame(a1 = c(1, 2, 3), a2 = c("A", "B", "C"))
+df2 <- data.frame(b1 = c(2, 3, 4), b2 = c("A", "B", "D"))
+# LEFT JOIN
+merge(x = df1, y = df2, by.x = "a2", by.y = "b2", all.x = TRUE)
+# RIGHT JOIN
+merge(x = df1, y = df2, by.x = "a2", by.y = "b2", all.y = TRUE)
+# INNER JOIN
+merge(x = df1, y = df2, by.x = "a2", by.y = "b2", all = FALSE)
+# FULL JOIN
+merge(x = df1, y = df2, by.x = "a2", by.y = "b2", all = TRUE)
+```
 
 ### 重塑 {#sec-reshape}
 
-reshape
+将数据集从宽格式转为长格式，可以用函数 `reshape()` 实现，反之，亦然。
 
-分组 split / lapply / do.call / Reduce
+```{r}
+# 长格式
+df3 <- data.frame(
+  extra = c(0.7, -1.6, -0.2, -1.2, -0.1, 3.4),
+  group = c("A", "A", "A", "B", "B", "B"),
+  id = c(1, 2, 3, 1, 2, 3)
+)
+# 长转宽
+reshape(df3, direction = "wide", timevar = "group", idvar = "id")
+# 也可以指定组合变量的列名
+reshape(df3, direction = "wide", timevar = "group", idvar = "id",
+        v.names = "extra", sep = "_")
+```
+
+提取并整理分组线性回归系数。函数 `split()` 将数据集 iris 按分类变量 Species 拆分成列表， 函数 `lapply()` 将线性回归操作 `lm()` 应用于列表的每一个元素上，再次用函数 `lapply()` 将函数 `coef()` 应用于线性回归后的列表上，提取回归系数，用函数 `do.call()` 将系数合并成矩阵，最后，用函数`as.data.frame()` 转化成数据框。
+
+```{r}
+s1 <- split(iris, ~Species)
+s2 <- lapply(s1, lm, formula = Sepal.Length ~ Sepal.Width)
+s3 <- lapply(s2, coef)
+s4 <- do.call("rbind", s3)
+s5 <- as.data.frame(s4)
+s5
+do.call(
+  "rbind",
+  lapply(
+    lapply(
+      split(iris, ~Species), lm,
+      formula = Sepal.Length ~ Sepal.Width
+    ),
+    coef
+  )
+)
+```
 
 ## data.table 操作 {#sec-data-table}
 
 掌握此等基础性的工具，再去了解新工具也不难，更重要的是，只要将一种工具掌握的足够好，也就足以应付绝大多数的情况。
 
-1.  介绍 data.table 基础语法，对标 Base R，介绍基础操作，同时给出等价的 dplyr 实现，但不运行代码。
+1.  介绍 **data.table** 基础语法，对标 Base R，介绍基础操作，同时给出等价的 **dplyr** 实现，但不运行代码。
 
-2.  data.table 扩展 Base R 数据操作，介绍常用的操作 8 个，讲清楚出现的具体场景，同时给出等价的 dplyr 实现，但不运行代码。
+2.  **data.table** 扩展 Base R 数据操作，介绍常用的操作 8 个，讲清楚出现的具体场景，同时给出等价的 dplyr 实现，但不运行代码。
 
-3.  data.table 特有的高级数据操作 on .SD .I .J 等。
+3.  **data.table** 特有的高级数据操作 `on`、`.SD` 、`.I` 、`.J` 等。
 
 ### 筛选 {#sec-dt-select}
 
-`[`
+data.table 扩展了函数 `[` 功能，简化 `iris$Species == "setosa"` 代码 `Species == "setosa"`
+
+```{r}
+iris_dt[Species == "setosa" & Sepal.Length > 5.5, c("Sepal.Length", "Sepal.Width")]
+```
 
 ### 变换 {#sec-dt-transform}
 
-`:`
+变换操作可以用函数 `:=`
+
+```{r}
+iris_dt[, Species_N := as.integer(Species)]
+str(iris_dt)
+```
 
 ### 排序 {#sec-dt-order}
 
+排序操作可以用函数 `order()`
+
+```{r}
+iris_dt[order(Sepal.Length, decreasing = FALSE)[1:3], ]
+```
+
 ### 聚合 {#sec-dt-aggregate}
+
+聚合操作用函数 `.()` 和 `by` 组合
+
+```{r}
+iris_dt[, .(mean = mean(Sepal.Length)), by = "Species"]
+```
+
+### 合并 {#sec-dt-merge}
+
+合并操作也是用函数 `merge()` 来实现。
+
+```{r}
+dt1 <- data.table(a1 = c(1, 2, 3), a2 = c("A", "B", "C"))
+dt2 <- data.table(b1 = c(2, 3, 4), b2 = c("A", "B", "D"))
+# LEFT JOIN
+merge(x = dt1, y = dt2, by.x = "a2", by.y = "b2", all.x = TRUE)
+# RIGHT JOIN
+merge(x = dt1, y = dt2, by.x = "a2", by.y = "b2", all.y = TRUE)
+# INNER JOIN
+merge(x = dt1, y = dt2, by.x = "a2", by.y = "b2", all = FALSE)
+# FULL JOIN
+merge(x = dt1, y = dt2, by.x = "a2", by.y = "b2", all = TRUE)
+```
 
 ### 重塑 {#sec-dt-reshape}
 
-### 合并 {#sec-dt-merge}
+将数据集从宽格式转为长格式，可以用函数 `dcast()` 实现，反之，可以用函数 `melt()` 实现。
+
+```{r}
+# 长格式
+dt3 <- data.table(
+  extra = c(0.7, -1.6, -0.2, -1.2, -0.1, 3.4),
+  group = c("A", "A", "A", "B", "B", "B"),
+  id = c(1, 2, 3, 1, 2, 3)
+)
+# 长转宽
+dcast(dt3, id ~ group, value.var = "extra")
+```
+
+类似 Base R，也用 **data.table** 来实现 iris 分组线性回归
+
+```{r}
+iris_dt[, as.list(coef(lm(Sepal.Length ~ Sepal.Width))), by = "Species"]
+```
