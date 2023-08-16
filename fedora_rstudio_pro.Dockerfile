@@ -9,6 +9,7 @@ LABEL org.label-schema.license="GPL-3.0" \
       maintainer="Xiangyun Huang <xiangyunfaith@outlook.com>"
 
 ARG QUARTO_VERSION=1.2.280
+ARG CMDSTAN_VERSION=2.32.2
 ARG GITHUB_PAT=abc123
 
 # System dependencies required for R packages
@@ -123,6 +124,14 @@ RUN mkdir -p /opt/.virtualenvs/r-tensorflow \
   && source $RETICULATE_PYTHON_ENV/bin/activate \
   && pip install -r requirements.txt \
   && deactivate
+
+# Setup CmdStan
+RUN curl -fLo cmdstan-${CMDSTAN_VERSION}.tar.gz https://github.com/stan-dev/cmdstan/releases/download/v${CMDSTAN_VERSION}/cmdstan-${CMDSTAN_VERSION}.tar.gz \
+  && mkdir -p /opt/cmdstan/ \
+  && chown -R $(whoami):staff /opt/cmdstan/ \
+  && tar -xzf cmdstan-${CMDSTAN_VERSION}.tar.gz -C /opt/cmdstan/ \
+  && make build -C /opt/cmdstan/cmdstan-${CMDSTAN_VERSION} \
+  && rm cmdstan-${CMDSTAN_VERSION}.tar.gz
 
 # Setup locale and timezone
 ENV LANG=en_US.UTF-8 \
