@@ -106,7 +106,7 @@ RUN ln -s /usr/lib64/R/library/littler/examples/install.r /usr/bin/install.r \
 COPY DESCRIPTION DESCRIPTION
 COPY desc_pkgs.txt desc_pkgs.txt
 RUN dnf -y copr enable iucar/cran \
-  && dnf -y install R-CoprManager \
+  && dnf -y install --setopt=tsflags=nocrypto --nogpgcheck R-CoprManager \
   && dnf -y install $(cat desc_pkgs.txt) \
   && dnf clean all \
   && install2.r showtextdb showtext \
