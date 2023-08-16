@@ -106,12 +106,9 @@ RUN ln -s /usr/lib64/R/library/littler/examples/install.r /usr/bin/install.r \
 COPY DESCRIPTION DESCRIPTION
 COPY desc_pkgs.txt desc_pkgs.txt
 RUN dnf -y copr enable iucar/cran \
-  && mv /usr/lib64/R/etc/Rprofile.site /usr/lib64/R/etc/Rprofile.site.bkp \
-  && dnf clean all \
   && dnf -y install R-CoprManager \
   && dnf -y install $(cat desc_pkgs.txt) \
   && dnf clean all \
-  && mv /usr/lib64/R/etc/Rprofile.site.bkp /usr/lib64/R/etc/Rprofile.site.d/00-repos.site \
   && install2.r showtextdb showtext \
   && export GITHUB_PAT=${GITHUB_PAT} \
   && export DOWNLOAD_STATIC_LIBV8=1 \
