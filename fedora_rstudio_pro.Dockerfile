@@ -1,4 +1,4 @@
-FROM registry.fedoraproject.org/fedora:38 AS fedora-rstudio
+FROM ghcr.io/enchufa2/r-copr:38 AS fedora-rstudio
 
 RUN groupadd staff \
   && useradd -g staff -d /home/docker docker
@@ -12,7 +12,6 @@ ARG QUARTO_VERSION=1.2.280
 
 # System dependencies required for R packages
 RUN dnf -y upgrade \
-  && echo "install_weak_deps=False" >> /etc/dnf/dnf.conf \
   && sed -i 's/tsflags=nodocs/tsflags=/g' /etc/dnf/dnf.conf \
   && dnf -y install dnf-plugins-core \
   && dnf -y install R-core \
