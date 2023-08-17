@@ -1,4 +1,4 @@
-FROM fedora:38
+FROM registry.fedoraproject.org/fedora:38 AS fedora-rstudio
 
 RUN groupadd staff \
   && useradd -g staff -d /home/docker docker
@@ -9,8 +9,6 @@ LABEL org.label-schema.license="GPL-3.0" \
       maintainer="Xiangyun Huang <xiangyunfaith@outlook.com>"
 
 ARG QUARTO_VERSION=1.2.280
-ARG CMDSTAN_VERSION=2.32.2
-ARG GITHUB_PAT=abc123
 
 # System dependencies required for R packages
 RUN dnf -y upgrade \
@@ -102,6 +100,23 @@ RUN ln -s /usr/lib64/R/library/littler/examples/install.r /usr/bin/install.r \
  && ln -s /opt/quarto/quarto-${QUARTO_VERSION}/bin/tools/pandoc /usr/bin/pandoc \
  && rm -f quarto.tar.gz
 
+# Setup locale and timezone
+ENV LANG=en_US.UTF-8 \
+    LANGUAGE=en_US.UTF-8 \
+    LC_ALL=en_US.UTF-8 \
+    TZ=UTC
+
+WORKDIR /home/docker/
+
+EXPOSE 8787/tcp
+
+CMD [ "/sbin/init" ]
+
+FROM fedora-rstudio AS fedora-rstudio-pro
+
+ARG CMDSTAN_VERSION=2.32.2
+ARG GITHUB_PAT=abc123
+
 # Install Extra R Packages
 COPY DESCRIPTION DESCRIPTION
 COPY desc_pkgs.txt desc_pkgs.txt
@@ -132,15 +147,3 @@ RUN curl -fLo cmdstan-${CMDSTAN_VERSION}.tar.gz https://github.com/stan-dev/cmds
   && tar -xzf cmdstan-${CMDSTAN_VERSION}.tar.gz -C /opt/cmdstan/ \
   && make build -C /opt/cmdstan/cmdstan-${CMDSTAN_VERSION} \
   && rm cmdstan-${CMDSTAN_VERSION}.tar.gz
-
-# Setup locale and timezone
-ENV LANG=en_US.UTF-8 \
-    LANGUAGE=en_US.UTF-8 \
-    LC_ALL=en_US.UTF-8 \
-    TZ=UTC
-
-WORKDIR /home/docker/
-
-EXPOSE 8787/tcp
-
-CMD [ "/sbin/init" ]
