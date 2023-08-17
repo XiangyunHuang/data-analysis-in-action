@@ -1,0 +1,217 @@
+# 贝叶斯计算 {#sec-bayesian-computation}
+
+```{r}
+#| echo: false
+
+Sys.setenv(CMDSTANR_NO_VER_CHECK = TRUE)
+```
+
+## 广义线性模型 {#sec-poisson-cmdstanr}
+
+先介绍泊松广义线性模型，包括模拟和计算，并和 Stan 实现的结果比较。
+
+泊松广义线性模型如下：
+
+$$
+\begin{aligned}
+\log(\lambda) &= \beta_0 + \beta_1 x_1 + \beta_2 x_2 \\
+Y &\sim \mathrm{Poisson}(u\lambda)
+\end{aligned}
+$$
+
+设定参数向量 $\beta = (\beta_0, \beta_1, \beta_2) = (0.5, 0.3, 0.2)$，观测变量 $X_1$ 和 $X_2$ 的均值都为 0，协方差矩阵 $\Sigma$ 为
+
+$$
+\left[
+ \begin{matrix}
+   1.0 & 0.8  \\
+   0.8 & 1.0 
+ \end{matrix}
+\right]
+$$
+
+## 生成模拟数据
+
+模拟观测到的响应变量值和协变量值，添加漂移项
+
+```{r}
+set.seed(2023)
+n <- 2500 # 样本量
+beta <- c(0.5, 0.3, 0.2)
+X <- MASS::mvrnorm(n, mu = rep(0, 2), Sigma = matrix(c(1, 0.8, 0.8, 1), 2))
+u <- rep(c(2, 4), each = n / 2)
+lambda <- u * exp(cbind(1, X) %*% beta)
+y <- rpois(n, lambda = lambda)
+```
+
+拟合泊松回归模型
+
+```{r}
+fit_poisson_glm <- glm(y ~ X, family = poisson(link = "log"), offset = log(u))
+summary(fit_poisson_glm)
+```
+
+```{r}
+# 对数似然函数值
+log_poisson_lik <- logLik(fit_poisson_glm)
+# 计算 AIC AIC(fit_poisson_glm)
+-2 * c(log_poisson_lik) + 2 * attr(log_poisson_lik, "df")
+```
+
+## 拟合泊松模型
+
+下面准备数据
+
+```{r}
+nchains <- 4 # 4 条迭代链
+# 给每条链设置不同的参数初始值
+inits_data <- lapply(1:nchains, function(i) {
+  list(
+    alpha = runif(1, 0, 1),
+    beta = runif(2, 1, 10)
+  )
+})
+
+# 准备数据
+poisson_d <- list(
+  n = 2500, # 观测记录的条数
+  k = 2, # 协变量个数
+  X = X, # N x 2 矩阵
+  y = y, # N 向量
+  log_offset = log(u)
+)
+```
+
+编译模型，抽样获取参数的后验分布
+
+```{r}
+#| message: false
+
+# 加载 cmdstanr 包
+library(cmdstanr)
+# 编译模型
+mod_poisson <- cmdstan_model(
+  stan_file = "code/poisson_log_glm.stan",
+  compile = TRUE,
+  cpp_options = list(stan_threads = TRUE)
+)
+# 采样拟合模型
+fit_poisson_stan <- mod_poisson$sample(
+  data = poisson_d,   # 观测数据
+  init = inits_data,  # 迭代初值
+  iter_warmup = 1000, # 每条链预处理迭代次数
+  iter_sampling = 2000, # 每条链总迭代次数
+  chains = nchains,     # 马尔科夫链的数目
+  parallel_chains = 1,   # 指定 CPU 核心数，可以给每条链分配一个
+  threads_per_chain = 1, # 每条链设置一个线程
+  show_messages = FALSE, # 不显示迭代的中间过程
+  refresh = 0,    # 不显示采样的进度
+  seed = 20222022 # 设置随机数种子，不要使用 set.seed() 函数
+)
+# 迭代诊断
+fit_poisson_stan$diagnostic_summary()
+# 输出结果
+fit_poisson_stan$summary(c("alpha", "beta", "lp__"))
+```
+
+## 参数后验分布
+
+加载 **bayesplot** 包，可以将模型参数的后验分布图展示出来
+
+```{r}
+#| label: fig-dens
+#| fig-cap: 各个参数的分布图（密度图）
+#| fig-showtext: true
+#| fig-width: 5
+#| fig-height: 5
+#| message: false
+
+library(ggplot2)
+library(bayesplot)
+
+mcmc_dens(fit_poisson_stan$draws(c("beta[1]", "beta[2]")),
+  facet_args = list(
+    labeller = ggplot2::label_parsed, strip.position = "top", ncol = 1
+  )
+) +
+  theme_classic()
+```
+
+岭线图就是将各个参数的后验分布图放在一起。
+
+```{r}
+#| label: fig-ridges
+#| fig-cap: 各个参数的分布图（岭线图）
+#| fig-showtext: true
+#| fig-width: 5
+#| fig-height: 3
+#| message: false
+
+mcmc_areas_ridges(x = fit_poisson_stan$draws(), pars = c("alpha", "beta[1]", "beta[2]")) +
+  scale_y_discrete(labels = scales::parse_format()) +
+  theme_classic()
+```
+
+## 模型评估指标
+
+LOO-CV
+
+```{r}
+fit_poisson_loo <- fit_poisson_stan$loo(variables = "log_lik", cores = 2)
+print(fit_poisson_loo)
+```
+
+## **brms** 包
+
+对于常见的统计模型，**brms** 包都内置了预编译的 Stan 程序，下面用 **brms** 包的函数 `brm()` 拟合带上述漂移项的泊松广义线性模型，参数估计结果和 Base R 函数 `glm()` 的几乎一致，因编译和抽样的过程比较花费时间，速度不及 Base R。
+
+``` r
+# brms
+dat <- data.frame(y = y, X = X, u = u)
+colnames(dat) <- c("y", "x1", "x2", "u")
+fit_poisson_brm <- brms::brm(y ~ x1 + x2 + offset(log(u)),
+  data = dat, family = poisson(link = "log")
+)
+fit_poisson_brm
+```
+
+```         
+ Family: poisson 
+  Links: mu = log 
+Formula: y ~ x1 + x2 + offset(log(u)) 
+   Data: dat (Number of observations: 2500) 
+  Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
+         total post-warmup draws = 4000
+
+Population-Level Effects: 
+          Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+Intercept     0.49      0.01     0.47     0.51 1.00     2509     2171
+x1            0.29      0.01     0.26     0.32 1.00     1771     1645
+x2            0.21      0.01     0.19     0.24 1.00     1727     1847
+
+Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
+and Tail_ESS are effective sample size measures, and Rhat is the potential
+scale reduction factor on split chains (at convergence, Rhat = 1).
+```
+
+计算 LOO-CV
+
+``` r
+loo::loo(fit_poisson_brm)
+```
+
+```         
+Computed from 4000 by 2500 log-likelihood matrix
+
+         Estimate   SE
+elpd_loo  -5386.3 37.8
+p_loo         2.9  0.1
+looic     10772.6 75.5
+------
+Monte Carlo SE of elpd_loo is 0.0.
+
+All Pareto k estimates are good (k < 0.5).
+See help('pareto-k-diagnostic') for details.
+```
+
+looic 指标的作用类似 AIC 指标，所以也几乎相同的。

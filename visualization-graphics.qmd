@@ -192,9 +192,7 @@ text(x = 4, y = 6.5, labels = "flower", col = "#EA4335")
 #| fig-showtext: true
 #| par: true
 
-plot(
-  Sepal.Length ~ Sepal.Width, data = iris, col = Species, pch = 16
-)
+plot(Sepal.Length ~ Sepal.Width, data = iris, col = Species, pch = 16)
 legend(x = "topright", title = "Species",
   legend = unique(iris$Species), box.col = NA, bg = NA,
   pch = 16, col = c("#EA4335", "#4285f4", "#34A853")
@@ -489,6 +487,71 @@ filled.contour(
 ```
 
 ## 总结 {#sec-graphics-summary}
+
+### plot2 包 {#sec-graphics-plot2}
+
+[**plot2**](https://github.com/grantmcdermott/plot2) 包扩展 Base R 函数 `plot()` 的功能，在公式语法方面和 lattice 包很接近。另一个值得一提的 R 包是 [**basetheme**](https://github.com/karoliskoncevicius/basetheme) ，用来设置 Base R 绘图主题。
+
+```{r}
+#| label: fig-plot2-iris
+#| fig-cap: plot2 包绘制分组散点图
+#| fig-width: 6
+#| fig-height: 4
+#| fig-showtext: true
+#| par: true
+
+library(plot2)
+plot2(Sepal.Length ~ Sepal.Width | Species, data = iris, 
+      palette = "Tableau 10", pch = 16)
+```
+
+或者使用参数 `by` 指定分组变量，效果和上图一样。
+
+```{r}
+#| eval: false
+
+with(iris, {
+  plot2(y = Sepal.Length, x = Sepal.Width, by = Species,
+      palette = "Tableau 10", pch = 16)
+})
+```
+
+还可以使用参数 `legend` 调整图例的位置，比如放置在绘图区域下方。
+
+```{r}
+#| label: fig-plot2-legend
+#| fig-cap: plot2 包调整图例位置
+#| fig-width: 5
+#| fig-height: 5
+#| fig-showtext: true
+
+op <- par(mar = c(5, 4, .5, .5))
+plot2(Sepal.Length ~ Sepal.Width | Species,
+  data = iris, palette = "Tableau 10", pch = 16,
+  legend = legend("bottom!", title = "Species of iris", bty = "o")
+)
+on.exit(par(op), add = TRUE)
+```
+
+还可以绘制其它类型的图形，如分组密度曲线图等。
+
+```{r}
+#| label: fig-plot2-density
+#| fig-cap: plot2 包绘制密度曲线图
+#| fig-width: 5
+#| fig-height: 5
+#| fig-showtext: true
+
+with(iris, plot2(
+  density(Sepal.Length), by = Species,
+  bg = "by",   # 分组填充
+  grid = TRUE, # 背景网格
+  palette = "Tableau 10",
+  legend = list("topright", bty = "o") # 右上角图例
+))
+```
+
+### plot3D 包 {#sec-graphics-plot3D}
 
 虽然不提倡大量使用三维图形，但如何绘制三维图形却是生生不息的命题，以下仅是 R 语言社区的冰山一角。
 
