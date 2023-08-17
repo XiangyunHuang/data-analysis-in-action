@@ -120,7 +120,11 @@ ARG GITHUB_PAT=abc123
 # Install Extra R Packages
 COPY DESCRIPTION DESCRIPTION
 COPY desc_pkgs.txt desc_pkgs.txt
-RUN install2.r showtextdb showtext \
+RUN dnf -y copr enable iucar/cran \
+  && dnf -y install R-CoprManager \
+  && dnf -y install $(cat desc_pkgs.txt) \
+  && dnf clean all \
+  && install2.r showtextdb showtext \
   && export GITHUB_PAT=${GITHUB_PAT} \
   && export DOWNLOAD_STATIC_LIBV8=1 \
   && Rscript -e "remotes::install_deps('.', dependencies = TRUE)" \
@@ -134,8 +138,7 @@ RUN mkdir -p /opt/.virtualenvs/r-tensorflow \
   && virtualenv -p /usr/bin/python3 $RETICULATE_PYTHON_ENV \
   && source $RETICULATE_PYTHON_ENV/bin/activate \
   && pip install -r requirements.txt \
-  && deactivate \
-  && rm requirements.txt
+  && deactivate
 
 # Setup CmdStan
 RUN curl -fLo cmdstan-${CMDSTAN_VERSION}.tar.gz https://github.com/stan-dev/cmdstan/releases/download/v${CMDSTAN_VERSION}/cmdstan-${CMDSTAN_VERSION}.tar.gz \
