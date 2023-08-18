@@ -156,18 +156,62 @@ fit_poisson_stan$summary(c("alpha", "beta", "lp__"))
 
 ## 参数后验分布 {#sec-posterior-distribution}
 
-加载 **bayesplot** 包，可以将模型参数的后验分布图展示出来
+加载 **bayesplot** 包，$\beta_1$ 和 $\beta_2$ 的联合分布
 
 ```{r}
-#| label: fig-dens
-#| fig-cap: 各个参数的分布图（密度图）
+#| label: fig-stan-scatter
+#| fig-cap: $\beta_1$ 和 $\beta_2$ 的联合分布
 #| fig-showtext: true
-#| fig-width: 5
-#| fig-height: 5
+#| fig-width: 4
+#| fig-height: 4
 #| message: false
 
 library(ggplot2)
 library(bayesplot)
+mcmc_scatter(fit_poisson_stan$draws(c("beta[1]", "beta[2]"))) +
+  theme_classic() +
+  labs(x = expression(beta[1]), y = expression(beta[2]))
+```
+
+$\beta_1$ 和 $\beta_2$ 的热力图
+
+```{r}
+#| label: fig-stan-hex
+#| fig-cap: $\beta_1$ 和 $\beta_2$ 的热力图
+#| fig-showtext: true
+#| fig-width: 4
+#| fig-height: 4
+
+mcmc_hex(fit_poisson_stan$draws(c("beta[1]", "beta[2]"))) +
+  theme_classic() +
+  labs(x = expression(beta[1]), y = expression(beta[2]))
+```
+
+各个参数的轨迹图
+
+```{r}
+#| label: fig-stan-trace
+#| fig-cap: 各个参数的轨迹图
+#| fig-showtext: true
+#| fig-width: 5
+#| fig-height: 5
+
+mcmc_trace(fit_poisson_stan$draws(c("beta[1]", "beta[2]")),
+  facet_args = list(
+    labeller = ggplot2::label_parsed, strip.position = "top", ncol = 1
+  )
+) +
+  theme_classic()
+```
+
+可以将模型参数的后验分布图展示出来
+
+```{r}
+#| label: fig-stan-dens
+#| fig-cap: 各个参数的分布图（密度图）
+#| fig-showtext: true
+#| fig-width: 5
+#| fig-height: 5
 
 mcmc_dens(fit_poisson_stan$draws(c("beta[1]", "beta[2]")),
   facet_args = list(
@@ -180,21 +224,28 @@ mcmc_dens(fit_poisson_stan$draws(c("beta[1]", "beta[2]")),
 岭线图就是将各个参数的后验分布图放在一起。
 
 ```{r}
-#| label: fig-ridges
+#| label: fig-stan-ridges
 #| fig-cap: 各个参数的分布图（岭线图）
 #| fig-showtext: true
-#| fig-width: 5
+#| fig-width: 4
 #| fig-height: 3
 #| message: false
 
-mcmc_areas_ridges(x = fit_poisson_stan$draws(), pars = c("alpha", "beta[1]", "beta[2]")) +
+mcmc_areas_ridges(x = fit_poisson_stan$draws(), pars = c("beta[1]", "beta[2]")) +
   scale_y_discrete(labels = scales::parse_format()) +
   theme_classic()
 ```
 
 ## 模型评估指标 {#sec-model-evaluation}
 
-LOO-CV
+**loo** 包可以计算 WAIC
+
+```{r}
+fit_poisson_waic <- loo::waic(fit_poisson_stan$draws(variables = "log_lik"))
+print(fit_poisson_waic)
+```
+
+**loo** 包推荐使用 LOO-CV ，它还提供诊断信息、有效样本量和蒙特卡罗估计。
 
 ```{r}
 fit_poisson_loo <- fit_poisson_stan$loo(variables = "log_lik", cores = 2)
