@@ -162,7 +162,7 @@ fit_poisson_stan$summary(c("alpha", "beta", "lp__"))
 #| label: fig-stan-scatter
 #| fig-cap: $\beta_1$ 和 $\beta_2$ 的联合分布
 #| fig-showtext: true
-#| fig-width: 4
+#| fig-width: 5
 #| fig-height: 4
 #| message: false
 
@@ -179,7 +179,7 @@ $\beta_1$ 和 $\beta_2$ 的热力图
 #| label: fig-stan-hex
 #| fig-cap: $\beta_1$ 和 $\beta_2$ 的热力图
 #| fig-showtext: true
-#| fig-width: 4
+#| fig-width: 5.5
 #| fig-height: 4
 
 mcmc_hex(fit_poisson_stan$draws(c("beta[1]", "beta[2]"))) +
@@ -227,12 +227,35 @@ mcmc_dens(fit_poisson_stan$draws(c("beta[1]", "beta[2]")),
 #| label: fig-stan-ridges
 #| fig-cap: 各个参数的分布图（岭线图）
 #| fig-showtext: true
-#| fig-width: 4
-#| fig-height: 3
+#| fig-width: 5
+#| fig-height: 4
 #| message: false
 
 mcmc_areas_ridges(x = fit_poisson_stan$draws(), pars = c("beta[1]", "beta[2]")) +
   scale_y_discrete(labels = scales::parse_format()) +
+  theme_classic()
+```
+
+参数的 $\hat{R}$ 潜在尺度收缩因子
+
+```{r}
+bayesplot::rhat(fit_poisson_stan, pars = "alpha")
+```
+
+后验预测诊断的想法是检查根据拟合模型生成的随机数 $y^{rep}$ 与真实观测数据 $y$ 的接近程度。为直观起见，可以用一系列描述数据分布的图来可视化检验。
+
+y 是真实数据，yrep 是根据贝叶斯拟合模型生成的数据。下图是真实数据的密度图和50组生成数据的密度图。
+
+```{r}
+#| label: fig-stan-ppcheck
+#| fig-cap: 后验预测诊断图（密度图）
+#| fig-showtext: true
+#| fig-width: 5
+#| fig-height: 4
+
+# 抽取 yrep 数据
+yrep <- fit_poisson_stan$draws(variables = "y_rep", format = "draws_matrix")
+pp_check(y, yrep = yrep[1:50, ], fun = ppc_dens_overlay) +
   theme_classic()
 ```
 
@@ -306,6 +329,10 @@ See help('pareto-k-diagnostic') for details.
 ```
 
 looic 指标的作用类似 AIC 指标，所以也几乎相同的。
+
+``` r
+brms::pp_check(fit_poisson_brm)
+```
 
 ## 习题 {#sec-bayesian-exercises}
 
