@@ -39,35 +39,6 @@ RUN dnf -y install cargo \
  && echo 'docker:docker123' | chpasswd \
  && dnf clean all
 
-# Texlive dependencies required for Quarto Book project
-RUN dnf -y install texlive-sourcecodepro \
-   texlive-pdfcrop \
-   texlive-dvisvgm \
-   texlive-dvips \
-   texlive-dvipng \
-   texlive-draftwatermark \
-   texlive-ctex \
-   texlive-fandol \
-   texlive-xetex \
-   texlive-framed \
-   texlive-titling \
-   texlive-fira \
-   texlive-xetex-pstricks \
-   texlive-pst-arrow \
-   texlive-awesomebox \
-   texlive-fontawesome5 \
-   texlive-fontawesome \
-   texlive-newtx \
-   texlive-tcolorbox \
-   texlive-tocbibind \
-   texlive-standalone \
-   texlive-animate \
-   texlive-media9 \
-   texlive-pgfplots \
-   texlive-smartdiagram \
-   texlive-tikz-network \
- && dnf clean all
-
 # Setup R and RStudio Server Open Source
 RUN ln -s /usr/lib64/R/library/littler/examples/install.r /usr/bin/install.r \
  && ln -s /usr/lib64/R/library/littler/examples/install2.r /usr/bin/install2.r \
@@ -115,6 +86,35 @@ FROM fedora-rstudio AS fedora-rstudio-pro
 
 ARG CMDSTAN_VERSION=2.32.2
 ARG GITHUB_PAT=abc123
+
+# Texlive dependencies required for Quarto Book project
+RUN dnf -y install texlive-sourcecodepro \
+   texlive-pdfcrop \
+   texlive-dvisvgm \
+   texlive-dvips \
+   texlive-dvipng \
+   texlive-draftwatermark \
+   texlive-ctex \
+   texlive-fandol \
+   texlive-xetex \
+   texlive-framed \
+   texlive-titling \
+   texlive-fira \
+   texlive-xetex-pstricks \
+   texlive-pst-arrow \
+   texlive-awesomebox \
+   texlive-fontawesome5 \
+   texlive-fontawesome \
+   texlive-newtx \
+   texlive-tcolorbox \
+   texlive-tocbibind \
+   texlive-standalone \
+   texlive-animate \
+   texlive-media9 \
+   texlive-pgfplots \
+   texlive-smartdiagram \
+   texlive-tikz-network \
+ && dnf clean all
 
 # Install Extra R Packages
 COPY DESCRIPTION DESCRIPTION
