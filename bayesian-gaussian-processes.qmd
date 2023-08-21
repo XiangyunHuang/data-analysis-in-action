@@ -7,6 +7,12 @@ Sys.setenv(CMDSTANR_NO_VER_CHECK = TRUE)
 if(!dir.exists(paths = "data-raw/")) dir.create(path = "data-raw/")
 ```
 
+::: hidden
+$$
+ \def\bm#1{{\boldsymbol #1}}
+$$
+:::
+
 ## 多元正态分布 {#sec-multi-normal}
 
 设随机向量 $\bm{X} = (X_1, X_2, \cdots, X_p)^{\top}$ 服从多元正态分布 $\mathrm{MVN}(\bm{\mu}, \Sigma)$ ，其联合密度函数如下
@@ -83,6 +89,7 @@ simu_multi_normal$summary(.num_args = list(sigfig = 4, notation = "dec"))
 #| fig-width: 6
 #| fig-height: 4
 #| fig-showtext: true
+#| message: false
 
 library(ggplot2)
 library(bayesplot)
@@ -275,10 +282,169 @@ mcmc_pairs(
 
 ### 高斯过程模拟 {#sec-gaussian-processes-simulation}
 
-Stan 代码模拟
+二维高斯过程 $\mathcal{S}$ 的均值向量为 0 向量，自协方差函数为指数型，
+
+$$
+\sigma = 10, \phi = 1
+$$
+
+[Simulating from a Gaussian process](https://mc-stan.org/docs/stan-users-guide/simulating-from-a-gaussian-process.html)
+
+```{verbatim, file="code/gaussian_process_simu.stan", lang="stan"}
+```
+
+在二维均匀网格上采样，采样点数量为 81
+
+```{r}
+#| message: false
+
+n <- 15
+gaussian_process_d <- list(
+  N = n^2,
+  D = 2,
+  mu = rep(0, n^2),
+  sigma = 10,
+  phi = 1,
+  X = cbind(x1 = runif(n^2), x2 = runif(n^2))
+)
+# 编译二维高斯过程模型
+mod_gaussian_process_simu <- cmdstan_model(
+  stan_file = "code/gaussian_process_simu.stan",
+  compile = TRUE, cpp_options = list(stan_threads = TRUE)
+)
+```
+
+模拟 1 个样本，因为是模拟数据，不需要设置多条链。
+
+```{r}
+#| message: false
+
+fit_multi_normal_gp <- mod_gaussian_process_simu$sample(
+  data = gaussian_process_d,
+  iter_warmup = 500,       # 每条链预处理迭代次数
+  iter_sampling = 1000,    # 样本量
+  chains = 1,             # 马尔科夫链的数目
+  parallel_chains = 1,    # 指定 CPU 核心数
+  threads_per_chain = 1,  # 每条链设置一个线程
+  show_messages = FALSE,  # 不显示迭代的中间过程
+  refresh = 0,            # 不显示采样的进度
+  output_dir = "data-raw/",
+  seed = 20232023     # 设置随机数种子
+)
+```
+
+位置 1 和 2 处的随机变量的迭代轨迹，均值为 0 ，标准差 10 左右。
+
+```{r}
+#| label: fig-location-bayes
+#| fig-cap: 位置 1 和 2 处的迭代轨迹
+#| fig-showtext: true
+
+mcmc_trace(fit_multi_normal_gp$draws(c("y[1]", "y[2]")),
+  facet_args = list(
+    labeller = ggplot2::label_parsed,
+    strip.position = "top", ncol = 1
+  )
+) + theme_bw(base_size = 12)
+```
+
+位置 1 处的随机变量及其分布
+
+```{r}
+y1 <- fit_multi_normal_gp$draws(c("y[1]"))
+# 合并链条结果
+y1_mean <- apply(y1, c(1, 3), mean)
+# y[1] 的方差
+var(y1_mean)
+# y[1] 的标准差
+sd(y1_mean)
+```
+
+100 次迭代获得 100 个样本点，每次迭代采集一个样本点，每个样本点是一个 225 维的向量。
+
+```{r}
+# 抽取原始的采样数据
+y_array <- fit_multi_normal_gp$draws(variables = "y", format = "array")
+# 合并链条
+y_mean <- apply(y_array, c(1, 3), mean)
+```
+
+从 100 次迭代中任意提取某一个样本点，比如预采样之后的第一次下迭代的结果，接着整理数据。
+
+```{r}
+# 整理数据
+sim_gp_data <- cbind.data.frame(gaussian_process_d$X, ysim = y_mean[1, ])
+```
+
+绘制二维高斯过程图形。
+
+```{r}
+#| label: fig-2d-gp-bayes
+#| fig-cap: 二维高斯过程
+#| fig-width: 6.5
+#| fig-height: 4
+#| fig-showtext: true
+
+ggplot(data = sim_gp_data, aes(x = x1, y = x2)) +
+  geom_point(aes(color = ysim)) +
+  scale_color_distiller(palette = "Spectral") +
+  theme_bw() +
+  labs(x = expression(x[1]), y = expression(x[2]))
+```
 
 ### 高斯过程拟合 {#sec-gaussian-processes-fitted}
 
-Stan 代码拟合
+复用 R 模拟二维高斯过程的数据，按照 Stan 官网给出的拟合代码，效率极低。
+
+```{r}
+#| message: false
+
+# 二维高斯过程模型
+gaussian_process_d <- list(
+  D = 2,
+  N = nrow(sim_gp_data), # 观测记录的条数
+  x = sim_gp_data[, c("x1", "x1")],
+  y = sim_gp_data[, "ysim"]
+)
+
+nchains <- 2
+set.seed(20232023)
+# 给每条链设置不同的参数初始值
+inits_gaussian_process <- lapply(1:nchains, function(i) {
+  list(
+    sigma = runif(1),
+    phi = runif(1)
+  )
+})
+
+# 编译模型
+mod_gaussian_process <- cmdstan_model(
+  stan_file = "code/gaussian_process_fitted.stan",
+  compile = TRUE, cpp_options = list(stan_threads = TRUE)
+)
+
+# 拟合二维高斯过程
+fit_gaussian_process <- mod_gaussian_process$sample(
+  data = gaussian_process_d, # 观测数据
+  init = inits_gaussian_process, # 迭代初值
+  iter_warmup = 1000, # 每条链预处理迭代次数
+  iter_sampling = 2000, # 每条链总迭代次数
+  chains = nchains, # 马尔科夫链的数目
+  parallel_chains = 2, # 指定 CPU 核心数，可以给每条链分配一个
+  threads_per_chain = 2, # 每条链设置一个线程
+  show_messages = FALSE, # 不显示迭代的中间过程
+  refresh = 0, # 不显示采样的进度
+  output_dir = "data-raw/",
+  seed = 20232023 # 设置随机数种子，不要使用 set.seed() 函数
+)
+# 诊断
+fit_gaussian_process$diagnostic_summary()
+```
+
+输出结果
+
+```{r}
+fit_gaussian_process$summary()
+```
 
 ## 高斯过程回归 {#sec-gaussian-processes-regression}
