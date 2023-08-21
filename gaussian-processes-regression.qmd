@@ -293,7 +293,7 @@ $$
 ```{verbatim, file="code/gaussian_process_simu.stan", lang="stan"}
 ```
 
-在二维均匀网格上采样，采样点数量为 81
+在二维规则网格上采样，采样点数量为 225
 
 ```{r}
 #| message: false
@@ -305,7 +305,7 @@ gaussian_process_d <- list(
   mu = rep(0, n^2),
   sigma = 10,
   phi = 1,
-  X = cbind(x1 = runif(n^2), x2 = runif(n^2))
+  X = expand.grid(x1 = 1:n / n, x2 = 1:n / n)
 )
 # 编译二维高斯过程模型
 mod_gaussian_process_simu <- cmdstan_model(
@@ -351,7 +351,7 @@ mcmc_trace(fit_multi_normal_gp$draws(c("y[1]", "y[2]")),
 位置 1 处的随机变量及其分布
 
 ```{r}
-y1 <- fit_multi_normal_gp$draws(c("y[1]"))
+y1 <- fit_multi_normal_gp$draws(c("y[1]"), format = "draws_array")
 # 合并链条结果
 y1_mean <- apply(y1, c(1, 3), mean)
 # y[1] 的方差
@@ -502,11 +502,11 @@ rongelap_poisson_d <- list(
 library(sf)
 library(abind)
 library(stars)
-
+# 类型转化
 rongelap_sf <- st_as_sf(rongelap, coords = c("cX", "cY"), dim = "XY")
 rongelap_coastline_sf <- st_as_sf(rongelap_coastline, coords = c("cX", "cY"), dim = "XY")
 rongelap_coastline_sfp <- st_cast(st_combine(st_geometry(rongelap_coastline_sf)), "POLYGON")
-
+# 添加缓冲区
 rongelap_coastline_buffer <- st_buffer(rongelap_coastline_sfp, dist = 50)
 # 构造带边界约束的网格
 rongelap_coastline_grid <- st_make_grid(rongelap_coastline_buffer, n = c(150, 75))
@@ -516,8 +516,7 @@ rongelap_coastline_buffer <- st_as_sf(rongelap_coastline_buffer)
 rongelap_grid <- rongelap_coastline_grid[rongelap_coastline_buffer, op = st_intersects]
 # 计算网格中心点坐标
 rongelap_grid_centroid <- st_centroid(rongelap_grid)
-
-# 1612 个点
+# 共计 1612 个预测点
 rongelap_grid_df <- as.data.frame(st_coordinates(rongelap_grid_centroid))
 colnames(rongelap_grid_df) <- c("cX", "cY")
 ```
