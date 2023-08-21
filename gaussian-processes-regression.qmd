@@ -1,4 +1,4 @@
-# 贝叶斯高斯过程回归 {#sec-bayesian-gaussian-processes}
+# 高斯过程回归 {#sec-bayesian-gaussian-processes}
 
 ```{r}
 #| echo: false
@@ -448,3 +448,174 @@ fit_gaussian_process$summary()
 ```
 
 ## 高斯过程回归 {#sec-gaussian-processes-regression}
+
+### 模型介绍
+
+根据 ${}^{137}\mathrm{Cs}$ 放出伽马射线，在 $n=157$ 个采样点，分别以时间间隔 $t_i$ 测量辐射量 $y(x_i)$，建立泊松型空间广义线性混合效应模型[@Diggle1998]。
+
+$$
+\begin{aligned}
+\log\{\lambda(x_i)\} & =  \beta + S(x_{i})\\
+y(x_{i}) &\sim \mathrm{Poisson}\big(t_i\lambda(x_i)\big)
+\end{aligned}
+$$
+
+其中，$\beta$ 表示截距，相当于平均水平，$\lambda(x_i)$ 表示位置 $x_i$ 处的辐射强度，$S(x_{i})$ 表示位置 $x_i$ 处的空间效应，$S(x),x \in \mathcal{D} \subset{\mathbb{R}^2}$ 是二维平稳空间高斯过程 $\mathcal{S}$ 的具体实现。 $\mathcal{D}$ 表示研究区域，可以理解为朗格拉普岛，它是二维实平面 $\mathbb{R}^2$ 的子集。
+
+随机过程 $S(x)$ 的自协方差函数常用的有指数型、幂二次指数型（高斯型）和梅隆型，形式如下：
+
+$$
+\begin{aligned}
+\mathsf{Cov}\{S(x_i), S(x_j)\} &= \sigma^2 \exp\big( -\frac{\|x_i -x_j\|_{2}}{\phi} \big) \\
+\mathsf{Cov}\{ S(x_i), S(x_j) \} &= \sigma^2 \exp\big( -\frac{\|x_i -x_j\|_{2}^{2}}{2\phi^2} \big) \\
+\mathsf{Cov}\{ S(x_i), S(x_j) \} &= \sigma^2 \frac{2^{1 - \nu}}{\Gamma(\nu)}
+\left(\sqrt{2\nu}\frac{\|x_i -x_j\|_{2}}{\phi}\right)^{\nu}
+K_{\nu}\left(\sqrt{2\nu}\frac{\|x_i -x_j\|_{2}}{\phi}\right) \\
+K_{\nu}(x) &= \int_{0}^{\infty}\exp(-x \cosh t) \cosh (\nu t) \mathrm{dt}
+\end{aligned}
+$$
+
+待估参数：代表方差的 $\sigma^2$ 和代表范围的 $\phi$ 。当 $\nu = 1/2$ 时，梅隆型退化为指数型。
+
+### 观测数据
+
+```{r}
+# 加载数据
+rongelap <- readRDS(file = "data/rongelap.rds")
+rongelap_coastline <- readRDS(file = "data/rongelap_coastline.rds")
+
+# 泊松对数模型
+rongelap_poisson_d <- list(
+  N = nrow(rongelap), # 观测记录的条数
+  D = 2, # 2 维坐标
+  X = rongelap[, c("cX", "cY")] / 6000, # N x 2 矩阵
+  y = rongelap$counts, # 响应变量
+  offsets = rongelap$time # 漂移项
+)
+```
+
+### 预测数据
+
+```{r}
+#| message: false
+
+library(sf)
+library(abind)
+library(stars)
+
+rongelap_sf <- st_as_sf(rongelap, coords = c("cX", "cY"), dim = "XY")
+rongelap_coastline_sf <- st_as_sf(rongelap_coastline, coords = c("cX", "cY"), dim = "XY")
+rongelap_coastline_sfp <- st_cast(st_combine(st_geometry(rongelap_coastline_sf)), "POLYGON")
+
+rongelap_coastline_buffer <- st_buffer(rongelap_coastline_sfp, dist = 50)
+# 构造带边界约束的网格
+rongelap_coastline_grid <- st_make_grid(rongelap_coastline_buffer, n = c(150, 75))
+# 将 sfc 类型转化为 sf 类型
+rongelap_coastline_grid <- st_as_sf(rongelap_coastline_grid)
+rongelap_coastline_buffer <- st_as_sf(rongelap_coastline_buffer)
+rongelap_grid <- rongelap_coastline_grid[rongelap_coastline_buffer, op = st_intersects]
+# 计算网格中心点坐标
+rongelap_grid_centroid <- st_centroid(rongelap_grid)
+
+# 1612 个点
+rongelap_grid_df <- as.data.frame(st_coordinates(rongelap_grid_centroid))
+colnames(rongelap_grid_df) <- c("cX", "cY")
+```
+
+`rongelap_grid_df` 即为需要预测核辐射强度的位置
+
+### 初始数据
+
+泊松对数模型
+
+```{r}
+set.seed(20232023)
+nchains <- 2 # 2 条迭代链
+
+inits_data_poisson <- lapply(1:nchains, function(i) {
+  list(
+    beta = rnorm(1),
+    sigma = runif(1),
+    phi = runif(1),
+    lambda = rnorm(157)
+  )
+})
+```
+
+### 模型编码
+
+$$
+\begin{aligned}
+\beta &\sim \text{std_normal}(0,1) \\
+\sigma &\sim \text{inv_gamma}(5,5) \\
+\phi &\sim \text{half_std_normal}(0,1) \\
+\bm{\lambda} &\sim \text{multivariate_normal}(\bm{\beta}, \sigma^2 \Sigma+ \delta^2 I) \\
+\bm{y} &\sim \text{poisson_log}(\log(\text{offsets})+\bm{\lambda})
+\end{aligned}
+$$
+
+其中，$\beta,\sigma,\phi,\delta,\Sigma,I$ 的含义同前，$\lambda$ 代表辐射强度，$\text{offsets}$ 代表漂移项，这里是时间段，$\bm{y}$ 表示观测的辐射粒子数，$\text{poisson_log}$ 表示泊松分布的对数参数化，将频率参数 rate 的对数 $\lambda$ 作为参数，详见 Stan 函数手册中泊松分布的[对数函数表示](https://mc-stan.org/docs/functions-reference/poisson-distribution-log-parameterization.html)。
+
+```{verbatim, file="code/rongelap_poisson_processes.stan", lang="stan"}
+```
+
+```{r}
+#| message: false
+
+mod_rongelap_poisson <- cmdstan_model(
+  stan_file = "code/rongelap_poisson_processes.stan",
+  compile = TRUE, cpp_options = list(stan_threads = TRUE)
+)
+# 泊松对数模型
+fit_rongelap_poisson <- mod_rongelap_poisson$sample(
+  data = rongelap_poisson_d, # 观测数据
+  init = inits_data_poisson,    # 迭代初值
+  iter_warmup = 500,    # 每条链预处理迭代次数
+  iter_sampling = 1000, # 每条链总迭代次数
+  chains = nchains,     # 马尔科夫链的数目
+  parallel_chains = 2,  # 指定 CPU 核心数，可以给每条链分配一个
+  threads_per_chain = 2, # 每条链设置一个线程
+  show_messages = FALSE, # 不显示迭代的中间过程
+  refresh = 0,    # 不显示采样的进度
+  output_dir = "data-raw/",
+  seed = 20232023
+)
+# 诊断
+fit_rongelap_poisson$diagnostic_summary()
+```
+
+```{r}
+# 泊松对数模型
+fit_rongelap_poisson$summary(
+  variables = c("lp__", "beta", "sigma", "phi"),
+  .num_args = list(sigfig = 3, notation = "dec")
+)
+```
+
+```{r}
+#| label: fig-rongelap-poisson-trace
+#| fig-cap: $\sigma$ 和 $\phi$ 的迭代轨迹
+#| fig-showtext: true
+
+# 参数的迭代轨迹
+mcmc_trace(fit_rongelap_poisson$draws(c("sigma", "phi")),
+           facet_args = list(
+             labeller = ggplot2::label_parsed,
+             strip.position = "top", ncol = 1
+           )
+) + theme_bw(base_size = 12)
+```
+
+```{r}
+#| label: fig-rongelap-poisson-dens
+#| fig-cap: $\sigma$ 和 $\phi$ 的后验分布
+#| fig-showtext: true
+
+# 参数的后验分布
+mcmc_dens(fit_rongelap_poisson$draws(c("sigma", "phi")),
+          facet_args = list(
+            labeller = ggplot2::label_parsed,
+            strip.position = "top", ncol = 1
+          )
+) + theme_bw(base_size = 12)
+```
