@@ -524,6 +524,10 @@ colnames(rongelap_grid_df) <- c("cX", "cY")
 
 `rongelap_grid_df` 即为需要预测核辐射强度的位置
 
+```{r}
+head(rongelap_grid_df)
+```
+
 ### 初始数据
 
 泊松对数模型
@@ -544,17 +548,19 @@ inits_data_poisson <- lapply(1:nchains, function(i) {
 
 ### 模型编码
 
+指定各个参数 $\beta,\sigma,\phi$ 的先验分布
+
 $$
 \begin{aligned}
-\beta &\sim \text{std_normal}(0,1) \\
-\sigma &\sim \text{inv_gamma}(5,5) \\
-\phi &\sim \text{half_std_normal}(0,1) \\
-\bm{\lambda} &\sim \text{multivariate_normal}(\bm{\beta}, \sigma^2 \Sigma+ \delta^2 I) \\
-\bm{y} &\sim \text{poisson_log}(\log(\text{offsets})+\bm{\lambda})
+\beta  &\sim \mathrm{std\_normal}(0,1) \\
+\sigma &\sim \mathrm{inv\_gamma}(5,5) \\
+\phi   &\sim \mathrm{half\_std\_normal}(0,1) \\
+\bm{\lambda} &\sim \mathrm{multivariate\_normal}(\bm{\beta}, \sigma^2 \Sigma + \delta^2 I) \\
+\bm{y} &\sim \mathrm{poisson\_log}\big(\log(\text{offsets})+\bm{\lambda}\big)
 \end{aligned}
 $$
 
-其中，$\beta,\sigma,\phi,\delta,\Sigma,I$ 的含义同前，$\lambda$ 代表辐射强度，$\text{offsets}$ 代表漂移项，这里是时间段，$\bm{y}$ 表示观测的辐射粒子数，$\text{poisson_log}$ 表示泊松分布的对数参数化，将频率参数 rate 的对数 $\lambda$ 作为参数，详见 Stan 函数手册中泊松分布的[对数函数表示](https://mc-stan.org/docs/functions-reference/poisson-distribution-log-parameterization.html)。
+其中，$\beta,\sigma,\phi,\delta,\Sigma,I$ 的含义同前，$\lambda$ 代表辐射强度，$\text{offsets}$ 代表漂移项，这里是时间段，$\bm{y}$ 表示观测的辐射粒子数，$\mathrm{poisson\_log}$ 表示泊松分布的对数参数化，将频率参数 rate 的对数 $\lambda$ 作为参数，详见 Stan 函数手册中泊松分布的[对数函数表示](https://mc-stan.org/docs/functions-reference/poisson-distribution-log-parameterization.html)。
 
 ```{verbatim, file="code/rongelap_poisson_processes.stan", lang="stan"}
 ```
