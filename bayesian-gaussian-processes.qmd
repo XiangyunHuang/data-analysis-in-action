@@ -1,0 +1,284 @@
+# 贝叶斯高斯过程回归 {#sec-bayesian-gaussian-processes}
+
+```{r}
+#| echo: false
+
+Sys.setenv(CMDSTANR_NO_VER_CHECK = TRUE)
+if(!dir.exists(paths = "data-raw/")) dir.create(path = "data-raw/")
+```
+
+## 多元正态分布 {#sec-multi-normal}
+
+设随机向量 $\bm{X} = (X_1, X_2, \cdots, X_p)^{\top}$ 服从多元正态分布 $\mathrm{MVN}(\bm{\mu}, \Sigma)$ ，其联合密度函数如下
+
+$$
+\begin{aligned}
+  p(\boldsymbol x) = (2\pi)^{-\frac{p}{2}} |\Sigma|^{-\frac12}
+    \exp\left\{ -\frac12 (\boldsymbol x - \boldsymbol \mu)^T \Sigma^{-1} (\boldsymbol x - \boldsymbol \mu) \right\},
+  \ \boldsymbol x \in \mathbb{R}^p
+\end{aligned}
+$$
+
+其中，协方差矩阵 $\Sigma$ 是正定的，其 Cholesky 分解为 $\Sigma = CC^{\top}$ ，这里 $C$ 为下三角矩阵。设 $\bm{Z} = (Z_1, Z_2, \cdots, Z_p)^{\top}$ 服从 $p$ 元标准正态分布 $\mathrm{MVN}(\bm{0}, I)$ ，则 $\bm{X} = \bm{\mu} + C\bm{Z}$ 服从多元正态分布 $\mathrm{MVN}(\bm{\mu}, \Sigma)$ 。
+
+### 多元正态分布模拟 {#sec-multi-normal-simu}
+
+可以用 Stan 函数 `multi_normal_cholesky_rng` 生成随机数模拟多元正态分布。
+
+```{verbatim, file="code/multi_normal_simu.stan", lang="stan"}
+```
+
+上述代码块可以同时模拟多组服从多元正态分布的随机数。其中，参数块 `parameters` 和模型块 `model` 是空白的，这是因为模拟随机数不涉及模型推断，只是采样。核心部分 `generated quantities` 代码块负责生成随机数。
+
+```{r}
+#| message: false
+
+# 给定二元正态分布的参数值
+multi_normal_d <- list(
+  N = 1, # 一组随机数
+  D = 2, # 维度
+  mu = c(3, 2), # 均值向量
+  Sigma = rbind(c(4, 1), c(1, 1)) # 协方差矩阵
+)
+library(cmdstanr)
+# 编译多元正态分布模型
+mod_multi_normal <- cmdstan_model(
+  stan_file = "code/multi_normal_simu.stan",
+  compile = TRUE, cpp_options = list(stan_threads = TRUE)
+)
+```
+
+抽样生成 1000 个服从二元正态分布的随机数。
+
+```{r}
+simu_multi_normal <- mod_multi_normal$sample(
+  data = multi_normal_d,
+  iter_warmup = 500,    # 每条链预处理迭代次数
+  iter_sampling = 1000, # 样本量
+  chains = 1,           # 马尔科夫链的数目
+  parallel_chains = 1,  # 指定 CPU 核心数，可以给每条链分配一个
+  threads_per_chain = 1, # 每条链设置一个线程
+  show_messages = FALSE, # 不显示迭代的中间过程
+  refresh = 0,        # 不显示采样的进度
+  fixed_param = TRUE, # 固定参数
+  output_dir = "data-raw/",
+  seed = 20232023     # 设置随机数种子，不要使用 set.seed() 函数
+)
+```
+
+值得注意，这里，不需要设置参数初始值，但要设置 `fixed_param = TRUE`，表示根据模型生成模拟数据。
+
+```{r}
+# 原始数据
+simu_multi_normal$draws(variables = "yhat", format = "array")
+# 数据概览
+simu_multi_normal$summary(.num_args = list(sigfig = 4, notation = "dec"))
+```
+
+以生成第一个服从二元正态分布的随机数（样本点）为例，这个随机数是通过采样获得的，采样过程中产生一个采样序列，采样序列的轨迹和分布如下：
+
+```{r}
+#| label: fig-trace-dens
+#| fig-cap: 采样序列的轨迹和分布
+#| fig-width: 6
+#| fig-height: 4
+#| fig-showtext: true
+
+library(ggplot2)
+library(bayesplot)
+mcmc_trace(simu_multi_normal$draws(c("yhat[1,1]", "yhat[1,2]")),
+  facet_args = list(
+    labeller = ggplot2::label_parsed,
+    strip.position = "top", ncol = 1
+  )
+) + theme_bw(base_size = 12)
+
+mcmc_dens(simu_multi_normal$draws(c("yhat[1,1]", "yhat[1,2]")),
+  facet_args = list(
+    labeller = ggplot2::label_parsed,
+    strip.position = "top", ncol = 1
+  )
+) + theme_bw(base_size = 12)
+```
+
+这就是一组来自二元正态分布的随机数。
+
+```{r}
+#| label: fig-bivar-scatter
+#| fig-cap: 生成二元正态分布的随机数
+#| fig-width: 6
+#| fig-height: 4
+#| fig-showtext: true
+
+mcmc_scatter(simu_multi_normal$draws(c("yhat[1,1]", "yhat[1,2]"))) +
+  theme_bw(base_size = 12) +
+  labs(x = expression(x[1]), y = expression(x[2]))
+```
+
+提取采样数据，整理成矩阵。
+
+```{r}
+# 抽取原始采样数据
+yhat <- simu_multi_normal$draws(c("yhat[1,1]", "yhat[1,2]"))
+# 合并多条链
+yhat_mean <- apply(yhat, c(1, 3), mean)
+# 整理成二维矩阵
+x <- as.matrix(yhat_mean)
+# 样本均值
+colMeans(x)
+# 样本方差-协方差矩阵
+var(x)
+```
+
+### 多元正态分布拟合 {#sec-multi-normal-fitted}
+
+一般地，协方差矩阵的 Cholesky 分解的矩阵表示如下：
+
+$$
+\begin{aligned}
+  \Sigma &= \begin{bmatrix}
+\sigma^2_1 & \rho_{12}\sigma_1\sigma_2 & \rho_{13}\sigma_1\sigma_3 \\
+\rho_{12}\sigma_1\sigma_2 & \sigma_2^2 & \rho_{23}\sigma_2\sigma_3 \\
+\rho_{13}\sigma_1\sigma_3 & \rho_{23}\sigma_2\sigma_3 & \sigma_3^2
+\end{bmatrix} \\
+& = \begin{bmatrix}
+\sigma_1 & 0 & 0 \\
+0 & \sigma_2 & 0 \\
+0 & 0 & \sigma_3
+\end{bmatrix} 
+\underbrace{
+\begin{bmatrix}
+1 & \rho_{12} & \rho_{13} \\
+\rho_{12} & 1 & \rho_{23} \\
+\rho_{13} & \rho_{23} & 1
+\end{bmatrix}
+}_{R}
+\begin{bmatrix}
+\sigma_1 & 0 & 0 \\
+0 & \sigma_2 & 0 \\
+0 & 0 & \sigma_3
+\end{bmatrix} \\
+& = \begin{bmatrix}
+\sigma_1 & 0 & 0 \\
+0 & \sigma_2 & 0 \\
+0 & 0 & \sigma_3
+\end{bmatrix} 
+\underbrace{L_u L_u^{\top}}_{R}
+\begin{bmatrix}
+\sigma_1 & 0 & 0 \\
+0 & \sigma_2 & 0 \\
+0 & 0 & \sigma_3
+\end{bmatrix} 
+\end{aligned}
+$$
+
+```{verbatim, file="code/multi_normal_fitted.stan", lang="stan"}
+```
+
+代码中， 核心部分是关于多元正态分布的协方差矩阵的参数化，先将协方差矩阵中的方差和相关矩阵剥离，然后利用 Cholesky 分解将相关矩阵分解。在 Stan 里，这是一套高效的组合。
+
+-   类型 `cholesky_factor_corr` 表示相关矩阵的 Cholesky 分解后的矩阵 $L_u$
+
+-   类型 `corr_matrix` 表示相关矩阵 $R$ 。
+
+-   类型 `cov_matrix` 表示协方差矩阵 $\Sigma$ 。
+
+-   函数 `lkj_corr_cholesky` 为相关矩阵 Cholesky 分解后的矩阵 $L_u$ 服从的分布，详见 [Cholesky LKJ correlation distribution](https://mc-stan.org/docs/functions-reference/cholesky-lkj-correlation-distribution.html)。函数名中的 `lkj` 是以三个人的人名的首字母命名的 [Lewandowski, Kurowicka, and Joe 2009](https://mc-stan.org/docs/functions-reference/lkj-correlation.html#ref-LewandowskiKurowickaJoe:2009)。
+
+-   函数 `multiply_lower_tri_self_transpose` 为下三角矩阵与它的转置的乘积，详见 [Correlation Matrix Distributions](https://mc-stan.org/docs/functions-reference/correlation-matrix-distributions.html)。
+
+-   函数 `multi_normal` 为多元正态分布的抽样语句，详见 [Multivariate normal distribution](https://mc-stan.org/docs/functions-reference/multivariate-normal-distribution.html)。
+
+矩阵 $L_u$ 是相关矩阵 $R$ 的 Cholesky 分解的结果，在贝叶斯框架内，参数都是随机的，相关矩阵是一个随机矩阵，矩阵 $L_u$ 是一个随机矩阵，它的分布用 Stan 代码表示为如下：
+
+``` stan
+L ~ lkj_corr_cholesky(2.0); # implies L * L' ~ lkj_corr(2.0);
+```
+
+LKJ 分布有一个参数 $\eta$ ，此处 $\eta = 2$ ，意味着变量之间的相关性较弱，LKJ 分布的概率密度函数正比于相关矩阵的行列式的 $\eta-1$ 次幂 $(\det{R})^{\eta-1}$，LKJ 分布的详细说明见[Lewandowski-Kurowicka-Joe (LKJ) distribution](https://distribution-explorer.github.io/multivariate_continuous/lkj.html)。
+
+有了上面的背景知识，下面先在 R 环境中模拟一组来自多元正态分布的样本。
+
+```{r}
+set.seed(20232023)
+# 均值
+mu <- c(1, 2, -5) 
+# 相关矩阵 (R)
+R <- matrix(c(
+  1, 0.7, 0.2, 
+  0.7, 1, -0.5,
+  0.2, -0.5, 1
+), 3)
+# sd1 = 0.5, sd2 = 1.2, sd3 = 2.3
+sigmas <- c(0.5, 1.2, 2.3) 
+# 方差-协方差矩阵
+Sigma <- diag(sigmas) %*% R %*% diag(sigmas) 
+# 模拟 1000 个样本数据
+dat <- MASS::mvrnorm(1000, mu = mu, Sigma = Sigma) 
+```
+
+根据 1000 个样本点，估计多元正态分布的均值参数和方差协方差参数。
+
+```{r}
+#| message: false
+
+# 来自多元正态分布的一组观测数据
+multi_normal_chol_d <- list(
+  N = 1000, # 样本量
+  K = 3,    # 三维
+  y = dat
+)
+# 编译多元正态分布模型
+mod_multi_normal_chol <- cmdstan_model(
+  stan_file = "code/multi_normal_fitted.stan",
+  compile = TRUE, cpp_options = list(stan_threads = TRUE)
+)
+# 拟合多元正态分布模型
+fit_multi_normal <- mod_multi_normal_chol$sample(
+  data = multi_normal_chol_d,
+  iter_warmup = 500,    # 每条链预处理迭代次数
+  iter_sampling = 1000, # 每条链采样次数
+  chains = 2,           # 马尔科夫链的数目
+  parallel_chains = 1,  # 指定 CPU 核心数
+  threads_per_chain = 1,  # 每条链设置一个线程
+  show_messages = FALSE,  # 不显示迭代的中间过程
+  refresh = 0,            # 不显示采样的进度
+  output_dir = "data-raw/",
+  seed = 20232023     # 设置随机数种子
+)
+```
+
+均值向量 $\bm{\mu}$ 和协方差矩阵 $\Sigma$ 估计结果如下：
+
+```{r}
+fit_multi_normal$summary(c("mu", "Sigma"), .num_args = list(sigfig = 4, notation = "dec"))
+```
+
+均值向量 $\bm{\mu} = (\mu_1,\mu_2,\mu_3)^{\top}$ 各个分量及其两两相关性，如下图所示。
+
+```{r}
+#| label: fig-trivar-bayes
+#| fig-cap: 三元正态分布
+#| fig-width: 6
+#| fig-height: 6
+#| fig-showtext: true
+
+mcmc_pairs(
+  fit_multi_normal$draws(c("mu[1]", "mu[2]", "mu[3]")),
+  diag_fun = "dens", off_diag_fun = "hex"
+)
+```
+
+## 高斯过程 {#sec-gaussian-processes}
+
+定义
+
+### 高斯过程模拟 {#sec-gaussian-processes-simulation}
+
+Stan 代码模拟
+
+### 高斯过程拟合 {#sec-gaussian-processes-fitted}
+
+Stan 代码拟合
+
+## 高斯过程回归 {#sec-gaussian-processes-regression}
