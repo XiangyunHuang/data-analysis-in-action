@@ -690,6 +690,25 @@ fit_rongelap_poisson_pred$summary(variables = c("beta", "sigma", "phi"))
 fit_rongelap_poisson_pred$loo(variables = "log_lik", cores = 2)
 ```
 
+辐射强度分布的检查
+
+```{r}
+#| label: fig-rongelap-poisson-ppcheck
+#| fig-cap: 后验预测诊断图（密度图）
+#| fig-showtext: true
+#| fig-width: 5
+#| fig-height: 4
+
+# 抽取 yrep 数据
+yrep <- fit_rongelap_poisson_pred$draws(variables = "yhat", format = "draws_matrix")
+
+pp_check(rongelap$counts / rongelap$time,
+  yrep = sweep(yrep[1:50, ], MARGIN = 2, STATS = rongelap$time, `/`),
+  fun = ppc_dens_overlay
+) +
+  theme_classic()
+```
+
 后 1000 次迭代是平稳的，可取任意一个链条的任意一次迭代，获得采样点处的预测值
 
 ```{r}
@@ -732,18 +751,13 @@ ggplot(data = rongelap_sf)+
 未采样点的预测
 
 ```{r}
-ypred_array <- fit_rongelap_poisson_pred$draws(variables = "ypred", format = "array")
-rongelap_grid_df$ypred <- as.matrix(ypred_array[1,1,])
+# 后验估计
+ypred_tbl <- fit_rongelap_poisson_pred$summary(variables = "ypred", "mean")
+rongelap_grid_df$ypred <- ypred_tbl$mean
 # 查看预测结果
 head(rongelap_grid_df)
 # 预测值的分布范围
 summary(rongelap_grid_df$ypred / rongelap_grid_df$time)
-```
-
-辐射强度大于 20 的位置是很少的
-
-```{r}
-subset(rongelap_grid_df, subset = ypred / time > 20)
 ```
 
 转化数据类型，去掉缓冲区内的预测位置，准备绘制辐射强度预测值的分布
@@ -784,7 +798,7 @@ p3 <- ggplot() +
   ) +
   # 图例
   scale_fill_viridis_c(
-    option = "C", breaks = 2*0:11,
+    option = "C", breaks = 0:13,
     guide = guide_colourbar(
       barwidth = 15, barheight = 1.5,
       title.position = "top" # 图例标题位于图例上方
@@ -815,7 +829,7 @@ p4 <- ggplot() +
     data = rongelap_coastline_sfp,
     fill = NA, color = "gray30", linewidth = 0.75
   ) +
-  scale_fill_viridis_c(option = "C", breaks = 2*0:11) +
+  scale_fill_viridis_c(option = "C", breaks = 0:13) +
   # 虚线框
   geom_sf(data = dash_sfp, fill = NA, linewidth = 0.75, lty = 2) +
   theme_void() +
