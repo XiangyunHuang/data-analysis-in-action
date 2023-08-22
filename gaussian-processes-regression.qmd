@@ -276,11 +276,11 @@ mcmc_pairs(
 )
 ```
 
-## 高斯过程 {#sec-gaussian-processes}
+## 二维高斯过程 {#sec-gaussian-processes}
 
 定义
 
-### 高斯过程模拟 {#sec-gaussian-processes-simulation}
+### 二维高斯过程模拟 {#sec-gaussian-processes-simulation}
 
 二维高斯过程 $\mathcal{S}$ 的均值向量为 0 向量，自协方差函数为指数型，
 
@@ -288,7 +288,7 @@ $$
 \sigma = 10, \phi = 1
 $$
 
-[Simulating from a Gaussian process](https://mc-stan.org/docs/stan-users-guide/simulating-from-a-gaussian-process.html)
+模拟高斯过程的 Stan 代码如下
 
 ```{verbatim, file="code/gaussian_process_simu.stan", lang="stan"}
 ```
@@ -323,13 +323,13 @@ fit_multi_normal_gp <- mod_gaussian_process_simu$sample(
   data = gaussian_process_d,
   iter_warmup = 500,       # 每条链预处理迭代次数
   iter_sampling = 1000,    # 样本量
-  chains = 1,             # 马尔科夫链的数目
+  chains = 1,              # 马尔科夫链的数目
   parallel_chains = 1,    # 指定 CPU 核心数
   threads_per_chain = 1,  # 每条链设置一个线程
   show_messages = FALSE,  # 不显示迭代的中间过程
   refresh = 0,            # 不显示采样的进度
   output_dir = "data-raw/",
-  seed = 20232023     # 设置随机数种子
+  seed = 20232023         # 设置随机数种子
 )
 ```
 
@@ -379,7 +379,7 @@ sim_gp_data <- cbind.data.frame(gaussian_process_d$X, ysim = y_mean[1, ])
 绘制二维高斯过程图形。
 
 ```{r}
-#| label: fig-2d-gp-bayes
+#| label: fig-2d-gp
 #| fig-cap: 二维高斯过程
 #| fig-width: 6.5
 #| fig-height: 4
@@ -392,9 +392,9 @@ ggplot(data = sim_gp_data, aes(x = x1, y = x2)) +
   labs(x = expression(x[1]), y = expression(x[2]))
 ```
 
-### 高斯过程拟合 {#sec-gaussian-processes-fitted}
+### 二维高斯过程拟合 {#sec-gaussian-processes-fitted}
 
-复用 R 模拟二维高斯过程的数据，按照 Stan 官网给出的拟合代码，效率极低。
+模拟二维高斯过程的数据，按照 Stan 官网给出的拟合代码，效率极低。
 
 ```{r}
 #| message: false
@@ -425,17 +425,17 @@ mod_gaussian_process <- cmdstan_model(
 
 # 拟合二维高斯过程
 fit_gaussian_process <- mod_gaussian_process$sample(
-  data = gaussian_process_d, # 观测数据
+  data = gaussian_process_d,     # 观测数据
   init = inits_gaussian_process, # 迭代初值
-  iter_warmup = 1000, # 每条链预处理迭代次数
+  iter_warmup = 1000,   # 每条链预处理迭代次数
   iter_sampling = 2000, # 每条链总迭代次数
-  chains = nchains, # 马尔科夫链的数目
-  parallel_chains = 2, # 指定 CPU 核心数，可以给每条链分配一个
+  chains = nchains,     # 马尔科夫链的数目
+  parallel_chains = 2,  # 指定 CPU 核心数，可以给每条链分配一个
   threads_per_chain = 2, # 每条链设置一个线程
   show_messages = FALSE, # 不显示迭代的中间过程
-  refresh = 0, # 不显示采样的进度
+  refresh = 0,           # 不显示采样的进度
   output_dir = "data-raw/",
-  seed = 20232023 # 设置随机数种子，不要使用 set.seed() 函数
+  seed = 20232023        # 设置随机数种子，不要使用 set.seed() 函数
 )
 # 诊断
 fit_gaussian_process$diagnostic_summary()
@@ -483,8 +483,7 @@ $$
 # 加载数据
 rongelap <- readRDS(file = "data/rongelap.rds")
 rongelap_coastline <- readRDS(file = "data/rongelap_coastline.rds")
-
-# 泊松对数模型
+# 准备输入数据
 rongelap_poisson_d <- list(
   N = nrow(rongelap), # 观测记录的条数
   D = 2, # 2 维坐标
@@ -492,9 +491,22 @@ rongelap_poisson_d <- list(
   y = rongelap$counts, # 响应变量
   offsets = rongelap$time # 漂移项
 )
+# 准备参数初始化数据
+set.seed(20232023)
+nchains <- 2 # 2 条迭代链
+inits_data_poisson <- lapply(1:nchains, function(i) {
+  list(
+    beta = rnorm(1),
+    sigma = runif(1),
+    phi = runif(1),
+    lambda = rnorm(157)
+  )
+})
 ```
 
 ### 预测数据
+
+预测未采样的位置的核辐射强度，根据海岸线数据网格化全岛，以格点代表未采样的位置
 
 ```{r}
 #| message: false
@@ -521,28 +533,10 @@ rongelap_grid_df <- as.data.frame(st_coordinates(rongelap_grid_centroid))
 colnames(rongelap_grid_df) <- c("cX", "cY")
 ```
 
-`rongelap_grid_df` 即为需要预测核辐射强度的位置
+未采样的位置 `rongelap_grid_df`
 
 ```{r}
 head(rongelap_grid_df)
-```
-
-### 初始数据
-
-泊松对数模型
-
-```{r}
-set.seed(20232023)
-nchains <- 2 # 2 条迭代链
-
-inits_data_poisson <- lapply(1:nchains, function(i) {
-  list(
-    beta = rnorm(1),
-    sigma = runif(1),
-    phi = runif(1),
-    lambda = rnorm(157)
-  )
-})
 ```
 
 ### 模型编码
@@ -559,7 +553,7 @@ $$
 \end{aligned}
 $$
 
-其中，$\beta,\sigma,\phi,\delta,\Sigma,I$ 的含义同前，$\lambda$ 代表辐射强度，$\text{offsets}$ 代表漂移项，这里是时间段，$\bm{y}$ 表示观测的辐射粒子数，$\mathrm{poisson\_log}$ 表示泊松分布的对数参数化，将频率参数 rate 的对数 $\lambda$ 作为参数，详见 Stan 函数手册中泊松分布的[对数函数表示](https://mc-stan.org/docs/functions-reference/poisson-distribution-log-parameterization.html)。
+其中，$\beta,\sigma,\phi,\delta,\Sigma,I$ 的含义同前，$\lambda$ 代表辐射强度，$\mathrm{offsets}$ 代表漂移项，这里是时间段，$\bm{y}$ 表示观测的辐射粒子数，$\mathrm{poisson\_log}$ 表示泊松分布的对数参数化，将频率参数 rate 的对数 $\lambda$ 作为参数，详见 Stan 函数手册中泊松分布的[对数函数表示](https://mc-stan.org/docs/functions-reference/poisson-distribution-log-parameterization.html)。
 
 ```{verbatim, file="code/rongelap_poisson_processes.stan", lang="stan"}
 ```
@@ -567,21 +561,22 @@ $$
 ```{r}
 #| message: false
 
+# 编译模型
 mod_rongelap_poisson <- cmdstan_model(
   stan_file = "code/rongelap_poisson_processes.stan",
   compile = TRUE, cpp_options = list(stan_threads = TRUE)
 )
 # 泊松对数模型
 fit_rongelap_poisson <- mod_rongelap_poisson$sample(
-  data = rongelap_poisson_d, # 观测数据
-  init = inits_data_poisson,    # 迭代初值
+  data = rongelap_poisson_d,  # 观测数据
+  init = inits_data_poisson,  # 迭代初值
   iter_warmup = 500,    # 每条链预处理迭代次数
   iter_sampling = 1000, # 每条链总迭代次数
   chains = nchains,     # 马尔科夫链的数目
   parallel_chains = 2,  # 指定 CPU 核心数，可以给每条链分配一个
   threads_per_chain = 2, # 每条链设置一个线程
   show_messages = FALSE, # 不显示迭代的中间过程
-  refresh = 0,    # 不显示采样的进度
+  refresh = 0,           # 不显示采样的进度
   output_dir = "data-raw/",
   seed = 20232023
 )
@@ -625,12 +620,20 @@ mcmc_dens(fit_rongelap_poisson$draws(c("sigma", "phi")),
 ) + theme_bw(base_size = 12)
 ```
 
-### 空间分布
+### 预测分布
+
+核辐射预测模型的 Stan 代码
+
+```{verbatim, file="code/rongelap_poisson_pred.stan", lang="stan"}
+```
+
+准备数据、拟合模型
 
 ```{r}
 #| message: false
-rongelap_grid_df$time <- 100
 
+# 固定漂移项
+rongelap_grid_df$time <- 100
 # 对数高斯模型
 rongelap_poisson_pred_d <- list(
   D = 2,
@@ -642,8 +645,8 @@ rongelap_poisson_pred_d <- list(
   x2 = rongelap_grid_df[, c("cX", "cY")] / 6000,
   offsets2 = rongelap_grid_df[, "time"]
 )
-
-nchains = 2
+# 迭代链数目
+nchains <- 2
 # 给每条链设置不同的参数初始值
 inits_data_poisson_pred <- lapply(1:nchains, function(i) {
   list(
@@ -653,18 +656,16 @@ inits_data_poisson_pred <- lapply(1:nchains, function(i) {
     lambda = rnorm(157)
   )
 })
-
 # 编译模型
 mod_rongelap_poisson_pred <- cmdstan_model(
   stan_file = "code/rongelap_poisson_pred.stan",
   compile = TRUE, cpp_options = list(stan_threads = TRUE)
 )
-
 # 泊松模型
 fit_rongelap_poisson_pred <- mod_rongelap_poisson_pred$sample(
   data = rongelap_poisson_pred_d,   # 观测数据
   init = inits_data_poisson_pred,   # 迭代初值
-  iter_warmup = 500,           # 每条链预处理迭代次数
+  iter_warmup = 500,            # 每条链预处理迭代次数
   iter_sampling = 1000,         # 每条链总迭代次数
   chains = nchains,             # 马尔科夫链的数目
   parallel_chains = 2,      # 指定 CPU 核心数，可以给每条链分配一个
@@ -674,11 +675,11 @@ fit_rongelap_poisson_pred <- mod_rongelap_poisson_pred$sample(
   output_dir = "data-raw/",
   seed = 20232023           # 设置随机数种子，不要使用 set.seed() 函数
 )
-
+# 诊断信息
 fit_rongelap_poisson_pred$diagnostic_summary()
 ```
 
-主要参数的后验估计
+参数的后验估计
 
 ```{r}
 fit_rongelap_poisson_pred$summary(variables = c("beta", "sigma", "phi"))
@@ -690,20 +691,20 @@ fit_rongelap_poisson_pred$summary(variables = c("beta", "sigma", "phi"))
 fit_rongelap_poisson_pred$loo(variables = "log_lik", cores = 2)
 ```
 
-辐射强度分布的检查
+检查辐射强度分布的拟合效果
 
 ```{r}
 #| label: fig-rongelap-poisson-ppcheck
 #| fig-cap: 后验预测诊断图（密度图）
 #| fig-showtext: true
 #| fig-width: 5
-#| fig-height: 4
+#| fig-height: 3.5
 
 # 抽取 yrep 数据
 yrep <- fit_rongelap_poisson_pred$draws(variables = "yhat", format = "draws_matrix")
-
+# Posterior predictive checks
 pp_check(rongelap$counts / rongelap$time,
-  yrep = sweep(yrep[1:50, ], MARGIN = 2, STATS = rongelap$time, `/`),
+  yrep = sweep(yrep[1:50, ], MARGIN = 2, STATS = rongelap$time, FUN = `/`),
   fun = ppc_dens_overlay
 ) +
   theme_classic()
@@ -714,8 +715,8 @@ pp_check(rongelap$counts / rongelap$time,
 ```{r}
 yhat_array <- fit_rongelap_poisson_pred$draws(variables = "yhat", format = "array")
 lambda1_array <- fit_rongelap_poisson_pred$draws(variables = "lambda1", format = "array")
-rongelap_sf$lambda <- as.matrix(lambda1_array[1,1,])
-rongelap_sf$yhat <- as.matrix(yhat_array[1,1,])
+rongelap_sf$lambda <- as.vector(lambda1_array[1,1,])
+rongelap_sf$yhat <- as.vector(yhat_array[1,1,])
 ```
 
 数据集 `rongelap_sf` 的概况
@@ -744,8 +745,13 @@ summary(rongelap_sf$yhat / rongelap_sf$time)
 
 ggplot(data = rongelap_sf)+
   geom_sf(aes(color = yhat / time), cex = 0.5) +
-  scale_colour_viridis_c(option = "C") +
-  theme_bw()
+  scale_colour_viridis_c(option = "C", breaks = 3*0:5,
+    guide = guide_colourbar(
+      barwidth = 15, barheight = 1.5,
+      title.position = "top" # 图例标题位于图例上方
+    )) +
+  theme_bw() +
+  labs(x = "横坐标（米）", y = "纵坐标（米）", colour = "辐射强度")
 ```
 
 未采样点的预测
