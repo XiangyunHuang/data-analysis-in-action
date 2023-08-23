@@ -1,0 +1,202 @@
+# 混合效应模型 {#sec-mixed-effects-models}
+
+::: hidden
+$$
+ \def\bm#1{{\boldsymbol #1}}
+$$
+:::
+
+```{r}
+library(nlme)
+library(GLMMadaptive)
+library(mgcv)
+
+library(cmdstanr)  # 编译采样
+library(ggplot2)   # 作图
+library(bayesplot) # 后验分布
+library(loo)       # LOO-CV
+library(projpred)  # 后验预测变量选择
+```
+
+最好找 3 个真实数据集，其中数据集 sleepstudy 和 cbpp 均来自 **lme4** 包
+
+## 线性混合效应模型 {#sec-lmm}
+
+### 频率派
+
+```{r}
+library(nlme)
+fm1 <- lme(Reaction ~ Days, random = ~ Days | Subject, data = sleepstudy)
+summary(fm1)
+# library(lme4)
+# fm2 <- lmer(Reaction ~ Days + (Days|Subject), sleepstudy)
+```
+
+### 贝叶斯派
+
+```{r}
+library(cmdstanr)
+
+# library(brms)
+# bm <- brm(Reaction ~ Days + (Days | Subject), data = sleepstudy)
+```
+
+## 广义线性混合效应模型 {#sec-glmm}
+
+二项分布
+
+### 频率派
+
+```{r}
+library(GLMMadaptive)
+fgm1 <- mixed_model(
+  fixed = cbind(incidence, size - incidence) ~ period,
+  random = ~ 1 | herd, data = cbpp, family = binomial(link = "logit")
+)
+summary(fgm1)
+# library(lme4)
+# fgm2 <- glmer(cbind(incidence, size - incidence) ~ period + (1 | herd), family = binomial("logit"), data = cbpp)
+```
+
+```{r}
+#| eval: false
+
+# 可加模型与混合效应模型的关系
+fgm3 <- mgcv::gam(
+  cbind(incidence, size - incidence) ~ period + s(herd, bs = "re"),
+  data = cbpp, family = binomial(link = "logit"), method = "REML"
+)
+summary(fgm3)
+# 随机效应的标准差的估计及其上下限
+mgcv::gam.vcomp(fgm3)
+```
+
+### 贝叶斯派
+
+```{r}
+library(cmdstanr)
+
+# library(brms)
+# bgm <- brm(incidence | trials(size) ~ period + (1 | herd), family = binomial("logit"), data = cbpp)
+```
+
+## 广义可加混合效应模型 {#sec-gamm}
+
+从线性到可加，意味着从线性到非线性，可加模型容纳非线性的成分，比如高斯过程、样条。
+
+### 频率派
+
+```{r}
+# 加载数据
+rongelap <- readRDS(file = "data/rongelap.rds")
+rongelap_coastline <- readRDS(file = "data/rongelap_coastline.rds")
+```
+
+近似高斯过程、高斯过程的核函数
+
+```{r}
+library(nlme)
+library(mgcv)
+## ?mgcv::s 帮助文档参数的说明，作者自己定义了一套符号约定
+# 默认值 梅隆型相关函数及默认的范围参数
+fit_rongelap_gam <- gam(counts ~ s(cX, cY, bs = "gp", k = 50),
+  offset = log(time), data = rongelap, family = poisson(link = "log")
+)
+# 模型输出
+summary(fit_rongelap_gam)
+# 随机效应
+gam.vcomp(fit_rongelap_gam)
+```
+
+```{r}
+#| eval: false
+
+# 球型相关函数及范围参数为 0.5
+fit_rongelap_gam <- gam(
+  counts ~ s(cX, cY, bs = "gp", k = 50, m = c(1, .5)),
+  offset = log(time), data = rongelap, family = poisson(link = "log")
+)
+```
+
+参数 m 接受一个向量， `m[1]` 取值为 1 至 5，分别代表球型 spherical, 幂指数 power exponential 和梅隆型 Matern with $\kappa$ = 1.5, 2.5 or 3.5 等 5 种相关/核函数。
+
+```{r}
+library(sf)
+library(abind)
+library(stars)
+# 类型转化
+rongelap_sf <- st_as_sf(rongelap, coords = c("cX", "cY"), dim = "XY")
+rongelap_coastline_sf <- st_as_sf(rongelap_coastline, coords = c("cX", "cY"), dim = "XY")
+rongelap_coastline_sfp <- st_cast(st_combine(st_geometry(rongelap_coastline_sf)), "POLYGON")
+# 添加缓冲区
+rongelap_coastline_buffer <- st_buffer(rongelap_coastline_sfp, dist = 50)
+# 构造带边界约束的网格
+rongelap_coastline_grid <- st_make_grid(rongelap_coastline_buffer, n = c(150, 75))
+# 将 sfc 类型转化为 sf 类型
+rongelap_coastline_grid <- st_as_sf(rongelap_coastline_grid)
+rongelap_coastline_buffer <- st_as_sf(rongelap_coastline_buffer)
+rongelap_grid <- rongelap_coastline_grid[rongelap_coastline_buffer, op = st_intersects]
+# 计算网格中心点坐标
+rongelap_grid_centroid <- st_centroid(rongelap_grid)
+# 共计 1612 个预测点
+rongelap_grid_df <- as.data.frame(st_coordinates(rongelap_grid_centroid))
+colnames(rongelap_grid_df) <- c("cX", "cY")
+
+# 预测
+rongelap_grid_df$ypred <- as.vector(predict(fit_rongelap_gam, newdata = rongelap_grid_df, type = "response")) 
+# 整理预测数据
+rongelap_grid_sf <- st_as_sf(rongelap_grid_df, coords = c("cX", "cY"), dim = "XY")
+rongelap_grid_stars <- st_rasterize(rongelap_grid_sf, nx = 150, ny = 75)
+rongelap_stars <- st_crop(x = rongelap_grid_stars, y = rongelap_coastline_sfp)
+```
+
+核辐射强度的空间分布
+
+```{r}
+#| label: fig-rongelap-mgcv
+#| fig-cap: 核辐射强度的预测分布
+#| fig-showtext: true
+#| fig-width: 6
+#| fig-height: 3.5
+#| echo: !expr knitr::is_html_output()
+#| code-fold: true
+
+library(ggplot2)
+ggplot() +
+  geom_stars(data = rongelap_stars, aes(fill = ypred), na.action = na.omit) +
+  geom_sf(data = rongelap_coastline_sfp, fill = NA, color = "gray50", linewidth = 0.5) +
+  scale_fill_viridis_c(option = "C") +
+  theme_bw() +
+  labs(x = "横坐标（米）", y = "纵坐标（米）", fill = "预测值")
+```
+
+### 贝叶斯派
+
+参考 **brms** 包的函数 `gp()` / `s()` 和 **mgcv** 包的函数 `gamm()` 的帮助文档，先用模拟数据检测
+
+```{r}
+library(cmdstanr)
+
+## 参数 k 表示近似高斯过程 GP 所用的基函数的数目
+# bgamm1 <- brms::brm(z ~ gp(x, y, cov = "exp_quad", c = 5 / 4, k = 50),
+#   data = topo, chains = 2, seed = 20232023,
+#   iter = 2000, warmup = 1000, thin = 2, refresh = 0,
+#   control = list(adapt_delta = 0.99)
+# )
+# summary(bgamm1)
+# me3 <- brms::conditional_effects(bgamm1, ndraws = 200, spaghetti = TRUE)
+# plot(me3, ask = FALSE, points = TRUE)
+```
+
+```{r}
+# simulate data with a factor covariate
+# 具体模拟的什么东西需要看源代码
+# dat2 <- mgcv::gamSim(eg = 4, n = 90, scale = 2)
+
+# fit separate gaussian processes for different levels of 'fac'
+# fit4 <- brm(y ~ gp(x2, by = fac), dat2, chains = 2)
+# summary(fit4)
+# plot(conditional_effects(fit4), points = TRUE)
+```
+
+## 总结 {#sec-mixed-effects-summary}
