@@ -9,9 +9,10 @@ $$
 ```{r}
 #| message: false
 
-library(nlme)
-library(GLMMadaptive)
-library(mgcv)
+library(nlme)         # 线性混合效应模型
+library(GLMMadaptive) # 广义线性混合效应模型
+library(mgcv)         # 广义线性/可加混合效应模型
+# library(lme4)         # 广义/线性混合效应模型
 
 library(cmdstanr)  # 编译采样
 library(ggplot2)   # 作图
@@ -20,7 +21,7 @@ library(loo)       # LOO-CV
 # library(projpred)  # 后验预测变量选择
 ```
 
-最好找 3 个真实数据集，其中数据集 sleepstudy 和 cbpp 均来自 **lme4** 包
+最好找 3 个真实数据集，其中数据集 `sleepstudy` 和 `cbpp` 均来自 **lme4** 包。
 
 ## 线性混合效应模型 {#sec-lmm}
 
@@ -31,8 +32,13 @@ data(sleepstudy, package = "lme4")
 library(nlme)
 fm1 <- lme(Reaction ~ Days, random = ~ Days | Subject, data = sleepstudy)
 summary(fm1)
-# library(lme4)
-# fm2 <- lmer(Reaction ~ Days + (Days|Subject), sleepstudy)
+```
+
+或使用 lme4 包，可以得到同样的结果
+
+```{r}
+fm2 <- lme4::lmer(Reaction ~ Days + (Days|Subject), data = sleepstudy)
+summary(fm2)
 ```
 
 ### 贝叶斯派
@@ -58,21 +64,30 @@ fgm1 <- mixed_model(
   random = ~ 1 | herd, data = cbpp, family = binomial(link = "logit")
 )
 summary(fgm1)
-# library(lme4)
-# fgm2 <- glmer(cbind(incidence, size - incidence) ~ period + (1 | herd), family = binomial("logit"), data = cbpp)
 ```
 
-```{r}
-#| eval: false
+或使用 lme4 包，可以得到同样的结果
 
-# 可加模型与混合效应模型的关系
-fgm3 <- mgcv::gam(
+```{r}
+fgm2 <- lme4::glmer(cbind(incidence, size - incidence) ~ period + (1 | herd), family = binomial("logit"), data = cbpp)
+summary(fgm2)
+```
+
+或使用 mgcv 包，可以得到近似的结果。随机效应部分可以看作可加的惩罚项
+
+```{r}
+library(mgcv)
+fgm3 <- gam(
   cbind(incidence, size - incidence) ~ period + s(herd, bs = "re"),
   data = cbpp, family = binomial(link = "logit"), method = "REML"
 )
 summary(fgm3)
-# 随机效应的标准差的估计及其上下限
-mgcv::gam.vcomp(fgm3)
+```
+
+下面给出随机效应的标准差的估计及其上下限，和前面 GLMMadaptive 包和 lme4 包给出的结果也是接近的。
+
+```{r}
+gam.vcomp(fgm3)
 ```
 
 ### 贝叶斯派
@@ -160,8 +175,8 @@ rongelap_stars <- st_crop(x = rongelap_grid_stars, y = rongelap_coastline_sfp)
 #| label: fig-rongelap-mgcv
 #| fig-cap: 核辐射强度的预测分布
 #| fig-showtext: true
-#| fig-width: 6
-#| fig-height: 3.5
+#| fig-width: 7
+#| fig-height: 4
 #| echo: !expr knitr::is_html_output()
 #| code-fold: true
 
