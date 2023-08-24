@@ -853,6 +853,73 @@ print(p4, vp = grid::viewport(x = .3, y = .65, width = .45, height = .45))
 
 ## 总结 {#sec-gaussian-processes-summary}
 
+从模型是否含有块金效应、不同的自相关函数和参数估计方法等方面比较。
+
+```{r}
+library(nlme)
+# 高斯分布、指数型自相关结构
+fit_exp_reml <- gls(log(counts / time) ~ 1,
+  correlation = corExp(value = 200, form = ~ cX + cY, nugget = FALSE),
+  data = rongelap, method = "REML"
+)
+fit_exp_ml <- gls(log(counts / time) ~ 1,
+  correlation = corExp(value = 200, form = ~ cX + cY, nugget = FALSE),
+  data = rongelap, method = "ML"
+)
+fit_exp_reml_nugget <- gls(log(counts / time) ~ 1,
+  correlation = corExp(value = c(200, 0.1), form = ~ cX + cY, nugget = TRUE),
+  data = rongelap, method = "REML"
+)
+fit_exp_ml_nugget <- gls(log(counts / time) ~ 1,
+  correlation = corExp(value = c(200, 0.1), form = ~ cX + cY, nugget = TRUE),
+  data = rongelap, method = "ML"
+)
+
+# 高斯分布、高斯型自相关结构
+fit_gaus_reml <- gls(log(counts / time) ~ 1,
+  correlation = corGaus(value = 200, form = ~ cX + cY, nugget = FALSE),
+  data = rongelap, method = "REML"
+)
+fit_gaus_ml <- gls(log(counts / time) ~ 1,
+  correlation = corGaus(value = 200, form = ~ cX + cY, nugget = FALSE),
+  data = rongelap, method = "ML"
+)
+fit_gaus_reml_nugget <- gls(log(counts / time) ~ 1,
+  correlation = corGaus(value = c(200, 0.1), form = ~ cX + cY, nugget = TRUE),
+  data = rongelap, method = "REML"
+)
+fit_gaus_ml_nugget <- gls(log(counts / time) ~ 1,
+  correlation = corGaus(value = c(200, 0.1), form = ~ cX + cY, nugget = TRUE),
+  data = rongelap, method = "ML"
+)
+```
+
+汇总结果见下表。
+
+```{r}
+#| label: tbl-gls-summary
+#| echo: false
+
+dat <- tibble::tribble(
+  ~response, ~corr, ~nugget, ~method, ~beta, ~sigmasq, ~phi, ~loglik,
+  "高斯分布", "指数型", "无", "REML", "1.826", "0.3172", "110.8", "-89.07",
+  "高斯分布", "指数型", "无", "ML", "1.828", "0.3064", "105.4", "-87.56",
+  "高斯分布", "指数型", "0.03598", "REML", "1.813", "0.2935", "169.7472", "-88.22",
+  "高斯分布", "指数型", "0.03312", "ML", "1.828", "0.2779", "150.1324", "-86.88",
+  "高斯分布", "高斯型", "无", "REML", "1.878", "0.2523", "41.96", "-100.7",
+  "高斯分布", "高斯型", "无", "ML", "1.879", "0.25", "41.81", "-98.62",
+  "高斯分布", "高斯型", "0.07055", "REML", "1.831", "0.2532", "139.1431", "-84.91",
+  "高斯分布", "高斯型", "0.07053", "ML", "1.832", "0.2459", "137.0980", "-83.32"
+)
+
+knitr::kable(dat, col.names = c(
+  "响应变量分布", "空间自相关结构", "块金效应", "估计方法",
+  "$\\beta$", "$\\sigma^2$", "$\\phi$", "对数似然值"
+  ), caption = "不同模型与参数估计方法的比较", escape = FALSE)
+```
+
+相比于其他参数，REML 和 ML 估计方法对参数 $\phi$ 影响很大，ML 估计的 $\phi$ 和对数似然函数值更大。高斯型自相关结构中，REML 和 ML 估计方法对参数 $\phi$ 的估计结果差不多。函数 `gls()` 对初值要求不高，以上初值选取比较随意，只是符合要求函数定义。
+
 ## 习题 {#sec-gaussian-processes-exercise}
 
 1.  对核辐射污染数据，建立对数高斯过程模型，用 Stan 编码模型，预测全岛的核辐射强度分布。
