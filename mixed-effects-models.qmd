@@ -14,6 +14,7 @@ library(GLMMadaptive) # 广义线性混合效应模型
 library(mgcv)         # 广义线性/可加混合效应模型
 # library(lme4)         # 广义/线性混合效应模型
 
+library(splines)   # 样条
 library(cmdstanr)  # 编译采样
 library(ggplot2)   # 作图
 library(bayesplot) # 后验分布
@@ -27,12 +28,16 @@ library(loo)       # LOO-CV
 
 ### 频率派
 
+#### nlme
+
 ```{r}
 data(sleepstudy, package = "lme4")
 library(nlme)
 fm1 <- lme(Reaction ~ Days, random = ~ Days | Subject, data = sleepstudy)
 summary(fm1)
 ```
+
+#### lme4
 
 或使用 lme4 包，可以得到同样的结果
 
@@ -43,11 +48,19 @@ summary(fm2)
 
 ### 贝叶斯派
 
+#### cmdstanr
+
 ```{r}
 library(cmdstanr)
+```
 
-# library(brms)
-# bm <- brm(Reaction ~ Days + (Days | Subject), data = sleepstudy)
+#### brms
+
+```{r}
+#| eval: false
+
+library(brms)
+bm <- brm(Reaction ~ Days + (Days | Subject), data = sleepstudy)
 ```
 
 ## 广义线性混合效应模型 {#sec-glmm}
@@ -55,6 +68,8 @@ library(cmdstanr)
 二项分布
 
 ### 频率派
+
+#### GLMMadaptive
 
 ```{r}
 data(cbpp, package = "lme4")
@@ -66,12 +81,16 @@ fgm1 <- mixed_model(
 summary(fgm1)
 ```
 
+#### lme4
+
 或使用 lme4 包，可以得到同样的结果
 
 ```{r}
 fgm2 <- lme4::glmer(cbind(incidence, size - incidence) ~ period + (1 | herd), family = binomial("logit"), data = cbpp)
 summary(fgm2)
 ```
+
+#### mgcv
 
 或使用 mgcv 包，可以得到近似的结果。随机效应部分可以看作可加的惩罚项
 
@@ -92,11 +111,19 @@ gam.vcomp(fgm3)
 
 ### 贝叶斯派
 
+#### cmdstanr
+
 ```{r}
 library(cmdstanr)
+```
 
-# library(brms)
-# bgm <- brm(incidence | trials(size) ~ period + (1 | herd), family = binomial("logit"), data = cbpp)
+#### brms
+
+```{r}
+#| eval: false
+
+library(brms)
+bgm <- brm(incidence | trials(size) ~ period + (1 | herd), family = binomial("logit"), data = cbpp)
 ```
 
 ## 广义可加混合效应模型 {#sec-gamm}
@@ -105,19 +132,19 @@ library(cmdstanr)
 
 ### 频率派
 
+#### mgcv (gam) {#sec-mgcv-gam}
+
 ```{r}
 # 加载数据
 rongelap <- readRDS(file = "data/rongelap.rds")
 rongelap_coastline <- readRDS(file = "data/rongelap_coastline.rds")
 ```
 
-近似高斯过程、高斯过程的核函数
+近似高斯过程、高斯过程的核函数，**mgcv** 包的函数 `s()` 帮助文档参数的说明，默认值是梅隆型相关函数及默认的范围参数，作者自己定义了一套符号约定
 
 ```{r}
 library(nlme)
 library(mgcv)
-## ?mgcv::s 帮助文档参数的说明，作者自己定义了一套符号约定
-# 默认值 梅隆型相关函数及默认的范围参数
 fit_rongelap_gam <- gam(counts ~ s(cX, cY, bs = "gp", k = 50),
   offset = log(time), data = rongelap, family = poisson(link = "log")
 )
@@ -189,7 +216,28 @@ ggplot() +
   labs(x = "横坐标（米）", y = "纵坐标（米）", fill = "预测值")
 ```
 
+#### mgcv (INLA) {#sec-mgcv-ginla}
+
+**mgcv** 包的函数 `ginla()` 实现简化版 INLA
+
+```{r}
+rongelap_gam <- gam(counts ~ s(cX, cY, bs = "gp", k = 50),
+  offset = log(time), data = rongelap, family = poisson(link = "log"), fit = FALSE
+)
+fit_rongelap_ginla <- ginla(G = rongelap_gam)
+```
+
+```{r}
+#| eval: false
+# k = 50 个参数
+plot(fit_rongelap_ginla$beta[1, ], fit_rongelap_ginla$density[1, ],
+  type = "l", xlab = "intercept", ylab = "density"
+)
+```
+
 ### 贝叶斯派
+
+#### Stan
 
 参考 **brms** 包的函数 `gp()` / `s()` 和 **mgcv** 包的函数 `gamm()` 的帮助文档，先用模拟数据检测
 
@@ -216,6 +264,109 @@ library(cmdstanr)
 # fit4 <- brm(y ~ gp(x2, by = fac), dat2, chains = 2)
 # summary(fit4)
 # plot(conditional_effects(fit4), points = TRUE)
+```
+
+#### INLA
+
+INLA 近似贝叶斯计算
+
+```{r}
+#| eval: false
+
+library(INLA)
+library(splancs)
+# 构造非凸的边界
+boundary <- list(
+  inla.nonconvex.hull(
+    points = as.matrix(rongelap_coastline[,c("cX", "cY")]), 
+    convex = 100, concave = 150, resolution = 100),
+  inla.nonconvex.hull(
+    points = as.matrix(rongelap_coastline[,c("cX", "cY")]), 
+    convex = 200, concave = 200, resolution = 200)
+)
+# 构造非凸的网格
+mesh <- inla.mesh.2d(
+  loc = as.matrix(rongelap[, c("cX", "cY")]), offset = 100,
+  max.edge = c(300, 600), boundary = boundary
+)
+spde <- inla.spde2.matern(mesh = mesh, alpha = 3/2, constr = TRUE)
+indexs <- inla.spde.make.index(name = "s", n.spde = spde$n.spde)
+lengths(indexs)
+A <- inla.spde.make.A(mesh = mesh, loc = as.matrix(rongelap[, c("cX", "cY")]) )
+coop <- as.matrix(rongelap_grid_df[, c("cX", "cY")])
+Ap <- inla.spde.make.A(mesh = mesh, loc = coop)
+dim(Ap)
+
+# 在采样点的位置上估计 estimation stk.e
+stk.e <- inla.stack(
+  tag = "est",
+  data = list(y = rongelap$counts, E = rongelap$time),
+  A = A,
+  effects = list(s = indexs)
+)
+
+# 在新生成的位置上预测 prediction stk.p
+stk.p <- inla.stack(
+  tag = "pred",
+  data = list(y = NA, E = NA),
+  A = Ap,
+  effects = list(s = indexs)
+)
+
+# 合并数据 stk.full has stk.e and stk.p
+stk.full <- inla.stack(stk.e, stk.p)
+
+formula <- y ~ f(s, model = spde)
+
+res <- inla(formula,
+  data = inla.stack.data(stk.full),
+  E = E, # E 已知漂移项
+  control.family = list(link = "log"),
+  control.predictor = list(
+    compute = TRUE, 
+    link = 1, # 与 control.family 联系函数相同
+    A = inla.stack.A(stk.full)
+  ),
+  control.compute = list(
+    cpo = TRUE, 
+    waic = TRUE, # WAIC
+    dic = TRUE   # DIC 统计量 偏差信息准则
+  ),
+  family = "poisson"
+)
+
+summary(res)
+
+res$summary.fixed
+res$summary.hyperpar
+
+index <- inla.stack.index(stk.full, tag = "pred")$data
+
+pred_mean <- res$summary.fitted.values[index, "mean"]
+pred_ll <- res$summary.fitted.values[index, "0.025quant"]
+pred_ul <- res$summary.fitted.values[index, "0.975quant"]
+
+dpm <- rbind(
+  data.frame(
+    cX = rongelap_grid_df[, 1], cY = rongelap_grid_df[, 2],
+    value = pred_mean, variable = "pred_mean"
+  ),
+  data.frame(
+    cX = rongelap_grid_df[, 1], cY = rongelap_grid_df[, 2],
+    value = pred_ll, variable = "pred_ll"
+  ),
+  data.frame(
+    cX = rongelap_grid_df[, 1], cY = rongelap_grid_df[, 2],
+    value = pred_ul, variable = "pred_ul"
+  )
+)
+
+dpm_sf <- st_as_sf(dpm, coords = c("cX", "cY"), dim = "XY")
+
+ggplot(dpm_sf[dpm_sf$variable =="pred_mean", ]) +
+  geom_sf(aes(color = value)) +
+  scale_color_viridis_c(option = "C", name = expression(lambda)) +
+  theme_bw()
 ```
 
 ## 总结 {#sec-mixed-effects-summary}
