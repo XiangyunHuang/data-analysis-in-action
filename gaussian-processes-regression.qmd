@@ -5,6 +5,7 @@
 
 Sys.setenv(CMDSTANR_NO_VER_CHECK = TRUE)
 if(!dir.exists(paths = "data-raw/")) dir.create(path = "data-raw/")
+knitr::opts_chunk$set(cache = TRUE)
 ```
 
 ::: hidden
@@ -539,6 +540,23 @@ colnames(rongelap_grid_df) <- c("cX", "cY")
 head(rongelap_grid_df)
 ```
 
+朗格拉普岛网格化生成格点
+
+```{r}
+#| label: fig-rongelap-grid
+#| fig-cap: 朗格拉普岛
+#| fig-width: 7
+#| fig-height: 4
+#| fig-showtext: true
+
+ggplot() +
+  geom_point(data = rongelap_grid_df, aes(x = cX, y = cY), cex = 0.3) +
+  geom_path(data = rongelap_coastline, aes(x = cX, y = cY)) +
+  coord_fixed() +
+  theme_bw() +
+  labs(x = "横坐标（米）", y = "纵坐标（米）")
+```
+
 ### 模型编码
 
 指定各个参数 $\beta,\sigma,\phi$ 的先验分布
@@ -849,3 +867,220 @@ p4 <- ggplot() +
 p3
 print(p4, vp = grid::viewport(x = .3, y = .65, width = .45, height = .45))
 ```
+
+## 总结 {#sec-gaussian-processes-summary}
+
+从模型是否含有块金效应、不同的自相关函数和参数估计方法等方面比较。
+
+```{r}
+library(nlme)
+# 高斯分布、指数型自相关结构
+fit_exp_reml <- gls(log(counts / time) ~ 1,
+  correlation = corExp(value = 200, form = ~ cX + cY, nugget = FALSE),
+  data = rongelap, method = "REML"
+)
+fit_exp_ml <- gls(log(counts / time) ~ 1,
+  correlation = corExp(value = 200, form = ~ cX + cY, nugget = FALSE),
+  data = rongelap, method = "ML"
+)
+fit_exp_reml_nugget <- gls(log(counts / time) ~ 1,
+  correlation = corExp(value = c(200, 0.1), form = ~ cX + cY, nugget = TRUE),
+  data = rongelap, method = "REML"
+)
+fit_exp_ml_nugget <- gls(log(counts / time) ~ 1,
+  correlation = corExp(value = c(200, 0.1), form = ~ cX + cY, nugget = TRUE),
+  data = rongelap, method = "ML"
+)
+
+# 高斯分布、高斯型自相关结构
+fit_gaus_reml <- gls(log(counts / time) ~ 1,
+  correlation = corGaus(value = 200, form = ~ cX + cY, nugget = FALSE),
+  data = rongelap, method = "REML"
+)
+fit_gaus_ml <- gls(log(counts / time) ~ 1,
+  correlation = corGaus(value = 200, form = ~ cX + cY, nugget = FALSE),
+  data = rongelap, method = "ML"
+)
+fit_gaus_reml_nugget <- gls(log(counts / time) ~ 1,
+  correlation = corGaus(value = c(200, 0.1), form = ~ cX + cY, nugget = TRUE),
+  data = rongelap, method = "REML"
+)
+fit_gaus_ml_nugget <- gls(log(counts / time) ~ 1,
+  correlation = corGaus(value = c(200, 0.1), form = ~ cX + cY, nugget = TRUE),
+  data = rongelap, method = "ML"
+)
+```
+
+汇总结果见下表。
+
+```{r}
+#| label: tbl-gls-summary
+#| tbl-cap: 不同模型与参数估计方法的比较
+#| echo: false
+
+dat <- tibble::tribble(
+  ~response, ~corr, ~nugget, ~method, ~beta, ~sigmasq, ~phi, ~loglik,
+  "高斯分布", "指数型", "无", "REML", "1.826", "0.3172", "110.8", "-89.07",
+  "高斯分布", "指数型", "无", "ML", "1.828", "0.3064", "105.4", "-87.56",
+  "高斯分布", "指数型", "0.03598", "REML", "1.813", "0.2935", "169.7472", "-88.22",
+  "高斯分布", "指数型", "0.03312", "ML", "1.828", "0.2779", "150.1324", "-86.88",
+  "高斯分布", "高斯型", "无", "REML", "1.878", "0.2523", "41.96", "-100.7",
+  "高斯分布", "高斯型", "无", "ML", "1.879", "0.25", "41.81", "-98.62",
+  "高斯分布", "高斯型", "0.07055", "REML", "1.831", "0.2532", "139.1431", "-84.91",
+  "高斯分布", "高斯型", "0.07053", "ML", "1.832", "0.2459", "137.0980", "-83.32"
+)
+
+knitr::kable(dat, col.names = c(
+  "响应变量分布", "空间自相关结构", "块金效应", "估计方法",
+  "$\\beta$", "$\\sigma^2$", "$\\phi$", "对数似然值"
+  ), escape = FALSE)
+```
+
+相比于其他参数，REML 和 ML 估计方法对参数 $\phi$ 影响很大，ML 估计的 $\phi$ 和对数似然函数值更大。高斯型自相关结构中，REML 和 ML 估计方法对参数 $\phi$ 的估计结果差不多。函数 `gls()` 对初值要求不高，以上初值选取比较随意，只是符合要求函数定义。
+
+## 习题 {#sec-gaussian-processes-exercise}
+
+1.  对核辐射污染数据，建立对数高斯过程模型，用 Stan 编码模型，预测全岛的核辐射强度分布。
+
+    $$
+    \begin{aligned}
+    \beta  &\sim \mathrm{std\_normal}(0,1) \\
+    \sigma &\sim \mathrm{inv\_gamma}(5,5) \\
+    \phi   &\sim \mathrm{half\_std\_normal}(0,1) \\
+    \tau   &\sim \mathrm{half\_std\_normal}(0,1) \\
+    \bm{y} &\sim \mathrm{multivariate\_normal}(\bm{\beta}, \sigma^2 \Sigma+ \tau^2 I)
+    \end{aligned}
+    $$
+
+    其中，$\beta$ 代表截距，先验分布为标准正态分布，$\sigma$ 代表高斯过程的方差参数（信号），先验分布为逆伽马分布，$\phi$ 代表高斯过程的范围参数，先验分布为半标准正态分布，$y$ 代表辐射强度的对数，给定参数和数据的条件分布为多元正态分布，$\Sigma$ 代表协方差矩阵，$I$ 代表与采样点数量相同的单位矩阵， $\tau^2$ 是块金效应。
+
+    ```{verbatim, file="code/rongelap_gaussian_pred.stan", lang="stan"}
+    ```
+
+    代码中，`gp_exponential_cov` 表示空间相关性结构选择了指数型，详见 Stan 函数手册中的[指数型核函数表示](https://mc-stan.org/docs/functions-reference/gaussian-process-covariance-functions.html#exponential-kernel)。`cholesky_decompose` 表示对协方差矩阵做 Cholesky 分解，分解出来的下三角矩阵作为多元正态分布的参数，详见 Stan 函数手册中的 [Cholesky 分解](https://mc-stan.org/docs/functions-reference/linear-algebra-functions-and-solvers.html#cholesky-decomposition)。 `multi_normal_cholesky` 表示基于 Cholesky 分解的多元正态分布。详见 Stan 函数手册中的多元正态分布的 [Cholesky](https://mc-stan.org/docs/functions-reference/multi-normal-cholesky-fun.html) 参数化表示。
+
+    ```{r}
+    #| eval: false
+    #| code-fold: true
+    #| echo: !expr knitr::is_html_output()
+
+    set.seed(20232023)
+    nchains <- 2 # 2 条迭代链
+    # 给每条链设置不同的参数初始值
+    inits_data_gaussian <- lapply(1:nchains, function(i) {
+      list(
+        beta = rnorm(1),
+        sigma = runif(1),
+        phi = runif(1),
+        tau = runif(1)
+      )
+    })
+
+    # 对数高斯模型
+    rongelap_gaussian_d <- list(
+      N1 = nrow(rongelap), # 观测记录的条数
+      N2 = nrow(rongelap_grid_df),
+      D = 2, # 2 维坐标
+      x1 = rongelap[, c("cX", "cY")] / 6000, # N x 2 坐标矩阵
+      x2 = rongelap_grid_df[, c("cX", "cY")] / 6000,
+      y1 = log(rongelap$counts / rongelap$time) # N 向量
+    )
+    # 编码
+    mod_rongelap_gaussian <- cmdstan_model(
+      stan_file = "code/rongelap_gaussian_pred.stan",
+      compile = TRUE, cpp_options = list(stan_threads = TRUE)
+    )
+
+    # 对数高斯模型
+    fit_rongelap_gaussian <- mod_rongelap_gaussian$sample(
+      data = rongelap_gaussian_d,   # 观测数据
+      init = inits_data_gaussian,   # 迭代初值
+      iter_warmup = 500,            # 每条链预处理迭代次数
+      iter_sampling = 1000,         # 每条链总迭代次数
+      chains = nchains,             # 马尔科夫链的数目
+      parallel_chains = 2,      # 指定 CPU 核心数，可以给每条链分配一个
+      threads_per_chain = 1,    # 每条链设置一个线程
+      show_messages = FALSE,    # 不显示迭代的中间过程
+      refresh = 0,              # 不显示采样的进度
+      output_dir = "data-raw/",
+      seed = 20232023           # 设置随机数种子，不要使用 set.seed() 函数
+    )
+
+    # 诊断
+    fit_rongelap_gaussian$diagnostic_summary()
+    # 对数高斯模型
+    fit_rongelap_gaussian$summary(
+      variables = c("lp__", "beta", "sigma", "phi", "tau"),
+      .num_args = list(sigfig = 4, notation = "dec")
+    )
+
+    # 未采样的位置的核辐射强度预测值
+    ypred <- fit_rongelap_gaussian$summary(variables = "ypred", "mean")
+    # 预测值
+    rongelap_grid_df$ypred <- exp(ypred$mean)
+    # 整理数据
+    rongelap_grid_sf <- st_as_sf(rongelap_grid_df, coords = c("cX", "cY"), dim = "XY")
+    rongelap_grid_stars <- st_rasterize(rongelap_grid_sf, nx = 150, ny = 75)
+    rongelap_stars <- st_crop(x = rongelap_grid_stars, y = rongelap_coastline_sfp)
+
+    # 虚线框数据
+    dash_sfp <- st_polygon(x = list(rbind(
+      c(-6000, -3600),
+      c(-6000, -2600),
+      c(-5000, -2600),
+      c(-5000, -3600),
+      c(-6000, -3600)
+    )), dim = "XY")
+    # 主体内容
+    p3 <- ggplot() +
+      geom_stars(
+        data = rongelap_stars, na.action = na.omit,
+        aes(fill = ypred)
+      ) +
+      # 海岸线
+      geom_sf(
+        data = rongelap_coastline_sfp,
+        fill = NA, color = "gray30", linewidth = 0.5
+      ) +
+      # 图例
+      scale_fill_viridis_c(
+        option = "C", breaks = 0:12,
+        guide = guide_colourbar(
+          barwidth = 15, barheight = 1.5,
+          title.position = "top" # 图例标题位于图例上方
+        )
+      ) +
+      # 虚线框
+      geom_sf(data = dash_sfp, fill = NA, linewidth = 0.75, lty = 2) +
+      # 箭头
+      geom_segment(
+        data = data.frame(x = -5500, xend = -5000, y = -2600, yend = -2250),
+        aes(x = x, y = y, xend = xend, yend = yend),
+        arrow = arrow(length = unit(0.03, "npc"))
+      ) +
+      theme_bw() +
+      labs(x = "横坐标（米）", y = "纵坐标（米）", fill = "辐射强度") +
+      theme(
+        legend.position = c(0.75, 0.1),
+        legend.direction = "horizontal",
+        legend.background = element_blank()
+      )
+
+    p4 <- ggplot() +
+      geom_stars(
+        data = rongelap_stars, na.action = na.omit,
+        aes(fill = ypred), show.legend = FALSE
+      ) +
+      geom_sf(
+        data = rongelap_coastline_sfp,
+        fill = NA, color = "gray30", linewidth = 0.75
+      ) +
+      scale_fill_viridis_c(option = "C", breaks = 0:12) +
+      # 虚线框
+      geom_sf(data = dash_sfp, fill = NA, linewidth = 0.75, lty = 2) +
+      theme_void() +
+      coord_sf(expand = FALSE, xlim = c(-6000, -5000), ylim = c(-3600, -2600))
+    # 叠加图形
+    p3
+    print(p4, vp = grid::viewport(x = .3, y = .65, width = .45, height = .45))
+    ```

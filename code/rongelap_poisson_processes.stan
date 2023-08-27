@@ -17,10 +17,14 @@ parameters {
 }
 transformed parameters {
   vector[N] mu = rep_vector(beta, N);
-  matrix[N, N] K = gp_exponential_cov(X, sigma, phi) + diag_matrix(rep_vector(delta, N));
-  matrix[N, N] L_K = cholesky_decompose(K);
 }
 model {
+  matrix[N, N] L_K;
+  {
+    matrix[N, N] K = gp_exponential_cov(X, sigma, phi) + diag_matrix(rep_vector(delta, N));
+    L_K = cholesky_decompose(K);
+  }
+  
   beta ~ std_normal();
   sigma ~ inv_gamma(5, 5);
   phi ~ std_normal();
