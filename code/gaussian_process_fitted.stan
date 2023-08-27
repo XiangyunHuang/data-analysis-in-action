@@ -13,8 +13,11 @@ parameters {
   real<lower=0> sigma;
 }
 model {
-  matrix[N, N] K = gp_exponential_cov(x, sigma, phi) + diag_matrix(rep_vector(delta, N));
-  matrix[N, N] L_K = cholesky_decompose(K);
+  matrix[N, N] L_K;
+  {
+    matrix[N, N] K = gp_exponential_cov(x, sigma, phi) + diag_matrix(rep_vector(delta, N));
+    L_K = cholesky_decompose(K);
+  }
   
   phi ~ std_normal();
   sigma ~ std_normal();
