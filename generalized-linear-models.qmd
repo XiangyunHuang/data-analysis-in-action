@@ -154,7 +154,7 @@ fit_poisson_stan$summary(c("alpha", "beta", "lp__"))
 
 ## 参数后验分布 {#sec-posterior-distribution}
 
-加载 **bayesplot** 包，$\beta_1$ 和 $\beta_2$ 的联合分布
+加载 **bayesplot** 包，bayesplot 包提供一系列描述数据分布的绘图函数，比如绘制散点图 `mcmc_scatter()` 。$\beta_1$ 和 $\beta_2$ 的联合分布
 
 ```{r}
 #| label: fig-stan-scatter
@@ -167,6 +167,23 @@ fit_poisson_stan$summary(c("alpha", "beta", "lp__"))
 library(ggplot2)
 library(bayesplot)
 mcmc_scatter(fit_poisson_stan$draws(c("beta[1]", "beta[2]"))) +
+  theme_classic() +
+  labs(x = expression(beta[1]), y = expression(beta[2]))
+```
+
+如果提取采样的数据，也可使用 ggplot2 包绘图，不局限于 bayesplot 设定的风格。
+
+```{r}
+#| label: fig-density-filled
+#| fig-cap: $\beta_1$ 和 $\beta_2$ 的联合分布
+#| fig-showtext: true
+#| fig-width: 6
+#| fig-height: 5
+
+beta_df <- fit_poisson_stan$summary(c("beta[1]", "beta[2]"), format = "draws_df")
+ggplot(data = beta_df, aes(x = `beta[1]`, y = `beta[2]`)) +
+  geom_density_2d_filled() +
+  facet_wrap(~.chain, ncol = 2) +
   theme_classic() +
   labs(x = expression(beta[1]), y = expression(beta[2]))
 ```
