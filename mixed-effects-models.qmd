@@ -207,6 +207,43 @@ rongelap <- readRDS(file = "data/rongelap.rds")
 rongelap_coastline <- readRDS(file = "data/rongelap_coastline.rds")
 ```
 
+```{r}
+#| label: fig-rongelap-scatter3d
+#| fig-cap: "岛上各采样点的辐射强度"
+#| fig-showtext: true
+#| fig-width: 6
+#| fig-height: 5
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
+
+library(plot3D)
+with(rongelap, {
+  opar <- par(mar = c(.1, 2.5, .1, .1), no.readonly = TRUE)
+  rongelap_coastline$cZ <- 0
+  scatter3D(
+    x = cX, y = cY, z = counts / time, 
+    xlim = c(-6500, 50), ylim = c(-3800, 110),
+    xlab = "\n横坐标（米）", ylab = "\n纵坐标（米）",
+    zlab = "\n辐射强度", lwd = 0.5, cex = 0.8,
+    pch = 16, type = "h", ticktype = "detailed",
+    phi = 40, theta = -30, r = 50, d = 1,
+    expand = 0.5, box = TRUE, bty = "b",
+    colkey = F, col = "black",
+    panel.first = function(trans) {
+      XY <- trans3D(
+        x = rongelap_coastline$cX,
+        y = rongelap_coastline$cY,
+        z = rongelap_coastline$cZ,
+        pmat = trans
+      )
+      lines(XY, col = "gray50", lwd = 2)
+    }
+  )
+  rongelap_coastline$cZ <- NULL
+  on.exit(par(opar), add = TRUE)
+})
+```
+
 近似高斯过程、高斯过程的核函数，**mgcv** 包的函数 `s()` 帮助文档参数的说明，默认值是梅隆型相关函数及默认的范围参数，作者自己定义了一套符号约定
 
 ```{r}
