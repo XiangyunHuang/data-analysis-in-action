@@ -600,3 +600,43 @@ ggplot(data = gapminder, aes(x = gdpPercap, y = lifeExp)) +
   theme(legend.position = c(0.9, 0.2)) +
   labs(x = "人均 GDP", y = "预期寿命", fill = "区域")
 ```
+
+## 动画 {#sec-animate}
+
+从 1991 年至 2020 年，gapminder 数据集一共是 30 年的数据。根据 2007 年的数据绘制了 @fig-animate-facets ，每年的数据绘制一幅图像，30 年总共可获得 30 帧图像，再以每秒播放 6 帧图像的速度将 30 帧图像合成 GIF 动画。因此，设置这个动画总共 30 帧，每秒播放的图像数为 6。
+
+```{r}
+options(gganimate.nframes = 30, gganimate.fps = 6)
+```
+
+**gganimate** 包提供一套代码风格类似 **ggplot2** 包的动态图形语法，可以非常顺滑地与之连接。在了解了 ggplot2 绘制图形的过程后，用 **gganimate** 包制作动画是非常容易的。**gganimate** 包会调用 **gifski** (<https://github.com/r-rust/gifski>) 包来合成动画，因此，除了安装 **gganimate** 包，还需要安装 **gifski** 包。接着，在已有的 **ggplot2** 绘图代码基础上，再追加一个转场图层函数 `transition_time()`，这里是按年逐帧展示图像，因此，其转场的时间变量为 gapminder 数据集中的变量 `year`。
+
+```{r}
+#| label: fig-animate
+#| fig-cap: 生成 GIF 动画
+#| fig-width: 6
+#| fig-height: 5
+#| fig-showtext: true
+#| fig-show: "animate"
+#| dev: "ragg_png"
+
+library(gganimate)
+ggplot(data = gapminder, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point(aes(color = region, size = pop),
+    show.legend = c(color = TRUE, size = TRUE), alpha = 0.65
+  ) +
+  scale_color_manual(values = c(
+    `拉丁美洲与加勒比海地区` = "#E41A1C", `撒哈拉以南非洲地区` = "#377EB8",
+    `欧洲与中亚地区` = "#4DAF4A", `中东与北非地区` = "#984EA3",
+    `东亚与太平洋地区` = "#FF7F00", `南亚` = "#FFFF33", `北美` = "#A65628"
+  )) +
+  scale_size(range = c(2, 12), labels = label_number(scale_cut = cut_short_scale())) +
+  scale_x_log10(labels = label_log(), limits = c(10, 130000)) +
+  facet_wrap(facets = ~income_level) +
+  theme_classic() +
+  labs(
+    title = "{frame_time} 年", x = "人均 GDP",
+    y = "预期寿命", size = "人口总数", color = "区域"
+  ) +
+  transition_time(time = year)
+```
