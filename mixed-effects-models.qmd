@@ -389,10 +389,12 @@ plot(brms::conditional_effects(fit_sim_dat), points = TRUE)
 
 #### INLA
 
-INLA 近似贝叶斯计算
+与 Stan 不同，INLA 包做近似贝叶斯推断，计算效率很高。
+
+根据研究区域的边界构造非凸的内外边界，处理边界效应。
 
 ```{r}
-#| eval: false
+#| message: false
 
 library(INLA)
 library(splancs)
@@ -405,6 +407,11 @@ boundary <- list(
     points = as.matrix(rongelap_coastline[,c("cX", "cY")]), 
     convex = 200, concave = 200, resolution = 200)
 )
+```
+
+根据研究区域的情况构造网格
+
+```{r}
 # 构造非凸的网格
 mesh <- inla.mesh.2d(
   loc = as.matrix(rongelap[, c("cX", "cY")]), offset = 100,
@@ -413,12 +420,21 @@ mesh <- inla.mesh.2d(
 spde <- inla.spde2.matern(mesh = mesh, alpha = 3/2, constr = TRUE)
 indexs <- inla.spde.make.index(name = "s", n.spde = spde$n.spde)
 lengths(indexs)
+```
 
+将观测数据
+
+```{r}
+# 观测位置投影到三角网格上
 A <- inla.spde.make.A(mesh = mesh, loc = as.matrix(rongelap[, c("cX", "cY")]) )
+# 预测位置投影到三角网格上
 coop <- as.matrix(rongelap_grid_df[, c("cX", "cY")])
 Ap <- inla.spde.make.A(mesh = mesh, loc = coop)
+# 1612 个预测位置
 dim(Ap)
+```
 
+```{r}
 # 在采样点的位置上估计 estimation stk.e
 stk.e <- inla.stack(
   tag = "est",
@@ -437,10 +453,13 @@ stk.p <- inla.stack(
 
 # 合并数据 stk.full has stk.e and stk.p
 stk.full <- inla.stack(stk.e, stk.p)
+```
 
-formula <- y ~ f(s, model = spde)
+指定模型
 
-res <- inla(formula,
+```{r}
+# 模型拟合
+res <- inla(formula = y ~ f(s, model = spde),
   data = inla.stack.data(stk.full),
   E = E, # E 已知漂移项
   control.family = list(link = "log"),
@@ -456,18 +475,30 @@ res <- inla(formula,
   ),
   family = "poisson"
 )
-
+# 模型输出
 summary(res)
+```
 
+固定效应和超参数部分
+
+```{r}
+# 截距
 res$summary.fixed
+# 超参数
 res$summary.hyperpar
+```
 
+预测数据
+
+```{r}
 index <- inla.stack.index(stk.full, tag = "pred")$data
-
+# 提取预测结果，后验均值
 pred_mean <- res$summary.fitted.values[index, "mean"]
+# 95% 预测下限
 pred_ll <- res$summary.fitted.values[index, "0.025quant"]
+# 95% 预测上限
 pred_ul <- res$summary.fitted.values[index, "0.975quant"]
-
+# 整理数据
 dpm <- rbind(
   data.frame(
     cX = rongelap_grid_df[, 1], cY = rongelap_grid_df[, 2],
@@ -482,8 +513,20 @@ dpm <- rbind(
     value = pred_ul, variable = "pred_ul"
   )
 )
-
+# 预测值数据
 dpm_sf <- st_as_sf(dpm, coords = c("cX", "cY"), dim = "XY")
+```
+
+预测结果
+
+```{r}
+#| label: fig-rongelap-inla
+#| fig-cap: 核辐射强度的预测分布
+#| fig-showtext: true
+#| fig-width: 7
+#| fig-height: 4
+#| echo: !expr knitr::is_html_output()
+#| code-fold: true
 
 ggplot(dpm_sf[dpm_sf$variable =="pred_mean", ]) +
   geom_sf(aes(color = value)) +
