@@ -517,9 +517,10 @@ ggplot(dpm_sf[dpm_sf$variable =="pred_mean", ]) +
       )
     })
     # 预测区域网格化
+    nx <- ny <- 27
     topo_grid_df <- expand.grid(
-      x = seq(from = 0, to = 6.5, by = 0.25),
-      y = seq(from = 0, to = 6.5, by = 0.25)
+      x = seq(from = 0, to = 6.5, length.out = nx),
+      y = seq(from = 0, to = 6.5, length.out = ny)
     )
     # 对数高斯模型
     topo_gaussian_d <- list(
@@ -565,8 +566,8 @@ ggplot(dpm_sf[dpm_sf$variable =="pred_mean", ]) +
     library(sf)
     topo_grid_sf <- st_as_sf(topo_grid_df, coords = c("x", "y"), dim = "XY")
     library(stars)
-    # 27x27 的网格
-    topo_grid_stars <- st_rasterize(topo_grid_sf, nx = 27, ny = 27)
+    # 26x26 的网格
+    topo_grid_stars <- st_rasterize(topo_grid_sf, nx = 26, ny = 26)
 
     library(ggplot2)
     ggplot() +
@@ -587,7 +588,7 @@ ggplot(dpm_sf[dpm_sf$variable =="pred_mean", ]) +
       warmup = 1000, iter = 2000, thin = 1, refresh = 0,
       control = list(adapt_delta = 0.99)
     )
-    # 输出接轨
+    # 输出结果
     summary(bgamm2)
     # 条件效应
     me3 <- brms::conditional_effects(bgamm1, ndraws = 200, spaghetti = TRUE)
