@@ -409,7 +409,7 @@ boundary <- list(
 )
 ```
 
-根据研究区域的情况构造网格
+根据研究区域的情况构造网格，边界内部三角网格最大边长为 300，边界外部最大边长为 600，边界外凸出距离为 100 米。
 
 ```{r}
 # 构造非凸的网格
@@ -417,12 +417,22 @@ mesh <- inla.mesh.2d(
   loc = as.matrix(rongelap[, c("cX", "cY")]), offset = 100,
   max.edge = c(300, 600), boundary = boundary
 )
+```
+
+构建 SPDE，指定自协方差函数为指数型，则 $\nu = 1/2$ ，因是二维平面，则 $d = 2$ ，根据 $\alpha = \nu + d/2$ ，从而 `alpha = 3/2` 。
+
+```{r}
 spde <- inla.spde2.matern(mesh = mesh, alpha = 3/2, constr = TRUE)
+```
+
+生成 SPDE 模型的指标集，也是随机效应部分。
+
+```{r}
 indexs <- inla.spde.make.index(name = "s", n.spde = spde$n.spde)
 lengths(indexs)
 ```
 
-将观测数据
+投影矩阵，三角网格和采样点坐标之间的投影。观测数据 `rongelap` 和未采样待预测的位置数据 `rongelap_grid_df`
 
 ```{r}
 # 观测位置投影到三角网格上
@@ -479,6 +489,10 @@ res <- inla(formula = y ~ f(s, model = spde),
 summary(res)
 ```
 
+`kld` 表示 Kullback-Leibler divergence (KLD) 它的值描述标准高斯分布与 Simplified Laplace Approximation 之间的差别，值越小越表示拉普拉斯的近似效果好。
+
+DIC 和 WAIC 指标都是评估模型预测表现的。另外，还有两个量计算出来了，但是没有显示，分别是 CPO 和 PIT 。CPO 表示 Conditional Predictive Ordinate (CPO)，PIT 表示 Probability Integral Transforms (PIT) 。
+
 固定效应和超参数部分
 
 ```{r}
@@ -491,6 +505,7 @@ res$summary.hyperpar
 预测数据
 
 ```{r}
+# 预测值对应的指标集合
 index <- inla.stack.index(stk.full, tag = "pred")$data
 # 提取预测结果，后验均值
 pred_mean <- res$summary.fitted.values[index, "mean"]
