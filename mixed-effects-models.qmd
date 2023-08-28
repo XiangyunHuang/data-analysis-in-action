@@ -381,7 +381,7 @@ str(sim_dat)
 ```{r}
 #| eval: false
 
-# 按变量 fac 的不同水平
+# 按变量 fac 分组
 fit_sim_dat <- brms::brm(y ~ gp(x2, by = fac), data = sim_dat, chains = 2)
 summary(fit_sim_dat)
 plot(brms::conditional_effects(fit_sim_dat), points = TRUE)
@@ -501,6 +501,8 @@ ggplot(dpm_sf[dpm_sf$variable =="pred_mean", ]) +
 
     ```{r}
     #| eval: false
+    #| code-fold: true
+    #| echo: !expr knitr::is_html_output()
 
     data(topo, package = "MASS")
     set.seed(20232023)
@@ -514,13 +516,11 @@ ggplot(dpm_sf[dpm_sf$variable =="pred_mean", ]) +
         tau = runif(1)
       )
     })
-
-    # 网格化
+    # 预测区域网格化
     topo_grid_df <- expand.grid(
-      x = seq(from = 1, to = 6.5, by = 0.25),
-      y = seq(from = 1, to = 6.5, by = 0.25)
+      x = seq(from = 0, to = 6.5, by = 0.25),
+      y = seq(from = 0, to = 6.5, by = 0.25)
     )
-
     # 对数高斯模型
     topo_gaussian_d <- list(
       N1 = nrow(topo), # 观测记录的条数
@@ -533,11 +533,10 @@ ggplot(dpm_sf[dpm_sf$variable =="pred_mean", ]) +
     library(cmdstanr)
     # 编码
     mod_topo_gaussian <- cmdstan_model(
-      stan_file = "code/topo_gaussian_pred.stan",
+      stan_file = "code/gaussian_process_pred.stan",
       compile = TRUE, cpp_options = list(stan_threads = TRUE)
     )
-
-    # 对数高斯模型
+    # 高斯过程回归模型
     fit_topo_gaussian <- mod_topo_gaussian$sample(
       data = topo_gaussian_d,   # 观测数据
       init = inits_data_gaussian,   # 迭代初值
@@ -549,9 +548,8 @@ ggplot(dpm_sf[dpm_sf$variable =="pred_mean", ]) +
       show_messages = FALSE,    # 不显示迭代的中间过程
       refresh = 0,              # 不显示采样的进度
       output_dir = "data-raw/",
-      seed = 20232023           # 设置随机数种子，不要使用 set.seed() 函数
+      seed = 20232023           
     )
-
     # 诊断
     fit_topo_gaussian$diagnostic_summary()
     # 对数高斯模型
@@ -559,26 +557,25 @@ ggplot(dpm_sf[dpm_sf$variable =="pred_mean", ]) +
       variables = c("lp__", "beta", "sigma", "phi", "tau"),
       .num_args = list(sigfig = 4, notation = "dec")
     )
-
-    # 未采样的位置的核辐射强度预测值
+    # 未采样的位置的预测值
     ypred <- fit_topo_gaussian$summary(variables = "ypred", "mean")
     # 预测值
     topo_grid_df$ypred <- ypred$mean
-
-    library(sf)
     # 整理数据
+    library(sf)
     topo_grid_sf <- st_as_sf(topo_grid_df, coords = c("x", "y"), dim = "XY")
     library(stars)
-    topo_grid_stars <- st_rasterize(topo_grid_sf, nx = 23, ny = 23)
+    # 27x27 的网格
+    topo_grid_stars <- st_rasterize(topo_grid_sf, nx = 27, ny = 27)
 
     library(ggplot2)
     ggplot() +
-      geom_stars(data = topo_grid_stars, aes(fill = ypred), na.action = na.omit) +
+      geom_stars(data = topo_grid_stars, aes(fill = ypred)) +
       scale_fill_viridis_c(option = "C") +
       theme_bw()
     ```
 
-    **brms** 包的函数 `gp()` 的参数 $k$ 表示近似高斯过程 GP 所用的基函数的数目
+2.  **用 brms** 包实现贝叶斯高斯过程回归模型，考虑用样条近似高斯过程以加快计算。提示：**brms** 包的函数 `gp()` 的参数 $k$ 表示近似高斯过程 GP 所用的基函数的数目。截止写作时间，**brms** 包实现的高斯过程核函数只有指数二次核函数 exponentiated-quadratic kernel 。
 
     ```{r}
     #| eval: false
@@ -590,7 +587,10 @@ ggplot(dpm_sf[dpm_sf$variable =="pred_mean", ]) +
       warmup = 1000, iter = 2000, thin = 1, refresh = 0,
       control = list(adapt_delta = 0.99)
     )
+    # 输出接轨
     summary(bgamm2)
+    # 条件效应
     me3 <- brms::conditional_effects(bgamm1, ndraws = 200, spaghetti = TRUE)
+    # 绘制图形
     plot(me3, ask = FALSE, points = TRUE)
     ```
