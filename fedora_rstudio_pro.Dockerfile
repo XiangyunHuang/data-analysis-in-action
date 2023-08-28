@@ -126,6 +126,7 @@ RUN dnf -y copr enable iucar/cran \
   && install2.r showtextdb showtext \
   && export GITHUB_PAT=${GITHUB_PAT} \
   && export DOWNLOAD_STATIC_LIBV8=1 \
+  && Rscript -e "install.packages('INLA', repos = c(getOption('repos'), INLA = 'https://inla.r-inla-download.org/R/stable'))" \
   && Rscript -e "remotes::install_deps('.', dependencies = TRUE)" \
   && rm -f DESCRIPTION desc_pkgs.txt
 
@@ -137,7 +138,8 @@ RUN mkdir -p /opt/.virtualenvs/r-tensorflow \
   && virtualenv -p /usr/bin/python3 $RETICULATE_PYTHON_ENV \
   && source $RETICULATE_PYTHON_ENV/bin/activate \
   && pip install -r requirements.txt \
-  && deactivate
+  && deactivate \
+  && rm -f requirements.txt
 
 # Setup CmdStan
 RUN curl -fLo cmdstan-${CMDSTAN_VERSION}.tar.gz https://github.com/stan-dev/cmdstan/releases/download/v${CMDSTAN_VERSION}/cmdstan-${CMDSTAN_VERSION}.tar.gz \
