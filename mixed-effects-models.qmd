@@ -508,28 +508,17 @@ res$summary.hyperpar
 # 预测值对应的指标集合
 index <- inla.stack.index(stk.full, tag = "pred")$data
 # 提取预测结果，后验均值
-pred_mean <- res$summary.fitted.values[index, "mean"]
+# pred_mean <- res$summary.fitted.values[index, "mean"]
 # 95% 预测下限
-pred_ll <- res$summary.fitted.values[index, "0.025quant"]
+# pred_ll <- res$summary.fitted.values[index, "0.025quant"]
 # 95% 预测上限
-pred_ul <- res$summary.fitted.values[index, "0.975quant"]
+# pred_ul <- res$summary.fitted.values[index, "0.975quant"]
 # 整理数据
-dpm <- rbind(
-  data.frame(
-    cX = rongelap_grid_df[, 1], cY = rongelap_grid_df[, 2],
-    value = pred_mean, variable = "pred_mean"
-  ),
-  data.frame(
-    cX = rongelap_grid_df[, 1], cY = rongelap_grid_df[, 2],
-    value = pred_ll, variable = "pred_ll"
-  ),
-  data.frame(
-    cX = rongelap_grid_df[, 1], cY = rongelap_grid_df[, 2],
-    value = pred_ul, variable = "pred_ul"
-  )
-)
+rongelap_grid_df$ypred <- res$summary.fitted.values[index, "mean"]
 # 预测值数据
-dpm_sf <- st_as_sf(dpm, coords = c("cX", "cY"), dim = "XY")
+rongelap_grid_sf <- st_as_sf(rongelap_grid_df, coords = c("cX", "cY"), dim = "XY")
+rongelap_grid_stars <- st_rasterize(rongelap_grid_sf, nx = 150, ny = 75)
+rongelap_stars <- st_crop(x = rongelap_grid_stars, y = rongelap_coastline_sfp)
 ```
 
 预测结果
@@ -540,13 +529,13 @@ dpm_sf <- st_as_sf(dpm, coords = c("cX", "cY"), dim = "XY")
 #| fig-showtext: true
 #| fig-width: 7
 #| fig-height: 4
-#| echo: !expr knitr::is_html_output()
-#| code-fold: true
 
-ggplot(dpm_sf[dpm_sf$variable =="pred_mean", ]) +
-  geom_sf(aes(color = value)) +
-  scale_color_viridis_c(option = "C", name = expression(lambda)) +
-  theme_bw()
+ggplot() +
+  geom_stars(data = rongelap_stars, aes(fill = ypred), na.action = na.omit) +
+  geom_sf(data = rongelap_coastline_sfp, fill = NA, color = "gray50", linewidth = 0.5) +
+  scale_fill_viridis_c(option = "C") +
+  theme_bw() +
+  labs(x = "横坐标（米）", y = "纵坐标（米）", fill = "预测值")
 ```
 
 ## 总结 {#sec-mixed-effects-summary}
