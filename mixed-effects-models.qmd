@@ -381,7 +381,7 @@ str(sim_dat)
 ```{r}
 #| eval: false
 
-# 按变量 fac 的不同水平
+# 按变量 fac 分组
 fit_sim_dat <- brms::brm(y ~ gp(x2, by = fac), data = sim_dat, chains = 2)
 summary(fit_sim_dat)
 plot(brms::conditional_effects(fit_sim_dat), points = TRUE)
@@ -389,10 +389,12 @@ plot(brms::conditional_effects(fit_sim_dat), points = TRUE)
 
 #### INLA
 
-INLA 近似贝叶斯计算
+与 Stan 不同，INLA 包做近似贝叶斯推断，计算效率很高。
+
+根据研究区域的边界构造非凸的内外边界，处理边界效应。
 
 ```{r}
-#| eval: false
+#| message: false
 
 library(INLA)
 library(splancs)
@@ -405,20 +407,44 @@ boundary <- list(
     points = as.matrix(rongelap_coastline[,c("cX", "cY")]), 
     convex = 200, concave = 200, resolution = 200)
 )
+```
+
+根据研究区域的情况构造网格，边界内部三角网格最大边长为 300，边界外部最大边长为 600，边界外凸出距离为 100 米。
+
+```{r}
 # 构造非凸的网格
 mesh <- inla.mesh.2d(
   loc = as.matrix(rongelap[, c("cX", "cY")]), offset = 100,
   max.edge = c(300, 600), boundary = boundary
 )
+```
+
+构建 SPDE，指定自协方差函数为指数型，则 $\nu = 1/2$ ，因是二维平面，则 $d = 2$ ，根据 $\alpha = \nu + d/2$ ，从而 `alpha = 3/2` 。
+
+```{r}
 spde <- inla.spde2.matern(mesh = mesh, alpha = 3/2, constr = TRUE)
+```
+
+生成 SPDE 模型的指标集，也是随机效应部分。
+
+```{r}
 indexs <- inla.spde.make.index(name = "s", n.spde = spde$n.spde)
 lengths(indexs)
+```
 
+投影矩阵，三角网格和采样点坐标之间的投影。观测数据 `rongelap` 和未采样待预测的位置数据 `rongelap_grid_df`
+
+```{r}
+# 观测位置投影到三角网格上
 A <- inla.spde.make.A(mesh = mesh, loc = as.matrix(rongelap[, c("cX", "cY")]) )
+# 预测位置投影到三角网格上
 coop <- as.matrix(rongelap_grid_df[, c("cX", "cY")])
 Ap <- inla.spde.make.A(mesh = mesh, loc = coop)
+# 1612 个预测位置
 dim(Ap)
+```
 
+```{r}
 # 在采样点的位置上估计 estimation stk.e
 stk.e <- inla.stack(
   tag = "est",
@@ -437,10 +463,13 @@ stk.p <- inla.stack(
 
 # 合并数据 stk.full has stk.e and stk.p
 stk.full <- inla.stack(stk.e, stk.p)
+```
 
-formula <- y ~ f(s, model = spde)
+指定模型
 
-res <- inla(formula,
+```{r}
+# 模型拟合
+res <- inla(formula = y ~ f(s, model = spde),
   data = inla.stack.data(stk.full),
   E = E, # E 已知漂移项
   control.family = list(link = "log"),
@@ -456,39 +485,57 @@ res <- inla(formula,
   ),
   family = "poisson"
 )
-
+# 模型输出
 summary(res)
+```
 
+`kld` 表示 Kullback-Leibler divergence (KLD) 它的值描述标准高斯分布与 Simplified Laplace Approximation 之间的差别，值越小越表示拉普拉斯的近似效果好。
+
+DIC 和 WAIC 指标都是评估模型预测表现的。另外，还有两个量计算出来了，但是没有显示，分别是 CPO 和 PIT 。CPO 表示 Conditional Predictive Ordinate (CPO)，PIT 表示 Probability Integral Transforms (PIT) 。
+
+固定效应和超参数部分
+
+```{r}
+# 截距
 res$summary.fixed
+# 超参数
 res$summary.hyperpar
+```
 
+预测数据
+
+```{r}
+# 预测值对应的指标集合
 index <- inla.stack.index(stk.full, tag = "pred")$data
+# 提取预测结果，后验均值
+# pred_mean <- res$summary.fitted.values[index, "mean"]
+# 95% 预测下限
+# pred_ll <- res$summary.fitted.values[index, "0.025quant"]
+# 95% 预测上限
+# pred_ul <- res$summary.fitted.values[index, "0.975quant"]
+# 整理数据
+rongelap_grid_df$ypred <- res$summary.fitted.values[index, "mean"]
+# 预测值数据
+rongelap_grid_sf <- st_as_sf(rongelap_grid_df, coords = c("cX", "cY"), dim = "XY")
+rongelap_grid_stars <- st_rasterize(rongelap_grid_sf, nx = 150, ny = 75)
+rongelap_stars <- st_crop(x = rongelap_grid_stars, y = rongelap_coastline_sfp)
+```
 
-pred_mean <- res$summary.fitted.values[index, "mean"]
-pred_ll <- res$summary.fitted.values[index, "0.025quant"]
-pred_ul <- res$summary.fitted.values[index, "0.975quant"]
+预测结果
 
-dpm <- rbind(
-  data.frame(
-    cX = rongelap_grid_df[, 1], cY = rongelap_grid_df[, 2],
-    value = pred_mean, variable = "pred_mean"
-  ),
-  data.frame(
-    cX = rongelap_grid_df[, 1], cY = rongelap_grid_df[, 2],
-    value = pred_ll, variable = "pred_ll"
-  ),
-  data.frame(
-    cX = rongelap_grid_df[, 1], cY = rongelap_grid_df[, 2],
-    value = pred_ul, variable = "pred_ul"
-  )
-)
+```{r}
+#| label: fig-rongelap-inla
+#| fig-cap: 核辐射强度的预测分布
+#| fig-showtext: true
+#| fig-width: 7
+#| fig-height: 4
 
-dpm_sf <- st_as_sf(dpm, coords = c("cX", "cY"), dim = "XY")
-
-ggplot(dpm_sf[dpm_sf$variable =="pred_mean", ]) +
-  geom_sf(aes(color = value)) +
-  scale_color_viridis_c(option = "C", name = expression(lambda)) +
-  theme_bw()
+ggplot() +
+  geom_stars(data = rongelap_stars, aes(fill = ypred), na.action = na.omit) +
+  geom_sf(data = rongelap_coastline_sfp, fill = NA, color = "gray50", linewidth = 0.5) +
+  scale_fill_viridis_c(option = "C") +
+  theme_bw() +
+  labs(x = "横坐标（米）", y = "纵坐标（米）", fill = "预测值")
 ```
 
 ## 总结 {#sec-mixed-effects-summary}
@@ -501,6 +548,8 @@ ggplot(dpm_sf[dpm_sf$variable =="pred_mean", ]) +
 
     ```{r}
     #| eval: false
+    #| code-fold: true
+    #| echo: !expr knitr::is_html_output()
 
     data(topo, package = "MASS")
     set.seed(20232023)
@@ -514,13 +563,12 @@ ggplot(dpm_sf[dpm_sf$variable =="pred_mean", ]) +
         tau = runif(1)
       )
     })
-
-    # 网格化
+    # 预测区域网格化
+    nx <- ny <- 27
     topo_grid_df <- expand.grid(
-      x = seq(from = 1, to = 6.5, by = 0.25),
-      y = seq(from = 1, to = 6.5, by = 0.25)
+      x = seq(from = 0, to = 6.5, length.out = nx),
+      y = seq(from = 0, to = 6.5, length.out = ny)
     )
-
     # 对数高斯模型
     topo_gaussian_d <- list(
       N1 = nrow(topo), # 观测记录的条数
@@ -533,11 +581,10 @@ ggplot(dpm_sf[dpm_sf$variable =="pred_mean", ]) +
     library(cmdstanr)
     # 编码
     mod_topo_gaussian <- cmdstan_model(
-      stan_file = "code/topo_gaussian_pred.stan",
+      stan_file = "code/gaussian_process_pred.stan",
       compile = TRUE, cpp_options = list(stan_threads = TRUE)
     )
-
-    # 对数高斯模型
+    # 高斯过程回归模型
     fit_topo_gaussian <- mod_topo_gaussian$sample(
       data = topo_gaussian_d,   # 观测数据
       init = inits_data_gaussian,   # 迭代初值
@@ -549,9 +596,8 @@ ggplot(dpm_sf[dpm_sf$variable =="pred_mean", ]) +
       show_messages = FALSE,    # 不显示迭代的中间过程
       refresh = 0,              # 不显示采样的进度
       output_dir = "data-raw/",
-      seed = 20232023           # 设置随机数种子，不要使用 set.seed() 函数
+      seed = 20232023           
     )
-
     # 诊断
     fit_topo_gaussian$diagnostic_summary()
     # 对数高斯模型
@@ -559,26 +605,25 @@ ggplot(dpm_sf[dpm_sf$variable =="pred_mean", ]) +
       variables = c("lp__", "beta", "sigma", "phi", "tau"),
       .num_args = list(sigfig = 4, notation = "dec")
     )
-
-    # 未采样的位置的核辐射强度预测值
+    # 未采样的位置的预测值
     ypred <- fit_topo_gaussian$summary(variables = "ypred", "mean")
     # 预测值
     topo_grid_df$ypred <- ypred$mean
-
-    library(sf)
     # 整理数据
+    library(sf)
     topo_grid_sf <- st_as_sf(topo_grid_df, coords = c("x", "y"), dim = "XY")
     library(stars)
-    topo_grid_stars <- st_rasterize(topo_grid_sf, nx = 23, ny = 23)
+    # 26x26 的网格
+    topo_grid_stars <- st_rasterize(topo_grid_sf, nx = 26, ny = 26)
 
     library(ggplot2)
     ggplot() +
-      geom_stars(data = topo_grid_stars, aes(fill = ypred), na.action = na.omit) +
+      geom_stars(data = topo_grid_stars, aes(fill = ypred)) +
       scale_fill_viridis_c(option = "C") +
       theme_bw()
     ```
 
-    **brms** 包的函数 `gp()` 的参数 $k$ 表示近似高斯过程 GP 所用的基函数的数目
+2.  **用 brms** 包实现贝叶斯高斯过程回归模型，考虑用样条近似高斯过程以加快计算。提示：**brms** 包的函数 `gp()` 的参数 $k$ 表示近似高斯过程 GP 所用的基函数的数目。截止写作时间，**brms** 包实现的高斯过程核函数只有指数二次核函数 exponentiated-quadratic kernel 。
 
     ```{r}
     #| eval: false
@@ -590,7 +635,10 @@ ggplot(dpm_sf[dpm_sf$variable =="pred_mean", ]) +
       warmup = 1000, iter = 2000, thin = 1, refresh = 0,
       control = list(adapt_delta = 0.99)
     )
+    # 输出结果
     summary(bgamm2)
+    # 条件效应
     me3 <- brms::conditional_effects(bgamm1, ndraws = 200, spaghetti = TRUE)
+    # 绘制图形
     plot(me3, ask = FALSE, points = TRUE)
     ```
