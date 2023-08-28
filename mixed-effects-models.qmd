@@ -293,7 +293,11 @@ rongelap_grid_centroid <- st_centroid(rongelap_grid)
 # 共计 1612 个预测点
 rongelap_grid_df <- as.data.frame(st_coordinates(rongelap_grid_centroid))
 colnames(rongelap_grid_df) <- c("cX", "cY")
+```
 
+预测和整理数据
+
+```{r}
 # 预测
 rongelap_grid_df$ypred <- as.vector(predict(fit_rongelap_gam, newdata = rongelap_grid_df, type = "response")) 
 # 整理预测数据
@@ -449,16 +453,16 @@ dim(Ap)
 stk.e <- inla.stack(
   tag = "est",
   data = list(y = rongelap$counts, E = rongelap$time),
-  A = A,
-  effects = list(s = indexs)
+  A = list(rep(1, 157), A),
+  effects = list(data.frame(b0 = 1), s = indexs)
 )
 
 # 在新生成的位置上预测 prediction stk.p
 stk.p <- inla.stack(
   tag = "pred",
   data = list(y = NA, E = NA),
-  A = Ap,
-  effects = list(s = indexs)
+  A = list(rep(1, 1612), Ap),
+  effects = list(data.frame(b0 = 1), s = indexs)
 )
 
 # 合并数据 stk.full has stk.e and stk.p
@@ -469,7 +473,7 @@ stk.full <- inla.stack(stk.e, stk.p)
 
 ```{r}
 # 模型拟合
-res <- inla(formula = y ~ f(s, model = spde),
+res <- inla(formula = y ~ 0 + b0 + f(s, model = spde),
   data = inla.stack.data(stk.full),
   E = E, # E 已知漂移项
   control.family = list(link = "log"),
