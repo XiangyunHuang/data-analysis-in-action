@@ -337,17 +337,30 @@ rongelap_gam <- gam(
 )
 # 简化版 INLA
 fit_rongelap_ginla <- ginla(G = rongelap_gam)
+str(fit_rongelap_ginla)
 ```
 
-其中， $k = 50$ 表示 50 个参数
+其中， $k = 50$ 表示 50 个参数，每个参数的分布对应有 100 个采样点，截距项的边际后验概率密度分布如下：
 
 ```{r}
-#| eval: false
+#| label: fig-rongelap-mgcv-ginla
+#| fig-cap: 截距项的边际后验概率密度分布
+#| fig-showtext: true
+#| fig-width: 5
+#| fig-height: 5
+#| par: true
 
 plot(
   fit_rongelap_ginla$beta[1, ], fit_rongelap_ginla$density[1, ],
-  type = "l", xlab = "intercept", ylab = "density"
+  type = "l", xlab = "截距项", ylab = "概率密度"
 )
+```
+
+不难看出，截距项在 1.976 至 1.978 之间，各个参数的最大后验估计如下：
+
+```{r}
+idx <- apply(fit_rongelap_ginla$density, 1, function(x) x == max(x))
+fit_rongelap_ginla$beta[t(idx)]
 ```
 
 ### 贝叶斯派
