@@ -36,6 +36,25 @@ library(loo)       # LOO-CV
 
 ```{r}
 data(sleepstudy, package = "lme4")
+str(sleepstudy)
+```
+
+```{r}
+#| label: fig-sleepstudy
+#| fig-cap: sleepstudy 数据集
+#| fig-width: 5
+#| fig-height: 4
+#| fig-showtext: true
+
+library(ggplot2)
+ggplot(data = sleepstudy, aes(x = Days, y = Reaction, group = Subject)) +
+  geom_line() +
+  theme_bw()
+```
+
+随机截距和斜率
+
+```{r}
 library(nlme)
 fm1 <- lme(Reaction ~ Days, random = ~ Days | Subject, data = sleepstudy)
 summary(fm1)
@@ -46,7 +65,7 @@ summary(fm1)
 或使用 lme4 包，可以得到同样的结果
 
 ```{r}
-fm2 <- lme4::lmer(Reaction ~ Days + (Days|Subject), data = sleepstudy)
+fm2 <- lme4::lmer(Reaction ~ Days + (Days | Subject), data = sleepstudy)
 summary(fm2)
 ```
 
@@ -125,6 +144,7 @@ Found 3 observations with a pareto_k > 0.7 in model 'bm'. It is recommended to s
 
 ```{r}
 #| eval: false
+
 # Display Conditional Effects of Predictors
 brms::conditional_effects(bm, effects = "Days")
 # Non-Linear Hypothesis Testing
@@ -141,6 +161,10 @@ brms::hypothesis(bm, hypothesis = "Days > 10")
 
 ```{r}
 data(cbpp, package = "lme4")
+str(cbpp)
+```
+
+```{r}
 library(GLMMadaptive)
 fgm1 <- mixed_model(
   fixed = cbind(incidence, size - incidence) ~ period,
