@@ -117,19 +117,22 @@ RUN dnf -y install texlive-sourcecodepro \
  && dnf clean all
 
 # Install Extra R Packages
-COPY DESCRIPTION DESCRIPTION
 COPY desc_pkgs.txt desc_pkgs.txt
 RUN dnf install -y rpm-sequoia --enablerepo=updates-testing,updates-testing-modular --best \
   && dnf -y copr enable iucar/cran \
   && dnf -y install R-CoprManager xz \
   && dnf -y install $(cat desc_pkgs.txt) \
   && dnf clean all \
-  && install2.r showtextdb showtext \
+  && rm -f desc_pkgs.txt
+
+# Install showtext V8 and INLA
+COPY DESCRIPTION DESCRIPTION
+RUN install2.r showtextdb showtext \
   && export GITHUB_PAT=${GITHUB_PAT} \
   && export DOWNLOAD_STATIC_LIBV8=1 \
   && Rscript -e "install.packages('INLA', repos = c(getOption('repos'), INLA = 'https://inla.r-inla-download.org/R/testing'))" \
   && Rscript -e "remotes::install_deps('.', dependencies = TRUE)" \
-  && rm -f DESCRIPTION desc_pkgs.txt
+  && rm -f DESCRIPTION
 
 # Setup Python Env
 COPY requirements.txt requirements.txt
