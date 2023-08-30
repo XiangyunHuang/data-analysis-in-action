@@ -1,4 +1,4 @@
-FROM ghcr.io/enchufa2/r-copr:38 AS fedora-rstudio
+FROM fedora:38 AS fedora-rstudio
 
 RUN groupadd staff \
   && useradd -g staff -d /home/docker docker
@@ -119,7 +119,8 @@ RUN dnf -y install texlive-sourcecodepro \
 # Install Extra R Packages
 COPY DESCRIPTION DESCRIPTION
 COPY desc_pkgs.txt desc_pkgs.txt
-RUN dnf -y copr enable iucar/cran \
+RUN dnf install -y rpm-sequoia --enablerepo=updates-testing,updates-testing-modular --best \
+  && dnf -y copr enable iucar/cran \
   && dnf -y install R-CoprManager xz \
   && dnf -y install $(cat desc_pkgs.txt) \
   && dnf clean all \
