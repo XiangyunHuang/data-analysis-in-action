@@ -3,14 +3,11 @@
 ```{r}
 #| echo: false
 
+source("_common.R")
 options(tinytex.engine = "xetex")
 ```
 
 有一些示意图是用来表达数据探索的思路的，而不是直接探索数据的工具。比如象限图、甘特图、思维导图、网络图等，可以用 TikZ 绘制这类图形来阐述分析维度、思路、结构等。当然，绘制这类示意图不仅限于 TikZ，还有很多其它工具，如 LaTeX 社区的 PSTricks，JavaScripts 社区的 Mermaid，软件 Graphviz 等。
-
-TikZ 绘图的优势有很多，语法简单、易于上手、功能强大、资源丰富、成熟稳定等，可以说几乎是集所有优点于一身。正因如此，**knitr** 包和 **tikzDevice** 包将其引入 R 语言社区中。**knitr** 包的 `tikz` 引擎是用来编译 TikZ 代码的，默认使用的是 standalone 文类。
-
-R 语言绘图遇到公式时，略显不足，而排版公式是 LaTeX 的优势。正因为有所不足，所以我也不会纠结于工具层面的东西，什么好用用什么！三维图 @fig-tikz-viridis 是用 LaTeX 里的优秀绘图工具 TikZ 制作的，细心的读者会发现本书多次用到这个工具。
 
 ## standalone 宏包 {#sec-tikz-standalone}
 
@@ -107,7 +104,7 @@ list(
 
 ## PGF 宏包 {#sec-tikz-pgf}
 
-TikZ 是 TikZ ist kein Zeichenprogramm 的简写，命名有 Linux 哲学意味。提供一套易于学习和使用的绘图语法，下面比较详细的介绍 LaTeX 宏包 [PGF](https://ctan.org/pkg/pgf) 绘制曲线图的过程。
+PGF 宏包提供一套易于学习和使用的绘图语法 TikZ，TikZ 是 TikZ ist kein Zeichenprogramm 的简写，命名有 Linux 哲学意味。下面比较详细的介绍 LaTeX 宏包 [PGF](https://ctan.org/pkg/pgf) 绘制曲线图的过程。
 
 ```{tikz}
 #| label: fig-tikz-pgf1
@@ -399,4 +396,119 @@ Office 办公软件中有一个 SmartArt 绘图模块，专门用来绘制各类
   {文档项目, {批量渲染、共享配置}},
   {扩展接口, {RStudio、VS Code、JupyterLab}},
 }
+```
+
+## TikZ 与 R {#sec-tikz-with-r}
+
+TikZ 绘图的优势有很多，语法简单、易于上手、功能强大、资源丰富、成熟稳定等，可以说几乎是集所有优点于一身。正因如此，**knitr** 包和 **tikzDevice** 包将其引入 R 语言社区中。**knitr** 包的 `tikz` 引擎是用来编译 TikZ 代码的，默认使用的是 standalone 文类。
+
+R 语言绘图遇到公式时，略显不足，而排版公式是 LaTeX 的优势。正因为有所不足，所以我也不会纠结于工具层面的东西，什么好用用什么！三维 @fig-tikz-viridis 是用 LaTeX 里的优秀绘图工具 TikZ 制作的，细心的读者会发现本书多次用到这个工具。
+
+众所周知，Donald Knuth 十年磨一剑，开发了 TeX 排版系统，就是解决排版数学公式的痛点。如 @fig-linear-model 所示，因图形中包含数学公式和符号，为了获得原汁原味的渲染效果，在使用 Base R 绘图的过程中通过 [**tikzDevice**](https://github.com/daqana/tikzDevice) 包引入了 LaTeX 中的 TikZ 绘图引擎。
+
+```{r}
+#| label: fig-linear-model
+#| dev: 'tikz'
+#| fig-cap: "简单线性模型"
+#| out-width: "60%"
+#| fig-width: 3
+#| fig-height: 3 
+#| cache: true
+#| fig-process: !expr to_png
+
+opar <- par(mgp = c(2, 0.7, 0), mar = c(4, 3, 4, 1) + 0.1, no.readonly = TRUE)
+set.seed(2021)
+x <- rnorm(10)
+y <- x + rnorm(5, sd = 0.25)
+lab <- sample(
+  x = paste0("$\\mathcal{", LETTERS, "}$"),
+  size = 10, replace = FALSE
+)
+model <- lm(y ~ x)
+rsq <- summary(model)$r.squared
+rsq <- signif(rsq, 4)
+plot(x, y,
+  main = "你好 \\LaTeX!", # 引入 7 号文本字体
+  sub = "$\\mathcal{N}(x;\\mu,\\Sigma)$",
+  xlab = "$x$", ylab = "$y$", type = "n"
+)
+text(x = x, y = y, labels = lab)
+abline(model, col = "black")
+# 引入 7 号数学字体
+mtext(paste("线性模型: $\\mathsf{R}^{2}=", rsq, "$"), line = 0.5)
+legend("bottomright",
+  legend = paste0(
+    "$y = ", round(coef(model)[2], 3), "x +",
+    round(coef(model)[1], 3), "$"
+  ),
+  bty = "n"
+)
+on.exit(par(opar), add = TRUE)
+```
+
+@fig-bessel-function-1 是贝塞尔函数 $\mathcal{K}_{\kappa}(u)$ 在区间 $(10^{-8}, 10^2)$ 和 $(0, 4)$ 上的图像。其中，@fig-bessel-function-1 是区间 $(10^{-8}, 10^2)$ 上的贝塞尔函数 $\mathcal{K}_{\kappa}(u)$， @fig-bessel-function-2 是区间 $(0, 4)$ 上的贝塞尔函数 $\mathcal{K}_{\kappa}(u)$ 。
+
+```{r}
+#| label: fig-bessel-function
+#| fig-cap: 贝塞尔函数图像
+#| fig-subcap: 
+#|   - 区间 $(10^{-8}, 10^2)$ 上的贝塞尔函数
+#|   - 区间 $(0, 4)$ 上的贝塞尔函数
+#| dev: 'tikz'
+#| cache: true
+#| fig-process: !expr to_png
+#| out-width: "50%"
+#| fig-width: 3.5
+#| fig-height: 3.5
+
+x0 <- 2^(-20:10)
+nus <- c(2:5, 10, 20)
+x <- seq(0, 4, length.out = 501)
+
+plot(x0, x0^-8,
+  frame.plot = TRUE, # 添加绘图框
+  log = "xy", # x 和 y 轴都取对数尺度
+  axes = FALSE, # 去掉坐标轴
+  xlab = "$u$", ylab = "$\\mathcal{K}_{\\kappa}(u)$", # 设置坐标轴标签
+  type = "n", # 清除绘图区域的内容
+  ann = TRUE, # 添加标题 x和y轴标签
+  panel.first = grid() # 添加背景参考线
+)
+
+axis(1,
+  at = 10^(-8 + 2 * 0:5),
+  labels = paste0("$\\mathsf{10^{", -8 + 2 * 0:5, "}}$")
+)
+axis(2,
+  at = 10^(-8 + 16 * 0:4),
+  labels = paste0("$\\mathsf{10^{", -8 + 16 * 0:4, "}}$"), las = 1
+)
+
+for (i in seq(length(nus))) {
+  lines(x0, besselK(x0, nu = nus[i]), col = hcl.colors(9)[i], lwd = 2)
+}
+legend("topright",
+  legend = paste0("$\\kappa=", rev(nus), "$"),
+  col = hcl.colors(9, rev = TRUE), lwd = 2, cex = 1
+)
+
+x <- seq(0, 4, length.out = 501)
+x <- x[x > 0]
+plot(x, x,
+  frame.plot = TRUE, ylim = c(1e+0, 1e+20), log = "y",
+  xlab = "$u$", ylab = "$\\mathcal{K}_{\\kappa}(u)$",
+  type = "n", yaxt = "n", ann = TRUE, panel.first = grid()
+)
+axis(2,
+  at = c(1e+0, 1e+05, 1e+10, 1e+15, 1e+20),
+  labels = paste0("$\\mathsf{10^{", 5 * 0:4, "}}$"), las = 1
+)
+
+for (i in seq(length(nus))) {
+  lines(x, besselK(x, nu = nus[i]), col = hcl.colors(9)[i], lwd = 2)
+}
+legend("topright",
+  legend = paste0("$\\kappa=", rev(nus), "$"),
+  col = hcl.colors(9, rev = TRUE), lwd = 2, cex = 1
+)
 ```
