@@ -24,6 +24,8 @@ library(cmdstanr)  # 编译采样
 library(ggplot2)   # 作图
 library(bayesplot) # 后验分布
 library(loo)       # LOO-CV
+
+library(INLA)      # 近似贝叶斯推断
 ```
 
 最好找 3 个真实数据集，其中数据集 `sleepstudy` 和 `cbpp` 均来自 **lme4** 包。
@@ -60,95 +62,12 @@ fm1 <- lme(Reaction ~ Days, random = ~ Days | Subject, data = sleepstudy)
 summary(fm1)
 ```
 
-#### lme4
-
-或使用 lme4 包，可以得到同样的结果
-
-```{r}
-fm2 <- lme4::lmer(Reaction ~ Days + (Days | Subject), data = sleepstudy)
-summary(fm2)
-```
-
 ### 贝叶斯派
 
 #### cmdstanr
 
 ```{r}
 library(cmdstanr)
-```
-
-#### brms
-
-```{r}
-#| eval: false
-
-bm <- brms::brm(Reaction ~ Days + (Days | Subject), data = sleepstudy)
-summary(bm)
-```
-
-```         
- Family: gaussian 
-  Links: mu = identity; sigma = identity 
-Formula: Reaction ~ Days + (Days | Subject) 
-   Data: sleepstudy (Number of observations: 180) 
-  Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
-         total post-warmup draws = 4000
-
-Group-Level Effects: 
-~Subject (Number of levels: 18) 
-                    Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sd(Intercept)          27.01      6.91    15.27    42.82 1.00     1655     2080
-sd(Days)                6.54      1.51     4.15     9.93 1.00     1359     1917
-cor(Intercept,Days)     0.08      0.30    -0.49     0.67 1.00      972     1465
-
-Population-Level Effects: 
-          Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-Intercept   251.17      7.65   235.76   266.45 1.00     1958     2029
-Days         10.37      1.72     7.01    13.81 1.00     1351     1999
-
-Family Specific Parameters: 
-      Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sigma    25.93      1.59    23.07    29.29 1.00     3005     2780
-
-Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
-and Tail_ESS are effective sample size measures, and Rhat is the potential
-scale reduction factor on split chains (at convergence, Rhat = 1).
-```
-
-```{r}
-#| eval: false
-
-brms::loo(bm)
-```
-
-```         
-Computed from 4000 by 180 log-likelihood matrix
-
-         Estimate   SE
-elpd_loo   -861.7 22.6
-p_loo        34.6  8.7
-looic      1723.4 45.2
-------
-Monte Carlo SE of elpd_loo is NA.
-
-Pareto k diagnostic values:
-                         Count Pct.    Min. n_eff
-(-Inf, 0.5]   (good)     170   94.4%   592       
- (0.5, 0.7]   (ok)         7    3.9%   571       
-   (0.7, 1]   (bad)        1    0.6%   46        
-   (1, Inf)   (very bad)   2    1.1%   7         
-See help('pareto-k-diagnostic') for details.
-Warning message:
-Found 3 observations with a pareto_k > 0.7 in model 'bm'. It is recommended to set 'moment_match = TRUE' in order to perform moment matching for problematic observations.  
-```
-
-```{r}
-#| eval: false
-
-# Display Conditional Effects of Predictors
-brms::conditional_effects(bm, effects = "Days")
-# Non-Linear Hypothesis Testing
-brms::hypothesis(bm, hypothesis = "Days > 10")
 ```
 
 ## 广义线性混合效应模型 {#sec-glmm}
@@ -171,18 +90,6 @@ fgm1 <- mixed_model(
   random = ~ 1 | herd, data = cbpp, family = binomial(link = "logit")
 )
 summary(fgm1)
-```
-
-#### lme4
-
-或使用 lme4 包，可以得到同样的结果
-
-```{r}
-fgm2 <- lme4::glmer(
-  cbind(incidence, size - incidence) ~ period + (1 | herd),
-  family = binomial("logit"), data = cbpp
-)
-summary(fgm2)
 ```
 
 #### mgcv
@@ -212,16 +119,27 @@ gam.vcomp(fgm3)
 library(cmdstanr)
 ```
 
-#### brms
+## 非线性混合效应模型 {#sec-nlmm}
+
+### 频率派
+
+#### nlme
 
 ```{r}
-#| eval: false
+#| label: fig-Loblolly
+#| fig-cap: Loblolly 数据集
+#| fig-width: 5
+#| fig-height: 4
+#| fig-showtext: true
 
-bgm <- brms::brm(
-  incidence | trials(size) ~ period + (1 | herd),
-  family = binomial("logit"), data = cbpp
-)
+ggplot(data = Loblolly, aes(x = age, y = height, group = Seed)) +
+  geom_line() +
+  theme_bw()
 ```
+
+### 贝叶斯派
+
+#### cmdstanr
 
 ## 广义可加混合效应模型 {#sec-gamm}
 
@@ -395,44 +313,7 @@ fit_rongelap_ginla$beta[t(idx)]
 
 ### 贝叶斯派
 
-#### brms
-
-参考 **brms** 包的函数 `gp()` / `s()` 和 **mgcv** 包的函数 `gamm()` 的帮助文档，先用模拟数据检测
-
-```{r}
-library(cmdstanr)
-```
-
-**mgcv** 包的函数 `gamSim()` 专门用于模拟数据。
-
-```{r}
-sim_dat <- mgcv::gamSim(eg = 4, dist = "normal", n = 90, scale = 2)
-```
-
-参数 $n=90$ 设置样本量，参数 `dist = "normal"` 设置变量分布，参数 `eg` 设置模拟数据的生成模型，取值如下
-
-1.  Gu and Wahba 4 univariate term example.
-2.  A smooth function of 2 variables.
-3.  Example with continuous by variable.
-4.  Example with factor by variable.
-5.  An additive example plus a factor variable.
-6.  Additive + random effect.
-7.  As 1 but with correlated covariates.
-
-```{r}
-str(sim_dat)
-```
-
-模拟分组的高斯过程
-
-```{r}
-#| eval: false
-
-# 按变量 fac 分组
-fit_sim_dat <- brms::brm(y ~ gp(x2, by = fac), data = sim_dat, chains = 2)
-summary(fit_sim_dat)
-plot(brms::conditional_effects(fit_sim_dat), points = TRUE)
-```
+#### cmdstanr
 
 #### INLA
 
