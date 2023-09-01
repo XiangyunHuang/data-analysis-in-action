@@ -53,6 +53,7 @@ str(sleepstudy)
 library(ggplot2)
 ggplot(data = sleepstudy, aes(x = Days, y = Reaction, group = Subject)) +
   geom_line() +
+  scale_x_continuous(n.breaks = 6) +
   theme_bw()
 ```
 
@@ -127,6 +128,8 @@ library(cmdstanr)
 
 #### nlme
 
+Loblolly 数据集
+
 ```{r}
 #| label: fig-Loblolly
 #| fig-cap: Loblolly 数据集
@@ -137,6 +140,21 @@ library(cmdstanr)
 ggplot(data = Loblolly, aes(x = age, y = height, group = Seed)) +
   geom_line() +
   theme_bw()
+```
+
+示例来自 **nlme** 包的函数 `nlme()` 帮助文档
+
+```{r}
+fm1 <- nlme(height ~ SSasymp(age, Asym, R0, lrc),
+  data = Loblolly,
+  fixed = Asym + R0 + lrc ~ 1,
+  random = Asym ~ 1,
+  start = c(Asym = 103, R0 = -8.5, lrc = -3.3)
+)
+summary(fm1)
+# 更新模型的随机效应部分
+fm2 <- update(fm1, random = pdDiag(Asym + lrc ~ 1))
+summary(fm2)
 ```
 
 ### 贝叶斯派
@@ -469,6 +487,8 @@ ggplot() +
 ## 总结 {#sec-mixed-effects-summary}
 
 通过对频率派和贝叶斯派方法的比较，发现一些有意思的结果。与 Stan 不同，INLA 包做近似贝叶斯推断，计算效率很高。
+
+集成嵌套拉普拉斯近似 (Integrated Nested Laplace Approximations，简称 INLA)，INLA 软件能处理上千个高斯随机效应，但最多只能处理 15 个超参数，因为 INLA 使用 CCD 处理超参数，如果使用 MCMC 处理超参数，就有可能处理更多的超参数，如 GPstuff 使用 MCMC 而不是 CCD 处理超参数，Daniel Simpson 等把 Laplace approximation 带入 Stan，这样就可以处理上千个超参数。 更多内容见 2009 年 INLA 诞生的[论文](https://inla.r-inla-download.org/r-inla.org/papers/inla-rss.pdf)和《Advanced Spatial Modeling with Stochastic Partial Differential Equations Using R and INLA》中估计方法章节 [CCD](https://becarioprecario.bitbucket.io/spde-gitbook/ch-INLA.html#estimation-method)。
 
 ## 习题 {#sec-mixed-effects-models-exercise}
 
