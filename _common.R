@@ -35,6 +35,8 @@ if (xfun::is_macos()) {
 options(rgl.useNULL = TRUE)
 options(rgl.printRglwidget = TRUE)
 
+# tinytex 不要自动安装宏包
+options(tinytex.install_packages = FALSE)
 options(
   tinytex.engine = "xelatex",
   tikzDefaultEngine = "xetex",

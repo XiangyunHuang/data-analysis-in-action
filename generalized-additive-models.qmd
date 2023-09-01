@@ -64,8 +64,7 @@ library(cmdstanr)
 ```{r}
 #| eval: false
 
-library(brms)
-bgam <- brm(bf(accel ~ s(times)),
+bgam <- brms::brm(accel ~ s(times),
   data = mcycle, family = gaussian(), cores = 2, seed = 20232023,
   iter = 4000, warmup = 1000, thin = 10, refresh = 0,
   control = list(adapt_delta = 0.99)
@@ -75,7 +74,31 @@ summary(bgam)
 
 ```{r}
 #| eval: false
+brms::fixef(bgam) # 固定效应
+# brms::ranef(bgam) # 随机效应
+```
 
-ms_bgam <- marginal_smooths(bgam)
+```{r}
+#| eval: false
+
+ms_bgam <- brms::conditional_smooths(bgam) # 平滑效应
 plot(ms_bgam)
+```
+
+```{r}
+#| eval: false
+brms::bayes_R2(bgam)
+brms::waic(bgam)
+# brms::log_lik(bgam)
+brms::loo(bgam)
+```
+
+```{r}
+#| eval: false
+brms::pp_check(bgam, ndraws = 50)
+```
+
+```{r}
+#| eval: false
+brms::make_stancode(accel ~ s(times), data = mcycle, family = gaussian())
 ```

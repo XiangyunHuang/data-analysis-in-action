@@ -53,6 +53,7 @@ str(sleepstudy)
 library(ggplot2)
 ggplot(data = sleepstudy, aes(x = Days, y = Reaction, group = Subject)) +
   geom_line() +
+  scale_x_continuous(n.breaks = 6) +
   theme_bw()
 ```
 
@@ -127,6 +128,8 @@ library(cmdstanr)
 
 #### nlme
 
+Loblolly 数据集
+
 ```{r}
 #| label: fig-Loblolly
 #| fig-cap: Loblolly 数据集
@@ -137,6 +140,21 @@ library(cmdstanr)
 ggplot(data = Loblolly, aes(x = age, y = height, group = Seed)) +
   geom_line() +
   theme_bw()
+```
+
+示例来自 **nlme** 包的函数 `nlme()` 帮助文档
+
+```{r}
+fm1 <- nlme(height ~ SSasymp(age, Asym, R0, lrc),
+  data = Loblolly,
+  fixed = Asym + R0 + lrc ~ 1,
+  random = Asym ~ 1,
+  start = c(Asym = 103, R0 = -8.5, lrc = -3.3)
+)
+summary(fm1)
+# 更新模型的随机效应部分
+fm2 <- update(fm1, random = pdDiag(Asym + lrc ~ 1))
+summary(fm2)
 ```
 
 ### 贝叶斯派
