@@ -6,16 +6,16 @@
 source("_common.R")
 ```
 
-:::{.callout-tip}
+::: callout-tip
 其它小节完成后再写本节。
 :::
 
 本书围绕数据分析实战工作流分四大部分：
 
-(@collection)  数据收集和整理。
-(@exploration)  数据探索和分析。
-(@interpretation)  数据建模和解释。
-(@communication)  数据交流和应用。
+(1) 数据收集和整理。
+(2) 数据探索和分析。
+(3) 数据建模和解释。
+(4) 数据交流和应用。
 
 对分析师来说，相比于整理、探索、建模和交流，收集、分析、解释和应用是更难的事。始终围绕 R 语言、数据分析、实战来介绍每一部分、每一章的内容，让每一部分、每一章的内容都在丰富和解释 R 语言、数据分析、实战主题。
 
@@ -25,8 +25,7 @@ source("_common.R")
 
 近年来，R 语言社区在数据分析领域频频发力，特别是 RStudio 公司及其打造的产品矩阵。数据获取、探索和分析方面，有 ggplot2、dplyr、tidyr、purrr 及整个 [tidyverse](https://github.com/tidyverse/tidyverse) 家族。数据交流和应用方面，有 Shiny、 Quarto、flexdashboard、R Markdown。数据建模和解释方面，有 tensorflow、keras、vetiver、plumber 及整个 [tidymodels](https://github.com/tidymodels/tidymodels) 家族。数据工作流集成方面，提供许多接口 R 包，支持大量数据库的连接驱动，[sparklyr](https://github.com/sparklyr/sparklyr) 与 [Apache Spark](https://github.com/apache/spark) 连接实现大规模数据处理，**renv** 实现系统软件依赖和 R 包版本管理，**reticulate** 包实现与 Python 连接，支持导入许多 Python 社区的模块。还有一系列遵循 tidyverse 设计原则的数据分析框架，比如 [DrWhy](https://github.com/ModelOriented/DrWhy)、[mlr3verse](https://github.com/mlr-org/mlr3verse)、[easystats](https://github.com/easystats/easystats)、[tidymodels](https://github.com/tidymodels/tidymodels)、[fastverse](https://github.com/fastverse)、[healthyverse](https://github.com/spsanderson/healthyverse)、[fable](https://github.com/tidyverts/fable) 等。
 
-RStudio 公司在解决数据分析技术栈，提供通用解决方案，而在特定领域内，也逐渐走向整合，形成生态。2005 年 Rigby R. A. 和 Stasinopoulos D. M. [**gamlss** 包](https://www.gamlss.com/) 试图将一系列统计模型，如线性模型 LM、广义线性模型 GLM、广义可加模型 GAM、线性混合效应模型LMM、广义线性混合效应模型 GLMM、广义可加混合效应模型 GAMM 纳入统一的广义可加模型框架下[@Rigby2005]。2009 年 Håvard Rue 开发[**INLA**](https://github.com/hrue/r-inla) 包，类似 **gamlss** 包，同样是整合一系列统计模型，纳入一个新的基于贝叶斯视角的集成嵌套拉普拉斯框架下，主要应用于空间统计领域，更多详见 <https://www.r-inla.org/>。
-
+RStudio 公司在解决数据分析技术栈，提供通用解决方案，而在特定领域内，也逐渐走向整合，形成生态。2005 年 Rigby R. A. 和 Stasinopoulos D. M. [**gamlss** 包](https://github.com/mstasinopoulos/GAMLSS-original) <https://www.gamlss.com/> 试图将一系列统计模型，如线性模型 LM、广义线性模型 GLM、广义可加模型 GAM、线性混合效应模型LMM、广义线性混合效应模型 GLMM、广义可加混合效应模型 GAMM 纳入统一的广义可加模型框架下[@Rigby2005]。2009 年 Håvard Rue 开发[**INLA**](https://github.com/hrue/r-inla) 包，类似 **gamlss** 包，同样是整合一系列统计模型，纳入一个新的基于贝叶斯视角的集成嵌套拉普拉斯框架下，主要应用于空间统计领域，更多详见 <https://www.r-inla.org/>。
 
 ## 数据探索和分析 {#sec-exploration-explaination}
 
@@ -71,9 +70,7 @@ knitr::kable(datasaurus_summ, col.names = c(
 ), digits = 3, escape = FALSE)
 ```
 
-
 诸多统计量都难以发现它们的差异，透过数据可视化这面照妖镜，却可以使数据的本来面目无所遁形，如 @fig-datasaurus-dozen 所示。可见，单个统计量就好比管窥蠡测，稍有不慎，我们就成了盲人摸象。
-
 
 ```{r}
 #| label: fig-datasaurus-dozen
@@ -92,7 +89,6 @@ ggplot(datasaurus_dozen, aes(x = x, y = y)) +
 ```
 
 数据可视化的重要性在于探索数据的真实分布，为数据建模提供假设和依据，也为验证、评估模型的效果。结合 @fig-datasaurus-dozen 也解释了为什么线性回归模型在解释数据方面的无能为力，即 $R^2$ 介于 0.004 至 0.005 之间，数据根本不符合线性模型的条件。
-
 
 有时候是有的数据符合模型假设，而有的不符合，我们没有上帝之眼，看不到哪些符合哪些不符合。在数据集不多的情况下，可以全部展示出来，数据集很多的时候，可以抽样一部分，再展示。下面再举一个例子，anscombe 数据集来自 R 软件内置的 R 包 **datasets**，它包含四组数据 $(x_i, y_i), i =1,2,3,4$，如 @tbl-anscombe-datasets 所示。
 
@@ -174,14 +170,11 @@ p +
 
 图形还告诉我们第二组数据的更适合二次非线性回归，第三组数据受到离群点的重大影响，第四组数据自变量只有两个取值，像是两个分布按不同比例混合的结果。
 
-
 ## 数据展示和交流 {#sec-data-communication}
-
 
 无论是数据表格还是交互图形，首先都承担着数据展示的基础作用，通过趋势、对比继而传递更加明确的信息和洞见，采用合适的表达方式可以高效准确地传递信息，促进交流，获取反馈，从而改善已有的分析方法和结论。
 
-数据展示和交流主要分两大部分：其一是用户可与之交互的图形、表格和应用，其二是文档内容可重复的 HTML 动态网页文档、PDF 便携式文档、 Office 办公文档。涵盖完整数据分析过程的网页文档，
-用于毕业的学位论文、投稿的期刊论文、出版的书籍初稿、交流的演示文稿，无论是 LaTeX 编译的 PDF 格式文档还是 DOCX 文档，R 语言社区都有非常先进的工具满足需求。
+数据展示和交流主要分两大部分：其一是用户可与之交互的图形、表格和应用，其二是文档内容可重复的 HTML 动态网页文档、PDF 便携式文档、 Office 办公文档。涵盖完整数据分析过程的网页文档， 用于毕业的学位论文、投稿的期刊论文、出版的书籍初稿、交流的演示文稿，无论是 LaTeX 编译的 PDF 格式文档还是 DOCX 文档，R 语言社区都有非常先进的工具满足需求。
 
 第章首先介绍 **plotly** 包绘图的基础语法以及与 **ggplot2** 包绘图 的关系，其次介绍制作常用的交互图形，如条形图、直方图、箱线图、曲线图等，最后介绍一些常用的技巧，如导出静态图片、添加水印徽标等。
 
@@ -190,4 +183,3 @@ p +
 第章首先介绍 **shiny** 包制作交互应用的整体概览，如前端布局、后端计算、筛选器、模块交互等，其次从易到难介绍一个完整的数据应用，最后介绍生产级的 Shiny 应用开发的技术栈。
 
 第章首先回顾 R 语言社区陆续出现的 R Sweave、R Markdown 和 Quarto 三套创作工具，其次介绍 Quarto 的基础用法，如 Markdown 基础和 Pandoc 的基础，接着根据使用场景分别介绍 HTML、PDF 和 Office 文档的特性。
-
