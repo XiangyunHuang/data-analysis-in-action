@@ -6,6 +6,12 @@ $$
 $$
 :::
 
+> I think that the formula language does allow expressions with '/' to represent nested factors but I can't check right now as there is a fire in the building where my office is located. I prefer to simply write nested factors as `factor1 + factor1:factor2`.
+>
+> --- Douglas Bates [^mixed-effects-models-1]
+
+[^mixed-effects-models-1]: <https://stat.ethz.ch/pipermail/r-sig-mixed-models/2013q1/019945.html>
+
 ```{r}
 #| echo: false
 
@@ -32,11 +38,43 @@ library(INLA)      # 近似贝叶斯推断
 
 本章用到 4 个数据集，其中 `sleepstudy` 和 `cbpp` 均来自 **lme4** 包，分别用于介绍线性混合效应模型和广义线性混合效应模型，`Loblolly` 来自 **datasets** 包，用于介绍非线性混合效应模型，最后，朗格拉普岛核辐射数据数据集用于介绍广义可加混合效应模型。
 
+在介绍理论的同时给出 R 语言或 S 语言实现
+
+-   《Mixed-Effects Models in S and S-PLUS》[@Pinheiro2000]
+-   《Mixed Models: Theory and Applications with R》[@Demidenko2013]
+-   《Linear Mixed-Effects Models Using R: A Step-by-Step Approach》[@Andrzej2013]
+-   《Linear and Generalized Linear Mixed Models and Their Applications》[@Jiang2021]
+
 ## 线性混合效应模型 {#sec-lmm}
 
-示例模型公式， nlme 包三个函数的使用语法
+> I think what we are seeking is the marginal variance-covariance matrix of the parameter estimators (marginal with respect to the random effects random variable, B), which would have the form of the inverse of the crossproduct of a $(q+p)$ by $p$ matrix composed of the vertical concatenation of $-L^{-1}RZXRX^{-1}$ and $RX^{-1}$. (Note: You do *not* want to calculate the first term by inverting $L$, use `solve(L, RZX, system = "L")`
+>
+> -   \[...\] don't even think about using `solve(L)`
+>
+> -   don't!, don't!, don't!
+>
+> -   have I made myself clear?
+>
+> -   don't do that (and we all know that someone will do exactly that for a very large $L$ and then send out messages about "R is SOOOOO SLOOOOW!!!!" :-) )
+>
+> --- Douglas Bates [^mixed-effects-models-2]
 
-线性混合效应模型 `nlme::lme` 和 `lme4::lmer` <https://rpsychologist.com/r-guide-longitudinal-lme-lmer>
+[^mixed-effects-models-2]: <https://stat.ethz.ch/pipermail/r-sig-mixed-models/2010q2/003615.html>
+
+::: callout-tip
+1.  一般的模型结构和假设
+2.  一般的模型表达公式
+3.  nlme 包的函数 `lme()`
+4.  公式语法和示例模型表示
+:::
+
+线性混合效应模型 `nlme::lme` 和 `lme4::lmer` [Using R and lme/lmer to fit different two- and three-level longitudinal models](https://rpsychologist.com/r-guide-longitudinal-lme-lmer){.uri}
+
+Ben Bolker 维护了 GLMM 一份丰富的材料 [GLMM FAQ](https://bbolker.github.io/mixedmodels-misc/glmmFAQ.html)
+
+线性混合效应模型（Linear Mixed Models or Linear Mixed-Effects Models，简称 LME 或 LMM，杨灿老师给她起了一个美丽的中文名：林妹妹。参考他给统计之都的文章 [昔日因，今日意](https://cosx.org/2014/04/lmm-and-me)
+
+模型参数估计方法主要是极大似然估计和限制极大似然估计
 
 ### nlme
 
@@ -97,6 +135,10 @@ library(cmdstanr)
 二项分布
 
 ### GLMMadaptive
+
+[GLMMadaptive](https://github.com/drizopoulos/GLMMadaptive)
+
+牛传染性胸膜肺炎数据 cbpp 来自 lme4 包。
 
 ```{r}
 data(cbpp, package = "lme4")
@@ -329,7 +371,7 @@ fit_rongelap_ginla$beta[t(idx)]
 
 #### INLA
 
-根据研究区域的边界构造非凸的内外边界，处理边界效应。
+根据研究区域的边界构造非凸的内外边界，处理边界效应。近似贝叶斯推断 INLA [@Rue2009]
 
 ```{r}
 #| message: false
@@ -478,6 +520,8 @@ ggplot() +
 
 ## 总结 {#sec-mixed-effects-summary}
 
+本章介绍 `MASS::glmmPQL()`、 `nlme::lme()`、`lme4::lmer()` 和 `brms::brm()` 求解线性混合效应模型的区别和联系。
+
 通过对频率派和贝叶斯派方法的比较，发现一些有意思的结果。与 Stan 不同，INLA 包做近似贝叶斯推断，计算效率很高。
 
 集成嵌套拉普拉斯近似 (Integrated Nested Laplace Approximations，简称 INLA)，INLA 软件能处理上千个高斯随机效应，但最多只能处理 15 个超参数，因为 INLA 使用 CCD 处理超参数，如果使用 MCMC 处理超参数，就有可能处理更多的超参数，如 GPstuff 使用 MCMC 而不是 CCD 处理超参数，Daniel Simpson 等把 Laplace approximation 带入 Stan，这样就可以处理上千个超参数。 更多内容见 2009 年 INLA 诞生的[论文](https://inla.r-inla-download.org/r-inla.org/papers/inla-rss.pdf)和《Advanced Spatial Modeling with Stochastic Partial Differential Equations Using R and INLA》中估计方法章节 [CCD](https://becarioprecario.bitbucket.io/spde-gitbook/ch-INLA.html#estimation-method)。
@@ -538,6 +582,12 @@ ggplot() +
     )
     summary(fit_glmm_lme4)
 
+    fit_glmm_glmmtmb <- glmmTMB::glmmTMB(
+      cbind(incidence, size - incidence) ~ period + (1 | herd),
+      data = cbpp, family = binomial, REML = TRUE
+    ) # REML 估计
+    summary(fit_glmm_glmmtmb)
+
     fit_glmm_blme <- blme::bglmer(
       cbind(incidence, size - incidence) ~ period + (1 | herd),
       family = binomial("logit"), data = cbpp
@@ -568,7 +618,150 @@ ggplot() +
     gam.vcomp(fgm3)
     ```
 
-4.  **基于 MASS** 包的地形数据集 topo，建立高斯过程回归模型，比较贝叶斯预测与克里金插值预测的效果。
+4.  从广义线性混合效应模型生成模拟数据，然后用不同的 R 包估计模型参数，比较效果。举例：带漂移项的泊松型广义线性混合效应模型。
+
+    ```{r}
+    #| eval: false
+
+    set.seed(2023)
+    # 样本量
+    n <- 2500
+    # 截距和两个协变量的系数
+    beta <- c(0.5, 0.3, 0.2)
+    # 两个协变量
+    X <- MASS::mvrnorm(100,
+      mu = rep(0, 2),
+      Sigma = matrix(c(1, 0.8, 0.8, 1), 2)
+    )
+    # 漂移项
+    u <- rep(c(2, 4), each = n / 2)
+    # 分 25 个组 每个组 100 个观察值
+    g <- factor(rep(1:25, each = 100))
+    # 泊松分布的期望
+    lambda <- u * exp(rep(cbind(1, X) %*% beta, each = 25))
+    # 响应变量的值
+    y <- rpois(n, lambda = lambda)
+    # 模拟的数据集
+    sim_data <- data.frame(y, X, u, g)
+    colnames(sim_data) <- c("y", "x1", "x2", "u", "g")
+
+    # 模型拟合
+    library(lme4)
+    fit_sim_poisson_glmer <- glmer(y ~ x1 + x2 + (1 | g),
+      data = sim_data,
+      offset = log(u),
+      family = poisson(link = "log")
+    )
+    # 模型输出
+    summary(fit_sim_poisson_glmer)
+
+    # 对随机效应 adaptive Gauss-Hermite quadrature 积分
+    library(GLMMadaptive)
+    fit_sim_poisson_adaptive <- mixed_model(
+      fixed = y ~ x1 + x2 + offset(log(u)), 
+      random = ~ 1 | g, data = sim_data,
+      family = poisson(link = "log")
+    )
+    summary(fit_sim_poisson_adaptive)
+
+    # 如何设置先验分布
+    fit_sim_poisson_brm <- brms::brm(
+      y ~ x1 + x2 + (1 | g) + offset(log(u)),
+      data = sim_data,
+      family = poisson(link = "log"),
+      # silent = 2, # 关闭消息
+      refresh = 0, # 不显示迭代进度
+      seed = 20232023,
+      backend = "cmdstanr" # 选择后端 rstan 或 cmdstanr
+    )
+    # 拟合结果
+    summary(fit_sim_poisson_brm)
+    # 发散很多
+    plot(fit_sim_poisson_brm)
+    # 模型诊断指标
+    brms::WAIC(fit_sim_poisson_brm)
+    brms::pp_check(fit_sim_poisson_brm)
+
+    # gee GLMMadaptive glmmML geepack 和 lme4 的模型输出结果是接近的
+    # blme 基于 lme4 的贝叶斯估计
+    library(blme)
+    fit_sim_poisson_bglmer <- bglmer(
+      formula = y ~ x1 + x2 + (1 | g),
+      data = sim_data,
+      offset = log(u),
+      family = poisson(link = "log")
+    )
+    summary(fit_sim_poisson_bglmer)
+    # MCMCglmm 包 贝叶斯估计
+    fit_sim_poisson_mcmcglmm <- MCMCglmm::MCMCglmm(
+      fixed = y ~ x1 + x2 + offset(log(u)),
+      random = ~g, family = "poisson", 
+      data = sim_data, verbose = FALSE
+    )
+    summary(fit_sim_poisson_mcmcglmm)
+    ## hglm 包 Hierarchical Generalized Linear Models
+    # extended quasi likelihood (EQL) method
+    fit_sim_poisson_hglm <- hglm::hglm(
+      fixed =  y ~ x1 + x2,
+      random = ~ 1 | g,
+      family = poisson(link = "log"), 
+      offset = log(u) ,
+      data = sim_data
+    )
+    summary(fit_sim_poisson_hglm)
+    # 广义估计方程 
+    library(gee)
+    fit_sim_poisson_gee <- gee(y ~ x1 + x2 + offset(log(u)),
+      id = g,
+      data = sim_data,
+      family = poisson(link = "log"),
+      corstr = "exchangeable"
+    )
+    # 输出
+    fit_sim_poisson_gee
+
+    # [glmmML](https://CRAN.R-project.org/package=glmmML)
+    # Maximum Likelihood and numerical integration via Gauss-Hermite quadrature.
+    library(glmmML)
+    fit_sim_poisson_glmmml <- glmmML(
+      formula = y ~ x1 + x2,
+      family = poisson,
+      data = sim_data,
+      offset = log(u),
+      cluster = g
+    )
+    summary(fit_sim_poisson_glmmml)
+    # Generalized Estimating Equation
+    # [geepack](https://cran.r-project.org/package=geepack) GEE
+    library(geepack)
+    fit_sim_poisson_geepack <- geeglm(
+      formula = y ~ x1 + x2,
+      family = poisson(link = "log"),
+      id = g,
+      offset = log(u),
+      data = sim_data,
+      corstr = "exchangeable",
+      scale.fix = FALSE
+    )
+    summary(fit_sim_poisson_geepack)
+    # [glmm](https://github.com/knudson1/glmm)
+    # Monte Carlo Likelihood Approximation 近似对随机效应的积分
+    library(glmm)
+    set.seed(2023)
+    # 设置双核并行迭代
+    clust <- makeCluster(2) # doParallel
+    # 对迭代时间没有给出预估，一旦执行，不知道什么时候会跑完
+    fit_sim_poisson_glmm <- glmm(y ~ x1 + x2,
+      random = list(~ 1 + g), # 随机效应
+      varcomps.names = c("G"), # 给随机效应取个名字
+      data = sim_data,
+      family.glmm = poisson.glmm, # 泊松型
+      m = 10^4, debug = TRUE, cluster = clust
+    )
+    stopCluster(clust)
+    ```
+
+5.  **基于 MASS** 包的地形数据集 topo，建立高斯过程回归模型，比较贝叶斯预测与克里金插值预测的效果。
 
     ```{r}
     #| eval: false
@@ -647,7 +840,7 @@ ggplot() +
       theme_bw()
     ```
 
-5.  **用 brms** 包实现贝叶斯高斯过程回归模型，考虑用样条近似高斯过程以加快计算。提示：**brms** 包的函数 `gp()` 的参数 $k$ 表示近似高斯过程 GP 所用的基函数的数目。截止写作时间，函数 `gp()` 的参数 `cov` 只能取指数二次核函数 exponentiated-quadratic kernel 。
+6.  **用 brms** 包实现贝叶斯高斯过程回归模型，考虑用样条近似高斯过程以加快计算。提示：**brms** 包的函数 `gp()` 的参数 $k$ 表示近似高斯过程 GP 所用的基函数的数目。截止写作时间，函数 `gp()` 的参数 `cov` 只能取指数二次核函数 exponentiated-quadratic kernel 。
 
     ```{r}
     #| eval: false
