@@ -78,6 +78,8 @@ Ben Bolker 维护了 GLMM 一份丰富的材料 [GLMM FAQ](https://bbolker.githu
 
 ### nlme
 
+sleepstudy 数据集来自 lme4 包
+
 ```{r}
 data(sleepstudy, package = "lme4")
 str(sleepstudy)
@@ -111,7 +113,7 @@ fm1 <- lme(Reaction ~ Days, random = ~ Days | Subject, data = sleepstudy)
 summary(fm1)
 ```
 
-[ggeffects](https://github.com/strengejacke/ggeffects) 提供函数 `ggpredict()` 和 `ggeffect()` 用来绘制各种混合效应模型的边际效应 Marginal Effects 图。[ggPMX](https://github.com/ggPMXdevelopment/ggPMX) 混合效应模型诊断图。
+[**ggeffects**](https://github.com/strengejacke/ggeffects) 提供函数 `ggpredict()` 和 `ggeffect()` 用来绘制各种混合效应模型的边际效应 Marginal Effects 图。[ggPMX](https://github.com/ggPMXdevelopment/ggPMX) 混合效应模型诊断图。
 
 ```{r}
 #| label: fig-lme-effects
@@ -351,7 +353,7 @@ ggplot() +
 
 #### mgcv (ginla) {#sec-mgcv-ginla}
 
-**mgcv** 包的函数 `ginla()` 实现简化版 INLA
+**mgcv** 包的函数 `ginla()` 实现简化版的 Integrated Nested Laplace Approximation, INLA [@Rue2009]。
 
 ```{r}
 rongelap_gam <- gam(
@@ -363,7 +365,7 @@ fit_rongelap_ginla <- ginla(G = rongelap_gam)
 str(fit_rongelap_ginla)
 ```
 
-其中， $k = 50$ 表示 50 个参数，每个参数的分布对应有 100 个采样点，截距项的边际后验概率密度分布如下：
+其中， $k = 50$ 表示 49 个样条参数，每个参数的分布对应有 100 个采样点，另外，截距项的边际后验概率密度分布如下：
 
 ```{r}
 #| label: fig-rongelap-mgcv-ginla
@@ -379,7 +381,7 @@ plot(
 )
 ```
 
-不难看出，截距项在 1.976 至 1.978 之间，各个参数的最大后验估计如下：
+不难看出，截距项在 1.976 至 1.978 之间，50个参数的最大后验估计分别如下：
 
 ```{r}
 idx <- apply(fit_rongelap_ginla$density, 1, function(x) x == max(x))
@@ -392,7 +394,7 @@ fit_rongelap_ginla$beta[t(idx)]
 
 #### INLA
 
-根据研究区域的边界构造非凸的内外边界，处理边界效应。近似贝叶斯推断 INLA [@Rue2009]
+接下来，介绍完整版的近似贝叶斯推断方法 INLA --- 集成嵌套拉普拉斯近似 (Integrated Nested Laplace Approximations，简称 INLA) [@Rue2009]。根据研究区域的边界构造非凸的内外边界，处理边界效应。
 
 ```{r}
 #| message: false
@@ -541,17 +543,42 @@ ggplot() +
 
 ## 总结 {#sec-mixed-effects-summary}
 
-本章介绍 `MASS::glmmPQL()`、 `nlme::lme()`、`lme4::lmer()` 和 `brms::brm()` 求解线性混合效应模型的区别和联系。
+本章介绍函数 `MASS::glmmPQL()`、 `nlme::lme()`、`lme4::lmer()` 和 `brms::brm()` 的用法，以及它们求解线性混合效应模型的区别和联系。在贝叶斯估计方法中，**brms** 包和 **INLA** 包都支持非常丰富的模型种类，前者是贝叶斯精确推断，后者是贝叶斯近似推断，**brms** 基于概率编程语言 Stan 框架打包了许多模型的 Stan 实现，INLA 基于求解随机偏微分方程的有限元方法和拉普拉斯近似技巧，将各类常见统计模型统一起来，计算速度快，计算结果准确。
+
+1.  函数 `nlme::lme()` 极大似然估计和限制极大似然估计
+2.  函数 `MASS::glmmPQL()` 惩罚拟似然估计，MASS 是依赖 nlme 包， nlme 不支持模型中添加漂移项，所以函数 `glmmPQL()` 也不支持。
+3.  函数 `lme4::lmer()` 拉普拉斯近似。关于随机效应的高维积分
+4.  函数 `brms::brm()` 汉密尔顿蒙特卡罗抽样。HMC 方法结合自适应步长的采样器 NUTS 来抽样。
+5.  函数 `INLA::inla()` 集成嵌套拉普拉斯近似。
+
+| 模型                 | nlme     | MASS                         | lme4      | GLMMadaptive    | brms    |
+|------------|------------|------------|------------|------------|------------|
+| 线性混合效应模型     | `lme()`  | `glmmPQL()`                  | `lmer()`  | 不支持          | `brm()` |
+| 广义线性混合效应模型 | 不支持   | `glmmPQL()` 不支持添加漂移项 | `glmer()` | `mixed_model()` | `brm()` |
+| 非线性混合效应模型   | `nlme()` | 不支持                       | `nlmer()` | 不支持          | `brm()` |
+
+: 混合效应模型及相关 R 包拟合函数 {#tbl-mixed-models}
 
 通过对频率派和贝叶斯派方法的比较，发现一些有意思的结果。与 Stan 不同，INLA 包做近似贝叶斯推断，计算效率很高。
 
-集成嵌套拉普拉斯近似 (Integrated Nested Laplace Approximations，简称 INLA)，INLA 软件能处理上千个高斯随机效应，但最多只能处理 15 个超参数，因为 INLA 使用 CCD 处理超参数，如果使用 MCMC 处理超参数，就有可能处理更多的超参数，如 GPstuff 使用 MCMC 而不是 CCD 处理超参数，Daniel Simpson 等把 Laplace approximation 带入 Stan，这样就可以处理上千个超参数。 更多内容见 2009 年 INLA 诞生的[论文](https://inla.r-inla-download.org/r-inla.org/papers/inla-rss.pdf)和《Advanced Spatial Modeling with Stochastic Partial Differential Equations Using R and INLA》中估计方法章节 [CCD](https://becarioprecario.bitbucket.io/spde-gitbook/ch-INLA.html#estimation-method)。
+INLA 软件能处理上千个高斯随机效应，但最多只能处理 15 个超参数，因为 INLA 使用 CCD 处理超参数。如果使用 MCMC 处理超参数，就有可能处理更多的超参数，Daniel Simpson 等把 Laplace approximation 带入 Stan，这样就可以处理上千个超参数。 更多理论内容见 2009 年 INLA 诞生的[论文](https://inla.r-inla-download.org/r-inla.org/papers/inla-rss.pdf)和《Advanced Spatial Modeling with Stochastic Partial Differential Equations Using R and INLA》中第一章的估计方法 [CCD](https://becarioprecario.bitbucket.io/spde-gitbook/ch-INLA.html#estimation-method)。
 
 ## 习题 {#sec-mixed-effects-models-exercise}
 
 1.  基于奥克兰火山地形数据集 volcano ，随机拆分成训练数据和测试数据，训练数据可以看作采样点的观测数据，建立高斯过程回归模型，比较测试数据与未采样的位置上的预测数据，在计算速度、准确度、易用性等方面总结 Stan 和 INLA 的特点。
 
-2.  从频率派和贝叶斯派角度分别比较多个 R 包对线性混合效应模型的拟合效果。函数 `MASS::glmmPQL()` 、函数 `lme4::lmer()`，以及函数 `blme::blmer()` 和 `brms::brm()` 。
+2.  基于 `PlantGrowth` 数据集，比较将 `group` 变量视为随机变量与随机效应的异同？
+
+    ```{r}
+    #| eval: false
+
+    fit_lm <- lm(weight ~ group, data = PlantGrowth)
+    summary(fit_lm)
+    fit_lme <- nlme::lme(weight ~ 1, random = ~ 1 | group, data = PlantGrowth)
+    summary(fit_lme)
+    ```
+
+3.  从频率派和贝叶斯派角度分别比较多个 R 包对线性混合效应模型的拟合效果。函数 `MASS::glmmPQL()` 、函数 `lme4::lmer()`，以及函数 `blme::blmer()` 和 `brms::brm()` 。
 
     ```{r}
     #| eval: false
@@ -583,7 +610,7 @@ ggplot() +
     summary(fit_lmm_brms)
     ```
 
-3.  从频率派和贝叶斯派角度分别比较多个 R 包对广义线性混合效应模型的拟合效果。函数 `MASS::glmmPQL()` 和函数 `lme4::glmer()`，以及函数 `blme::bglmer()` 和函数 `brms::brm()` 。
+4.  从频率派和贝叶斯派角度分别比较多个 R 包对广义线性混合效应模型的拟合效果。函数 `MASS::glmmPQL()` 和函数 `lme4::glmer()`，以及函数 `blme::bglmer()` 和函数 `brms::brm()` 。
 
     ```{r}
     #| eval: false
@@ -642,7 +669,7 @@ ggplot() +
     gam.vcomp(fgm3)
     ```
 
-4.  从广义线性混合效应模型生成模拟数据，然后用不同的 R 包估计模型参数，比较效果。举例：带漂移项的泊松型广义线性混合效应模型。
+5.  从广义线性混合效应模型生成模拟数据，然后用不同的 R 包估计模型参数，比较效果。举例：带漂移项的泊松型广义线性混合效应模型。
 
     ```{r}
     #| eval: false
@@ -786,7 +813,7 @@ ggplot() +
     stopCluster(clust)
     ```
 
-5.  **基于 MASS** 包的地形数据集 topo，建立高斯过程回归模型，比较贝叶斯预测与克里金插值预测的效果。
+6.  **基于 MASS** 包的地形数据集 topo，建立高斯过程回归模型，比较贝叶斯预测与克里金插值预测的效果。
 
     ```{r}
     #| eval: false
@@ -865,7 +892,7 @@ ggplot() +
       theme_bw()
     ```
 
-6.  **用 brms** 包实现贝叶斯高斯过程回归模型，考虑用样条近似高斯过程以加快计算。提示：**brms** 包的函数 `gp()` 的参数 $k$ 表示近似高斯过程 GP 所用的基函数的数目。截止写作时间，函数 `gp()` 的参数 `cov` 只能取指数二次核函数 exponentiated-quadratic kernel 。
+7.  **用 brms** 包实现贝叶斯高斯过程回归模型，考虑用样条近似高斯过程以加快计算。提示：**brms** 包的函数 `gp()` 的参数 $k$ 表示近似高斯过程 GP 所用的基函数的数目。截止写作时间，函数 `gp()` 的参数 `cov` 只能取指数二次核函数 exponentiated-quadratic kernel 。
 
     ```{r}
     #| eval: false
