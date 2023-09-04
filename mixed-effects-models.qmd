@@ -114,14 +114,19 @@ summary(fm1)
 [ggeffects](https://github.com/strengejacke/ggeffects) 提供函数 `ggpredict()` 和 `ggeffect()` 用来绘制各种混合效应模型的边际效应 Marginal Effects 图。[ggPMX](https://github.com/ggPMXdevelopment/ggPMX) 混合效应模型诊断图。
 
 ```{r}
-library(ggplot2)
+#| label: fig-lme-effects
+#| fig-cap: 边际效应图
+#| fig-showtext: true
+#| fig-width: 4
+#| fig-height: 4
+
 library(ggeffects)
 mydf <- ggpredict(fm1, terms = "Days")
 plot(mydf)
 # 或者
-ggplot(mydf, aes(x, predicted)) +
-  geom_line() +
-  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.1)
+# ggplot(mydf, aes(x = x, y = predicted)) +
+#   geom_line() +
+#   geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.1)
 ```
 
 ### cmdstanr
@@ -138,11 +143,27 @@ library(cmdstanr)
 
 [GLMMadaptive](https://github.com/drizopoulos/GLMMadaptive)
 
-牛传染性胸膜肺炎数据 cbpp 来自 lme4 包。
+牛传染性胸膜肺炎数据 cbpp 来自 lme4 包。Contagious bovine pleuropneumonia (CBPP)
 
 ```{r}
 data(cbpp, package = "lme4")
 str(cbpp)
+```
+
+herd 牛群编号，period 时间段，incidence 感染的数量，size 牛群大小。疾病在种群内扩散
+
+```{r}
+#| label: fig-glmm-cbpp
+#| fig-cap: 感染比例随变量 herd 和 period 的变化
+#| fig-showtext: true
+#| fig-width: 6
+#| fig-height: 3
+
+ggplot(data = cbpp, aes(x = herd, y = period)) +
+  geom_tile(aes(fill = incidence / size)) +
+  scale_fill_viridis_c(label = scales::percent_format(), 
+                       option = "C", name = "") +
+  theme_minimal()
 ```
 
 ```{r}
@@ -534,7 +555,8 @@ ggplot() +
 
     ```{r}
     #| eval: false
-
+    #| code-fold: true
+    #| echo: !expr knitr::is_html_output()
     # 加载数据集
     data(sleepstudy, package = "lme4")
     fit_lmm_mass <- MASS::glmmPQL(Reaction ~ Days,
@@ -565,6 +587,8 @@ ggplot() +
 
     ```{r}
     #| eval: false
+    #| code-fold: true
+    #| echo: !expr knitr::is_html_output()
     # 加载数据集
     data(cbpp, package = "lme4")
 
@@ -622,7 +646,8 @@ ggplot() +
 
     ```{r}
     #| eval: false
-
+    #| code-fold: true
+    #| echo: !expr knitr::is_html_output()
     set.seed(2023)
     # 样本量
     n <- 2500
