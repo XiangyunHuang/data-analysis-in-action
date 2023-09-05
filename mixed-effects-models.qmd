@@ -36,6 +36,8 @@ library(INLA)      # 近似贝叶斯推断
 
 混合效应模型在心理学、生态学、计量经济学和空间统计学等领域应用十分广泛。线性混合效应模型有多个化身，比如生态学里的分层线性模型（Hierarchical linear Model，简称 HLM），心理学的多水平线性模型（Multilevel Linear Model）。模型名称的多样性正说明它应用的广泛性！ 混合效应模型内容非常多，非常复杂，因此，本章仅对常见的四种类型提供入门级的实战内容。从频率派和贝叶斯派两个角度介绍模型结构及说明、R 代码或 Stan 代码实现及输出结果解释。
 
+除了 R 语言社区提供的开源扩展包，商业的软件有 [Mplus](https://www.statmodel.com/) 、[ASReml](https://vsni.co.uk/software/asreml) 和 [SAS](https://www.sas.com/) 等，而开源的软件 [OpenBUGS](https://www.mrc-bsu.cam.ac.uk/software/bugs/openbugs/) 、 [JAGS](https://mcmc-jags.sourceforge.io/) 和 [Stan](https://mc-stan.org/) 等。混合效应模型的种类非常多，一部分可以在一些流行的 R 包能力范围内解决，其余可以放在更加灵活、扩展性强的框架 Stan 内解决。因此，本章同时介绍 Stan 框架和一些 R 包。
+
 本章用到 4 个数据集，其中 `sleepstudy` 和 `cbpp` 均来自 **lme4** 包，分别用于介绍线性混合效应模型和广义线性混合效应模型，`Loblolly` 来自 **datasets** 包，用于介绍非线性混合效应模型，最后，朗格拉普岛核辐射数据数据集用于介绍广义可加混合效应模型。
 
 在介绍理论的同时给出 R 语言或 S 语言实现
@@ -64,17 +66,17 @@ library(INLA)      # 近似贝叶斯推断
 ::: callout-tip
 1.  一般的模型结构和假设
 2.  一般的模型表达公式
-3.  nlme 包的函数 `lme()`
+3.  **nlme** 包的函数 `lme()`
 4.  公式语法和示例模型表示
 :::
+
+线性混合效应模型（Linear Mixed Models or Linear Mixed-Effects Models，简称 LME 或 LMM），介绍模型的基础理论，包括一般形式，矩阵表示，参数估计，假设检验，模型诊断，模型评估。参数方法主要是极大似然估计和限制极大似然估计。
 
 线性混合效应模型 `nlme::lme` 和 `lme4::lmer` [Using R and lme/lmer to fit different two- and three-level longitudinal models](https://rpsychologist.com/r-guide-longitudinal-lme-lmer){.uri}
 
 Ben Bolker 维护了 GLMM 一份丰富的材料 [GLMM FAQ](https://bbolker.github.io/mixedmodels-misc/glmmFAQ.html)
 
-线性混合效应模型（Linear Mixed Models or Linear Mixed-Effects Models，简称 LME 或 LMM，杨灿老师给她起了一个美丽的中文名：林妹妹。参考他给统计之都的文章 [昔日因，今日意](https://cosx.org/2014/04/lmm-and-me)
-
-模型参数估计方法主要是极大似然估计和限制极大似然估计
+杨灿老师给她起了一个美丽的中文名：林妹妹。参考他给统计之都的文章 [昔日因，今日意](https://cosx.org/2014/04/lmm-and-me)
 
 ### nlme
 
@@ -119,7 +121,7 @@ summary(fm1)
 #| label: fig-lme-effects
 #| fig-cap: 边际效应图
 #| fig-showtext: true
-#| fig-width: 4
+#| fig-width: 4.5
 #| fig-height: 4
 
 library(ggeffects)
@@ -139,13 +141,29 @@ library(cmdstanr)
 
 ## 广义线性混合效应模型 {#sec-glmm}
 
-二项分布
+当响应变量分布不再是高斯分布，线性混合效应模型就扩展到广义线性混合效应模型。有一些 R 包可以拟合此类模型，MASS 包的函数 `glmmPQL()` ，lme4 包的函数 `glmer()` ，GLMMadaptive 包的函数 `mixed_model()` ，brms 包的函数 `brm()` 等。
+
+| 响应变量分布 | MASS   | lme4 | GLMMadaptive | brms |
+|--------------|--------|------|--------------|------|
+| 伯努利分布   | 支持   | 支持 | 支持         | 支持 |
+| 二项分布     | 支持   | 支持 | 支持         | 支持 |
+| 泊松分布     | 支持   | 支持 | 支持         | 支持 |
+| 负二项分布   | 不支持 | 支持 | 支持         | 支持 |
+| 伽马分布     | 支持   | 支持 | 支持         | 支持 |
+
+: 响应变量的分布 {#tbl-response}
+
+函数 `glmmPQL()` 支持的分布族见函数 `glm()` 的参数 `family` ，lme4 包的函数 `glmer.nb()` 和 GLMMadaptive 包的函数 `negative.binomial()` 都可用于拟合响应变量服从负二项分布的情况。除了这些常规的分布，GLMMadaptive 和 brms 包还支持许多常见的分布，比如零膨胀的情况，还可以自定义分布。
+
+-   伯努利分布 `family = binomial(link = "logit")`
+-   二项分布 `family = binomial(link = "logit")`
+-   泊松分布 `family = poisson(link = "log")`
+-   负二项分布 `lme4::glmer.nb()` 或 `GLMMadaptive::negative.binomial()`
+-   伽马分布 `family = Gamma(link = "inverse")`
 
 ### GLMMadaptive
 
-[GLMMadaptive](https://github.com/drizopoulos/GLMMadaptive)
-
-牛传染性胸膜肺炎数据 cbpp 来自 lme4 包。Contagious bovine pleuropneumonia (CBPP)
+[GLMMadaptive](https://github.com/drizopoulos/GLMMadaptive) 包的主要函数 `mixed_model()` 是用来拟合广义线性混合效应模型的。下面以牛传染性胸膜肺炎（Contagious bovine pleuropneumonia，简称 CBPP）数据 cbpp 介绍函数 `mixed_model()` 的用法，该数据集来自 lme4 包。
 
 ```{r}
 data(cbpp, package = "lme4")
@@ -813,7 +831,7 @@ INLA 软件能处理上千个高斯随机效应，但最多只能处理 15 个�
     stopCluster(clust)
     ```
 
-6.  **基于 MASS** 包的地形数据集 topo，建立高斯过程回归模型，比较贝叶斯预测与克里金插值预测的效果。
+6.  基于 **MASS** 包的地形数据集 topo，建立高斯过程回归模型，比较贝叶斯预测与克里金插值预测的效果。
 
     ```{r}
     #| eval: false
@@ -892,7 +910,7 @@ INLA 软件能处理上千个高斯随机效应，但最多只能处理 15 个�
       theme_bw()
     ```
 
-7.  **用 brms** 包实现贝叶斯高斯过程回归模型，考虑用样条近似高斯过程以加快计算。提示：**brms** 包的函数 `gp()` 的参数 $k$ 表示近似高斯过程 GP 所用的基函数的数目。截止写作时间，函数 `gp()` 的参数 `cov` 只能取指数二次核函数 exponentiated-quadratic kernel 。
+7.  用 **brms** 包实现贝叶斯高斯过程回归模型，考虑用样条近似高斯过程以加快计算。提示：**brms** 包的函数 `gp()` 的参数 $k$ 表示近似高斯过程 GP 所用的基函数的数目。截止写作时间，函数 `gp()` 的参数 `cov` 只能取指数二次核函数 exponentiated-quadratic kernel 。
 
     ```{r}
     #| eval: false
