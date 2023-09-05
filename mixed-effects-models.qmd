@@ -244,11 +244,15 @@ summary(fm2)
 
 #### mgcv (gam) {#sec-mgcv-gam}
 
+本节复用 @sec-nuclear-pollution-concentration 朗格拉普岛核污染数据，相关背景不再赘述，下面首先加载数据到 R 环境。
+
 ```{r}
 # 加载数据
 rongelap <- readRDS(file = "data/rongelap.rds")
 rongelap_coastline <- readRDS(file = "data/rongelap_coastline.rds")
 ```
+
+接着，将岛上各采样点的辐射强度展示出来，算是简单回顾一下数据概况。
 
 ```{r}
 #| label: fig-rongelap-scatter3d
@@ -288,7 +292,7 @@ with(rongelap, {
 })
 ```
 
-近似高斯过程、高斯过程的核函数，**mgcv** 包的函数 `s()` 帮助文档参数的说明，默认值是梅隆型相关函数及默认的范围参数，作者自己定义了一套符号约定
+在这里，从广义可加混合效应模型的角度来对核污染数据建模，空间效应仍然是用高斯过程来表示，响应变量服从带漂移项的泊松分布。采用 mgcv 包的函数 `gam()` 拟合模型，其中，含 49 个参数的样条近似高斯过程，高斯过程的核函数为默认的梅隆型。更多详情见 **mgcv** 包的函数 `s()` 帮助文档参数的说明，默认值是梅隆型相关函数及默认的范围参数，作者自己定义了一套符号约定。
 
 ```{r}
 library(nlme)
@@ -303,6 +307,8 @@ summary(fit_rongelap_gam)
 gam.vcomp(fit_rongelap_gam)
 ```
 
+值得一提的是核函数的类型和默认参数的选择，参数 m 接受一个向量， `m[1]` 取值为 1 至 5，分别代表球型 spherical, 幂指数 power exponential 和梅隆型 Matern with $\kappa$ = 1.5, 2.5 or 3.5 等 5 种相关/核函数。
+
 ```{r}
 #| eval: false
 
@@ -313,7 +319,7 @@ fit_rongelap_gam <- gam(
 )
 ```
 
-参数 m 接受一个向量， `m[1]` 取值为 1 至 5，分别代表球型 spherical, 幂指数 power exponential 和梅隆型 Matern with $\kappa$ = 1.5, 2.5 or 3.5 等 5 种相关/核函数。
+接下来，基于岛屿的海岸线数据划分出网格，将格点作为新的预测位置。
 
 ```{r}
 library(sf)
@@ -338,7 +344,7 @@ rongelap_grid_df <- as.data.frame(st_coordinates(rongelap_grid_centroid))
 colnames(rongelap_grid_df) <- c("cX", "cY")
 ```
 
-预测和整理数据
+模型对象 `fit_rongelap_gam` 在新的格点上预测核辐射强度，接着整理预测结果数据。
 
 ```{r}
 # 预测
@@ -349,7 +355,7 @@ rongelap_grid_stars <- st_rasterize(rongelap_grid_sf, nx = 150, ny = 75)
 rongelap_stars <- st_crop(x = rongelap_grid_stars, y = rongelap_coastline_sfp)
 ```
 
-核辐射强度的空间分布
+最后，将岛上各个格点的核辐射强度绘制出来，给出全岛核辐射强度的空间分布。
 
 ```{r}
 #| label: fig-rongelap-mgcv-gam
@@ -465,6 +471,8 @@ Ap <- inla.spde.make.A(mesh = mesh, loc = coop)
 dim(Ap)
 ```
 
+准备观测数据和预测位置，构造一个 INLA 可以使用的数据栈 Data Stack。
+
 ```{r}
 # 在采样点的位置上估计 estimation stk.e
 stk.e <- inla.stack(
@@ -486,7 +494,7 @@ stk.p <- inla.stack(
 stk.full <- inla.stack(stk.e, stk.p)
 ```
 
-指定模型
+指定响应变量与漂移项、联系函数、模型公式。
 
 ```{r}
 # 模型拟合
@@ -510,11 +518,11 @@ res <- inla(formula = y ~ 0 + b0 + f(s, model = spde),
 summary(res)
 ```
 
-`kld` 表示 Kullback-Leibler divergence (KLD) 它的值描述标准高斯分布与 Simplified Laplace Approximation 之间的差别，值越小越表示拉普拉斯的近似效果好。
+-   `kld` 表示 Kullback-Leibler divergence (KLD) 它的值描述标准高斯分布与 Simplified Laplace Approximation 之间的差别，值越小越表示拉普拉斯的近似效果好。
 
-DIC 和 WAIC 指标都是评估模型预测表现的。另外，还有两个量计算出来了，但是没有显示，分别是 CPO 和 PIT 。CPO 表示 Conditional Predictive Ordinate (CPO)，PIT 表示 Probability Integral Transforms (PIT) 。
+-   DIC 和 WAIC 指标都是评估模型预测表现的。另外，还有两个量计算出来了，但是没有显示，分别是 CPO 和 PIT 。CPO 表示 Conditional Predictive Ordinate (CPO)，PIT 表示 Probability Integral Transforms (PIT) 。
 
-固定效应和超参数部分
+固定效应（截距）和超参数部分
 
 ```{r}
 # 截距
@@ -523,7 +531,7 @@ res$summary.fixed
 res$summary.hyperpar
 ```
 
-预测数据
+提取预测数据，并整理数据。
 
 ```{r}
 # 预测值对应的指标集合
@@ -542,7 +550,7 @@ rongelap_grid_stars <- st_rasterize(rongelap_grid_sf, nx = 150, ny = 75)
 rongelap_stars <- st_crop(x = rongelap_grid_stars, y = rongelap_coastline_sfp)
 ```
 
-预测结果
+最后，类似之前 mgcv 建模的最后一步，将 INLA 的预测结果绘制出来。
 
 ```{r}
 #| label: fig-rongelap-inla
