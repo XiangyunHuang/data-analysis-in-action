@@ -38,7 +38,7 @@ library(INLA)      # 近似贝叶斯推断
 
 除了 R 语言社区提供的开源扩展包，商业的软件有 [Mplus](https://www.statmodel.com/) 、[ASReml](https://vsni.co.uk/software/asreml) 和 [SAS](https://www.sas.com/) 等，而开源的软件 [OpenBUGS](https://www.mrc-bsu.cam.ac.uk/software/bugs/openbugs/) 、 [JAGS](https://mcmc-jags.sourceforge.io/) 和 [Stan](https://mc-stan.org/) 等。混合效应模型的种类非常多，一部分可以在一些流行的 R 包能力范围内解决，其余可以放在更加灵活、扩展性强的框架 Stan 内解决。因此，本章同时介绍 Stan 框架和一些 R 包。
 
-本章用到 4 个数据集，其中 `sleepstudy` 和 `cbpp` 均来自 **lme4** 包，分别用于介绍线性混合效应模型和广义线性混合效应模型，`Loblolly` 来自 **datasets** 包，用于介绍非线性混合效应模型，最后，朗格拉普岛核辐射数据数据集用于介绍广义可加混合效应模型。
+本章用到 4 个数据集，其中 `sleepstudy` 和 `cbpp` 均来自 **lme4** 包 [@Bates2015]，分别用于介绍线性混合效应模型和广义线性混合效应模型，`Loblolly` 来自 **datasets** 包，用于介绍非线性混合效应模型，最后，朗格拉普岛核辐射数据数据集用于介绍广义可加混合效应模型。
 
 在介绍理论的同时给出 R 语言或 S 语言实现
 
@@ -72,20 +72,16 @@ library(INLA)      # 近似贝叶斯推断
 
 线性混合效应模型（Linear Mixed Models or Linear Mixed-Effects Models，简称 LME 或 LMM），介绍模型的基础理论，包括一般形式，矩阵表示，参数估计，假设检验，模型诊断，模型评估。参数方法主要是极大似然估计和限制极大似然估计。
 
-线性混合效应模型 `nlme::lme` 和 `lme4::lmer` [Using R and lme/lmer to fit different two- and three-level longitudinal models](https://rpsychologist.com/r-guide-longitudinal-lme-lmer){.uri}
-
-Ben Bolker 维护了 GLMM 一份丰富的材料 [GLMM FAQ](https://bbolker.github.io/mixedmodels-misc/glmmFAQ.html)
-
-杨灿老师给她起了一个美丽的中文名：林妹妹。参考他给统计之都的文章 [昔日因，今日意](https://cosx.org/2014/04/lmm-and-me)
-
 ### nlme
 
-sleepstudy 数据集来自 lme4 包
+sleepstudy 数据集来自 lme4 包，是一个睡眠研究项目的实验数据。
 
 ```{r}
 data(sleepstudy, package = "lme4")
 str(sleepstudy)
 ```
+
+Reaction 表示平均反应时间（毫秒），数值型，Days 表示睡眠不足的天数，数值型，Subject 表示参与实验的个体编号，因子型。
 
 ```{r}
 #| label: fig-sleepstudy
@@ -98,7 +94,26 @@ library(ggplot2)
 ggplot(data = sleepstudy, aes(x = Days, y = Reaction, group = Subject)) +
   geom_line() +
   scale_x_continuous(n.breaks = 6) +
-  theme_bw()
+  theme_bw() +
+  labs(x = "睡眠不足的天数", y = "平均反应时间")
+```
+
+对于重复测量数据，针对不同个体，相比于上图，下面绘制反应时间随睡眠时间的变化趋势更合适。
+
+```{r}
+#| label: fig-sleepstudy-facet
+#| fig-cap: 分面展示 sleepstudy 数据集
+#| fig-width: 6
+#| fig-height: 6
+#| fig-showtext: true
+
+ggplot(data = sleepstudy, aes(x = Days, y = Reaction)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  scale_x_continuous(n.breaks = 6) +
+  theme_bw() +
+  facet_wrap(facets = ~Subject, ncol = 6) +
+  labs(x = "睡眠不足的天数", y = "平均反应时间")
 ```
 
 分组线性回归，考虑组内有相关性
@@ -107,7 +122,7 @@ $$
 \mathrm{Reaction} = \alpha + \beta \cdot \mathrm{Days}
 $$
 
-随机截距和斜率
+随机截距和随机斜率，也叫变截距和变斜率模型，下面用 nlme 包 [@Pinheiro2000] 拟合模型。
 
 ```{r}
 library(nlme)
@@ -153,7 +168,7 @@ library(cmdstanr)
 
 : 响应变量的分布 {#tbl-response}
 
-函数 `glmmPQL()` 支持的分布族见函数 `glm()` 的参数 `family` ，lme4 包的函数 `glmer.nb()` 和 GLMMadaptive 包的函数 `negative.binomial()` 都可用于拟合响应变量服从负二项分布的情况。除了这些常规的分布，GLMMadaptive 和 brms 包还支持许多常见的分布，比如零膨胀的情况，还可以自定义分布。
+函数 `glmmPQL()` 支持的分布族见函数 `glm()` 的参数 `family` ，lme4 包的函数 `glmer.nb()` 和 GLMMadaptive 包的函数 `negative.binomial()` 都可用于拟合响应变量服从负二项分布的情况。除了这些常规的分布，GLMMadaptive 和 brms 包还支持许多常见的分布，比如零膨胀的泊松分布、二项分布等，还可以自定义分布。
 
 -   伯努利分布 `family = binomial(link = "logit")`
 -   二项分布 `family = binomial(link = "logit")`
@@ -163,7 +178,7 @@ library(cmdstanr)
 
 ### GLMMadaptive
 
-[GLMMadaptive](https://github.com/drizopoulos/GLMMadaptive) 包的主要函数 `mixed_model()` 是用来拟合广义线性混合效应模型的。下面以牛传染性胸膜肺炎（Contagious bovine pleuropneumonia，简称 CBPP）数据 cbpp 介绍函数 `mixed_model()` 的用法，该数据集来自 lme4 包。
+[GLMMadaptive](https://github.com/drizopoulos/GLMMadaptive) 包 [@Dimitris2023] 的主要函数 `mixed_model()` 是用来拟合广义线性混合效应模型的。下面以牛传染性胸膜肺炎（Contagious bovine pleuropneumonia，简称 CBPP）数据 cbpp 介绍函数 `mixed_model()` 的用法，该数据集来自 lme4 包。
 
 ```{r}
 data(cbpp, package = "lme4")
@@ -292,7 +307,7 @@ with(rongelap, {
 })
 ```
 
-在这里，从广义可加混合效应模型的角度来对核污染数据建模，空间效应仍然是用高斯过程来表示，响应变量服从带漂移项的泊松分布。采用 mgcv 包的函数 `gam()` 拟合模型，其中，含 49 个参数的样条近似高斯过程，高斯过程的核函数为默认的梅隆型。更多详情见 **mgcv** 包的函数 `s()` 帮助文档参数的说明，默认值是梅隆型相关函数及默认的范围参数，作者自己定义了一套符号约定。
+在这里，从广义可加混合效应模型的角度来对核污染数据建模，空间效应仍然是用高斯过程来表示，响应变量服从带漂移项的泊松分布。采用 mgcv 包 [@Wood2004] 的函数 `gam()` 拟合模型，其中，含 49 个参数的样条近似高斯过程，高斯过程的核函数为默认的梅隆型。更多详情见 **mgcv** 包的函数 `s()` 帮助文档参数的说明，默认值是梅隆型相关函数及默认的范围参数，作者自己定义了一套符号约定。
 
 ```{r}
 library(nlme)
@@ -604,7 +619,7 @@ INLA 软件能处理上千个高斯随机效应，但最多只能处理 15 个�
     summary(fit_lme)
     ```
 
-3.  从频率派和贝叶斯派角度分别比较多个 R 包对线性混合效应模型的拟合效果。函数 `MASS::glmmPQL()` 、函数 `lme4::lmer()`，以及函数 `blme::blmer()` 和 `brms::brm()` 。
+3.  从频率派和贝叶斯派角度分别比较多个 R 包对线性混合效应模型的拟合效果。提示：函数 `MASS::glmmPQL()` 、函数 `lme4::lmer()`，以及函数 `blme::blmer()` 和 `brms::brm()` 。
 
     ```{r}
     #| eval: false
@@ -636,7 +651,7 @@ INLA 软件能处理上千个高斯随机效应，但最多只能处理 15 个�
     summary(fit_lmm_brms)
     ```
 
-4.  从频率派和贝叶斯派角度分别比较多个 R 包对广义线性混合效应模型的拟合效果。函数 `MASS::glmmPQL()` 和函数 `lme4::glmer()`，以及函数 `blme::bglmer()` 和函数 `brms::brm()` 。
+4.  从频率派和贝叶斯派角度分别比较多个 R 包对广义线性混合效应模型的拟合效果。提示：函数 `MASS::glmmPQL()` 、函数 `lme4::glmer()` 和函数 `glmmTMB::glmmTMB()`，以及函数 `blme::bglmer()` 和函数 `brms::brm()` 。
 
     ```{r}
     #| eval: false
@@ -695,12 +710,13 @@ INLA 软件能处理上千个高斯随机效应，但最多只能处理 15 个�
     gam.vcomp(fgm3)
     ```
 
-5.  从广义线性混合效应模型生成模拟数据，然后用不同的 R 包估计模型参数，比较效果。举例：带漂移项的泊松型广义线性混合效应模型。
+5.  从广义线性混合效应模型生成模拟数据，用至少 6 个不同的 R 包估计模型参数，比较和归纳不同估计方法和实现算法的效果。举例：带漂移项的泊松型广义线性混合效应模型。
 
     ```{r}
     #| eval: false
     #| code-fold: true
     #| echo: !expr knitr::is_html_output()
+
     set.seed(2023)
     # 样本量
     n <- 2500
