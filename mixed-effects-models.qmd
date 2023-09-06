@@ -70,21 +70,44 @@ library(INLA)      # 近似贝叶斯推断
 4.  公式语法和示例模型表示
 :::
 
-线性混合效应模型（Linear Mixed Models or Linear Mixed-Effects Models，简称 LME 或 LMM），介绍模型的基础理论，包括一般形式，矩阵表示，参数估计，假设检验，模型诊断，模型评估。参数方法主要是极大似然估计和限制极大似然估计。
+线性混合效应模型（Linear Mixed Models or Linear Mixed-Effects Models，简称 LME 或 LMM），介绍模型的基础理论，包括一般形式，矩阵表示，参数估计，假设检验，模型诊断，模型评估。参数方法主要是极大似然估计和限制极大似然估计。一般形式如下：
+
+$$
+\bm{y} = X\bm{\beta} + Z\bm{u} + \bm{\epsilon}
+$$
+
+其中，$\bm{y}$ 是一个向量，代表响应变量，$X$ 代表固定效应对应的设计矩阵，$\bm{\beta}$ 是一个参数向量，代表固定效应对应的回归系数，$Z$ 代表随机效应对应的设计矩阵，$\bm{u}$ 是一个参数向量，代表随机效应对应的回归系数，$\bm{\epsilon}$ 表示残差向量。
+
+一般假定随机向量 $\bm{u}$ 服从多元正态分布，这是无条件分布，随机向量 $\bm{y}|\bm{u}$ 服从多元正态分布，这是条件分布。
+
+$$
+\begin{aligned}
+\bm{u} &\sim \mathcal{N}(0,\Sigma) \\
+\bm{y}|\bm{u} &\sim \mathcal{N}(X\bm{\beta} + Z\bm{u},\sigma^2W)
+\end{aligned}
+$$
+
+其中，方差协方差矩阵 $\Sigma$ 必须是半正定的，$W$ 是一个对角矩阵。
 
 ### nlme
 
-sleepstudy 数据集来自 lme4 包，是一个睡眠研究项目的实验数据。
+sleepstudy 数据集来自 lme4 包，是一个睡眠研究项目的实验数据。实验对象都是有失眠情况的人，有的人有严重的失眠问题（一天只有 3 个小时的睡眠时间）。进入实验后的前10 天的情况，记录平均反应时间、睡眠不足的天数。
 
 ```{r}
 data(sleepstudy, package = "lme4")
 str(sleepstudy)
 ```
 
-Reaction 表示平均反应时间（毫秒），数值型，Days 表示睡眠不足的天数，数值型，Subject 表示参与实验的个体编号，因子型。
+Reaction 表示平均反应时间（毫秒），数值型，Days 表示进入实验后的第几天，数值型，Subject 表示参与实验的个体编号，因子型。
 
 ```{r}
-#| label: fig-sleepstudy
+xtabs(~ Days + Subject, data = sleepstudy)
+```
+
+每个个体每天产生一条数据，下 \@fig-sleepstudy-line 中每条折线代表一个个体。
+
+```{r}
+#| label: fig-sleepstudy-line
 #| fig-cap: sleepstudy 数据集
 #| fig-width: 5
 #| fig-height: 4
@@ -98,7 +121,7 @@ ggplot(data = sleepstudy, aes(x = Days, y = Reaction, group = Subject)) +
   labs(x = "睡眠不足的天数", y = "平均反应时间")
 ```
 
-对于重复测量数据，针对不同个体，相比于上图，下面绘制反应时间随睡眠时间的变化趋势更合适。
+对于连续重复测量的数据（continuous repeated measurement outcomes），也叫纵向数据（longitudinal data），针对不同个体 Subject，相比于上图，下面绘制反应时间 Reaction 随睡眠时间 Days 的变化趋势更合适。图中趋势线是简单线性回归的结果，分面展示不同个体Subject 之间对比。
 
 ```{r}
 #| label: fig-sleepstudy-facet
@@ -109,25 +132,59 @@ ggplot(data = sleepstudy, aes(x = Days, y = Reaction, group = Subject)) +
 
 ggplot(data = sleepstudy, aes(x = Days, y = Reaction)) +
   geom_point() +
-  geom_smooth(method = "lm", se = FALSE) +
+  geom_smooth(formula = "y ~ x", method = "lm", se = FALSE) +
   scale_x_continuous(n.breaks = 6) +
   theme_bw() +
-  facet_wrap(facets = ~Subject, ncol = 6) +
+  facet_wrap(facets = ~Subject, labeller = "label_both", ncol = 6) +
   labs(x = "睡眠不足的天数", y = "平均反应时间")
 ```
 
-分组线性回归，考虑组内有相关性
+考虑两水平的混合效应模型，其中随机截距 $\beta_{0j}$ 和随机斜率 $\beta_{1j}$，指标 $j$ 表示分组的编号，也叫变截距和变斜率模型
 
 $$
-\mathrm{Reaction} = \alpha + \beta \cdot \mathrm{Days}
+\begin{aligned}
+\mathrm{Reaction}_{ij} &= \beta_{0j} + \beta_{1j} \cdot \mathrm{Days}_{ij} + \epsilon_{ij} \\
+\beta_{0j} &= \gamma_{00} + U_{0j} \\
+\beta_{1j} &= \gamma_{10} + U_{1j} \\
+\begin{pmatrix}
+U_{0j} \\
+U_{1j}
+\end{pmatrix} &\sim \mathcal{N}
+\begin{bmatrix}
+\begin{pmatrix}
+0 \\
+0
+\end{pmatrix}
+,
+\begin{pmatrix}
+\tau^2_{00} & \tau_{01} \\
+\tau_{01} & \tau^2_{10}
+\end{pmatrix}
+\end{bmatrix} \\
+\epsilon_{ij} &\sim \mathcal{N}(0, \sigma^2) \\
+i = 0,1,\cdots,9 &\quad j = 308,309,\cdots, 372.
+\end{aligned}
 $$
 
-随机截距和随机斜率，也叫变截距和变斜率模型，下面用 nlme 包 [@Pinheiro2000] 拟合模型。
+下面用 nlme 包 [@Pinheiro2000] 拟合模型。
 
 ```{r}
 library(nlme)
 fm1 <- lme(Reaction ~ Days, random = ~ Days | Subject, data = sleepstudy)
 summary(fm1)
+```
+
+随机效应（Random effects）部分：
+
+```{r}
+# 前 6 个 subject
+head(ranef(fm1))
+```
+
+固定效应（Fixed effects）部分：
+
+```{r}
+fixef(fm1)
 ```
 
 [**ggeffects**](https://github.com/strengejacke/ggeffects) 提供函数 `ggpredict()` 和 `ggeffect()` 用来绘制各种混合效应模型的边际效应 Marginal Effects 图。[ggPMX](https://github.com/ggPMXdevelopment/ggPMX) 混合效应模型诊断图。
@@ -847,7 +904,7 @@ INLA 软件能处理上千个高斯随机效应，但最多只能处理 15 个�
     # 对迭代时间没有给出预估，一旦执行，不知道什么时候会跑完
     fit_sim_poisson_glmm <- glmm(y ~ x1 + x2,
       random = list(~ 1 + g), # 随机效应
-      varcomps.names = c("G"), # 给随机效应取个名字
+      varcomps.names = "G", # 给随机效应取个名字
       data = sim_data,
       family.glmm = poisson.glmm, # 泊松型
       m = 10^4, debug = TRUE, cluster = clust
