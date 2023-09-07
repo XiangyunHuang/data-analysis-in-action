@@ -837,16 +837,14 @@ INLA 软件能处理上千个高斯随机效应，但最多只能处理 15 个�
     # 截距和两个协变量的系数
     beta <- c(0.5, 0.3, 0.2)
     # 两个协变量
-    X <- MASS::mvrnorm(NperGroup,
-      mu = rep(0, 2), Sigma = matrix(c(1, 0.8, 0.8, 1), 2)
-    )
+    X <- MASS::mvrnorm(N, mu = rep(0, 2), Sigma = matrix(c(1, 0.8, 0.8, 1), 2))
     # 漂移项
     o <- rep(c(2, 4), each = N / 2)
     # 分 25 个组 每个组 100 个观察值
     g <- factor(rep(1:Ngroups, each = NperGroup))
     u <- rnorm(Ngroups, sd = .5) # 随机效应的标准差 0.5
     # 泊松分布的期望
-    lambda <- o * exp(rep(cbind(1, X) %*% beta, Ngroups) + u[g])
+    lambda <- o * exp(cbind(1, X) %*% beta + u[g])
     # 响应变量的值
     y <- rpois(N, lambda = lambda)
     # 模拟的数据集
