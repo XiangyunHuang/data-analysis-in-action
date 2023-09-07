@@ -89,6 +89,23 @@ $$
 
 其中，方差协方差矩阵 $\Sigma$ 必须是半正定的，$W$ 是一个对角矩阵。
 
+nlme 和 lme4 等 R 包共用一套表示随机效应的公式语法，如下表所示。
+
+| 公式                                                                           | 含义                                                                                                                                    |
+|--------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|
+| `(1|group)`                                                                    | 随机组截距                                                                                                                              |
+| `(x|group)` = `(1+x|group)`                                                    | 变量 x 的随机组斜率和相关截距                                                                                                           |
+| `(0+x|group)` = `(-1+x|group)`                                                 | 变量 x 的随机组斜率，无变化的截距                                                                                                       |
+| `(1|group) + (0+x|group)`                                                      | 不相关的随机截距，组内随机斜率                                                                                                          |
+| `(1|site/block)` = `(1|site)+(1|site:block)`                                   | intercept varying among sites and among blocks within sites (nested random effects)                                                     |
+| `site+(1|site:block)`                                                          | fixed effect of sites plus random variation in intercept among blocks within sites                                                      |
+| `(x|site/block)` = `(x|site)+(x|site:block)` = `(1 + x|site)+(1+x|site:block)` | slope and intercept varying among sites and among blocks within sites                                                                   |
+| `(x1|site)+(x2|block)`                                                         | two different effects, varying at different levels                                                                                      |
+| `x*site+(x|site:block)`                                                        | fixed effect variation of slope and intercept varying among sites and random variation of slope and intercept among blocks within sites |
+| `(1|group1)+(1|group2)`                                                        | intercept varying among crossed random effects (e.g. site, year)                                                                        |
+
+: nlme 包的公式语法 {#tbl-nlme-syntax}
+
 ### nlme
 
 sleepstudy 数据集来自 lme4 包，是一个睡眠研究项目的实验数据。实验对象都是有失眠情况的人，有的人有严重的失眠问题（一天只有 3 个小时的睡眠时间）。进入实验后的前10 天的情况，记录平均反应时间、睡眠不足的天数。
@@ -187,7 +204,7 @@ head(ranef(fm1))
 fixef(fm1)
 ```
 
-[**ggeffects**](https://github.com/strengejacke/ggeffects) 提供函数 `ggpredict()` 和 `ggeffect()` 用来绘制各种混合效应模型的边际效应 Marginal Effects 图。[ggPMX](https://github.com/ggPMXdevelopment/ggPMX) 混合效应模型诊断图。
+[**ggeffects**](https://github.com/strengejacke/ggeffects) 包的函数 `ggpredict()` 和 `ggeffect()` 可以用来绘制混合效应模型的边际效应（ Marginal Effects），[**ggPMX**](https://github.com/ggPMXdevelopment/ggPMX) 包 可以用来绘制混合效应模型的诊断图。下 @fig-lme-effects 展示关于变量 Days 的边际效应图。
 
 ```{r}
 #| label: fig-lme-effects
@@ -198,17 +215,44 @@ fixef(fm1)
 
 library(ggeffects)
 mydf <- ggpredict(fm1, terms = "Days")
+ggplot(mydf, aes(x = x, y = predicted)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.2) +
+  scale_x_continuous(n.breaks = 6) +
+  theme_bw() +
+  labs(x = "Days", y = "Reaction")
+```
+
+```{r}
+#| echo: false
+#| eval: false
+
 plot(mydf)
-# 或者
-# ggplot(mydf, aes(x = x, y = predicted)) +
-#   geom_line() +
-#   geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.1)
 ```
 
 ### cmdstanr
 
 ```{r}
 library(cmdstanr)
+```
+
+```{r}
+#| eval: false
+#| echo: false
+
+# predictions
+fit_sleep2 <- brm(Reaction ~ Days + (Days | Subject),
+  data = sleepstudy
+)
+
+conds <- make_conditions(fit_sleep2, "Subject")
+
+fit_sleep2 |>
+  marginal_effects(
+    re_formula = NULL,
+    conditions = conds
+  ) |>
+  plot(points = TRUE, ncol = 6)
 ```
 
 ## 广义线性混合效应模型 {#sec-glmm}
@@ -674,6 +718,8 @@ INLA 软件能处理上千个高斯随机效应，但最多只能处理 15 个�
     summary(fit_lm)
     fit_lme <- nlme::lme(weight ~ 1, random = ~ 1 | group, data = PlantGrowth)
     summary(fit_lme)
+    fit_lme4 <- lme4::lmer(weight ~ 1 + (1 | group), data = PlantGrowth)
+    summary(fit_lme4)
     ```
 
 3.  从频率派和贝叶斯派角度分别比较多个 R 包对线性混合效应模型的拟合效果。提示：函数 `MASS::glmmPQL()` 、函数 `lme4::lmer()`，以及函数 `blme::blmer()` 和 `brms::brm()` 。
@@ -767,7 +813,16 @@ INLA 软件能处理上千个高斯随机效应，但最多只能处理 15 个�
     gam.vcomp(fgm3)
     ```
 
-5.  从广义线性混合效应模型生成模拟数据，用至少 6 个不同的 R 包估计模型参数，比较和归纳不同估计方法和实现算法的效果。举例：带漂移项的泊松型广义线性混合效应模型。
+5.  从广义线性混合效应模型生成模拟数据，用至少 6 个不同的 R 包估计模型参数，比较和归纳不同估计方法和实现算法的效果。举例：带漂移项的泊松型广义线性混合效应模型。$y_{ij}$ 表示响应变量，$\bm{u}$ 表示随机效应，$o_{ij}$ 表示漂移项。
+
+    $$
+    \begin{aligned}
+    y_{ij}|\bm{u} &\sim \mathrm{Poisson}(o_{ij}\lambda_{ij}) \\
+    \log(\lambda_{ij}) &= \beta_{ij}x_{ij} + u_{j} \\
+    u_j &\sim \mathcal{N}(0, \sigma^2) \\
+    i = 1,2,\ldots, n &\quad j = 1,2,\ldots,q
+    \end{aligned}
+    $$
 
     ```{r}
     #| eval: false
@@ -775,33 +830,33 @@ INLA 软件能处理上千个高斯随机效应，但最多只能处理 15 个�
     #| echo: !expr knitr::is_html_output()
 
     set.seed(2023)
+    Ngroups <- 25
+    NperGroup <- 100
     # 样本量
-    n <- 2500
+    N <- Ngroups * NperGroup
     # 截距和两个协变量的系数
     beta <- c(0.5, 0.3, 0.2)
     # 两个协变量
-    X <- MASS::mvrnorm(100,
-      mu = rep(0, 2),
-      Sigma = matrix(c(1, 0.8, 0.8, 1), 2)
+    X <- MASS::mvrnorm(NperGroup,
+      mu = rep(0, 2), Sigma = matrix(c(1, 0.8, 0.8, 1), 2)
     )
     # 漂移项
-    u <- rep(c(2, 4), each = n / 2)
+    o <- rep(c(2, 4), each = N / 2)
     # 分 25 个组 每个组 100 个观察值
-    g <- factor(rep(1:25, each = 100))
+    g <- factor(rep(1:Ngroups, each = NperGroup))
+    u <- rnorm(Ngroups, sd = .5) # 随机效应的标准差 0.5
     # 泊松分布的期望
-    lambda <- u * exp(rep(cbind(1, X) %*% beta, each = 25))
+    lambda <- o * exp(rep(cbind(1, X) %*% beta, Ngroups) + u[g])
     # 响应变量的值
-    y <- rpois(n, lambda = lambda)
+    y <- rpois(N, lambda = lambda)
     # 模拟的数据集
-    sim_data <- data.frame(y, X, u, g)
-    colnames(sim_data) <- c("y", "x1", "x2", "u", "g")
+    sim_data <- data.frame(y, X, o, g)
+    colnames(sim_data) <- c("y", "x1", "x2", "o", "g")
 
     # 模型拟合
     library(lme4)
     fit_sim_poisson_glmer <- glmer(y ~ x1 + x2 + (1 | g),
-      data = sim_data,
-      offset = log(u),
-      family = poisson(link = "log")
+      data = sim_data, offset = log(o), family = poisson(link = "log")
     )
     # 模型输出
     summary(fit_sim_poisson_glmer)
@@ -809,7 +864,7 @@ INLA 软件能处理上千个高斯随机效应，但最多只能处理 15 个�
     # 对随机效应 adaptive Gauss-Hermite quadrature 积分
     library(GLMMadaptive)
     fit_sim_poisson_adaptive <- mixed_model(
-      fixed = y ~ x1 + x2 + offset(log(u)), 
+      fixed = y ~ x1 + x2 + offset(log(o)), 
       random = ~ 1 | g, data = sim_data,
       family = poisson(link = "log")
     )
@@ -817,7 +872,7 @@ INLA 软件能处理上千个高斯随机效应，但最多只能处理 15 个�
 
     # 如何设置先验分布
     fit_sim_poisson_brm <- brms::brm(
-      y ~ x1 + x2 + (1 | g) + offset(log(u)),
+      y ~ x1 + x2 + (1 | g) + offset(log(o)),
       data = sim_data,
       family = poisson(link = "log"),
       # silent = 2, # 关闭消息
@@ -839,13 +894,13 @@ INLA 软件能处理上千个高斯随机效应，但最多只能处理 15 个�
     fit_sim_poisson_bglmer <- bglmer(
       formula = y ~ x1 + x2 + (1 | g),
       data = sim_data,
-      offset = log(u),
+      offset = log(o),
       family = poisson(link = "log")
     )
     summary(fit_sim_poisson_bglmer)
     # MCMCglmm 包 贝叶斯估计
     fit_sim_poisson_mcmcglmm <- MCMCglmm::MCMCglmm(
-      fixed = y ~ x1 + x2 + offset(log(u)),
+      fixed = y ~ x1 + x2 + offset(log(o)),
       random = ~g, family = "poisson", 
       data = sim_data, verbose = FALSE
     )
@@ -856,13 +911,13 @@ INLA 软件能处理上千个高斯随机效应，但最多只能处理 15 个�
       fixed =  y ~ x1 + x2,
       random = ~ 1 | g,
       family = poisson(link = "log"), 
-      offset = log(u) ,
+      offset = log(o) ,
       data = sim_data
     )
     summary(fit_sim_poisson_hglm)
     # 广义估计方程 
     library(gee)
-    fit_sim_poisson_gee <- gee(y ~ x1 + x2 + offset(log(u)),
+    fit_sim_poisson_gee <- gee(y ~ x1 + x2 + offset(log(o)),
       id = g,
       data = sim_data,
       family = poisson(link = "log"),
@@ -875,24 +930,17 @@ INLA 软件能处理上千个高斯随机效应，但最多只能处理 15 个�
     # Maximum Likelihood and numerical integration via Gauss-Hermite quadrature.
     library(glmmML)
     fit_sim_poisson_glmmml <- glmmML(
-      formula = y ~ x1 + x2,
-      family = poisson,
-      data = sim_data,
-      offset = log(u),
-      cluster = g
+      formula = y ~ x1 + x2, family = poisson,
+      data = sim_data, offset = log(o), cluster = g
     )
     summary(fit_sim_poisson_glmmml)
     # Generalized Estimating Equation
     # [geepack](https://cran.r-project.org/package=geepack) GEE
     library(geepack)
     fit_sim_poisson_geepack <- geeglm(
-      formula = y ~ x1 + x2,
-      family = poisson(link = "log"),
-      id = g,
-      offset = log(u),
-      data = sim_data,
-      corstr = "exchangeable",
-      scale.fix = FALSE
+      formula = y ~ x1 + x2, family = poisson(link = "log"),
+      id = g, offset = log(o), data = sim_data,
+      corstr = "exchangeable", scale.fix = FALSE
     )
     summary(fit_sim_poisson_geepack)
     # [glmm](https://github.com/knudson1/glmm)
