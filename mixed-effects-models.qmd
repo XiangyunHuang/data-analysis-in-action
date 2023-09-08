@@ -241,9 +241,7 @@ library(cmdstanr)
 #| echo: false
 
 # predictions
-fit_sleep2 <- brm(Reaction ~ Days + (Days | Subject),
-  data = sleepstudy
-)
+fit_sleep2 <- brm(Reaction ~ Days + (Days | Subject), data = sleepstudy)
 
 conds <- make_conditions(fit_sleep2, "Subject")
 
@@ -317,6 +315,17 @@ summary(fgm1)
 library(cmdstanr)
 ```
 
+```{r}
+#| eval: false
+#| echo: false
+
+library(brms)
+bgm1 <- brm(
+  incidence | trials(size) ~ period + (1 | herd),
+  data = cbpp, family = binomial(link = "logit")
+)
+```
+
 ## 非线性混合效应模型 {#sec-nlmm}
 
 ### nlme
@@ -350,7 +359,48 @@ fm2 <- update(fm1, random = pdDiag(Asym + lrc ~ 1))
 summary(fm2)
 ```
 
+非线性函数 `SSasymp()` 的内容如下
+
+$$
+\mathrm{Asym}+(\mathrm{R0}-\mathrm{Asym})\times\exp\big(-\exp(\mathrm{lrc})\times\mathrm{input}\big)
+$$
+
+其中，$\mathrm{Asym}$ 、$\mathrm{R0}$ 、$\mathrm{lrc}$ 是参数，$\mathrm{input}$ 是输入值。
+
 ### cmdstanr
+
+```{r}
+library(cmdstanr)
+```
+
+```{r}
+#| eval: false
+#| echo: false
+
+library(brms)
+lob_prior <- c(
+  set_prior("normal(101, 0.1)", nlpar = "Asym", lb = 100, ub = 102),
+  set_prior("normal(-8, 1)", nlpar = "R0", lb = -10),
+  set_prior("normal(-3, 3)", nlpar = "lrc", lb = -9),
+  set_prior("normal(3, 0.2)", class = "sigma")
+)
+
+lob_formula <- bf(
+  height ~ Asym + (R0 - Asym) * exp( - exp(lrc) * age),
+  # Nonlinear variables
+  # Fixed effects: Asym R0 lrc
+  R0 + lrc ~ 1,
+  # Nonlinear variables
+  # Random effects: Seed
+  Asym ~ 1 + (1 | Seed),
+  # Nonlinear fit
+  nl = TRUE
+)
+
+lob_bayes_fit <- brm(
+  lob_formula, family = gaussian(), data = Loblolly, prior = lob_prior
+)
+```
 
 ## 广义可加混合效应模型 {#sec-gamm}
 
@@ -532,6 +582,26 @@ fit_rongelap_ginla$beta[t(idx)]
 
 #### cmdstanr
 
+```{r}
+library(cmdstanr)
+```
+
+```{r}
+#| eval: false
+#| echo: false
+
+library(brms)
+# 预计运行 1 个小时以上
+rongelap_brm <- brm(counts ~ gp(cX, cY) + offset(log(time)),
+  data = rongelap, family = poisson(link = "log")
+)
+# 50 个基函数 computing approximate GPs.
+rongelap_brm <- brm(
+  counts ~ gp(cX, cY, c = 5/4, k = 50) + offset(log(time)),
+  data = rongelap, family = poisson(link = "log")
+)
+```
+
 #### INLA
 
 接下来，介绍完整版的近似贝叶斯推断方法 INLA --- 集成嵌套拉普拉斯近似 (Integrated Nested Laplace Approximations，简称 INLA) [@Rue2009]。根据研究区域的边界构造非凸的内外边界，处理边界效应。
@@ -688,16 +758,16 @@ ggplot() +
 本章介绍函数 `MASS::glmmPQL()`、 `nlme::lme()`、`lme4::lmer()` 和 `brms::brm()` 的用法，以及它们求解线性混合效应模型的区别和联系。在贝叶斯估计方法中，**brms** 包和 **INLA** 包都支持非常丰富的模型种类，前者是贝叶斯精确推断，后者是贝叶斯近似推断，**brms** 基于概率编程语言 Stan 框架打包了许多模型的 Stan 实现，INLA 基于求解随机偏微分方程的有限元方法和拉普拉斯近似技巧，将各类常见统计模型统一起来，计算速度快，计算结果准确。
 
 1.  函数 `nlme::lme()` 极大似然估计和限制极大似然估计
-2.  函数 `MASS::glmmPQL()` 惩罚拟似然估计，MASS 是依赖 nlme 包， nlme 不支持模型中添加漂移项，所以函数 `glmmPQL()` 也不支持。
+2.  函数 `MASS::glmmPQL()` 惩罚拟似然估计，MASS 是依赖 nlme 包， nlme 不支持模型中添加漂移项，所以函数 `glmmPQL()` 也不支持添加漂移项。
 3.  函数 `lme4::lmer()` 拉普拉斯近似。关于随机效应的高维积分
 4.  函数 `brms::brm()` 汉密尔顿蒙特卡罗抽样。HMC 方法结合自适应步长的采样器 NUTS 来抽样。
 5.  函数 `INLA::inla()` 集成嵌套拉普拉斯近似。
 
-| 模型                 | nlme     | MASS                         | lme4      | GLMMadaptive    | brms    |
-|------------|------------|------------|------------|------------|------------|
-| 线性混合效应模型     | `lme()`  | `glmmPQL()`                  | `lmer()`  | 不支持          | `brm()` |
-| 广义线性混合效应模型 | 不支持   | `glmmPQL()` 不支持添加漂移项 | `glmer()` | `mixed_model()` | `brm()` |
-| 非线性混合效应模型   | `nlme()` | 不支持                       | `nlmer()` | 不支持          | `brm()` |
+| 模型                 | nlme     | MASS        | lme4      | GLMMadaptive    | brms    |
+|----------------------|----------|-------------|-----------|-----------------|---------|
+| 线性混合效应模型     | `lme()`  | `glmmPQL()` | `lmer()`  | 不支持          | `brm()` |
+| 广义线性混合效应模型 | 不支持   | `glmmPQL()` | `glmer()` | `mixed_model()` | `brm()` |
+| 非线性混合效应模型   | `nlme()` | 不支持      | `nlmer()` | 不支持          | `brm()` |
 
 : 混合效应模型及相关 R 包拟合函数 {#tbl-mixed-models}
 
@@ -891,8 +961,7 @@ INLA 软件能处理上千个高斯随机效应，但最多只能处理 15 个�
     library(blme)
     fit_sim_poisson_bglmer <- bglmer(
       formula = y ~ x1 + x2 + (1 | g),
-      data = sim_data,
-      offset = log(o),
+      data = sim_data, offset = log(o),
       family = poisson(link = "log")
     )
     summary(fit_sim_poisson_bglmer)
@@ -906,19 +975,15 @@ INLA 软件能处理上千个高斯随机效应，但最多只能处理 15 个�
     ## hglm 包 Hierarchical Generalized Linear Models
     # extended quasi likelihood (EQL) method
     fit_sim_poisson_hglm <- hglm::hglm(
-      fixed =  y ~ x1 + x2,
-      random = ~ 1 | g,
+      fixed =  y ~ x1 + x2, random = ~ 1 | g,
       family = poisson(link = "log"), 
-      offset = log(o) ,
-      data = sim_data
+      offset = log(o), data = sim_data
     )
     summary(fit_sim_poisson_hglm)
     # 广义估计方程 
     library(gee)
     fit_sim_poisson_gee <- gee(y ~ x1 + x2 + offset(log(o)),
-      id = g,
-      data = sim_data,
-      family = poisson(link = "log"),
+      id = g, data = sim_data, family = poisson(link = "log"),
       corstr = "exchangeable"
     )
     # 输出
@@ -948,7 +1013,7 @@ INLA 软件能处理上千个高斯随机效应，但最多只能处理 15 个�
     # 设置双核并行迭代
     clust <- makeCluster(2) # doParallel
     # 对迭代时间没有给出预估，一旦执行，不知道什么时候会跑完
-    fit_sim_poisson_glmm <- glmm(y ~ x1 + x2,
+    fit_sim_poisson_glmm <- glmm(y ~ x1 + x2 + offset(log(o)),
       random = list(~ 1 + g), # 随机效应
       varcomps.names = "G", # 给随机效应取个名字
       data = sim_data,
@@ -956,6 +1021,7 @@ INLA 软件能处理上千个高斯随机效应，但最多只能处理 15 个�
       m = 10^4, debug = TRUE, cluster = clust
     )
     stopCluster(clust)
+    summary(fit_sim_poisson_glmm)
     ```
 
 6.  基于 **MASS** 包的地形数据集 topo，建立高斯过程回归模型，比较贝叶斯预测与克里金插值预测的效果。
