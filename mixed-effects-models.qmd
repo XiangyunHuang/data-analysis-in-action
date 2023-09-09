@@ -92,7 +92,7 @@ $$
 nlme 和 lme4 等 R 包共用一套表示随机效应的公式语法，如下表所示。
 
 | 公式                                                                           | 含义                                                                                                                                    |
-|--------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|
+|---------------------------|---------------------------------------------|
 | `(1|group)`                                                                    | 随机组截距                                                                                                                              |
 | `(x|group)` = `(1+x|group)`                                                    | 变量 x 的随机组斜率和相关截距                                                                                                           |
 | `(0+x|group)` = `(-1+x|group)`                                                 | 变量 x 的随机组斜率，无变化的截距                                                                                                       |
@@ -105,8 +105,6 @@ nlme 和 lme4 等 R 包共用一套表示随机效应的公式语法，如下表
 | `(1|group1)+(1|group2)`                                                        | intercept varying among crossed random effects (e.g. site, year)                                                                        |
 
 : nlme 包的公式语法 {#tbl-nlme-syntax}
-
-### nlme
 
 sleepstudy 数据集来自 lme4 包，是一个睡眠研究项目的实验数据。实验对象都是有失眠情况的人，有的人有严重的失眠问题（一天只有 3 个小时的睡眠时间）。进入实验后的前10 天的情况，记录平均反应时间、睡眠不足的天数。
 
@@ -230,16 +228,13 @@ ggplot(mydf, aes(x = x, y = predicted)) +
 plot(mydf)
 ```
 
-### cmdstanr
-
-```{r}
-library(cmdstanr)
-```
-
+::: {#brms-lmm .callout-note title="brms"}
 ```{r}
 #| eval: false
-#| echo: false
+#| echo: !expr knitr::is_html_output()
+#| code-fold: true
 
+library(brms)
 # predictions
 fit_sleep2 <- brm(Reaction ~ Days + (Days | Subject), data = sleepstudy)
 
@@ -252,6 +247,7 @@ fit_sleep2 |>
   ) |>
   plot(points = TRUE, ncol = 6)
 ```
+:::
 
 ## 广义线性混合效应模型 {#sec-glmm}
 
@@ -274,8 +270,6 @@ fit_sleep2 |>
 -   泊松分布 `family = poisson(link = "log")`
 -   负二项分布 `lme4::glmer.nb()` 或 `GLMMadaptive::negative.binomial()`
 -   伽马分布 `family = Gamma(link = "inverse")`
-
-### GLMMadaptive
 
 [GLMMadaptive](https://github.com/drizopoulos/GLMMadaptive) 包 [@Dimitris2023] 的主要函数 `mixed_model()` 是用来拟合广义线性混合效应模型的。下面以牛传染性胸膜肺炎（Contagious bovine pleuropneumonia，简称 CBPP）数据 cbpp 介绍函数 `mixed_model()` 的用法，该数据集来自 lme4 包。
 
@@ -309,15 +303,11 @@ fgm1 <- mixed_model(
 summary(fgm1)
 ```
 
-### cmdstanr
-
-```{r}
-library(cmdstanr)
-```
-
+::: {#brms-glmm .callout-note title="brms"}
 ```{r}
 #| eval: false
-#| echo: false
+#| echo: !expr knitr::is_html_output()
+#| code-fold: true
 
 library(brms)
 bgm1 <- brm(
@@ -325,12 +315,11 @@ bgm1 <- brm(
   data = cbpp, family = binomial(link = "logit")
 )
 ```
+:::
 
 ## 非线性混合效应模型 {#sec-nlmm}
 
-### nlme
-
-Loblolly 数据集
+Loblolly 数据集来自 R 内置的 datasets 包
 
 ```{r}
 #| label: fig-Loblolly
@@ -344,19 +333,12 @@ ggplot(data = Loblolly, aes(x = age, y = height, group = Seed)) +
   theme_bw()
 ```
 
-示例来自 **nlme** 包的函数 `nlme()` 帮助文档
+非线性回归
 
 ```{r}
-fm1 <- nlme(height ~ SSasymp(age, Asym, R0, lrc),
-  data = Loblolly,
-  fixed = Asym + R0 + lrc ~ 1,
-  random = Asym ~ 1,
-  start = c(Asym = 103, R0 = -8.5, lrc = -3.3)
-)
-summary(fm1)
-# 更新模型的随机效应部分
-fm2 <- update(fm1, random = pdDiag(Asym + lrc ~ 1))
-summary(fm2)
+nfm1 <- nls(height ~ SSasymp(age, Asym, R0, lrc),
+           data = Loblolly, subset = Seed == 329)
+summary(nfm1)
 ```
 
 非线性函数 `SSasymp()` 的内容如下
@@ -367,15 +349,26 @@ $$
 
 其中，$\mathrm{Asym}$ 、$\mathrm{R0}$ 、$\mathrm{lrc}$ 是参数，$\mathrm{input}$ 是输入值。
 
-### cmdstanr
+示例来自 **nlme** 包的函数 `nlme()` 帮助文档
 
 ```{r}
-library(cmdstanr)
+nfm2 <- nlme(height ~ SSasymp(age, Asym, R0, lrc),
+  data = Loblolly,
+  fixed = Asym + R0 + lrc ~ 1,
+  random = Asym ~ 1,
+  start = c(Asym = 103, R0 = -8.5, lrc = -3.3)
+)
+summary(nfm2)
+# 更新模型的随机效应部分
+nfm3 <- update(nfm2, random = pdDiag(Asym + lrc ~ 1))
+summary(nfm3)
 ```
 
+::: {#brms-nlmm .callout-note title="brms"}
 ```{r}
 #| eval: false
-#| echo: false
+#| echo: !expr knitr::is_html_output()
+#| code-fold: true
 
 library(brms)
 lob_prior <- c(
@@ -401,14 +394,13 @@ lob_bayes_fit <- brm(
   lob_formula, family = gaussian(), data = Loblolly, prior = lob_prior
 )
 ```
+:::
 
 ## 广义可加混合效应模型 {#sec-gamm}
 
 从线性到可加，意味着从线性到非线性，可加模型容纳非线性的成分，比如高斯过程、样条。
 
-### 频率派
-
-#### mgcv (gam) {#sec-mgcv-gam}
+### mgcv {#sec-mgcv-gam}
 
 本节复用 @sec-nuclear-pollution-concentration 朗格拉普岛核污染数据，相关背景不再赘述，下面首先加载数据到 R 环境。
 
@@ -541,7 +533,26 @@ ggplot() +
   labs(x = "横坐标（米）", y = "纵坐标（米）", fill = "预测值")
 ```
 
-#### mgcv (ginla) {#sec-mgcv-ginla}
+::: {#brms-gamm .callout-note title="brms"}
+```{r}
+#| eval: false
+#| echo: !expr knitr::is_html_output()
+#| code-fold: true
+
+library(brms)
+# 预计运行 1 个小时以上
+rongelap_brm <- brm(counts ~ gp(cX, cY) + offset(log(time)),
+  data = rongelap, family = poisson(link = "log")
+)
+# 50 个基函数 computing approximate GPs.
+rongelap_brm <- brm(
+  counts ~ gp(cX, cY, c = 5/4, k = 50) + offset(log(time)),
+  data = rongelap, family = poisson(link = "log")
+)
+```
+:::
+
+### INLA
 
 **mgcv** 包的函数 `ginla()` 实现简化版的 Integrated Nested Laplace Approximation, INLA [@Rue2009]。
 
@@ -577,32 +588,6 @@ plot(
 idx <- apply(fit_rongelap_ginla$density, 1, function(x) x == max(x))
 fit_rongelap_ginla$beta[t(idx)]
 ```
-
-### 贝叶斯派
-
-#### cmdstanr
-
-```{r}
-library(cmdstanr)
-```
-
-```{r}
-#| eval: false
-#| echo: false
-
-library(brms)
-# 预计运行 1 个小时以上
-rongelap_brm <- brm(counts ~ gp(cX, cY) + offset(log(time)),
-  data = rongelap, family = poisson(link = "log")
-)
-# 50 个基函数 computing approximate GPs.
-rongelap_brm <- brm(
-  counts ~ gp(cX, cY, c = 5/4, k = 50) + offset(log(time)),
-  data = rongelap, family = poisson(link = "log")
-)
-```
-
-#### INLA
 
 接下来，介绍完整版的近似贝叶斯推断方法 INLA --- 集成嵌套拉普拉斯近似 (Integrated Nested Laplace Approximations，简称 INLA) [@Rue2009]。根据研究区域的边界构造非凸的内外边界，处理边界效应。
 
@@ -764,7 +749,7 @@ ggplot() +
 5.  函数 `INLA::inla()` 集成嵌套拉普拉斯近似。
 
 | 模型                 | nlme     | MASS        | lme4      | GLMMadaptive    | brms    |
-|----------------------|----------|-------------|-----------|-----------------|---------|
+|-------------|------------|------------|------------|------------|------------|
 | 线性混合效应模型     | `lme()`  | `glmmPQL()` | `lmer()`  | 不支持          | `brm()` |
 | 广义线性混合效应模型 | 不支持   | `glmmPQL()` | `glmer()` | `mixed_model()` | `brm()` |
 | 非线性混合效应模型   | `nlme()` | 不支持      | `nlmer()` | 不支持          | `brm()` |
@@ -1124,3 +1109,4 @@ INLA 软件能处理上千个高斯随机效应，但最多只能处理 15 个�
     # 绘制图形
     plot(me3, ask = FALSE, points = TRUE)
     ```
+
