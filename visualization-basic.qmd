@@ -640,3 +640,77 @@ ggplot(data = gapminder, aes(x = gdpPercap, y = lifeExp)) +
   ) +
   transition_time(time = year)
 ```
+
+## 艺术 {#sec-arts}
+
+[Georgios Karamanis](https://georgemsavva.github.io/creativecoding/) 基于 R 语言和扩展包 **ggforce** 制作了一系列生成艺术（Generative Arts）作品。下图是 **ggforce** 包的 4 个图层函数 `geom_regon()`、 `geom_spiro()`、 `geom_diagonal()` 和 `geom_spoke()` 分别生成的四幅图片。
+
+```{r}
+#| label: fig-arts
+#| fig-width: 4
+#| fig-height: 4
+#| fig-cap: R 语言与生成艺术
+#| fig-subcap: 
+#| - 函数 `geom_regon()`
+#| - 函数 `geom_spiro()`
+#| - 函数 `geom_diagonal()`
+#| - 函数 `geom_spoke()` 
+#| fig-showtext: true
+#| layout-ncol: 2
+#| layout-nrow: 2
+
+library(ggforce)
+s <- 900
+ggplot() +
+  geom_regon(aes(
+    x0 = cos((1:s) / 57), y0 = sin((1:s) / 57),
+    sides = 6, r = cos((1:s) / 24),
+    angle = cos((1:s) / 23), color = 1:s %% 15
+  ),
+  linewidth = 0.2, fill = NA, linetype = "twodash"
+  ) +
+  scale_color_viridis_c(option = 15, guide = "none") +
+  coord_fixed() +
+  theme_void()
+
+r <- seq(1, 11, 0.1)
+ggplot() +
+  geom_spiro(aes(r = r, R = r * 20, d = r^2, outer = T, color = r %% 10), linewidth = 3) +
+  scale_color_viridis_c(option = "turbo") +
+  coord_fixed() +
+  theme_void() +
+  theme(legend.position = "none")
+
+s <- 1200
+ggplot() +
+  geom_diagonal(aes(
+    x = cos(seq(0, pi, length.out = s)),
+    y = sin(seq(0, pi, length.out = s)),
+    xend = cos(seq(0, 360 * pi, length.out = s)),
+    yend = sin(seq(0, 360 * pi, length.out = s))
+  ),
+  size = 0.1, strength = 1
+  ) +
+  coord_fixed() +
+  theme_void()
+
+e <- 1e-3
+s <- 1e4
+t <- pi / 2 * cumsum(seq(e, -e, length.out = s))^3
+ggplot() +
+  geom_spoke(aes(
+    x = cumsum(cos(t)), y = cumsum(sin(t)),
+    angle = t, color = t, radius = 1:s %% 500
+  ), alpha = 0.5) +
+  scale_color_distiller(palette = 15, guide = "none") +
+  coord_fixed() +
+  theme_void()
+```
+
+需要充满想象，或借助数学、物理方程，或借助算法、数据生成。好看，但没什么用的生成艺术作品。
+
+-   <https://art-from-code.netlify.app/>
+-   <https://clauswilke.com/art/project/before-after>
+-   <https://clauswilke.com/art/>
+-   <https://art.djnavarro.net/>
+-   <https://www.data-imaginist.com/art>
