@@ -75,13 +75,13 @@ model {
 
 -   `model` 代码块是抽样语句表示的模型结构，符号 `~` 表示服从的意思，函数 `y ~ normal(mu, 1)` 是正态分布的抽样语句。
 
-接下来，编译 Stan 代码，准备参数初值，配置采样的参数。首先加载 **cmdstanr** 包，设置 4 条迭代链，给每条链设置相同的参数初始值。代码编译后，生成一个模型对象 `mod_gaussian`，接着，调用方法 `sample()` ，传递迭代初值 `init`，初始化阶段的迭代次数 `iter_warmup` ，采样阶段的迭代次数 `iter_sampling`，采样的链条数 `chains` 及并行时 分配的 CPU 核心数 `parallel_chains` ，随机数种子 `seed` 。
+接下来，编译 Stan 代码，准备参数初值，配置采样的参数。首先加载 **cmdstanr** 包，设置 2 条迭代链，给每条链设置相同的参数初始值。代码编译后，生成一个模型对象 `mod_gaussian`，接着，调用方法 `sample()` ，传递迭代初值 `init`，初始化阶段的迭代次数 `iter_warmup` ，采样阶段的迭代次数 `iter_sampling`，采样的链条数 `chains` 及并行时 分配的 CPU 核心数 `parallel_chains` ，随机数种子 `seed` 。
 
 ```{r}
 #| message: false
 
 library(cmdstanr)
-nchains <- 4 # 4 条迭代链
+nchains <- 2 # 2 条迭代链
 # 给每条链设置相同的参数初始值
 inits_data_gaussian <- lapply(1:nchains, function(i) {
   list(
@@ -94,24 +94,38 @@ fit_gaussian <- mod_gaussian$sample(
   iter_warmup = 200,            # 每条链初始化迭代次数
   iter_sampling = 200,          # 每条链采样迭代次数
   chains = nchains,         # 马尔科夫链的数目
-  parallel_chains = 4,      # 指定 CPU 核心数，可以给每条链分配一个
+  parallel_chains = nchains,# 指定 CPU 核心数，可以给每条链分配一个
   seed = 20232023           # 设置随机数种子，不要使用 set.seed() 函数
 )
 ```
 
-默认情况下，采样过程中会输出一些信息，以上是 4 条链并行采样的过程，给出百分比进度及时间消耗。采样完成后，调用方法 `summary()` 汇总和展示采样结果。
+默认情况下，采样过程中会输出一些信息，以上是 2 条链并行采样的过程，给出百分比进度及时间消耗。采样完成后，调用方法 `summary()` 汇总和展示采样结果。
 
 ```{r}
 fit_gaussian$summary()
 ```
 
-输出模型中各个参数的后验分布的一些统计量，如均值（mean）、中位数（median）、标准差（sd），0.05 分位点（q5），0.95 分位点（q95）等。此外，还有 \`lp\_\_\` 后验对数概率密度值，每个模型都会有该值。`summary()` 方法有一些参数可以控制数字的显示方式和精度。下面展示的是保留 4 位有效数字的结果。
+输出模型中各个参数的后验分布的一些统计量，如均值（mean）、中位数（median）、标准差（sd），0.05 分位点（q5），0.95 分位点（q95）等。此外，还有 `lp__` 后验对数概率密度值，每个模型都会有该值。`summary()` 方法有一些参数可以控制数字的显示方式和精度。下面展示的是保留 4 位有效数字的结果。
 
 ```{r}
 fit_gaussian$summary(.num_args = list(sigfig = 4, notation = "dec"))
 ```
 
 接下来，要介绍 Stan 代码中的保留字 target 的含义，因为它在 Stan 代码中很常见，与输出结果中的 `lp__` 一行紧密相关。
+
+```{r}
+#| label: fig-stan-lp
+#| fig-cap: lp__ 的后验分布
+#| fig-showtext: true
+#| fig-width: 5
+#| fig-height: 4
+#| message: false
+
+library(ggplot2)
+library(bayesplot)
+mcmc_hist(fit_gaussian$draws("lp__")) +
+  theme_classic()
+```
 
 为此，不妨在之前的 Stan 代码的基础上添加两行，新的 Stan 代码如下：
 
@@ -137,7 +151,7 @@ fit_gaussian <- mod_gaussian_target$sample(
   iter_warmup = 200,            
   iter_sampling = 200,          
   chains = nchains,             
-  parallel_chains = 4,      
+  parallel_chains = nchains,      
   show_messages = FALSE,    # 不显示中间过程
   refresh = 0,              # 不显示采样进度
   seed = 20232023           
@@ -160,19 +174,19 @@ y <- c(-3, -2, -1, 0, 1, 2, 3)
 12345 + mean(exp(y)) - 14.45 
 ```
 
-一般地，不妨设 $x_1,x_2,\cdots,x_n$ 是来自正态总体 $\mathcal{N}(\mu,1)$ 的一个样本。则正态分布的概率密度函数 $f(x)$ 的对数如下：
+下面从概率密度函数出发，用 R 语言来计算逐点对数似然函数值。一般地，不妨设 $x_1,x_2,\cdots,x_n$ 是来自正态总体 $\mathcal{N}(\mu,1)$ 的一个样本。则正态分布的概率密度函数 $f(x)$ 的对数如下：
 
 $$
 \log f(x) = \log \frac{1}{\sqrt{2\pi}} - \frac{(x - \mu)^2}{2}
 $$
 
-经过计算，我们知道参数 $\mu$ 是一个非常接近 0 的数，不妨将 $\mu = 0$ 代入计算
+我们知道参数 $\mu$ 是一个非常接近 0 的数，不妨将 $\mu = 0$ 代入计算。
 
 ```{r}
 sum(dnorm(x = y, mean = 0, sd = 1, log = TRUE))
 ```
 
-如果去掉常数项计算概率密度函数值的对数和。
+对比去掉常数项后，概率密度函数值的对数和。
 
 ```{r}
 # 扔掉常数
@@ -182,7 +196,9 @@ f <- function(y, mu) {
 sum(f(-3:3, 0))
 ```
 
-这就比较接近原 `lp__` 的值了。在知道了 target 的含义后，以概率密度函数的对数 `normal_lpdf` 替代抽样语句，下面这段代码就不难理解了。**`normal_lpdf`** 是 Stan 内置的函数，输入值为概率密度值 `y` 、位置参数 `mu` 和尺度参数 `sigma`，返回值为 `real` 实数。
+这就比较接近原 `lp__` 的值了，所以，`lp__` 表示后验概率密度函数的对数（扔掉了与参数无关的常数项）。
+
+下面这个示例稍微修改已知数据，之前已知的是概率分布中随机变量的取值，现在已知的是随机变量对应的概率密度函数值的对数，以概率密度函数的对数 `normal_lpdf` 替代抽样语句，下面这段代码就不难理解了。**`normal_lpdf`** 是 Stan 内置的函数，输入值为概率密度值 `y` 、位置参数 `mu` 和尺度参数 `sigma`，返回值为 `real` 实数。
 
 `real` **`normal_lpdf`**`(reals y | reals mu, reals sigma)`
 
@@ -207,7 +223,7 @@ fit_gaussian <- mod_gaussian_lpdf$sample(
   iter_warmup = 200,            
   iter_sampling = 200,          
   chains = nchains,            
-  parallel_chains = 4,     
+  parallel_chains = nchains,     
   show_messages = FALSE,
   refresh = 0,            
   seed = 20232023
