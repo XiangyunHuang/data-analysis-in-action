@@ -113,6 +113,10 @@ fit_gaussian$summary(.num_args = list(sigfig = 4, notation = "dec"))
 
 接下来，要介绍 Stan 代码中的保留字 target 的含义，因为它在 Stan 代码中很常见，与输出结果中的 `lp__` 一行紧密相关。
 
+-   `lp__` 表示后验概率密度函数的对数。
+-   target 累加一些和参数无关的数不影响参数的估计，但影响 `lp__` 的值。
+-   抽样语句表示模型会扔掉后验概率密度函数的对数的常数项。
+
 ```{r}
 #| label: fig-stan-lp
 #| fig-cap: lp__ 的后验分布
@@ -180,13 +184,13 @@ $$
 \log f(x) = \log \frac{1}{\sqrt{2\pi}} - \frac{(x - \mu)^2}{2}
 $$
 
-我们知道参数 $\mu$ 是一个非常接近 0 的数，不妨将 $\mu = 0$ 代入计算。
+已知参数 $\mu$ 是一个非常接近 0 的数，不妨将 $\mu = 0$ 代入计算。
 
 ```{r}
 sum(dnorm(x = y, mean = 0, sd = 1, log = TRUE))
 ```
 
-对比去掉常数项后，概率密度函数值的对数和。
+去掉常数项后，计算概率密度函数值的对数和。
 
 ```{r}
 # 扔掉常数
@@ -196,16 +200,13 @@ f <- function(y, mu) {
 sum(f(-3:3, 0))
 ```
 
-这就比较接近原 `lp__` 的值了，所以，`lp__` 表示后验概率密度函数的对数（扔掉了与参数无关的常数项）。
-
-下面这个示例稍微修改已知数据，之前已知的是概率分布中随机变量的取值，现在已知的是随机变量对应的概率密度函数值的对数，以概率密度函数的对数 `normal_lpdf` 替代抽样语句，下面这段代码就不难理解了。**`normal_lpdf`** 是 Stan 内置的函数，输入值为概率密度值 `y` 、位置参数 `mu` 和尺度参数 `sigma`，返回值为 `real` 实数。
+这就比较接近原 `lp__` 的值了，所以，`lp__` 表示后验概率密度函数的对数，扔掉了与参数无关的常数项。若以概率密度函数的对数 `normal_lpdf` 替代抽样语句，则常数项是保留的。`normal_lpdf` 是 Stan 内置的函数，输入值为随机变量的取值 `y` 、位置参数 `mu` 和尺度参数 `sigma`，返回值为 `real` 实数。
 
 `real` **`normal_lpdf`**`(reals y | reals mu, reals sigma)`
 
 ```{stan output.var="mod_gaussian_lpdf"}
 transformed data {
-  vector[7] y = [-0.5657,  0.3210,  0.1253,  1.3532, -1.2877,  0.3226,  0.2669]';
-  // vector[7] y = [-3, -2, -1, 0, 1, 2, 3]';
+  vector[7] y = [-3, -2, -1, 0, 1, 2, 3]';
 }
 parameters {
   real mu;
@@ -231,7 +232,7 @@ fit_gaussian <- mod_gaussian_lpdf$sample(
 fit_gaussian$summary(.num_args = list(sigfig = 4, notation = "dec"))
 ```
 
-可以看到，将随机变量换成它的概率密度值，不影响对模型参数的推断。数值上的差异来源于数值精度的表示。
+可以看到，此时 `lp__` 的值包含常数项，两种表示方式对参数的计算结果没有影响。
 
 ### Stan 的变量类型
 
