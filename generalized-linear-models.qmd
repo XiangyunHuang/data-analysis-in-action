@@ -6,9 +6,9 @@
 Sys.setenv(CMDSTANR_NO_VER_CHECK = TRUE)
 ```
 
-[Stan](https://github.com/stan-dev) 是一个贝叶斯统计建模和计算的概率推理框架，广泛应用于社会、生物、物理、工程、商业等领域，提供统计建模、数据分析和预测能力[@Gelman2015]，它提供一套成熟的概率编程语言[@Carpenter2017]。Stan 还提供自动微分变分推断（ADVI）算法做近似贝叶斯推断获取参数的后验分布，以及拟牛顿法（L-BFGS）优化算法获取参数的惩罚极大似然估计。
+[Stan](https://github.com/stan-dev) 是一个贝叶斯统计建模和计算的概率推理框架，也是一门用于贝叶斯推断和优化的概率编程语言 [@Gelman2015; @Carpenter2017]。它使用汉密尔顿蒙特卡罗算法（Hamiltonian Monte Carlo algorithm ，简称 HMC 算法）抽样，内置一种可以自适应调整采样步长的 No-U-Turn sampler （简称 NUTS 采样器） 。Stan 还提供自动微分变分推断（Automatic Differentiation Variational Inference algorithm 简称 ADVI 算法）算法做近似贝叶斯推断获取参数的后验分布，以及拟牛顿法（the limited memory Broyden-Fletcher-Goldfarb-Shanno algorithm 简称 L-BFGS 算法）优化算法获取参数的惩罚极大似然估计。
 
-经过 10 多年的发展，Stan 已经形成一个相对成熟的生态，在学术界和工业界的影响力都很广泛，下 @fig-stan-api 是 Stan 软件生态的一角。
+经过 10 多年的发展，Stan 已经形成一个相对成熟的生态，它提供统计建模、数据分析和预测能力，广泛应用于社会、生物、物理、工程、商业等领域，在学术界和工业界的影响力也不小。下 @fig-stan-api 是 Stan 架构的一角，[math](https://github.com/stan-dev/math) 库是 Stan 框架最核心的组件，它基于 [boost](https://github.com/boostorg/boost) 、[eigen](https://gitlab.com/libeigen/eigen) 、[opencl](https://www.khronos.org/opencl/) 、[sundials](https://github.com/LLNL/sundials) 和 [oneTBB](https://github.com/oneapi-src/oneTBB) 等诸多 C++ 库，提供概率推理、自动微分、矩阵计算、并行计算、GPU 计算和求解代数微分方程等功能。
 
 ```{mermaid}
 %%| label: fig-stan-api
@@ -16,22 +16,247 @@ Sys.setenv(CMDSTANR_NO_VER_CHECK = TRUE)
 %%| fig-cap: Stan、CmdStan 和 CmdStanR 的关系
 
 flowchart TB
+  boost(boost) --> math(math)
+  eigen(eigen) --> math(math)
+  opencl(opencl) --> math(math)
+  sundials(sundials) --> math(math)
+  onetbb(onetbb) --> math(math)
+  math(math) --> Stan(Stan)
   Stan(Stan) --> CmdStan(CmdStan)
   Stan(Stan) --> RStan(RStan)
   RStan --> rstanarm(rstanarm)
   RStan --> brms(brms)
+  RStan --> prophet(prophet)
   CmdStan --> CmdStanR(CmdStanR)
   CmdStan --> CmdStanPy(CmdStanPy)
   CmdStan --> MathematicaStan(MathematicaStan)
 ```
 
-CmdStan 是 Stan 的命令行接口，**CmdStanR** 是 CmdStan 的 R 语言接口。每次当 Stan 发布新版本时，CmdStan 也会随之发布新版，只需指定新的 CmdStan 安装路径，**CmdStanR** 就可以使用上，**CmdStanR** 包与 Stan 是相互独立的更新机制。实际上，**CmdStanR** 只是负责处理 CmdStan 运行的结果。入门 **CmdStanR** 后，可以快速转入对 Stan 底层原理的学习，有利于编码符合实际需要的复杂模型，有利于掌握常用的炼丹技巧，提高科研和工作的效率。
+CmdStan 是 Stan 的命令行接口，可在 MacOS / Linux 的终端软件，Windows 的命令行窗口或 PowerShell 软件中使用。**CmdStanR、**CmdStanPy 和 MathematicaStan 分别是 CmdStan 的 R 语言、Python 语言和 Mathematica 语言接口。每次当 Stan 发布新版本时，CmdStan 也会随之发布新版，只需指定新的 CmdStan 安装路径，**CmdStanR** 就可以使用上，**CmdStanR** 包与 Stan 是相互独立的更新机制。 **CmdStanR** 负责处理 CmdStan 运行的结果，而编译代码，生成模型和模拟采样等都是由 **CmdStan 完成**。入门 **CmdStanR** 后，可以快速转入对 Stan 底层原理的学习，有利于编码符合实际需要的复杂模型，有利于掌握常用的炼丹技巧，提高科研和工作的效率。
 
 [**rstan**](https://github.com/stan-dev/rstan) 是 Stan 的 R 语言接口，该接口依赖 **Rcpp**、**RcppEigen**、**BH**、**RcppParallel** 和 **StanHeaders** 等 R 包，由于存在众多上游 R 包依赖，**RStan** 的更新通常滞后于 Stan 的更新，而且滞后很多，不利于及时地使用最新的学术研究成果。 因此，相比于 **rstan** 包，**CmdStanR** 更加轻量，可以更快地将 CmdStan 的新功能融入进来，**cmdstanr** 和 CmdStan 是分离的，方便用户升级和维护。
 
 [**rstanarm**](https://github.com/stan-dev/rstanarm) 和 [**brms**](https://github.com/paul-buerkner/brms) 是 **RStan** 的扩展包，各自提供了一套用于表示统计模型的公式语法。它们都支持丰富的统计模型，比如线性模型、广义线性模型、线性混合效应模型、广义线性混合效应模型等。相比于 **rstan**， 它们使用起来更加方便，因为它内置了大量统计模型的 Stan 实现，即将公式语法翻译成 Stan 编码的模型，然后调用 **rstan** 或 **cmdstanr** 翻译成 C++，最后编译成动态链接库。除了依赖 **rstan** 包，**rstanarm** 和 **brms** 还依赖大量其它 R 包，因此，安装、更新都比较麻烦。
 
 顺便一提，类似的用于概率推理和统计分析的框架，还有 Python 社区的 [PyMC3](https://github.com/pymc-devs/pymc3) 和 [TensorFlow Probability](https://www.tensorflow.org/probability)。
+
+## 概率编程语言
+
+Stan 是一门用于贝叶斯推断和优化的概率编程语言。下面以一个简单示例介绍 Stan 的用法，包括 Stan 的基本用法、变量类型、代码结构等，
+
+```{r}
+#| echo: false
+
+# 注册 Stan 引擎替换 Quarto 文档中默认的 Stan 块
+# 原 Stan 块的编译采用 rstan 包
+# eng_cmdstan 不支持传递函数 cmdstan_model 的其他参数选项
+knitr::knit_engines$set(stan = cmdstanr::eng_cmdstan)
+```
+
+### Stan 的基本用法
+
+考虑一个已知方差的正态分布，设 $-3, -2, -1, 0, 1, 2, 3$ 是取自正态分布 $\mathcal{N}(\mu,1)$ 的一个样本，也是取自该正态分布的一组随机数。现在的问题是估计该正态分布的均值参数 $\mu$ 。Stan 编码的正态分布模型如下：
+
+```{stan output.var="mod_gaussian"}
+transformed data {
+  vector[7] y = [-3, -2, -1, 0, 1, 2, 3]';
+}
+parameters {
+  real mu;
+}
+model {
+  y ~ normal(mu, 1);
+}
+```
+
+-   `transformed data` 代码块是一组已知的数据，这部分数据是不需要从外部传递进来的。这个样本是以向量存储的，需要声明向量的长度和类型（默认类型是实数），每一行以分号结尾，这与 C++ 的语法一样。
+
+-   `parameters` 代码块是未知的参数，需要声明各个参数的类型。这里只有一个参数，且只是一个未知的实数，声明类型即可。
+
+-   `model` 代码块是抽样语句表示的模型结构，符号 `~` 表示服从的意思，函数 `y ~ normal(mu, 1)` 是正态分布的抽样语句。
+
+接下来，编译 Stan 代码，准备参数初值，配置采样的参数。首先加载 **cmdstanr** 包，设置 4 条迭代链，给每条链设置相同的参数初始值。代码编译后，生成一个模型对象 `mod_gaussian`，接着，调用方法 `sample()` ，传递迭代初值 `init`，初始化阶段的迭代次数 `iter_warmup` ，采样阶段的迭代次数 `iter_sampling`，采样的链条数 `chains` 及并行时 分配的 CPU 核心数 `parallel_chains` ，随机数种子 `seed` 。
+
+```{r}
+#| message: false
+
+library(cmdstanr)
+nchains <- 4 # 4 条迭代链
+# 给每条链设置相同的参数初始值
+inits_data_gaussian <- lapply(1:nchains, function(i) {
+  list(
+    mu = 1
+  )
+})
+
+fit_gaussian <- mod_gaussian$sample(
+  init = inits_data_gaussian,   # 迭代初值
+  iter_warmup = 200,            # 每条链初始化迭代次数
+  iter_sampling = 200,          # 每条链采样迭代次数
+  chains = nchains,         # 马尔科夫链的数目
+  parallel_chains = 4,      # 指定 CPU 核心数，可以给每条链分配一个
+  seed = 20232023           # 设置随机数种子，不要使用 set.seed() 函数
+)
+```
+
+默认情况下，采样过程中会输出一些信息，以上是 4 条链并行采样的过程，给出百分比进度及时间消耗。采样完成后，调用方法 `summary()` 汇总和展示采样结果。
+
+```{r}
+fit_gaussian$summary()
+```
+
+输出模型中各个参数的后验分布的一些统计量，如均值（mean）、中位数（median）、标准差（sd），0.05 分位点（q5），0.95 分位点（q95）等。此外，还有 \`lp\_\_\` 后验对数概率密度值，每个模型都会有该值。`summary()` 方法有一些参数可以控制数字的显示方式和精度。下面展示的是保留 4 位有效数字的结果。
+
+```{r}
+fit_gaussian$summary(.num_args = list(sigfig = 4, notation = "dec"))
+```
+
+接下来，要介绍 Stan 代码中的保留字 target 的含义，因为它在 Stan 代码中很常见，与输出结果中的 `lp__` 一行紧密相关。
+
+为此，不妨在之前的 Stan 代码的基础上添加两行，新的 Stan 代码如下：
+
+```{stan output.var="mod_gaussian_target"}
+transformed data {
+  vector[7] y = [-3, -2, -1, 0, 1, 2, 3]';
+}
+parameters {
+  real mu;
+}
+model {
+  y ~ normal(mu, 1);
+  target += 12345;
+  target += mean(exp(y));
+}
+```
+
+接着，再次编译代码、采样，为了节约篇幅，设置两个参数 `show_messages` 和 `refresh` ，不显示中间过程和采样进度。其它参数设置不变，代码如下：
+
+```{r}
+fit_gaussian <- mod_gaussian_target$sample(
+  init = inits_data_gaussian,   
+  iter_warmup = 200,            
+  iter_sampling = 200,          
+  chains = nchains,             
+  parallel_chains = 4,      
+  show_messages = FALSE,    # 不显示中间过程
+  refresh = 0,              # 不显示采样进度
+  seed = 20232023           
+)
+fit_gaussian$summary(.num_args = list(sigfig = 4, notation = "dec"))
+```
+
+可以清楚地看到 `lp__` 的值发生了变化，而参数 `mu` 的值没有变化。这是因为抽样语句 `y ~ normal(mu, 1);` 隐含一个 `lp__` ，target 指代 `lp__` 的值，符号 `+=` 表示累加。两次累加后得到 12335.09。
+
+``` stan
+model {
+  y ~ normal(mu, 1);
+  target += 12345;
+  target += mean(exp(y));
+}
+```
+
+```{r}
+y <- c(-3, -2, -1, 0, 1, 2, 3)
+12345 + mean(exp(y)) - 14.45 
+```
+
+一般地，不妨设 $x_1,x_2,\cdots,x_n$ 是来自正态总体 $\mathcal{N}(\mu,1)$ 的一个样本。则正态分布的概率密度函数 $f(x)$ 的对数如下：
+
+$$
+\log f(x) = \log \frac{1}{\sqrt{2\pi}} - \frac{(x - \mu)^2}{2}
+$$
+
+经过计算，我们知道参数 $\mu$ 是一个非常接近 0 的数，不妨将 $\mu = 0$ 代入计算
+
+```{r}
+sum(dnorm(x = y, mean = 0, sd = 1, log = TRUE))
+```
+
+如果去掉常数项计算概率密度函数值的对数和。
+
+```{r}
+# 扔掉常数
+f <- function(y, mu) {
+  return(-0.5 * (y - mu)^2)
+}
+sum(f(-3:3, 0))
+```
+
+这就比较接近原 `lp__` 的值了。在知道了 target 的含义后，以概率密度函数的对数 `normal_lpdf` 替代抽样语句，下面这段代码就不难理解了。**`normal_lpdf`** 是 Stan 内置的函数，输入值为概率密度值 `y` 、位置参数 `mu` 和尺度参数 `sigma`，返回值为 `real` 实数。
+
+`real` **`normal_lpdf`**`(reals y | reals mu, reals sigma)`
+
+```{stan output.var="mod_gaussian_lpdf"}
+transformed data {
+  vector[7] y = [-0.5657,  0.3210,  0.1253,  1.3532, -1.2877,  0.3226,  0.2669]';
+  // vector[7] y = [-3, -2, -1, 0, 1, 2, 3]';
+}
+parameters {
+  real mu;
+}
+model {
+  target += normal_lpdf(y | mu, 1);
+}
+```
+
+接着，编译上述代码以及重复采样的步骤，参数设置也一样。
+
+```{r}
+fit_gaussian <- mod_gaussian_lpdf$sample(
+  init = inits_data_gaussian, 
+  iter_warmup = 200,            
+  iter_sampling = 200,          
+  chains = nchains,            
+  parallel_chains = 4,     
+  show_messages = FALSE,
+  refresh = 0,            
+  seed = 20232023
+)
+fit_gaussian$summary(.num_args = list(sigfig = 4, notation = "dec"))
+```
+
+可以看到，将随机变量换成它的概率密度值，不影响对模型参数的推断。数值上的差异来源于数值精度的表示。
+
+### Stan 的变量类型
+
+变量的声明没有太多的内涵，就是 C++ 和 Stan 定义的语法，比如整型用 `int` 声明。建模过程中，时常需要将 R 语言环境中的数据传递给 Stan 代码编译出来的模型，而 Stan 是基于 C++ 语言，在变量类型方面有继承有发展。下表给出 Stan 与 R 语言中的变量类型对应关系。值得注意， R 语言的类型检查是不严格的，使用变量也不需要提前声明和初始化。Stan 语言中向量、矩阵的类型都是实数，下标也从 1 开始，元组类型和 R 语言中的列表类似，所有向量默认都是列向量。
+
+| 变量类型 | Stan 语言                   | R 语言                                          |
+|------------|------------------------------|------------------------------|
+| 整型     | `int x = 1;`                | `x = 1L`                                        |
+| 实数     | `real x = 3.14;`            | `x = 3.14`                                      |
+| 向量     | `vector[3] x = [1, 2, 3]';` | `x = c(1L, 2L, 3L)`                             |
+| 矩阵     | `matrix[3,1] x;`            | `matrix(data = c(1L, 2L, 3L))`                  |
+| 数组     | `array[3] int x;`           | `array(data = c(1L, 2L, 3L), dim = c(3, 1, 1))` |
+| 元组     | `tuple(vector[3]) x;`       | `list(x = c(1L, 2L, 3L))`                       |
+
+: Stan 变量类型和 R 语言中的对应 {#tbl-stan-var-dec}
+
+### Stan 的代码结构
+
+``` stan
+functions {
+  // ... function declarations and definitions ...
+}
+data {
+  // ... declarations ...
+}
+transformed data {
+   // ... declarations ... statements ...
+}
+parameters {
+   // ... declarations ...
+}
+transformed parameters {
+   // ... declarations ... statements ...
+}
+model {
+   // ... declarations ... statements ...
+}
+generated quantities {
+   // ... declarations ... statements ...
+}
+```
 
 ## 生成模拟数据 {#sec-simulate-poisson-data}
 
