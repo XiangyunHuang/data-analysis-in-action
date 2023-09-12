@@ -641,6 +641,86 @@ ggplot(data = gapminder, aes(x = gdpPercap, y = lifeExp)) +
   transition_time(time = year)
 ```
 
+## 组合 {#sec-combine}
+
+将多幅小图组合起来构成一幅大图也是常见的需求，常见于出版级、产品级的作品中。组合涉及到布局，布局涉及到层次。有的组合图是从不同角度呈现数据，有的组合图是从传递信息的主次出发，等等。**patchwork** 包是非常流行的一个基于 **ggplot2** 的用于图形组合的 R 包，下面基于 faithful 数据展示绘制组合图形的过程。
+
+首先根据喷发时间将 faithful 数据分成两组。
+
+```{r}
+# 根据喷发时间将数据分成两组
+faithful <- transform(faithful, group = ifelse(eruptions > 3, "A", "B"))
+```
+
+绘制分组散点图，叠加二维核密度曲线。
+
+```{r}
+# 绘制分组散点图
+scatterplot <- ggplot(faithful, aes(eruptions, waiting, color = group)) +
+  geom_point() +
+  geom_density_2d() +
+  theme_classic() +
+  theme(axis.text = element_blank(), axis.title = element_blank())
+```
+
+将上图中的图例单独抽取出来，作为一个子图。
+
+```{r}
+# https://stackoverflow.com/questions/46079033/
+# Extract legend from ggplot object
+extract_legend <- function(gg) {
+  grobs <- ggplot_gtable(ggplot_build(gg))
+  foo <- which(sapply(grobs$grobs, function(x) x$name) == "guide-box")
+  grobs$grobs[[foo]]
+}
+legend <- extract_legend(scatterplot)
+```
+
+获得图例后，原图中不需要图例了。
+
+```{r}
+scatterplot <- scatterplot + theme(legend.position = "none")
+```
+
+准备两个箱线图分别描述 faithful 数据集中的等待时间 waiting 和喷发时间 eruptions 。
+
+```{r}
+boxplot_left <- ggplot(faithful, aes(group, waiting, fill = group)) +
+  geom_boxplot() +
+  theme_classic() +
+  theme(
+    legend.position = "none", axis.ticks.x = element_blank(),
+    axis.text.x = element_blank(), axis.title.x = element_blank()
+  )
+
+boxplot_bottom <- ggplot(faithful, aes(group, eruptions, fill = group)) +
+  geom_boxplot() +
+  theme_classic() +
+  theme(
+    legend.position = "none", axis.ticks.y = element_blank(),
+    axis.text.y = element_blank(), axis.title.y = element_blank()
+  ) +
+  coord_flip()
+```
+
+加载 **patchwork** 包，使用函数 `wrap_plots()` 组合 `boxplot_left` 、`scatterplot` 、`legend` 和 `boxplot_bottom` 四个子图，最终效果见下图。
+
+```{r}
+#| label: fig-patchwork
+#| fig-width: 6
+#| fig-height: 5
+#| fig-showtext: true
+#| fig-cap: patchwork 组合多幅子图
+
+library(patchwork)
+top <- wrap_plots(boxplot_left, scatterplot, ncol = 2, widths = c(0.2, 0.8))
+bottom <- wrap_plots(legend, boxplot_bottom, ncol = 2, widths = c(0.22, 0.8))
+final <- wrap_plots(top, bottom, nrow = 2, heights = c(0.8, 0.2))
+final
+```
+
+主图是占据着最大篇幅的叠加二维密度曲线的散点图，展示数据的二维分布，两个箱线图辅助展示等待时间 waiting 和喷发时间 eruptions 的分布，而左下角的图例是次要的说明。
+
 ## 艺术 {#sec-arts}
 
 [Georgios Karamanis](https://georgemsavva.github.io/creativecoding/) 基于 R 语言和扩展包 **ggforce** 制作了一系列生成艺术（Generative Arts）作品。下图是 **ggforce** 包的 4 个图层函数 `geom_regon()`、 `geom_spiro()`、 `geom_diagonal()` 和 `geom_spoke()` 分别生成的四幅图片。
