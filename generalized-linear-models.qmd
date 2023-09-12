@@ -8,12 +8,12 @@ Sys.setenv(CMDSTANR_NO_VER_CHECK = TRUE)
 
 [Stan](https://github.com/stan-dev) 是一个贝叶斯统计建模和计算的概率推理框架，也是一门用于贝叶斯推断和优化的概率编程语言 [@Gelman2015; @Carpenter2017]。它使用汉密尔顿蒙特卡罗算法（Hamiltonian Monte Carlo algorithm ，简称 HMC 算法）抽样，内置一种可以自适应调整采样步长的 No-U-Turn sampler （简称 NUTS 采样器） 。Stan 还提供自动微分变分推断（Automatic Differentiation Variational Inference algorithm 简称 ADVI 算法）算法做近似贝叶斯推断获取参数的后验分布，以及拟牛顿法（the limited memory Broyden-Fletcher-Goldfarb-Shanno algorithm 简称 L-BFGS 算法）优化算法获取参数的惩罚极大似然估计。
 
-经过 10 多年的发展，Stan 已经形成一个相对成熟的生态，它提供统计建模、数据分析和预测能力，广泛应用于社会、生物、物理、工程、商业等领域，在学术界和工业界的影响力也不小。下 @fig-stan-api 是 Stan 架构的一角，[math](https://github.com/stan-dev/math) 库是 Stan 框架最核心的组件，它基于 [boost](https://github.com/boostorg/boost) 、[eigen](https://gitlab.com/libeigen/eigen) 、[opencl](https://www.khronos.org/opencl/) 、[sundials](https://github.com/LLNL/sundials) 和 [oneTBB](https://github.com/oneapi-src/oneTBB) 等诸多 C++ 库，提供概率推理、自动微分、矩阵计算、并行计算、GPU 计算和求解代数微分方程等功能。
+经过 10 多年的发展，Stan 已经形成一个相对成熟的生态，它提供统计建模、数据分析和预测能力，广泛应用于社会、生物、物理、工程、商业等领域，在学术界和工业界的影响力也不小。下 @fig-stan-api 是 Stan 生态中各组件依赖架构图，[math](https://github.com/stan-dev/math) 库是 Stan 框架最核心的组件，它基于 [boost](https://github.com/boostorg/boost) 、[eigen](https://gitlab.com/libeigen/eigen) 、[opencl](https://www.khronos.org/opencl/) 、[sundials](https://github.com/LLNL/sundials) 和 [oneTBB](https://github.com/oneapi-src/oneTBB) 等诸多 C++ 库，提供概率推理、自动微分、矩阵计算、并行计算、GPU 计算和求解代数微分方程等功能。
 
 ```{mermaid}
 %%| label: fig-stan-api
 %%| fig-width: 6.5
-%%| fig-cap: Stan、CmdStan 和 CmdStanR 的关系
+%%| fig-cap: Stan、CmdStan 和 CmdStanR 等的依赖关系图
 
 flowchart TB
   boost(boost) --> math(math)
@@ -275,7 +275,9 @@ generated quantities {
 }
 ```
 
-## 生成模拟数据 {#sec-simulate-poisson-data}
+## 广义线性模型 {#sec-generalized-linear-models}
+
+### 生成模拟数据 {#sec-simulate-poisson-data}
 
 先介绍泊松广义线性模型，包括模拟和计算，并和 Stan 实现的结果比较。
 
@@ -311,7 +313,7 @@ lambda <- u * exp(cbind(1, X) %*% beta)
 y <- rpois(n, lambda = lambda)
 ```
 
-## 拟合泊松模型 {#sec-poisson-model}
+### 拟合泊松模型 {#sec-poisson-model}
 
 拟合泊松回归模型
 
@@ -396,7 +398,7 @@ fit_poisson_stan$diagnostic_summary()
 fit_poisson_stan$summary(c("alpha", "beta", "lp__"))
 ```
 
-## 参数后验分布 {#sec-posterior-distribution}
+### 参数后验分布 {#sec-posterior-distribution}
 
 加载 **bayesplot** 包，bayesplot 包提供一系列描述数据分布的绘图函数，比如绘制散点图 `mcmc_scatter()` 。$\beta_1$ 和 $\beta_2$ 的联合分布
 
@@ -518,7 +520,7 @@ pp_check(y, yrep = yrep[1:50, ], fun = ppc_dens_overlay) +
   theme_classic()
 ```
 
-## 模型评估指标 {#sec-model-evaluation}
+### 模型评估指标 {#sec-model-evaluation}
 
 **loo** 包可以计算 WAIC
 
@@ -534,9 +536,9 @@ fit_poisson_loo <- fit_poisson_stan$loo(variables = "log_lik", cores = 2)
 print(fit_poisson_loo)
 ```
 
-## brms 包 {#sec-bayesian-brms}
+### 可选替代实现 {#sec-bayesian-brms}
 
-对于常见的统计模型，**brms** 包都内置了预编译的 Stan 程序，下面用 **brms** 包的函数 `brm()` 拟合带上述漂移项的泊松广义线性模型，参数估计结果和 Base R 函数 `glm()` 的几乎一致，因编译和抽样的过程比较花费时间，速度不及 Base R。
+对于常见的统计模型，rstanarm 和 **brms** 包都内置了预编译的 Stan 程序，下面用 **brms** 包的函数 `brm()` 拟合带上述漂移项的泊松广义线性模型，参数估计结果和 Base R 函数 `glm()` 的几乎一致，因编译和抽样的过程比较花费时间，速度不及 Base R。
 
 ``` r
 # brms
@@ -724,6 +726,8 @@ brms 包在模型中全局性地使用 horseshoe 先验信息。
 -   approximate Bayesian inference with variational inference (ADVI)
 -   penalized maximum likelihood estimation with optimization (L-BFGS)
 
+### 惩罚极大似然算法 {#sec-optimization-algorithms}
+
 L-BFGS 算法拟合模型，速度非常快。
 
 ```{r}
@@ -739,6 +743,28 @@ fit_optim_logit <- mod_logit_lasso$optimize(
 
 fit_optim_logit$summary(c("alpha", "beta", "lambda", "lp__"))
 ```
+
+### 变分近似推断算法 {#sec-variational-approximation-algorithms}
+
+ADVI 算法拟合模型，可选的优化器有 `meanfield` 和 `fullrank` ，相比于 L-BFGS 稍慢
+
+```{r}
+# ADVI 算法拟合模型
+fit_advi_logit <- mod_logit_lasso$variational(
+  data = mdata, # 观测数据
+  init = 0,     # 所有参数初值设为 0
+  refresh = 0,  # 不显示迭代进程
+  algorithm = "meanfield", # 优化器
+  threads = 1,    # 单线程
+  seed = 20232023 # 随机数种子
+)
+
+fit_advi_logit$summary(c("alpha", "beta", "lambda", "lp__"))
+```
+
+### 拉普拉斯近似算法 {#sec-laplace-approximation-algorithms}
+
+CmdStan 已经集成，但 **cmdstanr** 包对该算法的支持还在开发中。
 
 ## 习题 {#sec-bayesian-exercises}
 
