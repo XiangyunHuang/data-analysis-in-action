@@ -27,7 +27,7 @@ flowchart TB
   Eigen(Eigen) --> math(math)
   OpenCL(OpenCL) --> math(math)
   SUNDIALS(SUNDIALS) --> math(math)
-  onetbb(onetbb) --> math(math)
+  oneTBB(oneTBB) --> math(math)
   math(math) --> Stan(Stan)
   Stan(Stan) --> CmdStan(CmdStan)
   Stan(Stan) --> RStan(RStan)
@@ -387,7 +387,7 @@ fit_logit_normal$summary(c("alpha", "beta", "lp__"))
 
 $$
 \begin{aligned}
-\lambda &\sim \mathrm{Cauchy}(0,0.01) \\
+\lambda &\sim \mathrm{Half\_Cauchy}(0,0.01) \\
 \alpha  &\sim \mathrm{Double\_exponential}(0, \lambda) \\
 \beta   &\sim \mathrm{Double\_exponential}(0, \lambda)
 \end{aligned}
@@ -442,8 +442,23 @@ loo::loo_compare(list(model0 = fit_logit_normal_loo,
 
 ### Horseshoe 先验 {#sec-prior-horseshoe}
 
+指定回归系数 $\alpha,\beta$ 的先验分布如下
+
+$$
+\begin{aligned}
+\lambda_i &\sim \mathrm{Half\_Cauchy}(0,1) \\
+\alpha | \lambda_0,\tau  &\sim \mathcal{N}(0, \tau^2\lambda_0^2) \\
+\beta_i | \lambda_i,\tau  &\sim \mathcal{N}(0, \tau^2\lambda_i^2),\quad i = 1,2,\cdots,10
+\end{aligned}
+$$
+
+其中，$\tau$ 称之为全局超参数，它将所有的回归系数朝着 0 收缩。而作用在局部超参数 $\lambda_i$ 上的重尾柯西先验允许某些回归系数逃脱收缩。
+
+```{verbatim, file="code/bernoulli_logit_glm_horseshoe.stan", lang="stan"}
+```
+
 ```{r}
-#| eval: false
+#| message: false
 
 # horseshoe 先验
 mod_logit_horseshoe <- cmdstan_model(
@@ -463,11 +478,18 @@ fit_logit_horseshoe <- mod_logit_horseshoe$sample(
   refresh = 0
 )
 
-fit_logit_horseshoe$summary(c("alpha", "beta", "lambda", "lp__")) 
+fit_logit_horseshoe$summary(c("alpha", "beta", "tau", "lambda", "lp__")) 
 ```
 
+```{r}
+fit_logit_horseshoe_loo <- fit_logit_horseshoe$loo(variables = "log_lik", cores = 2)
+print(fit_logit_horseshoe_loo)
+```
+
+LOOIC 比之 Lasso 先验的情况更小了。
+
 ::: callout-note
-brms 包在模型中全局性地使用 horseshoe 先验信息。
+**brms** 包在模型中全局性地使用 horseshoe 先验信息。
 :::
 
 ### SpikeSlab 先验 {#sec-prior-spikeslab}
