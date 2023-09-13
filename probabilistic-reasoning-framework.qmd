@@ -246,7 +246,7 @@ fit_gaussian$summary(.num_args = list(sigfig = 4, notation = "dec"))
 变量的声明没有太多的内涵，就是 C++ 和 Stan 定义的语法，比如整型用 `int` 声明。建模过程中，时常需要将 R 语言环境中的数据传递给 Stan 代码编译出来的模型，而 Stan 是基于 C++ 语言，在变量类型方面有继承有发展。下表给出 Stan 与 R 语言中的变量类型对应关系。值得注意， R 语言的类型检查是不严格的，使用变量也不需要提前声明和初始化。Stan 语言中向量、矩阵的类型都是实数，下标也从 1 开始，元组类型和 R 语言中的列表类似，所有向量默认都是列向量。
 
 | 变量类型 | Stan 语言                   | R 语言                                          |
-|---------------|---------------------|------------------------------------|
+|------------------|--------------------|-----------------------------------|
 | 整型     | `int x = 1;`                | `x = 1L`                                        |
 | 实数     | `real x = 3.14;`            | `x = 3.14`                                      |
 | 向量     | `vector[3] x = [1, 2, 3]';` | `x = c(1L, 2L, 3L)`                             |
@@ -438,11 +438,11 @@ loo::loo_compare(list(model0 = fit_logit_normal_loo,
                       model1 = fit_logit_lasso_loo))
 ```
 
-输出结果中最好的模型放在第一行。looic 越小越好，所以，Lasso 先验更好。
+输出结果中最好的模型放在第一行。LOOIC 越小越好，所以，Lasso 先验更好。
 
 ### Horseshoe 先验 {#sec-prior-horseshoe}
 
-指定回归系数 $\alpha,\beta$ 的先验分布如下
+Horseshoe 先验（Horse shoe）指定回归系数 $\alpha,\bm{\beta}$ 的先验分布如下
 
 $$
 \begin{aligned}
@@ -481,6 +481,8 @@ fit_logit_horseshoe <- mod_logit_horseshoe$sample(
 fit_logit_horseshoe$summary(c("alpha", "beta", "tau", "lambda", "lp__")) 
 ```
 
+可以看到回归系数小的压缩效果很明显，而回归系数大的几乎没有压缩。
+
 ```{r}
 fit_logit_horseshoe_loo <- fit_logit_horseshoe$loo(variables = "log_lik", cores = 2)
 print(fit_logit_horseshoe_loo)
@@ -489,12 +491,12 @@ print(fit_logit_horseshoe_loo)
 LOOIC 比之 Lasso 先验的情况更小了。
 
 ::: callout-note
-**brms** 包在模型中全局性地使用 horseshoe 先验信息。
+**brms** 包（版本 2.20.1）在模型中全局性地使用 horseshoe 先验信息。
 :::
 
 ### SpikeSlab 先验 {#sec-prior-spikeslab}
 
-先验放在非 0 协变量的个数上，是离散的先验。
+SpikeSlab 先验（Spike Slab）放在非 0 协变量的个数上，是离散的先验。
 
 ## 选择推理算法 {#sec-choose-inference}
 
