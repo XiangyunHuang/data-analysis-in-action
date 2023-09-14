@@ -49,6 +49,8 @@ jobs:
       #     build-args: |
       #       QUARTO_VERSION=${{ env.QUARTO_VERSION }}
       #     tags: ${{ env.REGISTRY }}/fedora-rstudio:latest
+      #     cache-from: type=local,src=/tmp/.buildx-cache
+      #     cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
 
       - name: Build and push fedora-rstudio-pro
         uses: docker/build-push-action@v3
@@ -63,7 +65,9 @@ jobs:
             CMDSTAN_VERSION=${{ env.CMDSTAN_VERSION }}
             GITHUB_PAT=${{ env.GITHUB_PAT }}
           tags: ${{ env.REGISTRY }}/fedora-rstudio-pro:latest
-          
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+
       - name: Move cache
         run: |
           rm -rf /tmp/.buildx-cache
