@@ -246,7 +246,7 @@ fit_gaussian$summary(.num_args = list(sigfig = 4, notation = "dec"))
 变量的声明没有太多的内涵，就是 C++ 和 Stan 定义的语法，比如整型用 `int` 声明。建模过程中，时常需要将 R 语言环境中的数据传递给 Stan 代码编译出来的模型，而 Stan 是基于 C++ 语言，在变量类型方面有继承有发展。下表给出 Stan 与 R 语言中的变量类型对应关系。值得注意， R 语言的类型检查是不严格的，使用变量也不需要提前声明和初始化。Stan 语言中向量、矩阵的类型都是实数，下标也从 1 开始，元组类型和 R 语言中的列表类似，所有向量默认都是列向量。
 
 | 变量类型 | Stan 语言                   | R 语言                                          |
-|------------------|--------------------|-----------------------------------|
+|------------------|--------------------|----------------------------------|
 | 整型     | `int x = 1;`                | `x = 1L`                                        |
 | 实数     | `real x = 3.14;`            | `x = 3.14`                                      |
 | 向量     | `vector[3] x = [1, 2, 3]';` | `x = c(1L, 2L, 3L)`                             |
@@ -393,7 +393,7 @@ $$
 \end{aligned}
 $$
 
-其中， $\alpha,\beta$ 服从双指数分布，惩罚因子 $\lambda$ 服从柯西分布。顺便一提，若把双指数分布改为正态分布，则 Lasso 先验变为岭先验。相比于岭先验，Lasso 先验有意将回归系数往 0 上收缩，这非常类似于频率派中的岭回归与 Lasso 回归的关系。
+其中， $\alpha,\beta$ 服从双指数分布，惩罚因子 $\lambda$ 服从柯西分布。顺便一提，若把双指数分布改为正态分布，则 Lasso 先验变为岭先验。相比于岭先验，Lasso 先验有意将回归系数往 0 上收缩，这非常类似于频率派中的岭回归与 Lasso 回归的关系 [@Bhadra2019]。
 
 ```{verbatim, file="code/bernoulli_logit_glm_lasso.stan", lang="stan"}
 ```
@@ -442,7 +442,7 @@ loo::loo_compare(list(model0 = fit_logit_normal_loo,
 
 ### Horseshoe 先验 {#sec-prior-horseshoe}
 
-Horseshoe 先验（Horse shoe）指定回归系数 $\alpha,\bm{\beta}$ 的先验分布如下
+Horseshoe 先验（Horse shoe）[@Piironen2017] 指定回归系数 $\alpha,\bm{\beta}$ 的先验分布如下
 
 $$
 \begin{aligned}
@@ -491,7 +491,7 @@ print(fit_logit_horseshoe_loo)
 LOOIC 比之 Lasso 先验的情况更小了。
 
 ::: callout-note
-**brms** 包（版本 2.20.1）在模型中全局性地使用 horseshoe 先验信息。
+**brms** 包（版本 2.20.1）在模型中全局性地使用 horseshoe 先验和 R2D2 先验信息。
 :::
 
 ### SpikeSlab 先验 {#sec-prior-spikeslab}
@@ -545,3 +545,17 @@ fit_advi_logit$summary(c("alpha", "beta", "lambda", "lp__"))
 ### 拉普拉斯近似算法 {#sec-laplace-approximation-algorithms}
 
 CmdStan 已经集成，但 **cmdstanr** 包对该算法的支持还在开发中。
+
+## 习题
+
+1.  在 @sec-choose-prior 的基础上，比较 Stan 实现的贝叶斯 Lasso 和 R 包 **glmnet** 的结果。发现 **glmnet** 包是很有竞争力的，收缩效果比 Stan 还好，运行速度很快，但 Stan 的优势在于不限于 **glmnet** 包支持的常见分布族，如高斯、二项、泊松、多项、Cox 等。本质上，这是 Stan 作为一门编程语言的优势，只要知道概率分布的数学表达式，总是可以用 Stan 编码出来的。
+
+    ```{r}
+    #| message: false
+
+    library(glmnet)
+    # 10 折交叉验证 Lasso 回归
+    fit_lasso <- cv.glmnet(x = X, y = y, family = "binomial", alpha = 1, nfolds = 10)
+    # 回归系数
+    coef(fit_lasso, s = fit_lasso$lambda.min)
+    ```
