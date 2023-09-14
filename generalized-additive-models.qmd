@@ -127,7 +127,8 @@ brms::pp_check(bgam, ndraws = 50)
 
 ```{r}
 #| eval: false
-brms::make_stancode(accel ~ s(times), data = mcycle, family = gaussian())
+
+brms::stancode(accel ~ s(times), data = mcycle, family = gaussian())
 ```
 
 ## 案例：朗格拉普岛核污染 {#sec-rongelap-gamm}
@@ -267,6 +268,8 @@ ggplot() +
   labs(x = "横坐标（米）", y = "纵坐标（米）", fill = "预测值")
 ```
 
+### cmdstanr
+
 ```{r}
 #| eval: false
 #| echo: !expr knitr::is_html_output()
@@ -277,12 +280,41 @@ library(brms)
 rongelap_brm <- brm(counts ~ gp(cX, cY) + offset(log(time)),
   data = rongelap, family = poisson(link = "log")
 )
-# 5 个基函数 computing approximate GPs.
 rongelap_brm <- brm(
   counts ~ gp(cX, cY, c = 5/4, k = 5) + offset(log(time)),
   data = rongelap, family = poisson(link = "log")
 )
 ```
+
+当设置 $k = 5$ 时，用 5 个基函数来近似高斯过程，编译完成后，采样速度很快，但是结果不可靠，采样过程中的问题很多，见下文。当将横、纵坐标值同时缩小 6000 倍，采样效率并未得到改善。当设置 $k = 15$ 时，运行时间明显增加，采样过程的诊断结果类似 $k = 5$ 的情况，还是不可靠。说明 brms 包不适合处理含高斯过程的模型。
+
+``` markdown
+Warning messages:
+1: There were 4000 transitions after warmup that exceeded the maximum treedepth. Increase max_treedepth above 10. See
+https://mc-stan.org/misc/warnings.html#maximum-treedepth-exceeded 
+2: There were 3 chains where the estimated Bayesian Fraction of Missing Information was low. See
+https://mc-stan.org/misc/warnings.html#bfmi-low 
+3: Examine the pairs() plot to diagnose sampling problems
+
+4: The largest R-hat is 4.4, indicating chains have not mixed.
+Running the chains for more iterations may help. See
+https://mc-stan.org/misc/warnings.html#r-hat 
+5: Bulk Effective Samples Size (ESS) is too low, indicating posterior means and medians may be unreliable.
+Running the chains for more iterations may help. See
+https://mc-stan.org/misc/warnings.html#bulk-ess 
+6: Tail Effective Samples Size (ESS) is too low, indicating posterior variances and tail quantiles may be unreliable.
+Running the chains for more iterations may help. See
+https://mc-stan.org/misc/warnings.html#tail-ess 
+```
+
+```{r}
+#| eval: false
+
+# k = 15 样条模型
+brms::stancode(rongelap_brm)
+```
+
+经过对 brms 包生成的模型代码的分析，发现它采用潜变量高斯过程（latent variable GP）模型，这也是采样效率低下的一个关键因素。接下来，分别手动实现低秩和基样条两种方法近似边际高斯过程（marginal likelihood GP），用 Stan 编码模型。代码文件分别是`rongelap_poisson_lr.stan` 和 `rongelap_poisson_splines.stan` 。
 
 ### INLA {#sec-rongelap-inla}
 
