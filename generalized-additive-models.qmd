@@ -36,7 +36,7 @@ library(INLA)      # 近似贝叶斯推断
 
 ### mgcv
 
-MASS 包的 mcycle 数据集
+**MASS** 包的 mcycle 数据集
 
 ```{r}
 #| label: fig-mcycle
@@ -80,13 +80,130 @@ gam.vcomp(fgam, rescale = FALSE)
 plot(fgam)
 ```
 
-### Stan
+### cmdstanr
 
 ```{r}
 #| message: false
 
 library(cmdstanr)
 ```
+
+### brms
+
+rstanarm 或 brms 包都可以拟合一般的广义可加（混合）模型。
+
+```{r}
+#| eval: false
+
+library(rstanarm)
+bgamm <- stan_gamm4(accel ~ s(times),
+  data = mcycle, family = gaussian(), cores = 2, seed = 20232023,
+  iter = 4000, warmup = 1000, thin = 10, refresh = 0,
+  adapt_delta = 0.99
+)
+summary(bgamm)
+```
+
+``` markdown
+Model Info:
+ function:     stan_gamm4
+ family:       gaussian [identity]
+ formula:      accel ~ s(times)
+ algorithm:    sampling
+ sample:       1200 (posterior sample size)
+ priors:       see help('prior_summary')
+ observations: 133
+
+Estimates:
+                       mean    sd      10%     50%     90%  
+(Intercept)            -25.6     2.1   -28.4   -25.5   -23.0
+s(times).1             340.4   232.9    61.1   340.8   634.7
+s(times).2           -1218.9   243.3 -1529.2 -1218.8  -913.5
+s(times).3            -567.8   147.0  -765.2  -567.1  -385.3
+s(times).4            -619.8   133.8  -791.1  -617.0  -458.9
+s(times).5           -1056.2    85.8 -1162.8 -1055.7  -945.1
+s(times).6             -89.2    49.8  -154.4   -89.4   -27.6
+s(times).7            -232.2    33.8  -274.7  -232.2  -189.5
+s(times).8              17.3   105.8  -121.0    15.5   150.1
+s(times).9               4.1    33.1   -25.8     1.0    39.1
+sigma                   24.7     1.6    22.6    24.6    26.8
+smooth_sd[s(times)1]   399.9    59.2   327.6   395.4   479.1
+smooth_sd[s(times)2]    25.2    25.4     2.9    17.5    56.6
+
+Fit Diagnostics:
+           mean   sd    10%   50%   90%
+mean_PPD -25.5    3.0 -29.3 -25.5 -21.8
+
+The mean_ppd is the sample average posterior predictive distribution of the outcome variable (for details see help('summary.stanreg')).
+
+MCMC diagnostics
+                     mcse Rhat n_eff
+(Intercept)          0.1  1.0  1052 
+s(times).1           7.0  1.0  1103 
+s(times).2           6.7  1.0  1329 
+s(times).3           4.4  1.0  1101 
+s(times).4           3.8  1.0  1230 
+s(times).5           2.5  1.0  1137 
+s(times).6           1.5  1.0  1128 
+s(times).7           1.0  1.0  1062 
+s(times).8           3.1  1.0  1147 
+s(times).9           1.0  1.0  1052 
+sigma                0.0  1.0  1154 
+smooth_sd[s(times)1] 1.8  1.0  1136 
+smooth_sd[s(times)2] 0.7  1.0  1157 
+mean_PPD             0.1  1.0   997 
+log-posterior        0.1  1.0  1122 
+
+For each parameter, mcse is Monte Carlo standard error, n_eff is a crude measure of effective sample size, and Rhat is the potential scale reduction factor on split chains (at convergence Rhat=1).
+```
+
+```{r}
+#| eval: false
+# 非线性部分
+plot_nonlinear(bgamm)
+```
+
+```{r}
+#| eval: false
+
+# LOO
+loo(bgamm)
+```
+
+``` markdown
+Computed from 1200 by 133 log-likelihood matrix
+
+         Estimate   SE
+elpd_loo   -611.0  8.8
+p_loo         7.3  1.2
+looic      1222.0 17.5
+------
+Monte Carlo SE of elpd_loo is 0.1.
+
+All Pareto k estimates are good (k < 0.5).
+See help('pareto-k-diagnostic') for details.
+```
+
+```{r}
+#| eval: false
+
+# 后验预测分布检查
+pp_check(bgamm)
+```
+
+贝叶斯 $R^2$
+
+```{r}
+#| eval: false
+
+# R^2 
+rsq <- bayes_R2(bgamm)
+print(median(rsq))
+# R^2 的分布
+hist(rsq)
+```
+
+或者调用 **brms** 包
 
 ```{r}
 #| eval: false
