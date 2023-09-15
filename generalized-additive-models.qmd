@@ -88,9 +88,9 @@ plot(fgam)
 library(cmdstanr)
 ```
 
-### brms
+### rstanarm
 
-rstanarm 或 brms 包都可以拟合一般的广义可加（混合）模型。
+rstanarm 可以拟合一般的广义可加（混合）模型。
 
 ```{r}
 #| eval: false
@@ -159,6 +159,7 @@ For each parameter, mcse is Monte Carlo standard error, n_eff is a crude measure
 
 ```{r}
 #| eval: false
+
 # 非线性部分
 plot_nonlinear(bgamm)
 ```
@@ -187,66 +188,52 @@ See help('pareto-k-diagnostic') for details.
 ```{r}
 #| eval: false
 
-# 后验预测分布检查
+# 后验预测分布
 pp_check(bgamm)
 ```
 
-贝叶斯 $R^2$
+贝叶斯 $R^2$ 统计量
 
 ```{r}
 #| eval: false
 
 # R^2 
 rsq <- bayes_R2(bgamm)
+# R^2 的估计
 print(median(rsq))
 # R^2 的分布
 hist(rsq)
 ```
 
-或者调用 **brms** 包
-
+::: {.callout-note title="brms"}
 ```{r}
 #| eval: false
-
+# 拟合模型
 bgam <- brms::brm(accel ~ s(times),
   data = mcycle, family = gaussian(), cores = 2, seed = 20232023,
   iter = 4000, warmup = 1000, thin = 10, refresh = 0,
   control = list(adapt_delta = 0.99)
 )
+# 模型输出
 summary(bgam)
-```
-
-```{r}
-#| eval: false
 brms::fixef(bgam) # 固定效应
-# brms::ranef(bgam) # 随机效应
-```
-
-```{r}
-#| eval: false
-
+brms::ranef(bgam) # 随机效应
+# 边际效应
 ms_bgam <- brms::conditional_smooths(bgam) # 平滑效应
 plot(ms_bgam)
-```
-
-```{r}
-#| eval: false
+# R-square
 brms::bayes_R2(bgam)
+# WAIC
 brms::waic(bgam)
+# LOOIC
 # brms::log_lik(bgam)
 brms::loo(bgam)
-```
-
-```{r}
-#| eval: false
+# 后验预测分布
 brms::pp_check(bgam, ndraws = 50)
-```
-
-```{r}
-#| eval: false
-
+# 生成代码
 brms::stancode(accel ~ s(times), data = mcycle, family = gaussian())
 ```
+:::
 
 ## 案例：朗格拉普岛核污染 {#sec-rongelap-gamm}
 
