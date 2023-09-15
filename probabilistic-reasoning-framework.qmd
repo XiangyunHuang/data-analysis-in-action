@@ -563,7 +563,7 @@ CmdStan 已经集成，但 **cmdstanr** 包对该算法的支持还在开发中�
 
 ## 习题
 
-1.  在 @sec-choose-prior 的基础上，比较 Stan 实现的贝叶斯 Lasso 和 R 包 **glmnet** 的结果。发现 **glmnet** 包是很有竞争力的，收缩效果比 Stan 还好，运行速度很快，但 Stan 的优势在于不限于 **glmnet** 包支持的常见分布族，如高斯、二项、泊松、多项、Cox 等。本质上，这是 Stan 作为一门编程语言的优势，只要知道概率分布的数学表达式，总是可以用 Stan 编码出来的。
+1.  在 @sec-choose-prior 的基础上，比较 Stan 实现的贝叶斯 Lasso 和 R 包 **glmnet** 的结果，发现 **glmnet** 包是很有竞争力的。在选择 Lasso 先验的情况下，收缩效果比 Stan 还好，运行速度也很快。Stan 的优势在于不限于先验分布的选取，当选择 Horseshoe 先验时，Stan 的收缩又比 **glmnet** 包更好。Stan 的优势还在于不限于 **glmnet** 包支持的常见分布族，如高斯、二项、泊松、多项、Cox 等。本质上，这两点都是 Stan 作为一门概率编程语言的优势，只要知道概率分布的数学表达式，总是可以用 Stan 编码出来的。
 
     ```{r}
     #| message: false
@@ -573,4 +573,17 @@ CmdStan 已经集成，但 **cmdstanr** 包对该算法的支持还在开发中�
     fit_lasso <- cv.glmnet(x = X, y = y, family = "binomial", alpha = 1, nfolds = 10)
     # 回归系数
     coef(fit_lasso, s = fit_lasso$lambda.min)
+    ```
+
+2.  在 @sec-visualization-practice 的探索分析基础上，对美国黄石公园的老忠实泉喷发规律，建立二项分布和二维正态分布的混合模型，请用 Stan 编码估计模型中的参数。
+
+    $$
+    f(\bm{x};p,\bm{\mu_1},\Sigma_1,\bm{\mu_2},\Sigma_2) = p\mathcal{N}(\bm{x};\bm{\mu_1},\Sigma_1) + (1-p) \mathcal{N}(\bm{x};\bm{\mu_2},\Sigma_2) 
+    $$
+
+    其中，参数 $p$ 是一个介于 0 到 1 之间的常数，参数 $\bm{\mu_1} = (\mu_{11},\mu_{12})^\top,\bm{\mu_2}=(\mu_{21},\mu_{22})^\top$ 是二维的列向量，参数 $\Sigma_1 = (\sigma_{ij}),\Sigma_2 = (\delta_{ij}),i=1,2,j=1,2$ 是二阶的协方差矩阵。
+
+    ```{r}
+    # 272 个观察值
+    data("faithful")
     ```
