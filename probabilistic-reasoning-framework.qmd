@@ -15,7 +15,7 @@ $$
 
 [Stan](https://github.com/stan-dev) 是一个贝叶斯统计建模和计算的概率推理框架，也是一门用于贝叶斯推断和优化的概率编程语言 [@Gelman2015; @Carpenter2017]。它使用汉密尔顿蒙特卡罗算法（Hamiltonian Monte Carlo algorithm ，简称 HMC 算法）抽样，内置一种可以自适应调整采样步长的 No-U-Turn sampler （简称 NUTS 采样器） 。Stan 还提供自动微分变分推断（Automatic Differentiation Variational Inference algorithm 简称 ADVI 算法）算法做近似贝叶斯推断获取参数的后验分布，以及拟牛顿法（the limited memory Broyden-Fletcher-Goldfarb-Shanno algorithm 简称 L-BFGS 算法）优化算法获取参数的惩罚极大似然估计。
 
-经过 10 多年的发展，Stan 已经形成一个相对成熟的生态，它提供统计建模、数据分析和预测能力，广泛应用于社会、生物、物理、工程、商业等领域，在学术界和工业界的影响力也不小。下 @fig-stan-api 是 Stan 生态中各组件依赖架构图，[math](https://github.com/stan-dev/math) 库是 Stan 框架最核心的组件，它基于 [Boost](https://github.com/boostorg/boost) 、[Eigen](https://gitlab.com/libeigen/eigen) 、[OpenCL](https://www.khronos.org/opencl/) 、[SUNDIALS](https://github.com/LLNL/sundials) 和 [oneTBB](https://github.com/oneapi-src/oneTBB) 等诸多 C++ 库，提供概率推理、自动微分、矩阵计算、并行计算、GPU 计算和求解代数微分方程等功能。
+经过 10 多年的发展，Stan 已经形成一个相对成熟的生态，它提供统计建模、数据分析和预测能力，广泛应用于社会、生物、物理、工程、商业等领域，在学术界和工业界的影响力也不小。下 @fig-stan-api 是 Stan 生态中各组件依赖架构图，[math](https://github.com/stan-dev/math) 库[@Carpenter2015]是 Stan 框架最核心的组件，它基于 [Boost](https://github.com/boostorg/boost) 、[Eigen](https://gitlab.com/libeigen/eigen) 、[OpenCL](https://www.khronos.org/opencl/) 、[SUNDIALS](https://github.com/LLNL/sundials) 和 [oneTBB](https://github.com/oneapi-src/oneTBB) 等诸多 C++ 库，提供概率推理、自动微分、矩阵计算、并行计算、GPU 计算和求解代数微分方程等功能。
 
 ```{mermaid}
 %%| label: fig-stan-api
@@ -39,13 +39,13 @@ flowchart TB
   CmdStan --> MathematicaStan(MathematicaStan)
 ```
 
-CmdStan 是 Stan 的命令行接口，可在 MacOS / Linux 的终端软件，Windows 的命令行窗口或 PowerShell 软件中使用。**CmdStanR、**CmdStanPy 和 MathematicaStan 分别是 CmdStan 的 R 语言、Python 语言和 Mathematica 语言接口。每次当 Stan 发布新版本时，CmdStan 也会随之发布新版，只需指定新的 CmdStan 安装路径，**CmdStanR** 就可以使用上，**CmdStanR** 包与 Stan 是相互独立的更新机制。 **CmdStanR** 负责处理 CmdStan 运行的结果，而编译代码，生成模型和模拟采样等都是由 **CmdStan 完成**。入门 **CmdStanR** 后，可以快速转入对 Stan 底层原理的学习，有利于编码符合实际需要的复杂模型，有利于掌握常用的炼丹技巧，提高科研和工作的效率。
+CmdStan 是 Stan 的命令行接口，可在 MacOS / Linux 的终端软件，Windows 的命令行窗口或 PowerShell 软件中使用。**CmdStanR** [@Gabry2023]**、**CmdStanPy 和 MathematicaStan 分别是 CmdStan 的 R 语言、Python 语言和 Mathematica 语言接口。每次当 Stan 发布新版本时，CmdStan 也会随之发布新版，只需指定新的 CmdStan 安装路径，**CmdStanR** 就可以使用上，**CmdStanR** 包与 Stan 是相互独立的更新机制。 **CmdStanR** 负责处理 CmdStan 运行的结果，而编译代码，生成模型和模拟采样等都是由 **CmdStan 完成**。入门 **CmdStanR** 后，可以快速转入对 Stan 底层原理的学习，有利于编码符合实际需要的复杂模型，有利于掌握常用的炼丹技巧，提高科研和工作的效率。
 
-[**rstan**](https://github.com/stan-dev/rstan) 是 Stan 的 R 语言接口，该接口依赖 **Rcpp**、**RcppEigen**、**BH**、**RcppParallel** 和 **StanHeaders** 等 R 包，由于存在众多上游 R 包依赖，**RStan** 的更新通常滞后于 Stan 的更新，而且滞后很多，不利于及时地使用最新的学术研究成果。 因此，相比于 **rstan** 包，**CmdStanR** 更加轻量，可以更快地将 CmdStan 的新功能融入进来，**cmdstanr** 和 CmdStan 是分离的，方便用户升级和维护。
+[**rstan**](https://github.com/stan-dev/rstan) 包[@RStan2023]是 Stan 的 R 语言接口，该接口依赖 **Rcpp**、**RcppEigen**、**BH**、**RcppParallel** 和 **StanHeaders** 等 R 包，由于存在众多上游 R 包依赖和兼容性问题，尤其在 Windows 系统环境中，因此，**RStan 的**安装、更新都比较麻烦。**RStan** 的更新通常严重滞后于 Stan 的更新，不利于及时地使用最新的学术研究成果。 而相比于 **rstan** 包，**CmdStanR** 更加轻量，可以更快地将 CmdStan 的新功能融入进来，而且 **cmdstanr** 和 CmdStan 是分离的，方便用户升级和维护。
 
-[**rstanarm**](https://github.com/stan-dev/rstanarm) 和 [**brms**](https://github.com/paul-buerkner/brms) 是 **RStan** 的扩展包，各自提供了一套用于表示统计模型的公式语法。它们都支持丰富的统计模型，比如线性模型、广义线性模型、线性混合效应模型、广义线性混合效应模型等。相比于 **rstan**， 它们使用起来更加方便，因为它内置了大量统计模型的 Stan 实现，即将公式语法翻译成 Stan 编码的模型，然后调用 **rstan** 或 **cmdstanr** 翻译成 C++，最后编译成动态链接库。除了依赖 **rstan** 包，**rstanarm** 和 **brms** 还依赖大量其它 R 包，因此，安装、更新都比较麻烦。
+[**rstanarm**](https://github.com/stan-dev/rstanarm) [@Goodrich2023] 和 [**brms**](https://github.com/paul-buerkner/brms) [@brms2017] 是 **RStan** 的扩展包，各自提供了一套用于表示统计模型的公式语法。它们都支持丰富的统计模型，比如线性模型、广义线性模型、线性混合效应模型、广义线性混合效应模型等。相比于 **rstan**， 它们使用起来更加方便，因为它内置了大量统计模型的 Stan 实现，即将公式语法翻译成 Stan 编码的模型，然后调用 **rstan** 或 **cmdstanr** 翻译成 C++，最后编译成动态链接库。除了依赖 **rstan** 包，**rstanarm** 和 **brms** 还依赖大量其它 R 包。
 
-顺便一提，类似的用于概率推理和统计分析的框架，还有 Python 社区的 [PyMC3](https://github.com/pymc-devs/pymc) 和 [TensorFlow Probability](https://www.tensorflow.org/probability)。
+顺便一提，类似的用于概率推理和统计分析的框架，还有 Python 社区的 [PyMC](https://github.com/pymc-devs/pymc) 和 [TensorFlow Probability](https://github.com/tensorflow/probability)，它们采用的 MCMC 采样算法也是基于 NUTS 的 HMC 算法。
 
 ## Stan 入门 {#sec-getting-started}
 
@@ -246,7 +246,7 @@ fit_gaussian$summary(.num_args = list(sigfig = 4, notation = "dec"))
 变量的声明没有太多的内涵，就是 C++ 和 Stan 定义的语法，比如整型用 `int` 声明。建模过程中，时常需要将 R 语言环境中的数据传递给 Stan 代码编译出来的模型，而 Stan 是基于 C++ 语言，在变量类型方面有继承有发展。下表给出 Stan 与 R 语言中的变量类型对应关系。值得注意， R 语言的类型检查是不严格的，使用变量也不需要提前声明和初始化。Stan 语言中向量、矩阵的类型都是实数，下标也从 1 开始，元组类型和 R 语言中的列表类似，所有向量默认都是列向量。
 
 | 变量类型 | Stan 语言                   | R 语言                                          |
-|------------------|--------------------|----------------------------------|
+|-------------------|--------------------|----------------------------------|
 | 整型     | `int x = 1;`                | `x = 1L`                                        |
 | 实数     | `real x = 3.14;`            | `x = 3.14`                                      |
 | 向量     | `vector[3] x = [1, 2, 3]';` | `x = c(1L, 2L, 3L)`                             |
