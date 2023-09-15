@@ -47,11 +47,11 @@ CmdStan 是 Stan 的命令行接口，可在 MacOS / Linux 的终端软件，Win
 
 此外，**bayesplot** 包 [@Gabry2019] 针对 cmdstanr 包生成的拟合模型对象提供一系列可视化图形，用于诊断采样过程、展示后验分布等。**loo** 包[@Vehtari2017]计算 LOOIC （留一交叉验证信息准则）和 WAIC （通用信息准则）等指标，用于模型评估与比较。**posterior** 包 [@Vehtari2021] 对采样数据提供统一的操作方法和类型转化，计算常用的后验分布的统计量等。**projpred** 包 [@Piironen2017b; @Piironen2020] 实现投影预测推断用于模型预测和特征选择。
 
-[**rstan**](https://github.com/stan-dev/rstan) 包[@RStan2023]是 Stan 的 R 语言接口，该接口依赖 **Rcpp**、**RcppEigen**、**BH**、**RcppParallel** 和 **StanHeaders** 等 R 包，由于存在众多上游 R 包依赖和兼容性问题，尤其在 Windows 系统环境中，因此，**RStan 的**安装、更新都比较麻烦。**RStan** 的更新通常严重滞后于 Stan 的更新，不利于及时地使用最新的学术研究成果。 而相比于 **rstan** 包，**CmdStanR** 更加轻量，可以更快地将 CmdStan 的新功能融入进来，而且 **cmdstanr** 和 CmdStan 是分离的，方便用户升级和维护。
+[**rstan**](https://github.com/stan-dev/rstan) 包[@RStan2023]是 Stan 的 R 语言接口，该接口依赖 **Rcpp** [@Rcpp2011; @Rcpp2018]、**RcppEigen** [@Bates2013]、**BH** [@BH2023]、**RcppParallel** [@RcppParallel2023]和 **StanHeaders** [@StanHeaders2023]等 R 包，由于存在众多上游 R 包依赖和兼容性问题，尤其在 Windows 系统环境中，因此，**RStan 的**安装、更新都比较麻烦。**RStan** 的更新通常严重滞后于 Stan 的更新，不利于及时地使用最新的学术研究成果。 而相比于 **rstan** 包，**CmdStanR** 更加轻量，可以更快地将 CmdStan 的新功能融入进来，而且 **cmdstanr** 和 CmdStan 是分离的，方便用户升级和维护。
 
 [**rstanarm**](https://github.com/stan-dev/rstanarm) [@Goodrich2023] 和 [**brms**](https://github.com/paul-buerkner/brms) [@brms2017] 是 **RStan** 的扩展包，各自提供了一套用于表示统计模型的公式语法。它们都支持丰富的统计模型，比如线性模型、广义线性模型、线性混合效应模型、广义线性混合效应模型等。相比于 **rstan**， 它们使用起来更加方便，因为它内置了大量统计模型的 Stan 实现，即将公式语法翻译成 Stan 编码的模型，然后调用 **rstan** 或 **cmdstanr** 翻译成 C++，最后编译成动态链接库。除了依赖 **rstan** 包，**rstanarm** 和 **brms** 还依赖大量其它 R 包。
 
-顺便一提，类似的用于概率推理和统计分析的框架，还有 Python 社区的 [PyMC](https://github.com/pymc-devs/pymc) 和 [TensorFlow Probability](https://github.com/tensorflow/probability)，它们采用的 MCMC 采样算法也是基于 NUTS 的 HMC 算法。
+顺便一提，类似的用于概率推理和统计分析的框架，还有 Python 社区的 [PyMC](https://github.com/pymc-devs/pymc) [@pymc2023]和 [TensorFlow Probability](https://github.com/tensorflow/probability) [@Dillon2017]，它们采用的 MCMC 采样算法也是基于 NUTS 的 HMC 算法。
 
 ## Stan 入门 {#sec-getting-started}
 
@@ -251,14 +251,14 @@ fit_gaussian$summary(.num_args = list(sigfig = 4, notation = "dec"))
 
 变量的声明没有太多的内涵，就是 C++ 和 Stan 定义的语法，比如整型用 `int` 声明。建模过程中，时常需要将 R 语言环境中的数据传递给 Stan 代码编译出来的模型，而 Stan 是基于 C++ 语言，在变量类型方面有继承有发展。下表给出 Stan 与 R 语言中的变量类型对应关系。值得注意， R 语言的类型检查是不严格的，使用变量也不需要提前声明和初始化。Stan 语言中向量、矩阵的类型都是实数，下标也从 1 开始，元组类型和 R 语言中的列表类似，所有向量默认都是列向量。
 
-| 变量类型 | Stan 语言                   | R 语言                                          |
-|---------------|---------------------|------------------------------------|
-| 整型     | `int x = 1;`                | `x = 1L`                                        |
-| 实数     | `real x = 3.14;`            | `x = 3.14`                                      |
-| 向量     | `vector[3] x = [1, 2, 3]';` | `x = c(1L, 2L, 3L)`                             |
-| 矩阵     | `matrix[3,1] x;`            | `matrix(data = c(1L, 2L, 3L))`                  |
-| 数组     | `array[3] int x;`           | `array(data = c(1L, 2L, 3L), dim = c(3, 1, 1))` |
-| 元组     | `tuple(vector[3]) x;`       | `list(x = c(1L, 2L, 3L))`                       |
+| 类型 | Stan 语言                   | R 语言                                          |
+|------|-----------------------------|-------------------------------------------------|
+| 整型 | `int x = 1;`                | `x = 1L`                                        |
+| 实数 | `real x = 3.14;`            | `x = 3.14`                                      |
+| 向量 | `vector[3] x = [1, 2, 3]';` | `x = c(1L, 2L, 3L)`                             |
+| 矩阵 | `matrix[3,1] x;`            | `matrix(data = c(1L, 2L, 3L))`                  |
+| 数组 | `array[3] int x;`           | `array(data = c(1L, 2L, 3L), dim = c(3, 1, 1))` |
+| 元组 | `tuple(vector[3]) x;`       | `list(x = c(1L, 2L, 3L))`                       |
 
 : Stan 变量类型和 R 语言中的对应 {#tbl-stan-var-dec}
 
@@ -448,7 +448,7 @@ loo::loo_compare(list(model0 = fit_logit_normal_loo,
 
 ### Horseshoe 先验 {#sec-prior-horseshoe}
 
-Horseshoe 先验（Horse shoe）[@Piironen2017] 指定回归系数 $\alpha,\bm{\beta}$ 的先验分布如下
+Horseshoe 先验（Horse shoe）[@Piironen2017a] 指定回归系数 $\alpha,\bm{\beta}$ 的先验分布如下
 
 $$
 \begin{aligned}
