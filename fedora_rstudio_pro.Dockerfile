@@ -101,6 +101,7 @@ RUN dnf -y install texlive-sourcecodepro \
    texlive-framed \
    texlive-titling \
    texlive-fira \
+   texlive-soul \
    texlive-xetex-pstricks \
    texlive-pst-arrow \
    texlive-awesomebox \
