@@ -586,6 +586,60 @@ For each parameter, mcse is Monte Carlo standard error, n_eff is a crude measure
 
 SpikeSlab 先验（Spike Slab）放在非 0 协变量的个数上，是离散的先验。回归系数的先验分布的有限混合，常用有限混合多元正态分布。参考文章 [Discrete Mixture Models](https://betanalpha.github.io/assets/case_studies/modeling_sparsity.html#221_Discrete_Mixture_Models)
 
+::: callout-note
+**BoomSpikeSlab** 包是 **Boom** 包的扩展，提供基于 SpikeSlab 先验的贝叶斯变量选择功能。
+
+```{r}
+#| eval: false
+
+set.seed(2023)
+n <- 2500
+k <- 10
+X <- matrix(rnorm(n * k), ncol = k)
+y <- rbinom(n, size = 1, prob = plogis(1 + 3 * X[, 1] - 2 * X[, 2]))
+# 加载 BoomSpikeSlab
+library(BoomSpikeSlab)
+fit_logit_spike <- logit.spike(y ~ X, niter = 500)
+# 模型输出
+summary(fit_logit_spike)
+```
+
+``` markdown
+
+null log likelihood:            -1690.677 
+posterior mean log likelihood:  -766.5283 
+posterior max log likelihood:   -754.8686 
+mean deviance R-sq:             0.5466147 
+
+predicted vs observed success rates, by decile:
+                  predicted    observed
+(0.00596,0.0279] 0.01388670 0.008032129
+(0.0279,0.108]   0.06371528 0.060000000
+(0.108,0.273]    0.17839881 0.176000000
+(0.273,0.496]    0.39146661 0.404000000
+(0.496,0.734]    0.61807048 0.608000000
+(0.734,0.865]    0.80694458 0.764000000
+(0.865,0.942]    0.90690322 0.928000000
+(0.942,0.979]    0.96436544 0.976000000
+(0.979,0.992]    0.98636201 0.992000000
+(0.992,0.996]    0.99441504 1.000000000
+
+summary of coefficients:
+             mean    sd mean.inc sd.inc inc.prob
+(Intercept)  1.02 0.105     1.02  0.105     1.00
+X2          -2.00 0.232    -2.02  0.118     0.99
+X1           3.10 0.354     3.13  0.170     0.99
+X10          0.00 0.000     0.00  0.000     0.00
+X9           0.00 0.000     0.00  0.000     0.00
+X8           0.00 0.000     0.00  0.000     0.00
+X7           0.00 0.000     0.00  0.000     0.00
+X6           0.00 0.000     0.00  0.000     0.00
+X5           0.00 0.000     0.00  0.000     0.00
+X4           0.00 0.000     0.00  0.000     0.00
+X3           0.00 0.000     0.00  0.000     0.00
+```
+:::
+
 ## 选择推理算法 {#sec-choose-inference}
 
 开篇提及 Stan 内置了多种推理算法，不同的算法获得的结果是存在差异的。
