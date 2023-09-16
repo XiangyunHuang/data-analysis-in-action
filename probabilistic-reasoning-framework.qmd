@@ -604,6 +604,48 @@ CmdStan 已经集成，但 **cmdstanr** 包对该算法的支持还在开发中�
     p1 | p2
     ```
 
+    ```{r}
+    #| code-fold: true
+    #| echo: !expr knitr::is_html_output()
+    #| eval: false
+    #| message: false
+
+    library(cmdstanr)
+
+    faithful_d <- list(
+      K = 2, # 几个正态分布混合
+      N = 272, # 样本量
+      # y = faithful$waiting,
+      y = faithful$eruptions
+    )
+
+    mod_faithful_normal <- cmdstan_model(
+      stan_file = "code/faithful_finite_mixtures.stan",
+      compile = TRUE, cpp_options = list(stan_threads = TRUE)
+    )
+
+    fit_faithful_normal <- mod_faithful_normal$sample(
+      data = faithful_d,
+      chains = 2,
+      parallel_chains = 2,
+      iter_warmup = 1000, 
+      iter_sampling = 1000, 
+      threads_per_chain = 2, 
+      seed = 20232023,
+      show_messages = FALSE,
+      refresh = 0
+    )
+
+    # 输出结果
+    fit_faithful_normal$summary(c("theta", "mu", "sigma", "lp__"))
+    # theta[1] = 0.350 混合比例
+    # theta[2] = 0.650
+    # mu[1] = 2.02 均值
+    # mu[2] = 4.27
+    # sigma[1] = 0.243 标准差
+    # sigma[2] = 0.437
+    ```
+
 3.  在 @sec-visualization-practice 的探索分析基础上，对美国黄石公园的老忠实泉喷发规律，建立二项分布和二维正态分布的混合模型，请用 Stan 编码估计模型中的参数。
 
     $$
