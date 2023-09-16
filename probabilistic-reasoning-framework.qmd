@@ -506,7 +506,80 @@ print(fit_logit_horseshoe_loo)
 LOOIC 比之 Lasso 先验的情况更小了。
 
 ::: callout-note
-**brms** 包（版本 2.20.1）在模型中全局性地使用 horseshoe 先验和 R2D2 先验信息。
+```{r}
+#| eval: false
+
+library(rstanarm)
+# set up the prior, use hyperprior tau ∼ half-Cauchy(0,tau0^2) 
+D <- ncol(X) # 10 变量
+n <- nrow(X) # 2500 样本量
+p0 <- 5 # prior guess for the number of relevant variables 
+sigma <- 1 / sqrt(mean(y)*(1-mean(y))) # pseudo sigma
+tau0 <- p0 / (D - p0) * sigma / sqrt(n)
+# hs() 函数指定层次收缩先验 Hierarchical shrinkage
+# 拟合模型
+fit <- stan_glm(
+  y ~ X, family = binomial(), data = data.frame(I(X), y), 
+  # horseshoe 先验
+  prior = hs(df = 1, global_df = 1, global_scale = tau0)
+)
+# 输出结果
+summary(fit, digits = 4)
+```
+
+模型输出如下：
+
+``` markdown
+Model Info:
+ function:     stan_glm
+ family:       binomial [logit]
+ formula:      y ~ X
+ algorithm:    sampling
+ sample:       4000 (posterior sample size)
+ priors:       see help('prior_summary')
+ observations: 2500
+ predictors:   11
+
+Estimates:
+              mean    sd      10%     50%     90%  
+(Intercept)  1.0016  0.0732  0.9080  1.0007  1.0947
+X1           3.0921  0.1343  2.9219  3.0888  3.2660
+X2          -1.9907  0.1002 -2.1200 -1.9903 -1.8631
+X3           0.0205  0.0429 -0.0180  0.0084  0.0804
+X4          -0.0069  0.0364 -0.0534 -0.0018  0.0297
+X5           0.0045  0.0367 -0.0336  0.0008  0.0474
+X6           0.0062  0.0364 -0.0323  0.0014  0.0519
+X7           0.0469  0.0559 -0.0068  0.0327  0.1258
+X8          -0.0082  0.0376 -0.0545 -0.0021  0.0296
+X9          -0.0342  0.0492 -0.1042 -0.0196  0.0109
+X10          0.0310  0.0472 -0.0125  0.0180  0.0971
+
+Fit Diagnostics:
+           mean   sd     10%    50%    90% 
+mean_PPD 0.5915 0.0087 0.5804 0.5916 0.6028
+
+The mean_ppd is the sample average posterior predictive distribution of the outcome variable (for details see help('summary.stanreg')).
+
+MCMC diagnostics
+              mcse   Rhat   n_eff
+(Intercept)   0.0010 0.9994 5422 
+X1            0.0021 0.9996 3994 
+X2            0.0016 1.0000 3817 
+X3            0.0006 0.9997 4531 
+X4            0.0005 0.9998 4652 
+X5            0.0005 0.9993 5052 
+X6            0.0005 0.9994 4795 
+X7            0.0010 1.0002 3045 
+X8            0.0006 1.0000 4397 
+X9            0.0009 1.0002 3034 
+X10           0.0008 1.0003 3292 
+mean_PPD      0.0001 0.9994 4742 
+log-posterior 0.1367 1.0012 1206 
+
+For each parameter, mcse is Monte Carlo standard error, n_eff is a crude measure of effective sample size, and Rhat is the potential scale reduction factor on split chains (at convergence Rhat=1).
+```
+
+**rstanarm** 包可以获得与前面一致的结果，甚至收缩效果比手写的 Stan 代码好一点点。
 :::
 
 ### SpikeSlab 先验 {#sec-prior-spikeslab}
