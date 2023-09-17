@@ -7,7 +7,7 @@ data {
 parameters {
   simplex[K] theta;       // mixing proportions
   array[K] ordered[D] mu; // locations of mixture components
-                          // scales of mixture components
+  // scales of mixture components
   array[K] cholesky_factor_corr[D] Lcorr; // cholesky factor (L_u matrix for R)
 }
 model {
