@@ -260,14 +260,14 @@ fit_gaussian$summary(.num_args = list(sigfig = 4, notation = "dec"))
 
 变量的声明没有太多的内涵，就是 C++ 和 Stan 定义的语法，比如整型用 `int` 声明。建模过程中，时常需要将 R 语言环境中的数据传递给 Stan 代码编译出来的模型，而 Stan 是基于 C++ 语言，在变量类型方面有继承有发展。下表给出 Stan 与 R 语言中的变量类型对应关系。值得注意， R 语言的类型检查是不严格的，使用变量也不需要提前声明和初始化。Stan 语言中向量、矩阵的类型都是实数，下标也从 1 开始，元组类型和 R 语言中的列表类似，所有向量默认都是列向量。
 
-| 类型 | Stan 语言                   | R 语言                                          |
-|------|-----------------------------|-------------------------------------------------|
-| 整型 | `int x = 1;`                | `x = 1L`                                        |
-| 实数 | `real x = 3.14;`            | `x = 3.14`                                      |
-| 向量 | `vector[3] x = [1, 2, 3]';` | `x = c(1L, 2L, 3L)`                             |
-| 矩阵 | `matrix[3,1] x;`            | `matrix(data = c(1L, 2L, 3L))`                  |
-| 数组 | `array[3] int x;`           | `array(data = c(1L, 2L, 3L), dim = c(3, 1, 1))` |
-| 元组 | `tuple(vector[3]) x;`       | `list(x = c(1L, 2L, 3L))`                       |
+| 类型 | Stan 语言                       | R 语言                                          |
+|------|---------------------------------|-------------------------------------------------|
+| 整型 | `int x = 1;`                    | `x = 1L`                                        |
+| 实数 | `real x = 3.14;`                | `x = 3.14`                                      |
+| 向量 | `vector[3] x = [1, 2, 3]';`     | `x = c(1L, 2L, 3L)`                             |
+| 矩阵 | `matrix[3,1] x;`                | `matrix(data = c(1L, 2L, 3L), nrow = 3)`        |
+| 数组 | `array[3] int x;`               | `array(data = c(1L, 2L, 3L), dim = c(3, 1, 1))` |
+| 元组 | `tuple(vector[3],vector[3]) x;` | `list(x = c(1L, 2L, 3L), y = c(1, 2, 3))`       |
 
 : Stan 变量类型和 R 语言中的对应 {#tbl-stan-var-dec}
 
@@ -506,12 +506,139 @@ print(fit_logit_horseshoe_loo)
 LOOIC 比之 Lasso 先验的情况更小了。
 
 ::: callout-note
-**brms** 包（版本 2.20.1）在模型中全局性地使用 horseshoe 先验和 R2D2 先验信息。
+```{r}
+#| eval: false
+
+library(rstanarm)
+# set up the prior, use hyperprior tau ∼ half-Cauchy(0,tau0^2) 
+D <- ncol(X) # 10 变量
+n <- nrow(X) # 2500 样本量
+p0 <- 5 # prior guess for the number of relevant variables 
+sigma <- 1 / sqrt(mean(y)*(1-mean(y))) # pseudo sigma
+tau0 <- p0 / (D - p0) * sigma / sqrt(n)
+# hs() 函数指定层次收缩先验 Hierarchical shrinkage
+# 拟合模型
+fit <- stan_glm(
+  y ~ X, family = binomial(), data = data.frame(I(X), y), 
+  # horseshoe 先验
+  prior = hs(df = 1, global_df = 1, global_scale = tau0)
+)
+# 输出结果
+summary(fit, digits = 4)
+```
+
+模型输出如下：
+
+``` markdown
+Model Info:
+ function:     stan_glm
+ family:       binomial [logit]
+ formula:      y ~ X
+ algorithm:    sampling
+ sample:       4000 (posterior sample size)
+ priors:       see help('prior_summary')
+ observations: 2500
+ predictors:   11
+
+Estimates:
+              mean    sd      10%     50%     90%  
+(Intercept)  1.0016  0.0732  0.9080  1.0007  1.0947
+X1           3.0921  0.1343  2.9219  3.0888  3.2660
+X2          -1.9907  0.1002 -2.1200 -1.9903 -1.8631
+X3           0.0205  0.0429 -0.0180  0.0084  0.0804
+X4          -0.0069  0.0364 -0.0534 -0.0018  0.0297
+X5           0.0045  0.0367 -0.0336  0.0008  0.0474
+X6           0.0062  0.0364 -0.0323  0.0014  0.0519
+X7           0.0469  0.0559 -0.0068  0.0327  0.1258
+X8          -0.0082  0.0376 -0.0545 -0.0021  0.0296
+X9          -0.0342  0.0492 -0.1042 -0.0196  0.0109
+X10          0.0310  0.0472 -0.0125  0.0180  0.0971
+
+Fit Diagnostics:
+           mean   sd     10%    50%    90% 
+mean_PPD 0.5915 0.0087 0.5804 0.5916 0.6028
+
+The mean_ppd is the sample average posterior predictive distribution of the outcome variable (for details see help('summary.stanreg')).
+
+MCMC diagnostics
+              mcse   Rhat   n_eff
+(Intercept)   0.0010 0.9994 5422 
+X1            0.0021 0.9996 3994 
+X2            0.0016 1.0000 3817 
+X3            0.0006 0.9997 4531 
+X4            0.0005 0.9998 4652 
+X5            0.0005 0.9993 5052 
+X6            0.0005 0.9994 4795 
+X7            0.0010 1.0002 3045 
+X8            0.0006 1.0000 4397 
+X9            0.0009 1.0002 3034 
+X10           0.0008 1.0003 3292 
+mean_PPD      0.0001 0.9994 4742 
+log-posterior 0.1367 1.0012 1206 
+
+For each parameter, mcse is Monte Carlo standard error, n_eff is a crude measure of effective sample size, and Rhat is the potential scale reduction factor on split chains (at convergence Rhat=1).
+```
+
+**rstanarm** 包可以获得与前面一致的结果，甚至收缩效果比手写的 Stan 代码好一点点。
 :::
 
 ### SpikeSlab 先验 {#sec-prior-spikeslab}
 
-SpikeSlab 先验（Spike Slab）放在非 0 协变量的个数上，是离散的先验。
+SpikeSlab 先验（Spike Slab）放在非 0 协变量的个数上，是离散的先验。回归系数的先验分布的有限混合，常用有限混合多元正态分布。参考文章 [Discrete Mixture Models](https://betanalpha.github.io/assets/case_studies/modeling_sparsity.html#221_Discrete_Mixture_Models)
+
+::: callout-note
+**BoomSpikeSlab** 包是 **Boom** 包的扩展，提供基于 SpikeSlab 先验的贝叶斯变量选择功能。
+
+```{r}
+#| eval: false
+
+set.seed(2023)
+n <- 2500
+k <- 10
+X <- matrix(rnorm(n * k), ncol = k)
+y <- rbinom(n, size = 1, prob = plogis(1 + 3 * X[, 1] - 2 * X[, 2]))
+# 加载 BoomSpikeSlab
+library(BoomSpikeSlab)
+fit_logit_spike <- logit.spike(y ~ X, niter = 500)
+# 模型输出
+summary(fit_logit_spike)
+```
+
+``` markdown
+
+null log likelihood:            -1690.677 
+posterior mean log likelihood:  -766.5283 
+posterior max log likelihood:   -754.8686 
+mean deviance R-sq:             0.5466147 
+
+predicted vs observed success rates, by decile:
+                  predicted    observed
+(0.00596,0.0279] 0.01388670 0.008032129
+(0.0279,0.108]   0.06371528 0.060000000
+(0.108,0.273]    0.17839881 0.176000000
+(0.273,0.496]    0.39146661 0.404000000
+(0.496,0.734]    0.61807048 0.608000000
+(0.734,0.865]    0.80694458 0.764000000
+(0.865,0.942]    0.90690322 0.928000000
+(0.942,0.979]    0.96436544 0.976000000
+(0.979,0.992]    0.98636201 0.992000000
+(0.992,0.996]    0.99441504 1.000000000
+
+summary of coefficients:
+             mean    sd mean.inc sd.inc inc.prob
+(Intercept)  1.02 0.105     1.02  0.105     1.00
+X2          -2.00 0.232    -2.02  0.118     0.99
+X1           3.10 0.354     3.13  0.170     0.99
+X10          0.00 0.000     0.00  0.000     0.00
+X9           0.00 0.000     0.00  0.000     0.00
+X8           0.00 0.000     0.00  0.000     0.00
+X7           0.00 0.000     0.00  0.000     0.00
+X6           0.00 0.000     0.00  0.000     0.00
+X5           0.00 0.000     0.00  0.000     0.00
+X4           0.00 0.000     0.00  0.000     0.00
+X3           0.00 0.000     0.00  0.000     0.00
+```
+:::
 
 ## 选择推理算法 {#sec-choose-inference}
 
@@ -575,15 +702,123 @@ CmdStan 已经集成，但 **cmdstanr** 包对该算法的支持还在开发中�
     coef(fit_lasso, s = fit_lasso$lambda.min)
     ```
 
-2.  在 @sec-visualization-practice 的探索分析基础上，对美国黄石公园的老忠实泉喷发规律，建立二项分布和二维正态分布的混合模型，请用 Stan 编码估计模型中的参数。
+2.  下图是美国黄石公园老忠实间歇泉喷发时间和等待时间的分布规律，请建立合适的正态混合模型，用 Stan 拟合模型，并对结果做出说明。（提示：参考 Stan 用户手册的[有限混合章节](https://mc-stan.org/docs/stan-users-guide/mixture-modeling.html)）
+
+    ```{r}
+    #| label: fig-faithful-mixture
+    #| fig-cap: 黄石公园老忠实间歇泉
+    #| fig-width: 7
+    #| fig-height: 3
+    #| fig-showtext: true
+    #| code-fold: true
+    #| echo: !expr knitr::is_html_output()
+
+    p1 <- ggplot(data = faithful, aes(x = eruptions)) +
+      geom_histogram(aes(y = after_stat(density)), 
+                     bins = 30, fill = "white", color = "gray") +
+      geom_density() +
+      theme_classic() +
+      labs(x = "喷发时间", y = "概率密度值")
+
+    p2 <- ggplot(data = faithful, aes(x = waiting)) +
+      geom_histogram(aes(y = after_stat(density)), 
+                     bins = 30, fill = "white", color = "gray") +
+      geom_density() +
+      theme_classic() +
+      labs(x = "等待时间", y = "概率密度值")
+
+    library(patchwork)
+    p1 | p2
+    ```
+
+    ```{verbatim, file="code/faithful_finite_mixtures.stan", lang="stan"}
+    ```
+
+    ```{r}
+    #| code-fold: true
+    #| echo: !expr knitr::is_html_output()
+    #| eval: false
+    #| message: false
+
+    library(cmdstanr)
+
+    faithful_d <- list(
+      K = 2, # 几个正态分布混合
+      N = 272, # 样本量
+      # y = faithful$waiting,
+      y = faithful$eruptions
+    )
+
+    mod_faithful_normal <- cmdstan_model(
+      stan_file = "code/faithful_finite_mixtures.stan",
+      compile = TRUE, cpp_options = list(stan_threads = TRUE)
+    )
+
+    fit_faithful_normal <- mod_faithful_normal$sample(
+      data = faithful_d,
+      chains = 2,
+      parallel_chains = 2,
+      iter_warmup = 1000, 
+      iter_sampling = 1000, 
+      threads_per_chain = 2, 
+      seed = 20232023,
+      show_messages = FALSE,
+      refresh = 0
+    )
+
+    # 输出结果
+    fit_faithful_normal$summary(c("theta", "mu", "sigma", "lp__"))
+    # theta[1] = 0.350 混合比例
+    # theta[2] = 0.650
+    # mu[1] = 2.02 均值
+    # mu[2] = 4.27
+    # sigma[1] = 0.243 标准差
+    # sigma[2] = 0.437
+    ```
+
+3.  在 @sec-visualization-practice 的探索分析基础上，对美国黄石公园的老忠实泉喷发规律，建立二项分布和二维正态分布的混合模型，请用 Stan 编码估计模型中的参数。
 
     $$
     f(\bm{x};p,\bm{\mu_1},\Sigma_1,\bm{\mu_2},\Sigma_2) = p\mathcal{N}(\bm{x};\bm{\mu_1},\Sigma_1) + (1-p) \mathcal{N}(\bm{x};\bm{\mu_2},\Sigma_2) 
     $$
 
-    其中，参数 $p$ 是一个介于 0 到 1 之间的常数，参数 $\bm{\mu_1} = (\mu_{11},\mu_{12})^\top,\bm{\mu_2}=(\mu_{21},\mu_{22})^\top$ 是二维的列向量，参数 $\Sigma_1 = (\sigma_{ij}),\Sigma_2 = (\delta_{ij}),i=1,2,j=1,2$ 是二阶的协方差矩阵。
+    其中，参数 $p$ 是一个介于 0 到 1 之间的常数，参数 $\bm{\mu_1} = (\mu_{11},\mu_{12})^\top,\bm{\mu_2}=(\mu_{21},\mu_{22})^\top$ 是二维的列向量，参数 $\Sigma_1 = (\sigma_{ij}),\Sigma_2 = (\delta_{ij}),i=1,2,j=1,2$ 是二阶的协方差矩阵。（提示：因有限混合模型存在可识别性问题，简单起见，考虑各个多元正态分布的协方差矩阵相同的情况。）
+
+    ```{verbatim, file="code/faithful_2d_finite_mixtures.stan", lang="stan"}
+    ```
 
     ```{r}
-    # 272 个观察值
+    #| code-fold: true
+    #| echo: !expr knitr::is_html_output()
+    #| eval: false
+    #| message: false
+
     data("faithful")
+    library(cmdstanr)
+    # 准备数据
+    faithful_2d <- list(
+      K = 2,    # 2 个分布混合
+      N = 272,  # 样本量 nrow(faithful)
+      D = 2,    # 二维正态分布
+      y = faithful # 数据集
+    )
+    # 编译模型
+    mod_faithful_normal_2d <- cmdstan_model(
+      stan_file = "code/faithful_2d_finite_mixtures.stan",
+      compile = TRUE, cpp_options = list(stan_threads = TRUE)
+    )
+    # 采样
+    fit_faithful_normal_2d <- mod_faithful_normal_2d$sample(
+      data = faithful_2d,
+      chains = 2,
+      parallel_chains = 2,
+      iter_warmup = 1000, 
+      iter_sampling = 1000, 
+      threads_per_chain = 2, 
+      seed = 20232023,
+      show_messages = FALSE,
+      refresh = 0
+    )
+    # 输出结果
+    fit_faithful_normal_2d$summary(c("theta", "mu", "lp__"))
     ```
