@@ -68,7 +68,7 @@ RUN ln -s /usr/lib64/R/library/littler/examples/install.r /usr/bin/install.r \
  && tar -xzf quarto.tar.gz -C /opt/quarto/ \
  && ln -s /opt/quarto/quarto-${QUARTO_VERSION}/bin/quarto /usr/bin/quarto \
  && mv -f /usr/bin/pandoc /usr/bin/pandoc.bak \
- && ln -s /opt/quarto/quarto-${QUARTO_VERSION}/bin/tools/pandoc /usr/bin/pandoc \
+ && ln -s /opt/quarto/quarto-${QUARTO_VERSION}/bin/tools/x86_64/pandoc /usr/bin/pandoc \
  && rm -f quarto.tar.gz
 
 # Setup locale and timezone
@@ -127,28 +127,28 @@ RUN dnf install -y rpm-sequoia --enablerepo=updates-testing,updates-testing-modu
   && dnf clean all \
   && rm -f desc_pkgs.txt
 
-# Install showtext V8 and INLA
+# For R
 COPY DESCRIPTION DESCRIPTION
+# For Python
+COPY requirements.txt requirements.txt
+# Setup showtext V8 and INLA
 RUN install2.r showtextdb showtext \
   && export GITHUB_PAT=${GITHUB_PAT} \
   && export DOWNLOAD_STATIC_LIBV8=1 \
   && Rscript -e "install.packages('INLA', repos = c(getOption('repos'), INLA = 'https://inla.r-inla-download.org/R/testing'))" \
   && Rscript -e "remotes::install_deps('.', dependencies = TRUE)" \
-  && rm -f DESCRIPTION
-
-# Setup Python Env
-COPY requirements.txt requirements.txt
-RUN mkdir -p /opt/.virtualenvs/r-tensorflow \
+  && rm -f DESCRIPTION \
+  # Setup Python Env
+  && mkdir -p /opt/.virtualenvs/r-tensorflow \
   && chown -R $(whoami):staff /opt/.virtualenvs/r-tensorflow \
   && export RETICULATE_PYTHON_ENV=/opt/.virtualenvs/r-tensorflow \
   && virtualenv -p /usr/bin/python3 $RETICULATE_PYTHON_ENV \
   && source $RETICULATE_PYTHON_ENV/bin/activate \
   && pip install -r requirements.txt \
   && deactivate \
-  && rm -f requirements.txt
-
-# Setup CmdStan
-RUN curl -fLo cmdstan-${CMDSTAN_VERSION}.tar.gz https://github.com/stan-dev/cmdstan/releases/download/v${CMDSTAN_VERSION}/cmdstan-${CMDSTAN_VERSION}.tar.gz \
+  && rm -f requirements.txt \
+  # Setup CmdStan
+  && curl -fLo cmdstan-${CMDSTAN_VERSION}.tar.gz https://github.com/stan-dev/cmdstan/releases/download/v${CMDSTAN_VERSION}/cmdstan-${CMDSTAN_VERSION}.tar.gz \
   && mkdir -p /opt/cmdstan/ \
   && chown -R $(whoami):staff /opt/cmdstan/ \
   && tar -xzf cmdstan-${CMDSTAN_VERSION}.tar.gz -C /opt/cmdstan/ \
