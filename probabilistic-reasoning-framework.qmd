@@ -784,7 +784,41 @@ CmdStan 已经集成，但 **cmdstanr** 包对该算法的支持还在开发中�
 
     其中，参数 $p$ 是一个介于 0 到 1 之间的常数，参数 $\bm{\mu_1} = (\mu_{11},\mu_{12})^\top,\bm{\mu_2}=(\mu_{21},\mu_{22})^\top$ 是二维的列向量，参数 $\Sigma_1 = (\sigma_{ij}),\Sigma_2 = (\delta_{ij}),i=1,2,j=1,2$ 是二阶的协方差矩阵。
 
+    ```{verbatim, file="code/faithful_2d_finite_mixtures.stan", lang="stan"}
+    ```
+
     ```{r}
-    # 272 个观察值
+    #| code-fold: true
+    #| echo: !expr knitr::is_html_output()
+    #| eval: false
+    #| message: false
+
     data("faithful")
+    library(cmdstanr)
+    # 准备数据
+    faithful_2d <- list(
+      K = 2,    # 2 个分布混合
+      N = 272,  # 样本量 nrow(faithful)
+      D = 2,    # 二维正态分布
+      y = faithful # 数据集
+    )
+    # 编译模型
+    mod_faithful_normal_2d <- cmdstan_model(
+      stan_file = "code/faithful_2d_finite_mixtures.stan",
+      compile = TRUE, cpp_options = list(stan_threads = TRUE)
+    )
+    # 采样
+    fit_faithful_normal_2d <- mod_faithful_normal_2d$sample(
+      data = faithful_2d,
+      chains = 2,
+      parallel_chains = 2,
+      iter_warmup = 1000, 
+      iter_sampling = 1000, 
+      threads_per_chain = 2, 
+      seed = 20232023,
+      show_messages = FALSE,
+      refresh = 0
+    )
+    # 输出结果
+    fit_faithful_normal_2d$summary(c("theta", "mu", "lp__"))
     ```
