@@ -35,8 +35,18 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Render Book
+        if: github.event_name == 'push'
         run: |
-          # quarto render
+          quarto render
+        shell: bash
+        env:
+          RETICULATE_PYTHON_ENV: /opt/.virtualenvs/r-tensorflow
+          RETICULATE_PYTHON: /opt/.virtualenvs/r-tensorflow/bin/python
+          CMDSTAN: /opt/cmdstan/cmdstan-${{ env.CMDSTAN_VERSION }}
+
+      - name: Render Book
+        if: github.event_name != 'push'
+        run: |
           quarto render --to html
         shell: bash
         env:
