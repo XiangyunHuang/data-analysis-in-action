@@ -33,7 +33,7 @@ knitr::kable(head(province_sex_ratio))
 #| - lvplot 包
 #| - Base R 包
 #| fig-width: 4.5
-#| fig-height: 3.5
+#| fig-height: 4.5
 #| fig-showtext: true
 #| par: true
 #| layout-ncol: 2
@@ -56,45 +56,33 @@ boxplot(`性别比（女=100）` ~ `区域` , data = province_sex_ratio)
 ### 提琴图 {#sec-violin}
 
 ```{r}
-#| label: fig-violin-gg
+#| label: fig-ggplot2-violin
 #| fig-cap: "提琴图"
+#| fig-subcap: 
+#| - 函数 `geom_violin()`
+#| - vioplot 包
+#| - beanplot 包
 #| fig-width: 4.5
-#| fig-height: 3.5
+#| fig-height: 4.5
 #| fig-showtext: true
+#| par: true
+#| layout-ncol: 2
 
 ggplot(data = province_sex_ratio, aes(x = `区域`, y = `性别比（女=100）`)) +
   geom_violin(fill = "lightgray", draw_quantiles = c(0.25, 0.5, 0.75)) +
   theme_classic()
-```
-
-```{r}
-#| label: fig-violin-vioplot
-#| fig-cap: "提琴图"
-#| fig-width: 4.5
-#| fig-height: 3.5
-#| fig-showtext: true
-#| par: true
 
 vioplot::vioplot(`性别比（女=100）` ~ `区域`,
   data = province_sex_ratio, col = "lightgray"
 )
-```
-
-beanplot 的名字是根据图形的外观取的，豌豆，rug 用须线表示数据
-
-```{r}
-#| label: fig-violin-beanplot
-#| fig-cap: "提琴图"
-#| fig-width: 4.5
-#| fig-height: 3.5
-#| fig-showtext: true
-#| par: true
 
 beanplot::beanplot(`性别比（女=100）` ~ `区域`,
   data = province_sex_ratio, col = "lightgray", log = "",
   xlab = "区域", ylab = "性别比（女=100）"
 )
 ```
+
+beanplot 包的名字是根据图形的外观取的，bean 即是豌豆，rug 用须线表示数据。
 
 ### 直方图 {#sec-histogram}
 
@@ -337,46 +325,29 @@ ggplot(data = province_sex_ratio, aes(x = `性别比（女=100）`, y = `区域`
 
 ### 抖动图 {#sec-jitter}
 
-散点图展示原始数据
+下面先用函数 `geom_point()` 绘制散点图展示原始数据，通过点的疏密程度暗示数据的分布。Base R 函数 `stripchart()` 可以实现类似的效果。当数据量比较大时，点相互覆盖比较严重，此时，抖动图比较适合用来展示原始数据。
 
 ```{r}
-#| label: fig-point
+#| label: fig-ggplot2-stripchart
 #| fig-cap: "散点图"
-#| fig-width: 4.5
-#| fig-height: 3.5
-#| fig-showtext: true
-
-ggplot(data = province_sex_ratio, aes(x = `区域`, y = `性别比（女=100）`)) +
-  geom_point() +
-  theme_classic()
-```
-
-::: callout-tip
-Base R 函数 `stripchart()` 可以实现类似 @fig-point 的效果。
-
-```{r}
-#| label: fig-point-stripchart
-#| fig-cap: "散点图"
+#| fig-subcap: 
+#| - 函数 `geom_point()`
+#| - 函数 `stripchart()`
+#| - 函数 `geom_jitter()`
 #| fig-width: 5
 #| fig-height: 4.5
 #| fig-showtext: true
 #| par: true
+#| layout-ncol: 2
+
+ggplot(data = province_sex_ratio, aes(x = `区域`, y = `性别比（女=100）`)) +
+  geom_point() +
+  theme_classic()
 
 stripchart(
   `性别比（女=100）` ~ `区域`, vertical = TRUE, pch = 1,
   data = province_sex_ratio, xlab = "区域"
 )
-```
-:::
-
-抖动图展示原始数据
-
-```{r}
-#| label: fig-jitter
-#| fig-cap: "抖动图"
-#| fig-width: 4.5
-#| fig-height: 3.5
-#| fig-showtext: true
 
 ggplot(data = province_sex_ratio, aes(x = `区域`, y = `性别比（女=100）`)) +
   geom_jitter(width = 0.25) +
