@@ -238,7 +238,65 @@ ggplot(data = usa_mortality, aes(x = Year, y = Age, fill = Male)) +
   labs(x = "年份", y = "年龄", fill = "死亡率")
 ```
 
-更加深入的分析和建模，详见 @Marron2022 的第一章
+更加深入的分析和建模，详见 @Marron2022 的第一章。
+
+## 美国弗吉尼亚州城乡死亡率 {#sec-virginia-deaths}
+
+VADeaths 数据来自 Base R 内置的 datasets 包，记录 1940 年美国弗吉尼亚州死亡率，如下表。
+
+```{r}
+#| label: tbl-virginia-deaths
+#| tbl-cap: 1940 年美国弗吉尼亚州死亡率
+#| echo: false
+
+knitr::kable(VADeaths, row.names = TRUE, 
+             col.names = c("农村男", "农村女", "城市男", "城市女"))
+```
+
+死亡率数据是按年龄段、城乡、性别分组统计的，这是一个三因素交叉统计表，表格中第1行第1列的数据表示 50-54 岁乡村男性的死亡率为 11.7 ‰ ，即在 50-54 岁乡村男性群体中，1000 个人中死亡 11.7 个，这是抽样调查出来的数字。下图分年龄段、城乡、性别展示弗吉尼亚州死亡率数据，从图例来看，突出的是各年龄段的对比，图主要传递的信息是各年龄段的死亡率差异。无论城市还是乡村，也无论男性还是女性，年龄越大死亡率越高，这完全是一个符合生物规律的客观事实，这是众人皆知的，算不上洞见。
+
+```{r}
+#| label: fig-virginia-age-group
+#| fig-cap: 弗吉尼亚州各年龄段死亡率的对比
+#| fig-width: 6
+#| fig-height: 5
+#| fig-showtext: true
+#| echo: false
+
+dat <- transform(expand.grid(
+  site = c("乡村", "城镇"), sex = c("男", "女"), 
+  age = ordered(c("50-54", "55-59", "60-64", "65-69", "70-74"))
+), deaths = as.vector(t(VADeaths)) / 1000)
+
+library(ggplot2)
+# (\u2030) 千分号
+ggplot(data = dat, aes(x = sex, y = deaths, fill = age)) +
+  geom_col(position = "dodge2") +
+  scale_y_continuous(labels = scales::label_percent(scale = 1000, suffix = "\u2030")) +
+  scale_fill_brewer(palette = "Spectral") +
+  facet_wrap(~site, ncol = 1) +
+  theme_bw(base_size = 13) +
+  labs(x = "性别", y = "死亡率", fill = "年龄")
+```
+
+将对比对象从年龄段转变为城乡，描述城乡差距在死亡率上的体现，是不是一下子更深刻了呢？城市降低各个年龄段的死亡率，暗示着城市的居住条件、医疗水平比乡村好，提高城市化率增加全民的寿命。严格来说，就这个粗糙的数据集不能如此快地下这个结论，但是，它暗示这个信息，同样也符合人们的常识。
+
+```{r}
+#| label: fig-virginia-population-group
+#| fig-cap: 弗吉尼亚州城乡死亡率的对比
+#| fig-width: 6
+#| fig-height: 5
+#| fig-showtext: true
+#| echo: false
+
+ggplot(data = dat, aes(x = age, y = deaths, fill = site)) +
+  geom_col(position = "dodge2") +
+  scale_y_continuous(labels = scales::label_percent(scale = 1000, suffix = "\u2030")) +
+  scale_fill_brewer(palette = "Spectral") +
+  facet_wrap(~sex, ncol = 1) +
+  theme_bw(base_size = 13) +
+  labs(x = "年龄", y = "死亡率", fill = "城乡")
+```
 
 ## 解释二项总体参数的置信带 {#sec-confidence-belt}
 
