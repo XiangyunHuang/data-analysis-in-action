@@ -395,7 +395,7 @@ ggplot(data = trunk_year, aes(x = year, y = revision)) +
 数学公式表达的统计模型与 R 语言表达的计算公式的对应关系见下 @tbl-formula ，更多详情见帮助文档 `?formula`。
 
 | 数学公式                                                    | R 语言计算公式                              |
-|:------------------------------------------------------------|:--------------------------------------------|
+|:-----------------------------|:---------------------------------------|
 | $y = \beta_0$                                               | `y ~ 1`                                     |
 | $y = \beta_0 + \beta_1 x_1$                                 | `y ~ 1 + x1` 或 `y ~ x1` 或 `y ~ x1 + x1^2` |
 | $y = \beta_1 x_1$                                           | `y ~ 0 + x1` 或 `y ~ -1 + x1`               |
@@ -408,17 +408,15 @@ ggplot(data = trunk_year, aes(x = year, y = revision)) +
 | $y = \beta_0 + \beta_1 x + \beta_2 x^2$                     | `y ~ x + I(x^2)`                            |
 | $y = \beta_0 + \beta_1 x + \beta_2 x^2$                     | `y ~ poly(x, degree = 2, raw = TRUE)`       |
 
-: 数学公式与 R 语言表示的计算公式 {#tbl-formula tbl-colwidths="\[45,55\]"}
+: 数学公式与 R 语言表示的计算公式 {#tbl-formula}
 
 自由度为 1 的正交多项式 `poly(x, 1)` 回归模型， 函数 `glm()` 的参数 `offset` 的含义，`weights` 的含义 广义可加模型 `gam()` 中回归样条的方法 `s()`
 
 ### 曲面图 {#sec-wireframe}
 
-**ggplot2** 暂不支持三维曲面图，而 **lattice** 包支持，也是非常有限的支持，**lattice** 和 **ggplot2** 都是基于图层的概念，层层叠加会出现覆盖。用来绘制函数图像还是可以的。
+**ggplot2** 包暂不支持绘制三维曲面图，而 **lattice** 包支持，但也是非常有限的支持。**lattice 包**和 **ggplot2** 包都是基于图形语法的，层层叠加就必然会出现覆盖，只有在绘制函数型数据的图像时是合适的，因为覆盖少，即使覆盖也不妨碍趋势的表达。根据不同的使用场景有两个更好的选择，基于 OpenGL 的真三维图形可以用 [rayrender](https://github.com/tylermorganwall/rayrender) 和 [rayshader](https://github.com/tylermorganwall/rayshader) 包绘制，而基于 JavaScripts 的交互式三维图形可以用 [rgl](https://github.com/dmurdoch/rgl) 或 [plotly](https://github.com/plotly/plotly.R) 包绘制。
 
-真三维图形可以用 [rayrender](https://github.com/tylermorganwall/rayrender) 和 [rayshader](https://github.com/tylermorganwall/rayshader) 包绘制。交互式三维图形可以用 [rgl](https://github.com/dmurdoch/rgl) 或 [plotly](https://github.com/plotly/plotly.R) 包绘制。
-
-@fig-trunk-year-wireframe 是用 **lattice** 包的 `wireframe()` 函数绘制三维曲面透视图，三维图形有时候并不能很好地表达数据，或者数据并不适合用三维图形表示。数据本身并没有那么明显的趋势规律，同样也会体现不出三维图形的表达能力。大部分情况下，我们应当避免使用静态的三维图形，但函数型数据是适合用三维图形来表达的。
+下 \@fig-trunk-year-wireframe 是用 **lattice** 包的 `wireframe()` 函数绘制的，这是一个三维曲面透视图，三维图形有时候并不能很好地表达数据，或者数据并不适合用三维图形表示。数据本身并没有那么明显的趋势规律，同样也会体现不出三维图形的表达能力。大部分情况下，我们应当避免使用静态的三维图形，但函数型数据是适合用三维图形来表达的。
 
 ```{r}
 #| label: fig-trunk-year-wireframe
@@ -429,13 +427,13 @@ ggplot(data = trunk_year, aes(x = year, y = revision)) +
 #| fig-showtext: true
 #| code-fold: true
 
-trunk_year_day <- aggregate(data = svn_trunk_log, revision ~ year + nday, FUN = length)
+trunk_year_week <- aggregate(data = svn_trunk_log, revision ~ year + week, FUN = length)
 library(lattice)
 wireframe(
-  data = trunk_year_day, revision ~ year * as.integer(nday),
+  data = trunk_year_week, revision ~ year * as.integer(week),
   shade = TRUE, drape = FALSE,
   xlab = "年份",
-  ylab = "第几天",
+  ylab = "第几周",
   zlab = list("提交量", rot = 90),
   scales = list(
     arrows = FALSE, col = "black"
@@ -456,7 +454,7 @@ wireframe(
 )
 ```
 
-每天的代码提交量受影响因素多，不确定性多，波动表现尖锐高频，上图反而对整体趋势的表达不够简洁清晰。按年、月统计提交量平均掉了每日的波动，反而可以体现更大的周期性和趋势性。下面绘制三维柱形图，三维图形天然给人有更加直观的感觉，毕竟立体。**latticeExtra** 包提供三维柱形图图层 `panel.3dbars()`，如 @fig-trunk-year-3dbarplot 所示。
+每周的代码提交量受影响因素多，不确定性多，波动表现尖锐高频，上图反而对整体趋势的表达不够简洁清晰。按年、月统计提交量平均掉了每日的波动，反而可以体现更大的周期性和趋势性。下面绘制三维柱形图，三维图形天然给人有更加直观的感觉，毕竟立体。**latticeExtra** 包提供三维柱形图图层 `panel.3dbars()`，如 @fig-trunk-year-3dbarplot 所示。
 
 ```{r}
 #| label: fig-trunk-year-3dbarplot
@@ -1252,7 +1250,7 @@ Jason M. Bryer 开发了一个 R 包 [**likert**](https://github.com/jbryer/like
 调查对象是 78 个来自不同学科的本科生，样本含有 36 个男性和 42 个女性，64% 的样本的年龄在 18 至 24 岁，36% 的样本年龄 25 岁及以上。更多数据背景信息 [@Bai2009]。
 
 | 观点                                                                      | 强烈反对 | 反对 | 中立 | 同意 | 强烈同意 |
-|:--------------------------------------------------------------------------|---------:|-----:|-----:|-----:|---------:|
+|:----------------------------------|-------:|-------:|-------:|-------:|-------:|
 | I find math interesting.                                                  |       10 |   15 |   10 |   35 |       30 |
 | I get uptight during math tests.                                          |       10 |   20 |   20 |   25 |       25 |
 | I think that I will use math in the future.                               |        0 |    0 |   20 |   25 |       55 |
@@ -1268,7 +1266,7 @@ Jason M. Bryer 开发了一个 R 包 [**likert**](https://github.com/jbryer/like
 | I enjoy learning with mathematics.                                        |       15 |   25 |   30 |   20 |       10 |
 | Mathematics makes me feel confused.                                       |       15 |   20 |   15 |   35 |       15 |
 
-: 你对数学感到焦虑吗？ {#tbl-math-anxiety tbl-colwidths="\[40,15,10,10,10,15\]"}
+: 你对数学感到焦虑吗？ {#tbl-math-anxiety}
 
 相比于 **ggplot2** 绘制的普通条形图， @fig-likert-scale 有一些独特之处：对立型的渐变色表示两个不同方向的态度，左右两侧以中立态度为中间位置，非常形象，并且按照其中一个方向的态度数据排序，显得比较整齐有序，便于理解。
 
