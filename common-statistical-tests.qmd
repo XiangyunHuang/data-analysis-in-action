@@ -757,9 +757,9 @@ with(PlantGrowth, pairwise.t.test(x = weight, g = group, paired = TRUE))
 
 函数 `pairwise.t.test()` 以 P 值给出两两配对比较的结果，trt1 和 ctrl 配对比较，P 值为 0.346，trt2 和 ctrl 配对比较，P 值为 0.220，以此类推。
 
-### 逐对比例检验 {#sec-pairwise-prop-test}
+### 配对比例检验 {#sec-pairwise-prop-test}
 
-对于离散数据，没有配对检验，但可以两两比较，采用逐对比例检验方法。如下示例含有 4 个组，采用函数 `pairwise.prop.test()` 做两两比较。
+对于离散数据，做两两配对比例检验，采用函数 `pairwise.prop.test()` ，如下示例含有 4 个组。
 
 ```{r}
 smokers <- c(83, 90, 129, 70)
@@ -799,10 +799,16 @@ with(PlantGrowth, dunn.test(x = weight, g = group, method = "holm", altp = TRUE)
 
 ### 配对相关性检验 {#sec-cor-test}
 
-配对样本的相关性检验 `cor.test()`：Pearson's 相关系数，Kendall's $\tau$ 检验或者 Spearman's $\rho$ 检验
+配对样本的相关性检验 `cor.test()`：Pearson's 相关系数检验，Kendall's $\tau$ 检验或者 Spearman's $\rho$ 检验。基于美国高等法院律师对州法官的评级数据集 USJudgeRatings 介绍各项评分之间的相关性。
 
 ```{r}
 # cor.test(method = "pearson")  # lm(y ~ 1 + x)
+cor.test(~ CONT + INTG, data = USJudgeRatings)
+```
+
+其中，变量 CONT 表示律师与法官的联系次数，INTG 表示司法公正。
+
+```{r}
 # cor.test(method = "kendall")
 # cor.test(method = "spearman") # lm(rank(y) ~ 1 + rank(x))
 ```
@@ -951,47 +957,32 @@ apply(Wish, MARGIN = 1:2, var)
 
 在假设检验理论方面作出贡献的人非常多，自 Karl Pearson 提出卡方统计量和卡方检验以来，陆续涌现出来一批人，见下表。
 
-+--------------------------------------------------------------------+----------------+--------------+--------------+------+----------------------------+
-| 姓名                                                               | 国籍           | 出生         | 死亡         | 寿命 | 贡献                       |
-+:===================================================================+================+==============+==============+======+============================+
-| [K. Pearson](https://en.wikipedia.org/wiki/Karl_Pearson)           | 英国           | 1857-03-27   | 1936-04-27   | 79   | 卡方分布、卡方检验         |
-+--------------------------------------------------------------------+----------------+--------------+--------------+------+----------------------------+
-| [C. Spearman](https://en.wikipedia.org/wiki/Charles_Spearman)      | 英国           | 1863-09-10   | 1945-09-17   | 82   | Spearman $\rho$ 秩相关检验 |
-+--------------------------------------------------------------------+----------------+--------------+--------------+------+----------------------------+
-| [W. S. Gosset](https://en.wikipedia.org/wiki/William_Sealy_Gosset) | 英国           | 1876-06-13   | 1937-10-16   | 61   | t 分布、t 检验             |
-+--------------------------------------------------------------------+----------------+--------------+--------------+------+----------------------------+
-| [R. A. Fisher](https://en.wikipedia.org/wiki/Ronald_Fisher)        | 英国、澳大利亚 | 1890-02-17   | 1962-07-29   | 72   | F 检验、Fisher 精确检验    |
-+--------------------------------------------------------------------+----------------+--------------+--------------+------+----------------------------+
-| [F. Wilcoxon](https://en.wikipedia.org/wiki/Frank_Wilcoxon)        | 美国           | 1892-09-02   | 1965-11-18   | 73   | Wilcoxon 符号秩、秩和检验  |
-+--------------------------------------------------------------------+----------------+--------------+--------------+------+----------------------------+
-| [J. Neyman](https://en.wikipedia.org/wiki/Jerzy_Neyman)            | 波兰、美国     | 1894-04-16   | 1981-08-05   | 87   | Neyman-Pearson 引理        |
-+--------------------------------------------------------------------+----------------+--------------+--------------+------+----------------------------+
-| [E. S. Pearson](https://en.wikipedia.org/wiki/Egon_Pearson)        | 英国           | 1895-08-11   | 1980-06-12   | 84   | Neyman-Pearson 引理        |
-+--------------------------------------------------------------------+----------------+--------------+--------------+------+----------------------------+
-| [A. Wald](https://en.wikipedia.org/wiki/Abraham_Wald)              | 匈牙利         | 1902-10-31   | 1950-12-13   | 48   | Wald 检验                  |
-+--------------------------------------------------------------------+----------------+--------------+--------------+------+----------------------------+
-| [F. Yates](https://en.wikipedia.org/wiki/Frank_Yates)              | 英国           | 1902-05-12   | 1994-06-17   | 92   | Yates 矫正                 |
-+--------------------------------------------------------------------+----------------+--------------+--------------+------+----------------------------+
-| [M. Kendall](https://en.wikipedia.org/wiki/Maurice_Kendall)        | 英国           | 1907-09-06   | 1983-03-29   | 76   | Kendall $\tau$ 秩相关检验  |
-+--------------------------------------------------------------------+----------------+--------------+--------------+------+----------------------------+
-| [M. S. Bartlet](https://en.wikipedia.org/wiki/M._S._Bartlett)      | 英国           | 1910-06-18   | 2002-01-08   | 91   | Bartlett 检验              |
-+--------------------------------------------------------------------+----------------+--------------+--------------+------+----------------------------+
-| [B. L. Welch](https://en.wikipedia.org/wiki/Bernard_Lewis_Welch)   | 英国           | 1911         | 1989-12-29   | 78   | Welch t 检验               |
-+--------------------------------------------------------------------+----------------+--------------+--------------+------+----------------------------+
-| [W. A. Wallis](https://en.wikipedia.org/wiki/W._Allen_Wallis)      | 美国           | 1912-11-05   | 1998-10-12   | 85   | Kruskal-Wallis 检验        |
-+--------------------------------------------------------------------+----------------+--------------+--------------+------+----------------------------+
-| [H. Levene](https://en.wikipedia.org/wiki/Howard_Levene)           | 美国           | 1914-01-17   | 2003-07-02   | 89   | Levene 检验                |
-+--------------------------------------------------------------------+----------------+--------------+--------------+------+----------------------------+
-| [O. J. Dunn](https://en.wikipedia.org/wiki/Olive_Jean_Dunn)        | 美国           | 1915-09-01   | 2008-01-12   | 92   | Dunn 检验                  |
-+--------------------------------------------------------------------+----------------+--------------+--------------+------+----------------------------+
-| [E. L. Lehmann](https://en.wikipedia.org/wiki/Erich_Leo_Lehmann)   | 法国、美国     | 1917-11-20   | 2009-09-12   | 91   | Lehmann-Scheffé 定理       |
-+--------------------------------------------------------------------+----------------+--------------+--------------+------+----------------------------+
-| [W. Kruskal](https://en.wikipedia.org/wiki/William_Kruskal)        | 美国           | 1919-10-10   | 2005-04-21   | 85   | Kruskal-Wallis 检验        |
-+--------------------------------------------------------------------+----------------+--------------+--------------+------+----------------------------+
-| [George E. P. Box](https://en.wikipedia.org/wiki/George_E._P._Box) | 英国、美国     | 1919-10-18   | 2013-03-28   | 93   | Box 检验                   |
-+--------------------------------------------------------------------+----------------+--------------+--------------+------+----------------------------+
+| 姓名                                                               | 国籍           | 出生       | 死亡       | 寿命 | 贡献                       |
+|:-------------------------------------------------------------------|----------------|------------|------------|------|----------------------------|
+| [K. Pearson](https://en.wikipedia.org/wiki/Karl_Pearson)           | 英国           | 1857-03-27 | 1936-04-27 | 79   | 卡方分布、卡方检验         |
+| [C. Spearman](https://en.wikipedia.org/wiki/Charles_Spearman)      | 英国           | 1863-09-10 | 1945-09-17 | 82   | Spearman $\rho$ 秩相关检验 |
+| [W. S. Gosset](https://en.wikipedia.org/wiki/William_Sealy_Gosset) | 英国           | 1876-06-13 | 1937-10-16 | 61   | t 分布、t 检验             |
+| [R. A. Fisher](https://en.wikipedia.org/wiki/Ronald_Fisher)        | 英国、澳大利亚 | 1890-02-17 | 1962-07-29 | 72   | F 检验、Fisher 精确检验    |
+| [F. Wilcoxon](https://en.wikipedia.org/wiki/Frank_Wilcoxon)        | 美国           | 1892-09-02 | 1965-11-18 | 73   | Wilcoxon 符号秩、秩和检验  |
+| [J. Neyman](https://en.wikipedia.org/wiki/Jerzy_Neyman)            | 波兰、美国     | 1894-04-16 | 1981-08-05 | 87   | Neyman-Pearson 引理        |
+| [E. S. Pearson](https://en.wikipedia.org/wiki/Egon_Pearson)        | 英国           | 1895-08-11 | 1980-06-12 | 84   | Neyman-Pearson 引理        |
+| [F. Yates](https://en.wikipedia.org/wiki/Frank_Yates)              | 英国           | 1902-05-12 | 1994-06-17 | 92   | Yates 矫正                 |
+| [A. Wald](https://en.wikipedia.org/wiki/Abraham_Wald)              | 匈牙利         | 1902-10-31 | 1950-12-13 | 48   | Wald 检验                  |
+| [A. Kolmogorov](https://en.wikipedia.org/wiki/Andrey_Kolmogorov)   | 苏联           | 1903-04-25 | 1987-10-20 | 84   | Kolmogorov-Smirnov 检验    |
+| [S. S. Wilks](https://en.wikipedia.org/wiki/Samuel_S._Wilks)       | 美国           | 1906-06-17 | 1964-03-07 | 57   | Wilks 检验                 |
+| [M. Kendall](https://en.wikipedia.org/wiki/Maurice_Kendall)        | 英国           | 1907-09-06 | 1983-03-29 | 76   | Kendall $\tau$ 秩相关检验  |
+| [M. S. Bartlet](https://en.wikipedia.org/wiki/M._S._Bartlett)      | 英国           | 1910-06-18 | 2002-01-08 | 91   | Bartlett 检验              |
+| [B. L. Welch](https://en.wikipedia.org/wiki/Bernard_Lewis_Welch)   | 英国           | 1911       | 1989-12-29 | 78   | Welch t 检验               |
+| [W. A. Wallis](https://en.wikipedia.org/wiki/W._Allen_Wallis)      | 美国           | 1912-11-05 | 1998-10-12 | 85   | Kruskal-Wallis 检验        |
+| [H. Levene](https://en.wikipedia.org/wiki/Howard_Levene)           | 美国           | 1914-01-17 | 2003-07-02 | 89   | Levene 检验                |
+| [O. J. Dunn](https://en.wikipedia.org/wiki/Olive_Jean_Dunn)        | 美国           | 1915-09-01 | 2008-01-12 | 92   | Dunn 检验                  |
+| [E. L. Lehmann](https://en.wikipedia.org/wiki/Erich_Leo_Lehmann)   | 法国、美国     | 1917-11-20 | 2009-09-12 | 91   | Lehmann-Scheffé 定理       |
+| [W. Kruskal](https://en.wikipedia.org/wiki/William_Kruskal)        | 美国           | 1919-10-10 | 2005-04-21 | 85   | Kruskal-Wallis 检验        |
+| [George E. P. Box](https://en.wikipedia.org/wiki/George_E._P._Box) | 英国、美国     | 1919-10-18 | 2013-03-28 | 93   | Box-Pierce 检验            |
+| [C. R. Rao](https://en.wikipedia.org/wiki/C._R._Rao)               | 印度、美国     | 1920-09-10 | 2023-08-22 | 102  | Score 检验                 |
+| [J. Durbin](https://en.wikipedia.org/wiki/James_Durbin)            | 英国           | 1923-06-30 | 2012-06-23 | 88   | Durbin 检验                |
 
-: 对假设检验理论有重要贡献的学者 {#tbl-statistical-hypothesis}
+: 对假设检验理论有重要贡献的学者 {#tbl-statisticans-hypothesis tbl-colwidths="\[20,15,15,15,10,25\]"}
 
 其中，最重要的统计学家及其学术传承关系见下 @fig-testing-statistical-hypothesis 。
 
