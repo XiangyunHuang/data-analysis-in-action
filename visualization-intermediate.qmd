@@ -84,11 +84,7 @@ ggplot(data = trunk_year, aes(x = year, y = revision)) +
   labs(x = "年份", y = "提交量")
 ```
 
-为什么呈现这样的变化趋势？我最初想到的是先逐步增加，然后下降一会儿，再趋于平稳。
-
-> 小时趋势
-
-上午高峰
+为什么呈现这样的变化趋势？我最初想到的是先逐步增加，然后下降一会儿，再趋于平稳。这比较符合软件从快速迭代开发期，过渡到成熟稳定期的生命周期。接着，从小时趋势图观察代码提交量的变化，发现有高峰有低谷，上午高峰，晚上低峰，但也并不是所有年份都一致，这是因为开发者来自世界各地，位于不同的时区。
 
 ```{r}
 #| label: fig-trunk-hour-line
@@ -106,9 +102,7 @@ aggregate(data = svn_trunk_log, revision ~ year + hour, length) |>
   labs(x = "时段", y = "提交量", color = "年份")
 ```
 
-> 月趋势
-
-12月和次年1月、7-8 月份提交量迎来小高峰，应该是教授们放寒暑假。是否有新人加入？
+最后，观察代码提交量的月趋势图，12月和次年1月、7-8 月份提交量迎来小高峰，应该是教授们放寒暑假。
 
 ```{r}
 #| label: fig-trunk-month-line
@@ -130,12 +124,7 @@ aggregate(data = svn_trunk_log, revision ~ year + month, length) |>
 
 ### 瀑布图 {#sec-waterfall}
 
-```{=html}
-<!-- 
-矩形图层 geom_rect
--->
-```
-相比于折线图，瀑布图将变化趋势和增减量都展示了，如 @fig-waterfall 所示，每年的提交量就好像瀑布上的水，图中当期相对于上一期的增减量
+相比于折线图，瀑布图将变化趋势和增减量都展示了，如 @fig-waterfall 所示，每年的提交量就好像瀑布上的水，图中每一段水柱表示当期相对于上一期的增减量。瀑布图是用矩形图层 `geom_rect()` 构造的，数据点作为矩形对角点，对撞型的颜色表示增减。
 
 ```{r}
 #| label: fig-waterfall
@@ -160,30 +149,11 @@ ggplot() +
       xmax = xmax, ymax = ymax, fill = fill
     ), show.legend = FALSE
   ) +
-  theme_classic() +
-  theme(panel.grid.major.y = element_line(colour = "gray90")) +
-  labs(x = "年份", y = "提交量")
-```
-
-瀑布图是以数据点作为对角点构造矩形，用对撞型的颜色表示增减，下 @fig-waterfall-point 在 @fig-waterfall 基础上添加了数据点，用以直观说明矩形图层 `geom_rect()` 构造瀑布图的方法。
-
-```{r}
-#| label: fig-waterfall-point
-#| fig-cap: "矩形图层构造瀑布图"
-#| fig-showtext: true
-
-ggplot() +
-  geom_rect(
-    data = trunk_year_tmp,
-    aes(
-      xmin = xmin, ymin = ymin,
-      xmax = xmax, ymax = ymax, fill = fill
-    ), show.legend = FALSE
-  ) +
   geom_point(
     data = trunk_year,
     aes(x = year, y = revision), size = 0.75
   ) +
+  scale_fill_brewer(palette = "Set2") +
   theme_classic() +
   theme(panel.grid.major.y = element_line(colour = "gray90")) +
   labs(x = "年份", y = "提交量")
@@ -323,10 +293,19 @@ trunk_year_fit <- within(trunk_year, {
 
 以平滑曲线连接相邻的散点，可以构造一个插值方法给函数 `geom_smooth()`，如下示例基于样条插值函数 `spline()`。样条源于德国宝马工程师，车辆外壳弧线，那些拥有非常漂亮的弧线，越光滑，与空气的摩擦阻力越小，车辆的气动外形更加符合流体力学的要求，加工打磨更加困难，往往价值不菲。美感是相通的，即使不懂车标，通过气动外形，也能识别出车辆的档次。
 
+**ggplot2** 包支持的平滑方法有很多，如借助函数 `splinefun()` 构造样条插值获得平滑曲线，调用 **mgcv** 包的函数 `gam()` ，调用 **ggalt** 包的函数 `geom_xspline()` 。
+
 ```{r}
 #| label: fig-trunk-year-xxspline
 #| fig-cap: "过去 25 年代码提交次数的变化情况"
+#| fig-subcap: 
+#| - 自定义样条插值 spline
+#| - 广义可加模型样条拟合
+#| - 自由度为 3 的正交多项式拟合
 #| fig-showtext: true
+#| layout-ncol: 2
+#| fig-width: 4.5
+#| fig-height: 4
 
 xxspline <- function(formula, data, ...) {
   dat <- model.frame(formula, data)
@@ -349,16 +328,6 @@ ggplot(data = trunk_year, aes(x = year, y = revision)) +
   theme_classic() +
   theme(panel.grid.major.y = element_line(colour = "gray90")) +
   labs(x = "年份", y = "提交量")
-```
-
-借助 spline 插值获得平滑曲线，ggalt 包的函数 `geom_xspline` 也提供类似的功能。
-
-ggplot2 当前支持的平滑方法，还有很多
-
-```{r}
-#| label: fig-trunk-year-smooth-sets
-#| fig-cap: "过去 25 年代码提交次数的变化情况"
-#| fig-showtext: true
 
 ggplot(data = trunk_year, aes(x = year, y = revision)) +
   geom_point() +
@@ -370,14 +339,6 @@ ggplot(data = trunk_year, aes(x = year, y = revision)) +
   theme_classic() +
   theme(panel.grid.major.y = element_line(colour = "gray90")) +
   labs(x = "年份", y = "提交量")
-```
-
-自由度为 3 的正交多项式拟合
-
-```{r}
-#| label: fig-trunk-year-poly
-#| fig-cap: "过去 25 年代码提交次数的变化情况"
-#| fig-showtext: true
 
 ggplot(data = trunk_year, aes(x = year, y = revision)) +
   geom_point() +
@@ -395,7 +356,7 @@ ggplot(data = trunk_year, aes(x = year, y = revision)) +
 数学公式表达的统计模型与 R 语言表达的计算公式的对应关系见下 @tbl-formula ，更多详情见帮助文档 `?formula`。
 
 | 数学公式                                                    | R 语言计算公式                              |
-|:-----------------------------|:---------------------------------------|
+|:------------------------------|:----------------------------------------|
 | $y = \beta_0$                                               | `y ~ 1`                                     |
 | $y = \beta_0 + \beta_1 x_1$                                 | `y ~ 1 + x1` 或 `y ~ x1` 或 `y ~ x1 + x1^2` |
 | $y = \beta_1 x_1$                                           | `y ~ 0 + x1` 或 `y ~ -1 + x1`               |
@@ -409,8 +370,6 @@ ggplot(data = trunk_year, aes(x = year, y = revision)) +
 | $y = \beta_0 + \beta_1 x + \beta_2 x^2$                     | `y ~ poly(x, degree = 2, raw = TRUE)`       |
 
 : 数学公式与 R 语言表示的计算公式 {#tbl-formula}
-
-自由度为 1 的正交多项式 `poly(x, 1)` 回归模型， 函数 `glm()` 的参数 `offset` 的含义，`weights` 的含义 广义可加模型 `gam()` 中回归样条的方法 `s()`
 
 ### 曲面图 {#sec-wireframe}
 
@@ -1250,7 +1209,7 @@ Jason M. Bryer 开发了一个 R 包 [**likert**](https://github.com/jbryer/like
 调查对象是 78 个来自不同学科的本科生，样本含有 36 个男性和 42 个女性，64% 的样本的年龄在 18 至 24 岁，36% 的样本年龄 25 岁及以上。更多数据背景信息 [@Bai2009]。
 
 | 观点                                                                      | 强烈反对 | 反对 | 中立 | 同意 | 强烈同意 |
-|:----------------------------------|-------:|-------:|-------:|-------:|-------:|
+|:-----------------------|---------:|---------:|---------:|---------:|---------:|
 | I find math interesting.                                                  |       10 |   15 |   10 |   35 |       30 |
 | I get uptight during math tests.                                          |       10 |   20 |   20 |   25 |       25 |
 | I think that I will use math in the future.                               |        0 |    0 |   20 |   25 |       55 |
@@ -1266,7 +1225,7 @@ Jason M. Bryer 开发了一个 R 包 [**likert**](https://github.com/jbryer/like
 | I enjoy learning with mathematics.                                        |       15 |   25 |   30 |   20 |       10 |
 | Mathematics makes me feel confused.                                       |       15 |   20 |   15 |   35 |       15 |
 
-: 你对数学感到焦虑吗？ {#tbl-math-anxiety}
+: 你对数学感到焦虑吗？ {#tbl-math-anxiety tbl-colwidths="\[40,15,10,10,10,15\]"}
 
 相比于 **ggplot2** 绘制的普通条形图， @fig-likert-scale 有一些独特之处：对立型的渐变色表示两个不同方向的态度，左右两侧以中立态度为中间位置，非常形象，并且按照其中一个方向的态度数据排序，显得比较整齐有序，便于理解。
 
