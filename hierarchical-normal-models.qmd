@@ -34,7 +34,7 @@ rstan_gg_options(
 )
 ```
 
-## 8schools 数据 {#subsec-eight-schools}
+## 8schools 数据 {#sec-eight-schools}
 
 分层正态模型
 
@@ -47,11 +47,9 @@ y_j &\sim \mathcal{N}(\theta_j,\sigma_j) \quad
 \end{aligned}
 $$
 
-### rstan
-
 首先用 rstan 包来拟合模型
 
-#### 拟合模型
+### 拟合模型
 
 ```{r}
 # rstan 方式编译模型
@@ -84,16 +82,16 @@ eight_schools_fit <- stan(
     sigma = c(15, 10, 16, 11, 9, 11, 10, 18)
   ),
   warmup = 1000, # 每条链预处理迭代次数
-  iter = 2000, # 每条链总迭代次数
-  chains = 4, # 马尔科夫链的数目
-  cores = 4, # 指定 CPU 核心数，可以给每条链分配一个
+  iter = 2000,   # 每条链总迭代次数
+  chains = 4,    # 马尔科夫链的数目
+  cores = 4,     # 指定 CPU 核心数，可以给每条链分配一个
   verbose = FALSE, # 不显示迭代的中间过程
-  refresh = 0, # 不显示采样的进度
-  seed = 20190425 # 设置随机数种子，不要使用 set.seed() 函数
+  refresh = 0,     # 不显示采样的进度
+  seed = 20190425  # 设置随机数种子，不要使用 set.seed() 函数
 )
 ```
 
-#### 模型输出
+### 模型输出
 
 ```{r}
 print(eight_schools_fit, digits = 1)
@@ -102,19 +100,17 @@ print(eight_schools_fit, digits = 1)
 提取任意一个参数的结果，如查看参数 $\tau$ 的 95% 置信区间。
 
 ```{r}
-print(eight_schools_fit, "tau", probs = c(0.025, 0.975))
+print(eight_schools_fit, pars = "tau", probs = c(0.025, 0.975))
 ```
 
 从迭代抽样数据获得与 `print(fit)` 一样的结果。以便后续对原始采样数据做任意的进一步分析。rstan 包扩展泛型函数 `summary()` 以支持对 stanfit 数据对象汇总。输出分链条和合并链条的汇总结果
 
 ```{r}
 # 汇总结果
-summary(eight_schools_fit)$summary
+print(summary(eight_schools_fit)$summary, digits = 2)
 ```
 
-::: callout-note
-操作原始采样数据
-:::
+### 操作数据
 
 合并四条马氏链的结果
 
@@ -159,7 +155,7 @@ lapply(eight_schools_sim["tau"], quantile, probs = c(2.5, 25, 50, 75, 97.5) / 10
 lapply(eight_schools_sim["lp__"], quantile, probs = c(2.5, 25, 50, 75, 97.5) / 100)
 ```
 
-#### 采样诊断
+### 采样诊断
 
 获取马尔科夫链迭代点列数据
 
@@ -222,7 +218,7 @@ stan_ac(eight_schools_fit, pars = "mu", separate_chains = TRUE, color = "white")
   theme_minimal()
 ```
 
-#### 后验分布
+### 后验分布
 
 可以用 `stan_hist` 函数绘制参数 $\mu$ 的后验分布图，它没有 `separate_chains` 参数，所以不能分链条绘制
 
@@ -256,29 +252,32 @@ stan_dens(eight_schools_fit, pars = "mu", separate_chains = TRUE) +
   labs(x = expression(mu), y = "Density")
 ```
 
-`lp__` 后验分布的对数，`pairs` 函数中再添加参数 `log = TRUE` 可获得非负参数取对数后的分布图
+**bayesplot** 包的函数 `mcmc_pairs()` 以矩阵图展示多个参数的分布。
 
 ```{r}
 #| label: fig-parameters-posterior
-#| fig-cap: 参数 $\mu$，$\tau$ 和 $\mathrm{lp__}$ 的后验分布图
+#| fig-cap: 参数 $\mu$，$\tau$ 和 $\mathrm{lp\_\_}$ 的后验分布图
 #| fig-showtext: true
 
-pairs(eight_schools_fit, pars = c("mu", "tau", "lp__"))
+bayesplot::mcmc_pairs(eight_schools_fit, pars = c("mu", "tau", "lp__"))
 ```
 
-#### 模型导出
+### 模型导出
 
-rstan 还支持从外部磁盘读取代码
+rstan 包还支持从外部磁盘读取代码
 
 ```{r}
 #| eval: false
+
 fit <- stan(file = 'code/stan/8schools.stan', ...)
 
 schools_dat <- read_rdump('data/8schools.rdump')
 source('data/8schools.rdump')
 ```
 
-### blme
+### 其它 R 包
+
+blme 包基于 lme4 包
 
 ```{r}
 y <- c(28, 8, -3, 7, -1, 1, 18, 12)
@@ -304,13 +303,15 @@ coef(schools)
 coef(summary(schools))
 ```
 
-### nlme
+nlme 包的函数 `lme()`
 
 ```{r}
 library(nlme)
 fit_lme <- lme(y ~ 1, random = ~ 1 | g, weights = varFunc(~ 1/sigma^2))
 summary(fit_lme)
 ```
+
+lme4 包可以获得与 nlme 包一致的结果。
 
 ```{r}
 #| eval: false
@@ -320,12 +321,11 @@ fit_lme4 <- lmer(y ~ 1 + (1 | g), weights = 1 / sigma^2)
 summary(fit_lme4)
 ```
 
-## rats 数据 {#subsec-rats}
+## rats 数据 {#sec-rats}
 
 示例数据来自 Gelfand et al (1990) ，每隔一周记录 30 只小鼠的重量，一共进行了 5 周。第一次记录是小鼠第 8 天的时候，第二次测量记录是第 15 天的时候，一直持续到第 36 天。下面在 R 环境中准备数据。
 
 ```{r}
-# modified code from https://github.com/stan-dev/example-models/tree/master/bugs_examples/vol1/rats
 # 总共 30 只老鼠
 N <- 30
 # 总共进行 5 周
@@ -402,13 +402,13 @@ rats_fit <- stan(
   data {
     int<lower=0> N;
     int<lower=0> T;
-    real x[T];
-    real y[N,T];
+    vector[T] x;
+    matrix[N,T] y;
     real xbar;
   }
   parameters {
-    real alpha[N];
-    real beta[N];
+    vector[N] alpha;
+    vector[N] beta;
 
     real alpha_c;
     real beta_c;          // beta.c in original bugs model
@@ -453,28 +453,30 @@ rats_fit <- stan(
 模型输出结果如下：
 
 ```{r}
-print(rats_fit, digits = 1)
+print(rats_fit, pars = c("alpha", "beta"), include = FALSE, digits = 1)
 ```
+
+Stan 模型中参数 `beta_c` 表示斜率，生成的量 `alpha0` 代表截距。
 
 ```{r}
 #| label: fig-rats-alpha
-#| fig-cap: $\alpha$ 参数
+#| fig-cap: 参数 $\alpha$ 的后验分布
 #| fig-showtext: true
 
-plot(rats_fit, pars = "alpha")
+plot(rats_fit, pars = "alpha", show_density = TRUE, ci_level = 0.8, outer_level = 0.95)
 ```
 
 ```{r}
 #| label: fig-rats-beta
-#| fig-cap: $\beta$ 参数
+#| fig-cap: 参数 $\beta$ 的后验分布
 #| fig-showtext: true
 
-plot(rats_fit, pars = "beta")
+plot(rats_fit, pars = "beta", ci_level = 0.8, outer_level = 0.95)
 ```
 
 ### nlme {#sec-rats-nlme}
 
-将数据整理成长格式
+**nlme** 包适合将长格式的数据，因此，先将小鼠数据整理成长格式。
 
 ```{r}
 weight <- c(
@@ -504,10 +506,13 @@ rats_lme <- lme(data = rats_data, fixed = weight ~ days, random = ~ 1 | rats)
 summary(rats_lme)
 ```
 
-模型输出结果中，截距 106.56762，斜率 6.18571。这与 Stan 拟合该模型的输出结果是一致的。Stan 模型中参数 `beta_c` 表示斜率，生成的量 `alpha0` 代表截距。
+模型输出结果中，截距 106.56762，斜率 6.18571。这与 Stan 拟合该模型的输出结果是一致的。经过对比 Stan 和 **nlme** 包的拟合结果，可以发现贝叶斯和频率方法的结果是一致的。
+
+::: callout-important
+当采用 **lme4** 包拟合数据的时候，发现参数取值落在参数空间的边界上，除此之外，输出结果与 **nlme** 包的结果完全一致。
 
 ```{r}
-print(rats_fit, c("alpha0", "beta_c", "tau_c"), digits = 3)
+mod_rats_lme4 <- lme4::lmer(weight ~ days + (1 | rats), rats_data)
+sumary(mod_rats_lme4)
 ```
-
-经过对比 Stan 和 **nlme** 包的拟合结果，可以发现贝叶斯和频率方法的结果是一致的。
+:::
