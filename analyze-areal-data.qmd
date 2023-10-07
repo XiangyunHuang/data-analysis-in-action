@@ -1,0 +1,134 @@
+# 区域数据分析 {#sec-analyze-areal-data}
+
+## 苏格兰唇癌数据分析 {#sec-scotland-lip-cancer}
+
+> Everything is related to everything else, but near things are more related than distant things.
+>
+> --- Waldo Tobler [@Tobler1970]
+
+::: {#spatial-areal-data .callout-note title="空间区域数据分析"}
+空间区域数据的贝叶斯建模
+
+-   Bayesian spatial and spatio-temporal GLMMs with possible extremes [glmmfields](https://github.com/seananderson/glmmfields)
+-   Bayesian spatial analysis [geostan](https://github.com/ConnorDonegan/geostan/)
+-   [Spatial Models in Stan: Intrinsic Auto-Regressive Models for Areal Data](https://mc-stan.org/users/documentation/case-studies/icar_stan.html)
+-   [Exact sparse CAR models in Stan](https://github.com/mbjoseph/CARstan) [网页文档](https://mc-stan.org/users/documentation/case-studies/mbjoseph-CARStan.html)
+-   [Spatial Models in Stan: Intrinsic Auto-Regressive Models for Areal Data](https://github.com/stan-dev/example-models/tree/master/knitr/car-iar-poisson) [网页文档](https://mc-stan.org/users/documentation/case-studies/icar_stan.html) 原始数据和代码，接上面苏格兰唇癌数据分析，用 CmdStanR 更新后的[代码](https://github.com/stan-dev/example-models/tree/master/knitr/car-iar-poisson)
+-   [Spatial modeling of areal data. Lip cancer in Scotland](https://www.paulamoraga.com/book-geospatial/sec-arealdataexamplespatial.html) INLA 建模
+-   [CAR models Scotland Lip cancer dataset](https://rafaelcabral96.github.io/nigstan/sar-and-car-models.html#car-models) Stan 建模
+-   空间计量 [区域数据分析](https://rsbivand.github.io/emos_talk_2304/bivand_emos_230419.pdf) [on-the-use-of-r-for-spatial-econometrics](https://github.com/rsbivand/emos_talk_2304)
+:::
+
+响应变量服从泊松分布 BYM-INLA [@blangiardo2013] BYM-Stan [@morris2019; @donegan2022; @cabral2022]
+
+记录 1975-1986 年苏格兰 56 个地区的唇癌病例数 [@moraga2020]，这是一个按地区汇总的数据。
+
+```{r}
+library(sf)
+scotlips <- st_read('data/scotland/scotland.shp', crs = st_crs("EPSG:27700"))
+str(scotlips)
+```
+
+```{r}
+#| label: fig-lip-cancer-map
+#| fig-cap: 苏格兰各地区唇癌病例数分布
+#| fig-width: 5
+#| fig-height: 5
+#| fig-showtext: true
+
+library(ggplot2)
+ggplot() +
+  geom_sf(data = scotlips, aes(fill = Observed)) +
+  scale_fill_viridis_c() +
+  theme_minimal()
+```
+
+## 美国各州文盲率分析
+
+响应变量服从高斯分布的调查数据 [@bivand2001]
+
+数据集 USArrests 记录 1973 年美国各州每 10 万居民中因谋杀 Murder、袭击 Assault 和强奸 Rape 被警察逮捕的人数以及城市人口所占百分比（可以看作城市化率）。
+
+```{r}
+#| echo: false
+#| label: tbl-us-arrests
+#| tbl-cap: "数据集 USArrests（部分）"
+
+us_arrests <- data.frame(
+  state_name = rownames(USArrests),
+  state_region = state.region,
+  USArrests, check.names = FALSE
+)
+
+knitr::kable(head(us_arrests), col.names = c(
+  "州名", "区域划分", "谋杀犯", "袭击犯", "城市化率", "强奸犯"
+), row.names = FALSE)
+```
+
+```{r}
+#| label: fig-us-arrests
+#| fig-cap: 因袭击被逮捕的人数分布
+#| fig-showtext: true
+#| fig-width: 7
+#| fig-height: 4
+
+library(sf)
+# 州数据
+us_state_sf <- readRDS("data/us-state-map-2010.rds")
+# 观测数据
+us_state_df <- merge(x = us_state_sf, y = us_arrests,
+  by.x = "NAME", by.y = "state_name", all.x = TRUE)
+
+ggplot() +
+  geom_sf(
+    data = us_state_df, aes(fill = Assault), color = "gray80", lwd = 0.25) +
+  scale_fill_viridis_c(option = "plasma", na.value = "white") +
+  theme_void()
+```
+
+1973 年美国各州因袭击被逮捕的人数与城市化率的关系：相关分析
+
+```{r}
+#| label: fig-us-arrests
+#| fig-cap: 逮捕人数比例与城市化率的关系
+#| fig-width: 7
+#| fig-height: 5.5
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
+#| fig-showtext: true
+
+library(ggrepel)
+ggplot(data = us_arrests, aes(x = UrbanPop, y = Assault)) +
+  geom_point(aes(color = state_region)) +
+  geom_text_repel(aes(label = state_name), size = 3, seed = 2022) +
+  theme_classic() +
+  labs(x = "城市化率（%）", y = "因袭击被逮捕人数", color = "区域划分")
+```
+
+阿拉斯加州和夏威夷州与其它州都不相连，属于孤立的情况，下面在空间相关性的分析中排除这两个州。
+
+```{r}
+# 州的中心
+centers48 <- subset(
+  x = data.frame(x = state.center$x, y = state.center$y),
+  subset = !state.name %in% c("Alaska", "Hawaii")
+)
+# 观测数据
+arrests48 <- subset(
+  x = USArrests,
+  subset = !rownames(USArrests) %in% c("Alaska", "Hawaii")
+)
+```
+
+```{r}
+#| message: false
+
+library(spData)
+library(spdep)
+# KNN
+k4.48 <- knn2nb(knearneigh(as.matrix(centers48), k = 4))
+# Moran I test
+moran.test(x = arrests48$Assault, listw = nb2listw(k4.48))
+# Permutation test for Moran's I statistic
+moran.mc(x = arrests48$Assault, listw = nb2listw(k4.48), nsim = 499)
+```
