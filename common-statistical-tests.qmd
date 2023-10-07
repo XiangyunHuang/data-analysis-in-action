@@ -111,6 +111,20 @@ qnorm(p = 1 - 0.05, mean = 0, sd = 1)
 1 - pnorm(q = u)
 ```
 
+::: callout-important
+随机变量 $X$ 服从标准正态分布，它的概率分布函数如下：
+
+$$
+P(X \leq u)= \phi(u) = \frac{1}{\sqrt{2\pi}}\int_{-\infty}^{u}\mathrm{e}^{-t^2/2}\mathrm{dt}
+$$
+
+若已知概率 $p = 0.95$ ，则对应的下分位点可用函数 `qnorm()` 计算。
+
+```{r}
+qnorm(p = 0.95, mean = 0, sd = 1)
+```
+:::
+
 #### 方差未知
 
 $$
@@ -150,6 +164,25 @@ qt(p = 1 - 0.05, df = n - 1)
 
 ::: callout-note
 英国统计学家 William Sealy Gosset (1876-1937) 于 1908 年在杂志 《Biometrics》 上以笔名 Student 发表论文《The Probable Error of a Mean》[@Gosset1908]，论文中展示了独立同正态分布的样本 $x_1, \ldots, x_n \stackrel{i.i.d}{\sim} \mathcal{N}(\mu,\sigma^2)$ 的样本方差 $s^2$ 和样本标准差 $s$ 的抽样分布，根据均值和标准差不相关的性质导出 t 分布，宣告 t 分布的诞生，因其在小样本领域的突出贡献，W. S. Gosset 进入世纪名人录 [@Heyde2001]。
+
+```{r}
+#| label: tbl-t-quantile
+#| tbl-cap: $t$ 分布的分位数表
+#| echo: false
+
+vec_prob <- c(
+  0.75, 0.80, 0.90, 0.95,
+  0.975, 0.99, 0.995, 0.999
+)
+vec_df <- 1:10
+
+tmp <- mapply(FUN = qt,
+  p = vec_prob,
+  MoreArgs = list(df = vec_df), SIMPLIFY = TRUE
+)
+row.names(tmp) <- vec_df
+knitr::kable(tmp, row.names = TRUE, col.names = vec_prob, digits = 4)
+```
 :::
 
 ### 正态总体方差检验
@@ -180,6 +213,41 @@ qchisq(p = 1 - 0.05, df = n -1)
 # P 值
 1 - pchisq(q = chi, df = n -1)
 ```
+
+::: callout-important
+R 软件提供很多统计分布的计算，因此，不再需要查分位数表，现算即可。计算自由度为 $n$ 概率为 $p$ 的 $\chi^2$ 分布的分位数 $\chi^2_p(n)$ ，即
+
+$$
+P(\chi^2(n) \leq \chi^2_p(n)) = p
+$$
+
+若已知自由度为 1 ，概率为 0.05，则可借助分位数函数 `qchisq()` 计算对应的（下）分位点。
+
+```{r}
+qchisq(p = 0.05, df = 1)
+```
+
+同理，也可以获得 $\chi^2$ 分布的分位数 @tbl-chisq-quantile ，计算出来的分位数保留 4 位小数。
+
+```{r}
+#| label: tbl-chisq-quantile
+#| tbl-cap: $\chi^2$ 分布的分位数表
+#| echo: false
+
+vec_prob <- c(
+  0.005, 0.01, 0.025, 0.05, 0.1,
+  0.9, 0.95, 0.975, 0.99, 0.995
+)
+vec_df <- 1:10
+
+tmp <- mapply(FUN = qchisq,
+  p = vec_prob,
+  MoreArgs = list(df = vec_df), SIMPLIFY = TRUE
+)
+row.names(tmp) <- vec_df
+knitr::kable(tmp, row.names = TRUE, col.names = vec_prob, digits = 4)
+```
+:::
 
 ### 总体未知均值检验
 
