@@ -1,0 +1,504 @@
+# 分层正态模型 {#sec-hierarchical-normal-models}
+
+```{r}
+#| echo: false
+
+source("_common.R")
+```
+
+以分层正态模型介绍 **rstan** 包的用法
+
+```{r}
+#| message: false
+
+library(StanHeaders)
+library(ggplot2)
+library(rstan)
+rstan_options(auto_write = TRUE)
+# 如果CPU和内存足够，设置成与马尔科夫链一样多
+options(mc.cores = max(c(floor(parallel::detectCores() / 2), 1L)))
+
+custom_colors <- c(
+  "#4285f4", # GoogleBlue
+  "#34A853", # GoogleGreen
+  "#FBBC05", # GoogleYellow
+  "#EA4335"  # GoogleRed
+)
+rstan_ggtheme_options(
+  panel.background = element_rect(fill = "white"),
+  legend.position = "top"
+)
+rstan_gg_options(
+  fill = "#4285f4", color = "white",
+  pt_color = "#EA4335", chain_colors = custom_colors
+)
+```
+
+## 8schools 数据 {#subsec-eight-schools}
+
+分层正态模型
+
+$$
+\begin{aligned}
+y_j &\sim \mathcal{N}(\theta_j,\sigma_j) \quad
+\theta_j = \mu + \tau * \eta_j \\
+\theta_j &\sim \mathcal{N}(\mu, \tau) \quad
+\eta_j \sim \mathcal{N}(0,1)
+\end{aligned}
+$$
+
+### rstan
+
+首先用 rstan 包来拟合模型
+
+#### 拟合模型
+
+```{r}
+# rstan 方式编译模型
+eight_schools_fit <- stan(
+  model_name = "eight_schools",
+  # file = "code/stan/8schools.stan",
+  model_code = "
+  // saved as 8schools.stan
+  data {
+    int<lower=0> J;         // number of schools
+    real y[J];              // estimated treatment effects
+    real<lower=0> sigma[J]; // standard error of effect estimates
+  }
+  parameters {
+    real mu;                // population treatment effect
+    real<lower=0> tau;      // standard deviation in treatment effects
+    vector[J] eta;          // unscaled deviation from mu by school
+  }
+  transformed parameters {
+    vector[J] theta = mu + tau * eta;        // school treatment effects
+  }
+  model {
+    target += normal_lpdf(eta | 0, 1);       // prior log-density
+    target += normal_lpdf(y | theta, sigma); // log-likelihood
+  }
+  ",
+  data = list( # 观测数据
+    J = 8,
+    y = c(28, 8, -3, 7, -1, 1, 18, 12),
+    sigma = c(15, 10, 16, 11, 9, 11, 10, 18)
+  ),
+  warmup = 1000, # 每条链预处理迭代次数
+  iter = 2000, # 每条链总迭代次数
+  chains = 4, # 马尔科夫链的数目
+  cores = 4, # 指定 CPU 核心数，可以给每条链分配一个
+  verbose = FALSE, # 不显示迭代的中间过程
+  refresh = 0, # 不显示采样的进度
+  seed = 20190425 # 设置随机数种子，不要使用 set.seed() 函数
+)
+```
+
+#### 模型输出
+
+```{r}
+print(eight_schools_fit, digits = 1)
+```
+
+提取任意一个参数的结果，如查看参数 $\tau$ 的 95% 置信区间。
+
+```{r}
+print(eight_schools_fit, "tau", probs = c(0.025, 0.975))
+```
+
+从迭代抽样数据获得与 `print(fit)` 一样的结果。以便后续对原始采样数据做任意的进一步分析。rstan 包扩展泛型函数 `summary()` 以支持对 stanfit 数据对象汇总。输出分链条和合并链条的汇总结果
+
+```{r}
+# 汇总结果
+summary(eight_schools_fit)$summary
+```
+
+::: callout-note
+操作原始采样数据
+:::
+
+合并四条马氏链的结果
+
+```{r}
+eight_schools_sim <- extract(eight_schools_fit, permuted = TRUE)
+```
+
+返回的结果是一个数组
+
+```{r}
+str(eight_schools_sim)
+class(eight_schools_sim)
+```
+
+计算参数 $\eta,\theta$ 的均值
+
+```{r}
+apply(eight_schools_sim$eta, 2, mean)
+apply(eight_schools_sim$theta, 2, mean)
+```
+
+计算参数 $\eta,\theta$ 的分位点
+
+```{r}
+t(apply(eight_schools_sim$eta, 2, quantile, probs = c(2.5, 25, 50, 75, 97.5) / 100))
+t(apply(eight_schools_sim$theta, 2, quantile, probs = c(2.5, 25, 50, 75, 97.5) / 100))
+```
+
+计算参数 $\mu,\tau$ 的均值
+
+```{r}
+lapply(eight_schools_sim["mu"], mean)
+lapply(eight_schools_sim["tau"], mean)
+lapply(eight_schools_sim["lp__"], mean)
+```
+
+计算参数 $\mu,\tau$ 的分位点
+
+```{r}
+lapply(eight_schools_sim["mu"], quantile, probs = c(2.5, 25, 50, 75, 97.5) / 100)
+lapply(eight_schools_sim["tau"], quantile, probs = c(2.5, 25, 50, 75, 97.5) / 100)
+lapply(eight_schools_sim["lp__"], quantile, probs = c(2.5, 25, 50, 75, 97.5) / 100)
+```
+
+#### 采样诊断
+
+获取马尔科夫链迭代点列数据
+
+```{r}
+eight_schools_sim <- extract(eight_schools_fit, permuted = FALSE)
+```
+
+`eight_schools_sim` 是一个三维数组，1000（次迭代）\* 4 （条链）\* 19（个参数）。如果 `permuted = TRUE` 则会合并四条马氏链的迭代结果，变成一个列表。
+
+```{r}
+# 数据类型
+class(eight_schools_sim)
+# 1000（次迭代）* 4 （条链）* 19（个参数）
+str(eight_schools_sim)
+```
+
+提取参数 $\mu$ 的四条迭代点列
+
+```{r}
+eight_schools_mu_sim <- eight_schools_sim[, , "mu"]
+```
+
+```{r}
+#| label: fig-8schools-mu-base
+#| fig-cap: 参数 $\mu$ 的迭代轨迹
+#| fig-showtext: true
+#| par: true
+
+matplot(eight_schools_mu_sim,
+        xlab = "Iteration", ylab = expression(mu),
+        type = "l", lty = "solid", col = custom_colors
+)
+abline(h = apply(eight_schools_mu_sim, 2, mean), col = custom_colors)
+legend("bottomleft",
+       legend = paste0("chain:", seq(4)), box.col = "white", inset = 0.01,
+       lty = "solid", horiz = TRUE, col = custom_colors
+)
+```
+
+或者使用 rstan 提供的 `traceplot` 函数或者 `stan_trace` 函数，rstan 大量依赖 ggplot2 绘图，所以如果你熟悉 GGplot2 可以很方便地定制属于自己的风格，除了 rstan 提供的 `rstan_ggtheme_options` 和 `rstan_gg_options` 两个函数外，还可以使用 ggplot2 自带的大量配置选项和主题，如 `theme_minimal` 主题，因为 `stan_trace`等作图函数返回的是一个 ggplot 对象。
+
+```{r}
+#| label: fig-8schools-mu-gg
+#| fig-cap: 马氏链的迭代序列
+#| fig-showtext: true
+
+stan_trace(eight_schools_fit, pars = "mu") +
+  theme_minimal() +
+  labs(x = "Iteration", y = expression(mu))
+```
+
+序列的自相关图，类似地，我们这里也使用 `stan_ac` 函数绘制自相关图
+
+```{r}
+#| label: fig-8schools-mu-acf
+#| fig-cap: 马氏链的自相关图
+#| fig-showtext: true
+
+stan_ac(eight_schools_fit, pars = "mu", separate_chains = TRUE, color = "white") +
+  theme_minimal()
+```
+
+#### 后验分布
+
+可以用 `stan_hist` 函数绘制参数 $\mu$ 的后验分布图，它没有 `separate_chains` 参数，所以不能分链条绘制
+
+```{r}
+#| label: fig-8schools-mu-hist
+#| fig-cap: 参数 $\mu$ 的后验分布
+#| fig-showtext: true
+
+stan_hist(eight_schools_fit, pars = "mu", bins = 30) + theme_minimal()
+```
+
+参数 $\mu$ 和 $\tau$ 的散点图
+
+```{r}
+#| label: fig-8schools-mu-hist
+#| fig-cap: 参数 $\mu$ 和 $\tau$ 的联合后验分布
+#| fig-showtext: true
+
+stan_scat(eight_schools_fit, pars = c("mu","tau")) + theme_minimal()
+```
+
+参数 $\mu$ 的后验概率密度分布图
+
+```{r}
+#| label: fig-8schools-mu-dens
+#| fig-cap: 参数 $\mu$ 的后验概率密度分布图
+#| fig-showtext: true
+
+stan_dens(eight_schools_fit, pars = "mu", separate_chains = TRUE) +
+  theme_minimal() +
+  labs(x = expression(mu), y = "Density")
+```
+
+`lp__` 后验分布的对数，`pairs` 函数中再添加参数 `log = TRUE` 可获得非负参数取对数后的分布图
+
+```{r}
+#| label: fig-parameters-posterior
+#| fig-cap: 参数 $\mu$，$\tau$ 和 $\mathrm{lp__}$ 的后验分布图
+#| fig-showtext: true
+
+pairs(eight_schools_fit, pars = c("mu", "tau", "lp__"))
+```
+
+#### 模型导出
+
+rstan 还支持从外部磁盘读取代码
+
+```{r}
+#| eval: false
+fit <- stan(file = 'code/stan/8schools.stan', ...)
+
+schools_dat <- read_rdump('data/8schools.rdump')
+source('data/8schools.rdump')
+```
+
+### blme
+
+```{r}
+y <- c(28, 8, -3, 7, -1, 1, 18, 12)
+sigma <- c(15, 10, 16, 11, 9, 11, 10, 18)
+g <- 1:8
+```
+
+```{r}
+#| eval: false
+
+### Example using a residual variance prior ###
+# This is the "eight schools" data set; 
+# the mode should be at the boundary of the space.
+
+library(blme)
+control <- lmerControl(check.conv.singular = "ignore",
+                       check.nobs.vs.nRE   = "ignore",
+                       check.nobs.vs.nlev  = "ignore")
+schools <- blmer(y ~ 1 + (1 | g), control = control, REML = FALSE,
+                  resid.prior = point, cov.prior = NULL,
+                  weights = 1 / sigma^2)
+coef(schools)
+coef(summary(schools))
+```
+
+### nlme
+
+```{r}
+library(nlme)
+fit_lme <- lme(y ~ 1, random = ~ 1 | g, weights = varFunc(~ 1/sigma^2))
+summary(fit_lme)
+```
+
+```{r}
+#| eval: false
+
+library(lme4)
+fit_lme4 <- lmer(y ~ 1 + (1 | g), weights = 1 / sigma^2)
+summary(fit_lme4)
+```
+
+## rats 数据 {#subsec-rats}
+
+示例数据来自 Gelfand et al (1990) ，每隔一周记录 30 只小鼠的重量，一共进行了 5 周。第一次记录是小鼠第 8 天的时候，第二次测量记录是第 15 天的时候，一直持续到第 36 天。下面在 R 环境中准备数据
+
+```{r}
+# modified code from https://github.com/stan-dev/example-models/tree/master/bugs_examples/vol1/rats
+# 总共 30 只老鼠
+N <- 30
+# 总共进行 5 周
+T <- 5
+# 小鼠重量
+y <- structure(c(
+  151, 145, 147, 155, 135, 159, 141, 159, 177, 134,
+  160, 143, 154, 171, 163, 160, 142, 156, 157, 152, 154, 139, 146,
+  157, 132, 160, 169, 157, 137, 153, 199, 199, 214, 200, 188, 210,
+  189, 201, 236, 182, 208, 188, 200, 221, 216, 207, 187, 203, 212,
+  203, 205, 190, 191, 211, 185, 207, 216, 205, 180, 200, 246, 249,
+  263, 237, 230, 252, 231, 248, 285, 220, 261, 220, 244, 270, 242,
+  248, 234, 243, 259, 246, 253, 225, 229, 250, 237, 257, 261, 248,
+  219, 244, 283, 293, 312, 272, 280, 298, 275, 297, 350, 260, 313,
+  273, 289, 326, 281, 288, 280, 283, 307, 286, 298, 267, 272, 285,
+  286, 303, 295, 289, 258, 286, 320, 354, 328, 297, 323, 331, 305,
+  338, 376, 296, 352, 314, 325, 358, 312, 324, 316, 317, 336, 321,
+  334, 302, 302, 323, 331, 345, 333, 316, 291, 324
+), .Dim = c(30, 5))
+# 第几天
+x <- c(8.0, 15.0, 22.0, 29.0, 36.0)
+xbar <- 22.0
+```
+
+老鼠数据 rats
+
+```{r}
+#| label: tbl-rats-data
+#| tbl-cap: 小鼠重量数据（部分）
+#| echo: false
+
+knitr::kable(head(y), col.names = c(8, 15, 22, 29, 36))
+```
+
+### rstan {#sec-rats-rstan}
+
+模型参数设置
+
+```{r}
+chains <- 4
+iter <- 1000
+
+init <- rep(list(list(
+  alpha = rep(250, 30), beta = rep(6, 30),
+  alpha_c = 150, beta_c = 10,
+  tausq_c = 1, tausq_alpha = 1,
+  tausq_beta = 1
+)), chains)
+```
+
+编译、采样和拟合模型
+
+$$
+\begin{aligned}
+\alpha_c &\sim N(0,100) \\
+\beta_c &\sim N(0,100) \\
+\tau^2_c &\sim \mathrm{inv\_gamma}(0.001, 0.001); \\
+\tau^2_{\alpha} &\sim \mathrm{inv\_gamma}(0.001, 0.001); \\
+\tau^2_{\beta} &\sim \mathrm{inv\_gamma}(0.001, 0.001); \\
+\alpha &\sim N(\alpha_c, \tau_{\alpha});  \\
+\beta &\sim N(\beta_c, \tau_{\beta}); \\
+y_{it} &\sim N(\alpha_i + \beta_i * (x_t - \mathrm{xbar}), \tau_c); \\
+& i = 1,2,\ldots,N, \quad t = 1,2,\ldots,T
+\end{aligned}
+$$
+
+```{r}
+rats_fit <- stan(
+  model_name = "rats",
+  model_code = "
+  data {
+    int<lower=0> N;
+    int<lower=0> T;
+    real x[T];
+    real y[N,T];
+    real xbar;
+  }
+  parameters {
+    real alpha[N];
+    real beta[N];
+
+    real alpha_c;
+    real beta_c;          // beta.c in original bugs model
+
+    real<lower=0> tausq_c;
+    real<lower=0> tausq_alpha;
+    real<lower=0> tausq_beta;
+  }
+  transformed parameters {
+    real<lower=0> tau_c;       // sigma in original bugs model
+    real<lower=0> tau_alpha;
+    real<lower=0> tau_beta;
+
+    tau_c = sqrt(tausq_c);
+    tau_alpha = sqrt(tausq_alpha);
+    tau_beta = sqrt(tausq_beta);
+  }
+  model {
+    alpha_c ~ normal(0, 100);
+    beta_c ~ normal(0, 100);
+    tausq_c ~ inv_gamma(0.001, 0.001);
+    tausq_alpha ~ inv_gamma(0.001, 0.001);
+    tausq_beta ~ inv_gamma(0.001, 0.001);
+    alpha ~ normal(alpha_c, tau_alpha); // vectorized
+    beta ~ normal(beta_c, tau_beta);  // vectorized
+    for (n in 1:N)
+      for (t in 1:T)
+        y[n,t] ~ normal(alpha[n] + beta[n] * (x[t] - xbar), tau_c);
+  }
+  generated quantities {
+    real alpha0;
+    alpha0 = alpha_c - xbar * beta_c;
+  }
+  ",
+  data = list(N = N, T = T, y = y, x = x, xbar = xbar),
+  chains = chains, init = init, iter = iter,   
+  verbose = FALSE, # 不显示迭代的中间过程
+  refresh = 0 # 不显示采样的进度
+)
+```
+
+模型输出结果
+
+```{r}
+print(rats_fit, digits = 1)
+```
+
+```{r}
+#| label: fig-rats-alpha
+#| fig-cap: $\alpha$ 参数
+#| fig-showtext: true
+
+plot(rats_fit, pars = "alpha")
+```
+
+```{r}
+#| label: fig-rats-beta
+#| fig-cap: $\beta$ 参数
+#| fig-showtext: true
+
+plot(rats_fit, pars = "beta")
+```
+
+### nlme {#sec-rats-nlme}
+
+```{r}
+weight <- c(
+  151, 145, 147, 155, 135, 159, 141, 159, 177, 134,
+  160, 143, 154, 171, 163, 160, 142, 156, 157, 152, 154, 139, 146,
+  157, 132, 160, 169, 157, 137, 153, 199, 199, 214, 200, 188, 210,
+  189, 201, 236, 182, 208, 188, 200, 221, 216, 207, 187, 203, 212,
+  203, 205, 190, 191, 211, 185, 207, 216, 205, 180, 200, 246, 249,
+  263, 237, 230, 252, 231, 248, 285, 220, 261, 220, 244, 270, 242,
+  248, 234, 243, 259, 246, 253, 225, 229, 250, 237, 257, 261, 248,
+  219, 244, 283, 293, 312, 272, 280, 298, 275, 297, 350, 260, 313,
+  273, 289, 326, 281, 288, 280, 283, 307, 286, 298, 267, 272, 285,
+  286, 303, 295, 289, 258, 286, 320, 354, 328, 297, 323, 331, 305,
+  338, 376, 296, 352, 314, 325, 358, 312, 324, 316, 317, 336, 321,
+  334, 302, 302, 323, 331, 345, 333, 316, 291, 324
+)
+rats <- rep(1:30, each = 5)
+days <- rep(c(8, 15, 22, 29, 36), each = 30)
+rats_data <- data.frame(weight = weight, rats = rats, days = days)
+```
+
+```{r}
+library(nlme)
+rats_lme <- lme(data = rats_data, fixed = weight ~ days, random = ~ 1 | rats)
+summary(rats_lme)
+```
+
+Stan 生成的量 `alpha0` 代表截距，其中参数 `beta_c` 表示斜率
+
+```{r}
+print(rats_fit, c("alpha0", "beta_c", "tau_c"), digits = 3)
+```
