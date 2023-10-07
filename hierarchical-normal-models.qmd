@@ -47,12 +47,12 @@ y_j &\sim \mathcal{N}(\theta_j,\sigma_j) \quad
 \end{aligned}
 $$
 
-首先用 rstan 包来拟合模型
-
 ### 拟合模型
 
+用 rstan 包来拟合模型
+
 ```{r}
-# rstan 方式编译模型
+# 编译模型
 eight_schools_fit <- stan(
   model_name = "eight_schools",
   # file = "code/stan/8schools.stan",
@@ -83,8 +83,8 @@ eight_schools_fit <- stan(
   ),
   warmup = 1000, # 每条链预处理迭代次数
   iter = 2000,   # 每条链总迭代次数
-  chains = 4,    # 马尔科夫链的数目
-  cores = 4,     # 指定 CPU 核心数，可以给每条链分配一个
+  chains = 2,    # 马尔科夫链的数目
+  cores = 2,     # 指定 CPU 核心数，可以给每条链分配一个
   verbose = FALSE, # 不显示迭代的中间过程
   refresh = 0,     # 不显示采样的进度
   seed = 20190425  # 设置随机数种子，不要使用 set.seed() 函数
@@ -103,12 +103,7 @@ print(eight_schools_fit, digits = 1)
 print(eight_schools_fit, pars = "tau", probs = c(0.025, 0.975))
 ```
 
-从迭代抽样数据获得与 `print(fit)` 一样的结果。以便后续对原始采样数据做任意的进一步分析。rstan 包扩展泛型函数 `summary()` 以支持对 stanfit 数据对象汇总。输出分链条和合并链条的汇总结果
-
-```{r}
-# 汇总结果
-print(summary(eight_schools_fit)$summary, digits = 2)
-```
+从迭代抽样数据获得与 `print(fit)` 一样的结果。以便后续对原始采样数据做任意的进一步分析。rstan 包扩展泛型函数 `summary()` 以支持对 stanfit 数据对象汇总。输出分链条和合并链条的汇总结果。
 
 ### 操作数据
 
