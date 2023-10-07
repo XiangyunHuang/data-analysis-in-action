@@ -237,7 +237,7 @@ stan_hist(eight_schools_fit, pars = "mu", bins = 30) + theme_minimal()
 参数 $\mu$ 和 $\tau$ 的散点图
 
 ```{r}
-#| label: fig-8schools-mu-hist
+#| label: fig-8schools-mu-tau
 #| fig-cap: 参数 $\mu$ 和 $\tau$ 的联合后验分布
 #| fig-showtext: true
 
@@ -322,7 +322,7 @@ summary(fit_lme4)
 
 ## rats 数据 {#subsec-rats}
 
-示例数据来自 Gelfand et al (1990) ，每隔一周记录 30 只小鼠的重量，一共进行了 5 周。第一次记录是小鼠第 8 天的时候，第二次测量记录是第 15 天的时候，一直持续到第 36 天。下面在 R 环境中准备数据
+示例数据来自 Gelfand et al (1990) ，每隔一周记录 30 只小鼠的重量，一共进行了 5 周。第一次记录是小鼠第 8 天的时候，第二次测量记录是第 15 天的时候，一直持续到第 36 天。下面在 R 环境中准备数据。
 
 ```{r}
 # modified code from https://github.com/stan-dev/example-models/tree/master/bugs_examples/vol1/rats
@@ -350,10 +350,10 @@ x <- c(8.0, 15.0, 22.0, 29.0, 36.0)
 xbar <- 22.0
 ```
 
-老鼠数据 rats
+重复测量的小鼠重量数据 rats 如下 @tbl-rats 所示。
 
 ```{r}
-#| label: tbl-rats-data
+#| label: tbl-rats
 #| tbl-cap: 小鼠重量数据（部分）
 #| echo: false
 
@@ -362,12 +362,14 @@ knitr::kable(head(y), col.names = c(8, 15, 22, 29, 36))
 
 ### rstan {#sec-rats-rstan}
 
-模型参数设置
+初始化模型参数，设置采样算法的参数。
 
 ```{r}
+# 迭代链
 chains <- 4
+# 迭代次数
 iter <- 1000
-
+# 初始值
 init <- rep(list(list(
   alpha = rep(250, 30), beta = rep(6, 30),
   alpha_c = 150, beta_c = 10,
@@ -376,21 +378,22 @@ init <- rep(list(list(
 )), chains)
 ```
 
-编译、采样和拟合模型
+接下来，基于重复测量数据，建立线性生长曲线模型：
 
 $$
 \begin{aligned}
-\alpha_c &\sim N(0,100) \\
-\beta_c &\sim N(0,100) \\
-\tau^2_c &\sim \mathrm{inv\_gamma}(0.001, 0.001); \\
-\tau^2_{\alpha} &\sim \mathrm{inv\_gamma}(0.001, 0.001); \\
-\tau^2_{\beta} &\sim \mathrm{inv\_gamma}(0.001, 0.001); \\
-\alpha &\sim N(\alpha_c, \tau_{\alpha});  \\
-\beta &\sim N(\beta_c, \tau_{\beta}); \\
-y_{it} &\sim N(\alpha_i + \beta_i * (x_t - \mathrm{xbar}), \tau_c); \\
-& i = 1,2,\ldots,N, \quad t = 1,2,\ldots,T
+\alpha_c &\sim \mathcal{N}(0,100), \quad \beta_c  \sim \mathcal{N}(0,100) \\
+\tau^2_c &\sim \mathrm{inv\_gamma}(0.001, 0.001) \\
+\tau^2_{\alpha} &\sim \mathrm{inv\_gamma}(0.001, 0.001) \\
+\tau^2_{\beta}  &\sim \mathrm{inv\_gamma}(0.001, 0.001) \\
+\alpha &\sim \mathcal{N}(\alpha_c, \tau_{\alpha}),  \quad
+\beta  \sim \mathcal{N}(\beta_c, \tau_{\beta}) \\
+y_{it} &\sim \mathcal{N}(\alpha_i + \beta_i * (x_t - \bar{x}), \tau_c) \\
+& i = 1,2,\ldots,N \quad t = 1,2,\ldots,T
 \end{aligned}
 $$
+
+其中， $\alpha_c,\beta_c,\tau_c,\tau_{\alpha},\tau_{\beta}$ 为无信息先验，$N = 30$ 和 $T = 5$ 分别表示实验中的小鼠数量和测量次数，下面编码、编译、采样和拟合模型。
 
 ```{r}
 rats_fit <- stan(
@@ -443,11 +446,11 @@ rats_fit <- stan(
   data = list(N = N, T = T, y = y, x = x, xbar = xbar),
   chains = chains, init = init, iter = iter,   
   verbose = FALSE, # 不显示迭代的中间过程
-  refresh = 0 # 不显示采样的进度
+  refresh = 0      # 不显示采样的进度
 )
 ```
 
-模型输出结果
+模型输出结果如下：
 
 ```{r}
 print(rats_fit, digits = 1)
@@ -471,6 +474,8 @@ plot(rats_fit, pars = "beta")
 
 ### nlme {#sec-rats-nlme}
 
+将数据整理成长格式
+
 ```{r}
 weight <- c(
   151, 145, 147, 155, 135, 159, 141, 159, 177, 134,
@@ -491,14 +496,18 @@ days <- rep(c(8, 15, 22, 29, 36), each = 30)
 rats_data <- data.frame(weight = weight, rats = rats, days = days)
 ```
 
+小鼠的重量随时间增长，不同小鼠的情况又会有所不同。可用随机效应模型表示生长曲线模型，下面加载 **nlme** 包调用函数 `lme()` 拟合该模型。
+
 ```{r}
 library(nlme)
 rats_lme <- lme(data = rats_data, fixed = weight ~ days, random = ~ 1 | rats)
 summary(rats_lme)
 ```
 
-Stan 生成的量 `alpha0` 代表截距，其中参数 `beta_c` 表示斜率
+模型输出结果中，截距 106.56762，斜率 6.18571。这与 Stan 拟合该模型的输出结果是一致的。Stan 模型中参数 `beta_c` 表示斜率，生成的量 `alpha0` 代表截距。
 
 ```{r}
 print(rats_fit, c("alpha0", "beta_c", "tau_c"), digits = 3)
 ```
+
+经过对比 Stan 和 **nlme** 包的拟合结果，可以发现贝叶斯和频率方法的结果是一致的。
