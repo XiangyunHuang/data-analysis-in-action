@@ -113,7 +113,7 @@ print(eight_schools_fit, pars = "tau", probs = c(0.025, 0.975))
 eight_schools_sim <- extract(eight_schools_fit, permuted = TRUE)
 ```
 
-返回的结果是一个数组
+返回的结果是一个列表
 
 ```{r}
 str(eight_schools_sim)
@@ -185,7 +185,7 @@ matplot(eight_schools_mu_sim,
 )
 abline(h = apply(eight_schools_mu_sim, 2, mean), col = custom_colors)
 legend("bottomleft",
-       legend = paste0("chain:", seq(4)), box.col = "white", inset = 0.01,
+       legend = paste0("chain:", 1:2), box.col = "white", inset = 0.01,
        lty = "solid", horiz = TRUE, col = custom_colors
 )
 ```
@@ -208,6 +208,7 @@ stan_trace(eight_schools_fit, pars = "mu") +
 #| label: fig-8schools-mu-acf
 #| fig-cap: 马氏链的自相关图
 #| fig-showtext: true
+#| fig-height: 4
 
 stan_ac(eight_schools_fit, pars = "mu", separate_chains = TRUE, color = "white") +
   theme_minimal()
@@ -318,7 +319,7 @@ summary(fit_lme4)
 
 ## rats 数据 {#sec-rats}
 
-示例数据来自 Gelfand et al (1990) ，每隔一周记录 30 只小鼠的重量，一共进行了 5 周。第一次记录是小鼠第 8 天的时候，第二次测量记录是第 15 天的时候，一直持续到第 36 天。下面在 R 环境中准备数据。
+rats 数据最早来自 @gelfand1990 ，记录 30 只小鼠每隔一周的重量，一共进行了 5 周。第一次记录是小鼠第 8 天的时候，第二次测量记录是第 15 天的时候，一直持续到第 36 天。下面在 R 环境中准备数据。
 
 ```{r}
 # 总共 30 只老鼠
@@ -355,6 +356,34 @@ xbar <- 22.0
 knitr::kable(head(y), col.names = c(8, 15, 22, 29, 36))
 ```
 
+小鼠重量数据的分布情况见下 @fig-rats ，由图可以假定 30 只小鼠的重量服从正态分布。
+
+```{r}
+#| label: fig-rats
+#| fig-cap: 30 只小鼠 5 次测量的数据
+#| fig-showtext: true
+#| par: true
+#| echo: false
+#| fig-width: 5
+#| fig-height: 4.5
+
+matplot(y, xlab = "小鼠编号", ylab = "小鼠重量")
+```
+
+由 @fig-rats-growth 可见， 30 只小鼠的重量增长趋势呈现一种线性趋势。
+
+```{r}
+#| label: fig-rats-growth
+#| fig-cap: 30 只小鼠 5 次测量的数据
+#| fig-showtext: true
+#| par: true
+#| echo: false
+#| fig-width: 5
+#| fig-height: 4.5
+
+matplot(t(y), xlab = "测量次数", ylab = "小鼠重量")
+```
+
 ### rstan {#sec-rats-rstan}
 
 初始化模型参数，设置采样算法的参数。
@@ -377,18 +406,18 @@ init <- rep(list(list(
 
 $$
 \begin{aligned}
-\alpha_c &\sim \mathcal{N}(0,100), \quad \beta_c  \sim \mathcal{N}(0,100) \\
+\alpha_c &\sim \mathcal{N}(0,100) \quad \beta_c  \sim \mathcal{N}(0,100) \\
 \tau^2_c &\sim \mathrm{inv\_gamma}(0.001, 0.001) \\
 \tau^2_{\alpha} &\sim \mathrm{inv\_gamma}(0.001, 0.001) \\
 \tau^2_{\beta}  &\sim \mathrm{inv\_gamma}(0.001, 0.001) \\
-\alpha &\sim \mathcal{N}(\alpha_c, \tau_{\alpha}),  \quad
+\alpha &\sim \mathcal{N}(\alpha_c, \tau_{\alpha})  \quad
 \beta  \sim \mathcal{N}(\beta_c, \tau_{\beta}) \\
-y_{it} &\sim \mathcal{N}(\alpha_i + \beta_i * (x_t - \bar{x}), \tau_c) \\
-& i = 1,2,\ldots,N \quad t = 1,2,\ldots,T
+y_{nt} &\sim \mathcal{N}(\alpha_n + \beta_n * (x_t - \bar{x}), \tau_c) \\
+& n = 1,2,\ldots,N \quad t = 1,2,\ldots,T
 \end{aligned}
 $$
 
-其中， $\alpha_c,\beta_c,\tau_c,\tau_{\alpha},\tau_{\beta}$ 为无信息先验，$N = 30$ 和 $T = 5$ 分别表示实验中的小鼠数量和测量次数，下面编码、编译、采样和拟合模型。
+其中， $\alpha_c,\beta_c,\tau_c,\tau_{\alpha},\tau_{\beta}$ 为无信息先验，$N = 30$ 和 $T = 5$ 分别表示实验中的小鼠数量和测量次数，下面采用 Stan 编码、编译、采样和拟合模型。
 
 ```{r}
 rats_fit <- stan(
@@ -440,8 +469,7 @@ rats_fit <- stan(
   ",
   data = list(N = N, T = T, y = y, x = x, xbar = xbar),
   chains = chains, init = init, iter = iter,   
-  verbose = FALSE, # 不显示迭代的中间过程
-  refresh = 0      # 不显示采样的进度
+  verbose = FALSE, refresh = 0, seed = 20190425
 )
 ```
 
@@ -451,22 +479,28 @@ rats_fit <- stan(
 print(rats_fit, pars = c("alpha", "beta"), include = FALSE, digits = 1)
 ```
 
-Stan 模型中参数 `beta_c` 表示斜率，生成的量 `alpha0` 代表截距。
+对于分量众多的参数向量，比较适合用岭线图展示后验分布，下面调用 bayesplot 包绘制参数向量 $\alpha,\beta$ 的后验分布。
 
 ```{r}
 #| label: fig-rats-alpha
 #| fig-cap: 参数 $\alpha$ 的后验分布
 #| fig-showtext: true
+#| fig-width: 6
+#| fig-height: 8
 
-plot(rats_fit, pars = "alpha", show_density = TRUE, ci_level = 0.8, outer_level = 0.95)
+# plot(rats_fit, pars = "alpha", show_density = TRUE, ci_level = 0.8, outer_level = 0.95)
+bayesplot::mcmc_areas_ridges(rats_fit, pars = paste0("alpha", "[", 1:30, "]"))
 ```
 
 ```{r}
 #| label: fig-rats-beta
 #| fig-cap: 参数 $\beta$ 的后验分布
 #| fig-showtext: true
+#| fig-width: 6
+#| fig-height: 8
 
-plot(rats_fit, pars = "beta", ci_level = 0.8, outer_level = 0.95)
+# plot(rats_fit, pars = "beta", ci_level = 0.8, outer_level = 0.95)
+bayesplot::mcmc_areas_ridges(rats_fit, pars = paste0("beta", "[", 1:30, "]"))
 ```
 
 ### nlme {#sec-rats-nlme}
@@ -501,13 +535,13 @@ rats_lme <- lme(data = rats_data, fixed = weight ~ days, random = ~ 1 | rats)
 summary(rats_lme)
 ```
 
-模型输出结果中，截距 106.56762，斜率 6.18571。这与 Stan 拟合该模型的输出结果是一致的。经过对比 Stan 和 **nlme** 包的拟合结果，可以发现贝叶斯和频率方法的结果是一致的。
+模型输出结果中，固定效应中的截距项 `(Intercept)` 对应 106.56762，斜率 `days` 对应 6.18571。Stan 模型中截距参数 `alpha0` 的后验估计是 106.332，斜率参数 `beta_c` 的后验估计是 6.188。对比 Stan 和 **nlme** 包的拟合结果，可以发现贝叶斯和频率方法的结果是非常接近的。
 
-::: callout-important
-当采用 **lme4** 包拟合数据的时候，发现参数取值落在参数空间的边界上，除此之外，输出结果与 **nlme** 包的结果完全一致。
+当采用 **lme4** 包拟合数据的时候，发现参数取值落在参数空间的边界上，除此之外，输出结果与 **nlme** 包几乎相同。
 
 ```{r}
-mod_rats_lme4 <- lme4::lmer(weight ~ days + (1 | rats), rats_data)
+mod_rats_lme4 <- lme4::lmer(weight ~ days + (1 | rats), data = rats_data)
 summary(mod_rats_lme4)
 ```
-:::
+
+**lme4** 包依赖 **nloptr** 包提供数值优化求解器，也做了更多的矩阵奇异性检查，对于复杂的重复测量模型，往往会发生奇异，需要适当降低复杂性，更多详情见 **lme4** 包的帮助文档 `help('isSingular')`
