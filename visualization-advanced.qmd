@@ -240,11 +240,11 @@ ggMarginal(p1, type = "histogram")
 #| label: fig-density-2d-filled
 #| fig-cap: "二维密度图"
 #| fig-width: 5.5
-#| fig-height: 3.5
+#| fig-height: 4
 #| fig-showtext: true
 
 ggplot(data = state_x77, aes(x = Income, y = `Life Exp`)) +
-  geom_density_2d_filled() +
+  geom_density_2d_filled(contour_var = "count") +
   theme_classic() +
   labs(
     x = "人均收入（美元）", y = "预期寿命（年）",
@@ -686,13 +686,13 @@ with(
 R 3.5.0 以后，函数 `aggregate()` 的参数 `drop` 默认值为 `TRUE`， 表示扔掉未用来分组的变量，聚合返回的是一个矩阵类型的数据对象。
 :::
 
-单因素方差分析
+单因素方差分析 `oneway.test()` 检验各组的方差是否相等。
 
 ```{r}
 oneway.test(data = PlantGrowth, weight ~ group)
 ```
 
-@fig-signif 展示假设检验的结果
+结果显示方差不全部相等，因此，采用函数 `t.test(var.equal = FALSE)` 来检验数据。@fig-signif 展示假设检验的结果，分别标记了 ctrl 与 trt1、trt1 与 trt2 两组 t 检验的结果。
 
 ```{r}
 #| label: fig-signif
@@ -710,6 +710,13 @@ ggplot(data = PlantGrowth, aes(x = group, y = weight)) +
               textsize = 6, test = "t.test") +
   theme_classic() +
   coord_cartesian(clip = "off")
+```
+
+为了了解其中的原理，下面分别使用函数 `t.test()` 检验数据，结果给出的 P 值与上 @fig-signif 完全一样。
+
+```{r}
+t.test(data = PlantGrowth, weight ~ group, subset = group %in% c("ctrl", "trt1"))
+t.test(data = PlantGrowth, weight ~ group, subset = group %in% c("trt1", "trt2"))
 ```
 
 ### 模型预测 {#sec-model-predictions}
@@ -736,8 +743,7 @@ ggplot(data = trunk_year, aes(x = year, y = revision)) +
     ), data = subset(trunk_year, year != c(1997, 2022))
   ) +
   geom_smooth(aes(color = "GAM", fill = "GAM"),
-    formula = y ~ s(x, k = 12),
-    method = "gam", se = T,
+    formula = y ~ s(x, k = 12), method = "gam", se = TRUE,
     data = subset(trunk_year, year != c(1997, 2022))
   ) +
   geom_smooth(aes(color = "Cubic Spline", fill = "Cubic Spline"),
@@ -766,15 +772,26 @@ ggplot(data = trunk_year, aes(x = year, y = revision)) +
 #| fig-width: 7
 #| fig-height: 8
 
+# 准备数据
 state_x77 <- data.frame(state.x77,
   state_name = rownames(state.x77),
   state_region = state.region,
   state_abb = state.abb,
   check.names = FALSE
 )
-
-# 模型诊断图
+# 线性模型拟合
 fit <- lm(`Life Exp` ~ Income + Murder, data = state_x77)
+# 模型诊断图
+library(ggfortify)
+autoplot(fit, which = 1:6, label.size = 3)
+```
+
+对于复杂的统计模型，比如混合效应模型的诊断，[**ggPMX**](https://github.com/ggPMXdevelopment/ggPMX) 包。
+
+```{r}
+#| echo: false
+#| eval: false
+
 op <- par(mfrow = c(3, 2), mar = c(4, 4, 3, 1))
 plot(fit,
   ask = FALSE, which = c(1, 2, 3, 4, 5, 6),
@@ -786,8 +803,6 @@ plot(fit,
 )
 par(op)
 ```
-
-对于复杂的统计模型，比如混合效应模型的诊断，[**ggPMX**](https://github.com/ggPMXdevelopment/ggPMX) 包。
 
 ### 边际效应 {#sec-marginal-effects}
 
