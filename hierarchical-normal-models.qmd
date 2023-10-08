@@ -273,33 +273,18 @@ source('data/8schools.rdump')
 
 ### 其它 R 包
 
-blme 包基于 lme4 包
+接下来，分别用 nlme 和 lme4 包拟合模型。
 
 ```{r}
+# 成绩
 y <- c(28, 8, -3, 7, -1, 1, 18, 12)
+# 标准差
 sigma <- c(15, 10, 16, 11, 9, 11, 10, 18)
+# 学校编号
 g <- 1:8
 ```
 
-```{r}
-#| eval: false
-
-### Example using a residual variance prior ###
-# This is the "eight schools" data set; 
-# the mode should be at the boundary of the space.
-
-library(blme)
-control <- lmerControl(check.conv.singular = "ignore",
-                       check.nobs.vs.nRE   = "ignore",
-                       check.nobs.vs.nlev  = "ignore")
-schools <- blmer(y ~ 1 + (1 | g), control = control, REML = FALSE,
-                  resid.prior = point, cov.prior = NULL,
-                  weights = 1 / sigma^2)
-coef(schools)
-coef(summary(schools))
-```
-
-nlme 包的函数 `lme()`
+首先，调用 **nlme** 包的函数 `lme()` 拟合模型。
 
 ```{r}
 library(nlme)
@@ -307,17 +292,35 @@ fit_lme <- lme(y ~ 1, random = ~ 1 | g, weights = varFunc(~ 1/sigma^2))
 summary(fit_lme)
 ```
 
-lme4 包可以获得与 nlme 包一致的结果。
+接着，采用 lme4 包拟合模型，发现 lme4 包可以获得与 nlme 包一致的结果。
 
 ```{r}
-#| eval: false
-
-library(lme4)
-fit_lme4 <- lmer(y ~ 1 + (1 | g), weights = 1 / sigma^2)
+control <- lme4::lmerControl(
+  check.conv.singular = "ignore",
+  check.nobs.vs.nRE = "ignore",
+  check.nobs.vs.nlev = "ignore"
+)
+fit_lme4 <- lme4::lmer(y ~ 1 + (1 | g), weights = 1 / sigma^2, control = control, REML = FALSE)
 summary(fit_lme4)
 ```
 
-## rats 数据 {#sec-rats}
+最后，使用 blme 包 [@Chung2013] ，blme 包基于 lme4 包，结果完全一致。
+
+```{r}
+### Example using a residual variance prior ###
+# This is the "eight schools" data set; 
+# the mode should be at the boundary of the space.
+
+fit_blme <- blme::blmer(
+  y ~ 1 + (1 | g),
+  control = control, REML = FALSE,
+  resid.prior = point, cov.prior = NULL,
+  weights = 1 / sigma^2
+)
+summary(fit_blme)
+```
+
+## rats 数据 {#sec-thirty-rats}
 
 rats 数据最早来自 @gelfand1990 ，记录 30 只小鼠每隔一周的重量，一共进行了 5 周。第一次记录是小鼠第 8 天的时候，第二次测量记录是第 15 天的时候，一直持续到第 36 天。下面在 R 环境中准备数据。
 
@@ -538,11 +541,32 @@ summary(rats_lme)
 
 模型输出结果中，固定效应中的截距项 `(Intercept)` 对应 106.56762，斜率 `days` 对应 6.18571。Stan 模型中截距参数 `alpha0` 的后验估计是 106.332，斜率参数 `beta_c` 的后验估计是 6.188。对比 Stan 和 **nlme** 包的拟合结果，可以发现贝叶斯和频率方法的结果是非常接近的。
 
+### lme4
+
 当采用 **lme4** 包拟合数据的时候，发现参数取值落在参数空间的边界上，除此之外，输出结果与 **nlme** 包几乎相同。
 
 ```{r}
-mod_rats_lme4 <- lme4::lmer(weight ~ days + (1 | rats), data = rats_data)
-summary(mod_rats_lme4)
+rats_lme4 <- lme4::lmer(weight ~ days + (1 | rats), data = rats_data)
+summary(rats_lme4)
 ```
 
-**lme4** 包依赖 **nloptr** 包提供数值优化求解器，也做了更多的矩阵奇异性检查，对于复杂的重复测量模型，往往会发生奇异，需要适当降低复杂性，更多详情见 **lme4** 包的帮助文档 `help('isSingular')`
+**lme4** 包依赖 **nloptr** 包提供数值优化求解器，也做了更多的矩阵奇异性检查，对于复杂的重复测量模型，往往会发生奇异，需要适当降低复杂性，更多详情见 **lme4** 包的帮助文档 `help('isSingular')` 。
+
+### blme
+
+blme 包基于 lme4 包
+
+```{r}
+control <- lme4::lmerControl(
+  check.conv.singular = "ignore",
+  check.nobs.vs.nRE = "ignore",
+  check.nobs.vs.nlev = "ignore"
+)
+rats_blme <- blme::blmer(
+  weight ~ days + (1 | rats),
+  data = rats_data,
+  resid.prior = point, cov.prior = NULL,
+  control = control, REML = FALSE
+)
+summary(rats_blme)
+```
