@@ -6,7 +6,7 @@
 source("_common.R")
 ```
 
-以分层正态模型介绍 **rstan** 包的用法
+介绍分层正态模型的定义、结构、估计，分层正态模型与线性生长模型的关系，分层正态模型与潜变量模型的关系，分层正态模型与神经网络模型的关系，以 **rstan** 包和 **nlme** 包实现简单分层正态模型，说明 **rstan** 包的一些用法，比较贝叶斯参数估计和频率参数估计的结果，给出结果的解释。
 
 ```{r}
 #| message: false
@@ -36,6 +36,8 @@ rstan_gg_options(
 
 ## 8schools 数据 {#sec-eight-schools}
 
+8schools 数据最早来自 @Rubin1981
+
 分层正态模型
 
 $$
@@ -55,7 +57,7 @@ $$
 # 编译模型
 eight_schools_fit <- stan(
   model_name = "eight_schools",
-  # file = "code/stan/8schools.stan",
+  # file = "code/8schools.stan",
   model_code = "
   // saved as 8schools.stan
   data {
@@ -158,12 +160,12 @@ lapply(eight_schools_sim["lp__"], quantile, probs = c(2.5, 25, 50, 75, 97.5) / 1
 eight_schools_sim <- extract(eight_schools_fit, permuted = FALSE)
 ```
 
-`eight_schools_sim` 是一个三维数组，1000（次迭代）\* 4 （条链）\* 19（个参数）。如果 `permuted = TRUE` 则会合并四条马氏链的迭代结果，变成一个列表。
+`eight_schools_sim` 是一个三维数组，1000（次迭代）\* 2 （条链）\* 19（个参数）。如果 `permuted = TRUE` 则会合并四条马氏链的迭代结果，变成一个列表。
 
 ```{r}
 # 数据类型
 class(eight_schools_sim)
-# 1000（次迭代）* 4 （条链）* 19（个参数）
+# 1000（次迭代）* 2 （条链）* 19（个参数）
 str(eight_schools_sim)
 ```
 
@@ -421,7 +423,7 @@ y_{nt} &\sim \mathcal{N}(\alpha_n + \beta_n * (x_t - \bar{x}), \tau_c) \\
 \end{aligned}
 $$
 
-其中， $\alpha_c,\beta_c,\tau_c,\tau_{\alpha},\tau_{\beta}$ 为无信息先验，$N = 30$ 和 $T = 5$ 分别表示实验中的小鼠数量和测量次数，下面采用 Stan 编码、编译、采样和拟合模型。
+其中， $\alpha_c,\beta_c,\tau_c,\tau_{\alpha},\tau_{\beta}$ 为无信息先验，$\bar{x} = 22$ 表示第 22 天，$N = 30$ 和 $T = 5$ 分别表示实验中的小鼠数量和测量次数，下面采用 Stan 编码、编译、采样和拟合模型。
 
 ```{r}
 rats_fit <- stan(
@@ -483,6 +485,8 @@ rats_fit <- stan(
 print(rats_fit, pars = c("alpha", "beta"), include = FALSE, digits = 1)
 ```
 
+`alpha_c` 表示小鼠 5 次测量的平均重量，`beta_c` 表示小鼠体重的增长率，$\alpha_i,\beta_i$ 分别表示第 $i$ 只小鼠在第 22 天（第 3 次测量或 $x_t = \bar{x}$ ）的重量和增长率（每日增加的重量）。
+
 对于分量众多的参数向量，比较适合用岭线图展示后验分布，下面调用 bayesplot 包绘制参数向量 $\alpha,\beta$ 的后验分布。
 
 ```{r}
@@ -496,6 +500,8 @@ print(rats_fit, pars = c("alpha", "beta"), include = FALSE, digits = 1)
 bayesplot::mcmc_areas_ridges(rats_fit, pars = paste0("alpha", "[", 1:30, "]"))
 ```
 
+参数向量 $\alpha$ 的后验估计可以看作 $x_t = \bar{x}$ 时小鼠的重量，上图即为各个小鼠重量的后验分布。
+
 ```{r}
 #| label: fig-rats-beta
 #| fig-cap: 参数 $\beta$ 的后验分布
@@ -506,6 +512,8 @@ bayesplot::mcmc_areas_ridges(rats_fit, pars = paste0("alpha", "[", 1:30, "]"))
 # plot(rats_fit, pars = "beta", ci_level = 0.8, outer_level = 0.95)
 bayesplot::mcmc_areas_ridges(rats_fit, pars = paste0("beta", "[", 1:30, "]"))
 ```
+
+参数向量 $\beta$ 的后验估计可以看作是小鼠的重量的增长率，上图即为各个小鼠重量的增长率的后验分布。
 
 ### nlme {#sec-rats-nlme}
 
@@ -539,7 +547,13 @@ rats_lme <- lme(data = rats_data, fixed = weight ~ days, random = ~ 1 | rats)
 summary(rats_lme)
 ```
 
-模型输出结果中，固定效应中的截距项 `(Intercept)` 对应 106.56762，斜率 `days` 对应 6.18571。Stan 模型中截距参数 `alpha0` 的后验估计是 106.332，斜率参数 `beta_c` 的后验估计是 6.188。对比 Stan 和 **nlme** 包的拟合结果，可以发现贝叶斯和频率方法的结果是非常接近的。
+模型输出结果中，固定效应中的截距项 `(Intercept)` 对应 106.56762，斜率 `days` 对应 6.18571。Stan 模型中截距参数 `alpha0` 的后验估计是 106.332，斜率参数 `beta_c` 的后验估计是 6.188。对比 Stan 和 **nlme** 包的拟合结果，可以发现贝叶斯和频率方法的结果是非常接近的。截距参数 `alpha0` 可以看作小鼠的初始（出生）重量，斜率参数 `beta_c` 可以看作小鼠的生长率 growth rate。
+
+函数 `lme()` 的输出结果中，随机效应的标准差 0.000825，表示每个小鼠的截距偏移量的波动，残差标准差为 16.132，表示与小鼠无关的剩余量的波动，如测量误差。
+
+Stan 输出中，截距项 alpha、斜率项 beta 参数的标准差分别是 `tau_alpha` 和 `tau_beta` ，残差标准差参数 `tau_c` 的估计为 6.1。简单起见，没有考虑截距项和斜率项的相关性，即不考虑小鼠出生时的重量和生长率的相关性，一般来说，应该是有关系的。
+
+值得注意，Stan 代码中对时间 days 做了中心化处理，即 $x_t - \bar{x}$，目的是降低采样时参数 $\alpha_i$ 和 $\beta_i$ 之间的相关性，而在拟合函数 `lme()` 中没有做处理，因此，结果无需转化，而且更容易解释。
 
 ### lme4
 
