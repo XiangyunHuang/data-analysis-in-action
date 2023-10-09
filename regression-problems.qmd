@@ -188,7 +188,7 @@ fit_lasso <- glmnet(x = Boston[, -14], y = Boston[, "medv"], family = "gaussian"
 
 ```{r}
 #| label: fig-lasso-glmnet
-#| fig-cap: Lasso
+#| fig-cap: Lasso 回归
 #| fig-subcap: 
 #| - 回归系数的迭代路径
 #| - 惩罚系数的迭代路径
@@ -223,21 +223,16 @@ fit_elasticnet <- glmnet(x = Boston[, -14], y = Boston[, "medv"], family = "gaus
 
 ```{r}
 #| label: fig-elasticnet-glmnet
-#| fig-cap: "回归系数的迭代路径"
+#| fig-cap: 弹性网络
+#| fig-subcap: 
+#| - 回归系数的迭代路径
+#| - 惩罚系数的迭代路径
 #| fig-width: 5
 #| fig-height: 5
 #| fig-showtext: true
+#| layout-ncol: 2
 
 plot(fit_elasticnet)
-```
-
-```{r}
-#| label: fig-elasticnet-lambda
-#| fig-cap: "惩罚系数的迭代路径"
-#| fig-width: 5
-#| fig-height: 5
-#| fig-showtext: true
-
 plot(fit_elasticnet$lambda,
   ylab = expression(lambda), xlab = "迭代次数",
   main = "惩罚系数的迭代路径"
@@ -549,32 +544,24 @@ fit_abess <- abess(medv ~ ., data = Boston, family = "gaussian",
                    tune.type = "cv", nfolds = 10, seed = 20232023)
 ```
 
-参数 `tune.type = "cv"` 表示交叉验证的方式确定超参数来筛选变量，参数 `nfolds = 10` 表示将数据划分为 10 份，采用 10 折交叉验证，参数 `seed` 用来设置随机数，以便可重复交叉验证 CV 的结果。惩罚系数的迭代路径见下图。
+参数 `tune.type = "cv"` 表示交叉验证的方式确定超参数来筛选变量，参数 `nfolds = 10` 表示将数据划分为 10 份，采用 10 折交叉验证，参数 `seed` 用来设置随机数，以便可重复交叉验证 CV 的结果。惩罚系数的迭代路径见下左图。使用交叉验证筛选变量个数，不同的 support size 表示进入模型中的变量数目。
 
 ```{r}
 #| label: fig-abess-lambda
-#| fig-cap: 惩罚系数的迭代路径
-#| fig-width: 5
-#| fig-height: 5
-#| fig-showtext: true
-
-plot(fit_abess, label = TRUE, main = "惩罚系数的迭代路径")
-```
-
-使用交叉验证筛选变量个数，不同的 support size 表示进入模型中的变量数目。
-
-```{r}
-#| label: fig-tune-lambda
-#| fig-cap: 交叉验证筛选变量个数
+#| fig-cap: 最优子集回归
+#| fig-subcap: 
+#| - 惩罚系数的迭代路径
+#| - 交叉验证筛选变量个数
 #| fig-width: 5
 #| fig-height: 5
 #| fig-showtext: true
 #| par: true
 
+plot(fit_abess, label = TRUE, main = "惩罚系数的迭代路径")
 plot(fit_abess, type = "tune", main = "交叉验证筛选变量个数")
 ```
 
-从上图可以看出，选择 6 个变量是比较合适的，作为最终的模型。
+从上右图可以看出，选择 6 个变量是比较合适的，作为最终的模型。
 
 ```{r}
 best_model <- extract(fit_abess, support.size = 6)
