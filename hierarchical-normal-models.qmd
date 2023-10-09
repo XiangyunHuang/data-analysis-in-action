@@ -260,22 +260,9 @@ stan_dens(eight_schools_fit, pars = "mu", separate_chains = TRUE) +
 bayesplot::mcmc_pairs(eight_schools_fit, pars = c("mu", "tau", "lp__"))
 ```
 
-### 模型导出
-
-rstan 包还支持从外部磁盘读取代码
-
-```{r}
-#| eval: false
-
-fit <- stan(file = 'code/stan/8schools.stan', ...)
-
-schools_dat <- read_rdump('data/8schools.rdump')
-source('data/8schools.rdump')
-```
-
 ### 其它 R 包
 
-接下来，分别用 nlme 和 lme4 包拟合模型。
+接下来，分别用 **nlme** 和 **lme4** 包拟合模型。
 
 ```{r}
 # 成绩
@@ -294,7 +281,7 @@ fit_lme <- lme(y ~ 1, random = ~ 1 | g, weights = varFunc(~ 1/sigma^2))
 summary(fit_lme)
 ```
 
-接着，采用 lme4 包拟合模型，发现 lme4 包可以获得与 nlme 包一致的结果。
+接着，采用 **lme4** 包拟合模型，发现 **lme4** 包可以获得与 **nlme** 包一致的结果。
 
 ```{r}
 control <- lme4::lmerControl(
@@ -487,33 +474,37 @@ print(rats_fit, pars = c("alpha", "beta"), include = FALSE, digits = 1)
 
 `alpha_c` 表示小鼠 5 次测量的平均重量，`beta_c` 表示小鼠体重的增长率，$\alpha_i,\beta_i$ 分别表示第 $i$ 只小鼠在第 22 天（第 3 次测量或 $x_t = \bar{x}$ ）的重量和增长率（每日增加的重量）。
 
-对于分量众多的参数向量，比较适合用岭线图展示后验分布，下面调用 bayesplot 包绘制参数向量 $\alpha,\beta$ 的后验分布。
+对于分量众多的参数向量，比较适合用岭线图展示后验分布，下面调用 **bayesplot** 包绘制参数向量 $\boldsymbol{\alpha},\boldsymbol{\beta}$ 的后验分布。
 
 ```{r}
 #| label: fig-rats-alpha
-#| fig-cap: 参数 $\alpha$ 的后验分布
+#| fig-cap: 参数 $\boldsymbol{\alpha}$ 的后验分布
 #| fig-showtext: true
 #| fig-width: 6
 #| fig-height: 8
+#| message: false
 
 # plot(rats_fit, pars = "alpha", show_density = TRUE, ci_level = 0.8, outer_level = 0.95)
-bayesplot::mcmc_areas_ridges(rats_fit, pars = paste0("alpha", "[", 1:30, "]"))
+bayesplot::mcmc_areas_ridges(rats_fit, pars = paste0("alpha", "[", 1:30, "]")) +
+  scale_y_discrete(labels = scales::parse_format()) 
 ```
 
-参数向量 $\alpha$ 的后验估计可以看作 $x_t = \bar{x}$ 时小鼠的重量，上图即为各个小鼠重量的后验分布。
+参数向量 $\boldsymbol{\alpha}$ 的后验估计可以看作 $x_t = \bar{x}$ 时小鼠的重量，上图即为各个小鼠重量的后验分布。
 
 ```{r}
 #| label: fig-rats-beta
-#| fig-cap: 参数 $\beta$ 的后验分布
+#| fig-cap: 参数 $\boldsymbol{\beta}$ 的后验分布
 #| fig-showtext: true
 #| fig-width: 6
 #| fig-height: 8
+#| message: false
 
 # plot(rats_fit, pars = "beta", ci_level = 0.8, outer_level = 0.95)
-bayesplot::mcmc_areas_ridges(rats_fit, pars = paste0("beta", "[", 1:30, "]"))
+bayesplot::mcmc_areas_ridges(rats_fit, pars = paste0("beta", "[", 1:30, "]")) +
+  scale_y_discrete(labels = scales::parse_format()) 
 ```
 
-参数向量 $\beta$ 的后验估计可以看作是小鼠的重量的增长率，上图即为各个小鼠重量的增长率的后验分布。
+参数向量 $\boldsymbol{\beta}$ 的后验估计可以看作是小鼠的重量的增长率，上图即为各个小鼠重量的增长率的后验分布。
 
 ### nlme {#sec-rats-nlme}
 
