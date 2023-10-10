@@ -277,11 +277,11 @@ g <- 1:8
 
 ```{r}
 library(nlme)
-fit_lme <- lme(y ~ 1, random = ~ 1 | g, weights = varFunc(~ 1/sigma^2))
+fit_lme <- lme(y ~ 1, random = ~ 1 | g, weights = varFixed(~ sigma^2), method = "REML")
 summary(fit_lme)
 ```
 
-接着，采用 **lme4** 包拟合模型，发现 **lme4** 包可以获得与 **nlme** 包一致的结果。
+接着，采用 **lme4** 包拟合模型，发现 **lme4** 包获得与 **nlme** 包一样的结果。
 
 ```{r}
 control <- lme4::lmerControl(
@@ -289,11 +289,11 @@ control <- lme4::lmerControl(
   check.nobs.vs.nRE = "ignore",
   check.nobs.vs.nlev = "ignore"
 )
-fit_lme4 <- lme4::lmer(y ~ 1 + (1 | g), weights = 1 / sigma^2, control = control, REML = FALSE)
+fit_lme4 <- lme4::lmer(y ~ 1 + (1 | g), weights = 1 / sigma^2, control = control, REML = TRUE)
 summary(fit_lme4)
 ```
 
-最后，使用 blme 包 [@Chung2013] ，blme 包基于 lme4 包，结果完全一致。
+最后，使用 blme 包 [@Chung2013] ，blme 包基于 lme4 包，截距项结果比较一致，随机效应（组间方差）和残差项（组内方差）完全不同。
 
 ```{r}
 ### Example using a residual variance prior ###
@@ -302,7 +302,7 @@ summary(fit_lme4)
 
 fit_blme <- blme::blmer(
   y ~ 1 + (1 | g),
-  control = control, REML = FALSE,
+  control = control, REML = TRUE,
   resid.prior = point, cov.prior = NULL,
   weights = 1 / sigma^2
 )
@@ -400,11 +400,11 @@ init <- rep(list(list(
 $$
 \begin{aligned}
 \alpha_c &\sim \mathcal{N}(0,100) \quad \beta_c  \sim \mathcal{N}(0,100) \\
-\tau^2_c &\sim \mathrm{inv\_gamma}(0.001, 0.001) \\
 \tau^2_{\alpha} &\sim \mathrm{inv\_gamma}(0.001, 0.001) \\
 \tau^2_{\beta}  &\sim \mathrm{inv\_gamma}(0.001, 0.001) \\
-\alpha &\sim \mathcal{N}(\alpha_c, \tau_{\alpha})  \quad
-\beta  \sim \mathcal{N}(\beta_c, \tau_{\beta}) \\
+\tau^2_c &\sim \mathrm{inv\_gamma}(0.001, 0.001) \\
+\alpha_n &\sim \mathcal{N}(\alpha_c, \tau_{\alpha})  \quad
+\beta_n  \sim \mathcal{N}(\beta_c, \tau_{\beta}) \\
 y_{nt} &\sim \mathcal{N}(\alpha_n + \beta_n * (x_t - \bar{x}), \tau_c) \\
 & n = 1,2,\ldots,N \quad t = 1,2,\ldots,T
 \end{aligned}
