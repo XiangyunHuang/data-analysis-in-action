@@ -281,6 +281,18 @@ fit_lme <- lme(y ~ 1, random = ~ 1 | g, weights = varFixed(~ sigma^2), method = 
 summary(fit_lme)
 ```
 
+随机效应的标准差 2.917988 ，随机效应部分的估计
+
+```{r}
+ranef(fit_lme)
+```
+
+类比 Stan 输出结果中的 $\theta$ 向量，每个学校的成绩估计
+
+```{r}
+7.785729 + 2.917988 * ranef(fit_lme) 
+```
+
 接着，采用 **lme4** 包拟合模型，发现 **lme4** 包获得与 **nlme** 包一样的结果。
 
 ```{r}
@@ -508,7 +520,7 @@ bayesplot::mcmc_areas_ridges(rats_fit, pars = paste0("beta", "[", 1:30, "]")) +
 
 ### nlme {#sec-rats-nlme}
 
-**nlme** 包适合将长格式的数据，因此，先将小鼠数据整理成长格式。
+**nlme** 包适合长格式的数据，因此，先将小鼠数据整理成长格式。
 
 ```{r}
 weight <- c(
@@ -525,53 +537,64 @@ weight <- c(
   338, 376, 296, 352, 314, 325, 358, 312, 324, 316, 317, 336, 321,
   334, 302, 302, 323, 331, 345, 333, 316, 291, 324
 )
-rats <- rep(1:30, each = 5)
+rats <- rep(1:30, times = 5)
 days <- rep(c(8, 15, 22, 29, 36), each = 30)
 rats_data <- data.frame(weight = weight, rats = rats, days = days)
+```
+
+将 30 只小鼠的重量变化及回归曲线画出来，发现各只小鼠的回归线的斜率几乎一样，截距略有不同。不同小鼠的出生重量是不同，前面 Stan 采用变截距变斜率的混合效应模型拟合数据。
+
+```{r}
+#| label: fig-rats-lm
+#| fig-cap: 小鼠重量变化曲线
+#| fig-showtext: true
+#| fig-width: 6
+#| fig-height: 7
+
+ggplot(data = rats_data, aes(x = days, y = weight)) +
+  geom_point() +
+  geom_smooth(formula = "y ~ x", method = "lm", se = FALSE) +
+  theme_bw() +
+  facet_wrap(facets = ~rats, labeller = "label_both", ncol = 6) +
+  labs(x = "第几天", y = "重量")
 ```
 
 小鼠的重量随时间增长，不同小鼠的情况又会有所不同。可用随机效应模型表示生长曲线模型，下面加载 **nlme** 包调用函数 `lme()` 拟合该模型。
 
 ```{r}
 library(nlme)
-rats_lme <- lme(data = rats_data, fixed = weight ~ days, random = ~ 1 | rats)
+rats_lme <- lme(data = rats_data, fixed = weight ~ days, random = ~ days | rats)
 summary(rats_lme)
 ```
 
 模型输出结果中，固定效应中的截距项 `(Intercept)` 对应 106.56762，斜率 `days` 对应 6.18571。Stan 模型中截距参数 `alpha0` 的后验估计是 106.332，斜率参数 `beta_c` 的后验估计是 6.188。对比 Stan 和 **nlme** 包的拟合结果，可以发现贝叶斯和频率方法的结果是非常接近的。截距参数 `alpha0` 可以看作小鼠的初始（出生）重量，斜率参数 `beta_c` 可以看作小鼠的生长率 growth rate。
 
-函数 `lme()` 的输出结果中，随机效应的标准差 0.000825，表示每个小鼠的截距偏移量的波动，残差标准差为 16.132，表示与小鼠无关的剩余量的波动，如测量误差。
+函数 `lme()` 的输出结果中，随机效应的随机截距标准差 10.7425835，对应 `tau_alpha`，表示每个小鼠的截距偏移量的波动。而随机斜率的标准差为 0.5105447，对应 `tau_beta`，相对随机截距标准差来说很小。残差标准差为 6.0146608，对应 `tau_c`，表示与小鼠无关的剩余量的波动，比如测量误差。总之，和 Stan 的结果有所不同，但相去不远。
 
-Stan 输出中，截距项 alpha、斜率项 beta 参数的标准差分别是 `tau_alpha` 和 `tau_beta` ，残差标准差参数 `tau_c` 的估计为 6.1。简单起见，没有考虑截距项和斜率项的相关性，即不考虑小鼠出生时的重量和生长率的相关性，一般来说，应该是有关系的。
+Stan 输出中，截距项 alpha、斜率项 beta 参数的标准差分别是 `tau_alpha` 和 `tau_beta` ，残差标准差参数 `tau_c` 的估计为 6.1。简单起见，没有考虑截距项和斜率项的相关性，即不考虑小鼠出生时的重量和生长率的相关性，一般来说，应该是有关系的。函数 `lme()` 的输出结果中给出了截距项和斜率项的相关性为 -0.343，随机截距和随机斜率的相关性为 -0.159。
+
+计算与 Stan 输出中的截距项 `alpha_c` 对应的量，结合函数 `lme()` 的输出，截距、斜率加和之后，如下
+
+```{r}
+106.56762 + 6.18571 * 22
+```
 
 值得注意，Stan 代码中对时间 days 做了中心化处理，即 $x_t - \bar{x}$，目的是降低采样时参数 $\alpha_i$ 和 $\beta_i$ 之间的相关性，而在拟合函数 `lme()` 中没有做处理，因此，结果无需转化，而且更容易解释。
 
 ### lme4
 
-当采用 **lme4** 包拟合数据的时候，发现参数取值落在参数空间的边界上，除此之外，输出结果与 **nlme** 包几乎相同。
+当采用 **lme4** 包拟合数据的时候，发现输出结果与 **nlme** 包几乎相同。
 
 ```{r}
-rats_lme4 <- lme4::lmer(weight ~ days + (1 | rats), data = rats_data)
+rats_lme4 <- lme4::lmer(weight ~ days + (days | rats), data = rats_data)
 summary(rats_lme4)
 ```
 
-**lme4** 包依赖 **nloptr** 包提供数值优化求解器，也做了更多的矩阵奇异性检查，对于复杂的重复测量模型，往往会发生奇异，需要适当降低复杂性，更多详情见 **lme4** 包的帮助文档 `help('isSingular')` 。
-
 ### blme
 
-blme 包基于 lme4 包
+blme 包基于 lme4 包拟合贝叶斯线性混合效应模型。
 
 ```{r}
-control <- lme4::lmerControl(
-  check.conv.singular = "ignore",
-  check.nobs.vs.nRE = "ignore",
-  check.nobs.vs.nlev = "ignore"
-)
-rats_blme <- blme::blmer(
-  weight ~ days + (1 | rats),
-  data = rats_data,
-  resid.prior = point, cov.prior = NULL,
-  control = control, REML = FALSE
-)
+rats_blme <- blme::blmer(weight ~ days + (days | rats), data = rats_data)
 summary(rats_blme)
 ```
