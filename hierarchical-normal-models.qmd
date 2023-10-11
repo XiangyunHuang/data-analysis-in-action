@@ -569,7 +569,7 @@ summary(rats_lme)
 
 模型输出结果中，固定效应中的截距项 `(Intercept)` 对应 106.56762，斜率 `days` 对应 6.18571。Stan 模型中截距参数 `alpha0` 的后验估计是 106.332，斜率参数 `beta_c` 的后验估计是 6.188。对比 Stan 和 **nlme** 包的拟合结果，可以发现贝叶斯和频率方法的结果是非常接近的。截距参数 `alpha0` 可以看作小鼠的初始（出生）重量，斜率参数 `beta_c` 可以看作小鼠的生长率 growth rate。
 
-函数 `lme()` 的输出结果中，随机效应的随机截距标准差 10.7425835，对应 `tau_alpha`，表示每个小鼠的截距偏移量的波动。而随机斜率的标准差为 0.5105447，对应 `tau_beta`，相对随机截距标准差来说很小。残差标准差为 6.0146608，对应 `tau_c`，表示与小鼠无关的剩余量的波动，比如测量误差。总之，和 Stan 的结果有所不同，但相去不远。
+函数 `lme()` 的输出结果中，随机效应的随机截距标准差 10.7425835，对应 `tau_alpha`，表示每个小鼠的截距偏移量的波动。而随机斜率的标准差为 0.5105447，对应 `tau_beta`，相对随机截距标准差来说很小。残差标准差为 6.0146608，对应 `tau_c`，表示与小鼠无关的剩余量的波动，比如测量误差。总之，和 Stan 的结果有所不同，但相去不远。主要是前面的 Stan 模型没有考虑随机截距和随机斜率之间的相关性，这可以进一步调整 [@sorensen2016] 。
 
 Stan 输出中，截距项 alpha、斜率项 beta 参数的标准差分别是 `tau_alpha` 和 `tau_beta` ，残差标准差参数 `tau_c` 的估计为 6.1。简单起见，没有考虑截距项和斜率项的相关性，即不考虑小鼠出生时的重量和生长率的相关性，一般来说，应该是有关系的。函数 `lme()` 的输出结果中给出了截距项和斜率项的相关性为 -0.343，随机截距和随机斜率的相关性为 -0.159。
 
@@ -598,3 +598,65 @@ blme 包基于 lme4 包拟合贝叶斯线性混合效应模型。
 rats_blme <- blme::blmer(weight ~ days + (days | rats), data = rats_data)
 summary(rats_blme)
 ```
+
+## 习题 {#sec-hierarchical-models-exercises}
+
+1.  四个组的重复测量数据，如下表所示，建立线性混合效应模型/分层正态模型分析数据。
+
+    ```{r}
+    #| label: tbl-exer
+    #| tbl-cap: 实验数据
+    #| echo: false
+
+    y <- c(
+      62, 60, 63, 59,
+      63, 67, 71, 64, 65, 66,
+      68, 66, 71, 67, 68, 68,
+      56, 62, 60, 61, 63, 64, 63, 59
+    )
+    group <- c(rep(1, 4), rep(2, 6), rep(3, 6), rep(4, 8))
+    id <- c(1:4, 1:6, 1:6, 1:8)
+    dat <- data.frame(y = y, group = group, id = id)
+    dat2 <- reshape(dat, direction = "wide", timevar = "group", idvar = "id")
+    knitr::kable(dat2, col.names = c("编号", "第1组", "第2组", "第3组", "第4组"))
+    ```
+
+    $$
+    \begin{aligned}
+    y_{ij}   &\sim \mathcal{N}(\theta_j, \sigma^2) \\
+    \theta_j &\sim \mathcal{N}(\mu, \tau^2) \\
+    (\mu,\log \sigma, \tau) &\sim \mathrm{uniform\ prior}
+    \end{aligned}
+    $$
+
+    $y_{ij}$ 表示第 $i$ 组的第 $j$ 个测量值，$\theta_i$ 组的均值。
+
+    ```{r}
+    library(nlme)
+    fit_lme <- lme(data = dat, fixed = y ~ 1, random = ~ 1 | group)
+    summary(fit_lme)
+    ```
+
+    随机效应（组间标准差）$\tau^2$ 3.419288 、残差效应（组内标准差）$\sigma^2$ 2.366309。截距 $\mu$ 64.01266 代表整体的均值。各组的均值如下：
+
+    ```{r}
+    64.01266 + ranef(fit_lme)
+    ```
+
+2.  基于 **lme4** 包中学生对课程的评价数据 `InstEval` 建立（广义）线性混合效应模型分析数据。将响应变量（学生评价）视为有序的离散型变量，比较观察两个模型拟合效果。再者，从 Stan 实现的贝叶斯模型来看，感受 Stan 建模的灵活性和扩展性。（**nlme** 包不支持此等交叉随机效应的表达。）
+
+    ```{r}
+    data(InstEval, package = "lme4")
+    str(InstEval)
+    ```
+
+    -   因子型变量 `s` 表示 1-2972 位参与评分的学生。
+    -   因子型变量 `d` 表示 1-2160 位上课的讲师。
+    -   因子型变量 `dept` 表示课程相关的 1-15 院系。
+    -   因子型变量 `service` 表示讲师除了授课外，是否承担其它服务。
+    -   数值型变量 `y` 表示学生给课程的评分，1-5 分对应从坏到很好。
+
+    ```{r}
+    fit_ratings <- lme4::lmer(y ~ 1 + service + (1 | s) + (1 | d) + (1 | dept), data = InstEval)
+    summary(fit_ratings)
+    ```
