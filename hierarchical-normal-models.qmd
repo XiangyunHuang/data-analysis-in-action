@@ -595,13 +595,16 @@ summary(rats_lme4)
 blme 包基于 lme4 包拟合贝叶斯线性混合效应模型。
 
 ```{r}
-rats_blme <- blme::blmer(weight ~ days + (days | rats), data = rats_data)
+rats_blme <- blme::blmer(
+  weight ~ days + (days | rats), data = rats_data,
+  resid.prior = point, cov.prior = NULL
+)
 summary(rats_blme)
 ```
 
 ## 习题 {#sec-hierarchical-models-exercises}
 
-1.  四个组的重复测量数据，如下表所示，建立线性混合效应模型/分层正态模型分析数据。
+1.  四个组的重复测量数据，如下表所示，建立贝叶斯线性混合效应模型/分层正态模型分析数据，与 nlme 包拟合的结果对比。
 
     ```{r}
     #| label: tbl-exer
@@ -618,18 +621,20 @@ summary(rats_blme)
     id <- c(1:4, 1:6, 1:6, 1:8)
     dat <- data.frame(y = y, group = group, id = id)
     dat2 <- reshape(dat, direction = "wide", timevar = "group", idvar = "id")
-    knitr::kable(dat2, col.names = c("编号", "第1组", "第2组", "第3组", "第4组"))
+    options(knitr.kable.NA = '')
+    knitr::kable(dat2, col.names = c("编号", "第1组", "第2组", "第3组", "第4组"), row.names = FALSE)
     ```
 
     $$
     \begin{aligned}
-    y_{ij}   &\sim \mathcal{N}(\theta_j, \sigma^2) \\
-    \theta_j &\sim \mathcal{N}(\mu, \tau^2) \\
-    (\mu,\log \sigma, \tau) &\sim \mathrm{uniform\ prior}
+    y_{ij}   \sim \mathcal{N}(\theta_i, \sigma^2) &\quad
+    \theta_i \sim \mathcal{N}(\mu, \tau^2) \\
+    (\mu,\log \sigma, \tau) &\sim \mathrm{uniform\ prior} \\
+    i = 1,2,3,4 &\quad j = 1,2, \ldots, n_i
     \end{aligned}
     $$
 
-    $y_{ij}$ 表示第 $i$ 组的第 $j$ 个测量值，$\theta_i$ 组的均值。
+    $y_{ij}$ 表示第 $i$ 组的第 $j$ 个测量值，$\theta_i$ 表示第 $i$ 组的均值，$\mu$ 表示整体的均值，$\sigma^2$ 表示组内的方差，$\tau^2$ 表示组内的方差。
 
     ```{r}
     library(nlme)
@@ -660,3 +665,4 @@ summary(rats_blme)
     fit_ratings <- lme4::lmer(y ~ 1 + service + (1 | s) + (1 | d) + (1 | dept), data = InstEval)
     summary(fit_ratings)
     ```
+
