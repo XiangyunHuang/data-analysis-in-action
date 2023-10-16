@@ -518,6 +518,23 @@ bayesplot::mcmc_areas_ridges(rats_fit, pars = paste0("beta", "[", 1:30, "]")) +
 
 参数向量 $\boldsymbol{\beta}$ 的后验估计可以看作是小鼠的重量的增长率，上图即为各个小鼠重量的增长率的后验分布。
 
+### lavaan
+
+lavaan 包 [@Rosseel2012] 的函数 `growth()` 可以直接拟合曲线生长模型
+
+```{r}
+library(lavaan)
+colnames(y) <- c("t1","t2","t3","t4","t5")
+# i 表示截距
+# s 表示斜率
+rats_growt_model <- ' i =~ 1*t1 + 1*t2 + 1*t3 + 1*t4 + 1*t5
+                      s =~ 0*t1 + 1*t2 + 2*t3 + 3*t4 + 4*t5 '
+# 拟合模型
+rats_growth_fit <- growth(rats_growt_model, data = y)
+# 模型输出
+summary(rats_growth_fit)
+```
+
 ### nlme {#sec-rats-nlme}
 
 **nlme** 包适合长格式的数据，因此，先将小鼠数据整理成长格式。
@@ -602,6 +619,17 @@ rats_blme <- blme::blmer(
 summary(rats_blme)
 ```
 
+### INLA
+
+```{r}
+#| message: false
+
+library(INLA)
+rats_inla <- inla(weight ~ 1 + days + f(rats, days, model = "iid"),
+  data = rats_data, control.predictor = list(compute = TRUE))
+summary(rats_inla)
+```
+
 ## 习题 {#sec-hierarchical-models-exercises}
 
 1.  四个组的重复测量数据，如下表所示，建立贝叶斯线性混合效应模型/分层正态模型分析数据，与 nlme 包拟合的结果对比。
@@ -648,7 +676,7 @@ summary(rats_blme)
     64.01266 + ranef(fit_lme)
     ```
 
-2.  基于 **lme4** 包中学生对课程的评价数据 `InstEval` 建立（广义）线性混合效应模型分析数据。将响应变量（学生评价）视为有序的离散型变量，比较观察两个模型拟合效果。再者，从 Stan 实现的贝叶斯模型来看，感受 Stan 建模的灵活性和扩展性。（**nlme** 包不支持此等交叉随机效应的表达。）
+2.  基于 **lme4** 包中学生对老师的评价数据 `InstEval` 建立（广义）线性混合效应模型分析数据。将响应变量（学生评价）视为有序的离散型变量，比较观察两个模型拟合效果（lme4、GLMMadaptive、spaMM 都不支持有序的响应变量，brms 则支持各类有序回归，使用语法与 lme4 完全一样。但是，由于数据规模比较大，计算时间数以天计，可考虑用 Stan 直接编码）。再者，从 Stan 实现的贝叶斯模型来看，感受 Stan 建模的灵活性和扩展性。（**nlme** 包不支持此等交叉随机效应的表达。）
 
     ```{r}
     data(InstEval, package = "lme4")
@@ -662,7 +690,22 @@ summary(rats_blme)
     -   数值型变量 `y` 表示学生给课程的评分，1-5 分对应从坏到很好。
 
     ```{r}
-    fit_ratings <- lme4::lmer(y ~ 1 + service + (1 | s) + (1 | d) + (1 | dept), data = InstEval)
-    summary(fit_ratings)
+    # 数值型的响应变量
+    fit_lme4 <- lme4::lmer(y ~ 1 + service + (1 | s) + (1 | d) + (1 | dept), data = InstEval)
+    summary(fit_lme4)
     ```
 
+    ```{r}
+    #| eval: false
+    #| echo: true
+
+    # 需要 5-10 分钟时间
+    # 有序因子型的响应变量
+    InstEval$y <- factor(InstEval$y, ordered = TRUE)
+    library(ordinal)
+    fit_ordinal <- clmm(
+      y ~ 1 + service + (1 | s) + (1 | d) + (1 | dept),
+      data = InstEval, link = "probit", threshold = "equidistant"
+    )
+    summary(fit_ordinal)
+    ```
