@@ -1,4 +1,4 @@
-FROM fedora:38 AS fedora-rstudio
+FROM fedora:39 AS fedora-rstudio
 
 RUN groupadd staff \
   && useradd -g staff -d /home/docker docker
