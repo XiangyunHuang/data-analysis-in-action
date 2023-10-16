@@ -120,8 +120,7 @@ RUN dnf -y install texlive-sourcecodepro \
 
 # Install Extra R Packages
 COPY desc_pkgs.txt desc_pkgs.txt
-RUN dnf install -y rpm-sequoia --enablerepo=updates-testing,updates-testing-modular --best \
-  && dnf -y copr enable iucar/cran \
+RUN dnf -y copr enable iucar/cran \
   && dnf -y install R-CoprManager xz \
   && dnf -y install $(cat desc_pkgs.txt) \
   && dnf clean all \
