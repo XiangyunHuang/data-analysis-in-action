@@ -99,6 +99,12 @@ RUN dnf -y install texlive-sourcecodepro \
    texlive-fandol \
    texlive-xetex \
    texlive-jknapltx \
+   texlive-mathspec \
+   texlive-mdwtools \
+   texlive-cancel \
+   texlive-glossaries \
+   texlive-tikzfill \
+   texlive-makeindex \
    texlive-framed \
    texlive-titling \
    texlive-fira \
