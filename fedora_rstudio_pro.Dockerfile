@@ -98,6 +98,7 @@ RUN dnf -y install texlive-sourcecodepro \
    texlive-ctex \
    texlive-fandol \
    texlive-xetex \
+   texlive-jknapltx \
    texlive-framed \
    texlive-titling \
    texlive-fira \
