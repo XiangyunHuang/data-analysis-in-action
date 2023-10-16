@@ -523,6 +523,8 @@ bayesplot::mcmc_areas_ridges(rats_fit, pars = paste0("beta", "[", 1:30, "]")) +
 lavaan 包 [@Rosseel2012] 的函数 `growth()` 可以直接拟合曲线生长模型
 
 ```{r}
+#| eval: false
+
 library(lavaan)
 colnames(y) <- c("t1","t2","t3","t4","t5")
 # i 表示截距
@@ -533,6 +535,68 @@ rats_growt_model <- ' i =~ 1*t1 + 1*t2 + 1*t3 + 1*t4 + 1*t5
 rats_growth_fit <- growth(rats_growt_model, data = y)
 # 模型输出
 summary(rats_growth_fit)
+```
+
+``` markdown
+lavaan 0.6.16 ended normally after 167 iterations
+
+  Estimator                                         ML
+  Optimization method                           NLMINB
+  Number of model parameters                        10
+
+  Number of observations                            30
+
+Model Test User Model:
+                                                      
+  Test statistic                                68.986
+  Degrees of freedom                                10
+  P-value (Chi-square)                           0.000
+
+Parameter Estimates:
+
+  Standard errors                             Standard
+  Information                                 Expected
+  Information saturated (h1) model          Structured
+
+Latent Variables:
+                   Estimate  Std.Err  z-value  P(>|z|)
+  i =~                                                
+    t1                1.000                           
+    t2                1.000                           
+    t3                1.000                           
+    t4                1.000                           
+    t5                1.000                           
+  s =~                                                
+    t1                0.000                           
+    t2                1.000                           
+    t3                2.000                           
+    t4                3.000                           
+    t5                4.000                           
+
+Covariances:
+                   Estimate  Std.Err  z-value  P(>|z|)
+  i ~~                                                
+    s                10.625    9.304    1.142    0.253
+
+Intercepts:
+                   Estimate  Std.Err  z-value  P(>|z|)
+   .t1                0.000                           
+   .t2                0.000                           
+   .t3                0.000                           
+   .t4                0.000                           
+   .t5                0.000                           
+    i               155.759    2.065   75.437    0.000
+    s                44.525    0.808   55.080    0.000
+
+Variances:
+                   Estimate  Std.Err  z-value  P(>|z|)
+   .t1               32.762   12.914    2.537    0.011
+   .t2               13.004    5.219    2.492    0.013
+   .t3                5.181    3.498    1.481    0.139
+   .t4               17.105    8.426    2.030    0.042
+   .t5              157.548   45.272    3.480    0.001
+    i               112.957   33.179    3.404    0.001
+    s                15.909    5.124    3.105    0.002
 ```
 
 ### nlme {#sec-rats-nlme}
@@ -597,6 +661,11 @@ Stan 输出中，截距项 alpha、斜率项 beta 参数的标准差分别是 `t
 ```
 
 值得注意，Stan 代码中对时间 days 做了中心化处理，即 $x_t - \bar{x}$，目的是降低采样时参数 $\alpha_i$ 和 $\beta_i$ 之间的相关性，而在拟合函数 `lme()` 中没有做处理，因此，结果无需转化，而且更容易解释。
+
+```{r}
+fit_lm <- lm(weight ~ days, data = rats_data)
+summary(fit_lm)
+```
 
 ### lme4
 
