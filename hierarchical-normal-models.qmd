@@ -656,12 +656,12 @@ summary(rats_lme4)
 
 ### blme
 
-blme 包基于 lme4 包拟合贝叶斯线性混合效应模型。
+**blme** 包 [@Chung2013] 基于 **lme4** 包 [@Bates2015] 拟合贝叶斯线性混合效应模型。参考前面 **rstan** 小节中关于模型参数的先验设置，下面将残差方差的先验设置为逆伽马分布，随机效应的协方差设置为伽马分布。发现拟合结果和 **nlme** 和 **lme4** 包的几乎一样。
 
 ```{r}
 rats_blme <- blme::blmer(
   weight ~ days + (days | rats), data = rats_data,
-  resid.prior = point, cov.prior = NULL
+  resid.prior = invgamma, cov.prior = gamma
 )
 summary(rats_blme)
 ```
@@ -699,9 +699,9 @@ rats_inla$summary.hyperpar
 #| fig-height: 4.5
 #| fig-showtext: true
 
-data_i <- rats_inla$marginals.fixed[[1]]
+alpha <- rats_inla$marginals.fixed[[1]]
 library(ggplot2)
-ggplot(data.frame(inla.smarginal(data_i)), aes(x, y)) +
+ggplot(data.frame(inla.smarginal(alpha)), aes(x, y)) +
   geom_line() +
   theme_bw()
 ```
@@ -709,7 +709,7 @@ ggplot(data.frame(inla.smarginal(data_i)), aes(x, y)) +
 已知随机变量 $X$ 的分布，根据 $P(X < x) = 0.05$ 可得 0.05 分位点 $x$ 。后验分布的 5% 分位点如下。
 
 ```{r}
-quant <- inla.qmarginal(0.05, data_i)
+quant <- inla.qmarginal(0.05, alpha)
 quant
 ```
 
@@ -722,11 +722,9 @@ quant
 #| fig-height: 4.5
 #| fig-showtext: true
 
-ggplot(data.frame(inla.smarginal(data_i)), aes(x, y)) +
+ggplot(data.frame(inla.smarginal(alpha)), aes(x, y)) +
   geom_line() +
-  geom_area(data = subset(data.frame(inla.smarginal(data_i)),
-                                     x < quant),
-            fill = "gray") +
+  geom_area(data = subset(data.frame(inla.smarginal(alpha)), x < quant), fill = "gray") +
   theme_bw()
 ```
 
