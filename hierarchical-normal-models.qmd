@@ -668,13 +668,96 @@ summary(rats_blme)
 
 ### INLA
 
+边际似然中包含随机效应对应的潜高斯分布的积分，INLA 包采用集成嵌套拉普拉斯近似积分。
+
 ```{r}
 #| message: false
 
 library(INLA)
 rats_inla <- inla(weight ~ 1 + days + f(rats, days, model = "iid"),
-  data = rats_data, control.predictor = list(compute = TRUE))
+  data = rats_data, control.predictor = list(compute = TRUE),
+  control.compute = list(dic = TRUE))
+# 输出结果
 summary(rats_inla)
+# 固定效应部分的参数估计
+rats_inla$summary.fixed
+# 随机效应部分（方差协方差矩阵）的超参数
+rats_inla$summary.hyperpar
+```
+
+从输出结果来看，`Fixed effects:` 部分与前面的输出完全一样。贝叶斯推断给出的是参数的后验分布，所以，不仅是后验点估计，同时给出几个后验分布的分位点，置信水平 95% 的置信区间为 $[103.568, 109.569]$ 。从结果中提取，截距项 `(Intercept)` 的后验边际分布
+
+```{r}
+#| label: fig-inla-rats-intercept
+#| fig-cap: 截距项的后验边际分布
+#| fig-width: 5
+#| fig-height: 4.5
+#| fig-showtext: true
+
+data_i <- rats_inla$marginals.fixed[[1]]
+library(ggplot2)
+ggplot(data.frame(inla.smarginal(data_i)), aes(x, y)) +
+  geom_line() +
+  theme_bw()
+```
+
+已知随机变量 $X$ 的分布，根据 $P(X < x) = 0.05$ 可得 0.05 分位点 $x$ 。后验分布的 5% 分位点如下。
+
+```{r}
+quant <- inla.qmarginal(0.05, data_i)
+quant
+```
+
+小于 0.05 分位点的概率图如下。
+
+```{r}
+#| label: fig-inla-rats-intercept2
+#| fig-cap: 截距项的后验边际分布
+#| fig-width: 5
+#| fig-height: 4.5
+#| fig-showtext: true
+
+ggplot(data.frame(inla.smarginal(data_i)), aes(x, y)) +
+  geom_line() +
+  geom_area(data = subset(data.frame(inla.smarginal(data_i)),
+                                     x < quant),
+            fill = "gray") +
+  theme_bw()
+```
+
+根据方差的后验边际分布获得随机效应对应的组间方差，方差的后验边际分布图如下。
+
+```{r}
+# 边际方差的后验采样数据
+marg_variance <- inla.tmarginal(function(x) 1/x,
+rats_inla$marginals.hyperpar$`Precision for rats`)
+```
+
+```{r}
+#| label: fig-inla-rats-variance
+#| fig-cap: 方差的后验边际分布
+#| fig-width: 5
+#| fig-height: 4.5
+#| fig-showtext: true
+
+ggplot(data.frame(inla.smarginal(marg_variance)), aes(x, y)) +
+  geom_line() +
+  theme_bw()
+```
+
+边际方差的估计如下：
+
+```{r}
+m <- inla.emarginal(function(x) x, marg_variance)
+m
+```
+
+计算边际方差的标准偏差 $\mathsf{Var}(X) = \mathsf{E}(X^2) - (\mathsf{E}(X))^2$
+
+```{r}
+mm <- inla.emarginal(function(x) x^2, marg_variance)
+# 方差的标准偏差
+sqrt(mm - m^2)
 ```
 
 ## 习题 {#sec-hierarchical-models-exercises}
