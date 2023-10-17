@@ -518,32 +518,6 @@ bayesplot::mcmc_areas_ridges(rats_fit, pars = paste0("beta", "[", 1:30, "]")) +
 
 参数向量 $\boldsymbol{\beta}$ 的后验估计可以看作是小鼠的重量的增长率，上图即为各个小鼠重量的增长率的后验分布。
 
-### lavaan
-
-lavaan 包 [@Rosseel2012] 的函数 `growth()` 可以直接拟合曲线生长模型
-
-```{r}
-#| message: false
-
-library(lavaan)
-# 设置矩阵 y 的列名
-colnames(y) <- c("t1","t2","t3","t4","t5")
-rats_growt_model <- ' i =~ 1*t1 + 1*t2 + 1*t3 + 1*t4 + 1*t5
-                      s =~ 0*t1 + 1*t2 + 2*t3 + 3*t4 + 4*t5 '
-```
-
-其中，i 表示截距， s 表示斜率。下面拟合模型
-
-```{r}
-rats_growth_fit <- growth(rats_growt_model, data = y)
-```
-
-模型输出
-
-```{r}
-summary(rats_growth_fit)
-```
-
 ### nlme {#sec-rats-nlme}
 
 **nlme** 包适合长格式的数据，因此，先将小鼠数据整理成长格式。
@@ -610,6 +584,55 @@ Stan 输出中，截距项 alpha、斜率项 beta 参数的标准差分别是 `t
 ```{r}
 fit_lm <- lm(weight ~ days, data = rats_data)
 summary(fit_lm)
+```
+
+采用简单线性模型即可获得与 **nlme** 包非常接近的估计结果，主要是小鼠重量的分布比较正态，且随时间的变化非常线性。
+
+### lavaan
+
+**lavaan** 包 [@Rosseel2012] 主要是用来拟合结构方程模型，而生长曲线模型可以放在该框架下。所以，也可以用 **lavaan** 包来拟合，并且，它提供的函数 `growth()` 可以直接拟合生长曲线模型。
+
+```{r}
+#| message: false
+
+library(lavaan)
+# 设置矩阵 y 的列名
+colnames(y) <- c("t1","t2","t3","t4","t5")
+rats_growt_model <- " 
+  # intercept and slope with fixed coefficients
+  intercept =~ 1*t1 + 1*t2 + 1*t3 + 1*t4 + 1*t5
+  days =~ 0*t1 + 1*t2 + 2*t3 + 3*t4 + 4*t5 
+
+  # if we fix the variances to be equal, the models are now identical.
+  t1 ~~ resvar*t1    
+  t2 ~~ resvar*t2
+  t3 ~~ resvar*t3
+  t4 ~~ resvar*t4
+  t5 ~~ resvar*t5
+"
+```
+
+其中，算子符号 `=~` 定义潜变量，`~~` 定义残差协方差，intercept 表示截距， days 表示斜率。假定 5 次测量的测量误差（组内方差）是相同的。拟合模型的代码如下：
+
+```{r}
+rats_growth_fit <- growth(rats_growt_model, data = y)
+```
+
+提供函数 `summary()` 获得模型输出，结果如下：
+
+```{r}
+summary(rats_growth_fit)
+```
+
+输出结果中，**lavaan** 包的函数 `growth()` 采用极大似然估计方法。协方差部分 `Covariances:` 随机效应中斜率和截距的协方差。截距部分 `Intercepts:` 对应于混合效应模型的固定效应部分。方差部分 `Variances:` 对应于随机效应部分，包括残差方差、斜率和截距的方差。不难看出，这和前面 **nlme** 包的输出结果差别很大。原因是 **lavaan** 包将测量的次序从 0 开始计，0 代表小鼠出生后的第 8 天。也就是说，**lavaan** 采用的是次序标记，而不是实际数据。将测量发生的时间（第几天）换算成次序（第几次），并从 0 开始计，则函数 `lme()` 的输出和函数 `growth()` 就一致了。
+
+```{r}
+# 重新组织数据
+days2 <- rep(c(0, 1, 2, 3, 4), each = 30)
+rats_data2 <- data.frame(weight = weight, rats = rats, days = days2)
+# ML 方法估计模型参数
+rats_lme2 <- lme(data = rats_data2, fixed = weight ~ days, random = ~ days | rats, method = "ML")
+summary(rats_lme2)
 ```
 
 ### lme4
