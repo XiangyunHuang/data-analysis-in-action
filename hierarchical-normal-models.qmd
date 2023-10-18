@@ -672,28 +672,81 @@ summary(rats_blme)
 
 边际似然中包含随机效应对应的潜高斯分布的积分，INLA 包采用集成嵌套拉普拉斯近似积分。INLA 包拟合随机截距和斜率的混合效应模型 [@Wang2018]。
 
+作为一个参照，首先考虑变截距的随机效应模型。
+
+$$
+y_{ij} = \beta_0 + \beta_1 * x_j + \alpha_i + \epsilon_{ij}, \quad i = 1,2,\ldots,30. \quad j = 1,2,3,4,5
+$$
+
+其中，$y_{ij}$ 表示第 $i$ 只小鼠在第 $j$ 次测量的重量，一共 30 只小鼠，共测量了 5 次。固定效应部分是 $\beta_0$ 和 $\beta_1$ ，分别表示截距和斜率。随机效应部分是 $\alpha_i$ 和 $\epsilon_{ij}$ ，分别服从正态分布$\alpha_i \sim \mathcal{N}(0, \sigma^2_{\alpha})$ 和 $\epsilon_{ij} \sim \mathcal{N}(0, \sigma^2_{\epsilon})$ 。$\sigma^2_{\alpha}$ 和 $\sigma^2_{\epsilon}$ 分别表示组间方差（group level）和组内方差（individual level）。
+
 ```{r}
 #| message: false
 
 library(INLA)
 # 变截距
-# rats_inla <- inla(weight ~ 1 + days + f(rats, model = "iid"),
-#   data = rats_data, control.predictor = list(compute = TRUE),
-#   control.compute = list(dic = TRUE))
+rats_inla0 <- inla(weight ~ 1 + days + f(rats, model = "iid"),
+  data = rats_data, control.predictor = list(compute = TRUE),
+  control.compute = list(dic = TRUE))
+# 输出结果
+summary(rats_inla0)
+```
+
+输出结果显示，$\beta_0 = 106.568,\beta_1 = 6.186$ 。随机效应部分需要做一下转化，Precision 需要转化为 Variance
+
+```{r}
+# 组内 残差方差 标准差
+sigmaepsilon <- inla.tmarginal(
+  function(x) 1 / sqrt(exp(x)),
+  rats_inla0$internal.marginals.hyperpar[[1]]
+)
+# 组间 随机方差 标准差
+sigmaalpha <- inla.tmarginal(
+  function(x) 1 / sqrt(exp(x)),
+  rats_inla0$internal.marginals.hyperpar[[2]]
+)
+
+sigepsilon <- c(inla.zmarginal(sigmaepsilon, silent = TRUE),
+  mode = inla.mmarginal(sigmaepsilon)
+)
+
+sigalpha <- c(inla.zmarginal(sigmaalpha, silent = TRUE),
+  mode = inla.mmarginal(sigmaalpha)
+)
+
+rbind(sigalpha, sigepsilon)
+```
+
+结果显示，组间方差和残差方差依次为 $\sigma_{\alpha} = 13.55, \sigma_{\epsilon} = 8.19$ 。
+
+接下来，考虑截距和斜率同时变化的随机效应模型，假定斜率和截距的联合分布是二元高斯分布。
+
+```{r}
+rats_data$slopeid <- rats_data$rats + N
 # 变截距、变斜率
-rats_inla <- inla(weight ~ 1 + days + f(rats, days, model = "iid"),
+rats_inla <- inla(
+  weight ~ 1 + days + f(rats, model = "iid2d", n = 2*N) + f(slopeid, days, copy = "rats"),
   data = rats_data, family = "gaussian",
   control.predictor = list(compute = TRUE),
   control.compute = list(dic = TRUE))
 # 输出结果
 summary(rats_inla)
+```
+
+固定效应部分的参数估计结果一样，但估计量的标准差不一样，截距项变小了，斜率项变大了。
+
+```{r}
 # 固定效应部分的参数估计
 rats_inla$summary.fixed
 # 随机效应部分（方差协方差矩阵）的超参数
 rats_inla$summary.hyperpar
 ```
 
-从输出结果来看，`Fixed effects:` 部分与前面的输出完全一样。贝叶斯推断给出的是参数的后验分布，所以，不仅是后验点估计，同时给出几个后验分布的分位点，置信水平 95% 的置信区间为 $[103.568, 109.569]$ 。从结果中提取，截距项 `(Intercept)` 的后验边际分布
+-   `Precision for rats (component 1)` 对应于随机效应部分的截距的 SD
+-   `Precision for rats (component 2)` 对应于随机效应部分的斜率的 SD
+-   `Rho1:2 for rats` 对应于随机效应部分的截距和斜率的 SD 的相关系数
+
+从输出结果来看，`Fixed effects:` 部分与前面的输出完全一样。贝叶斯推断给出的是参数的后验分布，所以，不仅是后验点估计，同时给出几个后验分布的分位点，置信水平 95% 的置信区间为 $[103.559, 109.577]$ 。从结果中提取，截距项 `(Intercept)` 的后验边际分布
 
 ```{r}
 #| label: fig-inla-rats-intercept
@@ -703,9 +756,9 @@ rats_inla$summary.hyperpar
 #| fig-showtext: true
 
 # 固定效应中的截距项
-alpha <- rats_inla$marginals.fixed[[1]]
+beta0 <- rats_inla$marginals.fixed[[1]]
 library(ggplot2)
-ggplot(data.frame(inla.smarginal(alpha)), aes(x, y)) +
+ggplot(data.frame(inla.smarginal(beta0)), aes(x, y)) +
   geom_line() +
   theme_bw()
 ```
@@ -713,11 +766,11 @@ ggplot(data.frame(inla.smarginal(alpha)), aes(x, y)) +
 已知随机变量 $X$ 的分布，根据 $P(X < x) = 0.05$ 可得 0.05 分位点 $x$ 。后验分布的 5% 分位点如下。
 
 ```{r}
-quant <- inla.qmarginal(0.05, alpha)
+quant <- inla.qmarginal(0.05, beta0)
 quant
 ```
 
-下面用图表示 $P(X < 104.0561) = 0.05$ ，随机变量 $X$ 小于 0.05 分位点的概率。
+下面用图表示 $P(X < 104.0454) = 0.05$ ，随机变量 $X$ 小于 0.05 分位点的概率。
 
 ```{r}
 #| label: fig-inla-rats-intercept2
@@ -726,9 +779,9 @@ quant
 #| fig-height: 3
 #| fig-showtext: true
 
-ggplot(data.frame(inla.smarginal(alpha)), aes(x, y)) +
+ggplot(data.frame(inla.smarginal(beta0)), aes(x, y)) +
   geom_line() +
-  geom_area(data = subset(data.frame(inla.smarginal(alpha)), x < quant), fill = "gray") +
+  geom_area(data = subset(data.frame(inla.smarginal(beta0)), x < quant), fill = "gray") +
   theme_bw()
 ```
 
@@ -737,7 +790,7 @@ ggplot(data.frame(inla.smarginal(alpha)), aes(x, y)) +
 ```{r}
 # 边际方差的后验采样数据
 marg_variance <- inla.tmarginal(function(x) 1/x,
-rats_inla$marginals.hyperpar$`Precision for rats`)
+rats_inla$marginals.hyperpar$`Precision for rats (component 1)`)
 ```
 
 ```{r}
