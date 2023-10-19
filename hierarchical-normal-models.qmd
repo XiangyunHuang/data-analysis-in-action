@@ -559,7 +559,21 @@ ggplot(data = rats_data, aes(x = days, y = weight)) +
   labs(x = "第几天", y = "重量")
 ```
 
-小鼠的重量随时间增长，不同小鼠的情况又会有所不同。可用随机效应模型表示生长曲线模型，下面加载 **nlme** 包调用函数 `lme()` 拟合该模型。
+小鼠的重量随时间增长，不同小鼠的情况又会有所不同。作为一个参照，首先考虑变截距的随机效应模型。
+
+$$
+y_{ij} = \beta_0 + \beta_1 * x_j + \alpha_i + \epsilon_{ij}, \quad i = 1,2,\ldots,30. \quad j = 1,2,3,4,5
+$$
+
+其中，$y_{ij}$ 表示第 $i$ 只小鼠在第 $j$ 次测量的重量，一共 30 只小鼠，共测量了 5 次。固定效应部分是 $\beta_0$ 和 $\beta_1$ ，分别表示截距和斜率。随机效应部分是 $\alpha_i$ 和 $\epsilon_{ij}$ ，分别服从正态分布$\alpha_i \sim \mathcal{N}(0, \sigma^2_{\alpha})$ 和 $\epsilon_{ij} \sim \mathcal{N}(0, \sigma^2_{\epsilon})$ 。$\sigma^2_{\alpha}$ 和 $\sigma^2_{\epsilon}$ 分别表示组间方差（group level）和组内方差（individual level）。
+
+```{r}
+library(nlme)
+rats_lme0 <- lme(data = rats_data, fixed = weight ~ days, random = ~ 1 | rats)
+summary(rats_lme0)
+```
+
+当然，若考虑不同小鼠的生长速度不同（变化不是很大），可用变截距和变斜率的随机效应模型表示生长曲线模型，下面加载 **nlme** 包调用函数 `lme()` 拟合该模型。
 
 ```{r}
 library(nlme)
@@ -668,156 +682,71 @@ summary(rats_blme)
 
 与 **lme4** 包的函数 `lmer()` 所不同的是参数 `resid.prior` 、`fixef.prior` 和 `cov.prior` ，它们设置参数的先验分布，其它参数的含义同 `lme4` 包。`resid.prior = invgamma` 表示残差方差参数使用逆伽马分布，`cov.prior = NULL` 表示随机效应的协方差参数使用扁平先验 flat priors。
 
-### INLA
+### MASS
 
-边际似然中包含随机效应对应的潜高斯分布的积分，INLA 包采用集成嵌套拉普拉斯近似积分。INLA 包拟合随机截距和斜率的混合效应模型 [@Wang2018]。
+**MASS** 包的结果与前面完全一致。
 
-作为一个参照，首先考虑变截距的随机效应模型。
+```{r}
+rats_mass <- MASS::glmmPQL(
+  fixed = weight ~ days, random = ~ days | rats, 
+  data = rats_data, family = gaussian(), verbose = FALSE
+)
+summary(rats_mass)
+```
+
+### spaMM
+
+**spaMM** 包的结果与前面完全一致。
+
+```{r}
+rats_spamm <- spaMM::fitme(weight ~ days + (days | rats), data = rats_data)
+summary(rats_spamm)
+```
+
+``` markdown
+ --------------- Random effects ---------------
+Family: gaussian( link = identity ) 
+         --- Random-coefficients Cov matrices:
+ Group        Term   Var.   Corr.
+  rats (Intercept)  110.1        
+  rats        days 0.2495 -0.1507
+# of obs: 150; # of groups: rats, 30 
+```
+
+随机效应的截距方差 110.1，斜率方差 0.2495，则标准差分别是 10.49 和 0.499，相关性为 -0.1507。
+
+``` markdown
+ -------------- Residual variance  ------------
+phi estimate was 36.1755 
+```
+
+残差方差为 36.1755，则标准差为 6.0146。
+
+### mgcv
+
+先考虑一个变截距的混合效应模型
 
 $$
 y_{ij} = \beta_0 + \beta_1 * x_j + \alpha_i + \epsilon_{ij}, \quad i = 1,2,\ldots,30. \quad j = 1,2,3,4,5
 $$
 
-其中，$y_{ij}$ 表示第 $i$ 只小鼠在第 $j$ 次测量的重量，一共 30 只小鼠，共测量了 5 次。固定效应部分是 $\beta_0$ 和 $\beta_1$ ，分别表示截距和斜率。随机效应部分是 $\alpha_i$ 和 $\epsilon_{ij}$ ，分别服从正态分布$\alpha_i \sim \mathcal{N}(0, \sigma^2_{\alpha})$ 和 $\epsilon_{ij} \sim \mathcal{N}(0, \sigma^2_{\epsilon})$ 。$\sigma^2_{\alpha}$ 和 $\sigma^2_{\epsilon}$ 分别表示组间方差（group level）和组内方差（individual level）。
+假设随机效应服从独立同正态分布，等价于添加一个岭惩罚。**mgcv** 包拟合广义可加模型。
 
 ```{r}
-#| message: false
-
-library(INLA)
-# 变截距
-rats_inla0 <- inla(weight ~ 1 + days + f(rats, model = "iid"),
-  data = rats_data, control.predictor = list(compute = TRUE),
-  control.compute = list(dic = TRUE))
-# 输出结果
-summary(rats_inla0)
+library(mgcv)
+rats_gam <- gam(weight ~ days + s(rats, by = days, bs = "re"), data = rats_data)
 ```
 
-输出结果显示，$\beta_0 = 106.568,\beta_1 = 6.186$ 。随机效应部分需要做一下转化，Precision 需要转化为 Variance
+其中， `bs = "re"` re 是 Random effects 的简写，参数项是一个岭惩罚的形式。
 
 ```{r}
-# 组内 残差方差 标准差
-sigmaepsilon <- inla.tmarginal(
-  function(x) 1 / sqrt(exp(x)),
-  rats_inla0$internal.marginals.hyperpar[[1]]
-)
-# 组间 随机方差 标准差
-sigmaalpha <- inla.tmarginal(
-  function(x) 1 / sqrt(exp(x)),
-  rats_inla0$internal.marginals.hyperpar[[2]]
-)
-
-sigepsilon <- c(inla.zmarginal(sigmaepsilon, silent = TRUE),
-  mode = inla.mmarginal(sigmaepsilon)
-)
-
-sigalpha <- c(inla.zmarginal(sigmaalpha, silent = TRUE),
-  mode = inla.mmarginal(sigmaalpha)
-)
-
-rbind(sigalpha, sigepsilon)
+summary(rats_gam)
 ```
 
-结果显示，组间方差和残差方差依次为 $\sigma_{\alpha} = 13.55, \sigma_{\epsilon} = 8.19$ 。
-
-接下来，考虑截距和斜率同时变化的随机效应模型，假定斜率和截距的联合分布是二元高斯分布。
+方差成分
 
 ```{r}
-rats_data$slopeid <- rats_data$rats + N
-# 变截距、变斜率
-rats_inla <- inla(
-  weight ~ 1 + days + f(rats, model = "iid2d", n = 2*N) + f(slopeid, days, copy = "rats"),
-  data = rats_data, family = "gaussian",
-  control.predictor = list(compute = TRUE),
-  control.compute = list(dic = TRUE))
-# 输出结果
-summary(rats_inla)
-```
-
-固定效应部分的参数估计结果一样，但估计量的标准差不一样，截距项变小了，斜率项变大了。
-
-```{r}
-# 固定效应部分的参数估计
-rats_inla$summary.fixed
-# 随机效应部分（方差协方差矩阵）的超参数
-rats_inla$summary.hyperpar
-```
-
--   `Precision for rats (component 1)` 对应于随机效应部分的截距的 SD
--   `Precision for rats (component 2)` 对应于随机效应部分的斜率的 SD
--   `Rho1:2 for rats` 对应于随机效应部分的截距和斜率的 SD 的相关系数
-
-从输出结果来看，`Fixed effects:` 部分与前面的输出完全一样。贝叶斯推断给出的是参数的后验分布，所以，不仅是后验点估计，同时给出几个后验分布的分位点，置信水平 95% 的置信区间为 $[103.559, 109.577]$ 。从结果中提取，截距项 `(Intercept)` 的后验边际分布
-
-```{r}
-#| label: fig-inla-rats-intercept
-#| fig-cap: 截距项的后验边际分布
-#| fig-width: 4
-#| fig-height: 3
-#| fig-showtext: true
-
-# 固定效应中的截距项
-beta0 <- rats_inla$marginals.fixed[[1]]
-library(ggplot2)
-ggplot(data.frame(inla.smarginal(beta0)), aes(x, y)) +
-  geom_line() +
-  theme_bw()
-```
-
-已知随机变量 $X$ 的分布，根据 $P(X < x) = 0.05$ 可得 0.05 分位点 $x$ 。后验分布的 5% 分位点如下。
-
-```{r}
-quant <- inla.qmarginal(0.05, beta0)
-quant
-```
-
-下面用图表示 $P(X < 104.0454) = 0.05$ ，随机变量 $X$ 小于 0.05 分位点的概率。
-
-```{r}
-#| label: fig-inla-rats-intercept2
-#| fig-cap: 截距项的后验边际分布
-#| fig-width: 4
-#| fig-height: 3
-#| fig-showtext: true
-
-ggplot(data.frame(inla.smarginal(beta0)), aes(x, y)) +
-  geom_line() +
-  geom_area(data = subset(data.frame(inla.smarginal(beta0)), x < quant), fill = "gray") +
-  theme_bw()
-```
-
-根据方差的后验边际分布获得随机效应对应的组间方差，方差的后验边际分布图如下。
-
-```{r}
-# 边际方差的后验采样数据
-marg_variance <- inla.tmarginal(function(x) 1/x,
-rats_inla$marginals.hyperpar$`Precision for rats (component 1)`)
-```
-
-```{r}
-#| label: fig-inla-rats-variance
-#| fig-cap: 方差的后验边际分布
-#| fig-width: 4
-#| fig-height: 3
-#| fig-showtext: true
-
-ggplot(data.frame(inla.smarginal(marg_variance)), aes(x, y)) +
-  geom_line() +
-  theme_bw()
-```
-
-边际方差的估计如下：
-
-```{r}
-m <- inla.emarginal(function(x) x, marg_variance)
-m
-```
-
-计算边际方差的标准偏差 $\mathsf{Var}(X) = \mathsf{E}(X^2) - (\mathsf{E}(X))^2$
-
-```{r}
-mm <- inla.emarginal(function(x) x^2, marg_variance)
-# 方差的标准偏差
-sqrt(mm - m^2)
+gam.vcomp(rats_gam, rescale = FALSE)
 ```
 
 ## 习题 {#sec-hierarchical-models-exercises}
