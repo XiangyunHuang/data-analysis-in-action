@@ -754,6 +754,34 @@ gam.vcomp(rats_gam, rescale = TRUE)
 
 `rescale = TRUE` 表示恢复至原数据的尺度，标准差 $\sigma_{\alpha} = 14.033$。可以看到，固定效应和随机效应的估计结果与 **nlme** 包等完全一致。
 
+若考虑变截距和变斜率的混合效应模型，
+
+```{r}
+rats_gam1 <- gam(
+  weight ~ days + s(rats, bs = "re") + s(rats, by = days, bs = "re"),
+  data = rats_data, method = "REML"
+)
+summary(rats_gam1)
+```
+
+输出结果中，固定效应部分的结果和 nlme 包完全一样。
+
+```{r}
+gam.vcomp(rats_gam1, rescale = TRUE)
+```
+
+输出结果中，依次是随机效应的截距、斜率和残差的标准差（标准偏差），结果和 nlme 包非常接近。
+
+**mgcv** 包还提供函数 `gamm()`，它将混合效应和固定效应分开，在拟合 LMM 模型时，它类似 **nlme** 包的函数 `lme()`。返回一个含有 lme 和 gam 两个元素的列表，前者包含随机效应的估计，后者是固定效应的估计，固定效应中可以添加样条（或样条表示的简单随机效益，比如本节前面提及的模型）。实际上，函数 `gamm()` 分别调用 **nlme** 包和 **MASS** 包来拟合 LMM 模型和 GLMM 模型。
+
+```{r}
+rats_gamm <- gamm(weight ~ days, random = list(rats = ~days), method = "REML", data = rats_data)
+# LME
+summary(rats_gamm$lme)
+# GAM
+summary(rats_gamm$gam)
+```
+
 ## 习题 {#sec-hierarchical-models-exercises}
 
 1.  四个组的重复测量数据，如下表所示，建立贝叶斯线性混合效应模型/分层正态模型分析数据，与 nlme 包拟合的结果对比。
