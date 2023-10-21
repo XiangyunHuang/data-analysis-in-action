@@ -300,37 +300,6 @@ fgm1 <- mixed_model(
 summary(fgm1)
 ```
 
-```{r}
-library(mgcv)
-fgm2 <- gam(
-  formula = cbind(incidence, size - incidence) ~ period + s(herd, bs = "re"),
- data = cbpp, family = binomial(link = "logit"), method = "REML"
-)
-summary(fgm2)
-gam.vcomp(fgm2)
-```
-
-```{r}
-fgm3 <- lme4::glmer(
-  formula = cbind(incidence, size - incidence) ~ period + (1 | herd),
-  data = cbpp, family = binomial(link = "logit")
-)
-summary(fgm3)
-```
-
-::: {#brms-glmm .callout-note title="brms"}
-```{r}
-#| eval: false
-#| echo: true
-
-library(brms)
-bgm1 <- brm(
-  incidence | trials(size) ~ period + (1 | herd),
-  data = cbpp, family = binomial(link = "logit")
-)
-```
-:::
-
 ## 非线性混合效应模型 {#sec-nlmm}
 
 Loblolly 数据集来自 R 内置的 datasets 包
@@ -420,7 +389,7 @@ lob_bayes_fit <- brm(
 5.  函数 `INLA::inla()` 集成嵌套拉普拉斯近似。
 
 | 模型                 | nlme     | MASS        | lme4      | GLMMadaptive    | brms    |
-|------------|------------|------------|------------|------------|------------|
+|----------------------|----------|-------------|-----------|-----------------|---------|
 | 线性混合效应模型     | `lme()`  | `glmmPQL()` | `lmer()`  | 不支持          | `brm()` |
 | 广义线性混合效应模型 | 不支持   | `glmmPQL()` | `glmer()` | `mixed_model()` | `brm()` |
 | 非线性混合效应模型   | `nlme()` | 不支持      | `nlmer()` | 不支持          | `brm()` |

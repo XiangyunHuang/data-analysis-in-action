@@ -3,6 +3,7 @@
 ```{r}
 #| echo: false
 
+Sys.setenv(CMDSTANR_NO_VER_CHECK = TRUE)
 source("_common.R")
 ```
 
@@ -319,6 +320,61 @@ fit_blme <- blme::blmer(
   weights = 1 / sigma^2
 )
 summary(fit_blme)
+```
+
+值得一提的，早年出现的 R 包 **arm** [@Gelman2007] 支持分层模型，这是最常见和重要的贝叶斯模型。**code** [@coda2006] 可以就 **rjags** [@rjags] 调用 JAGS 返回的结果进行各项数据分析。
+
+**rstan** 包到 **cmdstanr** 包的转化。
+
+$$
+\begin{aligned}
+& y_i \sim \mathcal{N}(\theta_i, \sigma_i^2), \quad \theta_i = \mu_i + \tau*\eta_i \\
+& \mu \sim \mathcal{N}(0, 5^2), \quad \tau \sim \mathrm{Half\_Cauchy}(0,5)
+\end{aligned}
+$$
+
+Stan 代码如下
+
+```{verbatim, file="code/eight_schools.stan", lang="stan"}
+```
+
+```{r}
+#| message: false
+
+eight_schools_dat <- list(
+  J = 8,
+  y = c(28, 8, -3, 7, -1, 1, 18, 12),
+  sigma = c(15, 10, 16, 11, 9, 11, 10, 18)
+)
+library(cmdstanr)
+mod_eight_schools <- cmdstan_model(
+  stan_file = "code/eight_schools.stan",
+  compile = TRUE, cpp_options = list(stan_threads = TRUE)
+)
+fit_eight_schools <- mod_eight_schools$sample(
+  data = eight_schools_dat,
+  chains = 4,
+  parallel_chains = 2,
+  iter_warmup = 1000, # 每条链预处理迭代次数
+  iter_sampling = 2000, # 每条链总迭代次数
+  threads_per_chain = 2, # 每条链设置一个线程
+  seed = 20232023,
+  show_messages = FALSE,
+  adapt_delta = 0.9,
+  refresh = 0
+)
+```
+
+模型输出
+
+```{r}
+fit_eight_schools$summary()
+```
+
+诊断输出
+
+```{r}
+fit_eight_schools$diagnostic_summary()
 ```
 
 ## rats 数据 {#sec-thirty-rats}
