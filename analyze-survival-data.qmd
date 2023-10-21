@@ -1,0 +1,98 @@
+# 生存分析 {#chap-survival-analysis}
+
+> The fact that some people murder doesn't mean we should copy them. And murdering data, though not as serious, should also be avoided.
+>
+> --- Frank E. Harrell [^analyze-survival-data-1]
+
+[^analyze-survival-data-1]: <https://stat.ethz.ch/pipermail/r-help/2005-July/075649.html>
+
+<!-- 有一篇公众号文章，从生物医学角度介绍生存分析。 -->
+
+生存分析可以用于用户流失分析，注册、激活、活跃。 分析次日留存、7日留存、15日留存。有学生来上体验课，多久来付费上课。 有一个人医院看病之后，多久办理住院。 最早，生存分析用于研究飞机出去之后，有多少返回的。还是要回归到原始文献去了解基本概念，及其背后的思考和应用
+
+以一个问题提出本章主题，讲述和展示一个数据集。建立模型，拟合模型，结果解释。
+
+## 问题背景 {#sec-aml}
+
+急性粒细胞白血病生存数据
+
+```{r}
+library(survival)
+data(cancer, package = "survival")
+str(aml)
+```
+
+## 模型拟合
+
+R 软件内置了 [**survival**包](https://github.com/therneau/survival) 它是实现生存分析的核心 R 包 [@Terry2000]
+
+```{r}
+#| label: fig-leukemia-surv
+#| fig-cap: "急性粒细胞白血病生存数据"
+#| fig-showtext: true
+#| fig-width: 7
+#| fig-height: 5
+
+leukemia.surv <- survfit(Surv(time, status) ~ x, data = aml)
+library(ggplot2)
+library(ggfortify)
+autoplot(leukemia.surv, data = aml) +
+  theme_minimal()
+```
+
+-   [ggsurvfit](https://github.com/ddsjoberg/ggsurvfit/)
+-   [survminer](https://github.com/kassambara/survminer) 依赖很多
+
+```{r}
+library(ggsurvfit)
+```
+
+拟合模型
+
+```{r}
+fit_mod_surv <- survfit2(Surv(time, status) ~ x, data = aml)
+```
+
+模型输出
+
+```{r}
+fit_mod_surv
+```
+
+```{r}
+#| label: fig-proportional-hazards-regression
+#| fig-cap: 比例风险回归
+#| fig-width: 7
+#| fig-height: 5
+#| fig-showtext: true
+
+ggsurvfit(fit_mod_surv, linewidth = 1) +
+  add_confidence_interval() +
+  add_risktable() +
+  add_quantile(y_value = 0.6, color = "gray50", linewidth = 0.75) +
+  scale_y_continuous(label = scales::percent_format()) +
+  labs(y = "生存百分比", title = "从手术到随机化的复发时间") 
+```
+
+## Cox-Box 比例风险回归与生存分析的关系 {#sec-box-cox}
+
+Box-Cox 变换 [@Box1964]
+
+-   `survival::coxph()`
+-   `MASS::boxcox()` Box-Cox 变换
+
+## Tobit regression 与生存分析的关系 {#sec-tobit-regression}
+
+Tobit (Tobin's Probit) regression 起源于计量经济学中的 Tobit 模型，James Tobin 提出的，用于截尾数据，生存分析中的一种加速失效模型 (accelerated failure model) [@Tobin1958]
+
+<https://m-clark.github.io/models-by-example/tobit.html> <https://stats.oarc.ucla.edu/r/dae/tobit-models/>
+
+-   `VGAM::vglm(family = tobit(Upper = 800))` 依赖少，稳定，推荐使用
+-   VGAM 包的扩展包 VGAMdata 和 VGAMextra
+-   `AER::tobit()` 依赖多
+
+## Logit, Probit and Tobit Regression {#sec-logit-probit-tobit}
+
+-   逻辑回归，响应变量是无序的分类变量，假定服从二项、多项分布
+-   Probit 回归，响应变量是有序的分类变量，
+-   Tobit 回归，响应变量
