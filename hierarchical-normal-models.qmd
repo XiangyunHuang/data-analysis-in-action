@@ -353,7 +353,7 @@ mod_eight_schools <- cmdstan_model(
 )
 fit_eight_schools <- mod_eight_schools$sample(
   data = eight_schools_dat,
-  chains = 4,
+  chains = 2,
   parallel_chains = 2,
   iter_warmup = 1000, # 每条链预处理迭代次数
   iter_sampling = 2000, # 每条链总迭代次数
@@ -832,6 +832,182 @@ summary(rats_gamm$lme)
 summary(rats_gamm$gam)
 ```
 
+### MCMCglmm
+
+同前，先考虑变截距的混合效应模型，结果很接近。
+
+```{r}
+#| eval: false
+#| echo: false
+
+library(MCMCglmm)
+## 变截距模型
+prior1 <- list(
+  R = list(V = 1, nu = 0.002),
+  G = list(
+    G1 = list(V = 1, nu = 0.002)
+  )
+)
+rats_mcmc1 <- MCMCglmm(
+  weight ~ days, random = ~ rats,
+  data = rats_data, verbose = FALSE, prior = prior1
+)
+summary(rats_mcmc1)
+```
+
+``` markdown
+ Iterations = 3001:12991
+ Thinning interval  = 10
+ Sample size  = 1000 
+
+ DIC: 1088.591 
+
+ G-structure:  ~rats
+
+     post.mean l-95% CI u-95% CI eff.samp
+rats     211.4    113.9    344.4     1000
+
+ R-structure:  ~units
+
+      post.mean l-95% CI u-95% CI eff.samp
+units     68.77    52.01    85.12     1000
+
+ Location effects: weight ~ days 
+
+            post.mean l-95% CI u-95% CI eff.samp  pMCMC    
+(Intercept)   106.537  100.354  112.430     1000 <0.001 ***
+days            6.187    6.048    6.321     1000 <0.001 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+```
+
+随机效应的方差（组间方差）为 211.4 ，则标准差为 14.539。残差方差（组内方差）为 68.77，则标准差为 8.293。
+
+```{r}
+#| eval: false
+#| echo: false
+## 变斜率、变截距模型
+prior2 <- list(
+  R = list(V = 1, nu = 0.002),
+  G = list(
+    G1 = list(V = diag(2), nu = 0.002)
+  )
+)
+rats_mcmc2 <- MCMCglmm(weight ~ days,
+  random = ~ us(1 + days):rats,
+  data = rats_data, verbose = FALSE, prior = prior2
+)
+summary(rats_mcmc2)
+```
+
+``` markdown
+
+ Iterations = 3001:12991
+ Thinning interval  = 10
+ Sample size  = 1000 
+
+ DIC: 1019.238 
+
+ G-structure:  ~us(1 + days):rats
+
+                             post.mean l-95% CI u-95% CI eff.samp
+(Intercept):(Intercept).rats  123.2867  45.2664 231.0724    855.7
+days:(Intercept).rats          -0.7634  -4.4912   1.9633    801.4
+(Intercept):days.rats          -0.7634  -4.4912   1.9633    801.4
+days:days.rats                  0.2746   0.1059   0.4926    868.6
+
+ R-structure:  ~units
+
+      post.mean l-95% CI u-95% CI eff.samp
+units     38.16    26.67    49.33    898.4
+
+ Location effects: weight ~ days 
+
+            post.mean l-95% CI u-95% CI eff.samp  pMCMC    
+(Intercept)   106.517  101.687  110.698     1000 <0.001 ***
+days            6.181    5.987    6.403     1000 <0.001 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+```
+
+随机截距的方差为 123.2867，标准差为 11.1034，随机斜率的方差 0.2746，标准差为 0.524，随机截距和随机斜率的协方差 -0.7634，相关系数为 -0.131，这与 **nlme** 包结果很接近。
+
+### INLA
+
+同前，先考虑变截距的混合效应模型，结果一样。
+
+```{r}
+#| message: false
+#| eval: false
+
+library(INLA)
+# 变截距
+rats_inla <- inla(weight ~ days + f(rats, model = "iid", n = 30), 
+                  family = "gaussian", data = rats_data)
+# 输出结果
+summary(rats_inla)
+```
+
+``` markdown
+Time used:
+    Pre = 1.88, Running = 4.21, Post = 0.0267, Total = 6.12 
+Fixed effects:
+               mean    sd 0.025quant 0.5quant 0.975quant    mode kld
+(Intercept) 106.568 3.019    100.628  106.568    112.509 106.568   0
+days          6.186 0.067      6.053    6.186      6.318   6.186   0
+
+Random effects:
+  Name    Model
+    rats IID model
+
+Model hyperparameters:
+                                         mean    sd 0.025quant 0.5quant 0.975quant  mode
+Precision for the Gaussian observations 0.015 0.002      0.011    0.015      0.019 0.015
+Precision for rats                      0.005 0.001      0.004    0.005      0.007 0.005
+
+Marginal log-Likelihood:  -604.26 
+```
+
+考虑，变截距和斜率的混合效应模型。
+
+```{r}
+#| eval: false
+
+# https://inla.r-inla-download.org/r-inla.org/doc/latent/iid.pdf
+# 二维高斯随机效应的先验为 Wishart prior
+rats_data$slopeid <- 30 + rats_data$rats
+# 变截距、变斜率
+rats_inla2 <- inla(
+  weight ~ 1 + days + f(rats, model = "iid2d", n = 2 * 30) + f(slopeid, days, copy = "rats"),
+  data = rats_data, family = "gaussian"
+)
+# 输出结果
+summary(rats_inla2)
+```
+
+``` markdown
+Time used:
+    Pre = 1.59, Running = 0.613, Post = 0.0274, Total = 2.23 
+Fixed effects:
+               mean    sd 0.025quant 0.5quant 0.975quant    mode kld
+(Intercept) 106.568 1.537    103.552  106.568    109.584 106.568   0
+days          6.186 0.121      5.948    6.186      6.423   6.186   0
+
+Random effects:
+  Name    Model
+    rats IID2D model
+   slopeid Copy
+
+Model hyperparameters:
+                                         mean    sd 0.025quant 0.5quant 0.975quant  mode
+Precision for the Gaussian observations 0.017 0.002      0.014    0.017      0.020 0.017
+Precision for rats (component 1)        8.534 1.001      6.987    8.409     10.879 7.981
+Precision for rats (component 2)        3.420 0.467      2.722    3.352      4.533 3.137
+Rho1:2 for rats                         0.054 0.080     -0.132    0.065      0.174 0.118
+
+Marginal log-Likelihood:  -588.65 
+```
+
 ## 习题 {#sec-hierarchical-models-exercises}
 
 1.  四个组的重复测量数据，如下表所示，建立贝叶斯线性混合效应模型/分层正态模型分析数据，与 nlme 包拟合的结果对比。
@@ -897,11 +1073,12 @@ summary(rats_gamm$gam)
     summary(fit_lme4)
     ```
 
+    **lme4** 包不支持响应变量为有序分类变量的情形，可用 **ordinal** 包，此等规模数据，拟合模型需要 5-10 分钟时间。
+
     ```{r}
     #| eval: false
     #| echo: true
 
-    # 需要 5-10 分钟时间
     # 有序因子型的响应变量
     InstEval$y <- factor(InstEval$y, ordered = TRUE)
     library(ordinal)
@@ -910,4 +1087,27 @@ summary(rats_gamm$gam)
       data = InstEval, link = "probit", threshold = "equidistant"
     )
     summary(fit_ordinal)
+
+    ## MCMCglmm
+    library(MCMCglmm)
+    prior2 <- list(
+      R = list(V = 1, nu = 0.002),
+      G = list(
+        G1 = list(V = 1, nu = 0.002),
+        G2 = list(V = 1, nu = 0.002),
+        G3 = list(V = 1, nu = 0.002)
+      )
+    )
+    # 响应变量视为数值变量
+    fit_mcmc2 <- MCMCglmm(
+      y ~ service, random = ~ s + d + dept, family = "gaussian",
+      data = InstEval, verbose = FALSE, prior = prior2
+    )
+    # 响应变量视为有序的分类变量
+    fit_mcmc3 <- MCMCglmm(
+      y ~ service, random = ~ s + d + dept, family = "ordinal",
+      data = InstEval, verbose = FALSE, prior = prior2
+    )
     ```
+
+    数据量较大时，**MCMCglmm** 包拟合模型需要很长时间，放弃，此时，Stan 的相对优势可以体现出来了。Stan 适合大型复杂概率统计模型。
