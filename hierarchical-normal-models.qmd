@@ -261,9 +261,9 @@ stan_dens(eight_schools_fit, pars = "mu", separate_chains = TRUE) +
 bayesplot::mcmc_pairs(eight_schools_fit, pars = c("mu", "tau", "lp__"))
 ```
 
-### 其它 R 包
+## 其它 R 包
 
-#### nlme
+### nlme
 
 接下来，用 **nlme** 包拟合模型。
 
@@ -296,7 +296,7 @@ ranef(fit_lme)
 7.785729 + 2.917988 * ranef(fit_lme)
 ```
 
-#### lme4
+### lme4
 
 接着，采用 **lme4** 包拟合模型，发现 **lme4** 包获得与 **nlme** 包一样的结果。
 
@@ -310,25 +310,21 @@ fit_lme4 <- lme4::lmer(y ~ 1 + (1 | g), weights = 1 / sigma^2, control = control
 summary(fit_lme4)
 ```
 
-#### blme
+### blme
 
-下面使用 blme 包 [@Chung2013] ，blme 包基于 lme4 包，截距项结果比较一致，随机效应（组间方差）和残差项（组内方差）完全不同。
+下面使用 **blme** 包 [@Chung2013] ，**blme** 包基于 **lme4** 包，截距项结果比较一致，随机效应（组间方差）和残差项（组内方差）完全不同。
 
 ```{r}
-### Example using a residual variance prior ###
-# This is the "eight schools" data set; 
 # the mode should be at the boundary of the space.
 
 fit_blme <- blme::blmer(
-  y ~ 1 + (1 | g),
-  control = control, REML = TRUE,
-  resid.prior = point, cov.prior = NULL,
-  weights = 1 / sigma^2
+  y ~ 1 + (1 | g), control = control, REML = TRUE, 
+  cov.prior = NULL, weights = 1 / sigma^2
 )
 summary(fit_blme)
 ```
 
-#### MCMCglmm
+### MCMCglmm
 
 **MCMCglmm** 包采用 MCMC 算法拟合数据。
 
@@ -338,32 +334,16 @@ summary(fit_blme)
 library(MCMCglmm)
 schools <- data.frame(y = y, sigma = sigma, g = g)
 schools$g <- as.factor(schools$g)
-# improper flat prior 
+# # inverse-gamma prior with scale and shape equal to 0.001
 prior1 <- list(
   R = list(
     V = diag(schools$sigma^2), fix = 1
   ),
-  G = list(G1 = list(V = 1e-10, nu = -1))
+  G = list(G1 = list(V = 1, nu = 0.002))
 )
-# # inverse-gamma prior with scale and shape equal to 0.001
-# prior2 <- list(
-#   R = list(
-#     V = diag(schools$sigma^2), fix = 1
-#   ),
-#   G = list(G1 = list(V = 1, nu = 0.002))
-# )
-# # proper Cauchy prior with scale equal to sqrt(alpha.V)
-# prior3 <- list(
-#   R = list(
-#     V = diag(schools$sigma^2), fix = 1
-#   ),
-#   G = list(G1 = list(V = 1, nu = 1, alpha.mu = 0, alpha.V = 25^2)
-#   )
-# )
 # 拟合模型
 fit_mcmc <- MCMCglmm(
-  y ~ 1, random = ~g,
-  rcov = ~ idh(g):units, data = schools,
+  y ~ 1, random = ~g, rcov = ~ idh(g):units, data = schools,
   prior = prior1, verbose = FALSE
 )
 # 输出结果
@@ -375,12 +355,12 @@ summary(fit_mcmc)
  Thinning interval  = 10
  Sample size  = 1000 
 
- DIC: -96.79147 
+ DIC: -98.08778 
 
  G-structure:  ~g
 
   post.mean  l-95% CI u-95% CI eff.samp
-g     70.93 3.487e-06      290    450.8
+g     12.45 0.0003472    72.02    335.7
 
  R-structure:  ~idh(g):units
 
@@ -396,13 +376,17 @@ g8.units       324      324      324        0
 
  Location effects: y ~ 1 
 
-            post.mean l-95% CI u-95% CI eff.samp pMCMC
-(Intercept)     7.802   -2.062   17.656     1100  0.11
+            post.mean l-95% CI u-95% CI eff.samp pMCMC  
+(Intercept)    7.7553  -0.8534  15.6176     1000  0.06 .
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
 ```
 
-值得一提的，早年出现的 R 包 **arm** [@Gelman2007] 支持分层模型，这是最常见和重要的贝叶斯模型。**code** [@coda2006] 可以就 **rjags** [@rjags] 调用 JAGS 返回的结果进行各项数据分析。
+R-structure 表示残差方差，这是已知的参数。G-structure 表示随机截距的方差，Location effects 表示固定效应的截距。
 
-#### cmdstanr
+此外， R 包 **arm** [@Gelman2007] 和 **rjags** [@rjags] 可以拟合分层正态模型。**coda 包** [@coda2006] 可以分析 JAGS 返回的各项数据。
+
+### cmdstanr
 
 **rstan** 包到 **cmdstanr** 包的转化。
 
