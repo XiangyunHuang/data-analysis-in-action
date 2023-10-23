@@ -263,7 +263,9 @@ bayesplot::mcmc_pairs(eight_schools_fit, pars = c("mu", "tau", "lp__"))
 
 ### 其它 R 包
 
-接下来，分别用 **nlme** 和 **lme4** 包拟合模型。
+#### nlme
+
+接下来，用 **nlme** 包拟合模型。
 
 ```{r}
 # 成绩
@@ -291,8 +293,10 @@ ranef(fit_lme)
 类比 Stan 输出结果中的 $\theta$ 向量，每个学校的成绩估计
 
 ```{r}
-7.785729 + 2.917988 * ranef(fit_lme) 
+7.785729 + 2.917988 * ranef(fit_lme)
 ```
+
+#### lme4
 
 接着，采用 **lme4** 包拟合模型，发现 **lme4** 包获得与 **nlme** 包一样的结果。
 
@@ -306,7 +310,9 @@ fit_lme4 <- lme4::lmer(y ~ 1 + (1 | g), weights = 1 / sigma^2, control = control
 summary(fit_lme4)
 ```
 
-最后，使用 blme 包 [@Chung2013] ，blme 包基于 lme4 包，截距项结果比较一致，随机效应（组间方差）和残差项（组内方差）完全不同。
+#### blme
+
+下面使用 blme 包 [@Chung2013] ，blme 包基于 lme4 包，截距项结果比较一致，随机效应（组间方差）和残差项（组内方差）完全不同。
 
 ```{r}
 ### Example using a residual variance prior ###
@@ -322,7 +328,81 @@ fit_blme <- blme::blmer(
 summary(fit_blme)
 ```
 
+#### MCMCglmm
+
+**MCMCglmm** 包采用 MCMC 算法拟合数据。
+
+```{r}
+#| eval: false
+
+library(MCMCglmm)
+schools <- data.frame(y = y, sigma = sigma, g = g)
+schools$g <- as.factor(schools$g)
+# improper flat prior 
+prior1 <- list(
+  R = list(
+    V = diag(schools$sigma^2), fix = 1
+  ),
+  G = list(G1 = list(V = 1e-10, nu = -1))
+)
+# # inverse-gamma prior with scale and shape equal to 0.001
+# prior2 <- list(
+#   R = list(
+#     V = diag(schools$sigma^2), fix = 1
+#   ),
+#   G = list(G1 = list(V = 1, nu = 0.002))
+# )
+# # proper Cauchy prior with scale equal to sqrt(alpha.V)
+# prior3 <- list(
+#   R = list(
+#     V = diag(schools$sigma^2), fix = 1
+#   ),
+#   G = list(G1 = list(V = 1, nu = 1, alpha.mu = 0, alpha.V = 25^2)
+#   )
+# )
+# 拟合模型
+fit_mcmc <- MCMCglmm(
+  y ~ 1, random = ~g,
+  rcov = ~ idh(g):units, data = schools,
+  prior = prior1, verbose = FALSE
+)
+# 输出结果
+summary(fit_mcmc)
+```
+
+``` markdown
+ Iterations = 3001:12991
+ Thinning interval  = 10
+ Sample size  = 1000 
+
+ DIC: -96.79147 
+
+ G-structure:  ~g
+
+  post.mean  l-95% CI u-95% CI eff.samp
+g     70.93 3.487e-06      290    450.8
+
+ R-structure:  ~idh(g):units
+
+         post.mean l-95% CI u-95% CI eff.samp
+g1.units       225      225      225        0
+g2.units       100      100      100        0
+g3.units       256      256      256        0
+g4.units       121      121      121        0
+g5.units        81       81       81        0
+g6.units       121      121      121        0
+g7.units       100      100      100        0
+g8.units       324      324      324        0
+
+ Location effects: y ~ 1 
+
+            post.mean l-95% CI u-95% CI eff.samp pMCMC
+(Intercept)     7.802   -2.062   17.656     1100  0.11
+```
+
 值得一提的，早年出现的 R 包 **arm** [@Gelman2007] 支持分层模型，这是最常见和重要的贝叶斯模型。**code** [@coda2006] 可以就 **rjags** [@rjags] 调用 JAGS 返回的结果进行各项数据分析。
+
+#### cmdstanr
 
 **rstan** 包到 **cmdstanr** 包的转化。
 
