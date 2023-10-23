@@ -85,24 +85,7 @@ $$
 \end{aligned}
 $$
 
-其中，方差协方差矩阵 $\Sigma$ 必须是半正定的，$W$ 是一个对角矩阵。
-
-nlme 和 lme4 等 R 包共用一套表示随机效应的公式语法，如下表所示。
-
-| 公式                                                                           | 含义                                                                                                                                    |
-|---------------------------|---------------------------------------------|
-| `(1|group)`                                                                    | 随机组截距                                                                                                                              |
-| `(x|group)` = `(1+x|group)`                                                    | 变量 x 的随机组斜率和相关截距                                                                                                           |
-| `(0+x|group)` = `(-1+x|group)`                                                 | 变量 x 的随机组斜率，无变化的截距                                                                                                       |
-| `(1|group) + (0+x|group)`                                                      | 不相关的随机截距，组内随机斜率                                                                                                          |
-| `(1|site/block)` = `(1|site)+(1|site:block)`                                   | intercept varying among sites and among blocks within sites (nested random effects)                                                     |
-| `site+(1|site:block)`                                                          | fixed effect of sites plus random variation in intercept among blocks within sites                                                      |
-| `(x|site/block)` = `(x|site)+(x|site:block)` = `(1 + x|site)+(1+x|site:block)` | slope and intercept varying among sites and among blocks within sites                                                                   |
-| `(x1|site)+(x2|block)`                                                         | two different effects, varying at different levels                                                                                      |
-| `x*site+(x|site:block)`                                                        | fixed effect variation of slope and intercept varying among sites and random variation of slope and intercept among blocks within sites |
-| `(1|group1)+(1|group2)`                                                        | intercept varying among crossed random effects (e.g. site, year)                                                                        |
-
-: nlme 包的公式语法 {#tbl-nlme-syntax}
+其中，方差协方差矩阵 $\Sigma$ 必须是半正定的，$W$ 是一个对角矩阵。nlme 和 lme4 等 R 包共用一套表示随机效应的公式语法。
 
 sleepstudy 数据集来自 lme4 包，是一个睡眠研究项目的实验数据。实验对象都是有失眠情况的人，有的人有严重的失眠问题（一天只有 3 个小时的睡眠时间）。进入实验后的前10 天的情况，记录平均反应时间、睡眠不足的天数。
 
@@ -389,7 +372,7 @@ lob_bayes_fit <- brm(
 5.  函数 `INLA::inla()` 集成嵌套拉普拉斯近似。
 
 | 模型                 | nlme     | MASS        | lme4      | GLMMadaptive    | brms    |
-|----------------------|----------|-------------|-----------|-----------------|---------|
+|-------------|------------|------------|------------|------------|------------|
 | 线性混合效应模型     | `lme()`  | `glmmPQL()` | `lmer()`  | 不支持          | `brm()` |
 | 广义线性混合效应模型 | 不支持   | `glmmPQL()` | `glmer()` | `mixed_model()` | `brm()` |
 | 非线性混合效应模型   | `nlme()` | 不支持      | `nlmer()` | 不支持          | `brm()` |
@@ -489,6 +472,22 @@ INLA 软件能处理上千个高斯随机效应，但最多只能处理 15 个�
       family = binomial("logit"), data = cbpp
     )
     summary(fit_glmm_brms)
+
+    # MCMCglmm 总是假定存在过度离散的情况
+    # 存在一个残差服从正态分布的随机变量（效应）
+    library(MCMCglmm)
+    cbpp_mcmc <- MCMCglmm(
+      cbind(incidence, size - incidence) ~ period, random = ~herd,
+      data = cbpp, family = "multinomial2", verbose = FALSE
+    )
+    summary(cbpp_mcmc)
+    # 以上 MCMCglmm 等价于
+    cbpp$id <- as.factor(1:dim(cbpp)[1])
+    cbpp_lme4 <- lme4::glmer(
+      cbind(incidence, size - incidence) ~ period + (1 | herd) + (1 | id),
+      family = binomial, data = cbpp
+    )
+    summary(cbpp_lme4)
     ```
 
     或使用 mgcv 包，可以得到近似的结果。随机效应部分可以看作可加的惩罚项
