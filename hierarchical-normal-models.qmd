@@ -384,8 +384,6 @@ Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’
 
 R-structure 表示残差方差，这是已知的参数。G-structure 表示随机截距的方差，Location effects 表示固定效应的截距。
 
-此外， R 包 **arm** [@Gelman2007] 和 **rjags** [@rjags] 可以拟合分层正态模型。**coda 包** [@coda2006] 可以分析 JAGS 返回的各项数据。
-
 ### cmdstanr
 
 **rstan** 包到 **cmdstanr** 包的转化。
@@ -801,6 +799,47 @@ summary(rats_blme)
 
 与 **lme4** 包的函数 `lmer()` 所不同的是参数 `resid.prior` 、`fixef.prior` 和 `cov.prior` ，它们设置参数的先验分布，其它参数的含义同 `lme4` 包。`resid.prior = invgamma` 表示残差方差参数使用逆伽马分布，`cov.prior = NULL` 表示随机效应的协方差参数使用扁平先验 flat priors。
 
+### glmmTMB
+
+glmmTMB 包基于 Template Model Builder (TMB) ，拟合广义线性混合效应模型，公式语法与 **lme4** 包一致。
+
+```{r}
+#| eval: false
+
+library(glmmTMB)
+rats_glmmtmb <- glmmTMB(weight ~ days + (days | rats), REML = TRUE, data = rats_data)
+summary(rats_glmmtmb)
+```
+
+``` markdown
+ Family: gaussian  ( identity )
+Formula:          weight ~ days + (days | rats)
+Data: rats_data
+
+     AIC      BIC   logLik deviance df.resid 
+  1107.4   1125.4   -547.7   1095.4      146 
+
+Random effects:
+
+Conditional model:
+ Groups   Name        Variance Std.Dev. Corr  
+ rats     (Intercept) 115.4195 10.7433        
+          days          0.2607  0.5106  -0.16 
+ Residual              36.1756  6.0146        
+Number of obs: 150, groups:  rats, 30
+
+Dispersion estimate for gaussian family (sigma^2): 36.2 
+
+Conditional model:
+            Estimate Std. Error z value Pr(>|z|)    
+(Intercept) 106.5676     2.2977   46.38   <2e-16 ***
+days          6.1857     0.1056   58.58   <2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+```
+
+结果与 **nlme** 包完全一样。
+
 ### MASS
 
 **MASS** 包的结果与前面完全一致。
@@ -840,6 +879,94 @@ phi estimate was 36.1755
 ```
 
 残差方差为 36.1755，则标准差为 6.0146。
+
+### hglm
+
+**hglm** 包 [@rönnegård2010] 可以拟合分层广义线性模型，线性混合效应模型和广义线性混合效应模型，随机效应和响应变量服从的分布可以很广泛，使用语法与 **lme4** 包一样。
+
+```{r}
+#| eval: false
+
+rats_hglm2 <- hglm::hglm2(weight ~ days + (days | rats), data = rats_data)
+summary(rats_hglm2)
+```
+
+``` markdown
+Call: 
+hglm2.formula(meanmodel = weight ~ days + (days | rats), data = rats_data)
+
+----------
+MEAN MODEL
+----------
+
+Summary of the fixed effects estimates:
+
+            Estimate Std. Error t-value Pr(>|t|)    
+(Intercept) 106.5676     2.1787   48.91   <2e-16 ***
+days          6.1857     0.1029   60.13   <2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+Note: P-values are based on 103 degrees of freedom
+
+Summary of the random effects estimates:
+
+                    Estimate Std. Error
+(Intercept)| rats:1  -0.1705     5.3422
+(Intercept)| rats:2  -9.8655     5.3422
+(Intercept)| rats:3   2.7201     5.3422
+...
+NOTE: to show all the random effects, use print(summary(hglm.object), print.ranef = TRUE).
+
+Summary of the random effects estimates:
+
+             Estimate Std. Error
+days| rats:1  -0.1213      0.229
+days| rats:2   0.7260      0.229
+days| rats:3   0.3280      0.229
+...
+NOTE: to show all the random effects, use print(summary(hglm.object), print.ranef = TRUE).
+
+----------------
+DISPERSION MODEL
+----------------
+
+NOTE: h-likelihood estimates through EQL can be biased.
+
+Dispersion parameter for the mean model:
+[1] 37.09572
+
+Model estimates for the dispersion term:
+
+Link = log 
+
+Effects:
+  Estimate Std. Error 
+    3.6135     0.1391 
+
+Dispersion = 1 is used in Gamma model on deviances to calculate the standard error(s).
+
+Dispersion parameter for the random effects:
+[1] 103.4501   0.2407
+
+Dispersion model for the random effects:
+
+Link = log
+
+Effects:
+.|Random1 
+  Estimate Std. Error 
+    4.6391     0.3069 
+
+.|Random2 
+  Estimate Std. Error 
+   -1.4241     0.2920 
+
+Dispersion = 1 is used in Gamma model on deviances to calculate the standard error(s).
+
+EQL estimation converged in 5 iterations.
+```
+
+固定效应的截距和斜率都是和 **nlme** 包的输出结果一致。值得注意，随机效应和模型残差都是以发散参数（Dispersion parameter）来表示的，模型残差方差为 37.09572，则标准差为 6.0906，随机效应的随机截距和随机斜率的方差分别为 103.4501 和 0.2407，则标准差分别为 10.1710 和 0.4906，这与 **nlme** 包的结果也是一致的。
 
 ### mgcv
 
@@ -900,6 +1027,280 @@ summary(rats_gamm$lme)
 # GAM
 summary(rats_gamm$gam)
 ```
+
+### rjags
+
+**rjags** [@rjags] 是 JAGS 软件的 R 语言接口，可以拟合分层正态模型，再借助 **coda 包** [@coda2006] 可以分析 JAGS 返回的各项数据。
+
+JAGS 代码和 Stan 代码有不少相似之处，最大的共同点在于以直观的统计模型的符号表示编码模型，仿照 Stan 代码， JAGS 编码的模型（BUGS 代码）如下：
+
+```{verbatim, file="code/rats.bugs", lang="bugs"}
+```
+
+```{r}
+#| message: false
+
+library(rjags)
+# 初始值
+rats_inits <- list(
+  list(".RNG.name" = "base::Marsaglia-Multicarry", 
+       ".RNG.seed" = 20222022, 
+       "alpha_c" = 100, "beta_c" = 6, "tau_c" = 5, "tau_alpha" = 10, "tau_beta" = 0.5),
+  list(".RNG.name" = "base::Marsaglia-Multicarry", 
+       ".RNG.seed" = 20232023, 
+       "alpha_c" = 200, "beta_c" = 10, "tau_c" = 15, "tau_alpha" = 15, "tau_beta" = 1)
+)
+# 模型
+rats_model <- jags.model(
+  file = "code/rats.bugs",
+  data = list(x = x, y = y, N = 30, T = 5, xbar = 22.0),
+  inits = rats_inits, 
+  n.chains = 2
+)
+# burn-in
+update(rats_model, n.iter = 2000)
+# 抽样
+rats_samples <- coda.samples(rats_model,
+  variable.names = c("alpha_c", "beta_c", "sigma_alpha", "sigma_beta", "sigma_c"),
+  n.iter = 4000, thin = 1
+)
+# 参数的后验估计
+summary(rats_samples)
+```
+
+输出结果与 rstan 十分一致，且采样速度极快。
+
+### brms
+
+**brms** 包是基于 **rstan** 包的，基于 Stan 语言做贝叶斯推断，提供与 lme4 包一致的公式语法，且扩展了模型种类。
+
+```{r}
+#| eval: false
+
+rats_brms <- brms::brm(weight ~ days + (days | rats), data = rats_data)
+summary(rats_brms)
+```
+
+``` markdown
+ Family: gaussian 
+  Links: mu = identity; sigma = identity 
+Formula: weight ~ days + (days | rats) 
+   Data: rats_data (Number of observations: 150) 
+  Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
+         total post-warmup draws = 4000
+
+Group-Level Effects: 
+~rats (Number of levels: 30) 
+                    Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+sd(Intercept)          11.27      2.23     7.36    16.08 1.00     2172     2939
+sd(days)                0.54      0.09     0.37     0.74 1.00     1380     2356
+cor(Intercept,days)    -0.11      0.24    -0.53     0.39 1.00      920     1541
+
+Population-Level Effects: 
+          Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+Intercept   106.47      2.47   101.61   111.23 1.00     2173     2768
+days          6.18      0.11     5.96     6.41 1.00     1617     2177
+
+Family Specific Parameters: 
+      Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+sigma     6.15      0.47     5.30     7.14 1.00     1832     3151
+
+Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
+and Tail_ESS are effective sample size measures, and Rhat is the potential
+scale reduction factor on split chains (at convergence, Rhat = 1).
+```
+
+### rstanarm
+
+**rstanarm** 包与 **brms** 包类似，区别是前者预编译了 Stan 模型，后者根据输入数据和模型编译即时编译，此外，后者支持的模型范围更加广泛。
+
+```{r}
+#| eval: false
+
+library(rstanarm)
+rats_rstanarm <- stan_lmer(formula = weight ~ days + (days | rats), data = rats_data)
+summary(rats_rstanarm)
+```
+
+``` markdown
+Model Info:
+ function:     stan_lmer
+ family:       gaussian [identity]
+ formula:      weight ~ days + (days | rats)
+ algorithm:    sampling
+ sample:       4000 (posterior sample size)
+ priors:       see help('prior_summary')
+ observations: 150
+ groups:       rats (30)
+
+Estimates:
+                                      mean   sd    10%   50%   90%
+(Intercept)                         106.5    2.2 103.7 106.6 109.4
+days                                  6.2    0.1   6.0   6.2   6.3
+b[(Intercept) rats:1]                 0.0    5.4  -6.8   0.0   6.8
+b[days rats:1]                       -0.1    0.2  -0.4  -0.1   0.2
+b[(Intercept) rats:2]               -10.2    6.0 -18.0 -10.2  -2.3
+b[days rats:2]                        0.7    0.3   0.4   0.7   1.1
+b[(Intercept) rats:3]                 2.4    5.4  -4.6   2.3   9.3
+b[days rats:3]                        0.3    0.2   0.0   0.3   0.6
+b[(Intercept) rats:4]                 6.1    5.8  -1.3   6.0  13.7
+b[days rats:4]                       -0.8    0.3  -1.1  -0.8  -0.5
+b[(Intercept) rats:5]               -14.5    5.9 -22.4 -14.2  -6.9
+b[days rats:5]                        0.2    0.3  -0.1   0.2   0.5
+b[(Intercept) rats:6]                 5.5    5.4  -1.3   5.5  12.4
+b[days rats:6]                        0.1    0.2  -0.2   0.1   0.4
+b[(Intercept) rats:7]                -6.8    5.4 -13.7  -6.8   0.2
+b[days rats:7]                       -0.3    0.2  -0.6  -0.3   0.0
+b[(Intercept) rats:8]                 0.6    5.3  -6.2   0.7   7.3
+b[days rats:8]                        0.2    0.2  -0.1   0.2   0.5
+b[(Intercept) rats:9]                16.0    5.9   8.6  16.0  23.6
+b[days rats:9]                        1.1    0.3   0.8   1.1   1.5
+b[(Intercept) rats:10]              -11.8    5.6 -19.0 -11.6  -4.7
+b[days rats:10]                      -0.5    0.2  -0.8  -0.5  -0.2
+b[(Intercept) rats:11]                1.6    5.6  -5.3   1.6   8.8
+b[days rats:11]                       0.7    0.2   0.3   0.7   1.0
+b[(Intercept) rats:12]               -9.8    5.5 -16.8  -9.8  -2.8
+b[days rats:12]                      -0.2    0.2  -0.5  -0.2   0.1
+b[(Intercept) rats:13]                0.2    5.4  -6.7   0.2   7.0
+b[days rats:13]                       0.0    0.2  -0.3   0.0   0.3
+b[(Intercept) rats:14]               10.7    5.5   3.7  10.6  17.8
+b[days rats:14]                       0.7    0.2   0.4   0.7   1.0
+b[(Intercept) rats:15]               12.5    6.0   4.9  12.4  20.3
+b[days rats:15]                      -0.6    0.3  -0.9  -0.6  -0.3
+b[(Intercept) rats:16]                6.3    5.5  -0.8   6.3  13.3
+b[days rats:16]                      -0.2    0.2  -0.5  -0.2   0.1
+b[(Intercept) rats:17]               -9.2    5.5 -16.2  -9.1  -2.3
+b[days rats:17]                       0.0    0.2  -0.3   0.0   0.3
+b[(Intercept) rats:18]                4.0    5.5  -2.8   3.9  11.1
+b[days rats:18]                      -0.3    0.2  -0.6  -0.3   0.0
+b[(Intercept) rats:19]                4.7    5.5  -2.4   4.6  11.7
+b[days rats:19]                       0.3    0.2   0.0   0.3   0.6
+b[(Intercept) rats:20]                1.4    5.3  -5.2   1.4   8.3
+b[days rats:20]                      -0.1    0.2  -0.4  -0.1   0.2
+b[(Intercept) rats:21]                0.9    5.5  -6.2   1.0   8.0
+b[days rats:21]                       0.2    0.2  -0.1   0.2   0.5
+b[(Intercept) rats:22]               -7.7    5.5 -14.8  -7.6  -0.7
+b[days rats:22]                      -0.4    0.2  -0.7  -0.4  -0.1
+b[(Intercept) rats:23]               -3.2    5.6 -10.4  -3.3   3.9
+b[days rats:23]                      -0.5    0.2  -0.8  -0.5  -0.2
+b[(Intercept) rats:24]                6.7    5.6  -0.3   6.5  14.0
+b[days rats:24]                      -0.2    0.2  -0.5  -0.2   0.1
+b[(Intercept) rats:25]              -17.8    6.3 -26.0 -17.5  -9.8
+b[days rats:25]                       0.5    0.3   0.1   0.5   0.8
+b[(Intercept) rats:26]                2.6    5.4  -4.4   2.6   9.4
+b[days rats:26]                       0.4    0.2   0.1   0.4   0.7
+b[(Intercept) rats:27]               13.3    5.8   5.8  13.1  20.7
+b[days rats:27]                      -0.1    0.3  -0.4  -0.1   0.2
+b[(Intercept) rats:28]                5.9    5.8  -1.4   5.8  13.3
+b[days rats:28]                      -0.3    0.2  -0.6  -0.3   0.0
+b[(Intercept) rats:29]              -10.0    5.6 -17.0 -10.0  -2.8
+b[days rats:29]                      -0.7    0.2  -1.0  -0.7  -0.4
+b[(Intercept) rats:30]                0.0    5.3  -6.7   0.0   6.8
+b[days rats:30]                      -0.1    0.2  -0.4  -0.1   0.2
+sigma                                 6.2    0.5   5.6   6.2   6.8
+Sigma[rats:(Intercept),(Intercept)] 104.8   42.0  58.1  98.4 157.6
+Sigma[rats:days,(Intercept)]         -0.5    1.5  -2.4  -0.4   1.1
+Sigma[rats:days,days]                 0.3    0.1   0.2   0.3   0.5
+
+Fit Diagnostics:
+           mean   sd    10%   50%   90%
+mean_PPD 242.6    0.7 241.7 242.6 243.6
+
+The mean_ppd is the sample average posterior predictive distribution of the outcome variable (for details see help('summary.stanreg')).
+
+MCMC diagnostics
+                                    mcse Rhat n_eff
+(Intercept)                         0.0  1.0  2544 
+days                                0.0  1.0  1789 
+b[(Intercept) rats:1]               0.1  1.0  4521 
+b[days rats:1]                      0.0  1.0  3408 
+b[(Intercept) rats:2]               0.1  1.0  2803 
+b[days rats:2]                      0.0  1.0  2234 
+b[(Intercept) rats:3]               0.1  1.0  4401 
+b[days rats:3]                      0.0  1.0  3921 
+b[(Intercept) rats:4]               0.1  1.0  2357 
+b[days rats:4]                      0.0  1.0  2717 
+b[(Intercept) rats:5]               0.1  1.0  3832 
+b[days rats:5]                      0.0  1.0  3154 
+b[(Intercept) rats:6]               0.1  1.0  3936 
+b[days rats:6]                      0.0  1.0  3347 
+b[(Intercept) rats:7]               0.1  1.0  4535 
+b[days rats:7]                      0.0  1.0  3907 
+b[(Intercept) rats:8]               0.1  1.0  4617 
+b[days rats:8]                      0.0  1.0  3956 
+b[(Intercept) rats:9]               0.1  1.0  4694 
+b[days rats:9]                      0.0  1.0  3983 
+b[(Intercept) rats:10]              0.1  1.0  4461 
+b[days rats:10]                     0.0  1.0  4218 
+b[(Intercept) rats:11]              0.1  1.0  4534 
+b[days rats:11]                     0.0  1.0  3204 
+b[(Intercept) rats:12]              0.1  1.0  3910 
+b[days rats:12]                     0.0  1.0  3770 
+b[(Intercept) rats:13]              0.1  1.0  4695 
+b[days rats:13]                     0.0  1.0  4325 
+b[(Intercept) rats:14]              0.1  1.0  4513 
+b[days rats:14]                     0.0  1.0  3341 
+b[(Intercept) rats:15]              0.1  1.0  2469 
+b[days rats:15]                     0.0  1.0  2576 
+b[(Intercept) rats:16]              0.1  1.0  4334 
+b[days rats:16]                     0.0  1.0  3888 
+b[(Intercept) rats:17]              0.1  1.0  4760 
+b[days rats:17]                     0.0  1.0  3686 
+b[(Intercept) rats:18]              0.1  1.0  4134 
+b[days rats:18]                     0.0  1.0  3484 
+b[(Intercept) rats:19]              0.1  1.0  4550 
+b[days rats:19]                     0.0  1.0  3962 
+b[(Intercept) rats:20]              0.1  1.0  4234 
+b[days rats:20]                     0.0  1.0  4036 
+b[(Intercept) rats:21]              0.1  1.0  4313 
+b[days rats:21]                     0.0  1.0  3618 
+b[(Intercept) rats:22]              0.1  1.0  4015 
+b[days rats:22]                     0.0  1.0  3636 
+b[(Intercept) rats:23]              0.1  1.0  4178 
+b[days rats:23]                     0.0  1.0  3373 
+b[(Intercept) rats:24]              0.1  1.0  4148 
+b[days rats:24]                     0.0  1.0  3838 
+b[(Intercept) rats:25]              0.1  1.0  2658 
+b[days rats:25]                     0.0  1.0  2147 
+b[(Intercept) rats:26]              0.1  1.0  5172 
+b[days rats:26]                     0.0  1.0  3670 
+b[(Intercept) rats:27]              0.1  1.0  3653 
+b[days rats:27]                     0.0  1.0  3520 
+b[(Intercept) rats:28]              0.1  1.0  4001 
+b[days rats:28]                     0.0  1.0  3389 
+b[(Intercept) rats:29]              0.1  1.0  4712 
+b[days rats:29]                     0.0  1.0  4009 
+b[(Intercept) rats:30]              0.1  1.0  5126 
+b[days rats:30]                     0.0  1.0  3547 
+sigma                               0.0  1.0  1450 
+Sigma[rats:(Intercept),(Intercept)] 1.0  1.0  1790 
+Sigma[rats:days,(Intercept)]        0.1  1.0   758 
+Sigma[rats:days,days]               0.0  1.0  1512 
+mean_PPD                            0.0  1.0  4110 
+log-posterior                       0.4  1.0   577 
+
+For each parameter, mcse is Monte Carlo standard error, n_eff is a crude measure of effective sample size, and Rhat is the potential scale reduction factor on split chains (at convergence Rhat=1).
+```
+
+固定效应的部分，截距和斜率如下：
+
+``` markdown
+Estimates:
+                                      mean   sd    10%   50%   90%
+(Intercept)                         106.5    2.2 103.7 106.6 109.4
+days                                  6.2    0.1   6.0   6.2   6.3
+```
+
+模型残差的标准差 sigma、随机效应 Sigma 的随机截距的方差 104.8 、随机斜率的方差 0.3 及其协方差 -0.5。
+
+``` markdown
+sigma                                 6.2    0.5   5.6   6.2   6.8
+Sigma[rats:(Intercept),(Intercept)] 104.8   42.0  58.1  98.4 157.6
+Sigma[rats:days,(Intercept)]         -0.5    1.5  -2.4  -0.4   1.1
+Sigma[rats:days,days]                 0.3    0.1   0.2   0.3   0.5
+```
+
+**rstanarm** 和 **brms** 包的结果基本一致的。
 
 ### MCMCglmm
 
@@ -1084,6 +1485,12 @@ Marginal log-Likelihood:  -588.65
 对于变截距和斜率混合效应模型，还未完全弄清楚 INLA 包的输出结果。固定效应部分和残差部分都是和前面一致的，但不清楚随机效应的方差协方差矩阵的估计与 INLA 输出的对应关系。
 :::
 
+## 总结 {#sec-hierarchical-normal-models-summary}
+
+基于 rats 数据建立变截距、变斜率的分层正态模型，也是线性混合效应模型的一种特殊情况，下表给出不同方法对模型各个参数的估计及置信区间。
+
+表中给出截距 $\beta_0$ 、斜率 $\beta_1$ 、随机截距 $\sigma_0$、随机斜率 $\sigma_1$、残差 $\sigma_{\epsilon}$ 等参数的估计及 95% 的置信区间，四舍五入保留 3 位小数。
+
 ## 习题 {#sec-hierarchical-models-exercises}
 
 1.  四个组的重复测量数据，如下表所示，建立贝叶斯线性混合效应模型/分层正态模型分析数据，与 nlme 包拟合的结果对比。
@@ -1128,6 +1535,56 @@ Marginal log-Likelihood:  -588.65
 
     ```{r}
     64.01266 + ranef(fit_lme)
+    ```
+
+    也可以调用 **rjags** 包连接 JAGS 软件做贝叶斯推理，JAGS 代码如下：
+
+    ```{verbatim, file="code/hnm.bugs", lang="bugs"}
+    ```
+
+    完整的运行代码如下：
+
+    ```{r}
+    #| message: false
+
+    library(rjags)
+    # 参考值
+    mu_a <- min(y)
+    mu_b <- max(y)
+    log_sigma_b <- 2 * log(sd(y))
+    tau_b <- 2 * sd(y)
+
+    J <- 4 # 4 个组
+    n <- length(y) # 观察值数量
+    N <- 1500 # 总采样数
+    nthin <- 1 # 采样间隔
+    nchains <- 2 # 2 条链
+    ndiscard <- N / 2 # 预处理阶段 warm-up / burn-in
+
+    # 初始值
+    jags_inits <- list(
+      list(".RNG.name" = "base::Marsaglia-Multicarry", 
+           ".RNG.seed" = 20222022, 
+           "theta" = rep(3, 4), "mu" = 60, "log_sigma" = 0, "tau" = 1.5),
+      list(".RNG.name" = "base::Marsaglia-Multicarry", 
+           ".RNG.seed" = 20232023, 
+           "theta" = rep(2, 4), "mu" = 60, "log_sigma" = 1, "tau" = 0.375)
+    )
+    # Call JAGS from R
+    jags_model <- jags.model(
+      file = "code/hnm.bugs",
+      data = list("y" = y, "group" = group, "J" = J, "n" = n),
+      inits = jags_inits, 
+      n.chains = nchains
+    )
+    # burn-in
+    update(jags_model, n.iter = ndiscard)
+    # 抽样
+    jags_samples <- coda.samples(jags_model,
+      variable.names = c('theta','mu','sigma','tau'), n.iter = N
+    )
+    # 参数的后验估计
+    summary(jags_samples)
     ```
 
 2.  基于 **lme4** 包中学生对老师的评价数据 `InstEval` 建立（广义）线性混合效应模型分析数据。将响应变量（学生评价）视为有序的离散型变量，比较观察两个模型拟合效果（lme4、GLMMadaptive、spaMM 都不支持有序的响应变量，brms 则支持各类有序回归，使用语法与 lme4 完全一样。但是，由于数据规模比较大，计算时间数以天计，可考虑用 Stan 直接编码）。再者，从 Stan 实现的贝叶斯模型来看，感受 Stan 建模的灵活性和扩展性。（**nlme** 包不支持此等交叉随机效应的表达。）
