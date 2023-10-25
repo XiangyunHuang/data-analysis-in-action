@@ -636,6 +636,46 @@ bayesplot::mcmc_areas_ridges(rats_fit, pars = paste0("beta", "[", 1:30, "]")) +
 
 参数向量 $\boldsymbol{\beta}$ 的后验估计可以看作是小鼠的重量的增长率，上图即为各个小鼠重量的增长率的后验分布。
 
+### cmdstanr
+
+从 rstan 包转 cmdstanr 包是非常容易的，只要语法兼容，模型代码可以原封不动。
+
+```{r}
+#| message: false
+
+library(cmdstanr)
+mod_rats <- cmdstan_model(
+  stan_file = "code/rats.stan",
+  compile = TRUE, cpp_options = list(stan_threads = TRUE)
+)
+fit_rats <- mod_rats$sample(
+  data = list(N = N, T = T, y = y, x = x, xbar = xbar), # 数据
+  chains = 2,            # 总链条数
+  parallel_chains = 2,   # 并行数目
+  iter_warmup = 1000,    # 每条链预处理的迭代次数
+  iter_sampling = 1000,  # 每条链采样的迭代次数
+  threads_per_chain = 2, # 每条链设置 2 个线程
+  seed = 20232023,       # 随机数种子
+  show_messages = FALSE, # 不显示消息
+  adapt_delta = 0.9,     # 接受率
+  refresh = 0 # 不显示采样迭代的进度
+)
+```
+
+模型输出
+
+```{r}
+# 显示除了参数 alpha 和 beta 以外的结果
+vars <- setdiff(fit_rats$metadata()$stan_variables, c("alpha", "beta"))
+fit_rats$summary(variables = vars)
+```
+
+诊断信息
+
+```{r}
+fit_rats$diagnostic_summary()
+```
+
 ### nlme {#sec-rats-nlme}
 
 **nlme** 包适合长格式的数据，因此，先将小鼠数据整理成长格式。
@@ -857,6 +897,8 @@ summary(rats_mass)
 **spaMM** 包的结果与前面完全一致。
 
 ```{r}
+#| message: false
+
 rats_spamm <- spaMM::fitme(weight ~ days + (days | rats), data = rats_data)
 summary(rats_spamm)
 ```
@@ -1037,6 +1079,8 @@ JAGS 代码和 Stan 代码有不少相似之处，最大的共同点在于以直
 ```{verbatim, file="code/rats.bugs", lang="bugs"}
 ```
 
+转化主要集中在模型块，注意二者概率分布的名称以及参数含义对应关系，JAGS 可以省略类型声明，最后，JAGS 不支持 Stan 中的向量化操作，这种新特性是独特的。
+
 ```{r}
 #| message: false
 
@@ -1055,7 +1099,7 @@ rats_model <- jags.model(
   file = "code/rats.bugs",
   data = list(x = x, y = y, N = 30, T = 5, xbar = 22.0),
   inits = rats_inits, 
-  n.chains = 2
+  n.chains = 2, quiet = TRUE
 )
 # burn-in
 update(rats_model, n.iter = 2000)
@@ -1134,170 +1178,45 @@ Model Info:
  groups:       rats (30)
 
 Estimates:
-                                      mean   sd    10%   50%   90%
-(Intercept)                         106.5    2.2 103.7 106.6 109.4
-days                                  6.2    0.1   6.0   6.2   6.3
-b[(Intercept) rats:1]                 0.0    5.4  -6.8   0.0   6.8
-b[days rats:1]                       -0.1    0.2  -0.4  -0.1   0.2
-b[(Intercept) rats:2]               -10.2    6.0 -18.0 -10.2  -2.3
-b[days rats:2]                        0.7    0.3   0.4   0.7   1.1
-b[(Intercept) rats:3]                 2.4    5.4  -4.6   2.3   9.3
-b[days rats:3]                        0.3    0.2   0.0   0.3   0.6
-b[(Intercept) rats:4]                 6.1    5.8  -1.3   6.0  13.7
-b[days rats:4]                       -0.8    0.3  -1.1  -0.8  -0.5
-b[(Intercept) rats:5]               -14.5    5.9 -22.4 -14.2  -6.9
-b[days rats:5]                        0.2    0.3  -0.1   0.2   0.5
-b[(Intercept) rats:6]                 5.5    5.4  -1.3   5.5  12.4
-b[days rats:6]                        0.1    0.2  -0.2   0.1   0.4
-b[(Intercept) rats:7]                -6.8    5.4 -13.7  -6.8   0.2
-b[days rats:7]                       -0.3    0.2  -0.6  -0.3   0.0
-b[(Intercept) rats:8]                 0.6    5.3  -6.2   0.7   7.3
-b[days rats:8]                        0.2    0.2  -0.1   0.2   0.5
-b[(Intercept) rats:9]                16.0    5.9   8.6  16.0  23.6
-b[days rats:9]                        1.1    0.3   0.8   1.1   1.5
-b[(Intercept) rats:10]              -11.8    5.6 -19.0 -11.6  -4.7
-b[days rats:10]                      -0.5    0.2  -0.8  -0.5  -0.2
-b[(Intercept) rats:11]                1.6    5.6  -5.3   1.6   8.8
-b[days rats:11]                       0.7    0.2   0.3   0.7   1.0
-b[(Intercept) rats:12]               -9.8    5.5 -16.8  -9.8  -2.8
-b[days rats:12]                      -0.2    0.2  -0.5  -0.2   0.1
-b[(Intercept) rats:13]                0.2    5.4  -6.7   0.2   7.0
-b[days rats:13]                       0.0    0.2  -0.3   0.0   0.3
-b[(Intercept) rats:14]               10.7    5.5   3.7  10.6  17.8
-b[days rats:14]                       0.7    0.2   0.4   0.7   1.0
-b[(Intercept) rats:15]               12.5    6.0   4.9  12.4  20.3
-b[days rats:15]                      -0.6    0.3  -0.9  -0.6  -0.3
-b[(Intercept) rats:16]                6.3    5.5  -0.8   6.3  13.3
-b[days rats:16]                      -0.2    0.2  -0.5  -0.2   0.1
-b[(Intercept) rats:17]               -9.2    5.5 -16.2  -9.1  -2.3
-b[days rats:17]                       0.0    0.2  -0.3   0.0   0.3
-b[(Intercept) rats:18]                4.0    5.5  -2.8   3.9  11.1
-b[days rats:18]                      -0.3    0.2  -0.6  -0.3   0.0
-b[(Intercept) rats:19]                4.7    5.5  -2.4   4.6  11.7
-b[days rats:19]                       0.3    0.2   0.0   0.3   0.6
-b[(Intercept) rats:20]                1.4    5.3  -5.2   1.4   8.3
-b[days rats:20]                      -0.1    0.2  -0.4  -0.1   0.2
-b[(Intercept) rats:21]                0.9    5.5  -6.2   1.0   8.0
-b[days rats:21]                       0.2    0.2  -0.1   0.2   0.5
-b[(Intercept) rats:22]               -7.7    5.5 -14.8  -7.6  -0.7
-b[days rats:22]                      -0.4    0.2  -0.7  -0.4  -0.1
-b[(Intercept) rats:23]               -3.2    5.6 -10.4  -3.3   3.9
-b[days rats:23]                      -0.5    0.2  -0.8  -0.5  -0.2
-b[(Intercept) rats:24]                6.7    5.6  -0.3   6.5  14.0
-b[days rats:24]                      -0.2    0.2  -0.5  -0.2   0.1
-b[(Intercept) rats:25]              -17.8    6.3 -26.0 -17.5  -9.8
-b[days rats:25]                       0.5    0.3   0.1   0.5   0.8
-b[(Intercept) rats:26]                2.6    5.4  -4.4   2.6   9.4
-b[days rats:26]                       0.4    0.2   0.1   0.4   0.7
-b[(Intercept) rats:27]               13.3    5.8   5.8  13.1  20.7
-b[days rats:27]                      -0.1    0.3  -0.4  -0.1   0.2
-b[(Intercept) rats:28]                5.9    5.8  -1.4   5.8  13.3
-b[days rats:28]                      -0.3    0.2  -0.6  -0.3   0.0
-b[(Intercept) rats:29]              -10.0    5.6 -17.0 -10.0  -2.8
-b[days rats:29]                      -0.7    0.2  -1.0  -0.7  -0.4
-b[(Intercept) rats:30]                0.0    5.3  -6.7   0.0   6.8
-b[days rats:30]                      -0.1    0.2  -0.4  -0.1   0.2
-sigma                                 6.2    0.5   5.6   6.2   6.8
-Sigma[rats:(Intercept),(Intercept)] 104.8   42.0  58.1  98.4 157.6
-Sigma[rats:days,(Intercept)]         -0.5    1.5  -2.4  -0.4   1.1
-Sigma[rats:days,days]                 0.3    0.1   0.2   0.3   0.5
-
-Fit Diagnostics:
-           mean   sd    10%   50%   90%
-mean_PPD 242.6    0.7 241.7 242.6 243.6
-
-The mean_ppd is the sample average posterior predictive distribution of the outcome variable (for details see help('summary.stanreg')).
+                                      mean    sd      10%     50%     90%  
+(Intercept)                         106.575   2.236 103.789 106.559 109.415
+days                                  6.187   0.111   6.048   6.185   6.329
+sigma                                 6.219   0.497   5.626   6.183   6.862
+Sigma[rats:(Intercept),(Intercept)] 103.927  42.705  57.329  98.128 159.086
+Sigma[rats:days,(Intercept)]         -0.545   1.492  -2.361  -0.402   1.162
+Sigma[rats:days,days]                 0.304   0.112   0.181   0.285   0.445
 
 MCMC diagnostics
-                                    mcse Rhat n_eff
-(Intercept)                         0.0  1.0  2544 
-days                                0.0  1.0  1789 
-b[(Intercept) rats:1]               0.1  1.0  4521 
-b[days rats:1]                      0.0  1.0  3408 
-b[(Intercept) rats:2]               0.1  1.0  2803 
-b[days rats:2]                      0.0  1.0  2234 
-b[(Intercept) rats:3]               0.1  1.0  4401 
-b[days rats:3]                      0.0  1.0  3921 
-b[(Intercept) rats:4]               0.1  1.0  2357 
-b[days rats:4]                      0.0  1.0  2717 
-b[(Intercept) rats:5]               0.1  1.0  3832 
-b[days rats:5]                      0.0  1.0  3154 
-b[(Intercept) rats:6]               0.1  1.0  3936 
-b[days rats:6]                      0.0  1.0  3347 
-b[(Intercept) rats:7]               0.1  1.0  4535 
-b[days rats:7]                      0.0  1.0  3907 
-b[(Intercept) rats:8]               0.1  1.0  4617 
-b[days rats:8]                      0.0  1.0  3956 
-b[(Intercept) rats:9]               0.1  1.0  4694 
-b[days rats:9]                      0.0  1.0  3983 
-b[(Intercept) rats:10]              0.1  1.0  4461 
-b[days rats:10]                     0.0  1.0  4218 
-b[(Intercept) rats:11]              0.1  1.0  4534 
-b[days rats:11]                     0.0  1.0  3204 
-b[(Intercept) rats:12]              0.1  1.0  3910 
-b[days rats:12]                     0.0  1.0  3770 
-b[(Intercept) rats:13]              0.1  1.0  4695 
-b[days rats:13]                     0.0  1.0  4325 
-b[(Intercept) rats:14]              0.1  1.0  4513 
-b[days rats:14]                     0.0  1.0  3341 
-b[(Intercept) rats:15]              0.1  1.0  2469 
-b[days rats:15]                     0.0  1.0  2576 
-b[(Intercept) rats:16]              0.1  1.0  4334 
-b[days rats:16]                     0.0  1.0  3888 
-b[(Intercept) rats:17]              0.1  1.0  4760 
-b[days rats:17]                     0.0  1.0  3686 
-b[(Intercept) rats:18]              0.1  1.0  4134 
-b[days rats:18]                     0.0  1.0  3484 
-b[(Intercept) rats:19]              0.1  1.0  4550 
-b[days rats:19]                     0.0  1.0  3962 
-b[(Intercept) rats:20]              0.1  1.0  4234 
-b[days rats:20]                     0.0  1.0  4036 
-b[(Intercept) rats:21]              0.1  1.0  4313 
-b[days rats:21]                     0.0  1.0  3618 
-b[(Intercept) rats:22]              0.1  1.0  4015 
-b[days rats:22]                     0.0  1.0  3636 
-b[(Intercept) rats:23]              0.1  1.0  4178 
-b[days rats:23]                     0.0  1.0  3373 
-b[(Intercept) rats:24]              0.1  1.0  4148 
-b[days rats:24]                     0.0  1.0  3838 
-b[(Intercept) rats:25]              0.1  1.0  2658 
-b[days rats:25]                     0.0  1.0  2147 
-b[(Intercept) rats:26]              0.1  1.0  5172 
-b[days rats:26]                     0.0  1.0  3670 
-b[(Intercept) rats:27]              0.1  1.0  3653 
-b[days rats:27]                     0.0  1.0  3520 
-b[(Intercept) rats:28]              0.1  1.0  4001 
-b[days rats:28]                     0.0  1.0  3389 
-b[(Intercept) rats:29]              0.1  1.0  4712 
-b[days rats:29]                     0.0  1.0  4009 
-b[(Intercept) rats:30]              0.1  1.0  5126 
-b[days rats:30]                     0.0  1.0  3547 
-sigma                               0.0  1.0  1450 
-Sigma[rats:(Intercept),(Intercept)] 1.0  1.0  1790 
-Sigma[rats:days,(Intercept)]        0.1  1.0   758 
-Sigma[rats:days,days]               0.0  1.0  1512 
-mean_PPD                            0.0  1.0  4110 
-log-posterior                       0.4  1.0   577 
+                                    mcse  Rhat  n_eff
+(Intercept)                         0.043 1.000 2753 
+days                                0.003 1.005 1694 
+sigma                               0.015 1.001 1172 
+Sigma[rats:(Intercept),(Intercept)] 1.140 1.000 1403 
+Sigma[rats:days,(Intercept)]        0.054 1.006  772 
+Sigma[rats:days,days]               0.003 1.000 1456 
 
-For each parameter, mcse is Monte Carlo standard error, n_eff is a crude measure of effective sample size, and Rhat is the potential scale reduction factor on split chains (at convergence Rhat=1).
+For each parameter, mcse is Monte Carlo standard error, 
+n_eff is a crude measure of effective sample size, 
+and Rhat is the potential scale reduction factor 
+on split chains (at convergence Rhat=1).
 ```
 
 固定效应的部分，截距和斜率如下：
 
 ``` markdown
 Estimates:
-                                      mean   sd    10%   50%   90%
-(Intercept)                         106.5    2.2 103.7 106.6 109.4
-days                                  6.2    0.1   6.0   6.2   6.3
+                                      mean    sd      10%     50%     90%  
+(Intercept)                         106.575   2.236 103.789 106.559 109.415
+days                                  6.187   0.111   6.048   6.185   6.329
 ```
 
-模型残差的标准差 sigma、随机效应 Sigma 的随机截距的方差 104.8 、随机斜率的方差 0.3 及其协方差 -0.5。
+模型残差的标准差 sigma、随机效应 Sigma 的随机截距的方差 103.927 、随机斜率的方差 0.304 及其协方差 -0.545。
 
 ``` markdown
-sigma                                 6.2    0.5   5.6   6.2   6.8
-Sigma[rats:(Intercept),(Intercept)] 104.8   42.0  58.1  98.4 157.6
-Sigma[rats:days,(Intercept)]         -0.5    1.5  -2.4  -0.4   1.1
-Sigma[rats:days,days]                 0.3    0.1   0.2   0.3   0.5
+sigma                                 6.219   0.497   5.626   6.183   6.862
+Sigma[rats:(Intercept),(Intercept)] 103.927  42.705  57.329  98.128 159.086
+Sigma[rats:days,(Intercept)]         -0.545   1.492  -2.361  -0.402   1.162
+Sigma[rats:days,days]                 0.304   0.112   0.181   0.285   0.445
 ```
 
 **rstanarm** 和 **brms** 包的结果基本一致的。
@@ -1575,7 +1494,7 @@ Marginal log-Likelihood:  -588.65
       file = "code/hnm.bugs",
       data = list("y" = y, "group" = group, "J" = J, "n" = n),
       inits = jags_inits, 
-      n.chains = nchains
+      n.chains = nchains, quiet = TRUE
     )
     # burn-in
     update(jags_model, n.iter = ndiscard)
