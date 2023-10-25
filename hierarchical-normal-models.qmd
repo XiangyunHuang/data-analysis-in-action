@@ -35,32 +35,33 @@ rstan_gg_options(
 )
 ```
 
-## 8schools 数据 {#sec-eight-schools}
+## rstan 包
 
-8schools 数据最早来自 @Rubin1981
-
-分层正态模型
+本节以 8schools 数据为例介绍分层正态模型及 **rstan** 包实现，8schools 数据最早来自 @Rubin1981 ，分层正态模型如下：
 
 $$
 \begin{aligned}
-y_j &\sim \mathcal{N}(\theta_j,\sigma_j) \quad
+y_j &\sim \mathcal{N}(\theta_j,\sigma_j^2) \quad
 \theta_j = \mu + \tau * \eta_j \\
-\theta_j &\sim \mathcal{N}(\mu, \tau) \quad
-\eta_j \sim \mathcal{N}(0,1)
+\theta_j &\sim \mathcal{N}(\mu, \tau^2) \quad
+\eta_j \sim \mathcal{N}(0,1) \\
+\mu &\sim \mathcal{N}(0, 5^2) \quad \tau \sim \mathrm{Half\_Cauchy}(0,5)
 \end{aligned}
 $$
 
+其中，$y_j,\sigma_j$ 是已知的观测数据，$\theta_j$ 是模型参数， $\eta_j$ 是服从标准正态分布的潜变量，$\mu,\tau$ 是超参数，分别服从正态分布和半柯西分布。
+
 ### 拟合模型
 
-用 rstan 包来拟合模型
+用 **rstan** 包来拟合模型
 
 ```{r}
 # 编译模型
 eight_schools_fit <- stan(
   model_name = "eight_schools",
-  # file = "code/8schools.stan",
+  # file = "code/eight_schools.stan",
   model_code = "
-  // saved as 8schools.stan
+  // saved as eight_schools.stan
   data {
     int<lower=0> J;         // number of schools
     real y[J];              // estimated treatment effects
@@ -75,6 +76,8 @@ eight_schools_fit <- stan(
     vector[J] theta = mu + tau * eta;        // school treatment effects
   }
   model {
+    target += normal_lpdf(mu | 0, 5); 
+    target += cauchy_lpdf(tau | 0, 5);
     target += normal_lpdf(eta | 0, 1);       // prior log-density
     target += normal_lpdf(y | theta, sigma); // log-likelihood
   }
@@ -326,7 +329,7 @@ summary(fit_blme)
 
 ### MCMCglmm
 
-**MCMCglmm** 包采用 MCMC 算法拟合数据。
+**MCMCglmm** 包 [@Hadfield2010] 采用 MCMC 算法拟合数据。
 
 ```{r}
 #| eval: false
@@ -336,15 +339,13 @@ schools <- data.frame(y = y, sigma = sigma, g = g)
 schools$g <- as.factor(schools$g)
 # # inverse-gamma prior with scale and shape equal to 0.001
 prior1 <- list(
-  R = list(
-    V = diag(schools$sigma^2), fix = 1
-  ),
+  R = list(V = diag(schools$sigma^2), fix = 1),
   G = list(G1 = list(V = 1, nu = 0.002))
 )
 # 拟合模型
 fit_mcmc <- MCMCglmm(
-  y ~ 1, random = ~g, rcov = ~ idh(g):units, data = schools,
-  prior = prior1, verbose = FALSE
+  y ~ 1, random = ~g, rcov = ~ idh(g):units, 
+  data = schools, prior = prior1, verbose = FALSE
 )
 # 输出结果
 summary(fit_mcmc)
@@ -386,16 +387,7 @@ R-structure 表示残差方差，这是已知的参数。G-structure 表示随�
 
 ### cmdstanr
 
-**rstan** 包到 **cmdstanr** 包的转化。
-
-$$
-\begin{aligned}
-& y_i \sim \mathcal{N}(\theta_i, \sigma_i^2), \quad \theta_i = \mu_i + \tau*\eta_i \\
-& \mu \sim \mathcal{N}(0, 5^2), \quad \tau \sim \mathrm{Half\_Cauchy}(0,5)
-\end{aligned}
-$$
-
-Stan 代码如下
+一般地，rstan 包使用的 stan 框架版本低于 **cmdstanr** 包，从 **rstan** 包切换到 **cmdstanr** 包，需要注意语法、函数的变化，在都是较新的版本时，Stan 代码不需要做改动，如下：
 
 ```{verbatim, file="code/eight_schools.stan", lang="stan"}
 ```
@@ -439,7 +431,7 @@ fit_eight_schools$summary()
 fit_eight_schools$diagnostic_summary()
 ```
 
-## rats 数据 {#sec-thirty-rats}
+## 案例：rats 数据 {#sec-thirty-rats}
 
 rats 数据最早来自 @gelfand1990 ，记录 30 只小鼠每隔一周的重量，一共进行了 5 周。第一次记录是小鼠第 8 天的时候，第二次测量记录是第 15 天的时候，一直持续到第 36 天。下面在 R 环境中准备数据。
 
@@ -507,174 +499,7 @@ matplot(y, xlab = "小鼠编号", ylab = "小鼠重量")
 matplot(t(y), xlab = "测量次数", ylab = "小鼠重量")
 ```
 
-### rstan {#sec-rats-rstan}
-
-初始化模型参数，设置采样算法的参数。
-
-```{r}
-# 迭代链
-chains <- 4
-# 迭代次数
-iter <- 1000
-# 初始值
-init <- rep(list(list(
-  alpha = rep(250, 30), beta = rep(6, 30),
-  alpha_c = 150, beta_c = 10,
-  tausq_c = 1, tausq_alpha = 1,
-  tausq_beta = 1
-)), chains)
-```
-
-接下来，基于重复测量数据，建立线性生长曲线模型：
-
-$$
-\begin{aligned}
-\alpha_c &\sim \mathcal{N}(0,100) \quad \beta_c  \sim \mathcal{N}(0,100) \\
-\tau^2_{\alpha} &\sim \mathrm{inv\_gamma}(0.001, 0.001) \\
-\tau^2_{\beta}  &\sim \mathrm{inv\_gamma}(0.001, 0.001) \\
-\tau^2_c &\sim \mathrm{inv\_gamma}(0.001, 0.001) \\
-\alpha_n &\sim \mathcal{N}(\alpha_c, \tau_{\alpha})  \quad
-\beta_n  \sim \mathcal{N}(\beta_c, \tau_{\beta}) \\
-y_{nt} &\sim \mathcal{N}(\alpha_n + \beta_n * (x_t - \bar{x}), \tau_c) \\
-& n = 1,2,\ldots,N \quad t = 1,2,\ldots,T
-\end{aligned}
-$$
-
-其中， $\alpha_c,\beta_c,\tau_c,\tau_{\alpha},\tau_{\beta}$ 为无信息先验，$\bar{x} = 22$ 表示第 22 天，$N = 30$ 和 $T = 5$ 分别表示实验中的小鼠数量和测量次数，下面采用 Stan 编码、编译、采样和拟合模型。
-
-```{r}
-rats_fit <- stan(
-  model_name = "rats",
-  model_code = "
-  data {
-    int<lower=0> N;
-    int<lower=0> T;
-    vector[T] x;
-    matrix[N,T] y;
-    real xbar;
-  }
-  parameters {
-    vector[N] alpha;
-    vector[N] beta;
-
-    real alpha_c;
-    real beta_c;          // beta.c in original bugs model
-
-    real<lower=0> tausq_c;
-    real<lower=0> tausq_alpha;
-    real<lower=0> tausq_beta;
-  }
-  transformed parameters {
-    real<lower=0> tau_c;       // sigma in original bugs model
-    real<lower=0> tau_alpha;
-    real<lower=0> tau_beta;
-
-    tau_c = sqrt(tausq_c);
-    tau_alpha = sqrt(tausq_alpha);
-    tau_beta = sqrt(tausq_beta);
-  }
-  model {
-    alpha_c ~ normal(0, 100);
-    beta_c ~ normal(0, 100);
-    tausq_c ~ inv_gamma(0.001, 0.001);
-    tausq_alpha ~ inv_gamma(0.001, 0.001);
-    tausq_beta ~ inv_gamma(0.001, 0.001);
-    alpha ~ normal(alpha_c, tau_alpha); // vectorized
-    beta ~ normal(beta_c, tau_beta);  // vectorized
-    for (n in 1:N)
-      for (t in 1:T)
-        y[n,t] ~ normal(alpha[n] + beta[n] * (x[t] - xbar), tau_c);
-  }
-  generated quantities {
-    real alpha0;
-    alpha0 = alpha_c - xbar * beta_c;
-  }
-  ",
-  data = list(N = N, T = T, y = y, x = x, xbar = xbar),
-  chains = chains, init = init, iter = iter,   
-  verbose = FALSE, refresh = 0, seed = 20190425
-)
-```
-
-模型输出结果如下：
-
-```{r}
-print(rats_fit, pars = c("alpha", "beta"), include = FALSE, digits = 1)
-```
-
-`alpha_c` 表示小鼠 5 次测量的平均重量，`beta_c` 表示小鼠体重的增长率，$\alpha_i,\beta_i$ 分别表示第 $i$ 只小鼠在第 22 天（第 3 次测量或 $x_t = \bar{x}$ ）的重量和增长率（每日增加的重量）。
-
-对于分量众多的参数向量，比较适合用岭线图展示后验分布，下面调用 **bayesplot** 包绘制参数向量 $\boldsymbol{\alpha},\boldsymbol{\beta}$ 的后验分布。
-
-```{r}
-#| label: fig-rats-alpha
-#| fig-cap: 参数 $\boldsymbol{\alpha}$ 的后验分布
-#| fig-showtext: true
-#| fig-width: 6
-#| fig-height: 8
-#| message: false
-
-# plot(rats_fit, pars = "alpha", show_density = TRUE, ci_level = 0.8, outer_level = 0.95)
-bayesplot::mcmc_areas_ridges(rats_fit, pars = paste0("alpha", "[", 1:30, "]")) +
-  scale_y_discrete(labels = scales::parse_format()) 
-```
-
-参数向量 $\boldsymbol{\alpha}$ 的后验估计可以看作 $x_t = \bar{x}$ 时小鼠的重量，上图即为各个小鼠重量的后验分布。
-
-```{r}
-#| label: fig-rats-beta
-#| fig-cap: 参数 $\boldsymbol{\beta}$ 的后验分布
-#| fig-showtext: true
-#| fig-width: 6
-#| fig-height: 8
-#| message: false
-
-# plot(rats_fit, pars = "beta", ci_level = 0.8, outer_level = 0.95)
-bayesplot::mcmc_areas_ridges(rats_fit, pars = paste0("beta", "[", 1:30, "]")) +
-  scale_y_discrete(labels = scales::parse_format()) 
-```
-
-参数向量 $\boldsymbol{\beta}$ 的后验估计可以看作是小鼠的重量的增长率，上图即为各个小鼠重量的增长率的后验分布。
-
-### cmdstanr
-
-从 rstan 包转 cmdstanr 包是非常容易的，只要语法兼容，模型代码可以原封不动。
-
-```{r}
-#| message: false
-
-library(cmdstanr)
-mod_rats <- cmdstan_model(
-  stan_file = "code/rats.stan",
-  compile = TRUE, cpp_options = list(stan_threads = TRUE)
-)
-fit_rats <- mod_rats$sample(
-  data = list(N = N, T = T, y = y, x = x, xbar = xbar), # 数据
-  chains = 2,            # 总链条数
-  parallel_chains = 2,   # 并行数目
-  iter_warmup = 1000,    # 每条链预处理的迭代次数
-  iter_sampling = 1000,  # 每条链采样的迭代次数
-  threads_per_chain = 2, # 每条链设置 2 个线程
-  seed = 20232023,       # 随机数种子
-  show_messages = FALSE, # 不显示消息
-  adapt_delta = 0.9,     # 接受率
-  refresh = 0 # 不显示采样迭代的进度
-)
-```
-
-模型输出
-
-```{r}
-# 显示除了参数 alpha 和 beta 以外的结果
-vars <- setdiff(fit_rats$metadata()$stan_variables, c("alpha", "beta"))
-fit_rats$summary(variables = vars)
-```
-
-诊断信息
-
-```{r}
-fit_rats$diagnostic_summary()
-```
+## 频率学派
 
 ### nlme {#sec-rats-nlme}
 
@@ -824,20 +649,6 @@ summary(rats_lme2)
 rats_lme4 <- lme4::lmer(weight ~ days + (days | rats), data = rats_data)
 summary(rats_lme4)
 ```
-
-### blme
-
-**blme** 包 [@Chung2013] 基于 **lme4** 包 [@Bates2015] 拟合贝叶斯线性混合效应模型。参考前面 **rstan** 小节中关于模型参数的先验设置，下面将残差方差的先验设置为逆伽马分布，随机效应的协方差设置为扁平分布。发现拟合结果和 **nlme** 和 **lme4** 包的几乎一样。
-
-```{r}
-rats_blme <- blme::blmer(
-  weight ~ days + (days | rats), data = rats_data,
-  resid.prior = invgamma, cov.prior = NULL
-)
-summary(rats_blme)
-```
-
-与 **lme4** 包的函数 `lmer()` 所不同的是参数 `resid.prior` 、`fixef.prior` 和 `cov.prior` ，它们设置参数的先验分布，其它参数的含义同 `lme4` 包。`resid.prior = invgamma` 表示残差方差参数使用逆伽马分布，`cov.prior = NULL` 表示随机效应的协方差参数使用扁平先验 flat priors。
 
 ### glmmTMB
 
@@ -1070,49 +881,176 @@ summary(rats_gamm$lme)
 summary(rats_gamm$gam)
 ```
 
-### rjags
+## 贝叶斯学派
 
-**rjags** [@rjags] 是 JAGS 软件的 R 语言接口，可以拟合分层正态模型，再借助 **coda 包** [@coda2006] 可以分析 JAGS 返回的各项数据。
+### rstan {#sec-rats-rstan}
 
-JAGS 代码和 Stan 代码有不少相似之处，最大的共同点在于以直观的统计模型的符号表示编码模型，仿照 Stan 代码， JAGS 编码的模型（BUGS 代码）如下：
+初始化模型参数，设置采样算法的参数。
 
-```{verbatim, file="code/rats.bugs", lang="bugs"}
+```{r}
+# 迭代链
+chains <- 4
+# 迭代次数
+iter <- 1000
+# 初始值
+init <- rep(list(list(
+  alpha = rep(250, 30), beta = rep(6, 30),
+  alpha_c = 150, beta_c = 10,
+  tausq_c = 1, tausq_alpha = 1,
+  tausq_beta = 1
+)), chains)
 ```
 
-转化主要集中在模型块，注意二者概率分布的名称以及参数含义对应关系，JAGS 可以省略类型声明，最后，JAGS 不支持 Stan 中的向量化操作，这种新特性是独特的。
+接下来，基于重复测量数据，建立线性生长曲线模型：
+
+$$
+\begin{aligned}
+\alpha_c &\sim \mathcal{N}(0,100) \quad \beta_c  \sim \mathcal{N}(0,100) \\
+\tau^2_{\alpha} &\sim \mathrm{inv\_gamma}(0.001, 0.001) \\
+\tau^2_{\beta}  &\sim \mathrm{inv\_gamma}(0.001, 0.001) \\
+\tau^2_c &\sim \mathrm{inv\_gamma}(0.001, 0.001) \\
+\alpha_n &\sim \mathcal{N}(\alpha_c, \tau_{\alpha})  \quad
+\beta_n  \sim \mathcal{N}(\beta_c, \tau_{\beta}) \\
+y_{nt} &\sim \mathcal{N}(\alpha_n + \beta_n * (x_t - \bar{x}), \tau_c) \\
+& n = 1,2,\ldots,N \quad t = 1,2,\ldots,T
+\end{aligned}
+$$
+
+其中， $\alpha_c,\beta_c,\tau_c,\tau_{\alpha},\tau_{\beta}$ 为无信息先验，$\bar{x} = 22$ 表示第 22 天，$N = 30$ 和 $T = 5$ 分别表示实验中的小鼠数量和测量次数，下面采用 Stan 编码、编译、采样和拟合模型。
+
+```{r}
+rats_fit <- stan(
+  model_name = "rats",
+  model_code = "
+  data {
+    int<lower=0> N;
+    int<lower=0> T;
+    vector[T] x;
+    matrix[N,T] y;
+    real xbar;
+  }
+  parameters {
+    vector[N] alpha;
+    vector[N] beta;
+
+    real alpha_c;
+    real beta_c;          // beta.c in original bugs model
+
+    real<lower=0> tausq_c;
+    real<lower=0> tausq_alpha;
+    real<lower=0> tausq_beta;
+  }
+  transformed parameters {
+    real<lower=0> tau_c;       // sigma in original bugs model
+    real<lower=0> tau_alpha;
+    real<lower=0> tau_beta;
+
+    tau_c = sqrt(tausq_c);
+    tau_alpha = sqrt(tausq_alpha);
+    tau_beta = sqrt(tausq_beta);
+  }
+  model {
+    alpha_c ~ normal(0, 100);
+    beta_c ~ normal(0, 100);
+    tausq_c ~ inv_gamma(0.001, 0.001);
+    tausq_alpha ~ inv_gamma(0.001, 0.001);
+    tausq_beta ~ inv_gamma(0.001, 0.001);
+    alpha ~ normal(alpha_c, tau_alpha); // vectorized
+    beta ~ normal(beta_c, tau_beta);  // vectorized
+    for (n in 1:N)
+      for (t in 1:T)
+        y[n,t] ~ normal(alpha[n] + beta[n] * (x[t] - xbar), tau_c);
+  }
+  generated quantities {
+    real alpha0;
+    alpha0 = alpha_c - xbar * beta_c;
+  }
+  ",
+  data = list(N = N, T = T, y = y, x = x, xbar = xbar),
+  chains = chains, init = init, iter = iter,   
+  verbose = FALSE, refresh = 0, seed = 20190425
+)
+```
+
+模型输出结果如下：
+
+```{r}
+print(rats_fit, pars = c("alpha", "beta"), include = FALSE, digits = 1)
+```
+
+`alpha_c` 表示小鼠 5 次测量的平均重量，`beta_c` 表示小鼠体重的增长率，$\alpha_i,\beta_i$ 分别表示第 $i$ 只小鼠在第 22 天（第 3 次测量或 $x_t = \bar{x}$ ）的重量和增长率（每日增加的重量）。
+
+对于分量众多的参数向量，比较适合用岭线图展示后验分布，下面调用 **bayesplot** 包绘制参数向量 $\boldsymbol{\alpha},\boldsymbol{\beta}$ 的后验分布。
+
+```{r}
+#| label: fig-rats-alpha
+#| fig-cap: 参数 $\boldsymbol{\alpha}$ 的后验分布
+#| fig-showtext: true
+#| fig-width: 6
+#| fig-height: 8
+#| message: false
+
+# plot(rats_fit, pars = "alpha", show_density = TRUE, ci_level = 0.8, outer_level = 0.95)
+bayesplot::mcmc_areas_ridges(rats_fit, pars = paste0("alpha", "[", 1:30, "]")) +
+  scale_y_discrete(labels = scales::parse_format()) 
+```
+
+参数向量 $\boldsymbol{\alpha}$ 的后验估计可以看作 $x_t = \bar{x}$ 时小鼠的重量，上图即为各个小鼠重量的后验分布。
+
+```{r}
+#| label: fig-rats-beta
+#| fig-cap: 参数 $\boldsymbol{\beta}$ 的后验分布
+#| fig-showtext: true
+#| fig-width: 6
+#| fig-height: 8
+#| message: false
+
+# plot(rats_fit, pars = "beta", ci_level = 0.8, outer_level = 0.95)
+bayesplot::mcmc_areas_ridges(rats_fit, pars = paste0("beta", "[", 1:30, "]")) +
+  scale_y_discrete(labels = scales::parse_format()) 
+```
+
+参数向量 $\boldsymbol{\beta}$ 的后验估计可以看作是小鼠的重量的增长率，上图即为各个小鼠重量的增长率的后验分布。
+
+### cmdstanr
+
+从 rstan 包转 cmdstanr 包是非常容易的，只要语法兼容，模型代码可以原封不动。
 
 ```{r}
 #| message: false
 
-library(rjags)
-# 初始值
-rats_inits <- list(
-  list(".RNG.name" = "base::Marsaglia-Multicarry", 
-       ".RNG.seed" = 20222022, 
-       "alpha_c" = 100, "beta_c" = 6, "tau_c" = 5, "tau_alpha" = 10, "tau_beta" = 0.5),
-  list(".RNG.name" = "base::Marsaglia-Multicarry", 
-       ".RNG.seed" = 20232023, 
-       "alpha_c" = 200, "beta_c" = 10, "tau_c" = 15, "tau_alpha" = 15, "tau_beta" = 1)
+library(cmdstanr)
+mod_rats <- cmdstan_model(
+  stan_file = "code/rats.stan",
+  compile = TRUE, cpp_options = list(stan_threads = TRUE)
 )
-# 模型
-rats_model <- jags.model(
-  file = "code/rats.bugs",
-  data = list(x = x, y = y, N = 30, T = 5, xbar = 22.0),
-  inits = rats_inits, 
-  n.chains = 2, quiet = TRUE
+fit_rats <- mod_rats$sample(
+  data = list(N = N, T = T, y = y, x = x, xbar = xbar), # 数据
+  chains = 2,            # 总链条数
+  parallel_chains = 2,   # 并行数目
+  iter_warmup = 1000,    # 每条链预处理的迭代次数
+  iter_sampling = 1000,  # 每条链采样的迭代次数
+  threads_per_chain = 2, # 每条链设置 2 个线程
+  seed = 20232023,       # 随机数种子
+  show_messages = FALSE, # 不显示消息
+  adapt_delta = 0.9,     # 接受率
+  refresh = 0 # 不显示采样迭代的进度
 )
-# burn-in
-update(rats_model, n.iter = 2000)
-# 抽样
-rats_samples <- coda.samples(rats_model,
-  variable.names = c("alpha_c", "beta_c", "sigma_alpha", "sigma_beta", "sigma_c"),
-  n.iter = 4000, thin = 1
-)
-# 参数的后验估计
-summary(rats_samples)
 ```
 
-输出结果与 rstan 十分一致，且采样速度极快。
+模型输出
+
+```{r}
+# 显示除了参数 alpha 和 beta 以外的结果
+vars <- setdiff(fit_rats$metadata()$stan_variables, c("alpha", "beta"))
+fit_rats$summary(variables = vars)
+```
+
+诊断信息
+
+```{r}
+fit_rats$diagnostic_summary()
+```
 
 ### brms
 
@@ -1220,6 +1158,64 @@ Sigma[rats:days,days]                 0.304   0.112   0.181   0.285   0.445
 ```
 
 **rstanarm** 和 **brms** 包的结果基本一致的。
+
+### blme
+
+**blme** 包 [@Chung2013] 基于 **lme4** 包 [@Bates2015] 拟合贝叶斯线性混合效应模型。参考前面 **rstan** 小节中关于模型参数的先验设置，下面将残差方差的先验设置为逆伽马分布，随机效应的协方差设置为扁平分布。发现拟合结果和 **nlme** 和 **lme4** 包的几乎一样。
+
+```{r}
+rats_blme <- blme::blmer(
+  weight ~ days + (days | rats), data = rats_data,
+  resid.prior = invgamma, cov.prior = NULL
+)
+summary(rats_blme)
+```
+
+与 **lme4** 包的函数 `lmer()` 所不同的是参数 `resid.prior` 、`fixef.prior` 和 `cov.prior` ，它们设置参数的先验分布，其它参数的含义同 `lme4` 包。`resid.prior = invgamma` 表示残差方差参数使用逆伽马分布，`cov.prior = NULL` 表示随机效应的协方差参数使用扁平先验 flat priors。
+
+### rjags
+
+**rjags** [@rjags] 是 JAGS 软件的 R 语言接口，可以拟合分层正态模型，再借助 **coda 包** [@coda2006] 可以分析 JAGS 返回的各项数据。
+
+JAGS 代码和 Stan 代码有不少相似之处，最大的共同点在于以直观的统计模型的符号表示编码模型，仿照 Stan 代码， JAGS 编码的模型（BUGS 代码）如下：
+
+```{verbatim, file="code/rats.bugs", lang="bugs"}
+```
+
+转化主要集中在模型块，注意二者概率分布的名称以及参数含义对应关系，JAGS 可以省略类型声明，最后，JAGS 不支持 Stan 中的向量化操作，这种新特性是独特的。
+
+```{r}
+#| message: false
+
+library(rjags)
+# 初始值
+rats_inits <- list(
+  list(".RNG.name" = "base::Marsaglia-Multicarry", 
+       ".RNG.seed" = 20222022, 
+       "alpha_c" = 100, "beta_c" = 6, "tau_c" = 5, "tau_alpha" = 10, "tau_beta" = 0.5),
+  list(".RNG.name" = "base::Marsaglia-Multicarry", 
+       ".RNG.seed" = 20232023, 
+       "alpha_c" = 200, "beta_c" = 10, "tau_c" = 15, "tau_alpha" = 15, "tau_beta" = 1)
+)
+# 模型
+rats_model <- jags.model(
+  file = "code/rats.bugs",
+  data = list(x = x, y = y, N = 30, T = 5, xbar = 22.0),
+  inits = rats_inits, 
+  n.chains = 2, quiet = TRUE
+)
+# burn-in
+update(rats_model, n.iter = 2000)
+# 抽样
+rats_samples <- coda.samples(rats_model,
+  variable.names = c("alpha_c", "beta_c", "sigma_alpha", "sigma_beta", "sigma_c"),
+  n.iter = 4000, thin = 1
+)
+# 参数的后验估计
+summary(rats_samples)
+```
+
+输出结果与 rstan 十分一致，且采样速度极快。
 
 ### MCMCglmm
 
@@ -1333,6 +1329,7 @@ G-structure 代表随机效应部分，R-structure 代表残差效应部分，Lo
 #| eval: false
 
 library(INLA)
+inla.setOption(short.summary = TRUE)
 # 变截距
 rats_inla <- inla(weight ~ days + f(rats, model = "iid", n = 30), 
                   family = "gaussian", data = rats_data)
@@ -1401,7 +1398,7 @@ Marginal log-Likelihood:  -588.65
 ```
 
 ::: callout-warning
-对于变截距和斜率混合效应模型，还未完全弄清楚 INLA 包的输出结果。固定效应部分和残差部分都是和前面一致的，但不清楚随机效应的方差协方差矩阵的估计与 INLA 输出的对应关系。
+对于变截距和斜率混合效应模型，还未完全弄清楚 INLA 包的输出结果。固定效应部分和残差部分都是和前面一致的，但不清楚随机效应的方差协方差矩阵的估计与 INLA 输出的对应关系。参考[《Bayesian inference with INLA》](https://becarioprecario.bitbucket.io/inla-gitbook/index.html)第 3 章第 3 小节。
 :::
 
 ## 总结 {#sec-hierarchical-normal-models-summary}
