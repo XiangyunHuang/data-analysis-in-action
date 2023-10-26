@@ -15,6 +15,6 @@ transformed parameters {
 model {
   target += normal_lpdf(mu | 0, 1e3); 
   target += cauchy_lpdf(tau | 0, 5);
-  target += std_normal_lpdf(eta);
+  target += normal_lpdf(eta | 0, 1);
   target += normal_lpdf(y | theta, sigma);
 }

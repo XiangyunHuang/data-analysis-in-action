@@ -34,6 +34,7 @@ rstan_gg_options(
   fill = "#4285f4", color = "white",
   pt_color = "#EA4335", chain_colors = custom_colors
 )
+library(bayesplot)
 ```
 
 ## rstan 包 {#sec-8schools-rstan}
@@ -64,9 +65,9 @@ eight_schools_fit <- stan(
   model_code = "
   // saved as eight_schools.stan
   data {
-    int<lower=0> J;         // number of schools
-    real y[J];              // estimated treatment effects
-    real<lower=0> sigma[J]; // standard error of effect estimates
+    int<lower=0> J;                // number of schools
+    array[J] real y;               // estimated treatment effects
+    array[J] real <lower=0> sigma; // standard error of effect estimates
   }
   parameters {
     real mu;                // population treatment effect
@@ -94,7 +95,7 @@ eight_schools_fit <- stan(
   cores = 2,     # 指定 CPU 核心数，可以给每条链分配一个
   verbose = FALSE, # 不显示迭代的中间过程
   refresh = 0,     # 不显示采样的进度
-  seed = 20190425  # 设置随机数种子，不要使用 set.seed() 函数
+  seed = 20232023  # 设置随机数种子，不要使用 set.seed() 函数
 )
 ```
 
@@ -201,8 +202,10 @@ stan_trace(eight_schools_fit, pars = "mu") +
 #| fig-height: 6
 
 p1 <- stan_hist(eight_schools_fit, pars = c("mu","tau"), bins = 30)
-p2 <- stan_scat(eight_schools_fit, pars = c("mu","tau"), size = 1)
-p3 <- stan_dens(eight_schools_fit, pars = "mu")
+p2 <- stan_scat(eight_schools_fit, pars = c("mu","tau"), size = 1) +
+  labs(x = expression(mu), y = expression(tau))
+p3 <- stan_dens(eight_schools_fit, pars = "mu") + 
+  labs(x = expression(mu))
 library(patchwork)
 p1 / (p2 + p3)
 ```
@@ -214,7 +217,9 @@ p1 / (p2 + p3)
 #| fig-cap: bayesplot 包绘制后验分布图
 #| fig-showtext: true
 
-bayesplot::mcmc_pairs(eight_schools_fit, pars = c("mu", "tau", "lp__"))
+bayesplot::mcmc_pairs(
+  eight_schools_fit, pars = c("mu", "tau"), transform = list(tau = "log")
+)
 ```
 
 ## 其它 R 包 {#sec-8schools-others}
@@ -330,7 +335,7 @@ fit_eight_schools <- mod_eight_schools$sample(
   iter_warmup = 1000,    # 每条链预处理的迭代次数
   iter_sampling = 1000,  # 每条链采样的迭代次数
   threads_per_chain = 2, # 每条链设置 2 个线程
-  seed = 20190425,       # 随机数种子
+  seed = 20232023,       # 随机数种子
   show_messages = FALSE, # 不显示消息
   refresh = 0 # 不显示采样迭代的进度
 )
@@ -339,7 +344,7 @@ fit_eight_schools <- mod_eight_schools$sample(
 模型输出
 
 ```{r}
-fit_eight_schools$summary()
+fit_eight_schools$summary(.num_args = list(sigfig = 3, notation = "dec"))
 ```
 
 诊断输出
@@ -347,6 +352,41 @@ fit_eight_schools$summary()
 ```{r}
 fit_eight_schools$diagnostic_summary()
 ```
+
+分层模型的参数 $\mu,\log(\tau)$ 的后验联合分布呈现经典的漏斗状。
+
+```{r}
+#| label: fig-8schools-funnels
+#| fig-cap: 参数 $\mu,\log(\tau)$ 的联合分布
+#| fig-showtext: true
+#| fig-width: 5
+#| fig-height: 4.5
+
+bayesplot::mcmc_scatter(
+  fit_eight_schools$draws(), pars = c("mu", "tau"), 
+  transform = list(tau = "log"), size = 2
+) +
+  labs(x = expression(mu), y = expression(log(tau)))
+```
+
+```{r}
+#| eval: false
+#| echo: false
+
+bayesplot::mcmc_pairs(
+  fit_eight_schools$draws(), pars = c("mu", "tau"), 
+  transform = list(tau = "log")
+)
+
+eight_schools_df <- fit_eight_schools$draws(c("mu", "tau"), format = "draws_df")
+ggplot(data = eight_schools_df, aes(x = mu, y = log(tau))) +
+  geom_point(color = "#4285f4") +
+  geom_density_2d(color = "#FBBC05", linewidth = 1) +
+  theme_bw() +
+  labs(x = expression(mu), y = expression(log(tau)))
+```
+
+对于调用 cmdstanr 包拟合的模型，适合用 bayesplot 包来可视化后验分布和诊断采样。
 
 ## 案例：rats 数据 {#sec-thirty-rats}
 
