@@ -7,7 +7,7 @@ Sys.setenv(CMDSTANR_NO_VER_CHECK = TRUE)
 source("_common.R")
 ```
 
-介绍分层正态模型的定义、结构、估计，分层正态模型与线性生长模型的关系，分层正态模型与潜变量模型的关系，分层正态模型与神经网络模型的关系，以 **rstan** 包和 **nlme** 包实现简单分层正态模型，说明 **rstan** 包的一些用法，比较贝叶斯参数估计和频率参数估计的结果，给出结果的解释。
+介绍分层正态模型的定义、结构、估计，分层正态模型与线性生长模型的关系，分层正态模型与潜变量模型的关系，以 **rstan** 包和 **nlme** 包实现简单分层正态模型，说明 **rstan** 包的一些用法，比较贝叶斯参数估计和频率参数估计的结果，给出结果的解释。
 
 ```{r}
 #| message: false
@@ -15,10 +15,11 @@ source("_common.R")
 library(StanHeaders)
 library(ggplot2)
 library(rstan)
+# 将编译的 Stan 模型与代码文件放在一起
 rstan_options(auto_write = TRUE)
 # 如果CPU和内存足够，设置成与马尔科夫链一样多
 options(mc.cores = max(c(floor(parallel::detectCores() / 2), 1L)))
-
+# 调色板
 custom_colors <- c(
   "#4285f4", # GoogleBlue
   "#34A853", # GoogleGreen
@@ -45,11 +46,11 @@ y_j &\sim \mathcal{N}(\theta_j,\sigma_j^2) \quad
 \theta_j = \mu + \tau * \eta_j \\
 \theta_j &\sim \mathcal{N}(\mu, \tau^2) \quad
 \eta_j \sim \mathcal{N}(0,1) \\
-\mu &\sim \mathcal{N}(0, 5^2) \quad \tau \sim \mathrm{Half\_Cauchy}(0,5)
+\mu &\sim \mathcal{N}(0, 1000^2) \quad \tau \sim \mathrm{Half\_Cauchy}(0,5)
 \end{aligned}
 $$
 
-其中，$y_j,\sigma_j$ 是已知的观测数据，$\theta_j$ 是模型参数， $\eta_j$ 是服从标准正态分布的潜变量，$\mu,\tau$ 是超参数，分别服从正态分布和半柯西分布。
+其中，$y_j,\sigma_j$ 是已知的观测数据，$\theta_j$ 是模型参数， $\eta_j$ 是服从标准正态分布的潜变量，$\mu,\tau$ 是超参数，分别服从正态分布（将方差设置为很大的数，弱信息先验或无信息均匀先验）和半柯西分布（随机变量限制为正值）。
 
 ### 拟合模型
 
@@ -76,9 +77,9 @@ eight_schools_fit <- stan(
     vector[J] theta = mu + tau * eta;        // school treatment effects
   }
   model {
-    target += normal_lpdf(mu | 0, 5); 
-    target += cauchy_lpdf(tau | 0, 5);
-    target += normal_lpdf(eta | 0, 1);       // prior log-density
+    target += normal_lpdf(mu | 0, 1e3); // hyper-parameter prior log-density
+    target += cauchy_lpdf(tau | 0, 5);  // hyper-parameter prior log-density
+    target += normal_lpdf(eta | 0, 1);  // prior log-density
     target += normal_lpdf(y | theta, sigma); // log-likelihood
   }
   ",
@@ -222,36 +223,18 @@ stan_ac(eight_schools_fit, pars = "mu", separate_chains = TRUE, color = "white")
 
 ### 后验分布
 
-可以用 `stan_hist` 函数绘制参数 $\mu$ 的后验分布图，它没有 `separate_chains` 参数，所以不能分链条绘制
-
-```{r}
-#| label: fig-8schools-mu-hist
-#| fig-cap: 参数 $\mu$ 的后验分布
-#| fig-showtext: true
-
-stan_hist(eight_schools_fit, pars = "mu", bins = 30) + theme_minimal()
-```
-
-参数 $\mu$ 和 $\tau$ 的散点图
+可以用 `stan_hist()` 函数绘制参数 $\mu$ 的后验分布图，它没有 `separate_chains` 参数，所以不能分链条绘制，而 `stan_dens()` 函数可以分链条。参数 $\mu$ 和 $\tau$ 的散点图、参数 $\mu$ 的后验概率密度分布图。
 
 ```{r}
 #| label: fig-8schools-mu-tau
-#| fig-cap: 参数 $\mu$ 和 $\tau$ 的联合后验分布
+#| fig-cap: 后验分布
 #| fig-showtext: true
 
-stan_scat(eight_schools_fit, pars = c("mu","tau")) + theme_minimal()
-```
-
-参数 $\mu$ 的后验概率密度分布图
-
-```{r}
-#| label: fig-8schools-mu-dens
-#| fig-cap: 参数 $\mu$ 的后验概率密度分布图
-#| fig-showtext: true
-
-stan_dens(eight_schools_fit, pars = "mu", separate_chains = TRUE) +
-  theme_minimal() +
-  labs(x = expression(mu), y = "Density")
+p1 <- stan_hist(eight_schools_fit, pars = c("mu","tau"), bins = 30)
+p2 <- stan_scat(eight_schools_fit, pars = c("mu","tau"))
+p3 <- stan_dens(eight_schools_fit, pars = "mu", separate_chains = TRUE)
+library(patchwork)
+p1 / (p2 + p3)
 ```
 
 **bayesplot** 包的函数 `mcmc_pairs()` 以矩阵图展示多个参数的分布。
@@ -471,32 +454,23 @@ rownames(y) <- 1:30
 knitr::kable(head(y), col.names = paste("第", c(8, 15, 22, 29, 36), "天"), row.names = TRUE)
 ```
 
-小鼠重量数据的分布情况见下 @fig-rats ，由图可以假定 30 只小鼠的重量服从正态分布。
+小鼠重量数据的分布和变化情况见下图，由图可以假定 30 只小鼠的重量服从正态分布，而30 只小鼠的重量呈现一种线性增长趋势。
 
 ```{r}
 #| label: fig-rats
 #| fig-cap: 30 只小鼠 5 次测量的数据
+#| fig-subcap: 
+#| - 小鼠重量的分布
+#| - 小鼠重量的变化
 #| fig-showtext: true
 #| par: true
 #| echo: false
 #| fig-width: 5
 #| fig-height: 4.5
+#| layout-ncol: 2
 
 matplot(y, xlab = "小鼠编号", ylab = "小鼠重量")
-```
-
-由 @fig-rats-growth 可见， 30 只小鼠的重量增长趋势呈现一种线性趋势。
-
-```{r}
-#| label: fig-rats-growth
-#| fig-cap: 30 只小鼠 5 次测量的数据
-#| fig-showtext: true
-#| par: true
-#| echo: false
-#| fig-width: 5
-#| fig-height: 4.5
-
-matplot(t(y), xlab = "测量次数", ylab = "小鼠重量")
+matplot(t(y), xlab = "测量次数", ylab = "小鼠重量", pch = 1)
 ```
 
 ## 频率学派 {#sec-rats-frequentist}
@@ -1182,7 +1156,7 @@ JAGS 代码和 Stan 代码有不少相似之处，最大的共同点在于以直
 ```{verbatim, file="code/rats.bugs", lang="bugs"}
 ```
 
-转化主要集中在模型块，注意二者概率分布的名称以及参数含义对应关系，JAGS 可以省略类型声明，最后，JAGS 不支持 Stan 中的向量化操作，这种新特性是独特的。
+转化主要集中在模型块，注意二者概率分布的名称以及参数含义对应关系，JAGS 使用 precision 而不是 standard deviation or variance，比如正态分布中的方差（标准偏差）被替换为其倒数。JAGS 可以省略类型声明（初始化模型时会补上），最后，JAGS 不支持 Stan 中的向量化操作，这种新特性是独特的。
 
 ```{r}
 #| message: false
