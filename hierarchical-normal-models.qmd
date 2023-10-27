@@ -55,7 +55,7 @@ $$
 
 ### 拟合模型
 
-用 **rstan** 包来拟合模型
+用 **rstan** 包来拟合模型，下面采用非中心的参数化表示，降低参数的相关性，减少发散的迭代次数，提高采样效率。
 
 ```{r}
 # 编译模型
@@ -78,8 +78,6 @@ eight_schools_fit <- stan(
     vector[J] theta = mu + tau * eta;        // school treatment effects
   }
   model {
-    target += normal_lpdf(mu | 0, 1e3); // hyper-parameter prior log-density
-    target += cauchy_lpdf(tau | 0, 5);  // hyper-parameter prior log-density
     target += normal_lpdf(eta | 0, 1);  // prior log-density
     target += normal_lpdf(y | theta, sigma); // log-likelihood
   }
@@ -101,11 +99,13 @@ eight_schools_fit <- stan(
 
 ### 模型输出
 
+用函数 `print()` 打印输出结果，保留 2 位小数。
+
 ```{r}
-print(eight_schools_fit, digits = 1)
+print(eight_schools_fit, digits = 2)
 ```
 
-提取任意一个参数的结果，如查看参数 $\tau$ 的 95% 置信区间。
+值得一提，数据有限而且规律不明确，数据隐含的信息不是很多，则先验分布的情况将会对参数估计结果产生很大影响。Stan 默认采用无信息的先验分布，当使用非常弱的信息先验时，结果就非常不同了。提取任意一个参数的结果，如查看参数 $\tau$ 的 95% 置信区间。
 
 ```{r}
 print(eight_schools_fit, pars = "tau", probs = c(0.025, 0.975))
@@ -115,7 +115,7 @@ print(eight_schools_fit, pars = "tau", probs = c(0.025, 0.975))
 
 ### 操作数据
 
-合并四条马氏链的结果
+合并马氏链的结果
 
 ```{r}
 eight_schools_sim <- extract(eight_schools_fit, permuted = TRUE)
@@ -148,7 +148,7 @@ lapply(eight_schools_sim, quantile, probs = c(2.5, 25, 50, 75, 97.5) / 100)
 eight_schools_sim <- extract(eight_schools_fit, permuted = FALSE)
 ```
 
-`eight_schools_sim` 是一个三维数组，1000（次迭代）\* 2 （条链）\* 19（个参数）。如果 `permuted = TRUE` 则会合并四条马氏链的迭代结果，变成一个列表。
+`eight_schools_sim` 是一个三维数组，1000（次迭代）\* 2 （条链）\* 19（个参数）。如果 `permuted = TRUE` 则会合并马氏链的迭代结果，变成一个列表。
 
 ```{r}
 # 数据类型
@@ -157,7 +157,7 @@ class(eight_schools_sim)
 str(eight_schools_sim)
 ```
 
-提取参数 $\mu$ 的四条迭代点列
+提取参数 $\mu$ 的迭代点列
 
 ```{r}
 eight_schools_mu_sim <- eight_schools_sim[, , "mu"]
@@ -169,14 +169,14 @@ eight_schools_mu_sim <- eight_schools_sim[, , "mu"]
 #| fig-showtext: true
 #| par: true
 
-matplot(eight_schools_mu_sim,
-        xlab = "Iteration", ylab = expression(mu),
-        type = "l", lty = "solid", col = custom_colors
+matplot(
+  eight_schools_mu_sim, xlab = "Iteration", ylab = expression(mu),
+  type = "l", lty = "solid", col = custom_colors
 )
 abline(h = apply(eight_schools_mu_sim, 2, mean), col = custom_colors)
-legend("bottomleft",
-       legend = paste0("chain:", 1:2), box.col = "white", inset = 0.01,
-       lty = "solid", horiz = TRUE, col = custom_colors
+legend(
+  "topleft", legend = paste0("chain:", 1:2), box.col = "white", 
+  inset = 0.01, lty = "solid", horiz = TRUE, col = custom_colors
 )
 ```
 
@@ -210,7 +210,7 @@ library(patchwork)
 p1 / (p2 + p3)
 ```
 
-**bayesplot** 包的函数 `mcmc_pairs()` 以矩阵图展示多个参数的分布，参数 $\mu$，$\tau$ 和 $\mathrm{lp\_\_}$ 的后验分布图。
+**bayesplot** 包的函数 `mcmc_pairs()` 以矩阵图展示多个参数的分布，下图展示参数 $\mu$，$\log(\tau)$ 后验分布图。相比于 rstan 包，**bayesplot** 包可视化能力更强，支持对特定的参数做变换。
 
 ```{r}
 #| label: fig-8schools-bayesplot-posterior
@@ -306,14 +306,16 @@ fit_mcmc <- MCMCglmm::MCMCglmm(
 summary(fit_mcmc)
 ```
 
-R-structure 表示残差方差，这是已知的参数。G-structure 表示随机截距的方差，Location effects 表示固定效应的截距。
+R-structure 表示残差方差，这是已知的参数。G-structure 表示随机截距的方差，Location effects 表示固定效应的截距。截距和 **nlme** 包的结果很接近。
 
 ### cmdstanr
 
-一般地，rstan 包使用的 stan 框架版本低于 **cmdstanr** 包，从 **rstan** 包切换到 **cmdstanr** 包，需要注意语法、函数的变化，在都是较新的版本时，Stan 代码不需要做改动，如下：
+一般地，**rstan** 包使用的 stan 框架版本低于 **cmdstanr** 包，从 **rstan** 包切换到 **cmdstanr** 包，需要注意语法、函数的变化。**rstan** 和 **cmdstanr** 使用的 Stan 版本不同导致参数估计结果不同，结果可重复的条件非常苛刻，详见 [Stan 参考手册](https://mc-stan.org/docs/reference-manual/reproducibility.html)。在都是较新的版本时，Stan 代码不需要做改动，如下：
 
 ```{verbatim, file="code/eight_schools.stan", lang="stan"}
 ```
+
+此处，给参数 $\mu,\tau$ 添加了非常弱（模糊）的先验，结果将出现较大不同。
 
 ```{r}
 #| message: false
@@ -341,13 +343,13 @@ fit_eight_schools <- mod_eight_schools$sample(
 )
 ```
 
-模型输出
+结果保留 3 位有效数字，模型输出如下：
 
 ```{r}
 fit_eight_schools$summary(.num_args = list(sigfig = 3, notation = "dec"))
 ```
 
-诊断输出
+模型采样过程的诊断结果如下：
 
 ```{r}
 fit_eight_schools$diagnostic_summary()
@@ -358,15 +360,16 @@ fit_eight_schools$diagnostic_summary()
 ```{r}
 #| label: fig-8schools-funnels
 #| fig-cap: 参数 $\mu,\log(\tau)$ 的联合分布
-#| fig-showtext: true
 #| fig-width: 5
 #| fig-height: 4.5
+#| dev: 'tikz'
+#| fig-process: !expr to_png
 
 bayesplot::mcmc_scatter(
   fit_eight_schools$draws(), pars = c("mu", "tau"), 
   transform = list(tau = "log"), size = 2
 ) +
-  labs(x = expression(mu), y = expression(log(tau)))
+  labs(x = "$\mu$", y = "$\log(\tau)$")
 ```
 
 ```{r}
@@ -386,7 +389,7 @@ ggplot(data = eight_schools_df, aes(x = mu, y = log(tau))) +
   labs(x = expression(mu), y = expression(log(tau)))
 ```
 
-对于调用 cmdstanr 包拟合的模型，适合用 bayesplot 包来可视化后验分布和诊断采样。
+对于调用 **cmdstanr** 包拟合的模型，适合用 **bayesplot** 包来可视化后验分布和诊断采样。
 
 ## 案例：rats 数据 {#sec-thirty-rats}
 
