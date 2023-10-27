@@ -7,7 +7,7 @@ Sys.setenv(CMDSTANR_NO_VER_CHECK = TRUE)
 source("_common.R")
 ```
 
-介绍分层正态模型的定义、结构、估计，分层正态模型与线性生长模型的关系，分层正态模型与潜变量模型的关系，以 **rstan** 包和 **nlme** 包实现简单分层正态模型，说明 **rstan** 包的一些用法，比较贝叶斯参数估计和频率参数估计的结果，给出结果的解释。
+介绍分层正态模型的定义、结构、估计，分层正态模型与线性生长模型的关系，分层正态模型与潜变量模型的关系，以 **rstan** 包和 **nlme** 包拟合分层正态模型，说明 **rstan** 包的一些用法，比较贝叶斯和频率派方法拟合的结果，给出结果的解释。
 
 ```{r}
 #| message: false
@@ -44,14 +44,14 @@ library(bayesplot)
 $$
 \begin{aligned}
 y_j &\sim \mathcal{N}(\theta_j,\sigma_j^2) \quad
-\theta_j = \mu + \tau * \eta_j \\
+\theta_j = \mu + \tau \times \eta_j \\
 \theta_j &\sim \mathcal{N}(\mu, \tau^2) \quad
 \eta_j \sim \mathcal{N}(0,1) \\
-\mu &\sim \mathcal{N}(0, 1000^2) \quad \tau \sim \mathrm{Half\_Cauchy}(0,5)
+\mu &\sim \mathcal{N}(0, 100^2) \quad \tau \sim \mathrm{half\_normal}(0,100^2)
 \end{aligned}
 $$
 
-其中，$y_j,\sigma_j$ 是已知的观测数据，$\theta_j$ 是模型参数， $\eta_j$ 是服从标准正态分布的潜变量，$\mu,\tau$ 是超参数，分别服从正态分布（将方差设置为很大的数，弱信息先验或无信息均匀先验）和半柯西分布（随机变量限制为正值）。
+其中，$y_j,\sigma_j$ 是已知的观测数据，$\theta_j$ 是模型参数， $\eta_j$ 是服从标准正态分布的潜变量，$\mu,\tau$ 是超参数，分别服从正态分布（将方差设置为很大的数，则变成弱信息先验或无信息均匀先验）和半正态分布（随机变量限制为正值）。
 
 ### 拟合模型
 
@@ -78,6 +78,8 @@ eight_schools_fit <- stan(
     vector[J] theta = mu + tau * eta;        // school treatment effects
   }
   model {
+    target += normal_lpdf(mu | 0, 100); 
+    target += normal_lpdf(tau | 0, 100);
     target += normal_lpdf(eta | 0, 1);  // prior log-density
     target += normal_lpdf(y | theta, sigma); // log-likelihood
   }
@@ -157,11 +159,7 @@ class(eight_schools_sim)
 str(eight_schools_sim)
 ```
 
-提取参数 $\mu$ 的迭代点列
-
-```{r}
-eight_schools_mu_sim <- eight_schools_sim[, , "mu"]
-```
+提取参数 $\mu$ 的迭代点列，绘制迭代轨迹。
 
 ```{r}
 #| label: fig-8schools-mu-base
@@ -169,13 +167,14 @@ eight_schools_mu_sim <- eight_schools_sim[, , "mu"]
 #| fig-showtext: true
 #| par: true
 
+eight_schools_mu_sim <- eight_schools_sim[, , "mu"]
 matplot(
-  eight_schools_mu_sim, xlab = "Iteration", ylab = expression(mu),
+  eight_schools_mu_sim, xlab = "迭代次数", ylab = expression(mu),
   type = "l", lty = "solid", col = custom_colors
 )
 abline(h = apply(eight_schools_mu_sim, 2, mean), col = custom_colors)
 legend(
-  "topleft", legend = paste0("chain:", 1:2), box.col = "white", 
+  "topleft", legend = paste("chain", 1:2), box.col = "white", 
   inset = 0.01, lty = "solid", horiz = TRUE, col = custom_colors
 )
 ```
@@ -188,12 +187,12 @@ legend(
 #| fig-showtext: true
 
 stan_trace(eight_schools_fit, pars = "mu") +
-  labs(x = "Iteration", y = expression(mu))
+  labs(x = "迭代次数", y = expression(mu))
 ```
 
 ### 后验分布
 
-可以用 `stan_hist()` 函数或 `stan_dens()` 函数绘制后验分布图。参数 $\mu$ 和 $\tau$ 的直方图、散点图、参数 $\mu$ 的后验概率密度分布图。
+可以用 `stan_hist()` 函数或 `stan_dens()` 函数绘制后验分布图。下图展示参数 $\mu$ 、 $\tau$ 的直方图，联合分布的散点图、参数 $\mu$ 的后验概率密度分布图。
 
 ```{r}
 #| label: fig-8schools-rstan-posterior
@@ -210,12 +209,13 @@ library(patchwork)
 p1 / (p2 + p3)
 ```
 
-**bayesplot** 包的函数 `mcmc_pairs()` 以矩阵图展示多个参数的分布，下图展示参数 $\mu$，$\log(\tau)$ 后验分布图。相比于 rstan 包，**bayesplot** 包可视化能力更强，支持对特定的参数做变换。
+相比于 **rstan** 包，**bayesplot** 包可视化能力更强，支持对特定的参数做变换。**bayesplot** 包的函数 `mcmc_pairs()` 以矩阵图展示多个参数的分布，下图展示参数 $\mu$，$\log(\tau)$ 后验分布图。但是，这些函数都固定了一些标题，不能修改。
 
 ```{r}
 #| label: fig-8schools-bayesplot-posterior
 #| fig-cap: bayesplot 包绘制后验分布图
 #| fig-showtext: true
+#| fig-height: 6
 
 bayesplot::mcmc_pairs(
   eight_schools_fit, pars = c("mu", "tau"), transform = list(tau = "log")
@@ -297,6 +297,8 @@ prior1 <- list(
   R = list(V = diag(schools$sigma^2), fix = 1),
   G = list(G1 = list(V = 1, nu = 0.002))
 )
+# 为可重复
+set.seed(20232023)
 # 拟合模型
 fit_mcmc <- MCMCglmm::MCMCglmm(
   y ~ 1, random = ~g, rcov = ~ idh(g):units, 
@@ -361,15 +363,14 @@ fit_eight_schools$diagnostic_summary()
 #| label: fig-8schools-funnels
 #| fig-cap: 参数 $\mu,\log(\tau)$ 的联合分布
 #| fig-width: 5
-#| fig-height: 4.5
+#| fig-height: 4
 #| dev: 'tikz'
 #| fig-process: !expr to_png
 
 bayesplot::mcmc_scatter(
   fit_eight_schools$draws(), pars = c("mu", "tau"), 
   transform = list(tau = "log"), size = 2
-) +
-  labs(x = "$\\mu$", y = "$\\log(\\tau)$")
+) + labs(x = "$\\mu$", y = "$\\log(\\tau)$")
 ```
 
 ```{r}
@@ -597,6 +598,8 @@ summary(rats_lme4)
 glmmTMB 包基于 Template Model Builder (TMB) ，拟合广义线性混合效应模型，公式语法与 **lme4** 包一致。
 
 ```{r}
+#| message: false
+
 rats_glmmtmb <- glmmTMB::glmmTMB(weight ~ days + (days | rats), REML = TRUE, data = rats_data)
 summary(rats_glmmtmb)
 ```
