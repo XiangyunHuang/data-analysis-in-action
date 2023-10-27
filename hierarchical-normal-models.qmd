@@ -113,34 +113,49 @@ print(eight_schools_fit, digits = 2)
 print(eight_schools_fit, pars = "tau", probs = c(0.025, 0.975))
 ```
 
-从迭代抽样数据获得与 `print(fit)` 一样的结果。以便后续对原始采样数据做任意的进一步分析。rstan 包扩展泛型函数 `summary()` 以支持对 stanfit 数据对象汇总，输出各个参数分链条和合并链条的后验分布结果。
+从迭代抽样数据获得与 `print(fit)` 一样的结果。以便后续对原始采样数据做任意的进一步分析。**rstan** 包扩展泛型函数 `summary()` 以支持对 stanfit 数据对象汇总，输出各个参数分链条和合并链条的后验分布结果。
 
 ### 操作数据
 
-合并马氏链的结果
+抽取数据对象 `eight_schools_fit` 中的采样数据，合并几条马氏链的结果，返回的结果是一个列表。
 
 ```{r}
 eight_schools_sim <- extract(eight_schools_fit, permuted = TRUE)
 ```
 
-返回的结果是一个列表
+返回列表中的每个元素是一个数组，标量参数对应一维数组，向量参数对应二维数组。
 
 ```{r}
 str(eight_schools_sim)
-class(eight_schools_sim)
 ```
 
-计算 $\mu,\tau$ 等参数的均值
+对于列表，适合用函数 `lapply()` 配合算术函数计算 $\mu,\tau$ 等参数的均值。
 
 ```{r}
-lapply(eight_schools_sim, mean)
+fun_mean <- function(x) {
+  if (length(dim(x)) > 1) {
+    apply(x, 2, mean)
+  } else {
+    mean(x)
+  }
+}
+lapply(eight_schools_sim, FUN = fun_mean)
 ```
 
-计算 $\mu,\tau$ 等参数的分位点
+类似地，计算 $\mu,\tau$ 等参数的分位点。
 
 ```{r}
-lapply(eight_schools_sim, quantile, probs = c(2.5, 25, 50, 75, 97.5) / 100)
+fun_quantile <- function(x, probs) {
+  if (length(dim(x)) > 1) {
+    t(apply(x, 2, quantile, probs = probs))
+  } else {
+    quantile(x, probs = probs)
+  }
+}
+lapply(eight_schools_sim, fun_quantile, probs = c(2.5, 25, 50, 75, 97.5) / 100)
 ```
+
+同理，可以计算最大值 `max()`、最小值 `min()` 和中位数 `median()` 等。
 
 ### 采样诊断
 
@@ -179,10 +194,10 @@ legend(
 )
 ```
 
-也可以使用 **rstan** 提供的 `traceplot()` 函数或者 `stan_trace()` 函数绘制参数的迭代轨迹图。
+也可以使用 **rstan** 包提供的函数 `traceplot()` 或者 `stan_trace()` 绘制参数的迭代轨迹图。
 
 ```{r}
-#| label: fig-8schools-mu-gg
+#| label: fig-8schools-mu-ggplot2
 #| fig-cap: rstan 绘制参数 $\mu$ 的迭代轨迹
 #| fig-showtext: true
 
@@ -192,7 +207,7 @@ stan_trace(eight_schools_fit, pars = "mu") +
 
 ### 后验分布
 
-可以用 `stan_hist()` 函数或 `stan_dens()` 函数绘制后验分布图。下图展示参数 $\mu$ 、 $\tau$ 的直方图，联合分布的散点图、参数 $\mu$ 的后验概率密度分布图。
+可以用函数 `stan_hist()` 或 `stan_dens()` 绘制后验分布图。下图分别展示参数 $\mu$、$\tau$ 的直方图，以及二者的散点图，参数 $\mu$ 的后验概率密度分布图。
 
 ```{r}
 #| label: fig-8schools-rstan-posterior
@@ -203,8 +218,7 @@ stan_trace(eight_schools_fit, pars = "mu") +
 p1 <- stan_hist(eight_schools_fit, pars = c("mu","tau"), bins = 30)
 p2 <- stan_scat(eight_schools_fit, pars = c("mu","tau"), size = 1) +
   labs(x = expression(mu), y = expression(tau))
-p3 <- stan_dens(eight_schools_fit, pars = "mu") + 
-  labs(x = expression(mu))
+p3 <- stan_dens(eight_schools_fit, pars = "mu") + labs(x = expression(mu))
 library(patchwork)
 p1 / (p2 + p3)
 ```
