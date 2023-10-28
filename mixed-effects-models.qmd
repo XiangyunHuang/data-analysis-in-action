@@ -135,6 +135,8 @@ ggplot(data = sleepstudy, aes(x = Days, y = Reaction)) +
   labs(x = "睡眠不足的天数", y = "平均反应时间")
 ```
 
+### nlme
+
 考虑两水平的混合效应模型，其中随机截距 $\beta_{0j}$ 和随机斜率 $\beta_{1j}$，指标 $j$ 表示分组的编号，也叫变截距和变斜率模型
 
 $$
@@ -166,21 +168,21 @@ $$
 
 ```{r}
 library(nlme)
-fm1 <- lme(Reaction ~ Days, random = ~ Days | Subject, data = sleepstudy)
-summary(fm1)
+sleep_nlme <- lme(Reaction ~ Days, random = ~ Days | Subject, data = sleepstudy)
+summary(sleep_nlme)
 ```
 
 随机效应（Random effects）部分：
 
 ```{r}
 # 前 6 个 subject
-head(ranef(fm1))
+head(ranef(sleep_nlme))
 ```
 
 固定效应（Fixed effects）部分：
 
 ```{r}
-fixef(fm1)
+fixef(sleep_nlme)
 ```
 
 [**ggeffects**](https://github.com/strengejacke/ggeffects) 包的函数 `ggpredict()` 和 `ggeffect()` 可以用来绘制混合效应模型的边际效应（ Marginal Effects），[**ggPMX**](https://github.com/ggPMXdevelopment/ggPMX) 包 可以用来绘制混合效应模型的诊断图。下 @fig-lme-effects 展示关于变量 Days 的边际效应图。
@@ -193,7 +195,7 @@ fixef(fm1)
 #| fig-height: 4
 
 library(ggeffects)
-mydf <- ggpredict(fm1, terms = "Days")
+mydf <- ggpredict(sleep_nlme, terms = "Days")
 ggplot(mydf, aes(x = x, y = predicted)) +
   geom_line() +
   geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.2) +
@@ -209,25 +211,40 @@ ggplot(mydf, aes(x = x, y = predicted)) +
 plot(mydf)
 ```
 
-::: {#brms-lmm .callout-note title="brms"}
+### lme4
+
+```{r}
+sleep_lme4 <- lme4::lmer(Reaction ~ Days + (Days | Subject), data = sleepstudy)
+summary(sleep_lme4)
+```
+
+### blme
+
+```{r}
+sleep_blme <- blme::blmer(
+  Reaction ~ Days + (Days | Subject), data = sleepstudy,
+  control = lme4::lmerControl(check.conv.grad = "ignore"),
+  cov.prior = NULL)
+summary(sleep_blme)
+```
+
+### brms
+
 ```{r}
 #| eval: false
 #| echo: true
 
 library(brms)
 # predictions
-fit_sleep2 <- brm(Reaction ~ Days + (Days | Subject), data = sleepstudy)
-
-conds <- make_conditions(fit_sleep2, "Subject")
-
-fit_sleep2 |>
+sleep_brms <- brm(Reaction ~ Days + (Days | Subject), data = sleepstudy)
+conds <- make_conditions(sleep_brms, "Subject")
+sleep_brms |>
   marginal_effects(
     re_formula = NULL,
     conditions = conds
   ) |>
   plot(points = TRUE, ncol = 6)
 ```
-:::
 
 ## 广义线性混合效应模型 {#sec-glmm}
 
@@ -274,13 +291,80 @@ ggplot(data = cbpp, aes(x = herd, y = period)) +
   theme_minimal()
 ```
 
+### MASS
+
+```{r}
+cbpp_mass <- MASS::glmmPQL(
+  cbind(incidence, size - incidence) ~ period,
+  random = ~ 1 | herd, verbose = FALSE,
+  data = cbpp, family = binomial("logit")
+)
+summary(cbpp_mass)
+```
+
+### GLMMadaptive
+
 ```{r}
 library(GLMMadaptive)
-fgm1 <- mixed_model(
+cbpp_glmmadaptive <- mixed_model(
   fixed = cbind(incidence, size - incidence) ~ period,
   random = ~ 1 | herd, data = cbpp, family = binomial(link = "logit")
 )
-summary(fgm1)
+summary(cbpp_glmmadaptive)
+```
+
+### lme4
+
+```{r}
+cbpp_lme4 <- lme4::glmer(
+  cbind(incidence, size - incidence) ~ period + (1 | herd),
+  family = binomial("logit"), data = cbpp
+)
+summary(cbpp_lme4)
+```
+
+### mgcv
+
+或使用 **mgcv** 包，可以得到近似的结果。随机效应部分可以看作可加的惩罚项
+
+```{r}
+#| message: false
+
+library(mgcv)
+cbpp_mgcv <- gam(
+  cbind(incidence, size - incidence) ~ period + s(herd, bs = "re"),
+  data = cbpp, family = binomial(link = "logit"), method = "REML"
+)
+summary(cbpp_mgcv)
+```
+
+下面给出随机效应的标准差的估计及其上下限，和前面 **GLMMadaptive** 包和 **lme4** 包给出的结果也是接近的。
+
+```{r}
+gam.vcomp(cbpp_mgcv)
+```
+
+### blme
+
+```{r}
+cbpp_blme <- blme::bglmer(
+  cbind(incidence, size - incidence) ~ period + (1 | herd),
+  family = binomial("logit"), data = cbpp
+)
+summary(cbpp_blme)
+```
+
+### brms
+
+```{r}
+#| eval: false
+#| echo: true
+
+cbpp_brms <- brms::brm(
+  incidence | trials(size) ~ period + (1 | herd),
+  family = binomial("logit"), data = cbpp
+)
+summary(cbpp_brms)
 ```
 
 ## 非线性混合效应模型 {#sec-nlmm}
@@ -298,6 +382,8 @@ ggplot(data = Loblolly, aes(x = age, y = height, group = Seed)) +
   geom_line() +
   theme_bw()
 ```
+
+### nlme
 
 非线性回归
 
@@ -330,7 +416,8 @@ nfm3 <- update(nfm2, random = pdDiag(Asym + lrc ~ 1))
 summary(nfm3)
 ```
 
-::: {#brms-nlmm .callout-note title="brms"}
+### brms
+
 ```{r}
 #| eval: false
 #| echo: true
@@ -359,7 +446,6 @@ lob_bayes_fit <- brm(
   lob_formula, family = gaussian(), data = Loblolly, prior = lob_prior
 )
 ```
-:::
 
 ## 总结 {#sec-mixed-effects-summary}
 
@@ -372,7 +458,7 @@ lob_bayes_fit <- brm(
 5.  函数 `INLA::inla()` 集成嵌套拉普拉斯近似。
 
 | 模型                 | nlme     | MASS        | lme4      | GLMMadaptive    | brms    |
-|-------------|------------|------------|------------|------------|------------|
+|------------|------------|------------|------------|------------|------------|
 | 线性混合效应模型     | `lme()`  | `glmmPQL()` | `lmer()`  | 不支持          | `brm()` |
 | 广义线性混合效应模型 | 不支持   | `glmmPQL()` | `glmer()` | `mixed_model()` | `brm()` |
 | 非线性混合效应模型   | `nlme()` | 不支持      | `nlmer()` | 不支持          | `brm()` |
@@ -406,6 +492,7 @@ INLA 软件能处理上千个高斯随机效应，但最多只能处理 15 个�
     #| eval: false
     #| code-fold: true
     #| echo: !expr knitr::is_html_output()
+
     # 加载数据集
     data(sleepstudy, package = "lme4")
     fit_lmm_mass <- MASS::glmmPQL(Reaction ~ Days,
@@ -414,22 +501,6 @@ INLA 软件能处理上千个高斯随机效应，但最多只能处理 15 个�
     )
     summary(fit_lmm_mass)
     coef(summary(fit_lmm_mass))
-
-    fit_lmm_lme4 <- lme4::lmer(Reaction ~ Days + (Days | Subject), data = sleepstudy)
-    summary(fit_lmm_lme4)
-    coef(summary(fit_lmm_lme4))
-
-    fit_lmm_blme <- blme::blmer(
-      Reaction ~ Days + (Days | Subject), data = sleepstudy,
-      control = lme4::lmerControl(check.conv.grad = "ignore"),
-      cov.prior = gamma)
-    summary(fit_lmm_blme)
-    coef(summary(fit_lmm_blme))
-
-    fit_lmm_brms <- brms::brm(Reaction ~ Days + (Days | Subject),
-      data = sleepstudy, refresh = 0
-    )
-    summary(fit_lmm_brms)
     ```
 
 4.  从频率派和贝叶斯派角度分别比较多个 R 包对广义线性混合效应模型的拟合效果。提示：函数 `MASS::glmmPQL()` 、函数 `lme4::glmer()` 和函数 `glmmTMB::glmmTMB()`，以及函数 `blme::bglmer()` 和函数 `brms::brm()` 。
@@ -438,40 +509,15 @@ INLA 软件能处理上千个高斯随机效应，但最多只能处理 15 个�
     #| eval: false
     #| code-fold: true
     #| echo: !expr knitr::is_html_output()
+
     # 加载数据集
     data(cbpp, package = "lme4")
-
-    fit_glmm_mass <- MASS::glmmPQL(
-      cbind(incidence, size - incidence) ~ period ,
-      random = ~ 1 | herd, verbose = FALSE,
-      data = cbpp, family = binomial("logit")
-    )
-    summary(fit_glmm_mass)
-    coef(summary(fit_glmm_mass))
-
-    fit_glmm_lme4 <- lme4::glmer(
-      cbind(incidence, size - incidence) ~ period + (1 | herd),
-      family = binomial("logit"), data = cbpp
-    )
-    summary(fit_glmm_lme4)
 
     fit_glmm_glmmtmb <- glmmTMB::glmmTMB(
       cbind(incidence, size - incidence) ~ period + (1 | herd),
       data = cbpp, family = binomial, REML = TRUE
     ) # REML 估计
     summary(fit_glmm_glmmtmb)
-
-    fit_glmm_blme <- blme::bglmer(
-      cbind(incidence, size - incidence) ~ period + (1 | herd),
-      family = binomial("logit"), data = cbpp
-    )
-    summary(fit_glmm_blme)
-
-    fit_glmm_brms <- brms::brm(
-      incidence | trials(size) ~ period + (1 | herd),
-      family = binomial("logit"), data = cbpp
-    )
-    summary(fit_glmm_brms)
 
     # MCMCglmm 总是假定存在过度离散的情况
     # 存在一个残差服从正态分布的随机变量（效应）
@@ -488,23 +534,6 @@ INLA 软件能处理上千个高斯随机效应，但最多只能处理 15 个�
       family = binomial, data = cbpp
     )
     summary(cbpp_lme4)
-    ```
-
-    或使用 mgcv 包，可以得到近似的结果。随机效应部分可以看作可加的惩罚项
-
-    ```{r}
-    library(mgcv)
-    fgm3 <- gam(
-      cbind(incidence, size - incidence) ~ period + s(herd, bs = "re"),
-      data = cbpp, family = binomial(link = "logit"), method = "REML"
-    )
-    summary(fgm3)
-    ```
-
-    下面给出随机效应的标准差的估计及其上下限，和前面 GLMMadaptive 包和 lme4 包给出的结果也是接近的。
-
-    ```{r}
-    gam.vcomp(fgm3)
     ```
 
 5.  从广义线性混合效应模型生成模拟数据，用至少 6 个不同的 R 包估计模型参数，比较和归纳不同估计方法和实现算法的效果。举例：带漂移项的泊松型广义线性混合效应模型。$y_{ij}$ 表示响应变量，$\bm{u}$ 表示随机效应，$o_{ij}$ 表示漂移项。
