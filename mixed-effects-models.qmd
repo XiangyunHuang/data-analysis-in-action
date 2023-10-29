@@ -211,6 +211,16 @@ ggplot(mydf, aes(x = x, y = predicted)) +
 plot(mydf)
 ```
 
+### MASS
+
+```{r}
+sleep_mass <- MASS::glmmPQL(Reaction ~ Days,
+  random = ~ Days | Subject, verbose = FALSE,
+  data = sleepstudy, family = gaussian
+)
+summary(sleep_mass)
+```
+
 ### lme4
 
 ```{r}
@@ -281,15 +291,39 @@ sleep_brms |>
   plot(points = TRUE, ncol = 6)
 ```
 
+### MCMCglmm
+
+将数据集 sleepstudy 中的 Reaction 除以 1000，目的是数值稳定性，减小迭代序列的相关性。
+
+```{r}
+## 尺度变换
+sleepstudy$Reaction <- sleepstudy$Reaction / 1000
+## 变截距、变斜率模型
+prior1 <- list(
+  R = list(V = 1, nu = 0.002),
+  G = list(G1 = list(V = diag(2), nu = 0.002))
+)
+set.seed(20232023)
+sleep_mcmcglmm <- MCMCglmm::MCMCglmm(
+  Reaction ~ Days, random = ~ us(1 + Days):Subject, prior = prior1,
+  data = sleepstudy, family = "gaussian", verbose = FALSE
+)
+summary(sleep_mcmcglmm)
+```
+
+固定效应 Location effects 截距 (Intercept) 为 0.25167，斜率 Days 为 0.01055 。
+
+随机效应 R-structure 方差 0.0006742，则标准差为 0.02596536。
+
 ### INLA
 
-变截距模型
+先考虑变截距模型
 
 ```{r}
 library(INLA)
 inla.setOption(short.summary = TRUE)
-# Scale Reaction
-sleepstudy$Reaction <- sleepstudy$Reaction / 1000
+# 前面已经做了尺度变换
+# sleepstudy$Reaction <- sleepstudy$Reaction / 1000
 # 变截距
 sleep_inla1 <- inla(Reaction ~ Days + f(Subject, model = "iid", n = 18), 
                   family = "gaussian", data = sleepstudy)
@@ -297,7 +331,7 @@ sleep_inla1 <- inla(Reaction ~ Days + f(Subject, model = "iid", n = 18),
 summary(sleep_inla1)
 ```
 
-变截距和变斜率模型
+再考虑变截距和变斜率模型
 
 ```{r}
 # https://inla.r-inla-download.org/r-inla.org/doc/latent/iid.pdf
@@ -380,6 +414,16 @@ cbpp_glmmadaptive <- mixed_model(
 summary(cbpp_glmmadaptive)
 ```
 
+### glmmTMB
+
+```{r}
+cbpp_glmmtmb <- glmmTMB::glmmTMB(
+  cbind(incidence, size - incidence) ~ period + (1 | herd),
+  data = cbpp, family = binomial, REML = TRUE
+)
+summary(cbpp_glmmtmb)
+```
+
 ### lme4
 
 ```{r}
@@ -460,6 +504,30 @@ Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 and Tail_ESS are effective sample size measures, and Rhat is the potential
 scale reduction factor on split chains (at convergence, Rhat = 1).
 ```
+
+### MCMCglmm
+
+```{r}
+set.seed(20232023)
+cbpp_mcmcglmm <- MCMCglmm::MCMCglmm(
+  cbind(incidence, size - incidence) ~ period, random = ~herd,
+  data = cbpp, family = "multinomial2", verbose = FALSE
+)
+summary(cbpp_mcmcglmm)
+```
+
+对于服从非高斯分布的响应变量，MCMCglmm 总是假定存在过度离散的情况，即存在一个与分类变量无关的随机变量，或者说存在一个残差服从正态分布的随机变量（效应），可以看作测量误差，这种假定对真实数据建模是有意义的，所以，与以上 MCMCglmm 代码等价的 lme4 包模型代码如下：
+
+```{r}
+cbpp$id <- as.factor(1:dim(cbpp)[1])
+cbpp_lme4 <- lme4::glmer(
+  cbind(incidence, size - incidence) ~ period + (1 | herd) + (1 | id),
+  family = binomial, data = cbpp
+)
+summary(cbpp_lme4)
+```
+
+贝叶斯的结果与频率派的结果相近，但还是有明显差异。
 
 ### INLA
 
@@ -648,57 +716,7 @@ INLA 软件能处理上千个高斯随机效应，但最多只能处理 15 个�
     summary(fit_lme4)
     ```
 
-3.  从频率派和贝叶斯派角度分别比较多个 R 包对线性混合效应模型的拟合效果。提示：函数 `MASS::glmmPQL()` 、函数 `lme4::lmer()`，以及函数 `blme::blmer()` 和 `brms::brm()` 。
-
-    ```{r}
-    #| eval: false
-    #| code-fold: true
-    #| echo: !expr knitr::is_html_output()
-
-    # 加载数据集
-    data(sleepstudy, package = "lme4")
-    fit_lmm_mass <- MASS::glmmPQL(Reaction ~ Days,
-      random = ~ Days | Subject, verbose = FALSE,
-      data = sleepstudy, family = gaussian
-    )
-    summary(fit_lmm_mass)
-    coef(summary(fit_lmm_mass))
-    ```
-
-4.  从频率派和贝叶斯派角度分别比较多个 R 包对广义线性混合效应模型的拟合效果。提示：函数 `MASS::glmmPQL()` 、函数 `lme4::glmer()` 和函数 `glmmTMB::glmmTMB()`，以及函数 `blme::bglmer()` 和函数 `brms::brm()` 。
-
-    ```{r}
-    #| eval: false
-    #| code-fold: true
-    #| echo: !expr knitr::is_html_output()
-
-    # 加载数据集
-    data(cbpp, package = "lme4")
-
-    fit_glmm_glmmtmb <- glmmTMB::glmmTMB(
-      cbind(incidence, size - incidence) ~ period + (1 | herd),
-      data = cbpp, family = binomial, REML = TRUE
-    ) # REML 估计
-    summary(fit_glmm_glmmtmb)
-
-    # MCMCglmm 总是假定存在过度离散的情况
-    # 存在一个残差服从正态分布的随机变量（效应）
-    library(MCMCglmm)
-    cbpp_mcmc <- MCMCglmm(
-      cbind(incidence, size - incidence) ~ period, random = ~herd,
-      data = cbpp, family = "multinomial2", verbose = FALSE
-    )
-    summary(cbpp_mcmc)
-    # 以上 MCMCglmm 等价于
-    cbpp$id <- as.factor(1:dim(cbpp)[1])
-    cbpp_lme4 <- lme4::glmer(
-      cbind(incidence, size - incidence) ~ period + (1 | herd) + (1 | id),
-      family = binomial, data = cbpp
-    )
-    summary(cbpp_lme4)
-    ```
-
-5.  从广义线性混合效应模型生成模拟数据，用至少 6 个不同的 R 包估计模型参数，比较和归纳不同估计方法和实现算法的效果。举例：带漂移项的泊松型广义线性混合效应模型。$y_{ij}$ 表示响应变量，$\bm{u}$ 表示随机效应，$o_{ij}$ 表示漂移项。
+3.  从广义线性混合效应模型生成模拟数据，用至少 6 个不同的 R 包估计模型参数，比较和归纳不同估计方法和实现算法的效果。举例：带漂移项的泊松型广义线性混合效应模型。$y_{ij}$ 表示响应变量，$\bm{u}$ 表示随机效应，$o_{ij}$ 表示漂移项。
 
     $$
     \begin{aligned}
@@ -839,7 +857,7 @@ INLA 软件能处理上千个高斯随机效应，但最多只能处理 15 个�
     summary(fit_sim_poisson_glmm)
     ```
 
-6.  基于 **MASS** 包的地形数据集 topo，建立高斯过程回归模型，比较贝叶斯预测与克里金插值预测的效果。
+4.  基于 **MASS** 包的地形数据集 topo，建立高斯过程回归模型，比较贝叶斯预测与克里金插值预测的效果。
 
     ```{r}
     #| eval: false
@@ -918,7 +936,7 @@ INLA 软件能处理上千个高斯随机效应，但最多只能处理 15 个�
       theme_bw()
     ```
 
-7.  用 **brms** 包实现贝叶斯高斯过程回归模型，考虑用样条近似高斯过程以加快计算。提示：**brms** 包的函数 `gp()` 的参数 $k$ 表示近似高斯过程 GP 所用的基函数的数目。截止写作时间，函数 `gp()` 的参数 `cov` 只能取指数二次核函数 exponentiated-quadratic kernel 。
+5.  用 **brms** 包实现贝叶斯高斯过程回归模型，考虑用样条近似高斯过程以加快计算。提示：**brms** 包的函数 `gp()` 的参数 $k$ 表示近似高斯过程 GP 所用的基函数的数目。截止写作时间，函数 `gp()` 的参数 `cov` 只能取指数二次核函数 exponentiated-quadratic kernel 。
 
     ```{r}
     #| eval: false
