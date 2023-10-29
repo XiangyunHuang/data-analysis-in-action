@@ -24,7 +24,7 @@ source("_common.R")
 library(nlme)         # 线性混合效应模型
 library(GLMMadaptive) # 广义线性混合效应模型
 library(mgcv)         # 广义线性/可加混合效应模型
-
+library(INLA)
 library(splines)   # 样条
 library(cmdstanr)  # 编译采样
 library(ggplot2)   # 作图
@@ -246,6 +246,38 @@ sleep_brms |>
   plot(points = TRUE, ncol = 6)
 ```
 
+### INLA
+
+变截距模型
+
+```{r}
+library(INLA)
+inla.setOption(short.summary = TRUE)
+# Scale Reaction
+sleepstudy$Reaction <- sleepstudy$Reaction / 1000
+# 变截距
+sleep_inla1 <- inla(Reaction ~ Days + f(Subject, model = "iid", n = 18), 
+                  family = "gaussian", data = sleepstudy)
+# 输出结果
+summary(sleep_inla1)
+```
+
+变截距和变斜率模型
+
+```{r}
+# https://inla.r-inla-download.org/r-inla.org/doc/latent/iid.pdf
+# 二维高斯随机效应的先验为 Wishart prior
+sleepstudy$Subject <- as.integer(sleepstudy$Subject)
+sleepstudy$slopeid <- 18 + sleepstudy$Subject
+# 变截距、变斜率
+sleep_inla2 <- inla(
+  Reaction ~ 1 + Days + f(Subject, model = "iid2d", n = 2 * 18) + f(slopeid, Days, copy = "Subject"),
+  data = sleepstudy, family = "gaussian"
+)
+# 输出结果
+summary(sleep_inla2)
+```
+
 ## 广义线性混合效应模型 {#sec-glmm}
 
 当响应变量分布不再是高斯分布，线性混合效应模型就扩展到广义线性混合效应模型。有一些 R 包可以拟合此类模型，MASS 包的函数 `glmmPQL()` ，**mgcv** 包的函数 `gam()`，lme4 包的函数 `glmer()` ，GLMMadaptive 包的函数 `mixed_model()` ，brms 包的函数 `brm()` 等。
@@ -356,6 +388,8 @@ summary(cbpp_blme)
 
 ### brms
 
+表示二项分布，公式语法与前面的 lme4 等包不同。
+
 ```{r}
 #| eval: false
 #| echo: true
@@ -365,6 +399,18 @@ cbpp_brms <- brms::brm(
   family = binomial("logit"), data = cbpp
 )
 summary(cbpp_brms)
+```
+
+### INLA
+
+表示二项分布，公式语法与前面的 brms 包和 lme4 等包都不同。
+
+```{r}
+cbpp_inla <- inla(
+  formula = incidence ~ period + f(herd, model = "iid", n = 15),
+  Ntrials = size, family = "binomial", data = cbpp
+)
+summary(cbpp_inla)
 ```
 
 ## 非线性混合效应模型 {#sec-nlmm}

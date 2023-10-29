@@ -1107,48 +1107,28 @@ G-structure 代表随机效应部分，R-structure 代表残差效应部分，Lo
 
 ### INLA
 
-同前，先考虑变截距的混合效应模型，结果和 **nlme** 包基本一样。
+同前，先考虑变截距的混合效应模型。
 
 ```{r}
 #| message: false
-#| eval: false
 
 library(INLA)
 inla.setOption(short.summary = TRUE)
+# 数值稳定性考虑
+rats_data$weight <- rats_data$weight / 400
 # 变截距
-rats_inla <- inla(weight ~ days + f(rats, model = "iid", n = 30), 
+rats_inla1 <- inla(weight ~ days + f(rats, model = "iid", n = 30), 
                   family = "gaussian", data = rats_data)
 # 输出结果
-summary(rats_inla)
-```
-
-``` markdown
-Time used:
-    Pre = 1.88, Running = 4.21, Post = 0.0267, Total = 6.12 
-Fixed effects:
-               mean    sd 0.025quant 0.5quant 0.975quant    mode kld
-(Intercept) 106.568 3.019    100.628  106.568    112.509 106.568   0
-days          6.186 0.067      6.053    6.186      6.318   6.186   0
-
-Random effects:
-  Name    Model
-    rats IID model
-
-Model hyperparameters:
-                                         mean    sd 0.025quant 0.5quant 0.975quant  mode
-Precision for the Gaussian observations 0.015 0.002      0.011    0.015      0.019 0.015
-Precision for rats                      0.005 0.001      0.004    0.005      0.007 0.005
-
-Marginal log-Likelihood:  -604.26 
+summary(rats_inla1)
 ```
 
 再考虑变截距和斜率的混合效应模型。
 
 ```{r}
-#| eval: false
-
 # https://inla.r-inla-download.org/r-inla.org/doc/latent/iid.pdf
 # 二维高斯随机效应的先验为 Wishart prior
+rats_data$rats <- as.integer(rats_data$rats)
 rats_data$slopeid <- 30 + rats_data$rats
 # 变截距、变斜率
 rats_inla2 <- inla(
@@ -1157,29 +1137,6 @@ rats_inla2 <- inla(
 )
 # 输出结果
 summary(rats_inla2)
-```
-
-``` markdown
-Time used:
-    Pre = 1.59, Running = 0.613, Post = 0.0274, Total = 2.23 
-Fixed effects:
-               mean    sd 0.025quant 0.5quant 0.975quant    mode kld
-(Intercept) 106.568 1.537    103.552  106.568    109.584 106.568   0
-days          6.186 0.121      5.948    6.186      6.423   6.186   0
-
-Random effects:
-  Name    Model
-    rats IID2D model
-   slopeid Copy
-
-Model hyperparameters:
-                                         mean    sd 0.025quant 0.5quant 0.975quant  mode
-Precision for the Gaussian observations 0.017 0.002      0.014    0.017      0.020 0.017
-Precision for rats (component 1)        8.534 1.001      6.987    8.409     10.879 7.981
-Precision for rats (component 2)        3.420 0.467      2.722    3.352      4.533 3.137
-Rho1:2 for rats                         0.054 0.080     -0.132    0.065      0.174 0.118
-
-Marginal log-Likelihood:  -588.65 
 ```
 
 ::: callout-warning
