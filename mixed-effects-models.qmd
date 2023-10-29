@@ -234,12 +234,47 @@ summary(sleep_blme)
 #| eval: false
 #| echo: true
 
-library(brms)
+sleep_brms <- brms::brm(Reaction ~ Days + (Days | Subject), data = sleepstudy)
+summary(sleep_brms)
+```
+
+``` markdown
+ Family: gaussian 
+  Links: mu = identity; sigma = identity 
+Formula: Reaction ~ Days + (Days | Subject) 
+   Data: sleepstudy (Number of observations: 180) 
+  Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
+         total post-warmup draws = 4000
+
+Group-Level Effects: 
+~Subject (Number of levels: 18) 
+                    Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+sd(Intercept)          27.03      6.60    15.88    42.13 1.00     1728     2469
+sd(Days)                6.61      1.50     4.18     9.97 1.00     1517     2010
+cor(Intercept,Days)     0.08      0.29    -0.46     0.65 1.00      991     1521
+
+Population-Level Effects: 
+          Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+Intercept   251.26      7.42   236.27   266.12 1.00     1982     2687
+Days         10.36      1.77     6.85    13.85 1.00     1415     1982
+
+Family Specific Parameters: 
+      Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+sigma    25.88      1.54    22.99    29.06 1.00     3204     2869
+
+Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
+and Tail_ESS are effective sample size measures, and Rhat is the potential
+scale reduction factor on split chains (at convergence, Rhat = 1).
+```
+
+```{r}
+#| eval: false
+#| echo: true
+
 # predictions
-sleep_brms <- brm(Reaction ~ Days + (Days | Subject), data = sleepstudy)
-conds <- make_conditions(sleep_brms, "Subject")
+conds <- brms::make_conditions(sleep_brms, "Subject")
 sleep_brms |>
-  marginal_effects(
+  brms::marginal_effects(
     re_formula = NULL,
     conditions = conds
   ) |>
@@ -401,6 +436,31 @@ cbpp_brms <- brms::brm(
 summary(cbpp_brms)
 ```
 
+``` markdown
+ Family: binomial 
+  Links: mu = logit 
+Formula: incidence | trials(size) ~ period + (1 | herd) 
+   Data: cbpp (Number of observations: 56) 
+  Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
+         total post-warmup draws = 4000
+
+Group-Level Effects: 
+~herd (Number of levels: 15) 
+              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+sd(Intercept)     0.76      0.22     0.39     1.29 1.00     1483     1962
+
+Population-Level Effects: 
+          Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+Intercept    -1.40      0.26    -1.92    -0.88 1.00     2440     2542
+period2      -1.00      0.31    -1.63    -0.41 1.00     5242     2603
+period3      -1.14      0.34    -1.83    -0.50 1.00     4938     3481
+period4      -1.61      0.44    -2.49    -0.81 1.00     4697     2966
+
+Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
+and Tail_ESS are effective sample size measures, and Rhat is the potential
+scale reduction factor on split chains (at convergence, Rhat = 1).
+```
+
 ### INLA
 
 表示二项分布，公式语法与前面的 brms 包和 lme4 等包都不同。
@@ -464,19 +524,27 @@ summary(nfm3)
 
 ### brms
 
+根据数据的情况，设定参数的先验分布
+
 ```{r}
 #| eval: false
 #| echo: true
 
-library(brms)
 lob_prior <- c(
-  set_prior("normal(101, 0.1)", nlpar = "Asym", lb = 100, ub = 102),
-  set_prior("normal(-8, 1)", nlpar = "R0", lb = -10),
-  set_prior("normal(-3, 3)", nlpar = "lrc", lb = -9),
-  set_prior("normal(3, 0.2)", class = "sigma")
+  brms::set_prior("normal(101, 0.1)", nlpar = "Asym", lb = 100, ub = 102),
+  brms::set_prior("normal(-8, 1)", nlpar = "R0", lb = -10),
+  brms::set_prior("normal(-3, 3)", nlpar = "lrc", lb = -9),
+  brms::set_prior("normal(3, 0.2)", class = "sigma")
 )
+```
 
-lob_formula <- bf(
+根据模型表达式编码
+
+```{r}
+#| eval: false
+#| echo: true
+
+lob_formula <- brms::bf(
   height ~ Asym + (R0 - Asym) * exp( - exp(lrc) * age),
   # Nonlinear variables
   # Fixed effects: Asym R0 lrc
@@ -487,10 +555,45 @@ lob_formula <- bf(
   # Nonlinear fit
   nl = TRUE
 )
+```
 
-lob_bayes_fit <- brm(
-  lob_formula, family = gaussian(), data = Loblolly, prior = lob_prior
-)
+```{r}
+#| eval: false
+#| echo: true
+
+lob_brms <- brms::brm(lob_formula, data = Loblolly, prior = lob_prior)
+summary(lob_brms)
+```
+
+``` markdown
+ Family: gaussian 
+  Links: mu = identity; sigma = identity 
+Formula: height ~ Asym + (R0 - Asym) * exp(-exp(lrc) * age) 
+         R0 ~ 1
+         lrc ~ 1
+         Asym ~ 1 + (1 | Seed)
+   Data: Loblolly (Number of observations: 84) 
+  Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
+         total post-warmup draws = 4000
+
+Group-Level Effects: 
+~Seed (Number of levels: 14) 
+                   Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+sd(Asym_Intercept)     3.90      1.09     2.24     6.51 1.00     1033     1647
+
+Population-Level Effects: 
+               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+R0_Intercept      -8.53      0.43    -9.37    -7.68 1.00     2236     1434
+lrc_Intercept     -3.23      0.02    -3.27    -3.20 1.00      981     1546
+Asym_Intercept   101.00      0.10   100.80   101.20 1.00     4443     2907
+
+Family Specific Parameters: 
+      Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+sigma     1.68      0.25     1.20     2.17 1.00     1910     2258
+
+Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
+and Tail_ESS are effective sample size measures, and Rhat is the potential
+scale reduction factor on split chains (at convergence, Rhat = 1).
 ```
 
 ## 总结 {#sec-mixed-effects-summary}
