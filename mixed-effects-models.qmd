@@ -688,7 +688,7 @@ scale reduction factor on split chains (at convergence, Rhat = 1).
 5.  函数 `INLA::inla()` 集成嵌套拉普拉斯近似。
 
 | 模型                 | nlme     | MASS        | lme4      | GLMMadaptive    | brms    |
-|------------|------------|------------|------------|------------|------------|
+|----------------------|----------|-------------|-----------|-----------------|---------|
 | 线性混合效应模型     | `lme()`  | `glmmPQL()` | `lmer()`  | 不支持          | `brm()` |
 | 广义线性混合效应模型 | 不支持   | `glmmPQL()` | `glmer()` | `mixed_model()` | `brm()` |
 | 非线性混合效应模型   | `nlme()` | 不支持      | `nlmer()` | 不支持          | `brm()` |
@@ -733,8 +733,8 @@ INLA 软件能处理上千个高斯随机效应，但最多只能处理 15 个�
     #| echo: !expr knitr::is_html_output()
 
     set.seed(2023)
-    Ngroups <- 25
-    NperGroup <- 100
+    Ngroups <- 25 # 一个随机效应分 25 个组
+    NperGroup <- 100 # 每个组 100 个观察值
     # 样本量
     N <- Ngroups * NperGroup
     # 截距和两个协变量的系数
@@ -755,24 +755,72 @@ INLA 软件能处理上千个高斯随机效应，但最多只能处理 15 个�
     colnames(sim_data) <- c("y", "x1", "x2", "o", "g")
 
     # 模型拟合
-    library(lme4)
-    fit_sim_poisson_glmer <- glmer(y ~ x1 + x2 + (1 | g),
+    fit_lme4 <- lme4::glmer(y ~ x1 + x2 + (1 | g),
       data = sim_data, offset = log(o), family = poisson(link = "log")
     )
-    # 模型输出
-    summary(fit_sim_poisson_glmer)
+    summary(fit_lme4)
 
     # 对随机效应 adaptive Gauss-Hermite quadrature 积分
     library(GLMMadaptive)
-    fit_sim_poisson_adaptive <- mixed_model(
+    fit_glmmadaptive <- mixed_model(
       fixed = y ~ x1 + x2 + offset(log(o)), 
       random = ~ 1 | g, data = sim_data,
       family = poisson(link = "log")
     )
-    summary(fit_sim_poisson_adaptive)
+    summary(fit_glmmadaptive)
+
+    ## hglm 包 Hierarchical Generalized Linear Models
+    # extended quasi likelihood (EQL) method
+    fit_hglm <- hglm::hglm(
+      fixed =  y ~ x1 + x2, random = ~ 1 | g,
+      family = poisson(link = "log"), 
+      offset = log(o), data = sim_data
+    )
+    summary(fit_hglm)
+
+    # 广义估计方程
+    fit_gee <- gee::gee(y ~ x1 + x2 + offset(log(o)),
+      id = g, data = sim_data, family = poisson(link = "log"),
+      corstr = "exchangeable"
+    )
+    # 输出
+    fit_gee
+
+    # [glmmML](https://CRAN.R-project.org/package=glmmML)
+    # Maximum Likelihood and numerical integration via Gauss-Hermite quadrature.
+    fit_glmmml <- glmmML::glmmML(
+      formula = y ~ x1 + x2, family = poisson,
+      data = sim_data, offset = log(o), cluster = g
+    )
+    summary(fit_glmmml)
+
+    # Generalized Estimating Equation
+    # [geepack](https://cran.r-project.org/package=geepack) GEE
+    fit_geepack <- geepack::geeglm(
+      formula = y ~ x1 + x2, family = poisson(link = "log"),
+      id = g, offset = log(o), data = sim_data,
+      corstr = "exchangeable", scale.fix = FALSE
+    )
+    summary(fit_geepack)
+
+    # [glmm](https://github.com/knudson1/glmm)
+    # Monte Carlo Likelihood Approximation 近似对随机效应的积分
+    # 对迭代时间没有给出预估，一旦执行，不知道什么时候会跑完
+    set.seed(2023)
+    # 设置双核并行迭代
+    clust <- parallel::makeCluster(2)
+    fit_glmm <- glmm::glmm(y ~ x1 + x2 + offset(log(o)),
+      random = list(~ 1 + g), # 随机效应
+      varcomps.names = "G", # 给随机效应取个名字
+      data = sim_data,
+      family.glmm = glmm::poisson.glmm, # 泊松型
+      m = 10^4, debug = TRUE, cluster = clust
+    )
+    parallel::stopCluster(clust)
+    summary(fit_glmm)
 
     # 如何设置先验分布
-    fit_sim_poisson_brm <- brms::brm(
+    fit_brms <- brms::brm(
       y ~ x1 + x2 + (1 | g) + offset(log(o)),
       data = sim_data,
       family = poisson(link = "log"),
@@ -782,79 +830,29 @@ INLA 软件能处理上千个高斯随机效应，但最多只能处理 15 个�
       backend = "cmdstanr" # 选择后端 rstan 或 cmdstanr
     )
     # 拟合结果
-    summary(fit_sim_poisson_brm)
+    summary(fit_brms)
     # 发散很多
-    plot(fit_sim_poisson_brm)
+    plot(fit_brms)
     # 模型诊断指标
-    brms::WAIC(fit_sim_poisson_brm)
-    brms::pp_check(fit_sim_poisson_brm)
+    brms::WAIC(fit_brms)
+    brms::pp_check(fit_brms)
 
     # gee GLMMadaptive glmmML geepack 和 lme4 的模型输出结果是接近的
     # blme 基于 lme4 的贝叶斯估计
-    library(blme)
-    fit_sim_poisson_bglmer <- bglmer(
+    fit_blme <- blme::bglmer(
       formula = y ~ x1 + x2 + (1 | g),
       data = sim_data, offset = log(o),
       family = poisson(link = "log")
     )
-    summary(fit_sim_poisson_bglmer)
+    summary(fit_blme)
+
     # MCMCglmm 包 贝叶斯估计
-    fit_sim_poisson_mcmcglmm <- MCMCglmm::MCMCglmm(
+    fit_mcmcglmm <- MCMCglmm::MCMCglmm(
       fixed = y ~ x1 + x2 + offset(log(o)),
       random = ~g, family = "poisson", 
       data = sim_data, verbose = FALSE
     )
-    summary(fit_sim_poisson_mcmcglmm)
-    ## hglm 包 Hierarchical Generalized Linear Models
-    # extended quasi likelihood (EQL) method
-    fit_sim_poisson_hglm <- hglm::hglm(
-      fixed =  y ~ x1 + x2, random = ~ 1 | g,
-      family = poisson(link = "log"), 
-      offset = log(o), data = sim_data
-    )
-    summary(fit_sim_poisson_hglm)
-    # 广义估计方程 
-    library(gee)
-    fit_sim_poisson_gee <- gee(y ~ x1 + x2 + offset(log(o)),
-      id = g, data = sim_data, family = poisson(link = "log"),
-      corstr = "exchangeable"
-    )
-    # 输出
-    fit_sim_poisson_gee
-
-    # [glmmML](https://CRAN.R-project.org/package=glmmML)
-    # Maximum Likelihood and numerical integration via Gauss-Hermite quadrature.
-    library(glmmML)
-    fit_sim_poisson_glmmml <- glmmML(
-      formula = y ~ x1 + x2, family = poisson,
-      data = sim_data, offset = log(o), cluster = g
-    )
-    summary(fit_sim_poisson_glmmml)
-    # Generalized Estimating Equation
-    # [geepack](https://cran.r-project.org/package=geepack) GEE
-    library(geepack)
-    fit_sim_poisson_geepack <- geeglm(
-      formula = y ~ x1 + x2, family = poisson(link = "log"),
-      id = g, offset = log(o), data = sim_data,
-      corstr = "exchangeable", scale.fix = FALSE
-    )
-    summary(fit_sim_poisson_geepack)
-    # [glmm](https://github.com/knudson1/glmm)
-    # Monte Carlo Likelihood Approximation 近似对随机效应的积分
-    library(glmm)
-    set.seed(2023)
-    # 设置双核并行迭代
-    clust <- makeCluster(2) # doParallel
-    # 对迭代时间没有给出预估，一旦执行，不知道什么时候会跑完
-    fit_sim_poisson_glmm <- glmm(y ~ x1 + x2 + offset(log(o)),
-      random = list(~ 1 + g), # 随机效应
-      varcomps.names = "G", # 给随机效应取个名字
-      data = sim_data,
-      family.glmm = poisson.glmm, # 泊松型
-      m = 10^4, debug = TRUE, cluster = clust
-    )
-    stopCluster(clust)
-    summary(fit_sim_poisson_glmm)
+    summary(fit_mcmcglmm)
     ```
 
 4.  基于 **MASS** 包的地形数据集 topo，建立高斯过程回归模型，比较贝叶斯预测与克里金插值预测的效果。
