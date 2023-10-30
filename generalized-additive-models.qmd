@@ -9,15 +9,15 @@ source("_common.R")
 ```{r}
 #| message: false
 
-library(mgcv)      # 广义可加混合效应模型
-
+library(mgcv)      # 广义可加模型
 library(splines)   # 样条
 library(cmdstanr)  # 编译采样
 library(ggplot2)   # 作图
 library(bayesplot) # 后验分布
 library(loo)       # LOO-CV
-
+library(rstanarm)  # 贝叶斯可加模型
 library(INLA)      # 近似贝叶斯推断
+options(mc.cores = 2) # 全局设置双核
 ```
 
 相比于广义线性模型，广义可加模型可以看作是一种非线性模型，模型中含有非线性的成分。
@@ -97,8 +97,6 @@ library(cmdstanr)
 rstanarm 可以拟合一般的广义可加（混合）模型。
 
 ```{r}
-#| eval: false
-
 library(rstanarm)
 mcycle_rstanarm <- stan_gamm4(accel ~ s(times),
   data = mcycle, family = gaussian(), cores = 2, seed = 20232023,
@@ -108,112 +106,38 @@ mcycle_rstanarm <- stan_gamm4(accel ~ s(times),
 summary(mcycle_rstanarm)
 ```
 
-``` markdown
-Model Info:
- function:     stan_gamm4
- family:       gaussian [identity]
- formula:      accel ~ s(times)
- algorithm:    sampling
- sample:       1200 (posterior sample size)
- priors:       see help('prior_summary')
- observations: 133
-
-Estimates:
-                       mean    sd      10%     50%     90%  
-(Intercept)            -25.6     2.1   -28.4   -25.5   -23.0
-s(times).1             340.4   232.9    61.1   340.8   634.7
-s(times).2           -1218.9   243.3 -1529.2 -1218.8  -913.5
-s(times).3            -567.8   147.0  -765.2  -567.1  -385.3
-s(times).4            -619.8   133.8  -791.1  -617.0  -458.9
-s(times).5           -1056.2    85.8 -1162.8 -1055.7  -945.1
-s(times).6             -89.2    49.8  -154.4   -89.4   -27.6
-s(times).7            -232.2    33.8  -274.7  -232.2  -189.5
-s(times).8              17.3   105.8  -121.0    15.5   150.1
-s(times).9               4.1    33.1   -25.8     1.0    39.1
-sigma                   24.7     1.6    22.6    24.6    26.8
-smooth_sd[s(times)1]   399.9    59.2   327.6   395.4   479.1
-smooth_sd[s(times)2]    25.2    25.4     2.9    17.5    56.6
-
-Fit Diagnostics:
-           mean   sd    10%   50%   90%
-mean_PPD -25.5    3.0 -29.3 -25.5 -21.8
-
-The mean_ppd is the sample average posterior predictive distribution of the outcome variable (for details see help('summary.stanreg')).
-
-MCMC diagnostics
-                     mcse Rhat n_eff
-(Intercept)          0.1  1.0  1052 
-s(times).1           7.0  1.0  1103 
-s(times).2           6.7  1.0  1329 
-s(times).3           4.4  1.0  1101 
-s(times).4           3.8  1.0  1230 
-s(times).5           2.5  1.0  1137 
-s(times).6           1.5  1.0  1128 
-s(times).7           1.0  1.0  1062 
-s(times).8           3.1  1.0  1147 
-s(times).9           1.0  1.0  1052 
-sigma                0.0  1.0  1154 
-smooth_sd[s(times)1] 1.8  1.0  1136 
-smooth_sd[s(times)2] 0.7  1.0  1157 
-mean_PPD             0.1  1.0   997 
-log-posterior        0.1  1.0  1122 
-
-For each parameter, mcse is Monte Carlo standard error, n_eff is a crude measure of effective sample size, and Rhat is the potential scale reduction factor on split chains (at convergence Rhat=1).
-```
-
 ```{r}
-#| eval: false
+#| label: fig-mcycle-nonlinear
+#| fig-cap: 非线性部分
+#| fig-showtext: true
+#| fig-width: 5
+#| fig-height: 4
 
-# 非线性部分
 plot_nonlinear(mcycle_rstanarm)
 ```
 
-```{r}
-#| eval: false
+LOO 值
 
+```{r}
 # LOO
 loo(mcycle_rstanarm)
 ```
 
-``` markdown
-Computed from 1200 by 133 log-likelihood matrix
-
-         Estimate   SE
-elpd_loo   -611.0  8.8
-p_loo         7.3  1.2
-looic      1222.0 17.5
-------
-Monte Carlo SE of elpd_loo is 0.1.
-
-All Pareto k estimates are good (k < 0.5).
-See help('pareto-k-diagnostic') for details.
-```
-
 ```{r}
-#| eval: false
+#| label: fig-mcycle-ppcheck
+#| fig-cap: 后验预测分布
+#| fig-showtext: true
+#| fig-width: 5
+#| fig-height: 4
 
-# 后验预测分布
 pp_check(mcycle_rstanarm)
-```
-
-贝叶斯 $R^2$ 统计量
-
-```{r}
-#| eval: false
-
-# R^2 
-rsq <- bayes_R2(mcycle_rstanarm)
-# R^2 的估计
-print(median(rsq))
-# R^2 的分布
-hist(rsq)
 ```
 
 ### brms
 
-```{r}
-#| eval: false
+另一个综合型的贝叶斯分析扩展包是 brms
 
+```{r}
 # 拟合模型
 mcycle_brms <- brms::brm(accel ~ s(times),
   data = mcycle, family = gaussian(), cores = 2, seed = 20232023,
@@ -224,40 +148,40 @@ mcycle_brms <- brms::brm(accel ~ s(times),
 summary(mcycle_brms)
 ```
 
-```{r}
-#| eval: false
+固定效应
 
-brms::fixef(mcycle_brms) # 固定效应
-brms::ranef(mcycle_brms) # 随机效应
+```{r}
+brms::fixef(mcycle_brms)
 ```
 
-```{r}
-#| eval: false
+模型中样条平滑的效应
 
-# 边际效应
-ms_bgam <- brms::conditional_smooths(mcycle_brms) # 平滑效应
-plot(ms_bgam)
+```{r}
+#| label: fig-mcycle-smooths
+#| fig-cap: 样条平滑效应
+#| fig-showtext: true
+#| fig-width: 5
+#| fig-height: 4
+
+plot(brms::conditional_smooths(mcycle_brms))
 ```
 
-```{r}
-#| eval: false
+LOO 值与 rstanarm 包计算的值很接近。
 
-# R-square
-brms::bayes_R2(mcycle_brms)
-# WAIC
-brms::waic(mcycle_brms)
-# LOOIC
-# brms::log_lik(bgam)
+```{r}
 brms::loo(mcycle_brms)
-# 后验预测分布
-brms::pp_check(mcycle_brms, ndraws = 50)
 ```
 
-```{r}
-#| eval: false
+后验预测分布检查
 
-# 生成代码
-brms::stancode(accel ~ s(times), data = mcycle, family = gaussian())
+```{r}
+#| label: fig-mcycle-ppcheck-brms
+#| fig-cap: 后验预测分布
+#| fig-showtext: true
+#| fig-width: 5
+#| fig-height: 4
+
+brms::pp_check(mcycle_brms, ndraws = 50)
 ```
 
 ### GINLA
@@ -451,13 +375,12 @@ library(cmdstanr)
 #| eval: false
 #| echo: true
 
-library(brms)
 # 预计运行 1 个小时以上
-rongelap_brm <- brm(counts ~ gp(cX, cY) + offset(log(time)),
+rongelap_brm <- brms::brm(counts ~ gp(cX, cY) + offset(log(time)),
   data = rongelap, family = poisson(link = "log")
 )
-# 样条
-rongelap_brm <- brm(
+# 基样条近似拟合也很慢
+rongelap_brm <- brms::brm(
   counts ~ gp(cX, cY, c = 5/4, k = 5) + offset(log(time)),
   data = rongelap, family = poisson(link = "log")
 )
