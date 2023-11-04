@@ -6,6 +6,18 @@
 
 [^analyze-survival-data-1]: <https://stat.ethz.ch/pipermail/r-help/2005-July/075649.html>
 
+```{r}
+#| message: false
+
+library(survival)  # survfit
+library(ggplot2)
+library(ggfortify) # autoplot
+library(ggsurvfit) # survfit2 and ggsurvfit
+library(glmnet)    # Cox Models
+# library(VGAM)      # R >= 4.4.0
+library(INLA)
+```
+
 生存分析可以用于用户流失分析，注册、激活、活跃。 分析次日留存、7日留存、15日留存。有学生来上体验课，多久来付费上课。 有一个人医院看病之后，多久办理住院。 最早，生存分析用于研究飞机出去之后，有多少返回的。还是要回归到原始文献去了解基本概念，及其背后的思考和应用
 
 以一个问题提出本章主题，讲述和展示一个数据集。建立模型，拟合模型，结果解释。
@@ -20,9 +32,44 @@ data(cancer, package = "survival")
 str(aml)
 ```
 
+数据的分布情况如下
+
+```{r}
+ggplot(data = aml, aes(x = time, y = status, color = x)) +
+  geom_jitter(height = 0.2)
+```
+
+在垂直方向添加了抖动，不影响时间项 time ，可以对数据的分布看得更加清楚。
+
 ## 模型拟合
 
-R 软件内置了 [survival](https://github.com/therneau/survival) 包，它是实现生存分析的核心 R 包 [@Terry2000]
+Cox 比例风险回归模型与 Box-Cox 变换 [@Box1964]
+
+-   `survival::coxph()` Cox 比例风险回归模型
+-   `MASS::boxcox()` Box-Cox 变换
+-   `glmnet::glmnet(family = "cox")`
+-   INLA 包的函数 `inla()` 与 `inla.surv()` 一起拟合，[链接](https://becarioprecario.bitbucket.io/inla-gitbook/ch-survival.html)
+-   [survstan](https://github.com/fndemarqui/survstan) Stan 与生存分析
+-   rstanarm 包的函数 `stan_jm()` 使用说明 Estimating Joint Models for Longitudinal and Time-to-Event Data with rstanarm [链接](https://cran.r-project.org/web/packages/rstanarm/vignettes/jm.html)
+-   rstanarm 包的[生存分析分支](https://github.com/stan-dev/rstanarm/pull/323)
+
+### survival
+
+R 软件内置了 [survival](https://github.com/therneau/survival) 包，它是实现生存分析的核心 R 包 [@Terry2000]，其函数 `survfit()` 拟合模型。
+
+```{r}
+aml_survival <- survfit(Surv(time, status) ~ x, data = aml)
+summary(aml_survival)
+```
+
+拟合 Cox 比例风险回归模型（Cox Proportional Hazards Regression Model）
+
+```{r}
+aml_coxph <- coxph(Surv(time, status) ~ 1 + x, data = aml)
+summary(aml_coxph)
+```
+
+展示拟合结果。可以绘制生存分析的图的 R 包有很多，比如 ggfortify 包、[ggsurvfit](https://github.com/ddsjoberg/ggsurvfit/) 包和 [survminer](https://github.com/kassambara/survminer) 包等。ggfortify 包可以直接针对函数 `survfit()` 的返回对象绘图，[ggsurvfit](https://github.com/ddsjoberg/ggsurvfit/) 包提供新函数 `survfit2()` 拟合模型、函数 `ggsurvfit()` 绘制图形，画面内容更加丰富，而 [survminer](https://github.com/kassambara/survminer) 包依赖很多。
 
 ```{r}
 #| label: fig-leukemia-surv
@@ -31,30 +78,30 @@ R 软件内置了 [survival](https://github.com/therneau/survival) 包，它是�
 #| fig-width: 6
 #| fig-height: 3
 
-leukemia.surv <- survfit(Surv(time, status) ~ x, data = aml)
 library(ggplot2)
 library(ggfortify)
-autoplot(leukemia.surv, data = aml) +
+autoplot(aml_survival, data = aml) +
   theme_minimal()
 ```
 
--   [ggsurvfit](https://github.com/ddsjoberg/ggsurvfit/)
--   [survminer](https://github.com/kassambara/survminer) 依赖很多
+下面 ggsurvfit 包再次拟合模型，并展示模型结果。
+
+### ggsurvfit
 
 ```{r}
 library(ggsurvfit)
 ```
 
-拟合模型
+拟合模型需要函数 `survfit2()`
 
 ```{r}
-fit_mod_surv <- survfit2(Surv(time, status) ~ x, data = aml)
+aml_ggsurvfit <- survfit2(Surv(time, status) ~ x, data = aml)
 ```
 
 模型输出
 
 ```{r}
-fit_mod_surv
+aml_ggsurvfit
 ```
 
 ```{r}
@@ -64,7 +111,7 @@ fit_mod_surv
 #| fig-height: 5
 #| fig-showtext: true
 
-ggsurvfit(fit_mod_surv, linewidth = 1) +
+ggsurvfit(aml_ggsurvfit, linewidth = 1) +
   add_confidence_interval() +
   add_risktable() +
   add_quantile(y_value = 0.6, color = "gray50", linewidth = 0.75) +
@@ -72,24 +119,39 @@ ggsurvfit(fit_mod_surv, linewidth = 1) +
   labs(y = "生存百分比", title = "从手术到随机化的复发时间") 
 ```
 
-## Cox-Box 比例风险回归与生存分析的关系 {#sec-box-cox}
+### glmnet
 
-Box-Cox 变换 [@Box1964]、Cox 回归模型
+glmnet 包拟合 Cox 比例风险回归模型 [@simon2011] 适合需要多变量筛选的情况。
 
--   `survival::coxph()` 比例风险回归模型
--   `MASS::boxcox()` Box-Cox 变换
--   `glmnet::glmnet(family = "cox")` Cox 回归模型
+```{r}
+#| eval: false
 
-## Tobit regression 与生存分析的关系 {#sec-tobit-regression}
+library(glmnet)
+# alpha = 1 lasso
+aml_glmnet <- glmnet(x = aml$x, y = Surv(aml$time, aml$status), family = "cox", alpha = 1)
+aml_glmnet_cv <- cv.glmnet(x = aml$x, y = Surv(aml$time, aml$status), family = "cox", alpha = 1)
+```
 
-Tobit (Tobin's Probit) regression 起源于计量经济学中的 Tobit 模型，James Tobin 提出的，用于截尾数据，生存分析中的一种加速失效模型 (accelerated failure model) [@Tobin1958]
+### INLA
 
--   `VGAM::vglm(family = tobit(Upper = 800))` 依赖少，稳定，推荐使用
--   VGAM 包的扩展包 VGAMdata 和 VGAMextra
--   `AER::tobit()` 依赖多
+INLA 包拟合 Cox 比例风险回归模型 [@gómez-rubio2020] 采用近似贝叶斯推断。
 
-## Logit, Probit and Tobit Regression {#sec-logit-probit-tobit}
+```{r}
+library(INLA)
+inla.setOption(short.summary = TRUE)
+aml_inla <- inla(inla.surv(time, status) ~ x, data = aml, family = "exponential.surv")
+summary(aml_inla)
+```
+
+## Tobit 回归 {#sec-tobit-regression}
+
+Tobit (Tobin's Probit) regression 起源于计量经济学中的 Tobit 模型，James Tobin 提出的，用于截尾数据，生存分析中的一种加速失效模型 (accelerated failure model) [@Tobin1958]。
 
 -   逻辑回归，响应变量是无序的分类变量，假定服从二项、多项分布，拟合函数 `glm()` 和 `nnet::multinom()`
 -   Probit 回归，响应变量是有序的分类变量，拟合函数 `MASS::polr()`
--   Tobit 回归，响应变量是有删失/截尾的
+-   Tobit 回归，响应变量是有删失/截尾的，VGAM 包依赖少，稳定，推荐使用。
+
+```{r}
+# library(VGAM) # Vector Generalized Linear and Additive Models
+# VGAM::vglm(family = tobit(Upper = 800)) # Tobit regression
+```
