@@ -101,11 +101,13 @@ ggplot2 包绘制直方图的函数是 `geom_histogram()` ，而与之相关的�
 
 ggplot(data = province_sex_ratio, aes(x = `性别比（女=100）`, fill = `区域`)) +
   geom_histogram(binwidth = 5, color = "white", position = "stack") +
-  theme_classic()
+  theme_classic() +
+  theme(legend.position = c(0.9, 0.9))
 
 ggplot(data = province_sex_ratio, aes(x = `性别比（女=100）`, color = `区域`)) +
   geom_freqpoly(binwidth = 5, stat = "bin") +
-  theme_classic()
+  theme_classic() +
+  theme(legend.position = c(0.9, 0.9))
 ```
 
 ### 密度图 {#sec-density}
@@ -123,6 +125,8 @@ ggplot(data = province_sex_ratio, aes(x = `性别比（女=100）`)) +
   geom_density(aes(fill = `区域`), alpha = 0.5) +
   theme_classic()
 ```
+
+#### 堆积（条件）密度图 {#sec-density-stacked-plot}
 
 ::: callout-caution
 Stacked density plots: if you want to create a stacked density plot, you probably want to 'count' (density \* n) variable instead of the default density
@@ -143,44 +147,44 @@ Stacked density plots: if you want to create a stacked density plot, you probabl
 
 ggplot(data = province_sex_ratio, aes(x = `性别比（女=100）`, y = after_stat(density))) +
   geom_density(aes(fill = `区域`), position = "stack", alpha = 0.5) +
-  theme_classic()
+  theme_classic() +
+  theme(legend.position = c(0.9, 0.9))
 ggplot(data = province_sex_ratio, aes(x = `性别比（女=100）`, y = after_stat(density * n))) +
   geom_density(aes(fill = `区域`), position = "stack", alpha = 0.5) +
-  theme_classic()
+  theme_classic() +
+  theme(legend.position = c(0.9, 0.9))
 ```
 
-什么原因导致 @fig-density-count 和 @fig-density-stack 看起来没什么差别呢？而换一组数据，就可以看出明显的差别，条件密度曲线 @fig-density-count
+什么原因导致 @fig-density-stack 中两个子图看起来没什么差别呢？而换一组数据，就可以看出明显的差别。
 
 ```{r}
 #| label: fig-density-diamonds
 #| fig-cap: "堆积密度图"
+#| fig-subcap: 
+#| - 函数 `after_stat(density)`
+#| - 函数 `after_stat(density * n)`
 #| fig-width: 6
-#| fig-height: 7.5
+#| fig-height: 2.5
 #| fig-showtext: true
+#| layout-ncol: 1
 
-p1 <- ggplot(diamonds, aes(x = carat, y = after_stat(density), fill = cut)) +
+ggplot(diamonds, aes(x = carat, y = after_stat(density), fill = cut)) +
   geom_density(position = "stack") +
-  theme_classic()
-
-p2 <- ggplot(diamonds, aes(x = carat, y = after_stat(density * n), fill = cut)) +
+  theme_classic() +
+  theme(legend.position = c(0.8, 0.8))
+ggplot(diamonds, aes(x = carat, y = after_stat(density * n), fill = cut)) +
   geom_density(position = "stack") +
-  theme_classic()
-
-p3 <- ggplot(diamonds, aes(x = carat, y = after_stat(count), fill = cut)) +
-  geom_density(position = "stack") +
-  theme_classic()
-
-library(patchwork)
-p1 / p2 / p3
+  theme_classic() +
+  theme(legend.position = c(0.8, 0.8))
 ```
 
-联合密度曲线
+#### 联合密度图 {#sec-density-2d-joint}
 
 ```{r}
 #| label: fig-density-2d
-#| fig-cap: "二维密度图"
-#| fig-width: 4.5
-#| fig-height: 3.5
+#| fig-cap: "二维联合密度图"
+#| fig-width: 5
+#| fig-height: 4
 #| fig-showtext: true
 
 state_x77 <- data.frame(state.x77,
@@ -193,8 +197,7 @@ p1 <- ggplot(data = state_x77, aes(x = Income, y = `Life Exp`)) +
   geom_density_2d(aes(
     color = after_stat(level),
     alpha = after_stat(level)
-  ),
-  show.legend = F
+  ), show.legend = F
   ) +
   scale_color_viridis_c(option = "inferno") +
   labs(
@@ -211,10 +214,12 @@ p1 <- ggplot(data = state_x77, aes(x = Income, y = `Life Exp`)) +
 p1
 ```
 
-**ggExtra** 包[@ggExtra2022] 添加边际密度曲线和边际直方图
+#### 边际密度图 {#sec-density-margins}
+
+**ggExtra** 包[@ggExtra2022] 添加边际密度曲线和边际直方图。
 
 ```{r}
-#| label: fig-margins
+#| label: fig-density-margins
 #| fig-cap: "描述边际分布"
 #| fig-width: 5
 #| fig-height: 4
@@ -224,6 +229,8 @@ library(ggExtra)
 ggMarginal(p1, type = "density")
 ggMarginal(p1, type = "histogram")
 ```
+
+#### 填充密度图 {#sec-density-2d-filled}
 
 **ggplot2** 包提供二维密度图层 `geom_density_2d_filled()` 绘制热力图， [**ggdist**](https://github.com/mjskay/ggdist) [@ggdist2022] 进行了一些扩展。
 
