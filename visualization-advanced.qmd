@@ -82,28 +82,26 @@ beanplot::beanplot(`性别比（女=100）` ~ `区域`,
 )
 ```
 
-beanplot 包的名字是根据图形的外观取的，bean 即是豌豆，rug 用须线表示数据。
+**beanplot** 包的名字是根据图形的外观取的，bean 即是豌豆，rug 用须线表示数据。
 
 ### 直方图 {#sec-histogram}
+
+ggplot2 包绘制直方图的函数是 `geom_histogram()` ，而与之相关的函数 `geom_freqpoly()` 是绘制折线图，将直方图中每个柱子的顶点连接起来。
 
 ```{r}
 #| label: fig-histogram
 #| fig-cap: "直方图"
+#| fig-subcap: 
+#| - 函数 `geom_histogram()`
+#| - 函数 `geom_freqpoly()`
 #| fig-width: 4.5
 #| fig-height: 3.5
 #| fig-showtext: true
+#| layout-ncol: 2
 
 ggplot(data = province_sex_ratio, aes(x = `性别比（女=100）`, fill = `区域`)) +
   geom_histogram(binwidth = 5, color = "white", position = "stack") +
   theme_classic()
-```
-
-```{r}
-#| label: fig-freqpoly
-#| fig-cap: "直方图"
-#| fig-width: 4.5
-#| fig-height: 3.5
-#| fig-showtext: true
 
 ggplot(data = province_sex_ratio, aes(x = `性别比（女=100）`, color = `区域`)) +
   geom_freqpoly(binwidth = 5, stat = "bin") +
@@ -112,7 +110,7 @@ ggplot(data = province_sex_ratio, aes(x = `性别比（女=100）`, color = `区
 
 ### 密度图 {#sec-density}
 
-@fig-density 展示分组密度曲线图
+ggplot2 包绘制密度图的函数是 `geom_density()`， @fig-density 展示分组密度曲线图
 
 ```{r}
 #| label: fig-density
@@ -126,33 +124,26 @@ ggplot(data = province_sex_ratio, aes(x = `性别比（女=100）`)) +
   theme_classic()
 ```
 
-@fig-density-stack 丢失边际密度
-
-```{r}
-#| label: fig-density-stack
-#| fig-cap: "堆积密度图"
-#| fig-width: 4.5
-#| fig-height: 3.5
-#| fig-showtext: true
-
-ggplot(data = province_sex_ratio, aes(x = `性别比（女=100）`, y = after_stat(density))) +
-  geom_density(aes(fill = `区域`), position = "stack", alpha = 0.5) +
-  theme_classic()
-```
-
 ::: callout-caution
 Stacked density plots: if you want to create a stacked density plot, you probably want to 'count' (density \* n) variable instead of the default density
 :::
 
-@fig-density-count 保护边际密度
+堆积密度图正确的绘制方式是保护边际密度。
 
 ```{r}
-#| label: fig-density-count
+#| label: fig-density-stack
 #| fig-cap: "累积分布密度图"
+#| fig-subcap: 
+#| - 堆积密度图 `after_stat(density)`
+#| - 堆积密度图 `after_stat(density * n)`
 #| fig-width: 4.5
 #| fig-height: 3.5
 #| fig-showtext: true
+#| layout-ncol: 2
 
+ggplot(data = province_sex_ratio, aes(x = `性别比（女=100）`, y = after_stat(density))) +
+  geom_density(aes(fill = `区域`), position = "stack", alpha = 0.5) +
+  theme_classic()
 ggplot(data = province_sex_ratio, aes(x = `性别比（女=100）`, y = after_stat(density * n))) +
   geom_density(aes(fill = `区域`), position = "stack", alpha = 0.5) +
   theme_classic()
@@ -253,7 +244,7 @@ ggplot(data = state_x77, aes(x = Income, y = `Life Exp`)) +
   )
 ```
 
-相比于 **ggplot2** 内置的二维核密度估计，[**ggdensity**](https://github.com/jamesotto852/ggdensity/) [@ggdensity2022] 有一些优势，根据数据密度将目标区域划分，更加突出层次和边界。[gghdr](https://github.com/Sayani07/gghdr) 与 ggdensity 类似，展示 highest density regions (HDR)
+相比于 **ggplot2** 内置的二维核密度估计，[**ggdensity**](https://github.com/jamesotto852/ggdensity/) [@ggdensity2022] 有一些优势，根据数据密度将目标区域划分，更加突出层次和边界。[**gghdr**](https://github.com/Sayani07/gghdr) 包与 **ggdensity** 类似，展示 highest density regions (HDR)
 
 ```{r}
 #| label: fig-density-hdr
