@@ -60,6 +60,24 @@ svn_trunk_log <- within(svn_trunk_log, {
   wday <- format(stamp, format = "%a", tz = "UTC")
   nday <- format(stamp, format = "%j", tz = "UTC")
 })
+# 代码维护者 ID 和姓名对应
+ctb_map <- c(
+  "bates" = "Douglas Bates", "deepayan" = "Deepayan Sarkar",
+  "duncan" = "Duncan Temple Lang", "falcon" = "Seth Falcon",
+  "guido" = "Guido Masarotto", "hornik" = "Kurt Hornik",
+  "iacus" = "Stefano M. Iacus", "ihaka" = "Ross Ihaka",
+  "jmc" = "John Chambers", "kalibera" = "Tomas Kalibera",
+  "lawrence" = "Michael Lawrence", "leisch" = "Friedrich Leisch",
+  "ligges" = "Uwe Ligges", "luke" = "Luke Tierney",
+  "lyndon" = "Others", "maechler" = "Martin Maechler",
+  "mike" = "Others", "morgan" = "Martin Morgan",
+  "murdoch" = "Duncan Murdoch", "murrell" = "Paul Murrell",
+  "pd" = "Peter Dalgaard", "plummer" = "Martyn Plummer",
+  "rgentlem" = "Robert Gentleman", "ripley" = "Brian Ripley",
+  "smeyer" = "Sebastian Meyer", "system" = "Others",
+  "tlumley" = "Thomas Lumley", "urbaneks" = "Simon Urbanek"
+)
+svn_trunk_log$author <- ctb_map[svn_trunk_log$author]
 ```
 
 接着，调用分组聚合函数 `aggregate()` 统计各年的代码提交量。
@@ -370,6 +388,25 @@ ggplot(data = trunk_year, aes(x = year, y = revision)) +
 | $y = \beta_0 + \beta_1 x + \beta_2 x^2$                     | `y ~ poly(x, degree = 2, raw = TRUE)`       |
 
 : 数学公式与 R 语言表示的计算公式 {#tbl-formula}
+
+### 流线图 {#sec-streamgraph}
+
+流线图（Stream Graph）是堆积面积图（Stacked Area Graph）的一种变体，适合描述时间序列数据的趋势。**ggplot2** 扩展包 [ggstream](https://github.com/davidsjoberg/ggstream) 可以制作流线图，如下图所示。
+
+```{r}
+#| label: fig-streamgraph
+#| fig-width: 6
+#| fig-height: 5
+#| fig-showtext: true
+#| fig-cap: 各开发者的提交量趋势
+
+library(ggstream)
+trunk_year_author <- aggregate(data = svn_trunk_log, revision ~ year + author, FUN = length)
+ggplot(trunk_year_author, aes(x = year, y = revision, fill = author)) +
+  geom_stream() +
+  theme(legend.position = "bottom") +
+  labs(x = "年份", y = "提交量", fill = "贡献者")
+```
 
 ### 曲面图 {#sec-wireframe}
 
