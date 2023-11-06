@@ -142,7 +142,7 @@ fit_poisson_stan$summary(c("alpha", "beta", "lp__"))
 
 library(ggplot2)
 library(bayesplot)
-mcmc_scatter(fit_poisson_stan$draws(c("beta[1]", "beta[2]"))) +
+mcmc_scatter(fit_poisson_stan$draws(c("beta[1]", "beta[2]")), size = 1) +
   theme_classic() +
   labs(x = expression(beta[1]), y = expression(beta[2]))
 ```
@@ -212,6 +212,21 @@ mcmc_dens(fit_poisson_stan$draws(c("beta[1]", "beta[2]")),
   theme_classic()
 ```
 
+后验分布的中位数、80% 区间
+
+```{r}
+#| label: fig-stan-areas
+#| fig-cap: 各个参数的分布图（岭线图）
+#| fig-showtext: true
+#| fig-width: 5
+#| fig-height: 4
+#| message: false
+
+mcmc_areas(fit_poisson_stan$draws(c("beta[1]", "beta[2]")), prob = 0.8) +
+  scale_y_discrete(labels = scales::parse_format()) +
+  theme_classic()
+```
+
 岭线图就是将各个参数的后验分布图放在一起。
 
 ```{r}
@@ -235,10 +250,27 @@ bayesplot::rhat(fit_poisson_stan, pars = "alpha")
 
 后验预测诊断的想法是检查根据拟合模型生成的随机数 $y^{rep}$ 与真实观测数据 $y$ 的接近程度。为直观起见，可以用一系列描述数据分布的图来可视化检验。
 
+```{r}
+#| label: fig-stan-nuts
+#| fig-cap: NUTS 能量诊断图
+#| fig-showtext: true
+#| fig-width: 5
+#| fig-height: 4
+#| message: false
+
+# mcmc_scatter(fit_poisson_stan$draws(),
+#   pars = c("beta[1]", "beta[2]"),
+#   np = nuts_params(fit_poisson_stan)
+# )
+
+mcmc_nuts_energy(x = nuts_params(fit_poisson_stan), binwidth = 1) +
+  ggtitle(label = "NUTS Energy Diagnostic")
+```
+
 y 是真实数据，yrep 是根据贝叶斯拟合模型生成的数据。下图是真实数据的密度图和50组生成数据的密度图。
 
 ```{r}
-#| label: fig-stan-ppcheck
+#| label: fig-stan-ppcheck-dens
 #| fig-cap: 后验预测诊断图（密度图）
 #| fig-showtext: true
 #| fig-width: 5
@@ -248,6 +280,18 @@ y 是真实数据，yrep 是根据贝叶斯拟合模型生成的数据。下图�
 yrep <- fit_poisson_stan$draws(variables = "y_rep", format = "draws_matrix")
 pp_check(y, yrep = yrep[1:50, ], fun = ppc_dens_overlay) +
   theme_classic()
+```
+
+观察后验预测区间与真实数据的覆盖情况，不妨取前 50 次观测的数据，即 `y[1:50]` 与第 2 个自变量 `X[1:50, 2]` ，基于后验分布的 500 次采样数据绘制 50% 后验置信区间。
+
+```{r}
+#| label: fig-stan-ppcheck-intervals
+#| fig-cap: 后验预测诊断图（区间图）
+#| fig-showtext: true
+#| fig-width: 5
+#| fig-height: 4
+
+ppc_intervals(y[1:50], yrep = yrep[1:1000, 1:50], x = X[1:50, 2], prob = 0.5)
 ```
 
 ## 模型评估指标 {#sec-model-evaluation}
