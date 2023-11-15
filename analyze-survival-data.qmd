@@ -14,7 +14,7 @@ library(ggplot2)
 library(ggfortify) # autoplot
 library(ggsurvfit) # survfit2 and ggsurvfit
 library(glmnet)    # Cox Models
-# library(VGAM)      # R >= 4.4.0
+library(VGAM)      # R >= 4.4.0
 library(INLA)
 ```
 
@@ -91,6 +91,13 @@ autoplot(aml_survival, data = aml) +
   theme_minimal()
 ```
 
+参数化的生存分析模型（参数模型，相对于非参数模型而言）
+
+```{r}
+aml_surv_reg <- survreg(Surv(time, status) ~ x, data = aml, dist = "weibull")
+summary(aml_surv_reg)
+```
+
 下面 ggsurvfit 包再次拟合模型，并展示模型结果。
 
 ### ggsurvfit
@@ -146,7 +153,7 @@ INLA 包拟合 Cox 比例风险回归模型 [@gómez-rubio2020] 采用近似贝�
 ```{r}
 library(INLA)
 inla.setOption(short.summary = TRUE)
-aml_inla <- inla(inla.surv(time, status) ~ x, data = aml, family = "exponential.surv")
+aml_inla <- inla(inla.surv(time, status) ~ x, data = aml, family = "exponential.surv", num.threads = "1:1")
 summary(aml_inla)
 ```
 
@@ -156,9 +163,25 @@ Tobit (Tobin's Probit) regression 起源于计量经济学中的 Tobit 模型，
 
 -   逻辑回归，响应变量是无序的分类变量，假定服从二项、多项分布，拟合函数 `glm()` 和 `nnet::multinom()`
 -   Probit 回归，响应变量是有序的分类变量，拟合函数 `MASS::polr()`
--   Tobit 回归，响应变量是有删失/截尾的，VGAM 包依赖少，稳定，推荐使用。
+-   Tobit 回归，响应变量是有删失/截尾的，VGAM 包依赖少，稳定，推荐使用。VGAM 包括了广义线性模型
 
 ```{r}
-# library(VGAM) # Vector Generalized Linear and Additive Models
+#| eval: false
+#| echo: false
+
+library(VGAM) # Vector Generalized Linear and Additive Models
 # VGAM::vglm(family = tobit(Upper = 800)) # Tobit regression
+```
+
+```{r}
+library(VGAM)
+with(aml, SurvS4(time, status))
+```
+
+```{r}
+#| eval: false
+#| echo: false
+
+aml_vglm <- vglm(SurvS4(time, status) ~ x, data = aml, family = cens.poisson)
+summary(aml_vglm)
 ```
