@@ -137,8 +137,8 @@ RUN dnf -y copr enable iucar/cran \
 COPY DESCRIPTION DESCRIPTION
 # For Python
 COPY requirements.txt requirements.txt
-# Setup showtext V8 and INLA
-RUN install2.r showtextdb showtext \
+# Setup Matrix showtext V8 and INLA
+RUN install2.r MatrixModels TMB glmmTMB showtextdb showtext \
   && export GITHUB_PAT=${GITHUB_PAT} \
   && export DOWNLOAD_STATIC_LIBV8=1 \
   && Rscript -e "install.packages('INLA', repos = c(getOption('repos'), INLA = 'https://inla.r-inla-download.org/R/stable'))" \
