@@ -728,8 +728,9 @@ summary(fit_lme4)
 
 ### GLMMadaptive
 
+对随机效应采用 adaptive Gauss-Hermite quadrature 积分
+
 ```{r}
-# 对随机效应 adaptive Gauss-Hermite quadrature 积分
 library(GLMMadaptive)
 fit_glmmadaptive <- mixed_model(
   fixed = y ~ x1 + x2 + offset(log(o)), 
@@ -777,6 +778,23 @@ fit_glmmml <- glmmML::glmmML(
 summary(fit_glmmml)
 ```
 
+``` markdown
+Call:  glmmML::glmmML(formula = y ~ x1 + x2, family = poisson, data = sim_data,      cluster = g, offset = log(o)) 
+
+
+             coef se(coef)     z Pr(>|z|)
+(Intercept) 0.556   0.1281  4.34  1.4e-05
+x1          0.284   0.0128 22.21  0.0e+00
+x2          0.209   0.0129 16.11  0.0e+00
+
+Scale parameter in mixing distribution:  0.638 gaussian 
+Std. Error:                              0.0865 
+
+        LR p-value for H_0: sigma = 0:  0 
+
+Residual deviance: 2770 on 2496 degrees of freedom 	AIC: 2780 
+```
+
 ### glmm
 
 [glmm](https://github.com/knudson1/glmm) 包对随机效应的积分采用 Monte Carlo Likelihood Approximation 近似
@@ -806,8 +824,9 @@ glmm 包的帮助文档中的示例如下，可复现结果，运行时间 1-2 �
 
 set.seed(1234)
 clust <- makeCluster(2)
-sal <- glmm(Mate ~ 0 + Cross,
-  random = list(~ 0 + Female, ~ 0 + Male), varcomps.names = c("F", "M"), data = salamander,
+sal <- glmm(
+  Mate ~ 0 + Cross, random = list(~ 0 + Female, ~ 0 + Male),
+  varcomps.names = c("F", "M"), data = salamander,
   family.glmm = bernoulli.glmm, m = 10^4, debug = TRUE, cluster = clust
 )
 summary(sal)
@@ -816,9 +835,9 @@ stopCluster(clust)
 
 ``` markdown
 Call:
-glmm(fixed = Mate ~ 0 + Cross, random = list(~0 + Female, ~0 + 
-    Male), varcomps.names = c("F", "M"), data = salamander, family.glmm = bernoulli.glmm, 
-    m = 10^4, debug = TRUE, cluster = clust)
+glmm(fixed = Mate ~ 0 + Cross, random = list(~0 + Female, ~0 + Male), 
+    varcomps.names = c("F", "M"), data = salamander, 
+    family.glmm = bernoulli.glmm, m = 10^4, debug = TRUE, cluster = clust)
 
 Link is: "logit (log odds)"
 
@@ -846,17 +865,52 @@ gee 包采用广义估计方程（Generalized Estimation Equation）方法
 ```{r}
 #| eval: false
 
-fit_gee <- gee::gee(y ~ x1 + x2 + offset(log(o)),
-  id = g, data = sim_data, family = poisson(link = "log"),
-  corstr = "exchangeable"
+fit_gee <- gee::gee(y ~ x1 + x2 + offset(log(o)), id = g, 
+  data = sim_data, family = poisson(link = "log"), corstr = "exchangeable"
 )
 # 输出
 fit_gee
 ```
 
+``` markdown
+ GEE:  GENERALIZED LINEAR MODELS FOR DEPENDENT DATA
+ gee S-function, version 4.13 modified 98/01/27 (1998) 
+
+Model:
+ Link:                      Logarithm 
+ Variance to Mean Relation: Poisson 
+ Correlation Structure:     Exchangeable 
+
+Call:
+gee::gee(formula = y ~ x1 + x2 + offset(log(o)), id = g, data = sim_data, 
+    family = poisson(link = "log"), corstr = "exchangeable")
+
+Number of observations :  2500 
+Maximum cluster size   :  100 
+
+Coefficients:
+(Intercept)          x1          x2 
+  0.6098935   0.3003721   0.2165055 
+
+Estimated Scale Parameter:  4.979956
+Number of Iterations:  3
+
+Working Correlation[1:4,1:4]
+          [,1]      [,2]      [,3]      [,4]
+[1,] 1.0000000 0.7220617 0.7220617 0.7220617
+[2,] 0.7220617 1.0000000 0.7220617 0.7220617
+[3,] 0.7220617 0.7220617 1.0000000 0.7220617
+[4,] 0.7220617 0.7220617 0.7220617 1.0000000
+
+Returned Error Value:
+[1] 0
+```
+
+输出结果中，尺度参数（Estimated Scale Parameter）的估计结果与随机效应的方差的联系？
+
 ### geepack
 
-[geepack](https://cran.r-project.org/package=geepack) 包
+[geepack](https://cran.r-project.org/package=geepack) 包类似 **gee** 包。
 
 ```{r}
 #| eval: false
@@ -867,6 +921,33 @@ fit_geepack <- geepack::geeglm(
   corstr = "exchangeable", scale.fix = FALSE
 )
 summary(fit_geepack)
+```
+
+``` markdown
+Call:
+geepack::geeglm(formula = y ~ x1 + x2, family = poisson(link = "log"), 
+    data = sim_data, offset = log(o), id = g, corstr = "exchangeable", 
+    scale.fix = FALSE)
+
+ Coefficients:
+            Estimate Std.err  Wald Pr(>|W|)    
+(Intercept)  0.60964 0.17310  12.4 0.000428 ***
+x1           0.30040 0.02353 163.1  < 2e-16 ***
+x2           0.21653 0.01458 220.6  < 2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Correlation structure = exchangeable 
+Estimated Scale Parameters:
+
+            Estimate Std.err
+(Intercept)    4.975    1.39
+  Link = identity 
+
+Estimated Correlation Parameters:
+      Estimate Std.err
+alpha    0.723 0.06703
+Number of clusters:   25  Maximum cluster size: 100 
 ```
 
 ### blme
@@ -882,7 +963,7 @@ fit_blme <- blme::bglmer(
 summary(fit_blme)
 ```
 
-gee、 GLMMadaptive、 glmmML、 geepack 和 lme4 的模型输出结果是接近的。
+GLMMadaptive、glmmML、gee、geepack 和 lme4 的模型输出结果是接近的。
 
 ### brms
 
@@ -891,14 +972,34 @@ gee、 GLMMadaptive、 glmmML、 geepack 和 lme4 的模型输出结果是接近
 
 fit_brms <- brms::brm(
   y ~ x1 + x2 + (1 | g) + offset(log(o)),
-  data = sim_data,
-  family = poisson(link = "log"),
-  silent = 2, # 关闭消息
-  refresh = 0, # 不显示迭代进度
-  seed = 20232023
+  data = sim_data, family = poisson(link = "log"),
+  silent = 2, refresh = 0, seed = 20232023
 )
-# 拟合结果
 summary(fit_brms)
+```
+
+``` markdown
+ Family: poisson 
+  Links: mu = log 
+Formula: y ~ x1 + x2 + (1 | g) + offset(log(o)) 
+   Data: sim_data (Number of observations: 2500) 
+  Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
+         total post-warmup draws = 4000
+
+Group-Level Effects: 
+~g (Number of levels: 25) 
+              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+sd(Intercept)     0.68      0.11     0.51     0.94 1.01      295      491
+
+Population-Level Effects: 
+          Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+Intercept     0.56      0.14     0.31     0.85 1.02      297      344
+x1            0.28      0.01     0.26     0.31 1.00     1053     1625
+x2            0.21      0.01     0.18     0.23 1.01     1071     1298
+
+Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
+and Tail_ESS are effective sample size measures, and Rhat is the potential
+scale reduction factor on split chains (at convergence, Rhat = 1).
 ```
 
 ### MCMCglmm
@@ -914,7 +1015,7 @@ fit_mcmcglmm <- MCMCglmm::MCMCglmm(
 summary(fit_mcmcglmm)
 ```
 
-MCMCglmm 包总是假定存在一个额外的随机变量表示过度离散。
+MCMCglmm 包假定存在一个额外的随机变量表示过度离散，如何将其去掉？
 
 ### INLA
 
@@ -926,6 +1027,8 @@ fit_inla <- inla(
 )
 summary(fit_inla)
 ```
+
+随机效应的标准（偏）差为 $1/\sqrt{\mathrm{Precision}}$ ，即 0.625。
 
 ## 总结 {#sec-mixed-effects-summary}
 
