@@ -677,6 +677,256 @@ and Tail_ESS are effective sample size measures, and Rhat is the potential
 scale reduction factor on split chains (at convergence, Rhat = 1).
 ```
 
+## 模拟实验比较（补充） {#sec-mixed-effects-simulation}
+
+从广义线性混合效应模型生成模拟数据，用至少 6 个不同的 R 包估计模型参数，比较和归纳不同估计方法和实现算法的效果。举例：带漂移项的泊松型广义线性混合效应模型。$y_{ij}$ 表示响应变量，$\bm{u}$ 表示随机效应，$o_{ij}$ 表示漂移项。
+
+$$
+\begin{aligned}
+y_{ij}|\bm{u} &\sim \mathrm{Poisson}(o_{ij}\lambda_{ij}) \\
+\log(\lambda_{ij}) &= \beta_{ij}x_{ij} + u_{j} \\
+u_j &\sim \mathcal{N}(0, \sigma^2) \\
+i = 1,2,\ldots, n &\quad j = 1,2,\ldots,q
+\end{aligned}
+$$
+
+首先准备数据
+
+```{r}
+set.seed(2023)
+Ngroups <- 25 # 一个随机效应分 25 个组
+NperGroup <- 100 # 每个组 100 个观察值
+# 样本量
+N <- Ngroups * NperGroup
+# 截距和两个协变量的系数
+beta <- c(0.5, 0.3, 0.2)
+# 两个协变量
+X <- MASS::mvrnorm(N, mu = rep(0, 2), Sigma = matrix(c(1, 0.8, 0.8, 1), 2))
+# 漂移项
+o <- rep(c(2, 4), each = N / 2)
+# 分 25 个组 每个组 100 个观察值
+g <- factor(rep(1:Ngroups, each = NperGroup))
+u <- rnorm(Ngroups, sd = .5) # 随机效应的标准差 0.5
+# 泊松分布的期望
+lambda <- o * exp(cbind(1, X) %*% beta + u[g])
+# 响应变量的值
+y <- rpois(N, lambda = lambda)
+# 模拟的数据集
+sim_data <- data.frame(y, X, o, g)
+colnames(sim_data) <- c("y", "x1", "x2", "o", "g")
+```
+
+### lme4
+
+```{r}
+# 模型拟合
+fit_lme4 <- lme4::glmer(y ~ x1 + x2 + (1 | g),
+  data = sim_data, offset = log(o), family = poisson(link = "log")
+)
+summary(fit_lme4)
+```
+
+### GLMMadaptive
+
+```{r}
+# 对随机效应 adaptive Gauss-Hermite quadrature 积分
+library(GLMMadaptive)
+fit_glmmadaptive <- mixed_model(
+  fixed = y ~ x1 + x2 + offset(log(o)), 
+  random = ~ 1 | g, data = sim_data,
+  family = poisson(link = "log")
+)
+summary(fit_glmmadaptive)
+```
+
+### glmmTMB
+
+```{r}
+fit_glmmtmb <- glmmTMB::glmmTMB(
+  y ~ x1 + x2 + (1 | g), offset = log(o),
+  data = sim_data, family = poisson, REML = TRUE
+)
+summary(fit_glmmtmb)
+```
+
+### hglm
+
+hglm 包的名称是 Hierarchical Generalized Linear Models 的首字母缩写拼成的。
+
+```{r}
+# extended quasi likelihood (EQL) method
+fit_hglm <- hglm::hglm(
+  fixed =  y ~ x1 + x2, random = ~ 1 | g,
+  family = poisson(link = "log"), 
+  offset = log(o), data = sim_data
+)
+summary(fit_hglm)
+```
+
+### glmmML
+
+[glmmML](https://CRAN.R-project.org/package=glmmML) 包 Maximum Likelihood and numerical integration via Gauss-Hermite quadrature
+
+```{r}
+#| eval: false
+
+fit_glmmml <- glmmML::glmmML(
+  formula = y ~ x1 + x2, family = poisson,
+  data = sim_data, offset = log(o), cluster = g
+)
+summary(fit_glmmml)
+```
+
+### glmm
+
+[glmm](https://github.com/knudson1/glmm) 包对随机效应的积分采用 Monte Carlo Likelihood Approximation 近似
+
+```{r}
+#| eval: false
+
+# 对迭代时间没有给出预估，一旦执行，不知道什么时候会跑完
+set.seed(2023)
+# 设置双核并行迭代
+clust <- parallel::makeCluster(2)
+fit_glmm <- glmm::glmm(y ~ x1 + x2 + offset(log(o)),
+  random = list(~ 1 + g), # 随机效应
+  varcomps.names = "G", # 给随机效应取个名字
+  data = sim_data,
+  family.glmm = glmm::poisson.glmm, # 泊松型
+  m = 10^4, debug = TRUE, cluster = clust
+)
+parallel::stopCluster(clust)
+summary(fit_glmm)
+```
+
+glmm 包的帮助文档中的示例如下，可复现结果，运行时间 1-2 分钟。
+
+```{r}
+#| eval: false
+
+set.seed(1234)
+clust <- makeCluster(2)
+sal <- glmm(Mate ~ 0 + Cross,
+  random = list(~ 0 + Female, ~ 0 + Male), varcomps.names = c("F", "M"), data = salamander,
+  family.glmm = bernoulli.glmm, m = 10^4, debug = TRUE, cluster = clust
+)
+summary(sal)
+stopCluster(clust)
+```
+
+``` markdown
+Call:
+glmm(fixed = Mate ~ 0 + Cross, random = list(~0 + Female, ~0 + 
+    Male), varcomps.names = c("F", "M"), data = salamander, family.glmm = bernoulli.glmm, 
+    m = 10^4, debug = TRUE, cluster = clust)
+
+Link is: "logit (log odds)"
+
+Fixed Effects:
+         Estimate Std. Error z value Pr(>|z|)    
+CrossR/R    1.230      0.300   4.045 5.24e-05 ***
+CrossR/W    0.320      0.267   1.198  0.23077    
+CrossW/R   -2.000      0.330  -6.042 1.52e-09 ***
+CrossW/W    0.920      0.300   3.084  0.00204 ** 
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Variance Components for Random Effects (P-values are one-tailed):
+  Estimate Std. Error z value Pr(>|z|)/2    
+F     1.46       0.31   4.695   1.33e-06 ***
+M     1.64       0.33   4.918   4.36e-07 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+```
+
+### gee
+
+gee 包采用广义估计方程（Generalized Estimation Equation）方法
+
+```{r}
+#| eval: false
+
+fit_gee <- gee::gee(y ~ x1 + x2 + offset(log(o)),
+  id = g, data = sim_data, family = poisson(link = "log"),
+  corstr = "exchangeable"
+)
+# 输出
+fit_gee
+```
+
+### geepack
+
+[geepack](https://cran.r-project.org/package=geepack) 包
+
+```{r}
+#| eval: false
+
+fit_geepack <- geepack::geeglm(
+  formula = y ~ x1 + x2, family = poisson(link = "log"),
+  id = g, offset = log(o), data = sim_data,
+  corstr = "exchangeable", scale.fix = FALSE
+)
+summary(fit_geepack)
+```
+
+### blme
+
+blme 包采用贝叶斯估计
+
+```{r}
+fit_blme <- blme::bglmer(
+  formula = y ~ x1 + x2 + (1 | g),
+  data = sim_data, offset = log(o),
+  family = poisson(link = "log")
+)
+summary(fit_blme)
+```
+
+gee、 GLMMadaptive、 glmmML、 geepack 和 lme4 的模型输出结果是接近的。
+
+### brms
+
+```{r}
+#| eval: false
+
+fit_brms <- brms::brm(
+  y ~ x1 + x2 + (1 | g) + offset(log(o)),
+  data = sim_data,
+  family = poisson(link = "log"),
+  silent = 2, # 关闭消息
+  refresh = 0, # 不显示迭代进度
+  seed = 20232023
+)
+# 拟合结果
+summary(fit_brms)
+```
+
+### MCMCglmm
+
+MCMCglmm 包采用贝叶斯估计
+
+```{r}
+fit_mcmcglmm <- MCMCglmm::MCMCglmm(
+  fixed = y ~ x1 + x2 + offset(log(o)),
+  random = ~g, family = "poisson", 
+  data = sim_data, verbose = FALSE
+)
+summary(fit_mcmcglmm)
+```
+
+MCMCglmm 包总是假定存在一个额外的随机变量表示过度离散。
+
+### INLA
+
+```{r}
+library(INLA)
+fit_inla <- inla(
+  formula = y ~ x1 + x2 + f(g, model = "iid", n = 25),
+  E = o, family = "poisson", data = sim_data
+)
+summary(fit_inla)
+```
+
 ## 总结 {#sec-mixed-effects-summary}
 
 本章介绍函数 `MASS::glmmPQL()`、 `nlme::lme()`、`lme4::lmer()` 和 `brms::brm()` 的用法，以及它们求解线性混合效应模型的区别和联系。在贝叶斯估计方法中，**brms** 包和 **INLA** 包都支持非常丰富的模型种类，前者是贝叶斯精确推断，后者是贝叶斯近似推断，**brms** 基于概率编程语言 Stan 框架打包了许多模型的 Stan 实现，INLA 基于求解随机偏微分方程的有限元方法和拉普拉斯近似技巧，将各类常见统计模型统一起来，计算速度快，计算结果准确。
@@ -688,7 +938,7 @@ scale reduction factor on split chains (at convergence, Rhat = 1).
 5.  函数 `INLA::inla()` 集成嵌套拉普拉斯近似。
 
 | 模型                 | nlme     | MASS        | lme4      | GLMMadaptive    | brms    |
-|----------------------|----------|-------------|-----------|-----------------|---------|
+|-------------|------------|------------|------------|------------|------------|
 | 线性混合效应模型     | `lme()`  | `glmmPQL()` | `lmer()`  | 不支持          | `brm()` |
 | 广义线性混合效应模型 | 不支持   | `glmmPQL()` | `glmer()` | `mixed_model()` | `brm()` |
 | 非线性混合效应模型   | `nlme()` | 不支持      | `nlmer()` | 不支持          | `brm()` |
@@ -716,146 +966,7 @@ INLA 软件能处理上千个高斯随机效应，但最多只能处理 15 个�
     summary(fit_lme4)
     ```
 
-3.  从广义线性混合效应模型生成模拟数据，用至少 6 个不同的 R 包估计模型参数，比较和归纳不同估计方法和实现算法的效果。举例：带漂移项的泊松型广义线性混合效应模型。$y_{ij}$ 表示响应变量，$\bm{u}$ 表示随机效应，$o_{ij}$ 表示漂移项。
-
-    $$
-    \begin{aligned}
-    y_{ij}|\bm{u} &\sim \mathrm{Poisson}(o_{ij}\lambda_{ij}) \\
-    \log(\lambda_{ij}) &= \beta_{ij}x_{ij} + u_{j} \\
-    u_j &\sim \mathcal{N}(0, \sigma^2) \\
-    i = 1,2,\ldots, n &\quad j = 1,2,\ldots,q
-    \end{aligned}
-    $$
-
-    ```{r}
-    #| eval: false
-    #| code-fold: true
-    #| echo: !expr knitr::is_html_output()
-
-    set.seed(2023)
-    Ngroups <- 25 # 一个随机效应分 25 个组
-    NperGroup <- 100 # 每个组 100 个观察值
-    # 样本量
-    N <- Ngroups * NperGroup
-    # 截距和两个协变量的系数
-    beta <- c(0.5, 0.3, 0.2)
-    # 两个协变量
-    X <- MASS::mvrnorm(N, mu = rep(0, 2), Sigma = matrix(c(1, 0.8, 0.8, 1), 2))
-    # 漂移项
-    o <- rep(c(2, 4), each = N / 2)
-    # 分 25 个组 每个组 100 个观察值
-    g <- factor(rep(1:Ngroups, each = NperGroup))
-    u <- rnorm(Ngroups, sd = .5) # 随机效应的标准差 0.5
-    # 泊松分布的期望
-    lambda <- o * exp(cbind(1, X) %*% beta + u[g])
-    # 响应变量的值
-    y <- rpois(N, lambda = lambda)
-    # 模拟的数据集
-    sim_data <- data.frame(y, X, o, g)
-    colnames(sim_data) <- c("y", "x1", "x2", "o", "g")
-
-    # 模型拟合
-    fit_lme4 <- lme4::glmer(y ~ x1 + x2 + (1 | g),
-      data = sim_data, offset = log(o), family = poisson(link = "log")
-    )
-    summary(fit_lme4)
-
-    # 对随机效应 adaptive Gauss-Hermite quadrature 积分
-    library(GLMMadaptive)
-    fit_glmmadaptive <- mixed_model(
-      fixed = y ~ x1 + x2 + offset(log(o)), 
-      random = ~ 1 | g, data = sim_data,
-      family = poisson(link = "log")
-    )
-    summary(fit_glmmadaptive)
-
-    ## hglm 包 Hierarchical Generalized Linear Models
-    # extended quasi likelihood (EQL) method
-    fit_hglm <- hglm::hglm(
-      fixed =  y ~ x1 + x2, random = ~ 1 | g,
-      family = poisson(link = "log"), 
-      offset = log(o), data = sim_data
-    )
-    summary(fit_hglm)
-
-    # 广义估计方程
-    fit_gee <- gee::gee(y ~ x1 + x2 + offset(log(o)),
-      id = g, data = sim_data, family = poisson(link = "log"),
-      corstr = "exchangeable"
-    )
-    # 输出
-    fit_gee
-
-    # [glmmML](https://CRAN.R-project.org/package=glmmML)
-    # Maximum Likelihood and numerical integration via Gauss-Hermite quadrature.
-    fit_glmmml <- glmmML::glmmML(
-      formula = y ~ x1 + x2, family = poisson,
-      data = sim_data, offset = log(o), cluster = g
-    )
-    summary(fit_glmmml)
-
-    # Generalized Estimating Equation
-    # [geepack](https://cran.r-project.org/package=geepack) GEE
-    fit_geepack <- geepack::geeglm(
-      formula = y ~ x1 + x2, family = poisson(link = "log"),
-      id = g, offset = log(o), data = sim_data,
-      corstr = "exchangeable", scale.fix = FALSE
-    )
-    summary(fit_geepack)
-
-    # [glmm](https://github.com/knudson1/glmm)
-    # Monte Carlo Likelihood Approximation 近似对随机效应的积分
-    # 对迭代时间没有给出预估，一旦执行，不知道什么时候会跑完
-    set.seed(2023)
-    # 设置双核并行迭代
-    clust <- parallel::makeCluster(2)
-    fit_glmm <- glmm::glmm(y ~ x1 + x2 + offset(log(o)),
-      random = list(~ 1 + g), # 随机效应
-      varcomps.names = "G", # 给随机效应取个名字
-      data = sim_data,
-      family.glmm = glmm::poisson.glmm, # 泊松型
-      m = 10^4, debug = TRUE, cluster = clust
-    )
-    parallel::stopCluster(clust)
-    summary(fit_glmm)
-
-    # 如何设置先验分布
-    fit_brms <- brms::brm(
-      y ~ x1 + x2 + (1 | g) + offset(log(o)),
-      data = sim_data,
-      family = poisson(link = "log"),
-      # silent = 2, # 关闭消息
-      refresh = 0, # 不显示迭代进度
-      seed = 20232023,
-      backend = "cmdstanr" # 选择后端 rstan 或 cmdstanr
-    )
-    # 拟合结果
-    summary(fit_brms)
-    # 发散很多
-    plot(fit_brms)
-    # 模型诊断指标
-    brms::WAIC(fit_brms)
-    brms::pp_check(fit_brms)
-
-    # gee GLMMadaptive glmmML geepack 和 lme4 的模型输出结果是接近的
-    # blme 基于 lme4 的贝叶斯估计
-    fit_blme <- blme::bglmer(
-      formula = y ~ x1 + x2 + (1 | g),
-      data = sim_data, offset = log(o),
-      family = poisson(link = "log")
-    )
-    summary(fit_blme)
-
-    # MCMCglmm 包 贝叶斯估计
-    fit_mcmcglmm <- MCMCglmm::MCMCglmm(
-      fixed = y ~ x1 + x2 + offset(log(o)),
-      random = ~g, family = "poisson", 
-      data = sim_data, verbose = FALSE
-    )
-    summary(fit_mcmcglmm)
-    ```
-
-4.  基于 **MASS** 包的地形数据集 topo，建立高斯过程回归模型，比较贝叶斯预测与克里金插值预测的效果。
+3.  基于 **MASS** 包的地形数据集 topo，建立高斯过程回归模型，比较贝叶斯预测与克里金插值预测的效果。
 
     ```{r}
     #| eval: false
@@ -934,7 +1045,7 @@ INLA 软件能处理上千个高斯随机效应，但最多只能处理 15 个�
       theme_bw()
     ```
 
-5.  用 **brms** 包实现贝叶斯高斯过程回归模型，考虑用样条近似高斯过程以加快计算。提示：**brms** 包的函数 `gp()` 的参数 $k$ 表示近似高斯过程 GP 所用的基函数的数目。截止写作时间，函数 `gp()` 的参数 `cov` 只能取指数二次核函数 exponentiated-quadratic kernel 。
+4.  用 **brms** 包实现贝叶斯高斯过程回归模型，考虑用样条近似高斯过程以加快计算。提示：**brms** 包的函数 `gp()` 的参数 $k$ 表示近似高斯过程 GP 所用的基函数的数目。截止写作时间，函数 `gp()` 的参数 `cov` 只能取指数二次核函数 exponentiated-quadratic kernel 。
 
     ```{r}
     #| eval: false
