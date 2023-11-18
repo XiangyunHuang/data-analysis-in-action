@@ -293,14 +293,12 @@ sleep_brms |>
 
 ### MCMCglmm
 
-将数据集 sleepstudy 中的 Reaction 除以 1000，目的是数值稳定性，减小迭代序列的相关性。
+MCMCglmm 包拟合变截距、变斜率模型，随机截距和随机斜率之间存在相关性。
 
 ```{r}
-## 尺度变换
-sleepstudy$Reaction <- sleepstudy$Reaction / 1000
 ## 变截距、变斜率模型
 prior1 <- list(
-  R = list(V = 1, nu = 0.002),
+  R = list(V = 1, fix = 1),
   G = list(G1 = list(V = diag(2), nu = 0.002))
 )
 set.seed(20232023)
@@ -311,19 +309,17 @@ sleep_mcmcglmm <- MCMCglmm::MCMCglmm(
 summary(sleep_mcmcglmm)
 ```
 
-固定效应 Location effects 截距 (Intercept) 为 0.25167，斜率 Days 为 0.01055 。
-
-随机效应 R-structure 方差 0.0006742，则标准差为 0.02596536。
+固定随机效应 R-structure 方差。固定效应 Location effects 截距 (Intercept) 为 251.374，斜率 Days 为 10.419 。
 
 ### INLA
 
-先考虑变截距模型
+将数据集 sleepstudy 中的 Reaction 除以 1000，目的是数值稳定性，减小迭代序列的相关性。先考虑变截距模型
 
 ```{r}
 library(INLA)
 inla.setOption(short.summary = TRUE)
-# 前面已经做了尺度变换
-# sleepstudy$Reaction <- sleepstudy$Reaction / 1000
+# 做尺度变换
+sleepstudy$Reaction <- sleepstudy$Reaction / 1000
 # 变截距
 sleep_inla1 <- inla(Reaction ~ Days + f(Subject, model = "iid", n = 18), 
                   family = "gaussian", data = sleepstudy)
@@ -527,7 +523,35 @@ cbpp_lme4 <- lme4::glmer(
 summary(cbpp_lme4)
 ```
 
-贝叶斯的结果与频率派的结果相近，但还是有明显差异。
+贝叶斯的结果与频率派的结果相近，但还是有明显差异。MCMCglmm 总是假定存在残差，残差的分布服从 0 均值的高斯分布，下面将残差分布的方差固定，重新拟合模型，之后再根据残差方差为 0 调整估计结果。
+
+```{r}
+prior2 <- list(
+  R = list(V = 1, fix = 1),
+  G = list(G1 = list(V = 1, nu = 0.002))
+)
+set.seed(20232023)
+cbpp_mcmcglmm <- MCMCglmm::MCMCglmm(
+  cbind(incidence, size - incidence) ~ period, random = ~herd, prior = prior2,
+  data = cbpp, family = "multinomial2", verbose = FALSE
+)
+summary(cbpp_mcmcglmm)
+```
+
+下面对结果进行调整
+
+```{r}
+# 调整常数
+c2 <- ((16 * sqrt(3)) / (15 * pi))^2
+# 固定效应
+cbpp_sol_adj <- cbpp_mcmcglmm$Sol / sqrt(1 + c2 * cbpp_mcmcglmm$VCV[, 2])
+summary(cbpp_sol_adj)
+# 方差成分
+cbpp_vcv_adj <- cbpp_mcmcglmm$VCV / (1 + c2 * cbpp_mcmcglmm$VCV[, 2])
+summary(cbpp_vcv_adj)
+```
+
+可以看到，调整后固定效应的部分和前面 lme4 等的输出非常接近，方差成分仍有差距。
 
 ### INLA
 
