@@ -1007,15 +1007,53 @@ scale reduction factor on split chains (at convergence, Rhat = 1).
 MCMCglmm 包采用贝叶斯估计
 
 ```{r}
+prior1 <- list(
+  R = list(V = 1, fix = 1), 
+  G = list(G1 = list(V = 1, nu = 0.002))
+)
+set.seed(20232023)
 fit_mcmcglmm <- MCMCglmm::MCMCglmm(
   fixed = y ~ x1 + x2 + offset(log(o)),
   random = ~g, family = "poisson", 
-  data = sim_data, verbose = FALSE
+  data = sim_data, verbose = FALSE, prior = prior1
 )
 summary(fit_mcmcglmm)
 ```
 
-MCMCglmm 包假定存在一个额外的随机变量表示过度离散，如何将其去掉？
+随机效应的方差 G-structure 为 0.5443，则标准差为 0.738。
+
+对于离散型响应变量，MCMCglmm 包默认添加一个可加的随机变量表示过度离散，如何将其去掉？将残差方差设置为常数，不再作为参数去估计，`fix = 1` 表示在 R-structure 中固定方差， `V = 1` 表示残差方差为 1。
+
+```{r}
+#| label: fig-fit-mcmcglmm
+#| fig-cap: 方差协方差参数的后验分布
+#| fig-showtext: true
+
+# 固定效应参数的后验分布
+# plot(fit_mcmcglmm$Sol)
+plot(fit_mcmcglmm$VCV)
+```
+
+根据响应变量的服从的分布类型，确定调整因子。固定效应乘以调整因子的平方根，随机效应的方差乘以调整因子，详见 [@diggle2002] 第 136-137 页。二项分布联系函数对应的调整因子如下：
+
+$$
+\frac{1 + c^2\sigma^2_{\epsilon}}{1 + c^2\sigma^2_{\mathrm{units}}}
+$$
+
+其中， $c$ 是与联系函数有关的常数，二项分布联系函数对应 $c = 16\sqrt{3}/(15\pi)$。此处，假定 $\sigma^2_{\epsilon} = 0$ ，代入泊松分布对应的调整因子。调整后的固定效应（回归系数）、随机效应的方差如下：
+
+```{r}
+#| eval: false
+
+# 调整公式中的调整因子 c2 取决于联系函数
+c2 <- ((16 * sqrt(3))/(15 * pi))^2 # 需要修改为泊松分布对应的值
+# 固定效应的调整
+adjusted_sol <- fit_mcmcglmm$Sol / sqrt(1 + c2 * fit_mcmcglmm$VCV[, 2])
+plot(adjusted_sol)
+# 随机效应的方差调整
+adjusted_vcv <- fit_mcmcglmm$VCV[, 1] / (1 + c2 * fit_mcmcglmm$VCV[, 2])
+plot(adjusted_vcv)
+```
 
 ### INLA
 
