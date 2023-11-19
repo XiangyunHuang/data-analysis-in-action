@@ -362,29 +362,11 @@ ggplot() +
   labs(x = "横坐标（米）", y = "纵坐标（米）", fill = "预测值")
 ```
 
-### FRK
-
-Fixed Rank Kriging 有规模的数据集
-
-```{r}
-#| eval: false
-
-library(FRK)
-```
-
 ### cmdstanr
 
-Stan 没有现成的有效算法或扩展包做有规模的高斯过程建模，因此，必须采用一些近似方法，通过 Stan 编码实现。
+[**FRK**](https://github.com/andrewzm/FRK) 包 [@Matthew2023]（Fixed Rank Kriging，固定秩克里金） 可对有一定规模的（时空）空间区域数据和点参考数据集建模，响应变量的分布从高斯分布扩展到指数族，放在（时空）空间广义线性混合效应模型的框架下统一建模。然而，不支持带漂移项的泊松分布。
 
-接下来，分别手动实现低秩和基样条两种方法近似边际高斯过程（marginal likelihood GP）[@Rasmussen2006]，用 Stan 编码模型。代码文件分别是 `rongelap_poisson_lr.stan` 和 `rongelap_poisson_splines.stan` 。
-
-```{r}
-library(cmdstanr)
-```
-
-### brms
-
-**brms** 包提供函数 `gp()` 定义高斯过程，对于空间高斯过程，我们发现迭代过程非常慢，效率很低，有一定规模后，这是不可行的。
+**brms** 包支持一大类贝叶斯统计模型，但是对高斯过程建模十分低效，当遇到有一定规模的数据，建模是不可行的，因为经过对 brms 包生成的模型代码的分析，发现它采用潜变量高斯过程（latent variable GP）模型，这也是采样效率低下的一个关键因素。
 
 ```{r}
 #| eval: false
@@ -403,33 +385,11 @@ rongelap_brm <- brms::brm(
 
 当设置 $k = 5$ 时，用 5 个基函数来近似高斯过程，编译完成后，采样速度很快，但是结果不可靠，采样过程中的问题很多，见下文。当将横、纵坐标值同时缩小 6000 倍，采样效率并未得到改善。当设置 $k = 15$ 时，运行时间明显增加，采样过程的诊断结果类似 $k = 5$ 的情况，还是不可靠。说明 brms 包不适合处理含高斯过程的模型。
 
-``` markdown
-Warning messages:
-1: There were 4000 transitions after warmup that exceeded the maximum treedepth. Increase max_treedepth above 10. See
-https://mc-stan.org/misc/warnings.html#maximum-treedepth-exceeded 
-2: There were 3 chains where the estimated Bayesian Fraction of Missing Information was low. See
-https://mc-stan.org/misc/warnings.html#bfmi-low 
-3: Examine the pairs() plot to diagnose sampling problems
-
-4: The largest R-hat is 4.4, indicating chains have not mixed.
-Running the chains for more iterations may help. See
-https://mc-stan.org/misc/warnings.html#r-hat 
-5: Bulk Effective Samples Size (ESS) is too low, indicating posterior means and medians may be unreliable.
-Running the chains for more iterations may help. See
-https://mc-stan.org/misc/warnings.html#bulk-ess 
-6: Tail Effective Samples Size (ESS) is too low, indicating posterior variances and tail quantiles may be unreliable.
-Running the chains for more iterations may help. See
-https://mc-stan.org/misc/warnings.html#tail-ess 
-```
+实际上，Stan 没有现成的有效算法或扩展包做有规模的高斯过程建模，详见 Bob Carpenter 在 2023 年 Stan 大会的[报告](https://github.com/stan-dev/stancon2023/tree/main/Bob-Carpenter)，因此，必须采用一些近似方法，通过 Stan 编码实现。接下来，分别手动实现低秩和基样条两种方法近似边际高斯过程（marginal likelihood GP）[@Rasmussen2006]，用 Stan 编码模型。代码文件分别是 `rongelap_poisson_lr.stan` 和 `rongelap_poisson_splines.stan` 。
 
 ```{r}
-#| eval: false
-
-# k = 15 样条模型
-brms::stancode(rongelap_brm)
+library(cmdstanr)
 ```
-
-经过对 brms 包生成的模型代码的分析，发现它采用潜变量高斯过程（latent variable GP）模型，这也是采样效率低下的一个关键因素。
 
 ### GINLA {#sec-rongelap-inla}
 
