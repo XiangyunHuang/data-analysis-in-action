@@ -1,5 +1,9 @@
 # 交互应用 {#sec-interactive-applications}
 
+```{r}
+library(shiny)
+```
+
 一个简单示例，介绍一个 Shiny 应用的各个常见组成部分。一个快速改变风格的主题包。介绍交互表格、交互图形与 Shiny 集成，如 **DT**、**plotly**、 **leaflet** 等。介绍 Shiny 工业化应用的开发过程。
 
 ## 简单示例 {#sec-shiny-demo}
@@ -475,6 +479,10 @@ server <- function(input, output) {
 shinyApp(ui = ui, server = server)
 ```
 
+## Shiny 优化 {#sec-shiny-faster}
+
+[提升 shiny 仪表盘访问性能的4个建议](https://blog.rstudio.com/2020/07/21/4-tips-to-make-your-shiny-dashboard-faster/)
+
 ## Shiny 部署 {#sec-shiny-deployment}
 
 ### promises 并发
@@ -525,7 +533,7 @@ shinyApp(ui, server)
 
 ## Shiny 替代品 {#sec-shiny-alternative}
 
-R Markdown 文档
+R Markdown + Shiny 文档
 
 -   crosstalk 交互
 -   flexdashboard 布局
@@ -533,7 +541,7 @@ R Markdown 文档
 -   leaflet 交互地图
 -   ggiraph 交互图形
 
-Quarto 文档
+Quarto Dashboard 文档
 
 ## Shiny 案例 {#sec-shiny-showcases}
 
@@ -541,14 +549,28 @@ Quarto 文档
 
 ## 总结 {#sec-shiny-summary}
 
+事实上，作为 BI 工程师，相当一部分工作是与数据开发结合的。从 Kafka 接入埋点上报的原始日志（ODS 层）、清洗抽取特定业务/领域内的数据（Fact 事实层）、面向某一类任务的主题数据（ topic 主题层）、面向特定数据产品的应用数据 （app 应用层）。
+
+-   数据仓库 Hive 数据开发：事实、主题和应用层
+-   数据计算 Spark 数据开发工具 Spark SQL / Hive SQL 任务调度
+-   数据报表 MySQL / Doris 数据同步工具 Hive2MySQL 同步应用层数据
+-   数据展示 Dashboard 应用开发工具 Shiny RStudio Shiny Server
+
+报表开发从数据仓库的 DWD 层开始，可能一些业务原因，我们需要从 ODS 层甚至从点击流的日志数据开始，经过数据清洗、提取、聚合成为支撑BI报表最底层的基础表，存储在 Hive 中，然后对这一系列的基础表根据BI展示的需要进行第二层聚合形成中间表，这两层数据根据业务情况做增量更新或者全量更新，并将中间表同步到 MySQL 仓库中，全量更新的情况，往往更新数据比较大，建议用 sqoop 做数据的同步。创建第二层的中间表稍有些灵活性，原则是在中间表之上对应的数据操作和可视化是容易实现且效率较高的，否则应该构造第三层的中间表，绝不能将大规模的数据集直接导入 R 中进行分析和可视化，拖慢前端展示的速度，占用过多的服务器资源。
+
 ```{r}
-#| label: shiny-nomnoml
-#| eval: false
 #| echo: false
-# 截图
-# 安装 nomnoml install.packages("nomnoml")
-# 安装 PhantomJS brew install --cask phantomjs 
-nomnoml::nomnoml(" 
+# 制作流程图
+library(nomnoml)
+```
+
+```{nomnoml}
+#| label: fig-shiny-ecosystem
+#| fig-cap: Shiny 生态系统
+#| fig-width: 3.5
+#| fig-height: 2.5
+#| echo: false
+
 #stroke: #26A63A
 #.box: dashed visual=ellipse
 #direction: down
@@ -568,16 +590,6 @@ nomnoml::nomnoml("
 [开发应用] <- [<table>处理数据|Base R|SQL||data.table|dplyr||tidyr|purrr]
 [开发应用] <- [<table>制作表格|DT|gt||reactable|formattable||kableExtra|sparkline]
 [开发应用] <- [<table>制作图形|ggplot2|plotly||echarts4r|leaflet||dygraphs|visNetwork]
-", png = "shiny-app.png")
-```
-
-```{r}
-#| label: fig-shiny-ecosystem
-#| fig-cap: Shiny 生态系统
-#| echo: false
-#| out-width: 90%
-
-knitr::include_graphics(path = "screenshots/shiny-app.png")
 ```
 
 -   连接数据库。根据数据库的情况选择相应的 R 接口包，比如连接 MySQL 数据库可以用 RMySQL 包，值得一提， odbc 包支持连接相当多的数据库。
@@ -585,13 +597,13 @@ knitr::include_graphics(path = "screenshots/shiny-app.png")
 -   交互表格。推荐 reactable 和 DT 包做数据呈现。
 -   交互图形。推荐功能强大的 plotly 包，可以先用 [ggplot2](https://github.com/tidyverse/ggplot2) 绘制，然后调用 [plotly](https://github.com/ropensci/plotly) 包的 `ggplotly()` 函数将静态图转化为交互图。
 -   针对特定应用场景的其它交互可视化工具包，比如 [leaflet](https://github.com/rstudio/leaflet) 可以将地图嵌入 Shiny 应用， [dygraphs](https://github.com/rstudio/dygraphs) 可以将时间序列塞进去。
--   Shiny 组件。[shinyFeedback](https://github.com/merlinoa/shinyFeedback) 提供用户输入的反馈。[shinyWidgets](https://github.com/dreamRs/shinyWidgets) 提供自定义 widget 的功能。
--   Shiny 主题。比如 shinythemes 包 可以统一配色，[dashboardthemes](https://github.com/nik01010/dashboardthemes) 提供更加深度的主题，[shinytableau](https://github.com/rstudio/shinytableau) 提供仿 [Tableau](https://www.tableau.com/) 的 dashboard 框架。[sass](https://github.com/rstudio/sass) 在 CSS 样式层面重定义风格。
--   Shiny 权限。[shinymanager](https://github.com/datastorm-open/shinymanager) 支持单个 shiny 应用的权限管理，[firebase](https://github.com/JohnCoene/firebase) 提供访问权限设置 <https://firebase.john-coene.com/>。
+-   Shiny 组件。[shinyFeedback](https://github.com/merlinoa/shinyFeedback) 提供用户输入的反馈。[shinyWidgets](https://github.com/dreamRs/shinyWidgets) 提供自定义 widget 的功能。[miniUI](https://github.com/rstudio/miniUI) 专为小屏设计，[shinyMobile](https://github.com/RinteRface/shinyMobile) 在 IOS 和安卓手机上访问 shiny 应用。
+-   Shiny 主题。比如 [shinythemes](https://github.com/rstudio/shinythemes) 包可以统一配色，[dashboardthemes](https://github.com/nik01010/dashboardthemes) 提供更加深度的主题，[shinytableau](https://github.com/rstudio/shinytableau) 提供仿 [Tableau](https://www.tableau.com/) 的 dashboard 框架。[sass](https://github.com/rstudio/sass) 在 CSS 样式层面重定义风格。[bslib](https://github.com/rstudio/bslib) 通过 Bootstrap 3/4/5 定制 Shiny 和 R Markdown 主题。
+-   Shiny 权限。[shinymanager](https://github.com/datastorm-open/shinymanager) / [shinyauthr](https://github.com/paulc91/shinyauthr) 支持单个 shiny 应用的权限管理，[firebase](https://github.com/JohnCoene/firebase) 提供访问权限设置 <https://firebase.john-coene.com/>。
 -   Shiny 框架。[ShinyStudio](https://github.com/clevr-dev/ShinyStudio) 打造基于容器架构的协作开发环境的开源解决方案，[golem](https://github.com/ThinkR-open/golem) 构建企业级 shiny 应用的框架，[RinteRface](https://github.com/RinteRface) 开发的系列 R 包也试图打造一套完整的解决方案，并配有速查小抄 [cheatsheets](https://github.com/RinteRface/cheatsheets)。
 -   Shiny 部署。[shiny-server](https://github.com/rstudio/shiny-server) 以网络服务的方式支持 shiny 应用，[shinyproxy](https://github.com/openanalytics/shinyproxy) 提供企业级部署 shiny 应用的开源解决方案。
 
-Shiny 生态非常庞大，资源非常丰富。
+自 RStudio 推出 Shiny 系列产品以来，一些公司进一步根据所需扩展和定制，比如 [Appsilon](https://github.com/Appsilon)、[RinteRface](https://github.com/RinteRface)、[ThinkR-open](https://github.com/ThinkR-open)、[dreamRs](https://github.com/dreamRs) 和[datastorm-open](https://github.com/datastorm-open) 等。经过商业公司和个人开发者的努力，Shiny 生态非常庞大，资源非常丰富。
 
 -   Shiny 入门 <https://shiny.posit.co/r/getstarted/>。
 -   Shiny 扩展包 <https://github.com/nanxstats/awesome-shiny-extensions>。
