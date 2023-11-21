@@ -581,3 +581,88 @@ ggplot() +
   theme_bw() +
   labs(x = "横坐标（米）", y = "纵坐标（米）", fill = "预测值")
 ```
+
+## 案例：城市土壤重金属污染 {#sec-topsoil-mgamm}
+
+介绍多元地统计（Multivariate geostatistics）建模分析与 INLA 实现。分析某城市地表土壤重金属污染情况，找到污染最严重的地方，即寻找重金属污染的源头。
+
+```{r}
+# 根据背景值将各个重金属浓度列进行转化
+city_data <- readRDS(file = "data/cumcm2011A.rds")
+library(sf)
+city_data <- st_as_sf(city_data, coords = c("x(m)", "y(m)"), dim = "XY")
+city_data
+```
+
+```{r}
+#| label: fig-city-data
+#| fig-width: 7
+#| fig-height: 4
+#| fig-showtext: true
+#| fig-cap: 某城市的地形
+
+ggplot(data = city_data) +
+  geom_sf(aes(color = `功能区名称`, size = `海拔(m)`)) +
+  theme_classic()
+```
+
+```{r}
+#| label: fig-city-as
+#| fig-width: 7
+#| fig-height: 4
+#| fig-cap: 重金属砷 As 和镉 Cd 的浓度分布
+#| fig-subcap: 
+#| - 重金属砷 As 
+#| - 重金属镉 Cd
+#| fig-showtext: true
+#| layout-ncol: 1
+
+library(ggplot2)
+ggplot(data = city_data) +
+  geom_sf(aes(color = `功能区名称`, size = `As (μg/g)`)) +
+  theme_classic()
+ggplot(data = city_data) +
+  geom_sf(aes(color = `功能区名称`, size = `Cd (ng/g)`)) +
+  theme_classic()
+```
+
+为了便于建模，对数据做标准化处理。
+
+```{r}
+city_data <- within(city_data, {
+  `As (μg/g)` <- (`As (μg/g)` - 3.6) / 0.9
+  `Cd (ng/g)` <- (`Cd (ng/g)` - 130) / 30
+  `Cr (μg/g)` <- (`Cr (μg/g)` - 31) / 9
+  `Cu (μg/g)` <- (`Cu (μg/g)` - 13.2) / 3.6
+  `Hg (ng/g)` <- (`Hg (ng/g)` - 35) / 8
+  `Ni (μg/g)` <- (`Ni (μg/g)` - 12.3) / 3.8
+  `Pb (μg/g)` <- (`Pb (μg/g)` - 31) / 6
+  `Zn (μg/g)` <- (`Zn (μg/g)` - 69) / 14
+})
+```
+
+当我们逐一检查各个重金属的浓度分布时，发现重金属汞 Hg 在四个地方的浓度极高，暗示着如果数据采集没有问题，那么这几个地方很可能是污染源。
+
+```{r}
+#| label: fig-city-data
+#| fig-width: 7
+#| fig-height: 4
+#| fig-showtext: true
+#| fig-cap: 重金属汞 Hg 的浓度分布
+
+ggplot(data = city_data) +
+  geom_sf(aes(color = `功能区名称`, size = `Hg (ng/g)`)) +
+  theme_classic()
+```
+
+### mgcv
+
+mgcv 包用于基于惩罚似然的多元模型平滑参数估计和选择 [@wood2016]。
+
+```{r}
+# ?mvn
+```
+
+### INLA
+
+INLA 包用于多元空间模型的贝叶斯推断 [@Francisco2022] 。
