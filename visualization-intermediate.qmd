@@ -556,10 +556,7 @@ aggregate(data = svn_trunk_log, revision ~ year + month, length) |>
 
 ```{r}
 # 星期、月份缩写
-week.abb <- c(
-  "Sun", "Mon", "Tue", "Wed",
-  "Thu", "Fri", "Sat"
-)
+week.abb <- c("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
 month.abb <- c(
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
@@ -587,8 +584,7 @@ svn_trunk_year <- within(svn_trunk_year, {
 #| fig-showtext: true
 
 ggplot(data = svn_trunk_year, aes(
-  x = week, y = wday,
-  fill = cut(revision, breaks = 5 * 0:5)
+  x = week, y = wday, fill = cut(revision, breaks = 5 * 0:5)
 )) +
   geom_tile(color = "white", linewidth = 0.5) +
   scale_fill_brewer(palette = "Greens") +
@@ -1349,3 +1345,49 @@ df[, (fkt) := lapply(.SD, factor, levels = likert_levels), .SDcols = fkt]
 
 gglikert(df)
 ```
+
+## 习题 {#sec-visualization-intermediate-exercise}
+
+1.  根据 Github 代码提交量数据制作日历图。
+
+    ```{r}
+    #| label: fig-github-profile
+    #| fig-cap: Github 打卡日历图
+    #| fig-width: 8
+    #| fig-height: 4
+    #| fig-showtext: true
+    #| echo: !expr knitr::is_html_output()
+
+    github_ctb <- jsonlite::read_json(path = "data/contributions.json")
+    github_df <- data.frame(
+      date = unlist(lapply(github_ctb$contributions, "[[", "date")),
+      count = unlist(lapply(github_ctb$contributions, "[[", "count")),
+      color = unlist(lapply(github_ctb$contributions, "[[", "color")),
+      intensity = unlist(lapply(github_ctb$contributions, "[[", "intensity"))
+    )
+    week.abb <- c("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
+    github_df <- within(github_df, {
+      date <- as.Date(date)
+      year <- format(date, format = "%Y", tz = "UTC")
+      month <- format(date, format = "%m", tz = "UTC")
+      week <- format(date, format = "%U", tz = "UTC")
+      wday <- format(date, format = "%a", tz = "UTC")
+      nday <- format(date, format = "%j", tz = "UTC")
+      week <- as.integer(week)
+      wday <- factor(wday, labels = week.abb)
+    })
+    ggplot(
+      data = subset(github_df, subset = year %in% 2020:2022),
+      aes(x = week, y = wday, fill = count)
+    ) +
+      geom_tile(color = "white", linewidth = 0.5) +
+      scale_fill_distiller(palette = "Greens", direction = 1) +
+      scale_x_continuous(
+        expand = c(0, 0),
+        breaks = seq(1, 52, length = 12),
+        labels = month.abb
+      ) +
+      facet_wrap(~year, ncol = 1) +
+      theme_minimal() +
+      labs(x = "月份", y = "星期", fill = "提交量")
+    ```
