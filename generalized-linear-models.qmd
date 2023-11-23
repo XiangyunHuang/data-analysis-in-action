@@ -370,6 +370,119 @@ See help('pareto-k-diagnostic') for details.
 brms::pp_check(fit_poisson_brm)
 ```
 
+## 案例：吸烟喝酒和食道癌的关系 {#sec-esoph}
+
+<!-- 存在有序分类数据  -->
+
+本例数据集 esoph 来自 Base R 内置的 datasets 包，是法国伊勒-维莱讷食道癌研究数据，研究吸烟、喝酒与食道癌的关系，量化酒精、烟草、酒精和烟草的交互作用。部分数据集见 @tbl-esoph ，年龄组 agegp、酒精量 alcgp 和烟草量 tobgp 为有序的分类变量，正常来说，年龄越大，吸烟、喝酒对食道癌影响越大。
+
+```{r}
+#| label: tbl-esoph
+#| tbl-cap: "食道癌研究数据（部分）"
+#| echo: false
+
+knitr::kable(head(esoph), col.names = c("年龄组", "酒精量", "烟草量", "实验组", "控制组"))
+```
+
+### 描述分析
+
+先来简单统计一下各年龄组、酒精量组的食道癌发病人数
+
+```{r}
+xtabs(data = esoph, cbind(ncases, ncontrols) ~ agegp + alcgp)
+```
+
+@fig-esoph 描述食道癌发病率与年龄组、酒精量的关系
+
+```{r}
+#| label: fig-esoph
+#| fig-cap: "食道癌发病率与年龄组、酒精量的关系"
+#| fig-showtext: true
+#| fig-width: 5
+#| fig-height: 3.5
+
+library(ggplot2)
+aggregate(cbind(ncases, ncontrols) ~ agegp + alcgp, data = esoph, sum) |>
+  ggplot(aes(x = agegp, y = alcgp, fill = ncases / (ncases + ncontrols))) +
+  scale_fill_viridis_c(labels = scales::percent) +
+  geom_tile() +
+  labs(x = "年龄组", y = "酒精量", fill = "发病率")
+```
+
+### 拟合模型
+
+响应变量服从二项分布，自变量包含年龄分组 agegp、酒精量 alcgp、烟草量 tobgp 和 酒精量与烟草量的交互作用，建立广义线性模型。
+
+```{r}
+fit_glm_esoph <- glm(cbind(ncases, ncontrols) ~ agegp + tobgp * alcgp,
+  data = esoph, family = binomial(link = "logit")
+)
+```
+
+模型输出
+
+```{r}
+summary(fit_glm_esoph)
+```
+
+整理模型输出后，见 @tbl-glm-esoph
+
+```{r}
+#| label: tbl-glm-esoph
+#| tbl-cap: "广义线性模型各个参数的估计结果"
+#| echo: false
+
+knitr::kable(broom::tidy(fit_glm_esoph), align = "lrrrr")
+```
+
+### 与 brms 比较
+
+下面从贝叶斯的视角分析和建模，使用 **brms** 包对该数据拟合，同样是广义线性模型。
+
+``` r
+fit_brm_esoph <- brm(ncases | trials(ncases + ncontrols) ~ agegp + tobgp * alcgp, 
+                     data = esoph, family = binomial(link = "logit"))
+```
+
+```         
+ Family: binomial 
+  Links: mu = logit 
+Formula: ncases | trials(ncases + ncontrols) ~ agegp + tobgp * alcgp 
+   Data: esoph (Number of observations: 88) 
+Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
+         total post-warmup samples = 4000
+
+Population-Level Effects: 
+                Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
+Intercept          -1.91      0.25    -2.49    -1.51        735 1.01
+agegp.L             3.39      0.86     2.13     5.45        674 1.01
+agegp.Q            -1.68      0.78    -3.58    -0.50        658 1.01
+agegp.C             0.31      0.57    -0.59     1.63        709 1.00
+agegpE4            -0.01      0.36    -0.80     0.65        907 1.01
+agegpE5            -0.20      0.21    -0.59     0.22       1970 1.00
+tobgp.L             0.63      0.20     0.24     1.03       4654 1.00
+tobgp.Q             0.03      0.20    -0.38     0.42       3469 1.00
+tobgp.C             0.17      0.20    -0.21     0.57       3892 1.00
+alcgp.L             1.41      0.22     0.99     1.84       4067 1.00
+alcgp.Q            -0.16      0.20    -0.56     0.24       3335 1.00
+alcgp.C             0.25      0.19    -0.12     0.62       3870 1.00
+tobgp.L:alcgp.L    -0.69      0.42    -1.51     0.16       3878 1.00
+tobgp.Q:alcgp.L     0.13      0.43    -0.75     0.97       4249 1.00
+tobgp.C:alcgp.L    -0.30      0.44    -1.15     0.58       5149 1.00
+tobgp.L:alcgp.Q     0.13      0.41    -0.67     0.94       3127 1.00
+tobgp.Q:alcgp.Q    -0.46      0.41    -1.24     0.34       4037 1.00
+tobgp.C:alcgp.Q    -0.05      0.40    -0.82     0.74       4490 1.00
+tobgp.L:alcgp.C    -0.15      0.38    -0.89     0.58       3507 1.00
+tobgp.Q:alcgp.C     0.04      0.37    -0.69     0.75       3274 1.00
+tobgp.C:alcgp.C    -0.17      0.36    -0.88     0.54       3773 1.00
+
+Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
+is a crude measure of effective sample size, and Rhat is the potential 
+scale reduction factor on split chains (at convergence, Rhat = 1).
+```
+
+输出结果和 `glm()` 有不少差别的。
+
 ## 习题 {#sec-bayesian-exercises}
 
 1.  分析挑战者号航天飞机 O 型环数据。**DAAG** 包的 orings 数据集记录美国挑战者号航天飞机 O 型环在不同温度下发生 Erosion 腐蚀和 Blowby 串气的失效数量。 @fig-cdplot-orings 展示航天飞机 O 型环在不同温度下失效的分布图（条件密度图）：随着温度升高，O 型环越来越不容易失效。请分别用 Base R 函数 `glm()` 和 **cmdstanr** 包建模分析 O 型环数据。

@@ -587,10 +587,10 @@ ggplot() +
 介绍多元地统计（Multivariate geostatistics）建模分析与 INLA 实现。分析某城市地表土壤重金属污染情况，找到污染最严重的地方，即寻找重金属污染的源头。
 
 ```{r}
-city_data <- readRDS(file = "data/cumcm2011A.rds")
+city_df <- readRDS(file = "data/cumcm2011A.rds")
 library(sf)
-city_data <- st_as_sf(city_data, coords = c("x(m)", "y(m)"), dim = "XY")
-city_data
+city_sf <- st_as_sf(city_df, coords = c("x(m)", "y(m)"), dim = "XY")
+city_sf
 ```
 
 ```{r}
@@ -600,9 +600,85 @@ city_data
 #| fig-showtext: true
 #| fig-cap: 某城市的地形
 
-ggplot(data = city_data) +
+ggplot(data = city_sf) +
   geom_sf(aes(color = `功能区名称`, size = `海拔(m)`)) +
   theme_classic()
+```
+
+类似 @sec-rongelap-mgcv ，下面根据数据构造城市边界以及对城市区域划分，以便预测城市中其它地方的重金属浓度。
+
+```{r}
+# 由点构造多边形
+city_sfp <- st_cast(st_combine(st_geometry(city_sf)), "POLYGON")
+# 由点构造凸包
+city_hull <- st_convex_hull(st_geometry(city_sfp))
+# 添加缓冲区作为城市边界
+city_buffer <- st_buffer(city_hull, dist = 1000)
+# 构造带边界约束的网格
+city_grid <- st_make_grid(city_buffer, n = c(150, 75))
+# 将 sfc 类型转化为 sf 类型
+city_grid <- st_as_sf(city_grid)
+city_buffer <- st_as_sf(city_buffer)
+city_grid <- city_grid[city_buffer, op = st_intersects]
+# 计算网格中心点坐标
+city_grid_centroid <- st_centroid(city_grid)
+# 共计 8494 个预测点
+city_grid_df <- as.data.frame(st_coordinates(city_grid_centroid))
+```
+
+城市边界线
+
+```{r}
+#| label: fig-city-border
+#| fig-cap: 某城市边界线
+#| fig-width: 7
+#| fig-height: 4
+#| fig-showtext: true
+
+ggplot() +
+  geom_sf(data = city_sf, aes(color = `功能区名称`, size = `海拔(m)`)) +
+  geom_sf(data = city_hull, fill = NA) +
+  geom_sf(data = city_buffer, fill = NA) +
+  theme_classic()
+```
+
+根据横、纵坐标和海拔数据，通过高斯过程回归（当然可以用其他办法，这里仅做示意）拟合获得城市其他位置的海拔，绘制等高线图，一目了然地获得城市地形信息。
+
+```{r}
+#| message: false
+
+library(mgcv)
+# 提取部分数据
+city_topo <- subset(city_df, select = c("x(m)", "y(m)", "海拔(m)"))
+colnames(city_topo) <- c("x", "y", "z")
+# 高斯过程拟合
+fit_city_mgcv <- gam(z ~ s(x, y, bs = "gp", k = 50), 
+  data = city_topo, family = gaussian(link = "identity")
+)
+# 绘制等高线图
+# vis.gam(fit_city_mgcv, color = "cm", plot.type = "contour", n.grid = 50)
+colnames(city_grid_df) <- c("x", "y")
+# 预测
+city_grid_df$zpred <- as.vector(predict(fit_city_mgcv, newdata = city_grid_df, type = "response")) 
+# 转化数据
+city_grid_sf <- st_as_sf(city_grid_df, coords = c("x", "y"), dim = "XY")
+library(stars)
+city_stars <- st_rasterize(city_grid_sf, nx = 150, ny = 75)
+```
+
+```{r}
+#| label: fig-city-topo
+#| fig-cap: 某城市地形图
+#| fig-showtext: true
+#| fig-width: 7
+#| fig-height: 4
+
+ggplot() +
+  geom_stars(data = city_stars, aes(fill = zpred), na.action = na.omit) +
+  geom_sf(data = city_buffer, fill = NA, color = "gray50", linewidth = .5) +
+  scale_fill_viridis_c(option = "C") +
+  theme_bw() +
+  labs(x = "横坐标（米）", y = "纵坐标（米）", fill = "海拔（米）")
 ```
 
 ```{r}
@@ -617,10 +693,10 @@ ggplot(data = city_data) +
 #| layout-ncol: 1
 
 library(ggplot2)
-ggplot(data = city_data) +
+ggplot(data = city_sf) +
   geom_sf(aes(color = `功能区名称`, size = `As (μg/g)`)) +
   theme_classic()
-ggplot(data = city_data) +
+ggplot(data = city_sf) +
   geom_sf(aes(color = `功能区名称`, size = `Cd (ng/g)`)) +
   theme_classic()
 ```
@@ -629,7 +705,7 @@ ggplot(data = city_data) +
 
 ```{r}
 # 根据背景值将各个重金属浓度列进行转化
-city_data <- within(city_data, {
+city_sf <- within(city_sf, {
   `As (μg/g)` <- (`As (μg/g)` - 3.6) / 0.9
   `Cd (ng/g)` <- (`Cd (ng/g)` - 130) / 30
   `Cr (μg/g)` <- (`Cr (μg/g)` - 31) / 9
@@ -650,14 +726,14 @@ city_data <- within(city_data, {
 #| fig-showtext: true
 #| fig-cap: 重金属汞 Hg 的浓度分布
 
-ggplot(data = city_data) +
+ggplot(data = city_sf) +
   geom_sf(aes(color = `功能区名称`, size = `Hg (ng/g)`)) +
   theme_classic()
 ```
 
 ### mgcv
 
-mgcv 包用于基于惩罚似然的多元模型平滑参数估计和选择 [@wood2016]。
+mgcv 包用于多元空间模型中样条参数估计和选择 [@wood2016]。
 
 ```{r}
 # ?mvn
@@ -666,4 +742,3 @@ mgcv 包用于基于惩罚似然的多元模型平滑参数估计和选择 [@woo
 ### INLA
 
 INLA 包用于多元空间模型的贝叶斯推断 [@Francisco2022] 。
-
