@@ -1,0 +1,133 @@
+# 时间序列回归 {#sec-time-series-regression}
+
+```{r}
+#| message: false
+
+library(cmdstanr)
+library(zoo)
+library(xts) # xts 依赖 zoo
+library(fGarch)
+library(INLA)
+library(mgcv)
+library(tensorflow)
+library(ggplot2)
+library(bayesplot)
+```
+
+## 随机波动率模型
+
+随机波动率模型主要用于股票时间序列数据建模。本节以美团股价数据为例介绍随机波动率模型，并分别以 Stan 框架和 **fGarch** 包拟合模型。
+
+```{r}
+#| label: fig-meituan-stack
+#| message: false
+#| fig-cap: 美团股价走势
+#| fig-showtext: true
+
+# 美团上市至 2023-07-15
+meituan <- readRDS(file = "data/meituan.rds")
+library(zoo)
+library(xts)
+library(ggplot2)
+autoplot(meituan[, "3690.HK.Adjusted"]) +
+  theme_classic() +
+  labs(x = "日期", y = "股价")
+```
+
+### Stan 框架
+
+```{r}
+library(cmdstanr)
+```
+
+### fGarch 包
+
+[《金融时间序列分析讲义》](https://www.math.pku.edu.cn/teachers/lidf/course/fts/ftsnotes/html/_ftsnotes/index.html)两个波动率建模方法
+
+-   自回归条件异方差模型（Autoregressive Conditional Heteroskedasticity，简称 ARCH）。
+
+-   广义自回归条件异方差模型 （Generalized Autoregressive Conditional Heteroskedasticity，简称 GARCH ）
+
+```{r}
+#| message: false
+
+library(fGarch)
+# garchFit
+```
+
+## 贝叶斯可加模型
+
+大规模时间序列回归，观察值是比较多的，可达数十万、数百万，乃至更多。粗粒度时时间跨度往往很长，比如数十年的天粒度数据，细粒度时时间跨度可短可长，比如数年的半小时级数据，总之，需要包含多个季节的数据，各种季节性重复出现。通过时序图可以观察到明显的季节性，而且往往是多种周期不同的季节性混合在一起，有时还包含一定的趋势性。举例来说，比如 2018-2023 年美国旧金山犯罪[事件报告数据](https://data.sfgov.org/Public-Safety/Police-Department-Incident-Reports-2018-to-Present/wg3w-h783)，事件数量的变化趋势，除了上述季节性因素，特殊事件疫情肯定会影响，数据规模约 200 M 。再比如 2018-2023 年美国境内和跨境旅游业中的[航班数据](https://www.transtats.bts.gov/)，原始数据非常大，R 包 [nycflights13](https://github.com/tidyverse/nycflights13) 提供纽约机场的部分航班数据。
+
+### Stan 框架
+
+```{r}
+library(cmdstanr)
+```
+
+### INLA 框架 {#sec-kaust-inla}
+
+模型内容、成分结构和参数解释
+
+阿卜杜拉国王科技大学（King Abdullah University of Science and Technology 简称 KAUST）的 Håvard Rue 等开发了 INLA 框架 [@Rue2009]。INLA 动态时间序列建模 [@Nalini2022]
+
+```{r}
+#| message: false
+
+library(INLA)
+```
+
+## 一些非参数模型
+
+### mgcv 包 {#sec-gnu-mgcv}
+
+模型内容、成分结构和参数解释。一般可加模型，在似然函数中添加平滑样条，与 Lasso 回归模型在形式上有相似之处，属于频率派方法。
+
+**mgcv** 包 [@Wood2017] 是 R 软件内置的推荐组件，由 Simon Wood 开发和维护，历经多年，成熟稳定。对于时间序列数据预测，数万和百万级观测值都可以 [@wood2015]。函数 `bam()`
+
+```{r}
+library(mgcv)
+```
+
+### nnet 包
+
+多层感知机是一种前馈神经网络，**nnet** 包的函数 `nnet()` 实现了单隐藏层的简单神经网络。
+
+```{r}
+# library(nnet) 
+```
+
+### tensorflow 框架 {#sec-google-tensorflow}
+
+前面介绍的模型都具有非常强的可解释性，比如各个参数对模型的作用。对于复杂的时间序列数据，比较适合用复杂的模型来拟合，看重模型的泛化能力，而不那么关注模型的机理。下面用 LSTM （长短期记忆）神经网络来训练时间序列数据，预测未来一周的趋势。
+
+```{r}
+library(tensorflow)
+# tf$abs(x = c(-1, 1, 2))
+```
+
+[forecastML](https://github.com/nredell/forecastML/) 采用机器学习方法可以一次向前预测多期。
+
+## 习题
+
+1.  基于 R 软件内置的数据集 `sunspots` 和 `sunspot.month` 比较 INLA 和 **mgcv** 框架的预测效果。
+
+    ```{r}
+    #| label: fig-sunspots
+    #| fig-cap: 预测月粒度太阳黑子数量
+    #| fig-width: 7
+    #| fig-height: 4
+    #| fig-showtext: true
+    #| code-fold: true
+    #| echo: !expr knitr::is_html_output()
+
+    sunspots_tbl <- broom::tidy(sunspots)
+    sunspots_month_tbl <- broom::tidy(sunspot.month)
+    ggplot() +
+      geom_line(data = sunspots_month_tbl, aes(x = index, y = value), color = "red") +
+      geom_line(data = sunspots_tbl, aes(x = index, y = value)) +
+      theme_bw() +
+      labs(x = "年月", y = "数量")
+    ```
+
+    图中黑线和红线分别表示 1749-1983 年、1984-2014 年每月太阳黑子数量。
