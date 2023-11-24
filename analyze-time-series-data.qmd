@@ -22,7 +22,7 @@ library(keras)        # LSTM 模型
 
 ## 数据获取
 
-Joshua M. Ulrich 开发维护的 [**quantmod**](https://github.com/joshuaulrich/quantmod) 包可以下载国内外股票市场的数据。本节主要以美团股价数据为例，美团自 2018-09-20 在香港挂牌上市，股票代码 3690.HK。首先用 **quantmod** 包 [@quantmod2022] 获取美团上市至 2022-05-27 每天的股价数据，包含 Open 开盘价、High 最高价、Low 最低价、Close 闭市价、Adjusted 调整价和 Volume 成交量数据。
+Joshua M. Ulrich 开发维护的 [**quantmod**](https://github.com/joshuaulrich/quantmod) 包可以下载国内外股票市场的数据。本节主要以美团股价数据为例，美团自 2018-09-20 在香港挂牌上市，股票代码 3690.HK。首先用 **quantmod** 包 [@quantmod2022] 获取美团上市至 2023-07-15 每天的股价数据，包含 Open 开盘价、High 最高价、Low 最低价、Close 闭市价、Adjusted 调整价和 Volume 成交量数据。
 
 ```{r}
 #| label: downlaod-yahoo-data
@@ -40,7 +40,7 @@ meituan <- getSymbols("3690.HK", auto.assign = FALSE, src = "yahoo")
 #| message: false
 
 library(quantmod)
-# 美团上市至 2022-05-27
+# 美团上市至 2023-07-15
 meituan <- readRDS(file = "data/meituan.rds")
 ```
 
@@ -225,7 +225,7 @@ getYearMonth <- '
 
 # 绘图
 dygraph(meituan[, "3690.HK.Adjusted"], main = "美团股价走势") |>
-  dyRangeSelector(dateWindow = c(format(Sys.Date(), "%Y-01-01"), as.character(Sys.Date()))) |>
+  dyRangeSelector(dateWindow = c("2023-01-01", "2023-07-15")) |>
   dyAxis(name = "x", axisLabelFormatter = getYearMonth) |>
   dyAxis("y", valueRange = c(0, 500), label = "美团股价") |>
   dyEvent("2020-01-23", "武汉封城", labelLoc = "bottom") |>
@@ -682,25 +682,6 @@ s.e.  0.0888  0.0880   0.0292
 
 sigma^2 = 132.3:  log likelihood = -504.92
 AIC=1017.85   AICc=1018.17   BIC=1029.35
-```
-
-### 自回归条件异方差模型 {#sec-arch}
-
-[《金融时间序列分析讲义》](https://www.math.pku.edu.cn/teachers/lidf/course/fts/ftsnotes/html/_ftsnotes/index.html)
-
-自回归条件异方差模型（Autoregressive Conditional Heteroskedasticity，简称 ARCH）
-
-```{r}
-# library(fGarch)
-```
-
-### 广义自回归条件异方差模型 {#sec-garch}
-
-广义自回归条件异方差模型 （Generalized Autoregressive Conditional Heteroskedasticity，简称 GARCH ）
-
-```{r}
-# library(fGarch)
-# garchFit
 ```
 
 ## 机器学习算法 {#sec-forecast-machine-learning}
