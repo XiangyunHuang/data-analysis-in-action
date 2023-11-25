@@ -372,7 +372,7 @@ brms::pp_check(fit_poisson_brm)
 
 ## 案例：吸烟喝酒和食道癌的关系 {#sec-esoph}
 
-<!-- 存在有序分类数据  -->
+<!-- 存在有序分类变量数据  -->
 
 本例数据集 esoph 来自 Base R 内置的 datasets 包，是法国伊勒-维莱讷食道癌研究数据，研究吸烟、喝酒与食道癌的关系，量化酒精、烟草、酒精和烟草的交互作用。部分数据集见 @tbl-esoph ，年龄组 agegp、酒精量 alcgp 和烟草量 tobgp 为有序的分类变量，正常来说，年龄越大，吸烟、喝酒对食道癌影响越大。
 
@@ -483,6 +483,34 @@ scale reduction factor on split chains (at convergence, Rhat = 1).
 
 输出结果和 `glm()` 有不少差别的。
 
+## 案例：哥本哈根住房状况调查
+
+<!-- 响应变量是分类有序的变量 -->
+
+数据集 housing 哥本哈根住房状况调查中的次数分布表，`Sat` 住户对目前居住环境的满意程度，是一个有序的因子变量，`Infl` 住户对物业管理的感知影响程度，`Type` 租赁住宿类型，如塔楼、中庭、公寓、露台，`Cont` 联系居民可与其他居民联系(低、高)，`Freq` 每个类中的居民人数，调查的人数。
+
+```{r}
+data("housing", package = "MASS")
+str(housing)
+```
+
+响应变量是居民对居住环境满意度 Sat ，分三个等级，且存在强弱，等级，大小之分。
+
+```{r}
+# 因子变量的处理
+options(contrasts = c("contr.treatment", "contr.poly"))
+# 有序逻辑回归
+housing_mass <- MASS::polr(Sat ~ Infl + Type + Cont, weights = Freq, data = housing, Hess = TRUE)
+summary(housing_mass)
+```
+
+计算置信区间
+
+```{r}
+# 剖面
+confint(profile(housing_mass), level = 0.95)
+```
+
 ## 习题 {#sec-bayesian-exercises}
 
 1.  分析挑战者号航天飞机 O 型环数据。**DAAG** 包的 orings 数据集记录美国挑战者号航天飞机 O 型环在不同温度下发生 Erosion 腐蚀和 Blowby 串气的失效数量。 @fig-cdplot-orings 展示航天飞机 O 型环在不同温度下失效的分布图（条件密度图）：随着温度升高，O 型环越来越不容易失效。请分别用 Base R 函数 `glm()` 和 **cmdstanr** 包建模分析 O 型环数据。
@@ -506,4 +534,25 @@ scale reduction factor on split chains (at convergence, Rhat = 1).
       labs(x = "温度", y = "比例", fill = "失效")
     ```
 
-2.  根据 @sec-nuclear-pollution-concentration 的数据，建立贝叶斯空间广义线性混合模型，用 Stan 预测核辐射强度的分布。
+2.  基于数据集 infert 分析自然流产和人工流产后的不育情况，
+
+    ```{r}
+    #| eval: false
+    #| code-fold: true
+    #| echo: !expr knitr::is_html_output()
+
+    infert_glm <- glm(
+      case ~ age + parity + education + spontaneous + induced,
+      data = infert, family = binomial()
+    )
+    summary(infert_glm)
+
+    # conditional logistic regression
+    library(survival)
+    infert_survival <- clogit(
+      case ~ age + parity + education + spontaneous + induced + strata(stratum), data = infert
+    )
+    summary(infert_survival)
+    ```
+
+3.  根据 @sec-nuclear-pollution-concentration 的数据，建立贝叶斯空间广义线性混合模型，用 Stan 预测核辐射强度的分布。
