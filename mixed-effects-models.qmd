@@ -567,18 +567,38 @@ summary(cbpp_inla)
 
 ## 非线性混合效应模型 {#sec-nlmm}
 
-Loblolly 数据集来自 R 内置的 datasets 包
+Loblolly 数据集来自 R 内置的 datasets 包，记录了 14 颗火炬树种子的生长情况。
+
+```{r}
+#| label: tbl-Loblolly
+#| tbl-cap: Loblolly 数据集
+#| echo: false
+
+loblolly_df <- reshape(Loblolly, idvar = "Seed", timevar = "age",
+        v.names = "height", direction = "wide", sep = "")
+
+knitr::kable(loblolly_df,
+    row.names = FALSE, align = "c",
+    col.names = gsub("(height)", "", names(loblolly_df))
+  )
+```
+
+火炬树种子基本决定了树的长势，不同种子预示最后的高度，并且在生长期也是很稳定地生长
 
 ```{r}
 #| label: fig-Loblolly
-#| fig-cap: Loblolly 数据集
+#| fig-cap: 火炬松树的高度（英尺）随时间（年）的变化
 #| fig-width: 5
 #| fig-height: 4
-#| fig-showtext: true
+#| fig-show: "animate"
+#| dev: "ragg_png"
 
-ggplot(data = Loblolly, aes(x = age, y = height, group = Seed)) +
+library(gganimate)
+ggplot(data = Loblolly, aes(x = age, y = height, color = Seed)) +
   geom_line() +
-  theme_bw()
+  theme_bw() +
+  labs(x = "age (yr)", y = "height (ft)") +
+  transition_reveal(age) 
 ```
 
 ### nlme
@@ -1105,7 +1125,7 @@ summary(fit_inla)
 5.  函数 `INLA::inla()` 集成嵌套拉普拉斯近似。
 
 | 模型                 | nlme     | MASS        | lme4      | GLMMadaptive    | brms    |
-|------------|------------|------------|------------|------------|------------|
+|----------------------|----------|-------------|-----------|-----------------|---------|
 | 线性混合效应模型     | `lme()`  | `glmmPQL()` | `lmer()`  | 不支持          | `brm()` |
 | 广义线性混合效应模型 | 不支持   | `glmmPQL()` | `glmer()` | `mixed_model()` | `brm()` |
 | 非线性混合效应模型   | `nlme()` | 不支持      | `nlmer()` | 不支持          | `brm()` |
@@ -1133,7 +1153,64 @@ INLA 软件能处理上千个高斯随机效应，但最多只能处理 15 个�
     summary(fit_lme4)
     ```
 
-3.  基于 **MASS** 包的地形数据集 topo，建立高斯过程回归模型，比较贝叶斯预测与克里金插值预测的效果。
+3.  **MASS** 包的数据集 epil 记录癫痫发作的次数及病人的特征，请建立混合效应模型分析癫痫病发作的风险与病人特征之间的关系。
+
+    ```{r}
+    #| eval: false
+    #| code-fold: true
+    #| echo: !expr knitr::is_html_output()
+
+    data(epil, package = "MASS")
+    epil_glm <- glm(y ~ lbase * trt + lage + V4,
+      family = poisson, data = epil
+    )
+    summary(epil_glm)
+
+    epil_mass <- MASS::glmmPQL(y ~ lbase * trt + lage + V4,
+      random = ~ 1 | subject, family = poisson, data = epil
+    )
+    summary(epil_mass)
+
+    epil_lme4 <- lme4::glmer(
+      y ~ lbase * trt + lage + V4 + (1 | subject),
+      family = poisson, data = epil
+    )
+    summary(epil_lme4)
+
+    epil_glmmtmb <- glmmTMB::glmmTMB(
+      y ~ lbase * trt + lage + V4 + (1 | subject),
+      data = epil, family = poisson, REML = TRUE
+    )
+    summary(epil_glmmtmb)
+
+    epil_glmmadaptive <- GLMMadaptive::mixed_model(
+      fixed = y ~ lbase * trt + lage + V4,
+      random = ~ 1 | subject, data = epil,
+      family = poisson()
+    )
+    summary(epil_glmmadaptive)
+    ```
+
+4.  基于数据集 Puromycin 分析酶促反应的反应速率（提示：Michaelis-Menten 模型和函数 `SSmicmen()`）。
+
+    ```{r}
+    #| label: fig-Puromycin
+    #| fig-cap: Puromycin 反应速率变化趋势
+    #| fig-width: 5
+    #| fig-height: 4
+    #| fig-showtext: true
+
+    ggplot(data = Puromycin, aes(x = conc, y = rate, color = state)) +
+      geom_point() +
+      geom_line() +
+      theme_minimal() +
+      labs(
+        x = "Substrate concentration (ppm)",
+        y = "Reaction velocity (counts/min/min)"
+      )
+    ```
+
+5.  基于 **MASS** 包的地形数据集 topo，建立高斯过程回归模型，比较贝叶斯预测与克里金插值预测的效果。
 
     ```{r}
     #| eval: false
@@ -1212,7 +1289,7 @@ INLA 软件能处理上千个高斯随机效应，但最多只能处理 15 个�
       theme_bw()
     ```
 
-4.  用 **brms** 包实现贝叶斯高斯过程回归模型，考虑用样条近似高斯过程以加快计算。提示：**brms** 包的函数 `gp()` 的参数 $k$ 表示近似高斯过程 GP 所用的基函数的数目。截止写作时间，函数 `gp()` 的参数 `cov` 只能取指数二次核函数 exponentiated-quadratic kernel 。
+6.  用 **brms** 包实现贝叶斯高斯过程回归模型，考虑用样条近似高斯过程以加快计算。提示：**brms** 包的函数 `gp()` 的参数 $k$ 表示近似高斯过程 GP 所用的基函数的数目。截止写作时间，函数 `gp()` 的参数 `cov` 只能取指数二次核函数 exponentiated-quadratic kernel 。
 
     ```{r}
     #| eval: false
