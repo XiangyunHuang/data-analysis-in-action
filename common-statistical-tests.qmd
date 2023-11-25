@@ -768,11 +768,27 @@ Quade 检验 `quade.test()` 与 Friedman 检验类似，Quade 检验应用于 un
 quade.test(extra ~ group | ID, data = sleep)
 ```
 
-术语涉及实验设计，比如完全区组设计 complete block designs 。
+术语涉及实验设计，比如完全区组设计 complete block designs 。1879 年迈克尔逊光速测量数据记录了五次实验，每次试验测量 20 次光速。数据集 morley 中光速 Speed 已经编码过了，为了展示方便，原始观测速度减去了 299000 (km/sec)。
 
 ```{r}
 # 光速实验
 quade.test(Speed ~ Expt | Run, data = morley)
+```
+
+<!-- 重复测量数据：试验设计的巧妙 -->
+
+```{r}
+#| label: fig-morley
+#| fig-cap: 1879 年迈克尔逊光速实验数据
+#| fig-showtext: true
+#| fig-width: 5
+#| fig-height: 4
+
+ggplot(data = morley, aes(x = Expt, y = Speed, group = Expt)) +
+  geom_boxplot() +
+  geom_jitter() +
+  theme_minimal() +
+  labs(x = "Expt", y = "Speed (km/sec)")
 ```
 
 ### 总体未知方差检验
@@ -1311,3 +1327,34 @@ summary(fit)
 ## 习题 {#sec-common-statistical-tests-exercise}
 
 1.  分析《红楼梦》的情景描写。参考 2009 年东南大学韦博成教授将两个独立二项总体的等价性检验应用于《红楼梦》前80回与后40回某些文风差异的统计分析 [@Wei2009]。
+
+2.  根据数据集 chickwts 分析不同喂食方式对小鸡体重的影响。（单因素方差分析）
+
+    ```{r}
+    #| label: fig-chickwts-i
+    #| fig-cap: 不同喂食方式对小鸡的影响
+    #| fig-showtext: true
+    #| fig-width: 6
+    #| fig-height: 4.5
+
+    ggplot(data = chickwts, aes(x = feed, y = weight)) +
+      geom_boxplot() +
+      geom_jitter() +
+      theme_minimal()
+    ```
+
+3.  根据数据集 ChickWeight 分析 4 种喂食方式对小鸡体重有影响，每个小鸡本身对喂食方式的接受、吸收程度不一样、它们本身的素质不一样（个体差异），要考察喂食的方式的影响，应该剔除掉个体差异，才是喂食方式的真正影响。
+
+    ```{r}
+    #| label: fig-chickwts-ii
+    #| fig-cap: 不同喂食方式对小鸡的影响（续）
+    #| fig-showtext: true
+    #| fig-width: 6
+    #| fig-height: 4
+
+    ggplot(data = ChickWeight, aes(x = Time, y = weight, group = Chick, color = Diet)) +
+      geom_point() +
+      geom_line() +
+      facet_wrap(~Diet) +
+      theme_minimal()
+    ```
