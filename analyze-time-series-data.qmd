@@ -17,7 +17,7 @@ library(dygraphs)    # 交互展示
 
 ## 数据获取
 
-Joshua M. Ulrich 开发维护的 [**quantmod**](https://github.com/joshuaulrich/quantmod) 包可以下载国内外股票市场的数据。本节主要以美团股价数据为例，美团自 2018-09-20 在香港挂牌上市，股票代码 3690.HK。首先用 **quantmod** 包 [@quantmod2022] 获取美团上市至 2023-07-15 每天的股价数据，包含 Open 开盘价、High 最高价、Low 最低价、Close 闭市价、Adjusted 调整价和 Volume 成交量数据。
+Joshua M. Ulrich 开发维护的 [**quantmod**](https://github.com/joshuaulrich/quantmod) 包可以下载国内外股票市场的数据。本节主要以美团股价数据为例，美团自 2018-09-20 在香港挂牌上市，股票代码 3690.HK。首先用 **quantmod** 包 [@quantmod2022] 获取美团上市至 2023-11-24 每天的股价数据，包含 Open 开盘价、High 最高价、Low 最低价、Close 闭市价、Adjusted 调整价和 Volume 成交量数据。
 
 ```{r}
 #| label: downlaod-yahoo-data
@@ -35,7 +35,7 @@ meituan <- getSymbols("3690.HK", auto.assign = FALSE, src = "yahoo")
 #| message: false
 
 library(quantmod)
-# 美团上市至 2023-07-15
+# 美团上市至 2023-11-24
 meituan <- readRDS(file = "data/meituan.rds")
 ```
 
@@ -46,12 +46,12 @@ class(meituan)
 str(meituan)
 ```
 
-数据集 `meituan` 是一个 `xts` 类型的时间序列数据对象，时间范围是 2018-09-20 至 2023-07-14，包含 4 个成分，分别如下
+数据集 `meituan` 是一个 `xts` 类型的时间序列数据对象，时间范围是 2018-09-20 至 2023-11-24，包含 4 个成分，分别如下
 
 -   Data 部分显示为 906 行 6 列的双精度浮点存储的数值。
 -   Columns 部分显示列名，依次是 3690.HK.Open、3690.HK.High、 3690.HK.Low 和 3690.HK.Close 等，当列数很多时，显示时会省略。
 -   Index 部分表示索引列，有序是时间序列数据的本质特点。示例中索引存储数据点产生的先后顺序，索引是用日期来表示的，日期所在的时区是 "UTC"。
--   xts 部分是数据类型的一些属性（元数据），说明数据集的来源，什么时候制作的数据。示例中数据是从雅虎财经下载的，下载时间是 2023-07-15 11:19:34。
+-   xts 部分是数据类型的一些属性（元数据），说明数据集的来源，什么时候制作的数据。示例中数据是从雅虎财经下载的，下载时间是 2023-11-27 14:31:12。
 
 与时间序列数据相关的数据类型有很多，比如 Base R 提供的 Date 和 POSIX 等，扩展包 **timeDate** 和 **chron** 也都有自己的一套数据类型及处理方法。[**xts**](https://github.com/joshuaulrich/xts) 包是处理时间序列数据的主要工具之一，xts 是 eXtensible Time Series 的缩写。为了进一步了解用法，下面举个例子，使用该 R 包的函数 `xts()` 构造时间序列对象。
 
@@ -220,7 +220,7 @@ getYearMonth <- '
 
 # 绘图
 dygraph(meituan[, "3690.HK.Adjusted"], main = "美团股价走势") |>
-  dyRangeSelector(dateWindow = c("2023-01-01", "2023-07-15")) |>
+  dyRangeSelector(dateWindow = c("2023-01-01", "2023-11-24")) |>
   dyAxis(name = "x", axisLabelFormatter = getYearMonth) |>
   dyAxis("y", valueRange = c(0, 500), label = "美团股价") |>
   dyEvent("2020-01-23", "武汉封城", labelLoc = "bottom") |>

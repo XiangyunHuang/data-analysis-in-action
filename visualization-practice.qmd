@@ -8,11 +8,12 @@ source("_common.R")
 
 ## 分析老忠实间歇泉喷发规律 {#sec-faithful}
 
-@fig-faithful-bkde2d 展示美国怀俄明州黄石国家公园[老忠实间歇泉](https://en.wikipedia.org/wiki/Old_Faithful)喷发规律，横轴表示喷发持续时间（以分钟计），纵轴表示等待时间（以分钟计），点的亮暗程度（白到黑）代表附近点密度的高低，亮度值通过二维核密度估计方法得到，具体实现借助了 **KernSmooth** [@KernSmooth1995] 包提供的 `bkde2D()` 函数，设置了喷发时间的窗宽为 0.7 分钟，等待时间的窗宽为 7分钟。不难看出，每等待55分钟左右间歇泉喷发约2分钟，或者每等待80分钟左右间歇泉喷发4.5约分钟，非常守时，表现得很老实，故而得名。说实话，二维核密度估计在这里有点大材小用了，因为数据点比较少，肉眼也能分辨出来哪里聚集的点多，哪里聚集的点少。
+@fig-faithful-bkde2d 展示美国怀俄明州黄石国家公园[老忠实间歇泉](https://en.wikipedia.org/wiki/Old_Faithful)喷发规律，横轴表示喷发持续时间（以分钟计），纵轴表示等待时间（以分钟计），点的亮暗程度（白到黑）代表附近点密度的高低，亮度值通过二维核密度估计方法得到，具体实现借助了 **KernSmooth** [@KernSmooth1995] 包提供的 `bkde2D()` 函数，设置了喷发时间的窗宽为 0.7 分钟，等待时间的窗宽为 7分钟。不难看出，每等待 55 分钟左右间歇泉喷发约 2 分钟，或者每等待 80 分钟左右间歇泉喷发 4.5 约分钟，非常守时，表现得很老实，故而得名。说实话，二维核密度估计在这里有点大材小用了，因为数据点比较少，肉眼也能分辨出来哪里聚集的点多，哪里聚集的点少。
 
 ```{r}
 #| label: fig-faithful-bkde2d
 #| echo: !expr knitr::is_html_output()
+#| code-fold: true
 #| par: true
 #| fig-cap: "二维核密度估计"
 #| fig-subcap: 
@@ -74,7 +75,6 @@ faithful$dens[is.na(faithful$dens)] <- 0
 
 library(ggplot2)
 library(ggnewscale)
-
 ggplot() +
   geom_point(
     data = faithful, aes(x = eruptions, y = waiting, color = dens),
@@ -122,7 +122,7 @@ ggplot() +
 ```
 
 ::: callout-tip
-函数 `bkde2D()` 实现二维带窗宽的核密度估计（2D Binned Kernel Density Estimate），R 语言存在多个版本，**grDevices** 包的函数 `densCols()` 直接调用 **KernSmooth** 包的函数 `bkde2D()`，**graphics** 包的函数 `smoothScatter()` 与函数 `densCols()` 一样，内部也是调用 `bkde2D()` 函数，**ggplot2** 包的图层 `geom_density_2d()` 采用 **MASS** 包的函数 `kde2d()`，在算法实现上，`MASS::kde2d()` 与 `KernSmooth::bkde2D()` 不同，前者是二维核密度估计（Two-Dimensional Kernel Density Estimation）。
+函数 `bkde2D()` 实现二维带窗宽的核密度估计（2D Binned Kernel Density Estimate），R 语言存在多个版本，**grDevices** 包的函数 `densCols()` 直接调用 **KernSmooth** 包的函数 `bkde2D()`，**graphics** 包的函数 `smoothScatter()` 与函数 `densCols()` 一样，内部也是调用 `bkde2D()` 函数，**ggplot2** 包的图层 `geom_density_2d()` 采用 **MASS** 包的函数 `kde2d()`，在算法实现上，`MASS::kde2d()` 与 `KernSmooth::bkde2D()` 不同，前者是二维核密度估计（Two-Dimensional Kernel Density Estimation）。Tarn Duong 的著作 [《Multivariate Kernel Smoothing and Its Applications 》](https://www.mvstat.net/mvksa/) [@Chacon2018] 对多元核平滑方法及其应用作了专门的论述，相关实现见书籍配套的 **ks** 包。
 :::
 
 ```{r}
@@ -142,6 +142,7 @@ with(dens, plot_ly(x = x, y = y, z = z, type = "surface"))
 ```{r}
 #| label: fig-china-household-sex
 #| echo: !expr knitr::is_html_output()
+#| code-fold: true
 #| fig-cap: "2020 年中国地区级男女性别比分布"
 #| fig-subcap: 
 #|  - 原始性别比数据
@@ -181,6 +182,7 @@ ggplot(data = china_household_sex, aes(x = `户口登记状况`, y = `男性` / 
 #| fig-height: 6
 #| echo: !expr knitr::is_html_output()
 #| fig-showtext: true
+#| code-fold: true
 
 usa_mortality <- readRDS(file = "data/usa-mortality-2020.rds")
 library(patchwork)
@@ -205,7 +207,7 @@ p2 / p3
 
 @fig-usa-mortality 还展示了一个潜在的数据质量问题，在 100 岁之后，死亡率波动程度明显在变大，这是因为高龄人数变得很少，即死亡率的分母变得很小，分子的细小波动会被放大，也因为同样的原因，100 岁以上的死亡率主要依赖模型估计，甚至出现死亡率大于 1 的罕见情况。因此，就对比医疗和公共卫生水平的变化而言，从数据的实际情况出发，100 岁以上的情况可以不参与比较。
 
-@fig-usa-mortality-heatmap 死亡率数据是对数尺度
+@fig-usa-mortality-heatmap 以年份为横轴，以年龄为纵轴绘制网格，网格内部根据男性死亡率数据填充颜色制作热力图，死亡率数据是对数尺度，颜色的变化和死亡率的变化关系同前，采用了相同的调色板。更加深入的分析和建模，详见 @Marron2022 的第一章。
 
 ```{r}
 #| label: fig-usa-mortality-heatmap
@@ -214,6 +216,7 @@ p2 / p3
 #| fig-height: 4.5
 #| echo: !expr knitr::is_html_output()
 #| fig-showtext: true
+#| code-fold: true
 
 ggplot(data = usa_mortality, aes(x = Year, y = Age, fill = Male)) +
   scale_fill_gradientn(
@@ -234,8 +237,6 @@ ggplot(data = usa_mortality, aes(x = Year, y = Age, fill = Male)) +
   theme_classic() +
   labs(x = "年份", y = "年龄", fill = "死亡率")
 ```
-
-更加深入的分析和建模，详见 @Marron2022 的第一章。
 
 ## 美国弗吉尼亚州城乡死亡率 {#sec-virginia-deaths}
 
@@ -259,6 +260,7 @@ knitr::kable(VADeaths, row.names = TRUE,
 #| fig-height: 5
 #| fig-showtext: true
 #| echo: !expr knitr::is_html_output()
+#| code-fold: true
 
 dat <- transform(expand.grid(
   site = c("乡村", "城镇"), sex = c("男", "女"), 
@@ -266,7 +268,7 @@ dat <- transform(expand.grid(
 ), deaths = as.vector(t(VADeaths)) / 1000)
 
 library(ggplot2)
-# (\u2030) 千分号
+# (\u2030) 表示千分号
 ggplot(data = dat, aes(x = sex, y = deaths, fill = age)) +
   geom_col(position = "dodge2") +
   scale_y_continuous(labels = scales::label_percent(scale = 1000, suffix = "\u2030")) +
@@ -285,6 +287,7 @@ ggplot(data = dat, aes(x = sex, y = deaths, fill = age)) +
 #| fig-height: 5
 #| fig-showtext: true
 #| echo: !expr knitr::is_html_output()
+#| code-fold: true
 
 ggplot(data = dat, aes(x = age, y = deaths, fill = site)) +
   geom_col(position = "dodge2") +
@@ -303,9 +306,7 @@ $$
 F(x) = \int_{-\infty}^{x} f(t) \mathrm{dt}
 $$
 
-数据可视化陷阱 [@pu2020]
-
-diamonds 数据来自 ggplot2 包，记录了约 54000 颗钻石的价格、重量、切工、颜色、纯净度、尺寸等属性信息。如何表达条件分布和累积分布，在这个示例中，应该用条件分布还是累积分布。
+diamonds 数据来自 ggplot2 包，记录了约 54000 颗钻石的价格、重量、切工、颜色、纯净度、尺寸等属性信息。@fig-diamonds-distr 展示这批不同切工的钻石随价格的分布，在这个示例中，如何表达累积分布？概率分布的密度曲线是根据直方图估计得来的，根据不同价格区间内钻石的数量占总钻石的比例估计概率。固定窗宽，即在同一价格区间内累积不同切工的钻石数量，得到累积概率，最后获得累积概率密度曲线，更多理论细节见数据可视化陷阱 [@pu2020] 。
 
 ```{r}
 #| label: fig-diamonds-distr
@@ -314,10 +315,10 @@ diamonds 数据来自 ggplot2 包，记录了约 54000 颗钻石的价格、重�
 #| fig-height: 5
 #| echo: !expr knitr::is_html_output()
 #| fig-showtext: true
+#| code-fold: true
 
 library(ggplot2)
 library(patchwork)
-
 p1 <- ggplot(diamonds, aes(x = price, y = after_stat(density), fill = cut)) +
   geom_density(position = "stack", colour = "white") +
   scale_fill_brewer(palette = "Spectral") +
@@ -423,6 +424,7 @@ binom.test(x = 2, n = 10, p = 0.4)
 #| label: fig-confidence-belt
 #| fig-cap: "二项分布参数的置信带"
 #| echo: !expr knitr::is_html_output()
+#| code-fold: true
 #| fig-width: 5
 #| fig-height: 5
 #| fig-showtext: true
@@ -443,8 +445,7 @@ l <- sapply(0:10, function(x) max(uniroot.all(l_fun, lower = 0, upper = 1, r = x
 plot(
   x = seq(from = 0, to = 10, length.out = 11),
   y = seq(from = 0, to = 1, length.out = 11),
-  type = "n", ann = FALSE, panel.first = grid(),
-  family = "sans"
+  type = "n", ann = FALSE, family = "sans", panel.first = grid()
 )
 title(xlab = "成功次数", ylab = "置信限", family = "Noto Serif CJK SC")
 lines(x = 0:10, y = p, type = "s") # 朝下的阶梯线
@@ -488,6 +489,7 @@ $$ {#eq-wald-ci}
 #| fig-height: 8.5
 #| fig-showtext: true
 #| echo: !expr knitr::is_html_output()
+#| code-fold: true
 
 # 计算覆盖概率
 # Wald 覆盖
@@ -572,4 +574,3 @@ ggplot(data = sim_dat, aes(x = p, y = prob, color = nsample)) +
     ggpairs(swiss, columns = 1:4, aes(color = Catholic > 50),
             upper = "blank", progress = FALSE)
     ```
-
