@@ -23,6 +23,8 @@ library(bayesplot)
 #| message: false
 #| fig-cap: 美团股价走势
 #| fig-showtext: true
+#| fig-width: 5
+#| fig-height: 4
 
 # 美团上市至 2023-07-15
 meituan <- readRDS(file = "data/meituan.rds")
@@ -32,6 +34,31 @@ library(ggplot2)
 autoplot(meituan[, "3690.HK.Adjusted"]) +
   theme_classic() +
   labs(x = "日期", y = "股价")
+```
+
+股价对数收益率变化和股价对数收益率的分布，美团股价对数收益率的分布可以看作正态分布。并且在不同时间段，收益率波动幅度是不同的。
+
+```{r}
+#| label: fig-meituan-log-return
+#| fig-cap: 美团股价对数收益率的变化
+#| fig-subcap: 
+#|  - 对数收益率的变动
+#|  - 对数收益率的分布
+#| fig-showtext: true
+#| fig-width: 5
+#| fig-height: 4
+#| layout-ncol: 2
+
+meituan_return_log <- diff(log(meituan[, "3690.HK.Adjusted"])) / log(meituan[, "3690.HK.Adjusted"])
+
+autoplot(meituan_return_log) +
+  theme_classic() +
+  labs(x = "日期", y = "股价对数收益率")
+
+ggplot(data = meituan_return_log) +
+  geom_histogram(aes(x = `3690.HK.Adjusted`), color = "black", fill = "gray", bins = 30) +
+  theme_classic() +
+  labs(x = "股价对数收益率", y = "频数（天数）")
 ```
 
 ### Stan 框架
@@ -45,7 +72,6 @@ library(cmdstanr)
 [《金融时间序列分析讲义》](https://www.math.pku.edu.cn/teachers/lidf/course/fts/ftsnotes/html/_ftsnotes/index.html)两个波动率建模方法
 
 -   自回归条件异方差模型（Autoregressive Conditional Heteroskedasticity，简称 ARCH）。
-
 -   广义自回归条件异方差模型 （Generalized Autoregressive Conditional Heteroskedasticity，简称 GARCH ）
 
 ```{r}
