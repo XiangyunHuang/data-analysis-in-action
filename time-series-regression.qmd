@@ -1,6 +1,12 @@
 # 时间序列回归 {#sec-time-series-regression}
 
 ```{r}
+#| echo: false
+
+source("_common.R")
+```
+
+```{r}
 #| message: false
 
 library(cmdstanr)
@@ -31,7 +37,6 @@ meituan <- readRDS(file = "data/meituan.rds")
 library(zoo)
 library(xts)
 library(ggplot2)
-
 autoplot(meituan[, "3690.HK.Adjusted"]) +
   theme_classic() +
   labs(x = "日期", y = "股价")
@@ -57,13 +62,11 @@ $$
 #| layout-ncol: 2
 
 meituan_log_return <- log(1 + diff(meituan[, "3690.HK.Adjusted"]) /  meituan[, "3690.HK.Adjusted"])[-1,]
-
 autoplot(meituan_log_return) +
   theme_classic() +
   labs(x = "日期", y = "对数收益率")
-
-ggplot(data = meituan_log_return) +
-  geom_histogram(aes(x = `3690.HK.Adjusted`), color = "black", fill = "gray", bins = 30) +
+ggplot(data = meituan_log_return, aes(x = `3690.HK.Adjusted`)) +
+  geom_histogram(color = "black", fill = "gray", bins = 30) +
   theme_classic() +
   labs(x = "对数收益率", y = "频数（天数）")
 ```
@@ -76,8 +79,9 @@ ggplot(data = meituan_log_return) +
 #| fig-showtext: true
 #| fig-width: 5
 #| fig-height: 4
+#| par: true
 
-acf(meituan_log_return, main = "对数收益率的自相关图")
+acf(meituan_log_return, main = "")
 ```
 
 发现，滞后 2、3、6、26 阶都有出界，滞后 17 阶略微出界，其它的自相关都在零水平线的界限内。
@@ -90,9 +94,7 @@ Box.test(meituan_log_return, lag = 12, type = "Ljung")
 
 ```{r}
 # ARCH 效应的检验
-Box.test((meituan_log_return - mean(meituan_log_return))^2,
-  lag = 12, type = "Ljung"
-)
+Box.test((meituan_log_return - mean(meituan_log_return))^2, lag = 12, type = "Ljung")
 ```
 
 结果高度显著，说明有 ARCH 效应。
@@ -110,15 +112,69 @@ library(cmdstanr)
 -   自回归条件异方差模型（Autoregressive Conditional Heteroskedasticity，简称 ARCH）。
 -   广义自回归条件异方差模型 （Generalized Autoregressive Conditional Heteroskedasticity，简称 GARCH ）
 
+确定 ARCH 模型的阶，观察残差的平方的 ACF 和 PACF 。
+
+```{r}
+#| label: fig-log-return-resid
+#| fig-cap: 对数收益率的残差平方
+#| fig-subcap: 
+#| - 自相关图
+#| - 偏自相关图
+#| fig-showtext: true
+#| fig-width: 5
+#| fig-height: 4
+#| layout-ncol: 2
+#| par: true
+
+acf((meituan_log_return - mean(meituan_log_return))^2, main = "")
+pacf((meituan_log_return - mean(meituan_log_return))^2, main = "")
+```
+
+发现 ACF 在滞后 1、2、3 阶比较突出，PACF 在滞后 1、2、16、18、29 阶比较突出。所以下面先来考虑低阶的 ARCH(2) 模型，设 $r_t$ 为对数收益率。
+
+$$
+\begin{aligned}
+r_t &= \mu + a_t, \quad a_t = \sigma_t \epsilon_t, \quad \epsilon_t \sim \mathcal{N}(0,1) \\
+\sigma_t^2 &= \alpha_0 + \alpha_1 a_{t-1}^2 
+  + \alpha_2 a_{t-2}^2.
+\end{aligned}
+$$
+
+拟合 ARCH 模型，比较模型估计结果，根据系数显著性的结果，采纳 ARCH(2) 模型。
+
 ```{r}
 #| message: false
 
 library(fGarch)
-meituan_garch <- garchFit(~ 1 + garch(1, 1), data = meituan_log_return, trace = FALSE)
-summary(meituan_garch)
+meituan_garch1 <- garchFit(~ 1 + garch(2, 0), data = meituan_log_return, trace = FALSE, cond.dist = "std")
+summary(meituan_garch1)
 ```
 
-函数 `garchFit()` 的参数 `cond.dist` 默认值为 `"norm"` 表示正态分布。
+函数 `garchFit()` 的参数 `cond.dist` 默认值为 `"norm"` 表示标准正态分布，`cond.dist = "std"` 表示标准 t 分布。模型均值的估计值接近 0 是符合预期的，且显著性没通过，对数收益率在 0 上下波动。将估计结果代入模型，得到
+
+$$
+\begin{aligned}
+r_t &= -5.665 \times 10^{-5} + \sigma_t \epsilon_t, \quad \epsilon_t \sim \mathcal{N}(0,1) \\
+\sigma_t^2 &= 1.070 \times 10^{-3} + 0.1156 a_{t-1}^2 + 0.1438a_{t-2}^2.
+\end{aligned}
+$$
+
+下面考虑 GARCH(1,1) 模型
+
+$$
+\begin{aligned}
+r_t &= \mu + a_t, \quad a_t = \sigma_t \epsilon_t, \quad \epsilon_t \sim \mathcal{N}(0,1) \\
+\sigma_t^2 &= \alpha_0 + \alpha_1 a_{t-1}^2 
+  + \beta_1 \sigma_{t-1}^2.
+\end{aligned}
+$$
+
+```{r}
+meituan_garch2 <- garchFit(~ 1 + garch(1, 1), data = meituan_log_return, trace = FALSE, cond.dist = "std")
+summary(meituan_garch2)
+```
+
+波动率的贡献主要来自 $\sigma_{t-1}^2$ ，其系数 $\beta_1$ 为 0.918。
 
 ## 贝叶斯可加模型
 
