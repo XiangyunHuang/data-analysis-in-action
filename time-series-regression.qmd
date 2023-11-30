@@ -31,16 +31,23 @@ meituan <- readRDS(file = "data/meituan.rds")
 library(zoo)
 library(xts)
 library(ggplot2)
+
 autoplot(meituan[, "3690.HK.Adjusted"]) +
   theme_classic() +
   labs(x = "日期", y = "股价")
 ```
 
-股价对数收益率变化和股价对数收益率的分布，美团股价对数收益率的分布可以看作正态分布。并且在不同时间段，收益率波动幅度是不同的。
+对数收益率的计算公式如下：
+
+$$
+\mathrm{对数收益率} = \ln(\mathrm{今日收盘价} / \mathrm{上一收盘价} ) = \ln (1 + \mathrm{普通收益率})
+$$
+
+下图给出股价对数收益率变化和股价对数收益率的分布，可以看出在不同时间段，收益率波动幅度是不同的，美团股价对数收益率的分布可以看作正态分布。
 
 ```{r}
 #| label: fig-meituan-log-return
-#| fig-cap: 美团股价对数收益率的变化
+#| fig-cap: 美团股价对数收益率的情况
 #| fig-subcap: 
 #|  - 对数收益率的变动
 #|  - 对数收益率的分布
@@ -49,17 +56,46 @@ autoplot(meituan[, "3690.HK.Adjusted"]) +
 #| fig-height: 4
 #| layout-ncol: 2
 
-meituan_return_log <- diff(log(meituan[, "3690.HK.Adjusted"])) / log(meituan[, "3690.HK.Adjusted"])
+meituan_log_return <- log(1 + diff(meituan[, "3690.HK.Adjusted"]) /  meituan[, "3690.HK.Adjusted"])[-1,]
 
-autoplot(meituan_return_log) +
+autoplot(meituan_log_return) +
   theme_classic() +
-  labs(x = "日期", y = "股价对数收益率")
+  labs(x = "日期", y = "对数收益率")
 
-ggplot(data = meituan_return_log) +
+ggplot(data = meituan_log_return) +
   geom_histogram(aes(x = `3690.HK.Adjusted`), color = "black", fill = "gray", bins = 30) +
   theme_classic() +
-  labs(x = "股价对数收益率", y = "频数（天数）")
+  labs(x = "对数收益率", y = "频数（天数）")
 ```
+
+检查对数收益率序列的自相关图
+
+```{r}
+#| label: fig-log-return
+#| fig-cap: 对数收益率的自相关图
+#| fig-showtext: true
+#| fig-width: 5
+#| fig-height: 4
+
+acf(meituan_log_return, main = "对数收益率的自相关图")
+```
+
+发现，滞后 2、3、6、26 阶都有出界，滞后 17 阶略微出界，其它的自相关都在零水平线的界限内。
+
+```{r}
+Box.test(meituan_log_return, lag = 12, type = "Ljung")
+```
+
+在 0.05 水平下拒绝了白噪声检验，说明对数收益率序列存在相关性。同理，也注意到对数收益率的绝对值和平方序列都不是独立的，存在相关性。
+
+```{r}
+# ARCH 效应的检验
+Box.test((meituan_log_return - mean(meituan_log_return))^2,
+  lag = 12, type = "Ljung"
+)
+```
+
+结果高度显著，说明有 ARCH 效应。
 
 ### Stan 框架
 
@@ -78,8 +114,11 @@ library(cmdstanr)
 #| message: false
 
 library(fGarch)
-# garchFit
+meituan_garch <- garchFit(~ 1 + garch(1, 1), data = meituan_log_return, trace = FALSE)
+summary(meituan_garch)
 ```
+
+函数 `garchFit()` 的参数 `cond.dist` 默认值为 `"norm"` 表示正态分布。
 
 ## 贝叶斯可加模型
 
