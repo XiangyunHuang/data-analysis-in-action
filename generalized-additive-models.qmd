@@ -383,7 +383,7 @@ rongelap_brm <- brms::brm(
 )
 ```
 
-当设置 $k = 5$ 时，用 5 个基函数来近似高斯过程，编译完成后，采样速度很快，但是结果不可靠，采样过程中的问题很多，见下文。当将横、纵坐标值同时缩小 6000 倍，采样效率并未得到改善。当设置 $k = 15$ 时，运行时间明显增加，采样过程的诊断结果类似 $k = 5$ 的情况，还是不可靠。说明 brms 包不适合处理含高斯过程的模型。
+当设置 $k = 5$ 时，用 5 个基函数来近似高斯过程，编译完成后，采样速度很快，但是结果不可靠，采样过程中的问题很多。当将横、纵坐标值同时缩小 6000 倍，采样效率并未得到改善。当设置 $k = 15$ 时，运行时间明显增加，采样过程的诊断结果类似 $k = 5$ 的情况，还是不可靠。截止写作时间，函数 `gp()` 的参数 `cov` 只能取指数二次核函数（exponentiated-quadratic kernel） 。说明 brms 包不适合处理含高斯过程的模型。
 
 实际上，Stan 没有现成的有效算法或扩展包做有规模的高斯过程建模，详见 Bob Carpenter 在 2023 年 Stan 大会的[报告](https://github.com/stan-dev/stancon2023/tree/main/Bob-Carpenter)，因此，必须采用一些近似方法，通过 Stan 编码实现。接下来，分别手动实现低秩和基样条两种方法近似边际高斯过程（marginal likelihood GP）[@Rasmussen2006]，用 Stan 编码模型。代码文件分别是 `rongelap_poisson_lr.stan` 和 `rongelap_poisson_splines.stan` 。
 

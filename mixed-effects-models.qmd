@@ -1286,25 +1286,3 @@ INLA 软件能处理上千个高斯随机效应，但最多只能处理 15 个�
       scale_fill_viridis_c(option = "C") +
       theme_bw()
     ```
-
-6.  用 **brms** 包实现贝叶斯高斯过程回归模型，考虑用样条近似高斯过程以加快计算。提示：**brms** 包的函数 `gp()` 的参数 $k$ 表示近似高斯过程 GP 所用的基函数的数目。截止写作时间，函数 `gp()` 的参数 `cov` 只能取指数二次核函数 exponentiated-quadratic kernel 。
-
-    ```{r}
-    #| eval: false
-    #| code-fold: true
-    #| echo: !expr knitr::is_html_output()
-
-    # 高斯过程近似计算
-    bgamm2 <- brms::brm(
-      z ~ gp(x, y, cov = "exp_quad", c = 5 / 4, k = 50),
-      data = topo, chains = 2, seed = 20232023,
-      warmup = 1000, iter = 2000, thin = 1, refresh = 0,
-      control = list(adapt_delta = 0.99)
-    )
-    # 输出结果
-    summary(bgamm2)
-    # 条件效应
-    me3 <- brms::conditional_effects(bgamm1, ndraws = 200, spaghetti = TRUE)
-    # 绘制图形
-    plot(me3, ask = FALSE, points = TRUE)
-    ```
