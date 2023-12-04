@@ -19,7 +19,7 @@ if (xfun::is_macos()) {
     regular = "NotoSerifCJKsc-Regular.otf",
     bold = "NotoSerifCJKsc-Bold.otf"
   )
-} else { # Github Action custom Docker Container Based on Fedora
+} else if (grepl(x = sessionInfo()$running, pattern = "Fedora")) { # Github Action custom Docker Container Based on Fedora
   sysfonts::font_paths(new = c(
     "/usr/share/fonts/google-noto-serif-cjk-fonts" # Fedora 38
   ))
@@ -28,6 +28,23 @@ if (xfun::is_macos()) {
     family = "Noto Serif CJK SC",
     regular = "NotoSerifCJK-Regular.ttc",
     bold = "NotoSerifCJK-Bold.ttc"
+  )
+} else {
+  sysfonts::font_paths(new = c(
+    "/usr/share/fonts/opentype/noto/",
+    "/usr/share/fonts/truetype/noto/"
+  ))
+  ## 宋体
+  sysfonts::font_add(
+    family = "Noto Serif CJK SC",
+    regular = "NotoSerifCJK-Regular.ttc",
+    bold = "NotoSerifCJK-Bold.ttc"
+  )
+  ## 黑体
+  sysfonts::font_add(
+    family = "Noto Sans CJK SC",
+    regular = "NotoSansCJK-Regular.ttc",
+    bold = "NotoSansCJK-Bold.ttc"
   )
 }
 
