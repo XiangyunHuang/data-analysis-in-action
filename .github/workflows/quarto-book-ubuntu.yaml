@@ -60,6 +60,12 @@ jobs:
           fc-list | grep 'noto' | sort
           fc-list | sort
 
+      - name: Install LaTeX packages
+        run: |
+          if(!require('tinytex')) install.packages('tinytex')
+          tinytex::tlmgr_install(readLines("texlive.txt"))
+        shell: Rscript {0}
+
       - name: Render Book
         run: |
           quarto render --to html
@@ -69,7 +75,13 @@ jobs:
           RETICULATE_PYTHON: /opt/.virtualenvs/r-tensorflow/bin/python
           CMDSTAN: /opt/cmdstan/cmdstan-${{ env.CMDSTAN_VERSION }}
 
-      - name: Publish to GitHub Pages (and render)
-        uses: quarto-dev/quarto-actions/publish@v2
+      - name: Deploy to Github Pages
+        uses: JamesIves/github-pages-deploy-action@v4
         with:
-          target: gh-pages
+          git-config-name: GitHub Actions
+          git-config-email: actions@github.com
+          repository-name: XiangyunHuang/tidyverse
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: gh-pages
+          folder: _book
+          clean: true
