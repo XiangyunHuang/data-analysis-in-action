@@ -32,7 +32,6 @@ jobs:
       - name: Setup Python Env
         run: |
           mkdir -p /opt/.virtualenvs/r-tensorflow
-          chown -R $(whoami):staff /opt/.virtualenvs/r-tensorflow
           export RETICULATE_PYTHON_ENV=/opt/.virtualenvs/r-tensorflow
           virtualenv -p /usr/bin/python3 $RETICULATE_PYTHON_ENV
           source $RETICULATE_PYTHON_ENV/bin/activate
@@ -43,16 +42,18 @@ jobs:
         run: |
           curl -fLo cmdstan-${CMDSTAN_VERSION}.tar.gz https://github.com/stan-dev/cmdstan/releases/download/v${CMDSTAN_VERSION}/cmdstan-${CMDSTAN_VERSION}.tar.gz
           mkdir -p /opt/cmdstan/
-          chown -R $(whoami):staff /opt/cmdstan/
           tar -xzf cmdstan-${CMDSTAN_VERSION}.tar.gz -C /opt/cmdstan/
           make build -C /opt/cmdstan/cmdstan-${CMDSTAN_VERSION}
           rm cmdstan-${CMDSTAN_VERSION}.tar.gz
 
-      - name: Render Quarto Project
-        uses: quarto-dev/quarto-actions/render@v2
-        with:
-          to: html 
-          path: . 
+      - name: Render Book
+        run: |
+          quarto render --to html
+        shell: bash
+        env:
+          RETICULATE_PYTHON_ENV: /opt/.virtualenvs/r-tensorflow
+          RETICULATE_PYTHON: /opt/.virtualenvs/r-tensorflow/bin/python
+          CMDSTAN: /opt/cmdstan/cmdstan-${{ env.CMDSTAN_VERSION }}
 
       - name: Publish to GitHub Pages (and render)
         uses: quarto-dev/quarto-actions/publish@v2
