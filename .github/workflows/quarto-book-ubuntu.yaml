@@ -1,0 +1,59 @@
+on:
+  push:
+    branches: main
+  pull_request:
+    branches: main
+
+name: Render and deploy Book to Github Pages
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-22.04
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      CMDSTAN_VERSION: "2.33.1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Quarto
+        uses: quarto-dev/quarto-actions/setup@v2
+        with:
+          version: 1.4.515
+          tinytex: true
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+          r-version: '4.3.2'
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+
+      - name: Setup Python Env
+        run: |
+          mkdir -p /opt/.virtualenvs/r-tensorflow
+          chown -R $(whoami):staff /opt/.virtualenvs/r-tensorflow
+          export RETICULATE_PYTHON_ENV=/opt/.virtualenvs/r-tensorflow
+          virtualenv -p /usr/bin/python3 $RETICULATE_PYTHON_ENV
+          source $RETICULATE_PYTHON_ENV/bin/activate
+          pip install -r requirements.txt
+          deactivate
+
+      - name: Setup CmdStan
+        run: |
+          curl -fLo cmdstan-${CMDSTAN_VERSION}.tar.gz https://github.com/stan-dev/cmdstan/releases/download/v${CMDSTAN_VERSION}/cmdstan-${CMDSTAN_VERSION}.tar.gz
+          mkdir -p /opt/cmdstan/
+          chown -R $(whoami):staff /opt/cmdstan/
+          tar -xzf cmdstan-${CMDSTAN_VERSION}.tar.gz -C /opt/cmdstan/
+          make build -C /opt/cmdstan/cmdstan-${CMDSTAN_VERSION}
+          rm cmdstan-${CMDSTAN_VERSION}.tar.gz
+
+      - name: Render Quarto Project
+        uses: quarto-dev/quarto-actions/render@v2
+        with:
+          to: html 
+          path: . 
+
+      - name: Publish to GitHub Pages (and render)
+        uses: quarto-dev/quarto-actions/publish@v2
+        with:
+          target: gh-pages
