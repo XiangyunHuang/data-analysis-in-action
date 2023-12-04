@@ -12,6 +12,7 @@ jobs:
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       CMDSTAN_VERSION: "2.33.1"
+      RETICULATE_PYTHON_ENV: /opt/.virtualenvs/r-tensorflow
     steps:
       - uses: actions/checkout@v4
 
@@ -29,10 +30,14 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
 
-      - name: Setup Python Env
-        run: |
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11' 
+          cache: 'pip'
+          cache-dependency-path: 'requirements.txt'
+      - run: |
+          pip install virtualenv
           mkdir -p /opt/.virtualenvs/r-tensorflow
-          export RETICULATE_PYTHON_ENV=/opt/.virtualenvs/r-tensorflow
           virtualenv -p /usr/bin/python3 $RETICULATE_PYTHON_ENV
           source $RETICULATE_PYTHON_ENV/bin/activate
           pip install -r requirements.txt
