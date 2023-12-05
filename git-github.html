@@ -1,0 +1,1341 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh-Hans" xml:lang="zh-Hans"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.4.515">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>R 语言数据分析实战 - 附录 C — Git 和 Github</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./matrix-operations.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "没有结果",
+    "search-matching-documents-text": "匹配的文档",
+    "search-copy-link-title": "复制搜索链接",
+    "search-hide-matches-text": "隐藏其它匹配结果",
+    "search-more-match-text": "更多匹配结果",
+    "search-more-matches-text": "更多匹配结果",
+    "search-clear-button-title": "清除",
+    "search-detached-cancel-button-title": "取消",
+    "search-submit-button-title": "提交",
+    "search-label": "搜索"
+  }
+}</script>
+<script async="" src="https://www.googletagmanager.com/gtag/js?id=G-ZPWJBMKFL8"></script>
+
+<script type="text/javascript">
+
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-ZPWJBMKFL8', { 'anonymize_ip': true});
+</script>
+<script>
+MathJax ={
+  tex: {
+    macros: {
+      bm: ["{\\boldsymbol #1}",1],
+    }
+  }
+};
+</script>
+<script src="site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+
+</head>
+
+<body class="nav-sidebar floating">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="切换侧边栏导航" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./notations.html">附录</a></li><li class="breadcrumb-item"><a href="./git-github.html"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">Git 和 Github</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="切换侧边栏导航" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">R 语言数据分析实战</a> 
+        <div class="sidebar-tools-main">
+    <a href="https://github.com/XiangyunHuang/data-analysis-in-action" title="Source Code" class="quarto-navigation-tool px-1" aria-label="Source Code"><i class="bi bi-github"></i></a>
+    <a href="./_main.pdf" title="Download PDF" class="quarto-navigation-tool px-1" aria-label="Download PDF"><i class="bi bi-file-pdf"></i></a>
+</div>
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="搜索"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">欢迎</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./preface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">前言</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./intro.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">介绍</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true">
+ <span class="menu-text">数据准备</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./wrangling-objects.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">数据对象</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./wrangling-collection.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">数据获取</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./wrangling-cleaning.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">数据清洗</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./wrangling-manipulation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">数据操作</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./wrangling-processing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">数据处理</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true">
+ <span class="menu-text">数据探索</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./visualization-basic.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">ggplot2 入门</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./visualization-intermediate.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">基础图形</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./visualization-advanced.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">统计图形</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./visualization-lattice.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">lattice 入门</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./visualization-graphics.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">graphics 入门</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./visualization-tikz.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">TikZ 入门</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./visualization-practice.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">探索实践</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true">
+ <span class="menu-text">数据交流</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./interactive-graphics.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">交互图形</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./interactive-tables.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">交互表格</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./interactive-applications.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">交互应用</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./documents-html.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">HTML 文档</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./documents-latex.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">PDF 文档</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./documents-office.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Office 文档</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-expanded="true">
+ <span class="menu-text">统计分析</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./common-statistical-tests.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">常见的统计检验</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./regression-and-correlation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">回归与相关分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./categorical-data-analysis.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">分类数据的分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./power-analysis.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">统计检验的功效</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-expanded="true">
+ <span class="menu-text">数据建模</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./analyze-network-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">网络分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./analyze-text-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">文本分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./analyze-survival-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">生存分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./analyze-time-series-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">时序分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./analyze-point-pattern.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">空间点模式分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./analyze-spatial-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">预测核辐射强度的分布</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./analyze-areal-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">区域数据分析</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-expanded="true">
+ <span class="menu-text">优化建模</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./statistical-computation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">统计计算</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./numerical-optimization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">数值优化</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./optimization-problems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">优化问题</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" aria-expanded="true">
+ <span class="menu-text">贝叶斯建模</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./probabilistic-reasoning-framework.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">概率推理框架</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./generalized-linear-models.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">广义线性模型</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./hierarchical-normal-models.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">分层正态模型</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./mixed-effects-models.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">混合效应模型</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./generalized-additive-models.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">37</span>&nbsp; <span class="chapter-title">广义可加模型</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./gaussian-processes-regression.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">38</span>&nbsp; <span class="chapter-title">高斯过程回归</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./time-series-regression.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">39</span>&nbsp; <span class="chapter-title">时间序列回归</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" aria-expanded="true">
+ <span class="menu-text">机器学习</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./classification-problems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">40</span>&nbsp; <span class="chapter-title">分类问题</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./clustering-problems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">41</span>&nbsp; <span class="chapter-title">聚类问题</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./regression-problems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">42</span>&nbsp; <span class="chapter-title">回归问题</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">参考文献</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" aria-expanded="true">
+ <span class="menu-text">附录</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./notations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">数学符号</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./matrix-operations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">矩阵运算</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./git-github.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">Git 和 Github</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">目录</h2>
+   
+  <ul>
+  <li><a href="#sec-setup" id="toc-sec-setup" class="nav-link active" data-scroll-target="#sec-setup"><span class="header-section-number">C.1</span> 安装配置</a>
+  <ul class="collapse">
+  <li><a href="#sec-create-account" id="toc-sec-create-account" class="nav-link" data-scroll-target="#sec-create-account"><span class="header-section-number">C.1.1</span> 创建账户</a></li>
+  <li><a href="#sec-install-git" id="toc-sec-install-git" class="nav-link" data-scroll-target="#sec-install-git"><span class="header-section-number">C.1.2</span> 安装 Git</a></li>
+  <li><a href="#sec-ssh-key" id="toc-sec-ssh-key" class="nav-link" data-scroll-target="#sec-ssh-key"><span class="header-section-number">C.1.3</span> 配置密钥</a></li>
+  <li><a href="#sec-multi-accounts" id="toc-sec-multi-accounts" class="nav-link" data-scroll-target="#sec-multi-accounts"><span class="header-section-number">C.1.4</span> (*) 账户共存</a></li>
+  </ul></li>
+  <li><a href="#sec-basic-git-operations" id="toc-sec-basic-git-operations" class="nav-link" data-scroll-target="#sec-basic-git-operations"><span class="header-section-number">C.2</span> 基本操作</a>
+  <ul class="collapse">
+  <li><a href="#初始化仓库" id="toc-初始化仓库" class="nav-link" data-scroll-target="#初始化仓库"><span class="header-section-number">C.2.1</span> 初始化仓库</a></li>
+  <li><a href="#添加文件" id="toc-添加文件" class="nav-link" data-scroll-target="#添加文件"><span class="header-section-number">C.2.2</span> 添加文件</a></li>
+  <li><a href="#记录修改" id="toc-记录修改" class="nav-link" data-scroll-target="#记录修改"><span class="header-section-number">C.2.3</span> 记录修改</a></li>
+  <li><a href="#推送修改" id="toc-推送修改" class="nav-link" data-scroll-target="#推送修改"><span class="header-section-number">C.2.4</span> 推送修改</a></li>
+  <li><a href="#sec-git-clone" id="toc-sec-git-clone" class="nav-link" data-scroll-target="#sec-git-clone"><span class="header-section-number">C.2.5</span> 克隆项目</a></li>
+  </ul></li>
+  <li><a href="#sec-pr-operations" id="toc-sec-pr-operations" class="nav-link" data-scroll-target="#sec-pr-operations"><span class="header-section-number">C.3</span> 分支操作</a>
+  <ul class="collapse">
+  <li><a href="#sec-create-branch" id="toc-sec-create-branch" class="nav-link" data-scroll-target="#sec-create-branch"><span class="header-section-number">C.3.1</span> 创建分支</a></li>
+  <li><a href="#sec-checkout-branch" id="toc-sec-checkout-branch" class="nav-link" data-scroll-target="#sec-checkout-branch"><span class="header-section-number">C.3.2</span> 分支切换</a></li>
+  <li><a href="#sec-modify-pr" id="toc-sec-modify-pr" class="nav-link" data-scroll-target="#sec-modify-pr"><span class="header-section-number">C.3.3</span> 修改 PR</a></li>
+  <li><a href="#sec-github-pages" id="toc-sec-github-pages" class="nav-link" data-scroll-target="#sec-github-pages"><span class="header-section-number">C.3.4</span> (*) 创建 gh-pages 分支</a></li>
+  </ul></li>
+  <li><a href="#sec-r-to-git" id="toc-sec-r-to-git" class="nav-link" data-scroll-target="#sec-r-to-git"><span class="header-section-number">C.4</span> R 与 Git 交互</a>
+  <ul class="collapse">
+  <li><a href="#sec-git-operations-from-r" id="toc-sec-git-operations-from-r" class="nav-link" data-scroll-target="#sec-git-operations-from-r"><span class="header-section-number">C.4.1</span> 从 R 操作 Git</a></li>
+  <li><a href="#sec-analyze-git-log" id="toc-sec-analyze-git-log" class="nav-link" data-scroll-target="#sec-analyze-git-log"><span class="header-section-number">C.4.2</span> 分析 Git 记录</a></li>
+  </ul></li>
+  <li><a href="#sec-git-extensions" id="toc-sec-git-extensions" class="nav-link" data-scroll-target="#sec-git-extensions"><span class="header-section-number">C.5</span> (*) 辅助工具</a>
+  <ul class="collapse">
+  <li><a href="#sec-syntax-highlighting" id="toc-sec-syntax-highlighting" class="nav-link" data-scroll-target="#sec-syntax-highlighting"><span class="header-section-number">C.5.1</span> 语法高亮</a></li>
+  <li><a href="#sec-text-interface" id="toc-sec-text-interface" class="nav-link" data-scroll-target="#sec-text-interface"><span class="header-section-number">C.5.2</span> 文本接口</a></li>
+  <li><a href="#sec-git-lfs" id="toc-sec-git-lfs" class="nav-link" data-scroll-target="#sec-git-lfs"><span class="header-section-number">C.5.3</span> 大文件存储</a></li>
+  </ul></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/XiangyunHuang/data-analysis-in-action/blob/main/git-github.qmd" class="toc-action"><i class="bi bi-github"></i>查看代码</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./notations.html">附录</a></li><li class="breadcrumb-item"><a href="./git-github.html"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">Git 和 Github</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span id="sec-git-github" class="quarto-section-identifier">附录 C — Git 和 Github</span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p>Git 是一个代码、数据和文档的版本管理工具，Github 提供一个用户界面。</p>
+<section id="sec-setup" class="level2" data-number="C.1">
+<h2 data-number="C.1" class="anchored" data-anchor-id="sec-setup"><span class="header-section-number">C.1</span> 安装配置</h2>
+<section id="sec-create-account" class="level3" data-number="C.1.1">
+<h3 data-number="C.1.1" class="anchored" data-anchor-id="sec-create-account"><span class="header-section-number">C.1.1</span> 创建账户</h3>
+<p>登陆 Github 官网 (<a href="https://github.com/" class="uri">https://github.com/</a>)，点击左上角注册按钮，开始注册 Github 账户。</p>
+<div id="fig-sign-up" class="quarto-figure quarto-figure-center anchored" width="70%">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-sign-up-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="screenshots/git-github/sign-up.png" class="img-fluid figure-img" style="width:70.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-sign-up-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;C.1: 点击注册
+</figcaption>
+</figure>
+</div>
+<p>接着，输入注册用的邮箱地址，比如 Outlook 和 Gmail 等。</p>
+<div id="fig-email" class="quarto-figure quarto-figure-center anchored" width="70%">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-email-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="screenshots/git-github/email.png" class="img-fluid figure-img" style="width:70.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-email-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;C.2: 输入邮箱
+</figcaption>
+</figure>
+</div>
+<p>除了邮箱外，继续输入密码、用户名等，密码可以选用浏览器自动生成的复杂字符串，只要没有被别人占用，用户名可以按着自己的喜好填写。</p>
+<div id="fig-username" class="quarto-figure quarto-figure-center anchored" width="70%">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-username-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="screenshots/git-github/username.png" class="img-fluid figure-img" style="width:70.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-username-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;C.3: 输入用户名
+</figcaption>
+</figure>
+</div>
+<p>接着，系统要验证来注册 Github 账户的人是否是真人。</p>
+<div id="fig-verify-account" class="quarto-figure quarto-figure-center anchored" width="70%">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-verify-account-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="screenshots/git-github/verify-account.png" class="img-fluid figure-img" style="width:70.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-verify-account-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;C.4: 回答问题
+</figcaption>
+</figure>
+</div>
+<p>正确回答界面上出现的问题后，进入下一步，系统会给你之前提供的邮箱发送一个验证码。</p>
+<div id="fig-verify-code" class="quarto-figure quarto-figure-center anchored" width="70%">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-verify-code-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="screenshots/git-github/verify-code.png" class="img-fluid figure-img" style="width:70.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-verify-code-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;C.5: 输入验证码
+</figcaption>
+</figure>
+</div>
+<p>将收到的验证码输入进去，完成账户验证。</p>
+<div id="fig-create-account" class="quarto-figure quarto-figure-center anchored" width="70%">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-create-account-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="screenshots/git-github/create-account.png" class="img-fluid figure-img" style="width:70.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-create-account-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;C.6: 验证账户
+</figcaption>
+</figure>
+</div>
+<p>创建账户后，将自动进入如下界面，接下来，可以创建代码仓库了。</p>
+<div id="fig-git-repo" class="quarto-figure quarto-figure-center anchored" width="70%">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-git-repo-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="screenshots/git-github/git-repo.png" class="img-fluid figure-img" style="width:70.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-git-repo-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;C.7: 创建代码仓库
+</figcaption>
+</figure>
+</div>
+</section>
+<section id="sec-install-git" class="level3" data-number="C.1.2">
+<h3 data-number="C.1.2" class="anchored" data-anchor-id="sec-install-git"><span class="header-section-number">C.1.2</span> 安装 Git</h3>
+<p>在 MacOS 系统上，系统自带 Git 工具，无需安装。在 Ubuntu 系统上，安装最新稳定版的命令如下：</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode numberSource bash number-lines code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1"></a><span class="fu">sudo</span> add-apt-repository <span class="at">-y</span> ppa:git-core/ppa</span>
+<span id="cb1-2"><a href="#cb1-2"></a><span class="fu">sudo</span> apt update <span class="kw">&amp;&amp;</span> <span class="fu">sudo</span> apt install git</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>在 Windows 系统上，安装最新稳定版的命令如下：</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode numberSource bash number-lines code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1"></a><span class="ex">winget</span> install <span class="at">--id</span> Git.Git <span class="at">-e</span> <span class="at">--source</span> winget</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="sec-ssh-key" class="level3" data-number="C.1.3">
+<h3 data-number="C.1.3" class="anchored" data-anchor-id="sec-ssh-key"><span class="header-section-number">C.1.3</span> 配置密钥</h3>
+<p>在配置 GitHub 账户和安装完 Git 客户端后，接着配置密钥，以便将本地的代码推送到远程 Github 账户下的代码仓库。</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode numberSource bash number-lines code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1"></a><span class="fu">git</span> config <span class="at">--global</span> user.name <span class="st">"用户名"</span></span>
+<span id="cb3-2"><a href="#cb3-2"></a><span class="fu">git</span> config <span class="at">--global</span> user.email <span class="st">"邮箱地址"</span></span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="sec-multi-accounts" class="level3" data-number="C.1.4">
+<h3 data-number="C.1.4" class="anchored" data-anchor-id="sec-multi-accounts"><span class="header-section-number">C.1.4</span> (*) 账户共存</h3>
+<p>在公司往往会有自己的一套代码管理系统，比如 Gitlab 或者某种类似 Gitlab 的工具。本节介绍如何使 Gitlab / Github 账户共存在一台机器上。</p>
+<p>如何生成 SSH 密钥见 Github 文档 — <a href="https://help.github.com/cn/github/authenticating-to-github/connecting-to-github-with-ssh">使用 SSH 连接到 GitHub</a>。有了密钥之后只需在目录 <code>~/.ssh</code> 下创建一个配置文件 config。</p>
+<p>Github 对应个人的私有邮箱，Gitlab 对应公司分配的个人邮箱。</p>
+<p>生成 SSH Key</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode numberSource bash number-lines code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1"></a><span class="fu">ssh-keygen</span> <span class="at">-t</span> rsa <span class="at">-f</span> ~/.ssh/id_rsa_github <span class="at">-C</span> <span class="st">"个人邮箱地址"</span></span>
+<span id="cb4-2"><a href="#cb4-2"></a><span class="fu">ssh-keygen</span> <span class="at">-t</span> rsa <span class="at">-f</span> ~/.ssh/id_rsa_gitlab <span class="at">-C</span> <span class="st">"公司邮箱地址"</span></span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>将 GitHub/GitLab 公钥分别上传至服务器，然后创建配置文件</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode numberSource bash number-lines code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1"></a><span class="fu">touch</span> ~/.ssh/config</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>配置文件内容如下</p>
+<pre><code>#
+# Github
+#
+Host github.com // Github 代码仓库的服务器地址
+HostName github.com
+User XiangyunHuang
+IdentityFile ~/.ssh/id_rsa_github
+
+#
+# company
+#
+Host xx.xx.xx.xx // 公司代码仓库的服务器地址
+IdentityFile ~/.ssh/id_rsa_gitlab</code></pre>
+<p>配置成功，你会看到</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode numberSource bash number-lines code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1"></a><span class="fu">ssh</span> <span class="at">-T</span> git@xx.xx.xx.xx</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<pre><code>Welcome to GitLab, xiangyunhuang!</code></pre>
+<p>和</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode numberSource bash number-lines code-with-copy"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1"></a><span class="fu">ssh</span> <span class="at">-T</span> git@github.com</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<pre><code>Hi XiangyunHuang! You've successfully authenticated, but GitHub does not provide shell access.</code></pre>
+</section>
+</section>
+<section id="sec-basic-git-operations" class="level2" data-number="C.2">
+<h2 data-number="C.2" class="anchored" data-anchor-id="sec-basic-git-operations"><span class="header-section-number">C.2</span> 基本操作</h2>
+<section id="初始化仓库" class="level3" data-number="C.2.1">
+<h3 data-number="C.2.1" class="anchored" data-anchor-id="初始化仓库"><span class="header-section-number">C.2.1</span> 初始化仓库</h3>
+<p>git init</p>
+</section>
+<section id="添加文件" class="level3" data-number="C.2.2">
+<h3 data-number="C.2.2" class="anchored" data-anchor-id="添加文件"><span class="header-section-number">C.2.2</span> 添加文件</h3>
+<p>git add</p>
+<p>追踪当前目录下的内容</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode numberSource bash number-lines code-with-copy"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1"></a><span class="fu">git</span> add .</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>追踪被修改(modified)文件，不包括新添加的文件和被删除(deleted)的文件，<code>-u</code> 是 <code>--update</code> 的缩写</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode numberSource bash number-lines code-with-copy"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1"></a><span class="fu">git</span> add <span class="at">-u</span></span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>添加所有文件，<code>-A</code> 是 <code>--all</code> 的缩写</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode numberSource bash number-lines code-with-copy"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1"></a><span class="fu">git</span> add <span class="at">-A</span></span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="记录修改" class="level3" data-number="C.2.3">
+<h3 data-number="C.2.3" class="anchored" data-anchor-id="记录修改"><span class="header-section-number">C.2.3</span> 记录修改</h3>
+<p>git commit</p>
+<pre><code>git commit -m "添加提交说明"</code></pre>
+</section>
+<section id="推送修改" class="level3" data-number="C.2.4">
+<h3 data-number="C.2.4" class="anchored" data-anchor-id="推送修改"><span class="header-section-number">C.2.4</span> 推送修改</h3>
+<p>git push</p>
+<pre><code>git push -u origin master</code></pre>
+</section>
+<section id="sec-git-clone" class="level3" data-number="C.2.5">
+<h3 data-number="C.2.5" class="anchored" data-anchor-id="sec-git-clone"><span class="header-section-number">C.2.5</span> 克隆项目</h3>
+<p>克隆项目 <code>git clone</code></p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode numberSource bash number-lines code-with-copy"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1"></a><span class="fu">git</span> clone git@github.com:XiangyunHuang/data-analysis-in-action.git</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>有的项目包含子模块，添加选项 <code>--recursive</code> 可以将子模块也克隆下来。</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode numberSource bash number-lines code-with-copy"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1"></a><span class="fu">git</span> clone <span class="at">--recursive</span> git@github.com:cosname/cosx.org.git</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+</section>
+<section id="sec-pr-operations" class="level2" data-number="C.3">
+<h2 data-number="C.3" class="anchored" data-anchor-id="sec-pr-operations"><span class="header-section-number">C.3</span> 分支操作</h2>
+<p>对每一个新的问题，创建新的分支，提交新的 PR。</p>
+<p>与人协作开发代码项目，往往涉及 Git 分支操作。通常有两个场景，其一是独立地在分支上进行开发，包含创建分支、修改分支、提交分支、合并分支和删除分支。其二是与人合作互相评审代码修改分支，除了之前的基础操作，还包含在分支上解决代码冲突，同步分支内容。</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-pr" class="quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-pr-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div>
+<pre class="mermaid mermaid-js" data-label="fig-pr">flowchart LR
+  A[创建分支] --&gt; B[修改分支]
+  B --&gt; C[提交分支]
+  C --&gt; D[合并分支]
+  D --&gt; E[删除分支]
+</pre>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-pr-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;C.8: Git 分支操作
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<section id="sec-create-branch" class="level3" data-number="C.3.1">
+<h3 data-number="C.3.1" class="anchored" data-anchor-id="sec-create-branch"><span class="header-section-number">C.3.1</span> 创建分支</h3>
+<div class="sourceCode" id="cb18"><pre class="sourceCode numberSource bash number-lines code-with-copy"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1"></a><span class="fu">git</span> checkout <span class="at">-b</span> 分支名称</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="sec-checkout-branch" class="level3" data-number="C.3.2">
+<h3 data-number="C.3.2" class="anchored" data-anchor-id="sec-checkout-branch"><span class="header-section-number">C.3.2</span> 分支切换</h3>
+<div class="sourceCode" id="cb19"><pre class="sourceCode numberSource bash number-lines code-with-copy"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1"></a><span class="fu">git</span> checkout 分支名称</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="sec-modify-pr" class="level3" data-number="C.3.3">
+<h3 data-number="C.3.3" class="anchored" data-anchor-id="sec-modify-pr"><span class="header-section-number">C.3.3</span> 修改 PR</h3>
+<div class="sourceCode" id="cb20"><pre class="sourceCode numberSource bash number-lines code-with-copy"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1"></a><span class="co"># 拉取合作者的 PR</span></span>
+<span id="cb20-2"><a href="#cb20-2"></a><span class="fu">git</span> fetch origin refs/pull/771/head:patch-2</span>
+<span id="cb20-3"><a href="#cb20-3"></a><span class="co"># 771 是 PR 对应的编号</span></span>
+<span id="cb20-4"><a href="#cb20-4"></a><span class="fu">git</span> checkout patch-2</span>
+<span id="cb20-5"><a href="#cb20-5"></a></span>
+<span id="cb20-6"><a href="#cb20-6"></a><span class="co"># 你的修改</span></span>
+<span id="cb20-7"><a href="#cb20-7"></a></span>
+<span id="cb20-8"><a href="#cb20-8"></a><span class="fu">git</span> add <span class="at">-u</span> <span class="co"># 追踪修改的内容</span></span>
+<span id="cb20-9"><a href="#cb20-9"></a><span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"描述修改内容"</span></span>
+<span id="cb20-10"><a href="#cb20-10"></a></span>
+<span id="cb20-11"><a href="#cb20-11"></a><span class="fu">git</span> remote add LalZzy https://github.com/LalZzy/cosx.org.git</span>
+<span id="cb20-12"><a href="#cb20-12"></a><span class="fu">git</span> push <span class="at">--set-upstream</span> LalZzy patch-2</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="sec-github-pages" class="level3" data-number="C.3.4">
+<h3 data-number="C.3.4" class="anchored" data-anchor-id="sec-github-pages"><span class="header-section-number">C.3.4</span> (*) 创建 gh-pages 分支</h3>
+<p>基于 GitHub Pages 创建站点用于存放图片和数据。</p>
+<ol type="1">
+<li>在 Github 上创建一个空的仓库，命名为 uploads。</li>
+<li>在本地创建目录 uploads。</li>
+<li>切换到 uploads 目录下，执行如下命令。</li>
+</ol>
+<div class="sourceCode" id="cb21"><pre class="sourceCode numberSource bash number-lines code-with-copy"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1"></a><span class="fu">git</span> init </span>
+<span id="cb21-2"><a href="#cb21-2"></a><span class="fu">git</span> checkout <span class="at">-b</span> gh-pages</span>
+<span id="cb21-3"><a href="#cb21-3"></a><span class="fu">git</span> remote add origin https://github.com/XiangyunHuang/uploads.git</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>添加图片或者数据，并推送到 gh-pages 分支。</p>
+<div class="sourceCode" id="cb22"><pre class="sourceCode numberSource bash number-lines code-with-copy"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1"></a><span class="fu">git</span> add README.md</span>
+<span id="cb22-2"><a href="#cb22-2"></a><span class="fu">git</span> commit <span class="st">"消息"</span> </span>
+<span id="cb22-3"><a href="#cb22-3"></a><span class="fu">git</span> push <span class="at">--set-upstream</span> origin gh-pages</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>这样仓库 uploads 只包含 gh-pages 分支，<code>README.md</code> 文件地址为</p>
+<p><a href="https://xiangyunhuang.github.io/uploads/README.md" class="uri">https://xiangyunhuang.github.io/uploads/README.md</a></p>
+</section>
+</section>
+<section id="sec-r-to-git" class="level2" data-number="C.4">
+<h2 data-number="C.4" class="anchored" data-anchor-id="sec-r-to-git"><span class="header-section-number">C.4</span> R 与 Git 交互</h2>
+<p><strong>usethis</strong> 包将 Git 操作封装了，特别是一些复杂的操作，比如修改他人的 PR</p>
+<section id="sec-git-operations-from-r" class="level3" data-number="C.4.1">
+<h3 data-number="C.4.1" class="anchored" data-anchor-id="sec-git-operations-from-r"><span class="header-section-number">C.4.1</span> 从 R 操作 Git</h3>
+<p>拉取编号为 1019 的 PR</p>
+<div class="sourceCode" id="cb23"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1"></a>usethis<span class="sc">::</span><span class="fu">pr_fetch</span>(<span class="dv">1019</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>1019 是 PR 的编号，修改完，清理</p>
+<div class="sourceCode" id="cb24"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1"></a>usethis<span class="sc">::</span><span class="fu">pr_finish</span>()</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="sec-analyze-git-log" class="level3" data-number="C.4.2">
+<h3 data-number="C.4.2" class="anchored" data-anchor-id="sec-analyze-git-log"><span class="header-section-number">C.4.2</span> 分析 Git 记录</h3>
+<p>给我的仓库点赞的人有哪些，如果有很多，仅显示第一页。</p>
+<div class="sourceCode" id="cb25"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1"></a><span class="fu">library</span>(gh)</span>
+<span id="cb25-2"><a href="#cb25-2"></a>my_repos <span class="ot">&lt;-</span> <span class="fu">gh</span>(<span class="st">"GET /repos/:owner/:repo/stargazers"</span>, </span>
+<span id="cb25-3"><a href="#cb25-3"></a>               <span class="at">owner =</span> <span class="st">"XiangyunHuang"</span>, <span class="at">page =</span> <span class="dv">1</span>, </span>
+<span id="cb25-4"><a href="#cb25-4"></a>               <span class="at">repo =</span> <span class="st">"data-analysis-in-action"</span>)</span>
+<span id="cb25-5"><a href="#cb25-5"></a><span class="fu">vapply</span>(my_repos, <span class="st">"[["</span>, <span class="st">""</span>, <span class="st">"login"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p><a href="https://github.com/jeroen">Jeroen Ooms</a> 开发的 <a href="https://github.com/r-lib/gert"><strong>gert</strong></a> 包，提供了 <code>git_rm()</code>、 <code>git_status()</code>、 <code>git_add()</code> 和 <code>git_commit()</code> 等函数，其中包含 <code>git_reset()</code> 、<code>git_branch_*()</code> 等高级 Git 操作。查看最近的 5 条提交记录。</p>
+<div class="sourceCode" id="cb26"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1"></a><span class="fu">library</span>(gert)</span>
+<span id="cb26-2"><a href="#cb26-2"></a><span class="fu">git_log</span>(<span class="at">max =</span> <span class="dv">5</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>更多内容，读者请看 <a href="https://jeroen.github.io/gert2019">Gert: A minimal git client for R</a>。</p>
+<p><strong>git2r</strong> 包对 Git 仓库进行概要。</p>
+<div class="sourceCode" id="cb27"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1"></a><span class="fu">summary</span>(git2r<span class="sc">::</span><span class="fu">repository</span>())</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p><a href="https://github.com/Thinkr-open/gitdown"><strong>gitdown</strong></a> 包将 Git 提交日志转化为 GitBook</p>
+<p>截止 2023 年 6 月 1 日，统计之都的主站仓库，提交量最大的 10 个人。</p>
+<div class="sourceCode" id="cb28"><pre class="sourceCode numberSource bash number-lines code-with-copy"><code class="sourceCode bash"><span id="cb28-1"><a href="#cb28-1"></a><span class="fu">git</span> shortlog <span class="at">-sn</span> <span class="kw">|</span> <span class="fu">head</span> <span class="at">-n</span> 10</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<pre><code> 153    Dawei Lang
+ 127    Yihui Xie
+ 101    Ryan Feng Lin
+  93    Beilei Bian
+  65    Xiangyun Huang
+  46    王佳
+  42    雷博文
+  39    Miao YU
+  35    xiangyun
+  32    fanchao</code></pre>
+</section>
+</section>
+<section id="sec-git-extensions" class="level2" data-number="C.5">
+<h2 data-number="C.5" class="anchored" data-anchor-id="sec-git-extensions"><span class="header-section-number">C.5</span> (*) 辅助工具</h2>
+<p>Git 扩展 <a href="https://github.com/dandavison/delta">git-delta</a> 和 <a href="https://github.com/jonas/tig">tig</a> 是两款辅助工具。 tig 用于查看提交的历史日志。</p>
+<section id="sec-syntax-highlighting" class="level3" data-number="C.5.1">
+<h3 data-number="C.5.1" class="anchored" data-anchor-id="sec-syntax-highlighting"><span class="header-section-number">C.5.1</span> 语法高亮</h3>
+<p>git-delta</p>
+<div class="sourceCode" id="cb30"><pre class="sourceCode numberSource bash number-lines code-with-copy"><code class="sourceCode bash"><span id="cb30-1"><a href="#cb30-1"></a><span class="ex">brew</span> install git-delta</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>对 <code>git diff</code> 的输出提供语法高亮</p>
+</section>
+<section id="sec-text-interface" class="level3" data-number="C.5.2">
+<h3 data-number="C.5.2" class="anchored" data-anchor-id="sec-text-interface"><span class="header-section-number">C.5.2</span> 文本接口</h3>
+<p>在 MacOS 上，推荐用 Homebrew 安装</p>
+<div class="sourceCode" id="cb31"><pre class="sourceCode numberSource bash number-lines code-with-copy"><code class="sourceCode bash"><span id="cb31-1"><a href="#cb31-1"></a><span class="ex">brew</span> install tig</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="sec-git-lfs" class="level3" data-number="C.5.3">
+<h3 data-number="C.5.3" class="anchored" data-anchor-id="sec-git-lfs"><span class="header-section-number">C.5.3</span> 大文件存储</h3>
+<p>Git Large File Storage (LFS) <a href="https://git-lfs.com/">Git LFS</a></p>
+<div class="sourceCode" id="cb32"><pre class="sourceCode numberSource bash number-lines code-with-copy"><code class="sourceCode bash"><span id="cb32-1"><a href="#cb32-1"></a><span class="co"># MacOS</span></span>
+<span id="cb32-2"><a href="#cb32-2"></a><span class="ex">brew</span> install git-lfs</span>
+<span id="cb32-3"><a href="#cb32-3"></a><span class="co"># Ubuntu</span></span>
+<span id="cb32-4"><a href="#cb32-4"></a><span class="fu">sudo</span> apt install git-lfs</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>配置 Git LFS</p>
+<div class="sourceCode" id="cb33"><pre class="sourceCode numberSource bash number-lines code-with-copy"><code class="sourceCode bash"><span id="cb33-1"><a href="#cb33-1"></a><span class="fu">git</span> lfs install</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>项目中的大型数据文件</p>
+<div class="sourceCode" id="cb34"><pre class="sourceCode numberSource bash number-lines code-with-copy"><code class="sourceCode bash"><span id="cb34-1"><a href="#cb34-1"></a><span class="fu">git</span> lfs track <span class="st">"*.csv"</span></span>
+<span id="cb34-2"><a href="#cb34-2"></a><span class="fu">git</span> add .gitattributes</span>
+<span id="cb34-3"><a href="#cb34-3"></a><span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Git LFS 追踪数据文件"</span></span>
+<span id="cb34-4"><a href="#cb34-4"></a><span class="fu">git</span> push origin master</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "已复制");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "已复制");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    const typesetMath = (el) => {
+      if (window.MathJax) {
+        // MathJax Typeset
+        window.MathJax.typeset([el]);
+      } else if (window.katex) {
+        // KaTeX Render
+        var mathElements = el.getElementsByClassName("math");
+        var macros = [];
+        for (var i = 0; i < mathElements.length; i++) {
+          var texText = mathElements[i].firstChild;
+          if (mathElements[i].tagName == "SPAN") {
+            window.katex.render(texText.data, mathElements[i], {
+              displayMode: mathElements[i].classList.contains('display'),
+              throwOnError: false,
+              macros: macros,
+              fleqn: false
+            });
+          }
+        }
+      }
+    }
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        typesetMath(container);
+        return container.innerHTML
+      } else {
+        typesetMath(note);
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      typesetMath(note);
+      return note.innerHTML;
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./matrix-operations.html" class="pagination-link  aria-label=" &lt;span="">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">矩阵运算</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

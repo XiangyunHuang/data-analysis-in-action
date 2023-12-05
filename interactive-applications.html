@@ -1,0 +1,1575 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh-Hans" xml:lang="zh-Hans"><head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.4.515">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>R 语言数据分析实战 - 15&nbsp; 交互应用</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./documents-html.html" rel="next">
+<link href="./interactive-tables.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light"><script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "没有结果",
+    "search-matching-documents-text": "匹配的文档",
+    "search-copy-link-title": "复制搜索链接",
+    "search-hide-matches-text": "隐藏其它匹配结果",
+    "search-more-match-text": "更多匹配结果",
+    "search-more-matches-text": "更多匹配结果",
+    "search-clear-button-title": "清除",
+    "search-detached-cancel-button-title": "取消",
+    "search-submit-button-title": "提交",
+    "search-label": "搜索"
+  }
+}</script><script async="" src="https://www.googletagmanager.com/gtag/js?id=G-ZPWJBMKFL8"></script><script type="text/javascript">
+
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-ZPWJBMKFL8', { 'anonymize_ip': true});
+</script><script>
+MathJax ={
+  tex: {
+    macros: {
+      bm: ["{\\boldsymbol #1}",1],
+    }
+  }
+};
+</script><script src="site_libs/htmlwidgets-1.6.3/htmlwidgets.js"></script><script src="site_libs/es6shim-0.35.6/es6shim.js"></script><script src="site_libs/es7shim-6.0.0/es7shim.js"></script><script src="site_libs/graphre-0.1.3/graphre.js"></script><script src="site_libs/nomnoml-1.6.2/nomnoml.js"></script><script src="site_libs/nomnoml-binding-0.3.0/nomnoml.js"></script>
+</head>
+<body class="nav-sidebar floating">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top"><nav class="quarto-secondary-nav"><div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="切换侧边栏导航" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./interactive-graphics.html">数据交流</a></li><li class="breadcrumb-item"><a href="./interactive-applications.html"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">交互应用</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="切换侧边栏导航" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav></header><!-- content --><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto"><div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">R 语言数据分析实战</a> 
+        <div class="sidebar-tools-main">
+    <a href="https://github.com/XiangyunHuang/data-analysis-in-action" title="Source Code" class="quarto-navigation-tool px-1" aria-label="Source Code"><i class="bi bi-github"></i></a>
+    <a href="./_main.pdf" title="Download PDF" class="quarto-navigation-tool px-1" aria-label="Download PDF"><i class="bi bi-file-pdf"></i></a>
+</div>
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="搜索"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">欢迎</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./preface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">前言</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./intro.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">介绍</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true">
+ <span class="menu-text">数据准备</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./wrangling-objects.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">数据对象</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./wrangling-collection.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">数据获取</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./wrangling-cleaning.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">数据清洗</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./wrangling-manipulation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">数据操作</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./wrangling-processing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">数据处理</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true">
+ <span class="menu-text">数据探索</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./visualization-basic.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">ggplot2 入门</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./visualization-intermediate.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">基础图形</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./visualization-advanced.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">统计图形</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./visualization-lattice.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">lattice 入门</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./visualization-graphics.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">graphics 入门</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./visualization-tikz.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">TikZ 入门</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./visualization-practice.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">探索实践</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true">
+ <span class="menu-text">数据交流</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./interactive-graphics.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">交互图形</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./interactive-tables.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">交互表格</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./interactive-applications.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">交互应用</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./documents-html.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">HTML 文档</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./documents-latex.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">PDF 文档</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./documents-office.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Office 文档</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-expanded="true">
+ <span class="menu-text">统计分析</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./common-statistical-tests.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">常见的统计检验</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./regression-and-correlation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">回归与相关分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./categorical-data-analysis.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">分类数据的分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./power-analysis.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">统计检验的功效</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-expanded="true">
+ <span class="menu-text">数据建模</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./analyze-network-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">网络分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./analyze-text-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">文本分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./analyze-survival-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">生存分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./analyze-time-series-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">时序分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./analyze-point-pattern.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">空间点模式分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./analyze-spatial-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">预测核辐射强度的分布</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./analyze-areal-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">区域数据分析</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-expanded="true">
+ <span class="menu-text">优化建模</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./statistical-computation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">统计计算</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./numerical-optimization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">数值优化</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./optimization-problems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">优化问题</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" aria-expanded="true">
+ <span class="menu-text">贝叶斯建模</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./probabilistic-reasoning-framework.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">概率推理框架</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./generalized-linear-models.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">广义线性模型</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./hierarchical-normal-models.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">分层正态模型</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./mixed-effects-models.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">混合效应模型</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./generalized-additive-models.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">37</span>&nbsp; <span class="chapter-title">广义可加模型</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./gaussian-processes-regression.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">38</span>&nbsp; <span class="chapter-title">高斯过程回归</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./time-series-regression.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">39</span>&nbsp; <span class="chapter-title">时间序列回归</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" aria-expanded="true">
+ <span class="menu-text">机器学习</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./classification-problems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">40</span>&nbsp; <span class="chapter-title">分类问题</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./clustering-problems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">41</span>&nbsp; <span class="chapter-title">聚类问题</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./regression-problems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">42</span>&nbsp; <span class="chapter-title">回归问题</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">参考文献</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" aria-expanded="true">
+ <span class="menu-text">附录</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./notations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">数学符号</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./matrix-operations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">矩阵运算</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./git-github.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">Git 和 Github</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+    </ul>
+</div>
+</nav><div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active"><h2 id="toc-title">目录</h2>
+   
+  <ul>
+<li>
+<a href="#sec-shiny-demo" id="toc-sec-shiny-demo" class="nav-link active" data-scroll-target="#sec-shiny-demo"><span class="header-section-number">15.1</span> 简单示例</a>
+  <ul class="collapse">
+<li><a href="#sec-shiny-ui" id="toc-sec-shiny-ui" class="nav-link" data-scroll-target="#sec-shiny-ui"><span class="header-section-number">15.1.1</span> UI 前端</a></li>
+  <li><a href="#sec-shiny-server" id="toc-sec-shiny-server" class="nav-link" data-scroll-target="#sec-shiny-server"><span class="header-section-number">15.1.2</span> Server 后端</a></li>
+  </ul>
+</li>
+  <li>
+<a href="#sec-shiny-widget" id="toc-sec-shiny-widget" class="nav-link" data-scroll-target="#sec-shiny-widget"><span class="header-section-number">15.2</span> Shiny 组件</a>
+  <ul class="collapse">
+<li><a href="#sec-widget-filter" id="toc-sec-widget-filter" class="nav-link" data-scroll-target="#sec-widget-filter"><span class="header-section-number">15.2.1</span> 筛选器</a></li>
+  <li><a href="#sec-widget-input" id="toc-sec-widget-input" class="nav-link" data-scroll-target="#sec-widget-input"><span class="header-section-number">15.2.2</span> 输入框</a></li>
+  <li><a href="#sec-widget-button" id="toc-sec-widget-button" class="nav-link" data-scroll-target="#sec-widget-button"><span class="header-section-number">15.2.3</span> 动作按钮</a></li>
+  <li><a href="#sec-widget-bookmark" id="toc-sec-widget-bookmark" class="nav-link" data-scroll-target="#sec-widget-bookmark"><span class="header-section-number">15.2.4</span> 书签</a></li>
+  </ul>
+</li>
+  <li>
+<a href="#sec-shiny-extensions" id="toc-sec-shiny-extensions" class="nav-link" data-scroll-target="#sec-shiny-extensions"><span class="header-section-number">15.3</span> Shiny 扩展</a>
+  <ul class="collapse">
+<li><a href="#sec-shiny-layout" id="toc-sec-shiny-layout" class="nav-link" data-scroll-target="#sec-shiny-layout"><span class="header-section-number">15.3.1</span> 页面布局</a></li>
+  <li><a href="#sec-shiny-tables" id="toc-sec-shiny-tables" class="nav-link" data-scroll-target="#sec-shiny-tables"><span class="header-section-number">15.3.2</span> 交互表格</a></li>
+  <li><a href="#sec-shiny-plots" id="toc-sec-shiny-plots" class="nav-link" data-scroll-target="#sec-shiny-plots"><span class="header-section-number">15.3.3</span> 交互图形</a></li>
+  </ul>
+</li>
+  <li>
+<a href="#sec-shiny-dashboard" id="toc-sec-shiny-dashboard" class="nav-link" data-scroll-target="#sec-shiny-dashboard"><span class="header-section-number">15.4</span> Shiny 仪表盘</a>
+  <ul class="collapse">
+<li><a href="#shinydashboard-%E5%8C%85" id="toc-shinydashboard-包" class="nav-link" data-scroll-target="#shinydashboard-%E5%8C%85"><span class="header-section-number">15.4.1</span> shinydashboard 包</a></li>
+  <li><a href="#shinydashboardplus-%E5%8C%85" id="toc-shinydashboardplus-包" class="nav-link" data-scroll-target="#shinydashboardplus-%E5%8C%85"><span class="header-section-number">15.4.2</span> shinydashboardPlus 包</a></li>
+  <li><a href="#bs4dash-%E5%8C%85" id="toc-bs4dash-包" class="nav-link" data-scroll-target="#bs4dash-%E5%8C%85"><span class="header-section-number">15.4.3</span> bs4Dash 包</a></li>
+  <li><a href="#miniui-%E5%8C%85" id="toc-miniui-包" class="nav-link" data-scroll-target="#miniui-%E5%8C%85"><span class="header-section-number">15.4.4</span> miniUI 包</a></li>
+  </ul>
+</li>
+  <li>
+<a href="#sec-shiny-themes" id="toc-sec-shiny-themes" class="nav-link" data-scroll-target="#sec-shiny-themes"><span class="header-section-number">15.5</span> Shiny 主题</a>
+  <ul class="collapse">
+<li><a href="#bslib-%E5%8C%85" id="toc-bslib-包" class="nav-link" data-scroll-target="#bslib-%E5%8C%85"><span class="header-section-number">15.5.1</span> bslib 包</a></li>
+  <li><a href="#shinymaterial-%E5%8C%85" id="toc-shinymaterial-包" class="nav-link" data-scroll-target="#shinymaterial-%E5%8C%85"><span class="header-section-number">15.5.2</span> shinymaterial 包</a></li>
+  </ul>
+</li>
+  <li><a href="#sec-shiny-faster" id="toc-sec-shiny-faster" class="nav-link" data-scroll-target="#sec-shiny-faster"><span class="header-section-number">15.6</span> Shiny 优化</a></li>
+  <li>
+<a href="#sec-shiny-deployment" id="toc-sec-shiny-deployment" class="nav-link" data-scroll-target="#sec-shiny-deployment"><span class="header-section-number">15.7</span> Shiny 部署</a>
+  <ul class="collapse">
+<li><a href="#promises-%E5%B9%B6%E5%8F%91" id="toc-promises-并发" class="nav-link" data-scroll-target="#promises-%E5%B9%B6%E5%8F%91"><span class="header-section-number">15.7.1</span> promises 并发</a></li>
+  </ul>
+</li>
+  <li><a href="#sec-shiny-alternative" id="toc-sec-shiny-alternative" class="nav-link" data-scroll-target="#sec-shiny-alternative"><span class="header-section-number">15.8</span> Shiny 替代品</a></li>
+  <li><a href="#sec-shiny-showcases" id="toc-sec-shiny-showcases" class="nav-link" data-scroll-target="#sec-shiny-showcases"><span class="header-section-number">15.9</span> Shiny 案例</a></li>
+  <li><a href="#sec-shiny-summary" id="toc-sec-shiny-summary" class="nav-link" data-scroll-target="#sec-shiny-summary"><span class="header-section-number">15.10</span> 总结</a></li>
+  </ul><div class="toc-actions"><ul><li><a href="https://github.com/XiangyunHuang/data-analysis-in-action/blob/main/interactive-applications.qmd" class="toc-action"><i class="bi bi-github"></i>查看代码</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./interactive-graphics.html">数据交流</a></li><li class="breadcrumb-item"><a href="./interactive-applications.html"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">交互应用</span></a></li></ol></nav><div class="quarto-title">
+<h1 class="title"><span id="sec-interactive-applications" class="quarto-section-identifier"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">交互应用</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header><div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a><span class="fu">library</span>(shiny)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>一个简单示例，介绍一个 Shiny 应用的各个常见组成部分。一个快速改变风格的主题包。介绍交互表格、交互图形与 Shiny 集成，如 <strong>DT</strong>、<strong>plotly</strong>、 <strong>leaflet</strong> 等。介绍 Shiny 工业化应用的开发过程。</p>
+<section id="sec-shiny-demo" class="level2" data-number="15.1"><h2 data-number="15.1" class="anchored" data-anchor-id="sec-shiny-demo">
+<span class="header-section-number">15.1</span> 简单示例</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1"></a><span class="fu">library</span>(shiny)</span>
+<span id="cb2-2"><a href="#cb2-2"></a></span>
+<span id="cb2-3"><a href="#cb2-3"></a>ui <span class="ot">&lt;-</span> <span class="fu">fluidPage</span>(</span>
+<span id="cb2-4"><a href="#cb2-4"></a>  <span class="fu">sliderInput</span>(<span class="at">inputId =</span> <span class="st">"n"</span>, <span class="at">label =</span> <span class="st">"观测记录的数目"</span>, </span>
+<span id="cb2-5"><a href="#cb2-5"></a>              <span class="at">min =</span> <span class="dv">1</span>, <span class="at">max =</span> <span class="fu">nrow</span>(faithful), <span class="at">value =</span> <span class="dv">100</span>),</span>
+<span id="cb2-6"><a href="#cb2-6"></a>  <span class="fu">plotOutput</span>(<span class="st">"plot"</span>)</span>
+<span id="cb2-7"><a href="#cb2-7"></a>)</span>
+<span id="cb2-8"><a href="#cb2-8"></a></span>
+<span id="cb2-9"><a href="#cb2-9"></a>server <span class="ot">&lt;-</span> <span class="cf">function</span>(input, output) {</span>
+<span id="cb2-10"><a href="#cb2-10"></a>  output<span class="sc">$</span>plot <span class="ot">&lt;-</span> <span class="fu">renderPlot</span>({</span>
+<span id="cb2-11"><a href="#cb2-11"></a>    <span class="fu">hist</span>(faithful<span class="sc">$</span>eruptions[<span class="fu">seq_len</span>(input<span class="sc">$</span>n)],</span>
+<span id="cb2-12"><a href="#cb2-12"></a>      <span class="at">breaks =</span> <span class="dv">40</span>,</span>
+<span id="cb2-13"><a href="#cb2-13"></a>      <span class="at">main =</span> <span class="st">"美国黄石公园喷泉"</span>,</span>
+<span id="cb2-14"><a href="#cb2-14"></a>      <span class="at">xlab =</span> <span class="st">"喷发持续时间"</span></span>
+<span id="cb2-15"><a href="#cb2-15"></a>    )</span>
+<span id="cb2-16"><a href="#cb2-16"></a>  })</span>
+<span id="cb2-17"><a href="#cb2-17"></a>}</span>
+<span id="cb2-18"><a href="#cb2-18"></a></span>
+<span id="cb2-19"><a href="#cb2-19"></a><span class="fu">shinyApp</span>(ui, server)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="sec-shiny-ui" class="level3" data-number="15.1.1"><h3 data-number="15.1.1" class="anchored" data-anchor-id="sec-shiny-ui">
+<span class="header-section-number">15.1.1</span> UI 前端</h3>
+</section><section id="sec-shiny-server" class="level3" data-number="15.1.2"><h3 data-number="15.1.2" class="anchored" data-anchor-id="sec-shiny-server">
+<span class="header-section-number">15.1.2</span> Server 后端</h3>
+</section></section><section id="sec-shiny-widget" class="level2" data-number="15.2"><h2 data-number="15.2" class="anchored" data-anchor-id="sec-shiny-widget">
+<span class="header-section-number">15.2</span> Shiny 组件</h2>
+<p>组件又很多，下面想重点介绍 4 个，它们使用频次很高，很有代表性。</p>
+<section id="sec-widget-filter" class="level3" data-number="15.2.1"><h3 data-number="15.2.1" class="anchored" data-anchor-id="sec-widget-filter">
+<span class="header-section-number">15.2.1</span> 筛选器</h3>
+<p>单个筛选器、独立筛选器、筛选器联动</p>
+</section><section id="sec-widget-input" class="level3" data-number="15.2.2"><h3 data-number="15.2.2" class="anchored" data-anchor-id="sec-widget-input">
+<span class="header-section-number">15.2.2</span> 输入框</h3>
+<p>数值型、文本型</p>
+</section><section id="sec-widget-button" class="level3" data-number="15.2.3"><h3 data-number="15.2.3" class="anchored" data-anchor-id="sec-widget-button">
+<span class="header-section-number">15.2.3</span> 动作按钮</h3>
+<p>提交按钮、响应按钮</p>
+</section><section id="sec-widget-bookmark" class="level3" data-number="15.2.4"><h3 data-number="15.2.4" class="anchored" data-anchor-id="sec-widget-bookmark">
+<span class="header-section-number">15.2.4</span> 书签</h3>
+<p>书签记录输入状态，链接可以指向页面状态</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1"></a><span class="fu">library</span>(shiny)</span>
+<span id="cb3-2"><a href="#cb3-2"></a></span>
+<span id="cb3-3"><a href="#cb3-3"></a>ui <span class="ot">&lt;-</span> <span class="fu">fluidPage</span>(</span>
+<span id="cb3-4"><a href="#cb3-4"></a>  <span class="fu">sliderInput</span>(<span class="at">inputId =</span> <span class="st">"n"</span>, <span class="at">label =</span> <span class="st">"观测记录的数目"</span>, </span>
+<span id="cb3-5"><a href="#cb3-5"></a>              <span class="at">min =</span> <span class="dv">1</span>, <span class="at">max =</span> <span class="fu">nrow</span>(faithful), <span class="at">value =</span> <span class="dv">100</span>),</span>
+<span id="cb3-6"><a href="#cb3-6"></a>  <span class="fu">plotOutput</span>(<span class="st">"plot"</span>),</span>
+<span id="cb3-7"><a href="#cb3-7"></a>  <span class="fu">bookmarkButton</span>(<span class="at">id =</span> <span class="st">"bookmark1"</span>, <span class="at">label =</span> <span class="st">"书签"</span>, <span class="at">title =</span> <span class="st">"记录、分享此时应用的状态"</span>)</span>
+<span id="cb3-8"><a href="#cb3-8"></a>)</span>
+<span id="cb3-9"><a href="#cb3-9"></a></span>
+<span id="cb3-10"><a href="#cb3-10"></a>server <span class="ot">&lt;-</span> <span class="cf">function</span>(input, output) {</span>
+<span id="cb3-11"><a href="#cb3-11"></a>  output<span class="sc">$</span>plot <span class="ot">&lt;-</span> <span class="fu">renderPlot</span>({</span>
+<span id="cb3-12"><a href="#cb3-12"></a>    <span class="fu">hist</span>(faithful<span class="sc">$</span>eruptions[<span class="fu">seq_len</span>(input<span class="sc">$</span>n)],</span>
+<span id="cb3-13"><a href="#cb3-13"></a>      <span class="at">breaks =</span> <span class="dv">40</span>,</span>
+<span id="cb3-14"><a href="#cb3-14"></a>      <span class="at">main =</span> <span class="st">"美国黄石公园喷泉"</span>,</span>
+<span id="cb3-15"><a href="#cb3-15"></a>      <span class="at">xlab =</span> <span class="st">"喷发持续时间"</span></span>
+<span id="cb3-16"><a href="#cb3-16"></a>    )</span>
+<span id="cb3-17"><a href="#cb3-17"></a>  })</span>
+<span id="cb3-18"><a href="#cb3-18"></a>}</span>
+<span id="cb3-19"><a href="#cb3-19"></a></span>
+<span id="cb3-20"><a href="#cb3-20"></a><span class="fu">enableBookmarking</span>(<span class="at">store =</span> <span class="st">"url"</span>)</span>
+<span id="cb3-21"><a href="#cb3-21"></a><span class="fu">shinyApp</span>(ui, server)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section></section><section id="sec-shiny-extensions" class="level2" data-number="15.3"><h2 data-number="15.3" class="anchored" data-anchor-id="sec-shiny-extensions">
+<span class="header-section-number">15.3</span> Shiny 扩展</h2>
+<p>页面布局</p>
+<ul>
+<li>
+<a href="https://github.com/rstudio/shinydashboard">shinydashboard</a> / <a href="https://github.com/RinteRface/shinydashboardPlus">shinydashboardPlus</a> Shiny 应用</li>
+<li>
+<a href="https://github.com/rstudio/flexdashboard/">flexdashboard</a> R Markdown 文档中制作 Shiny 应用</li>
+<li><a href="https://github.com/RinteRface/bs4Dash">bs4Dash</a></li>
+</ul>
+<p>交互表格</p>
+<ul>
+<li>DT</li>
+<li>reactable</li>
+</ul>
+<p>交互图形</p>
+<ul>
+<li>plotly</li>
+<li>ggiraph</li>
+</ul>
+<section id="sec-shiny-layout" class="level3" data-number="15.3.1"><h3 data-number="15.3.1" class="anchored" data-anchor-id="sec-shiny-layout">
+<span class="header-section-number">15.3.1</span> 页面布局</h3>
+</section><section id="sec-shiny-tables" class="level3" data-number="15.3.2"><h3 data-number="15.3.2" class="anchored" data-anchor-id="sec-shiny-tables">
+<span class="header-section-number">15.3.2</span> 交互表格</h3>
+<p>下面在 Shiny 应用中插入 DT 包制作的交互表格</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1"></a><span class="co"># 前端</span></span>
+<span id="cb4-2"><a href="#cb4-2"></a><span class="fu">library</span>(shiny)</span>
+<span id="cb4-3"><a href="#cb4-3"></a>ui <span class="ot">&lt;-</span> <span class="fu">fluidPage</span>(</span>
+<span id="cb4-4"><a href="#cb4-4"></a>  <span class="co"># 应用的标题名称</span></span>
+<span id="cb4-5"><a href="#cb4-5"></a>  <span class="fu">titlePanel</span>(<span class="st">"鸢尾花数据集"</span>),</span>
+<span id="cb4-6"><a href="#cb4-6"></a>  <span class="co"># 边栏</span></span>
+<span id="cb4-7"><a href="#cb4-7"></a>  <span class="fu">fluidRow</span>(</span>
+<span id="cb4-8"><a href="#cb4-8"></a>    <span class="fu">column</span>(<span class="dv">12</span>, DT<span class="sc">::</span><span class="fu">dataTableOutput</span>(<span class="st">"table"</span>))</span>
+<span id="cb4-9"><a href="#cb4-9"></a>  )</span>
+<span id="cb4-10"><a href="#cb4-10"></a>)</span>
+<span id="cb4-11"><a href="#cb4-11"></a></span>
+<span id="cb4-12"><a href="#cb4-12"></a><span class="co"># 服务端</span></span>
+<span id="cb4-13"><a href="#cb4-13"></a>server <span class="ot">&lt;-</span> <span class="cf">function</span>(input, output, session) {</span>
+<span id="cb4-14"><a href="#cb4-14"></a>  output<span class="sc">$</span>table <span class="ot">&lt;-</span> DT<span class="sc">::</span><span class="fu">renderDataTable</span>(iris,</span>
+<span id="cb4-15"><a href="#cb4-15"></a>    <span class="at">options =</span> <span class="fu">list</span>(</span>
+<span id="cb4-16"><a href="#cb4-16"></a>      <span class="at">pageLength =</span> <span class="dv">5</span>, <span class="co"># 每页显示5行</span></span>
+<span id="cb4-17"><a href="#cb4-17"></a>      <span class="at">initComplete =</span> <span class="fu">I</span>(<span class="st">"function(settings, json) {alert('Done.');}"</span>)</span>
+<span id="cb4-18"><a href="#cb4-18"></a>    ), <span class="at">server =</span> F</span>
+<span id="cb4-19"><a href="#cb4-19"></a>  )</span>
+<span id="cb4-20"><a href="#cb4-20"></a>}</span>
+<span id="cb4-21"><a href="#cb4-21"></a></span>
+<span id="cb4-22"><a href="#cb4-22"></a><span class="fu">shinyApp</span>(ui, server)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+重要
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>加载 shiny 包后再加载 DT 包，函数 <code>dataTableOutput()</code> 和<code>renderDataTable()</code> 显示冲突，因为两个 R 包都有这两个函数。在创建 shiny 应用的过程中，如果我们需要呈现动态表格，就需要使用 DT 包的 <code><a href="https://rdrr.io/pkg/DT/man/dataTableOutput.html">DT::dataTableOutput()</a></code> 和 <code><a href="https://rdrr.io/pkg/DT/man/dataTableOutput.html">DT::renderDataTable()</a></code> ，否则会报错，详见 <a href="https://github.com/rstudio/shiny/issues/2653" class="uri">https://github.com/rstudio/shiny/issues/2653</a>。</p>
+</div>
+</div>
+<p><a href="https://github.com/glin/reactable">reactable</a> 基于 JS 库 <a href="https://github.com/tannerlinsley/react-table">React Table</a> 提供交互式表格渲染，和 <strong>shiny</strong> 无缝集成，是替代 <strong>DT</strong> 的不二选择，在 app.R 用 reactable 包的 <code>reactableOutput()</code> 和 <code>renderReactable()</code> 函数替代 <strong>shiny</strong> 里面的 <code>dataTableOutput()</code> 和 <code>renderDataTable()</code>。 再也不用忍受 <strong>DT</strong> 和 <strong>shiny</strong> 的函数冲突了，且其覆盖测试达到 99%。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1"></a><span class="fu">library</span>(shiny)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>下面在 Shiny 应用中插入 <strong>reactable</strong> 包制作的交互表格</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1"></a><span class="fu">library</span>(shiny)</span>
+<span id="cb6-2"><a href="#cb6-2"></a><span class="fu">library</span>(reactable)</span>
+<span id="cb6-3"><a href="#cb6-3"></a></span>
+<span id="cb6-4"><a href="#cb6-4"></a>ui <span class="ot">&lt;-</span> <span class="fu">fluidPage</span>(</span>
+<span id="cb6-5"><a href="#cb6-5"></a>  <span class="fu">reactableOutput</span>(<span class="st">"table"</span>)</span>
+<span id="cb6-6"><a href="#cb6-6"></a>)</span>
+<span id="cb6-7"><a href="#cb6-7"></a></span>
+<span id="cb6-8"><a href="#cb6-8"></a>server <span class="ot">&lt;-</span> <span class="cf">function</span>(input, output) {</span>
+<span id="cb6-9"><a href="#cb6-9"></a>  output<span class="sc">$</span>table <span class="ot">&lt;-</span> <span class="fu">renderReactable</span>({</span>
+<span id="cb6-10"><a href="#cb6-10"></a>    <span class="fu">reactable</span>(iris,</span>
+<span id="cb6-11"><a href="#cb6-11"></a>      <span class="at">filterable =</span> <span class="cn">TRUE</span>, <span class="co"># 过滤</span></span>
+<span id="cb6-12"><a href="#cb6-12"></a>      <span class="at">searchable =</span> <span class="cn">TRUE</span>, <span class="co"># 搜索</span></span>
+<span id="cb6-13"><a href="#cb6-13"></a>      <span class="at">showPageSizeOptions =</span> <span class="cn">TRUE</span>, <span class="co"># 页面大小</span></span>
+<span id="cb6-14"><a href="#cb6-14"></a>      <span class="at">pageSizeOptions =</span> <span class="fu">c</span>(<span class="dv">5</span>, <span class="dv">10</span>, <span class="dv">15</span>), <span class="co"># 页面大小可选项</span></span>
+<span id="cb6-15"><a href="#cb6-15"></a>      <span class="at">defaultPageSize =</span> <span class="dv">10</span>, <span class="co"># 默认显示10行</span></span>
+<span id="cb6-16"><a href="#cb6-16"></a>      <span class="at">highlight =</span> <span class="cn">TRUE</span>, <span class="co"># 高亮选择</span></span>
+<span id="cb6-17"><a href="#cb6-17"></a>      <span class="at">striped =</span> <span class="cn">TRUE</span>, <span class="co"># 隔行高亮</span></span>
+<span id="cb6-18"><a href="#cb6-18"></a>      <span class="at">fullWidth =</span> <span class="cn">FALSE</span>, <span class="co"># 默认不要全宽填充，适应数据框的宽度</span></span>
+<span id="cb6-19"><a href="#cb6-19"></a>      <span class="at">defaultSorted =</span> <span class="fu">list</span>(</span>
+<span id="cb6-20"><a href="#cb6-20"></a>        <span class="at">Sepal.Length =</span> <span class="st">"asc"</span>, <span class="co"># 由小到大排序</span></span>
+<span id="cb6-21"><a href="#cb6-21"></a>        <span class="at">Petal.Length =</span> <span class="st">"desc"</span> <span class="co"># 由大到小</span></span>
+<span id="cb6-22"><a href="#cb6-22"></a>      ),</span>
+<span id="cb6-23"><a href="#cb6-23"></a>      <span class="at">columns =</span> <span class="fu">list</span>(</span>
+<span id="cb6-24"><a href="#cb6-24"></a>        <span class="at">Sepal.Width =</span> <span class="fu">colDef</span>(<span class="at">style =</span> <span class="cf">function</span>(value) { </span>
+<span id="cb6-25"><a href="#cb6-25"></a>          <span class="co"># Sepal.Width 添加颜色标记</span></span>
+<span id="cb6-26"><a href="#cb6-26"></a>          <span class="cf">if</span> (value <span class="sc">&gt;</span> <span class="fl">3.5</span>) {</span>
+<span id="cb6-27"><a href="#cb6-27"></a>            color <span class="ot">&lt;-</span> <span class="st">"#008000"</span></span>
+<span id="cb6-28"><a href="#cb6-28"></a>          } <span class="cf">else</span> <span class="cf">if</span> (value <span class="sc">&gt;</span> <span class="dv">2</span>) {</span>
+<span id="cb6-29"><a href="#cb6-29"></a>            color <span class="ot">&lt;-</span> <span class="st">"#e00000"</span></span>
+<span id="cb6-30"><a href="#cb6-30"></a>          } <span class="cf">else</span> {</span>
+<span id="cb6-31"><a href="#cb6-31"></a>            color <span class="ot">&lt;-</span> <span class="st">"#777"</span></span>
+<span id="cb6-32"><a href="#cb6-32"></a>          }</span>
+<span id="cb6-33"><a href="#cb6-33"></a>          <span class="fu">list</span>(<span class="at">color =</span> color, <span class="at">fontWeight =</span> <span class="st">"bold"</span>) <span class="co"># 字体加粗</span></span>
+<span id="cb6-34"><a href="#cb6-34"></a>        })</span>
+<span id="cb6-35"><a href="#cb6-35"></a></span>
+<span id="cb6-36"><a href="#cb6-36"></a>      )</span>
+<span id="cb6-37"><a href="#cb6-37"></a>    )</span>
+<span id="cb6-38"><a href="#cb6-38"></a>  })</span>
+<span id="cb6-39"><a href="#cb6-39"></a>}</span>
+<span id="cb6-40"><a href="#cb6-40"></a></span>
+<span id="cb6-41"><a href="#cb6-41"></a><span class="fu">shinyApp</span>(ui, server)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>除了 <strong>DT</strong> 和 <strong>reactable</strong> 包，其它支持 Shiny 集成的 R 包还有 <a href="https://github.com/rstudio/gt">gt</a> 、<a href="https://github.com/renkun-ken/formattable">formattable</a> 和 <strong>kableExtra</strong> 等。</p>
+</section><section id="sec-shiny-plots" class="level3" data-number="15.3.3"><h3 data-number="15.3.3" class="anchored" data-anchor-id="sec-shiny-plots">
+<span class="header-section-number">15.3.3</span> 交互图形</h3>
+<p><strong>ggiraph</strong> 包</p>
+<div class="cell">
+<iframe src="https://xiangyun.shinyapps.io/01-iris-ggiraph/?showcase=0" width="768" height="400px" data-external="1">
+</iframe>
+</div>
+</section></section><section id="sec-shiny-dashboard" class="level2" data-number="15.4"><h2 data-number="15.4" class="anchored" data-anchor-id="sec-shiny-dashboard">
+<span class="header-section-number">15.4</span> Shiny 仪表盘</h2>
+<p>dashboard 翻译过来叫仪表盘，就是驾驶仓的那个玩意，形象地表达作为掌舵者应该关注的对象。R 包 shiny 出现后，仪表盘的制作显得非常容易，也很快形成了一个生态，比如 <a href="https://rstudio.github.io/shinydashboard">shinydashboard</a>、 <a href="https://github.com/rstudio/flexdashboard">flexdashboard</a> 等，此外 <a href="https://github.com/RinteRface/bs4Dash">bs4Dash</a> 基于 Bootstrap 4 的仪表盘，目前 shiny 和 rmarkdown 都在向 Bootstrap 4 升级，这是未来的方向。 <a href="https://github.com/RinteRface/shinydashboardPlus">shinydashboardPlus</a> 主要目的在于扩展 <strong>shinydashboard</strong> 包</p>
+<section id="shinydashboard-包" class="level3" data-number="15.4.1"><h3 data-number="15.4.1" class="anchored" data-anchor-id="shinydashboard-包">
+<span class="header-section-number">15.4.1</span> shinydashboard 包</h3>
+<p>将如下内容保存为 app.R 文件。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1"></a><span class="fu">library</span>(shiny)</span>
+<span id="cb7-2"><a href="#cb7-2"></a><span class="fu">library</span>(shinydashboard)</span>
+<span id="cb7-3"><a href="#cb7-3"></a>ui <span class="ot">&lt;-</span> <span class="fu">dashboardPage</span>(</span>
+<span id="cb7-4"><a href="#cb7-4"></a>  <span class="fu">dashboardHeader</span>(<span class="at">title =</span> <span class="st">"Basic dashboard"</span>),</span>
+<span id="cb7-5"><a href="#cb7-5"></a>  <span class="do">## 边栏</span></span>
+<span id="cb7-6"><a href="#cb7-6"></a>  <span class="fu">dashboardSidebar</span>(</span>
+<span id="cb7-7"><a href="#cb7-7"></a>    <span class="fu">sidebarMenu</span>(</span>
+<span id="cb7-8"><a href="#cb7-8"></a>      <span class="fu">menuItem</span>(<span class="st">"Dashboard"</span>, <span class="at">tabName =</span> <span class="st">"dashboard"</span>, <span class="at">icon =</span> <span class="fu">icon</span>(<span class="st">"dashboard"</span>)),</span>
+<span id="cb7-9"><a href="#cb7-9"></a>      <span class="fu">menuItem</span>(<span class="st">"Widgets"</span>, <span class="at">tabName =</span> <span class="st">"widgets"</span>, <span class="at">icon =</span> <span class="fu">icon</span>(<span class="st">"th"</span>))</span>
+<span id="cb7-10"><a href="#cb7-10"></a>    )</span>
+<span id="cb7-11"><a href="#cb7-11"></a>  ),</span>
+<span id="cb7-12"><a href="#cb7-12"></a>  <span class="do">## 主体内容</span></span>
+<span id="cb7-13"><a href="#cb7-13"></a>  <span class="fu">dashboardBody</span>(</span>
+<span id="cb7-14"><a href="#cb7-14"></a>    <span class="fu">tabItems</span>(</span>
+<span id="cb7-15"><a href="#cb7-15"></a>      <span class="co"># 第一个 Tab 页内容</span></span>
+<span id="cb7-16"><a href="#cb7-16"></a>      <span class="fu">tabItem</span>(</span>
+<span id="cb7-17"><a href="#cb7-17"></a>        <span class="at">tabName =</span> <span class="st">"dashboard"</span>,</span>
+<span id="cb7-18"><a href="#cb7-18"></a>        <span class="fu">fluidRow</span>(</span>
+<span id="cb7-19"><a href="#cb7-19"></a>          <span class="fu">box</span>(<span class="fu">plotOutput</span>(<span class="st">"plot1"</span>, <span class="at">height =</span> <span class="dv">250</span>)),</span>
+<span id="cb7-20"><a href="#cb7-20"></a>          <span class="fu">box</span>(</span>
+<span id="cb7-21"><a href="#cb7-21"></a>            <span class="at">title =</span> <span class="st">"Controls"</span>,</span>
+<span id="cb7-22"><a href="#cb7-22"></a>            <span class="fu">sliderInput</span>(<span class="st">"slider"</span>, <span class="st">"Number of observations:"</span>, <span class="dv">1</span>, <span class="dv">100</span>, <span class="dv">50</span>)</span>
+<span id="cb7-23"><a href="#cb7-23"></a>          )</span>
+<span id="cb7-24"><a href="#cb7-24"></a>        )</span>
+<span id="cb7-25"><a href="#cb7-25"></a>      ),</span>
+<span id="cb7-26"><a href="#cb7-26"></a></span>
+<span id="cb7-27"><a href="#cb7-27"></a>      <span class="co"># 第二个 Tab 页内容</span></span>
+<span id="cb7-28"><a href="#cb7-28"></a>      <span class="fu">tabItem</span>(</span>
+<span id="cb7-29"><a href="#cb7-29"></a>        <span class="at">tabName =</span> <span class="st">"widgets"</span>,</span>
+<span id="cb7-30"><a href="#cb7-30"></a>        <span class="fu">h2</span>(<span class="st">"Widgets tab content"</span>)</span>
+<span id="cb7-31"><a href="#cb7-31"></a>      )</span>
+<span id="cb7-32"><a href="#cb7-32"></a>    )</span>
+<span id="cb7-33"><a href="#cb7-33"></a>  )</span>
+<span id="cb7-34"><a href="#cb7-34"></a>)</span>
+<span id="cb7-35"><a href="#cb7-35"></a></span>
+<span id="cb7-36"><a href="#cb7-36"></a>server <span class="ot">&lt;-</span> <span class="cf">function</span>(input, output) {</span>
+<span id="cb7-37"><a href="#cb7-37"></a>  <span class="fu">set.seed</span>(<span class="dv">122</span>)</span>
+<span id="cb7-38"><a href="#cb7-38"></a>  histdata <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="dv">500</span>)</span>
+<span id="cb7-39"><a href="#cb7-39"></a></span>
+<span id="cb7-40"><a href="#cb7-40"></a>  output<span class="sc">$</span>plot1 <span class="ot">&lt;-</span> <span class="fu">renderPlot</span>({</span>
+<span id="cb7-41"><a href="#cb7-41"></a>    data <span class="ot">&lt;-</span> histdata[<span class="fu">seq_len</span>(input<span class="sc">$</span>slider)]</span>
+<span id="cb7-42"><a href="#cb7-42"></a>    <span class="fu">hist</span>(data)</span>
+<span id="cb7-43"><a href="#cb7-43"></a>  })</span>
+<span id="cb7-44"><a href="#cb7-44"></a>}</span>
+<span id="cb7-45"><a href="#cb7-45"></a></span>
+<span id="cb7-46"><a href="#cb7-46"></a><span class="fu">shinyApp</span>(ui, server)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section><section id="shinydashboardplus-包" class="level3" data-number="15.4.2"><h3 data-number="15.4.2" class="anchored" data-anchor-id="shinydashboardplus-包">
+<span class="header-section-number">15.4.2</span> shinydashboardPlus 包</h3>
+<p><strong>shinydashboardPlus</strong> 包的函数 <code>descriptionBlock()</code></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1"></a><span class="fu">library</span>(shiny)</span>
+<span id="cb8-2"><a href="#cb8-2"></a><span class="fu">library</span>(shinydashboard)</span>
+<span id="cb8-3"><a href="#cb8-3"></a><span class="fu">library</span>(shinydashboardPlus)</span>
+<span id="cb8-4"><a href="#cb8-4"></a></span>
+<span id="cb8-5"><a href="#cb8-5"></a><span class="fu">shinyApp</span>(</span>
+<span id="cb8-6"><a href="#cb8-6"></a>  <span class="at">ui =</span> <span class="fu">dashboardPage</span>(</span>
+<span id="cb8-7"><a href="#cb8-7"></a>    <span class="fu">dashboardHeader</span>(),</span>
+<span id="cb8-8"><a href="#cb8-8"></a>    <span class="fu">dashboardSidebar</span>(),</span>
+<span id="cb8-9"><a href="#cb8-9"></a>    <span class="fu">dashboardBody</span>(</span>
+<span id="cb8-10"><a href="#cb8-10"></a>      <span class="fu">box</span>(</span>
+<span id="cb8-11"><a href="#cb8-11"></a>        <span class="at">solidHeader =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb8-12"><a href="#cb8-12"></a>        <span class="at">title =</span> <span class="st">"状态概览"</span>,</span>
+<span id="cb8-13"><a href="#cb8-13"></a>        <span class="at">background =</span> <span class="cn">NULL</span>,</span>
+<span id="cb8-14"><a href="#cb8-14"></a>        <span class="at">width =</span> <span class="dv">4</span>,</span>
+<span id="cb8-15"><a href="#cb8-15"></a>        <span class="at">status =</span> <span class="st">"danger"</span>,</span>
+<span id="cb8-16"><a href="#cb8-16"></a>        <span class="at">footer =</span> <span class="fu">fluidRow</span>(</span>
+<span id="cb8-17"><a href="#cb8-17"></a>          <span class="fu">column</span>(</span>
+<span id="cb8-18"><a href="#cb8-18"></a>            <span class="at">width =</span> <span class="dv">6</span>,</span>
+<span id="cb8-19"><a href="#cb8-19"></a>            <span class="fu">descriptionBlock</span>(</span>
+<span id="cb8-20"><a href="#cb8-20"></a>              <span class="at">number =</span> <span class="st">"17%"</span>,</span>
+<span id="cb8-21"><a href="#cb8-21"></a>              <span class="at">numberColor =</span> <span class="st">"green"</span>,</span>
+<span id="cb8-22"><a href="#cb8-22"></a>              <span class="at">numberIcon =</span> <span class="st">"fa fa-caret-up"</span>,</span>
+<span id="cb8-23"><a href="#cb8-23"></a>              <span class="at">header =</span> <span class="st">"$35,210.43"</span>,</span>
+<span id="cb8-24"><a href="#cb8-24"></a>              <span class="at">text =</span> <span class="st">"总收入"</span>,</span>
+<span id="cb8-25"><a href="#cb8-25"></a>              <span class="at">rightBorder =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb8-26"><a href="#cb8-26"></a>              <span class="at">marginBottom =</span> <span class="cn">FALSE</span></span>
+<span id="cb8-27"><a href="#cb8-27"></a>            )</span>
+<span id="cb8-28"><a href="#cb8-28"></a>          ),</span>
+<span id="cb8-29"><a href="#cb8-29"></a>          <span class="fu">column</span>(</span>
+<span id="cb8-30"><a href="#cb8-30"></a>            <span class="at">width =</span> <span class="dv">6</span>,</span>
+<span id="cb8-31"><a href="#cb8-31"></a>            <span class="fu">descriptionBlock</span>(</span>
+<span id="cb8-32"><a href="#cb8-32"></a>              <span class="at">number =</span> <span class="st">"18%"</span>,</span>
+<span id="cb8-33"><a href="#cb8-33"></a>              <span class="at">numberColor =</span> <span class="st">"red"</span>,</span>
+<span id="cb8-34"><a href="#cb8-34"></a>              <span class="at">numberIcon =</span> <span class="st">"fa fa-caret-down"</span>,</span>
+<span id="cb8-35"><a href="#cb8-35"></a>              <span class="at">header =</span> <span class="st">"1200"</span>,</span>
+<span id="cb8-36"><a href="#cb8-36"></a>              <span class="at">text =</span> <span class="st">"目标完成"</span>,</span>
+<span id="cb8-37"><a href="#cb8-37"></a>              <span class="at">rightBorder =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb8-38"><a href="#cb8-38"></a>              <span class="at">marginBottom =</span> <span class="cn">FALSE</span></span>
+<span id="cb8-39"><a href="#cb8-39"></a>            )</span>
+<span id="cb8-40"><a href="#cb8-40"></a>          )</span>
+<span id="cb8-41"><a href="#cb8-41"></a>        )</span>
+<span id="cb8-42"><a href="#cb8-42"></a>      )</span>
+<span id="cb8-43"><a href="#cb8-43"></a>    ),</span>
+<span id="cb8-44"><a href="#cb8-44"></a>    <span class="at">title =</span> <span class="st">"Description Blocks"</span></span>
+<span id="cb8-45"><a href="#cb8-45"></a>  ),</span>
+<span id="cb8-46"><a href="#cb8-46"></a>  <span class="at">server =</span> <span class="cf">function</span>(input, output) { }</span>
+<span id="cb8-47"><a href="#cb8-47"></a>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section><section id="bs4dash-包" class="level3" data-number="15.4.3"><h3 data-number="15.4.3" class="anchored" data-anchor-id="bs4dash-包">
+<span class="header-section-number">15.4.3</span> bs4Dash 包</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1"></a><span class="fu">library</span>(bs4Dash)</span>
+<span id="cb9-2"><a href="#cb9-2"></a>ui <span class="ot">&lt;-</span> <span class="fu">dashboardPage</span>(</span>
+<span id="cb9-3"><a href="#cb9-3"></a>  <span class="fu">dashboardHeader</span>(<span class="at">title =</span> <span class="st">"Basic dashboard"</span>),</span>
+<span id="cb9-4"><a href="#cb9-4"></a>  <span class="fu">dashboardSidebar</span>(),</span>
+<span id="cb9-5"><a href="#cb9-5"></a>  <span class="fu">dashboardBody</span>(</span>
+<span id="cb9-6"><a href="#cb9-6"></a>    <span class="co"># Boxes need to be put in a row (or column)</span></span>
+<span id="cb9-7"><a href="#cb9-7"></a>    <span class="fu">fluidRow</span>(</span>
+<span id="cb9-8"><a href="#cb9-8"></a>      <span class="fu">box</span>(<span class="fu">plotOutput</span>(<span class="st">"plot1"</span>, <span class="at">height =</span> <span class="dv">250</span>)),</span>
+<span id="cb9-9"><a href="#cb9-9"></a>      </span>
+<span id="cb9-10"><a href="#cb9-10"></a>      <span class="fu">box</span>(</span>
+<span id="cb9-11"><a href="#cb9-11"></a>        <span class="at">title =</span> <span class="st">"Controls"</span>,</span>
+<span id="cb9-12"><a href="#cb9-12"></a>        <span class="fu">sliderInput</span>(<span class="st">"slider"</span>, <span class="st">"Number of observations:"</span>, <span class="dv">1</span>, <span class="dv">100</span>, <span class="dv">50</span>)</span>
+<span id="cb9-13"><a href="#cb9-13"></a>      )</span>
+<span id="cb9-14"><a href="#cb9-14"></a>    )</span>
+<span id="cb9-15"><a href="#cb9-15"></a>  )</span>
+<span id="cb9-16"><a href="#cb9-16"></a>)</span>
+<span id="cb9-17"><a href="#cb9-17"></a></span>
+<span id="cb9-18"><a href="#cb9-18"></a>server <span class="ot">&lt;-</span> <span class="cf">function</span>(input, output) {</span>
+<span id="cb9-19"><a href="#cb9-19"></a>  <span class="fu">set.seed</span>(<span class="dv">122</span>)</span>
+<span id="cb9-20"><a href="#cb9-20"></a>  histdata <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="dv">500</span>)</span>
+<span id="cb9-21"><a href="#cb9-21"></a>  </span>
+<span id="cb9-22"><a href="#cb9-22"></a>  output<span class="sc">$</span>plot1 <span class="ot">&lt;-</span> <span class="fu">renderPlot</span>({</span>
+<span id="cb9-23"><a href="#cb9-23"></a>    data <span class="ot">&lt;-</span> histdata[<span class="fu">seq_len</span>(input<span class="sc">$</span>slider)]</span>
+<span id="cb9-24"><a href="#cb9-24"></a>    <span class="fu">hist</span>(data)</span>
+<span id="cb9-25"><a href="#cb9-25"></a>  })</span>
+<span id="cb9-26"><a href="#cb9-26"></a>}</span>
+<span id="cb9-27"><a href="#cb9-27"></a></span>
+<span id="cb9-28"><a href="#cb9-28"></a><span class="fu">shinyApp</span>(ui, server)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section><section id="miniui-包" class="level3" data-number="15.4.4"><h3 data-number="15.4.4" class="anchored" data-anchor-id="miniui-包">
+<span class="header-section-number">15.4.4</span> miniUI 包</h3>
+<p><strong>miniUI</strong> 包制作迷你版 Shiny 应用，适用于小屏幕显示。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1"></a><span class="fu">library</span>(shiny)</span>
+<span id="cb10-2"><a href="#cb10-2"></a><span class="fu">library</span>(miniUI)</span>
+<span id="cb10-3"><a href="#cb10-3"></a><span class="fu">library</span>(leaflet)</span>
+<span id="cb10-4"><a href="#cb10-4"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb10-5"><a href="#cb10-5"></a></span>
+<span id="cb10-6"><a href="#cb10-6"></a>ui <span class="ot">&lt;-</span> <span class="fu">miniPage</span>(</span>
+<span id="cb10-7"><a href="#cb10-7"></a>  <span class="fu">gadgetTitleBar</span>(<span class="st">"Shiny gadget example"</span>),</span>
+<span id="cb10-8"><a href="#cb10-8"></a>  <span class="fu">miniTabstripPanel</span>(</span>
+<span id="cb10-9"><a href="#cb10-9"></a>    <span class="fu">miniTabPanel</span>(<span class="at">title =</span> <span class="st">"参数"</span>,</span>
+<span id="cb10-10"><a href="#cb10-10"></a>      <span class="at">icon =</span> <span class="fu">icon</span>(<span class="st">"sliders"</span>),</span>
+<span id="cb10-11"><a href="#cb10-11"></a>      <span class="fu">miniContentPanel</span>(</span>
+<span id="cb10-12"><a href="#cb10-12"></a>        <span class="fu">sliderInput</span>(<span class="st">"year"</span>, <span class="st">"年份"</span>, <span class="dv">1978</span>, <span class="dv">2010</span>, <span class="fu">c</span>(<span class="dv">2000</span>, <span class="dv">2010</span>), <span class="at">sep =</span> <span class="st">""</span>)</span>
+<span id="cb10-13"><a href="#cb10-13"></a>      )</span>
+<span id="cb10-14"><a href="#cb10-14"></a>    ),</span>
+<span id="cb10-15"><a href="#cb10-15"></a>    <span class="fu">miniTabPanel</span>(<span class="at">title =</span> <span class="st">"可视化"</span>,</span>
+<span id="cb10-16"><a href="#cb10-16"></a>      <span class="at">icon =</span> <span class="fu">icon</span>(<span class="st">"area-chart"</span>),</span>
+<span id="cb10-17"><a href="#cb10-17"></a>      <span class="fu">miniContentPanel</span>(</span>
+<span id="cb10-18"><a href="#cb10-18"></a>        <span class="fu">plotOutput</span>(<span class="st">"quakes"</span>, <span class="at">height =</span> <span class="st">"100%"</span>)</span>
+<span id="cb10-19"><a href="#cb10-19"></a>      )</span>
+<span id="cb10-20"><a href="#cb10-20"></a>    ),</span>
+<span id="cb10-21"><a href="#cb10-21"></a>    <span class="fu">miniTabPanel</span>(<span class="at">title =</span> <span class="st">"地图"</span>,</span>
+<span id="cb10-22"><a href="#cb10-22"></a>      <span class="at">icon =</span> <span class="fu">icon</span>(<span class="st">"map-o"</span>),</span>
+<span id="cb10-23"><a href="#cb10-23"></a>      <span class="fu">miniContentPanel</span>(</span>
+<span id="cb10-24"><a href="#cb10-24"></a>        <span class="at">padding =</span> <span class="dv">0</span>,</span>
+<span id="cb10-25"><a href="#cb10-25"></a>        <span class="fu">leafletOutput</span>(<span class="st">"map"</span>, <span class="at">height =</span> <span class="st">"100%"</span>)</span>
+<span id="cb10-26"><a href="#cb10-26"></a>      ),</span>
+<span id="cb10-27"><a href="#cb10-27"></a>      <span class="fu">miniButtonBlock</span>(</span>
+<span id="cb10-28"><a href="#cb10-28"></a>        <span class="fu">actionButton</span>(<span class="st">"resetMap"</span>, <span class="st">"Reset"</span>)</span>
+<span id="cb10-29"><a href="#cb10-29"></a>      )</span>
+<span id="cb10-30"><a href="#cb10-30"></a>    ),</span>
+<span id="cb10-31"><a href="#cb10-31"></a>    <span class="fu">miniTabPanel</span>(<span class="at">title =</span> <span class="st">"数据"</span>,</span>
+<span id="cb10-32"><a href="#cb10-32"></a>      <span class="at">icon =</span> <span class="fu">icon</span>(<span class="st">"table"</span>),</span>
+<span id="cb10-33"><a href="#cb10-33"></a>      <span class="fu">miniContentPanel</span>(</span>
+<span id="cb10-34"><a href="#cb10-34"></a>        DT<span class="sc">::</span><span class="fu">dataTableOutput</span>(<span class="st">"table"</span>)</span>
+<span id="cb10-35"><a href="#cb10-35"></a>      )</span>
+<span id="cb10-36"><a href="#cb10-36"></a>    ),</span>
+<span id="cb10-37"><a href="#cb10-37"></a>    <span class="at">selected =</span> <span class="st">"Map"</span></span>
+<span id="cb10-38"><a href="#cb10-38"></a>  )</span>
+<span id="cb10-39"><a href="#cb10-39"></a>)</span>
+<span id="cb10-40"><a href="#cb10-40"></a></span>
+<span id="cb10-41"><a href="#cb10-41"></a>server <span class="ot">&lt;-</span> <span class="cf">function</span>(input, output, session) {</span>
+<span id="cb10-42"><a href="#cb10-42"></a>  output<span class="sc">$</span>quakes <span class="ot">&lt;-</span> <span class="fu">renderPlot</span>({</span>
+<span id="cb10-43"><a href="#cb10-43"></a>    <span class="fu">ggplot</span>(quakes, <span class="fu">aes</span>(long, lat)) <span class="sc">+</span></span>
+<span id="cb10-44"><a href="#cb10-44"></a>      <span class="fu">geom_point</span>()</span>
+<span id="cb10-45"><a href="#cb10-45"></a>  })</span>
+<span id="cb10-46"><a href="#cb10-46"></a></span>
+<span id="cb10-47"><a href="#cb10-47"></a>  output<span class="sc">$</span>map <span class="ot">&lt;-</span> <span class="fu">renderLeaflet</span>({</span>
+<span id="cb10-48"><a href="#cb10-48"></a>    <span class="fu">force</span>(input<span class="sc">$</span>resetMap)</span>
+<span id="cb10-49"><a href="#cb10-49"></a></span>
+<span id="cb10-50"><a href="#cb10-50"></a>    <span class="fu">leaflet</span>(quakes, <span class="at">height =</span> <span class="st">"100%"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb10-51"><a href="#cb10-51"></a>      <span class="fu">addTiles</span>() <span class="sc">|&gt;</span></span>
+<span id="cb10-52"><a href="#cb10-52"></a>      <span class="fu">addMarkers</span>(<span class="at">lng =</span> <span class="sc">~</span>long, <span class="at">lat =</span> <span class="sc">~</span>lat)</span>
+<span id="cb10-53"><a href="#cb10-53"></a>  })</span>
+<span id="cb10-54"><a href="#cb10-54"></a></span>
+<span id="cb10-55"><a href="#cb10-55"></a>  output<span class="sc">$</span>table <span class="ot">&lt;-</span> DT<span class="sc">::</span><span class="fu">renderDataTable</span>({</span>
+<span id="cb10-56"><a href="#cb10-56"></a>    quakes</span>
+<span id="cb10-57"><a href="#cb10-57"></a>  })</span>
+<span id="cb10-58"><a href="#cb10-58"></a></span>
+<span id="cb10-59"><a href="#cb10-59"></a>  <span class="fu">observeEvent</span>(input<span class="sc">$</span>done, {</span>
+<span id="cb10-60"><a href="#cb10-60"></a>    <span class="fu">stopApp</span>(<span class="cn">TRUE</span>)</span>
+<span id="cb10-61"><a href="#cb10-61"></a>  })</span>
+<span id="cb10-62"><a href="#cb10-62"></a>}</span>
+<span id="cb10-63"><a href="#cb10-63"></a></span>
+<span id="cb10-64"><a href="#cb10-64"></a><span class="fu">shinyApp</span>(ui, server)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section></section><section id="sec-shiny-themes" class="level2" data-number="15.5"><h2 data-number="15.5" class="anchored" data-anchor-id="sec-shiny-themes">
+<span class="header-section-number">15.5</span> Shiny 主题</h2>
+<section id="bslib-包" class="level3" data-number="15.5.1"><h3 data-number="15.5.1" class="anchored" data-anchor-id="bslib-包">
+<span class="header-section-number">15.5.1</span> bslib 包</h3>
+<ul>
+<li><a href="https://github.com/rstudio/bslib">bslib</a></li>
+</ul></section><section id="shinymaterial-包" class="level3" data-number="15.5.2"><h3 data-number="15.5.2" class="anchored" data-anchor-id="shinymaterial-包">
+<span class="header-section-number">15.5.2</span> shinymaterial 包</h3>
+<p><a href="https://github.com/ericrayanderson/shinymaterial">shinymaterial</a> 包实现 Material Design</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1"></a><span class="fu">library</span>(shiny)</span>
+<span id="cb11-2"><a href="#cb11-2"></a><span class="fu">library</span>(shinymaterial)</span>
+<span id="cb11-3"><a href="#cb11-3"></a></span>
+<span id="cb11-4"><a href="#cb11-4"></a>ui <span class="ot">&lt;-</span> <span class="fu">material_page</span>(</span>
+<span id="cb11-5"><a href="#cb11-5"></a>  <span class="at">title =</span> <span class="st">"用户画像"</span>,</span>
+<span id="cb11-6"><a href="#cb11-6"></a>  <span class="at">nav_bar_fixed =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb11-7"><a href="#cb11-7"></a>  <span class="co"># 每个 sidebar 内容</span></span>
+<span id="cb11-8"><a href="#cb11-8"></a>  <span class="fu">material_side_nav</span>(</span>
+<span id="cb11-9"><a href="#cb11-9"></a>    <span class="at">fixed =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb11-10"><a href="#cb11-10"></a>    <span class="co"># Place side-nav tabs within side-nav</span></span>
+<span id="cb11-11"><a href="#cb11-11"></a>    <span class="fu">material_side_nav_tabs</span>(</span>
+<span id="cb11-12"><a href="#cb11-12"></a>      <span class="at">side_nav_tabs =</span> <span class="fu">c</span>(</span>
+<span id="cb11-13"><a href="#cb11-13"></a>        <span class="st">"数据汇总"</span> <span class="ot">=</span> <span class="st">"tab_1"</span>,</span>
+<span id="cb11-14"><a href="#cb11-14"></a>        <span class="st">"趋势信息"</span> <span class="ot">=</span> <span class="st">"tab_2"</span></span>
+<span id="cb11-15"><a href="#cb11-15"></a>      ),</span>
+<span id="cb11-16"><a href="#cb11-16"></a>      <span class="at">icons =</span> <span class="fu">c</span>(<span class="st">"cast"</span>, <span class="st">"insert_chart"</span>)</span>
+<span id="cb11-17"><a href="#cb11-17"></a>    )</span>
+<span id="cb11-18"><a href="#cb11-18"></a>  ),</span>
+<span id="cb11-19"><a href="#cb11-19"></a>  <span class="co"># 每个 tab 页面的内容</span></span>
+<span id="cb11-20"><a href="#cb11-20"></a>  <span class="fu">material_side_nav_tab_content</span>(</span>
+<span id="cb11-21"><a href="#cb11-21"></a>    <span class="at">side_nav_tab_id =</span> <span class="st">"tab_1"</span>,</span>
+<span id="cb11-22"><a href="#cb11-22"></a>    tags<span class="sc">$</span><span class="fu">h2</span>(<span class="st">"第一个tab页"</span>)</span>
+<span id="cb11-23"><a href="#cb11-23"></a>  ),</span>
+<span id="cb11-24"><a href="#cb11-24"></a>  <span class="fu">material_side_nav_tab_content</span>(</span>
+<span id="cb11-25"><a href="#cb11-25"></a>    <span class="at">side_nav_tab_id =</span> <span class="st">"tab_2"</span>,</span>
+<span id="cb11-26"><a href="#cb11-26"></a>    tags<span class="sc">$</span><span class="fu">h2</span>(<span class="st">"第二个tab页"</span>)</span>
+<span id="cb11-27"><a href="#cb11-27"></a>  )</span>
+<span id="cb11-28"><a href="#cb11-28"></a>)</span>
+<span id="cb11-29"><a href="#cb11-29"></a></span>
+<span id="cb11-30"><a href="#cb11-30"></a>server <span class="ot">&lt;-</span> <span class="cf">function</span>(input, output) {</span>
+<span id="cb11-31"><a href="#cb11-31"></a></span>
+<span id="cb11-32"><a href="#cb11-32"></a>}</span>
+<span id="cb11-33"><a href="#cb11-33"></a><span class="fu">shinyApp</span>(<span class="at">ui =</span> ui, <span class="at">server =</span> server)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section></section><section id="sec-shiny-faster" class="level2" data-number="15.6"><h2 data-number="15.6" class="anchored" data-anchor-id="sec-shiny-faster">
+<span class="header-section-number">15.6</span> Shiny 优化</h2>
+<p><a href="https://blog.rstudio.com/2020/07/21/4-tips-to-make-your-shiny-dashboard-faster/">提升 shiny 仪表盘访问性能的4个建议</a></p>
+</section><section id="sec-shiny-deployment" class="level2" data-number="15.7"><h2 data-number="15.7" class="anchored" data-anchor-id="sec-shiny-deployment">
+<span class="header-section-number">15.7</span> Shiny 部署</h2>
+<section id="promises-并发" class="level3" data-number="15.7.1"><h3 data-number="15.7.1" class="anchored" data-anchor-id="promises-并发">
+<span class="header-section-number">15.7.1</span> promises 并发</h3>
+<p>shiny 异步编程实现并发访问，多人同时访问 Shiny 应用的情况下，解决必须等另一个人完成访问的情况下才能继续访问的问题。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1"></a><span class="fu">library</span>(shiny)</span>
+<span id="cb12-2"><a href="#cb12-2"></a><span class="fu">library</span>(future)</span>
+<span id="cb12-3"><a href="#cb12-3"></a><span class="fu">library</span>(promises)</span>
+<span id="cb12-4"><a href="#cb12-4"></a></span>
+<span id="cb12-5"><a href="#cb12-5"></a><span class="fu">plan</span>(multiprocess)</span>
+<span id="cb12-6"><a href="#cb12-6"></a></span>
+<span id="cb12-7"><a href="#cb12-7"></a>ui <span class="ot">&lt;-</span> <span class="fu">fluidPage</span>(</span>
+<span id="cb12-8"><a href="#cb12-8"></a>  <span class="fu">h2</span>(<span class="st">"测试异步下载"</span>),</span>
+<span id="cb12-9"><a href="#cb12-9"></a>  tags<span class="sc">$</span><span class="fu">ol</span>(</span>
+<span id="cb12-10"><a href="#cb12-10"></a>    tags<span class="sc">$</span><span class="fu">li</span>(<span class="st">"Verify that plot appears below"</span>),</span>
+<span id="cb12-11"><a href="#cb12-11"></a>    tags<span class="sc">$</span><span class="fu">li</span>(<span class="st">"Verify that pressing Download results in 5 second delay, then rock.csv being downloaded"</span>),</span>
+<span id="cb12-12"><a href="#cb12-12"></a>    tags<span class="sc">$</span><span class="fu">li</span>(<span class="st">"Check 'Throw on download?' checkbox and verify that pressing Download results in 5 second delay, then error, as well as stack traces in console"</span>)</span>
+<span id="cb12-13"><a href="#cb12-13"></a>  ),</span>
+<span id="cb12-14"><a href="#cb12-14"></a>  <span class="fu">hr</span>(),</span>
+<span id="cb12-15"><a href="#cb12-15"></a>  <span class="fu">checkboxInput</span>(<span class="st">"throw"</span>, <span class="st">"Throw on download?"</span>),</span>
+<span id="cb12-16"><a href="#cb12-16"></a>  <span class="fu">downloadButton</span>(<span class="st">"download"</span>, <span class="st">"下载 (等待5秒)"</span>),</span>
+<span id="cb12-17"><a href="#cb12-17"></a>  <span class="fu">plotOutput</span>(<span class="st">"plot"</span>)</span>
+<span id="cb12-18"><a href="#cb12-18"></a>)</span>
+<span id="cb12-19"><a href="#cb12-19"></a></span>
+<span id="cb12-20"><a href="#cb12-20"></a>server <span class="ot">&lt;-</span> <span class="cf">function</span>(input, output, session) {</span>
+<span id="cb12-21"><a href="#cb12-21"></a>  output<span class="sc">$</span>download <span class="ot">&lt;-</span> <span class="fu">downloadHandler</span>(<span class="st">"rock.csv"</span>, <span class="cf">function</span>(file) {</span>
+<span id="cb12-22"><a href="#cb12-22"></a>    <span class="fu">future</span>({<span class="fu">Sys.sleep</span>(<span class="dv">5</span>)}) <span class="sc">%...&gt;%</span></span>
+<span id="cb12-23"><a href="#cb12-23"></a>      {</span>
+<span id="cb12-24"><a href="#cb12-24"></a>        <span class="cf">if</span> (input<span class="sc">$</span>throw) {</span>
+<span id="cb12-25"><a href="#cb12-25"></a>          <span class="fu">stop</span>(<span class="st">"boom"</span>)</span>
+<span id="cb12-26"><a href="#cb12-26"></a>        } <span class="cf">else</span> {</span>
+<span id="cb12-27"><a href="#cb12-27"></a>          <span class="fu">write.csv</span>(rock, file)</span>
+<span id="cb12-28"><a href="#cb12-28"></a>        }</span>
+<span id="cb12-29"><a href="#cb12-29"></a>      }</span>
+<span id="cb12-30"><a href="#cb12-30"></a>  })</span>
+<span id="cb12-31"><a href="#cb12-31"></a></span>
+<span id="cb12-32"><a href="#cb12-32"></a>  output<span class="sc">$</span>plot <span class="ot">&lt;-</span> <span class="fu">renderPlot</span>({</span>
+<span id="cb12-33"><a href="#cb12-33"></a>    <span class="fu">plot</span>(cars)</span>
+<span id="cb12-34"><a href="#cb12-34"></a>  })</span>
+<span id="cb12-35"><a href="#cb12-35"></a>}</span>
+<span id="cb12-36"><a href="#cb12-36"></a></span>
+<span id="cb12-37"><a href="#cb12-37"></a><span class="fu">shinyApp</span>(ui, server)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section></section><section id="sec-shiny-alternative" class="level2" data-number="15.8"><h2 data-number="15.8" class="anchored" data-anchor-id="sec-shiny-alternative">
+<span class="header-section-number">15.8</span> Shiny 替代品</h2>
+<p>R Markdown + Shiny 文档</p>
+<ul>
+<li>crosstalk 交互</li>
+<li>flexdashboard 布局</li>
+<li>DT 交互表格</li>
+<li>leaflet 交互地图</li>
+<li>ggiraph 交互图形</li>
+</ul>
+<p>Quarto Dashboard 文档</p>
+</section><section id="sec-shiny-showcases" class="level2" data-number="15.9"><h2 data-number="15.9" class="anchored" data-anchor-id="sec-shiny-showcases">
+<span class="header-section-number">15.9</span> Shiny 案例</h2>
+<ul>
+<li>
+<a href="https://github.com/radiant-rstats/radiant">radiant</a> 探索性数据分析解决方案</li>
+</ul></section><section id="sec-shiny-summary" class="level2" data-number="15.10"><h2 data-number="15.10" class="anchored" data-anchor-id="sec-shiny-summary">
+<span class="header-section-number">15.10</span> 总结</h2>
+<p>事实上，作为 BI 工程师，相当一部分工作是与数据开发结合的。从 Kafka 接入埋点上报的原始日志（ODS 层）、清洗抽取特定业务/领域内的数据（Fact 事实层）、面向某一类任务的主题数据（ topic 主题层）、面向特定数据产品的应用数据 （app 应用层）。</p>
+<ul>
+<li>数据仓库 Hive 数据开发：事实、主题和应用层</li>
+<li>数据计算 Spark 数据开发工具 Spark SQL / Hive SQL 任务调度</li>
+<li>数据报表 MySQL / Doris 数据同步工具 Hive2MySQL 同步应用层数据</li>
+<li>数据展示 Dashboard 应用开发工具 Shiny RStudio Shiny Server</li>
+</ul>
+<p>报表开发从数据仓库的 DWD 层开始，可能一些业务原因，我们需要从 ODS 层甚至从点击流的日志数据开始，经过数据清洗、提取、聚合成为支撑BI报表最底层的基础表，存储在 Hive 中，然后对这一系列的基础表根据BI展示的需要进行第二层聚合形成中间表，这两层数据根据业务情况做增量更新或者全量更新，并将中间表同步到 MySQL 仓库中，全量更新的情况，往往更新数据比较大，建议用 sqoop 做数据的同步。创建第二层的中间表稍有些灵活性，原则是在中间表之上对应的数据操作和可视化是容易实现且效率较高的，否则应该构造第三层的中间表，绝不能将大规模的数据集直接导入 R 中进行分析和可视化，拖慢前端展示的速度，占用过多的服务器资源。</p>
+<div class="cell">
+<div id="fig-shiny-ecosystem" class="cell-output-display quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-shiny-ecosystem-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="nomnoml html-widget html-fill-item" id="htmlwidget-6425cb1354a493eaf67b" style="width:100%;height:464px;"></div>
+<script type="application/json" data-for="htmlwidget-6425cb1354a493eaf67b">{"x":{"code":"\n#fill: #FEFEFF\n#lineWidth: 1\n#zoom: 4\n#direction: right\n\n#stroke: #26A63A\n#.box: dashed visual=ellipse\n#direction: down\n\n[<box>HTML]       -> [网页三剑客]\n[<box>JavaScript] -> [网页三剑客]\n[<box>CSS]        -> [<table>网页三剑客|htmlwidgets|htmltools||sass|bslib||thematic|jquerylib]\n\n[设计布局|bs4Dash|flexdashboard|shinydashboard] -> [<actor>开发应用|R Shiny]\n[设计交互|waiter|shinyFeedback|shinyToastify] -> [<actor>开发应用|R Shiny]\n[权限代理|shinyproxy|shinyauthr|shinymanager] -> [<actor>开发应用|R Shiny]\n\n[网页三剑客]  -> [<actor>开发应用|R Shiny]\n[网页三剑客]  -> [<actor>开发应用|R Shiny]\n[网页三剑客]  -> [<actor>开发应用|R Shiny]\n\n[开发应用] <- [<table>处理数据|Base R|SQL||data.table|dplyr||tidyr|purrr]\n[开发应用] <- [<table>制作表格|DT|gt||reactable|formattable||kableExtra|sparkline]\n[开发应用] <- [<table>制作图形|ggplot2|plotly||echarts4r|leaflet||dygraphs|visNetwork]","svg":false,"png":null},"evals":[],"jsHooks":[]}</script>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-shiny-ecosystem-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;15.1: Shiny 生态系统
+</figcaption></figure>
+</div>
+</div>
+<ul>
+<li>连接数据库。根据数据库的情况选择相应的 R 接口包，比如连接 MySQL 数据库可以用 RMySQL 包，值得一提， odbc 包支持连接相当多的数据库。</li>
+<li>数据操作。根据需要处理的数据规模，可以选择 Base R、 data.table 或者 dplyr 做数据操作，推荐和管道操作一起使用，增加代码可读性。</li>
+<li>交互表格。推荐 reactable 和 DT 包做数据呈现。</li>
+<li>交互图形。推荐功能强大的 plotly 包，可以先用 <a href="https://github.com/tidyverse/ggplot2">ggplot2</a> 绘制，然后调用 <a href="https://github.com/ropensci/plotly">plotly</a> 包的 <code>ggplotly()</code> 函数将静态图转化为交互图。</li>
+<li>针对特定应用场景的其它交互可视化工具包，比如 <a href="https://github.com/rstudio/leaflet">leaflet</a> 可以将地图嵌入 Shiny 应用， <a href="https://github.com/rstudio/dygraphs">dygraphs</a> 可以将时间序列塞进去。</li>
+<li>Shiny 组件。<a href="https://github.com/merlinoa/shinyFeedback">shinyFeedback</a> 提供用户输入的反馈。<a href="https://github.com/dreamRs/shinyWidgets">shinyWidgets</a> 提供自定义 widget 的功能。<a href="https://github.com/rstudio/miniUI">miniUI</a> 专为小屏设计，<a href="https://github.com/RinteRface/shinyMobile">shinyMobile</a> 在 IOS 和安卓手机上访问 shiny 应用。</li>
+<li>Shiny 主题。比如 <a href="https://github.com/rstudio/shinythemes">shinythemes</a> 包可以统一配色，<a href="https://github.com/nik01010/dashboardthemes">dashboardthemes</a> 提供更加深度的主题，<a href="https://github.com/rstudio/shinytableau">shinytableau</a> 提供仿 <a href="https://www.tableau.com/">Tableau</a> 的 dashboard 框架。<a href="https://github.com/rstudio/sass">sass</a> 在 CSS 样式层面重定义风格。<a href="https://github.com/rstudio/bslib">bslib</a> 通过 Bootstrap 3/4/5 定制 Shiny 和 R Markdown 主题。</li>
+<li>Shiny 权限。<a href="https://github.com/datastorm-open/shinymanager">shinymanager</a> / <a href="https://github.com/paulc91/shinyauthr">shinyauthr</a> 支持单个 shiny 应用的权限管理，<a href="https://github.com/JohnCoene/firebase">firebase</a> 提供访问权限设置 <a href="https://firebase.john-coene.com/" class="uri">https://firebase.john-coene.com/</a>。</li>
+<li>Shiny 框架。<a href="https://github.com/clevr-dev/ShinyStudio">ShinyStudio</a> 打造基于容器架构的协作开发环境的开源解决方案，<a href="https://github.com/ThinkR-open/golem">golem</a> 构建企业级 shiny 应用的框架，<a href="https://github.com/RinteRface">RinteRface</a> 开发的系列 R 包也试图打造一套完整的解决方案，并配有速查小抄 <a href="https://github.com/RinteRface/cheatsheets">cheatsheets</a>。</li>
+<li>Shiny 部署。<a href="https://github.com/rstudio/shiny-server">shiny-server</a> 以网络服务的方式支持 shiny 应用，<a href="https://github.com/openanalytics/shinyproxy">shinyproxy</a> 提供企业级部署 shiny 应用的开源解决方案。</li>
+</ul>
+<p>自 RStudio 推出 Shiny 系列产品以来，一些公司进一步根据所需扩展和定制，比如 <a href="https://github.com/Appsilon">Appsilon</a>、<a href="https://github.com/RinteRface">RinteRface</a>、<a href="https://github.com/ThinkR-open">ThinkR-open</a>、<a href="https://github.com/dreamRs">dreamRs</a> 和<a href="https://github.com/datastorm-open">datastorm-open</a> 等。经过商业公司和个人开发者的努力，Shiny 生态非常庞大，资源非常丰富。</p>
+<ul>
+<li>Shiny 入门 <a href="https://shiny.posit.co/r/getstarted/" class="uri">https://shiny.posit.co/r/getstarted/</a>。</li>
+<li>Shiny 扩展包 <a href="https://github.com/nanxstats/awesome-shiny-extensions" class="uri">https://github.com/nanxstats/awesome-shiny-extensions</a>。</li>
+<li>Shiny 常用技巧和提示 <a href="https://github.com/daattali/advanced-shiny" class="uri">https://github.com/daattali/advanced-shiny</a>。</li>
+<li>Shiny 各类资源列表 <a href="https://github.com/grabear/awesome-rshiny" class="uri">https://github.com/grabear/awesome-rshiny</a>。</li>
+</ul>
+<p>特别值得一提，Shiny 方面的三本专著。</p>
+<ul>
+<li>Hadley Wickham 的书 <a href="https://mastering-shiny.org/">Mastering Shiny</a>。</li>
+<li>Colin Fay, Sébastien Rochette, Vincent Guyader, Cervan Girard 的书 <a href="https://engineering-shiny.org/">Engineering Production-Grade Shiny Apps</a>。</li>
+<li>David Granjon 的书 <a href="https://unleash-shiny.rinterface.com/">Outstanding User Interfaces with Shiny</a>。</li>
+</ul>
+
+
+</section></main><!-- /main --><script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "已复制");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "已复制");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    const typesetMath = (el) => {
+      if (window.MathJax) {
+        // MathJax Typeset
+        window.MathJax.typeset([el]);
+      } else if (window.katex) {
+        // KaTeX Render
+        var mathElements = el.getElementsByClassName("math");
+        var macros = [];
+        for (var i = 0; i < mathElements.length; i++) {
+          var texText = mathElements[i].firstChild;
+          if (mathElements[i].tagName == "SPAN") {
+            window.katex.render(texText.data, mathElements[i], {
+              displayMode: mathElements[i].classList.contains('display'),
+              throwOnError: false,
+              macros: macros,
+              fleqn: false
+            });
+          }
+        }
+      }
+    }
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        typesetMath(container);
+        return container.innerHTML
+      } else {
+        typesetMath(note);
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      typesetMath(note);
+      return note.innerHTML;
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script><nav class="page-navigation"><div class="nav-page nav-page-previous">
+      <a href="./interactive-tables.html" class="pagination-link  aria-label=">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">交互表格</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./documents-html.html" class="pagination-link" aria-label="<span class='chapter-number'>16</span>&nbsp; <span class='chapter-title'>HTML 文档</span>">
+        <span class="nav-page-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">HTML 文档</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+</body></html>

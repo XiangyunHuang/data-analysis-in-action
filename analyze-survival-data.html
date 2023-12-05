@@ -1,0 +1,1297 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh-Hans" xml:lang="zh-Hans"><head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.4.515">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>R 语言数据分析实战 - 25&nbsp; 生存分析</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+  margin-bottom: 0em;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./analyze-time-series-data.html" rel="next">
+<link href="./analyze-text-data.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light"><script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "没有结果",
+    "search-matching-documents-text": "匹配的文档",
+    "search-copy-link-title": "复制搜索链接",
+    "search-hide-matches-text": "隐藏其它匹配结果",
+    "search-more-match-text": "更多匹配结果",
+    "search-more-matches-text": "更多匹配结果",
+    "search-clear-button-title": "清除",
+    "search-detached-cancel-button-title": "取消",
+    "search-submit-button-title": "提交",
+    "search-label": "搜索"
+  }
+}</script><script async="" src="https://www.googletagmanager.com/gtag/js?id=G-ZPWJBMKFL8"></script><script type="text/javascript">
+
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-ZPWJBMKFL8', { 'anonymize_ip': true});
+</script><script>
+MathJax ={
+  tex: {
+    macros: {
+      bm: ["{\\boldsymbol #1}",1],
+    }
+  }
+};
+</script>
+</head>
+<body class="nav-sidebar floating">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top"><nav class="quarto-secondary-nav"><div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="切换侧边栏导航" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./analyze-network-data.html">数据建模</a></li><li class="breadcrumb-item"><a href="./analyze-survival-data.html"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">生存分析</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="切换侧边栏导航" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav></header><!-- content --><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto"><div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">R 语言数据分析实战</a> 
+        <div class="sidebar-tools-main">
+    <a href="https://github.com/XiangyunHuang/data-analysis-in-action" title="Source Code" class="quarto-navigation-tool px-1" aria-label="Source Code"><i class="bi bi-github"></i></a>
+    <a href="./_main.pdf" title="Download PDF" class="quarto-navigation-tool px-1" aria-label="Download PDF"><i class="bi bi-file-pdf"></i></a>
+</div>
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="搜索"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">欢迎</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./preface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">前言</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./intro.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">介绍</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true">
+ <span class="menu-text">数据准备</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./wrangling-objects.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">数据对象</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./wrangling-collection.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">数据获取</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./wrangling-cleaning.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">数据清洗</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./wrangling-manipulation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">数据操作</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./wrangling-processing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">数据处理</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true">
+ <span class="menu-text">数据探索</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./visualization-basic.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">ggplot2 入门</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./visualization-intermediate.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">基础图形</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./visualization-advanced.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">统计图形</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./visualization-lattice.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">lattice 入门</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./visualization-graphics.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">graphics 入门</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./visualization-tikz.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">TikZ 入门</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./visualization-practice.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">探索实践</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true">
+ <span class="menu-text">数据交流</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./interactive-graphics.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">交互图形</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./interactive-tables.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">交互表格</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./interactive-applications.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">交互应用</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./documents-html.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">HTML 文档</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./documents-latex.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">PDF 文档</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./documents-office.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Office 文档</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-expanded="true">
+ <span class="menu-text">统计分析</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./common-statistical-tests.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">常见的统计检验</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./regression-and-correlation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">回归与相关分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./categorical-data-analysis.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">分类数据的分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./power-analysis.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">统计检验的功效</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-expanded="true">
+ <span class="menu-text">数据建模</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./analyze-network-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">网络分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./analyze-text-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">文本分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./analyze-survival-data.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">生存分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./analyze-time-series-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">时序分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./analyze-point-pattern.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">空间点模式分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./analyze-spatial-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">预测核辐射强度的分布</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./analyze-areal-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">区域数据分析</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-expanded="true">
+ <span class="menu-text">优化建模</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./statistical-computation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">统计计算</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./numerical-optimization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">数值优化</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./optimization-problems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">优化问题</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" aria-expanded="true">
+ <span class="menu-text">贝叶斯建模</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./probabilistic-reasoning-framework.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">概率推理框架</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./generalized-linear-models.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">广义线性模型</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./hierarchical-normal-models.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">分层正态模型</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./mixed-effects-models.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">混合效应模型</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./generalized-additive-models.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">37</span>&nbsp; <span class="chapter-title">广义可加模型</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./gaussian-processes-regression.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">38</span>&nbsp; <span class="chapter-title">高斯过程回归</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./time-series-regression.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">39</span>&nbsp; <span class="chapter-title">时间序列回归</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" aria-expanded="true">
+ <span class="menu-text">机器学习</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./classification-problems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">40</span>&nbsp; <span class="chapter-title">分类问题</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./clustering-problems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">41</span>&nbsp; <span class="chapter-title">聚类问题</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./regression-problems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">42</span>&nbsp; <span class="chapter-title">回归问题</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">参考文献</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" aria-expanded="true">
+ <span class="menu-text">附录</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./notations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">数学符号</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./matrix-operations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">矩阵运算</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./git-github.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">Git 和 Github</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+    </ul>
+</div>
+</nav><div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active"><h2 id="toc-title">目录</h2>
+   
+  <ul>
+<li><a href="#sec-aml" id="toc-sec-aml" class="nav-link active" data-scroll-target="#sec-aml"><span class="header-section-number">25.1</span> 问题背景</a></li>
+  <li>
+<a href="#%E6%A8%A1%E5%9E%8B%E6%8B%9F%E5%90%88" id="toc-模型拟合" class="nav-link" data-scroll-target="#%E6%A8%A1%E5%9E%8B%E6%8B%9F%E5%90%88"><span class="header-section-number">25.2</span> 模型拟合</a>
+  <ul class="collapse">
+<li><a href="#survival" id="toc-survival" class="nav-link" data-scroll-target="#survival"><span class="header-section-number">25.2.1</span> survival</a></li>
+  <li><a href="#ggsurvfit" id="toc-ggsurvfit" class="nav-link" data-scroll-target="#ggsurvfit"><span class="header-section-number">25.2.2</span> ggsurvfit</a></li>
+  <li><a href="#glmnet" id="toc-glmnet" class="nav-link" data-scroll-target="#glmnet"><span class="header-section-number">25.2.3</span> glmnet</a></li>
+  <li><a href="#inla" id="toc-inla" class="nav-link" data-scroll-target="#inla"><span class="header-section-number">25.2.4</span> INLA</a></li>
+  </ul>
+</li>
+  <li><a href="#sec-tobit-regression" id="toc-sec-tobit-regression" class="nav-link" data-scroll-target="#sec-tobit-regression"><span class="header-section-number">25.3</span> Tobit 回归</a></li>
+  </ul><div class="toc-actions"><ul><li><a href="https://github.com/XiangyunHuang/data-analysis-in-action/blob/main/analyze-survival-data.qmd" class="toc-action"><i class="bi bi-github"></i>查看代码</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./analyze-network-data.html">数据建模</a></li><li class="breadcrumb-item"><a href="./analyze-survival-data.html"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">生存分析</span></a></li></ol></nav><div class="quarto-title">
+<h1 class="title"><span id="sec-survival-analysis" class="quarto-section-identifier"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">生存分析</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header><blockquote class="blockquote">
+<p>The fact that some people murder doesn’t mean we should copy them. And murdering data, though not as serious, should also be avoided.</p>
+<p>— Frank E. Harrell <a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a></p>
+</blockquote>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a><span class="fu">library</span>(survival)  <span class="co"># survfit</span></span>
+<span id="cb1-2"><a href="#cb1-2"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb1-3"><a href="#cb1-3"></a><span class="fu">library</span>(ggfortify) <span class="co"># autoplot</span></span>
+<span id="cb1-4"><a href="#cb1-4"></a><span class="fu">library</span>(ggsurvfit) <span class="co"># survfit2 and ggsurvfit</span></span>
+<span id="cb1-5"><a href="#cb1-5"></a><span class="fu">library</span>(glmnet)    <span class="co"># Cox Models</span></span>
+<span id="cb1-6"><a href="#cb1-6"></a><span class="fu">library</span>(VGAM)      <span class="co"># R &gt;= 4.4.0</span></span>
+<span id="cb1-7"><a href="#cb1-7"></a><span class="fu">library</span>(INLA)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>生存分析可以用于用户流失分析，注册、激活、活跃。 分析次日留存、7日留存、15日留存。有学生来上体验课，多久来付费上课。 有一个人医院看病之后，多久办理住院。 最早，生存分析用于研究飞机出去之后，有多少返回的。还是要回归到原始文献去了解基本概念，及其背后的思考和应用</p>
+<p>以一个问题提出本章主题，讲述和展示一个数据集。建立模型，拟合模型，结果解释。</p>
+<section id="sec-aml" class="level2" data-number="25.1"><h2 data-number="25.1" class="anchored" data-anchor-id="sec-aml">
+<span class="header-section-number">25.1</span> 问题背景</h2>
+<p>急性粒细胞白血病生存数据</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1"></a><span class="fu">library</span>(survival)</span>
+<span id="cb2-2"><a href="#cb2-2"></a><span class="fu">data</span>(cancer, <span class="at">package =</span> <span class="st">"survival"</span>)</span>
+<span id="cb2-3"><a href="#cb2-3"></a><span class="fu">str</span>(aml)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>'data.frame':   23 obs. of  3 variables:
+ $ time  : num  9 13 13 18 23 28 31 34 45 48 ...
+ $ status: num  1 1 0 1 1 0 1 1 0 1 ...
+ $ x     : Factor w/ 2 levels "Maintained","Nonmaintained": 1 1 1 1 1 1 1 1 1 1 ...</code></pre>
+</div>
+</div>
+<p>数据的分布情况如下</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1"></a><span class="fu">ggplot</span>(<span class="at">data =</span> aml, <span class="fu">aes</span>(<span class="at">x =</span> time, <span class="at">y =</span> status, <span class="at">color =</span> x)) <span class="sc">+</span></span>
+<span id="cb4-2"><a href="#cb4-2"></a>  <span class="fu">geom_jitter</span>(<span class="at">height =</span> <span class="fl">0.2</span>) <span class="sc">+</span></span>
+<span id="cb4-3"><a href="#cb4-3"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-aml" class="quarto-figure quarto-figure-center anchored" width="432">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-aml-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="analyze-survival-data_files/figure-html/fig-aml-1.png" class="img-fluid figure-img" width="432">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-aml-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;25.1: 急性粒细胞白血病
+</figcaption></figure>
+</div>
+</div>
+</div>
+<p>在垂直方向添加了抖动，不影响时间项 time ，可以对数据的分布看得更加清楚。</p>
+</section><section id="模型拟合" class="level2" data-number="25.2"><h2 data-number="25.2" class="anchored" data-anchor-id="模型拟合">
+<span class="header-section-number">25.2</span> 模型拟合</h2>
+<p>Cox 比例风险回归模型与 Box-Cox 变换 <span class="citation" data-cites="Box1964">(<a href="references.html#ref-Box1964" role="doc-biblioref">Box 和 Cox 1964</a>)</span></p>
+<ul>
+<li>
+<code><a href="https://rdrr.io/pkg/survival/man/coxph.html">survival::coxph()</a></code> Cox 比例风险回归模型</li>
+<li>
+<code><a href="https://rdrr.io/pkg/MASS/man/boxcox.html">MASS::boxcox()</a></code> Box-Cox 变换</li>
+<li><code>glmnet::glmnet(family = "cox")</code></li>
+<li>INLA 包的函数 <code>inla()</code> 与 <code>inla.surv()</code> 一起拟合，<a href="https://becarioprecario.bitbucket.io/inla-gitbook/ch-survival.html">链接</a>
+</li>
+<li>
+<a href="https://github.com/fndemarqui/survstan">survstan</a> Stan 与生存分析</li>
+<li>rstanarm 包的函数 <code>stan_jm()</code> 使用说明 Estimating Joint Models for Longitudinal and Time-to-Event Data with rstanarm <a href="https://cran.r-project.org/web/packages/rstanarm/vignettes/jm.html">链接</a>
+</li>
+<li>rstanarm 包的<a href="https://github.com/stan-dev/rstanarm/pull/323">生存分析分支</a>
+</li>
+</ul>
+<section id="survival" class="level3" data-number="25.2.1"><h3 data-number="25.2.1" class="anchored" data-anchor-id="survival">
+<span class="header-section-number">25.2.1</span> survival</h3>
+<p>R 软件内置了 <a href="https://github.com/therneau/survival">survival</a> 包，它是实现生存分析的核心 R 包 <span class="citation" data-cites="Terry2000">(<a href="references.html#ref-Terry2000" role="doc-biblioref">Terry M. Therneau 和 Patricia M. Grambsch 2000</a>)</span>，其函数 <code>survfit()</code> 拟合模型。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1"></a>aml_survival <span class="ot">&lt;-</span> <span class="fu">survfit</span>(<span class="fu">Surv</span>(time, status) <span class="sc">~</span> x, <span class="at">data =</span> aml)</span>
+<span id="cb5-2"><a href="#cb5-2"></a><span class="fu">summary</span>(aml_survival)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Call: survfit(formula = Surv(time, status) ~ x, data = aml)
+
+                x=Maintained 
+ time n.risk n.event survival std.err lower 95% CI upper 95% CI
+    9     11       1    0.909  0.0867       0.7541        1.000
+   13     10       1    0.818  0.1163       0.6192        1.000
+   18      8       1    0.716  0.1397       0.4884        1.000
+   23      7       1    0.614  0.1526       0.3769        0.999
+   31      5       1    0.491  0.1642       0.2549        0.946
+   34      4       1    0.368  0.1627       0.1549        0.875
+   48      2       1    0.184  0.1535       0.0359        0.944
+
+                x=Nonmaintained 
+ time n.risk n.event survival std.err lower 95% CI upper 95% CI
+    5     12       2   0.8333  0.1076       0.6470        1.000
+    8     10       2   0.6667  0.1361       0.4468        0.995
+   12      8       1   0.5833  0.1423       0.3616        0.941
+   23      6       1   0.4861  0.1481       0.2675        0.883
+   27      5       1   0.3889  0.1470       0.1854        0.816
+   30      4       1   0.2917  0.1387       0.1148        0.741
+   33      3       1   0.1944  0.1219       0.0569        0.664
+   43      2       1   0.0972  0.0919       0.0153        0.620
+   45      1       1   0.0000     NaN           NA           NA</code></pre>
+</div>
+</div>
+<p>拟合 Cox 比例风险回归模型（Cox Proportional Hazards Regression Model）</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1"></a>aml_coxph <span class="ot">&lt;-</span> <span class="fu">coxph</span>(<span class="fu">Surv</span>(time, status) <span class="sc">~</span> <span class="dv">1</span> <span class="sc">+</span> x, <span class="at">data =</span> aml)</span>
+<span id="cb7-2"><a href="#cb7-2"></a><span class="fu">summary</span>(aml_coxph)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Call:
+coxph(formula = Surv(time, status) ~ 1 + x, data = aml)
+
+  n= 23, number of events= 18 
+
+                 coef exp(coef) se(coef)     z Pr(&gt;|z|)  
+xNonmaintained 0.9155    2.4981   0.5119 1.788   0.0737 .
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+               exp(coef) exp(-coef) lower .95 upper .95
+xNonmaintained     2.498     0.4003    0.9159     6.813
+
+Concordance= 0.619  (se = 0.063 )
+Likelihood ratio test= 3.38  on 1 df,   p=0.07
+Wald test            = 3.2  on 1 df,   p=0.07
+Score (logrank) test = 3.42  on 1 df,   p=0.06</code></pre>
+</div>
+</div>
+<p>展示拟合结果。可以绘制生存分析的图的 R 包有很多，比如 ggfortify 包、<a href="https://github.com/ddsjoberg/ggsurvfit/">ggsurvfit</a> 包和 <a href="https://github.com/kassambara/survminer">survminer</a> 包等。ggfortify 包可以直接针对函数 <code>survfit()</code> 的返回对象绘图，<a href="https://github.com/ddsjoberg/ggsurvfit/">ggsurvfit</a> 包提供新函数 <code>survfit2()</code> 拟合模型、函数 <code>ggsurvfit()</code> 绘制图形，画面内容更加丰富，而 <a href="https://github.com/kassambara/survminer">survminer</a> 包依赖很多。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb9-2"><a href="#cb9-2"></a><span class="fu">library</span>(ggfortify)</span>
+<span id="cb9-3"><a href="#cb9-3"></a><span class="fu">autoplot</span>(aml_survival, <span class="at">data =</span> aml) <span class="sc">+</span></span>
+<span id="cb9-4"><a href="#cb9-4"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-leukemia-surv" class="quarto-figure quarto-figure-center anchored" width="576">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-leukemia-surv-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="analyze-survival-data_files/figure-html/fig-leukemia-surv-1.png" class="img-fluid figure-img" width="576">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-leukemia-surv-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;25.2: 急性粒细胞白血病生存数据
+</figcaption></figure>
+</div>
+</div>
+</div>
+<p>参数化的生存分析模型（参数模型，相对于非参数模型而言）</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1"></a>aml_surv_reg <span class="ot">&lt;-</span> <span class="fu">survreg</span>(<span class="fu">Surv</span>(time, status) <span class="sc">~</span> x, <span class="at">data =</span> aml, <span class="at">dist =</span> <span class="st">"weibull"</span>)</span>
+<span id="cb10-2"><a href="#cb10-2"></a><span class="fu">summary</span>(aml_surv_reg)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+survreg(formula = Surv(time, status) ~ x, data = aml, dist = "weibull")
+                Value Std. Error     z      p
+(Intercept)     4.109      0.300 13.70 &lt;2e-16
+xNonmaintained -0.929      0.383 -2.43  0.015
+Log(scale)     -0.235      0.178 -1.32  0.188
+
+Scale= 0.791 
+
+Weibull distribution
+Loglik(model)= -80.5   Loglik(intercept only)= -83.2
+    Chisq= 5.31 on 1 degrees of freedom, p= 0.021 
+Number of Newton-Raphson Iterations: 5 
+n= 23 </code></pre>
+</div>
+</div>
+<p>下面 ggsurvfit 包再次拟合模型，并展示模型结果。</p>
+</section><section id="ggsurvfit" class="level3" data-number="25.2.2"><h3 data-number="25.2.2" class="anchored" data-anchor-id="ggsurvfit">
+<span class="header-section-number">25.2.2</span> ggsurvfit</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1"></a><span class="fu">library</span>(ggsurvfit)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>拟合模型需要函数 <code>survfit2()</code></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1"></a>aml_ggsurvfit <span class="ot">&lt;-</span> <span class="fu">survfit2</span>(<span class="fu">Surv</span>(time, status) <span class="sc">~</span> x, <span class="at">data =</span> aml)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>模型输出</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1"></a>aml_ggsurvfit</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Call: survfit(formula = Surv(time, status) ~ x, data = aml)
+
+                 n events median 0.95LCL 0.95UCL
+x=Maintained    11      7     31      18      NA
+x=Nonmaintained 12     11     23       8      NA</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1"></a><span class="fu">ggsurvfit</span>(aml_ggsurvfit, <span class="at">linewidth =</span> <span class="dv">1</span>) <span class="sc">+</span></span>
+<span id="cb16-2"><a href="#cb16-2"></a>  <span class="fu">add_confidence_interval</span>() <span class="sc">+</span></span>
+<span id="cb16-3"><a href="#cb16-3"></a>  <span class="fu">add_risktable</span>() <span class="sc">+</span></span>
+<span id="cb16-4"><a href="#cb16-4"></a>  <span class="fu">add_quantile</span>(<span class="at">y_value =</span> <span class="fl">0.6</span>, <span class="at">color =</span> <span class="st">"gray50"</span>, <span class="at">linewidth =</span> <span class="fl">0.75</span>) <span class="sc">+</span></span>
+<span id="cb16-5"><a href="#cb16-5"></a>  <span class="fu">scale_y_continuous</span>(<span class="at">label =</span> scales<span class="sc">::</span><span class="fu">percent_format</span>()) <span class="sc">+</span></span>
+<span id="cb16-6"><a href="#cb16-6"></a>  <span class="fu">labs</span>(<span class="at">y =</span> <span class="st">"生存百分比"</span>, <span class="at">title =</span> <span class="st">"从手术到随机化的复发时间"</span>) </span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-proportional-hazards-regression" class="quarto-figure quarto-figure-center anchored" width="672">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-proportional-hazards-regression-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="analyze-survival-data_files/figure-html/fig-proportional-hazards-regression-1.png" class="img-fluid figure-img" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-proportional-hazards-regression-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;25.3: 比例风险回归
+</figcaption></figure>
+</div>
+</div>
+</div>
+</section><section id="glmnet" class="level3" data-number="25.2.3"><h3 data-number="25.2.3" class="anchored" data-anchor-id="glmnet">
+<span class="header-section-number">25.2.3</span> glmnet</h3>
+<p>glmnet 包拟合 Cox 比例风险回归模型 <span class="citation" data-cites="simon2011">(<a href="references.html#ref-simon2011" role="doc-biblioref">Simon 等 2011</a>)</span> 适合需要多变量筛选的情况。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1"></a><span class="fu">library</span>(glmnet)</span>
+<span id="cb17-2"><a href="#cb17-2"></a><span class="co"># alpha = 1 lasso</span></span>
+<span id="cb17-3"><a href="#cb17-3"></a>aml_glmnet <span class="ot">&lt;-</span> <span class="fu">glmnet</span>(<span class="at">x =</span> aml<span class="sc">$</span>x, <span class="at">y =</span> <span class="fu">Surv</span>(aml<span class="sc">$</span>time, aml<span class="sc">$</span>status), <span class="at">family =</span> <span class="st">"cox"</span>, <span class="at">alpha =</span> <span class="dv">1</span>)</span>
+<span id="cb17-4"><a href="#cb17-4"></a>aml_glmnet_cv <span class="ot">&lt;-</span> <span class="fu">cv.glmnet</span>(<span class="at">x =</span> aml<span class="sc">$</span>x, <span class="at">y =</span> <span class="fu">Surv</span>(aml<span class="sc">$</span>time, aml<span class="sc">$</span>status), <span class="at">family =</span> <span class="st">"cox"</span>, <span class="at">alpha =</span> <span class="dv">1</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section><section id="inla" class="level3" data-number="25.2.4"><h3 data-number="25.2.4" class="anchored" data-anchor-id="inla">
+<span class="header-section-number">25.2.4</span> INLA</h3>
+<p>INLA 包拟合 Cox 比例风险回归模型 <span class="citation" data-cites="Virgilio2020">(<a href="references.html#ref-Virgilio2020" role="doc-biblioref">Gómez-Rubio 2020</a>)</span> 采用近似贝叶斯推断。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1"></a><span class="fu">library</span>(INLA)</span>
+<span id="cb18-2"><a href="#cb18-2"></a><span class="fu">inla.setOption</span>(<span class="at">short.summary =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb18-3"><a href="#cb18-3"></a>aml_inla <span class="ot">&lt;-</span> <span class="fu">inla</span>(<span class="fu">inla.surv</span>(time, status) <span class="sc">~</span> x, <span class="at">data =</span> aml, <span class="at">family =</span> <span class="st">"exponential.surv"</span>, <span class="at">num.threads =</span> <span class="st">"1:1"</span>)</span>
+<span id="cb18-4"><a href="#cb18-4"></a><span class="fu">summary</span>(aml_inla)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Fixed effects:
+                 mean    sd 0.025quant 0.5quant 0.975quant   mode kld
+(Intercept)    -4.173 0.378     -4.913   -4.173     -3.432 -4.173   0
+xNonmaintained  0.984 0.483      0.036    0.984      1.931  0.984   0
+
+ is computed </code></pre>
+</div>
+</div>
+</section></section><section id="sec-tobit-regression" class="level2" data-number="25.3"><h2 data-number="25.3" class="anchored" data-anchor-id="sec-tobit-regression">
+<span class="header-section-number">25.3</span> Tobit 回归</h2>
+<p>Tobit (Tobin’s Probit) regression 起源于计量经济学中的 Tobit 模型，James Tobin 提出的，用于截尾数据，生存分析中的一种加速失效模型 (accelerated failure model) <span class="citation" data-cites="Tobin1958">(<a href="references.html#ref-Tobin1958" role="doc-biblioref">Tobin 1958</a>)</span>。</p>
+<ul>
+<li>逻辑回归，响应变量是无序的分类变量，假定服从二项、多项分布，拟合函数 <code><a href="https://rdrr.io/r/stats/glm.html">glm()</a></code> 和 <code><a href="https://rdrr.io/pkg/nnet/man/multinom.html">nnet::multinom()</a></code>
+</li>
+<li>Probit 回归，响应变量是有序的分类变量，拟合函数 <code><a href="https://rdrr.io/pkg/MASS/man/polr.html">MASS::polr()</a></code>
+</li>
+<li>Tobit 回归，响应变量是有删失/截尾的，VGAM 包依赖少，稳定，推荐使用。VGAM 包括了广义线性模型</li>
+</ul>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1"></a><span class="fu">library</span>(VGAM)</span>
+<span id="cb20-2"><a href="#cb20-2"></a><span class="fu">with</span>(aml, <span class="fu">SurvS4</span>(time, status))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>      time status
+ [1,]    9      1
+ [2,]   13      1
+ [3,]   13      0
+ [4,]   18      1
+ [5,]   23      1
+ [6,]   28      0
+ [7,]   31      1
+ [8,]   34      1
+ [9,]   45      0
+[10,]   48      1
+[11,]  161      0
+[12,]    5      1
+[13,]    5      1
+[14,]    8      1
+[15,]    8      1
+[16,]   12      1
+[17,]   16      0
+[18,]   23      1
+[19,]   27      1
+[20,]   30      1
+[21,]   33      1
+[22,]   43      1
+[23,]   45      1
+attr(,"type")
+[1] "right"
+attr(,"class")
+[1] "SurvS4"</code></pre>
+</div>
+</div>
+
+
+<div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list" style="display: none">
+<div id="ref-Box1964" class="csl-entry" role="listitem">
+Box, G. E. P., 和 D. R. Cox. 1964. <span>《An analysis of transformations (with discussion)》</span>. <em>Journal of the Royal Statistical Society, Series B</em> 26 (2): 211–52. <a href="https://www.jstor.org/stable/2984418">https://www.jstor.org/stable/2984418</a>.
+</div>
+<div id="ref-Virgilio2020" class="csl-entry" role="listitem">
+Gómez-Rubio, Virgilio. 2020. <em>Bayesian inference with INLA</em>. Boca Raton, Florida: Chapman; Hall/CRC. <a href="https://becarioprecario.bitbucket.io/inla-gitbook/">https://becarioprecario.bitbucket.io/inla-gitbook/</a>.
+</div>
+<div id="ref-simon2011" class="csl-entry" role="listitem">
+Simon, Noah, Jerome H. Friedman, Trevor Hastie, 和 Rob Tibshirani. 2011. <span>《Regularization Paths for Cox’s Proportional Hazards Model via Coordinate Descent》</span>. <em>Journal of Statistical Software</em> 39 (5): 1–13. <a href="https://doi.org/10.18637/jss.v039.i05">https://doi.org/10.18637/jss.v039.i05</a>.
+</div>
+<div id="ref-Terry2000" class="csl-entry" role="listitem">
+Terry M. Therneau, 和 Patricia M. Grambsch. 2000. <em>Modeling Survival Data: Extending the <span>C</span>ox Model</em>. New York: Springer.
+</div>
+<div id="ref-Tobin1958" class="csl-entry" role="listitem">
+Tobin, J. 1958. <span>《Estimation of relationships for limited dependent variables》</span>. <em>Econometrica</em> 26 (1): 24–36. <a href="https://doi.org/10.2307/1907382">https://doi.org/10.2307/1907382</a>.
+</div>
+</div>
+</section><aside id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes"><hr>
+<ol>
+<li id="fn1"><p><a href="https://stat.ethz.ch/pipermail/r-help/2005-July/075649.html" class="uri">https://stat.ethz.ch/pipermail/r-help/2005-July/075649.html</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol></aside></main><!-- /main --><script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "已复制");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "已复制");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    const typesetMath = (el) => {
+      if (window.MathJax) {
+        // MathJax Typeset
+        window.MathJax.typeset([el]);
+      } else if (window.katex) {
+        // KaTeX Render
+        var mathElements = el.getElementsByClassName("math");
+        var macros = [];
+        for (var i = 0; i < mathElements.length; i++) {
+          var texText = mathElements[i].firstChild;
+          if (mathElements[i].tagName == "SPAN") {
+            window.katex.render(texText.data, mathElements[i], {
+              displayMode: mathElements[i].classList.contains('display'),
+              throwOnError: false,
+              macros: macros,
+              fleqn: false
+            });
+          }
+        }
+      }
+    }
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        typesetMath(container);
+        return container.innerHTML
+      } else {
+        typesetMath(note);
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      typesetMath(note);
+      return note.innerHTML;
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script><nav class="page-navigation"><div class="nav-page nav-page-previous">
+      <a href="./analyze-text-data.html" class="pagination-link  aria-label=">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">文本分析</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./analyze-time-series-data.html" class="pagination-link" aria-label="<span class='chapter-number'>26</span>&nbsp; <span class='chapter-title'>时序分析</span>">
+        <span class="nav-page-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">时序分析</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+</body></html>

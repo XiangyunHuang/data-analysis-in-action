@@ -1,0 +1,3564 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh-Hans" xml:lang="zh-Hans"><head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.4.515">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>R 语言数据分析实战 - 21&nbsp; 分类数据的分析</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+  margin-bottom: 0em;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./power-analysis.html" rel="next">
+<link href="./regression-and-correlation.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light"><script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "没有结果",
+    "search-matching-documents-text": "匹配的文档",
+    "search-copy-link-title": "复制搜索链接",
+    "search-hide-matches-text": "隐藏其它匹配结果",
+    "search-more-match-text": "更多匹配结果",
+    "search-more-matches-text": "更多匹配结果",
+    "search-clear-button-title": "清除",
+    "search-detached-cancel-button-title": "取消",
+    "search-submit-button-title": "提交",
+    "search-label": "搜索"
+  }
+}</script><script async="" src="https://www.googletagmanager.com/gtag/js?id=G-ZPWJBMKFL8"></script><script type="text/javascript">
+
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-ZPWJBMKFL8', { 'anonymize_ip': true});
+</script><script>
+MathJax ={
+  tex: {
+    macros: {
+      bm: ["{\\boldsymbol #1}",1],
+    }
+  }
+};
+</script><script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script><script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+</head>
+<body class="nav-sidebar floating">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top"><nav class="quarto-secondary-nav"><div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="切换侧边栏导航" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./common-statistical-tests.html">统计分析</a></li><li class="breadcrumb-item"><a href="./categorical-data-analysis.html"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">分类数据的分析</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="切换侧边栏导航" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav></header><!-- content --><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto"><div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">R 语言数据分析实战</a> 
+        <div class="sidebar-tools-main">
+    <a href="https://github.com/XiangyunHuang/data-analysis-in-action" title="Source Code" class="quarto-navigation-tool px-1" aria-label="Source Code"><i class="bi bi-github"></i></a>
+    <a href="./_main.pdf" title="Download PDF" class="quarto-navigation-tool px-1" aria-label="Download PDF"><i class="bi bi-file-pdf"></i></a>
+</div>
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="搜索"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">欢迎</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./preface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">前言</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./intro.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">介绍</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true">
+ <span class="menu-text">数据准备</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./wrangling-objects.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">数据对象</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./wrangling-collection.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">数据获取</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./wrangling-cleaning.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">数据清洗</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./wrangling-manipulation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">数据操作</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./wrangling-processing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">数据处理</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true">
+ <span class="menu-text">数据探索</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./visualization-basic.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">ggplot2 入门</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./visualization-intermediate.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">基础图形</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./visualization-advanced.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">统计图形</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./visualization-lattice.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">lattice 入门</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./visualization-graphics.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">graphics 入门</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./visualization-tikz.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">TikZ 入门</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./visualization-practice.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">探索实践</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true">
+ <span class="menu-text">数据交流</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./interactive-graphics.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">交互图形</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./interactive-tables.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">交互表格</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./interactive-applications.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">交互应用</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./documents-html.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">HTML 文档</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./documents-latex.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">PDF 文档</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./documents-office.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Office 文档</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-expanded="true">
+ <span class="menu-text">统计分析</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./common-statistical-tests.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">常见的统计检验</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./regression-and-correlation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">回归与相关分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./categorical-data-analysis.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">分类数据的分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./power-analysis.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">统计检验的功效</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-expanded="true">
+ <span class="menu-text">数据建模</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./analyze-network-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">网络分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./analyze-text-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">文本分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./analyze-survival-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">生存分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./analyze-time-series-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">时序分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./analyze-point-pattern.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">空间点模式分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./analyze-spatial-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">预测核辐射强度的分布</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./analyze-areal-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">区域数据分析</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-expanded="true">
+ <span class="menu-text">优化建模</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./statistical-computation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">统计计算</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./numerical-optimization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">数值优化</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./optimization-problems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">优化问题</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" aria-expanded="true">
+ <span class="menu-text">贝叶斯建模</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./probabilistic-reasoning-framework.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">概率推理框架</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./generalized-linear-models.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">广义线性模型</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./hierarchical-normal-models.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">分层正态模型</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./mixed-effects-models.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">混合效应模型</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./generalized-additive-models.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">37</span>&nbsp; <span class="chapter-title">广义可加模型</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./gaussian-processes-regression.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">38</span>&nbsp; <span class="chapter-title">高斯过程回归</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./time-series-regression.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">39</span>&nbsp; <span class="chapter-title">时间序列回归</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" aria-expanded="true">
+ <span class="menu-text">机器学习</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./classification-problems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">40</span>&nbsp; <span class="chapter-title">分类问题</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./clustering-problems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">41</span>&nbsp; <span class="chapter-title">聚类问题</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./regression-problems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">42</span>&nbsp; <span class="chapter-title">回归问题</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">参考文献</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" aria-expanded="true">
+ <span class="menu-text">附录</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./notations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">数学符号</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./matrix-operations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">矩阵运算</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./git-github.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">Git 和 Github</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+    </ul>
+</div>
+</nav><div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active"><h2 id="toc-title">目录</h2>
+   
+  <ul>
+<li>
+<a href="#sec-prop-test" id="toc-sec-prop-test" class="nav-link active" data-scroll-target="#sec-prop-test"><span class="header-section-number">21.1</span> 比例检验</a>
+  <ul class="collapse">
+<li><a href="#%E5%8D%95%E6%A0%B7%E6%9C%AC%E6%A3%80%E9%AA%8C" id="toc-单样本检验" class="nav-link" data-scroll-target="#%E5%8D%95%E6%A0%B7%E6%9C%AC%E6%A3%80%E9%AA%8C"><span class="header-section-number">21.1.1</span> 单样本检验</a></li>
+  <li><a href="#%E4%B8%A4%E6%A0%B7%E6%9C%AC%E6%A3%80%E9%AA%8C" id="toc-两样本检验" class="nav-link" data-scroll-target="#%E4%B8%A4%E6%A0%B7%E6%9C%AC%E6%A3%80%E9%AA%8C"><span class="header-section-number">21.1.2</span> 两样本检验</a></li>
+  <li><a href="#%E5%A4%9A%E6%A0%B7%E6%9C%AC%E6%A3%80%E9%AA%8C" id="toc-多样本检验" class="nav-link" data-scroll-target="#%E5%A4%9A%E6%A0%B7%E6%9C%AC%E6%A3%80%E9%AA%8C"><span class="header-section-number">21.1.3</span> 多样本检验</a></li>
+  </ul>
+</li>
+  <li>
+<a href="#sec-poisson-test" id="toc-sec-poisson-test" class="nav-link" data-scroll-target="#sec-poisson-test"><span class="header-section-number">21.2</span> 泊松检验</a>
+  <ul class="collapse">
+<li><a href="#%E5%8D%95%E6%A0%B7%E6%9C%AC" id="toc-单样本" class="nav-link" data-scroll-target="#%E5%8D%95%E6%A0%B7%E6%9C%AC"><span class="header-section-number">21.2.1</span> 单样本</a></li>
+  <li><a href="#%E4%B8%A4%E6%A0%B7%E6%9C%AC" id="toc-两样本" class="nav-link" data-scroll-target="#%E4%B8%A4%E6%A0%B7%E6%9C%AC"><span class="header-section-number">21.2.2</span> 两样本</a></li>
+  </ul>
+</li>
+  <li>
+<a href="#%E5%88%97%E8%81%94%E8%A1%A8%E6%8F%8F%E8%BF%B0" id="toc-列联表描述" class="nav-link" data-scroll-target="#%E5%88%97%E8%81%94%E8%A1%A8%E6%8F%8F%E8%BF%B0"><span class="header-section-number">21.3</span> 列联表描述</a>
+  <ul class="collapse">
+<li><a href="#%E8%A1%8C%E5%88%97%E5%88%86%E7%BB%84%E8%A1%A8%E6%A0%BC" id="toc-行列分组表格" class="nav-link" data-scroll-target="#%E8%A1%8C%E5%88%97%E5%88%86%E7%BB%84%E8%A1%A8%E6%A0%BC"><span class="header-section-number">21.3.1</span> 行列分组表格</a></li>
+  <li><a href="#%E7%99%BE%E5%88%86%E6%AF%94%E5%A0%86%E7%A7%AF%E5%9B%BE" id="toc-百分比堆积图" class="nav-link" data-scroll-target="#%E7%99%BE%E5%88%86%E6%AF%94%E5%A0%86%E7%A7%AF%E5%9B%BE"><span class="header-section-number">21.3.2</span> 百分比堆积图</a></li>
+  <li><a href="#%E6%A1%91%E5%9F%BA%E5%9B%BE" id="toc-桑基图" class="nav-link" data-scroll-target="#%E6%A1%91%E5%9F%BA%E5%9B%BE"><span class="header-section-number">21.3.3</span> 桑基图</a></li>
+  <li><a href="#%E9%A9%AC%E8%B5%9B%E5%85%8B%E5%9B%BE" id="toc-马赛克图" class="nav-link" data-scroll-target="#%E9%A9%AC%E8%B5%9B%E5%85%8B%E5%9B%BE"><span class="header-section-number">21.3.4</span> 马赛克图</a></li>
+  </ul>
+</li>
+  <li>
+<a href="#sec-chisq-test" id="toc-sec-chisq-test" class="nav-link" data-scroll-target="#sec-chisq-test"><span class="header-section-number">21.4</span> 列联表分析</a>
+  <ul class="collapse">
+<li><a href="#%E7%9B%B8%E4%BA%92%E7%8B%AC%E7%AB%8B%E6%80%A7" id="toc-相互独立性" class="nav-link" data-scroll-target="#%E7%9B%B8%E4%BA%92%E7%8B%AC%E7%AB%8B%E6%80%A7"><span class="header-section-number">21.4.1</span> 相互独立性</a></li>
+  <li><a href="#%E8%BE%B9%E9%99%85%E7%8B%AC%E7%AB%8B%E6%80%A7" id="toc-边际独立性" class="nav-link" data-scroll-target="#%E8%BE%B9%E9%99%85%E7%8B%AC%E7%AB%8B%E6%80%A7"><span class="header-section-number">21.4.2</span> 边际独立性</a></li>
+  <li><a href="#%E5%AF%B9%E7%A7%B0%E6%80%A7" id="toc-对称性" class="nav-link" data-scroll-target="#%E5%AF%B9%E7%A7%B0%E6%80%A7"><span class="header-section-number">21.4.3</span> 对称性</a></li>
+  <li><a href="#%E6%9D%A1%E4%BB%B6%E7%8B%AC%E7%AB%8B%E6%80%A7" id="toc-条件独立性" class="nav-link" data-scroll-target="#%E6%9D%A1%E4%BB%B6%E7%8B%AC%E7%AB%8B%E6%80%A7"><span class="header-section-number">21.4.4</span> 条件独立性</a></li>
+  </ul>
+</li>
+  <li><a href="#sec-ucb-admissions" id="toc-sec-ucb-admissions" class="nav-link" data-scroll-target="#sec-ucb-admissions"><span class="header-section-number">21.5</span> 加州伯克利分校的录取情况</a></li>
+  <li><a href="#sec-titanic" id="toc-sec-titanic" class="nav-link" data-scroll-target="#sec-titanic"><span class="header-section-number">21.6</span> 分析泰坦尼克号乘客生存率</a></li>
+  </ul><div class="toc-actions"><ul><li><a href="https://github.com/XiangyunHuang/data-analysis-in-action/blob/main/categorical-data-analysis.qmd" class="toc-action"><i class="bi bi-github"></i>查看代码</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./common-statistical-tests.html">统计分析</a></li><li class="breadcrumb-item"><a href="./categorical-data-analysis.html"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">分类数据的分析</span></a></li></ol></nav><div class="quarto-title">
+<h1 class="title"><span id="sec-categorical-data-analysis" class="quarto-section-identifier"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">分类数据的分析</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header><div class="hidden">
+<p><span class="math display">\[
+\def\bm#1{{\boldsymbol #1}}
+\]</span></p>
+</div>
+<ol type="1">
+<li>最常见的两个广义线性模型：泊松和逻辑回归</li>
+<li>理论公式、R 输出及其解释，应用案例</li>
+<li>与计数/离散数据的假设检验的关系</li>
+<li>辛普森悖论，分类数据处理，高维列联表的压缩和分层，边际和条件</li>
+<li>泰坦尼克号 4x2x2x2 高维复杂列联表分析</li>
+</ol>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a><span class="fu">library</span>(MASS)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>计数数据，通俗来说，对象是一个一个或一份一份的，可数的、离散的数据，比如人数。列联表来组织数据，分二维和多维的情况。</p>
+<section id="sec-prop-test" class="level2" data-number="21.1"><h2 data-number="21.1" class="anchored" data-anchor-id="sec-prop-test">
+<span class="header-section-number">21.1</span> 比例检验</h2>
+<section id="单样本检验" class="level3" data-number="21.1.1"><h3 data-number="21.1.1" class="anchored" data-anchor-id="单样本检验">
+<span class="header-section-number">21.1.1</span> 单样本检验</h3>
+<p>比例检验函数 <code><a href="https://rdrr.io/r/stats/prop.test.html">prop.test()</a></code> 检验比例是否等于给定的值。单样本的比例检验结果中比例的区间估计与 Wilson 区间估计 <span class="citation" data-cites="Wilson1927">(<a href="references.html#ref-Wilson1927" role="doc-biblioref">Wilson 1927</a>)</span> 是相关的。区间估计与假设检验是有紧密关系的，对于二项分布比例的 11 种区间估计方法的比较 <span class="citation" data-cites="Newcombe1998">(<a href="references.html#ref-Newcombe1998" role="doc-biblioref">Newcombe 1998</a>)</span>。</p>
+<section id="近似检验" class="level4" data-number="21.1.1.1"><h4 data-number="21.1.1.1" class="anchored" data-anchor-id="近似检验">
+<span class="header-section-number">21.1.1.1</span> 近似检验</h4>
+</section><section id="精确检验" class="level4" data-number="21.1.1.2"><h4 data-number="21.1.1.2" class="anchored" data-anchor-id="精确检验">
+<span class="header-section-number">21.1.1.2</span> 精确检验</h4>
+<p>函数 <code><a href="https://rdrr.io/r/stats/binom.test.html">binom.test()</a></code> 来做二项检验，函数 <code><a href="https://rdrr.io/r/stats/binom.test.html">binom.test()</a></code> 用来检验伯努利试验中成功概率 <span class="math inline">\(p\)</span> 和给定概率 <span class="math inline">\(p_0\)</span> 的关系，属于精确检验 <span class="citation" data-cites="Clopper1934">(<a href="references.html#ref-Clopper1934" role="doc-biblioref">Clopper 和 Pearson 1934</a>)</span>。</p>
+<p>比例 <span class="math inline">\(p\)</span> 的检验，做 <span class="math inline">\(n\)</span> 次独立试验，样本 <span class="math inline">\(X_1,\ldots,X_n \sim b(1, p)\)</span>，事件发生的总次数 <span class="math inline">\(\sum_{i=1}^{n}X_i\)</span>。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1"></a><span class="co"># 模拟一组样本</span></span>
+<span id="cb2-2"><a href="#cb2-2"></a><span class="fu">set.seed</span>(<span class="dv">20232023</span>)</span>
+<span id="cb2-3"><a href="#cb2-3"></a>x <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="at">x =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>), <span class="at">size =</span> <span class="dv">100</span>, <span class="at">replace =</span> <span class="cn">TRUE</span>, <span class="at">prob =</span> <span class="fu">c</span>(<span class="fl">0.8</span>, <span class="fl">0.2</span>))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>二项分布中成功概率的检验</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1"></a><span class="fu">binom.test</span>(<span class="fu">sum</span>(x), <span class="at">n =</span> <span class="dv">100</span>, <span class="at">p =</span> <span class="fl">0.5</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt; 
+#&gt;  Exact binomial test
+#&gt; 
+#&gt; data:  sum(x) and 100
+#&gt; number of successes = 23, number of trials = 100, p-value = 5.514e-08
+#&gt; alternative hypothesis: true probability of success is not equal to 0.5
+#&gt; 95 percent confidence interval:
+#&gt;  0.1517316 0.3248587
+#&gt; sample estimates:
+#&gt; probability of success 
+#&gt;                   0.23</code></pre>
+</div>
+</div>
+<p>检验成功概率 p 是否等于 0.5， P 值 <span class="math inline">\(5.514 \times 10^{-8}\)</span> 结论是拒绝原假设</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1"></a><span class="fu">binom.test</span>(<span class="fu">sum</span>(x), <span class="at">n =</span> <span class="dv">100</span>, <span class="at">p =</span> <span class="fl">0.2</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt; 
+#&gt;  Exact binomial test
+#&gt; 
+#&gt; data:  sum(x) and 100
+#&gt; number of successes = 23, number of trials = 100, p-value = 0.4534
+#&gt; alternative hypothesis: true probability of success is not equal to 0.2
+#&gt; 95 percent confidence interval:
+#&gt;  0.1517316 0.3248587
+#&gt; sample estimates:
+#&gt; probability of success 
+#&gt;                   0.23</code></pre>
+</div>
+</div>
+<p>检验成功概率 p 是否等于 0.2， P 值 0.4534 结论是不能拒绝原假设</p>
+<p>切比雪夫不等式（Chebyshev, 1821-1894）。设随机变量 <span class="math inline">\(X\)</span> 的数学期望和方差都存在，则对任意常数 <span class="math inline">\(\epsilon &gt; 0\)</span>，有</p>
+<p><span class="math display">\[
+\begin{aligned}
+P(|X - EX| \geq \epsilon) &amp; \leq \frac{Var(X)}{\epsilon^2} \\
+P(|X - EX| \leq \epsilon) &amp; \geq 1 - \frac{Var(X)}{\epsilon^2}
+\end{aligned}
+\]</span></p>
+</section></section><section id="两样本检验" class="level3" data-number="21.1.2"><h3 data-number="21.1.2" class="anchored" data-anchor-id="两样本检验">
+<span class="header-section-number">21.1.2</span> 两样本检验</h3>
+<p>关于两样本的比例检验问题</p>
+<p><span class="math display">\[
+\begin{aligned}
+H_0: P_A = P_B \quad vs. \quad H_1: P_A &gt; P_B \\
+H_0: P_A = P_B \quad vs. \quad H_1: P_A &lt; P_B
+\end{aligned}
+\]</span></p>
+<p><span class="math inline">\(H_0\)</span> 成立的情况下，暗示着两个样本来自同一总体。</p>
+<p>比例检验函数 <code><a href="https://rdrr.io/r/stats/prop.test.html">prop.test()</a></code> 用来检验两组或多组二项分布的成功概率（比例）是否相等。</p>
+<p>设随机变量 X 服从参数为 <span class="math inline">\(p\)</span> 的二项分布 <span class="math inline">\(b(n, p)\)</span>， <span class="math inline">\(Y\)</span> 服从参数为 <span class="math inline">\(\theta\)</span> 的二项分布 <span class="math inline">\(b(m,\theta)\)</span>， <span class="math inline">\(m,n\)</span> 都假定为较大的正整数，检验如下问题</p>
+<p><span class="math display">\[
+H_0: P_A \geq P_B \quad vs. \quad H_1: P_A &lt; P_B
+\]</span></p>
+<p>根据中心极限定理</p>
+<p><span class="math display">\[
+\frac{\bar{X} - \bar{Y}}{\sqrt{\frac{p(1-p)}{n} + \frac{\theta(1-\theta)}{m}}}
+\]</span></p>
+<p>近似服从标准正态分布 <span class="math inline">\(N(0,1)\)</span>。如果用矩估计 <span class="math inline">\(\bar{X}\)</span> 和 <span class="math inline">\(\bar{Y}\)</span> 分别替代总体参数 <span class="math inline">\(p\)</span> 和 <span class="math inline">\(\theta\)</span>，构造检验统计量</p>
+<p><span class="math display">\[
+T = \frac{\bar{X} - \bar{Y}}{\sqrt{\frac{\bar{X}(1-\bar{X})}{n} + \frac{\bar{Y}(1-\bar{Y})}{m}}}
+\]</span></p>
+<p>根据 Slutsky 定理，检验统计量 <span class="math inline">\(T\)</span> 近似服从标准正态分布，当 <span class="math inline">\(T\)</span> 偏大时，拒绝 <span class="math inline">\(H_0\)</span>。该方法的优势在于当 <span class="math inline">\(n,m\)</span> 比较大时，二项分布比较复杂，无法建立统计表，利用标准正态分布表来给出检验所需要的临界值，简便易行！</p>
+<p>当 <span class="math inline">\(p\)</span> 和 <span class="math inline">\(\theta\)</span> 都比较小，上述方法检验效果不好，原因在于由中心极限定理对 <span class="math inline">\(\bar{X}\)</span> 和 <span class="math inline">\(\bar{Y}\)</span> 的正态分布近似效果不好，或者间接地导致 <span class="math inline">\(\bar{X}-\bar{Y}\)</span> 的方差偏小，进而 <span class="math inline">\(T\)</span> 的分辨都不好，而且当 <span class="math inline">\(p,\theta\)</span> 很接近 1 时，上述现象也会产生！</p>
+<p>下面介绍新的解决办法，办法来自两个二项总体成功概率的比较 <span class="citation" data-cites="Song2011">(<a href="references.html#ref-Song2011" role="doc-biblioref">宋泽熙 2011</a>)</span>。</p>
+<p>上面的检验问题等价于</p>
+<p><span class="math display">\[
+H_0: \frac{P_A}{P_B} \geq 1 \quad vs. \quad H_1: \frac{P_A}{P_B} &lt; 1
+\]</span></p>
+<p>引入检验统计量</p>
+<p><span class="math display">\[
+T^{\star} = \frac{\bar{X}}{\bar{Y}}
+\]</span></p>
+<p>同样由 Slutsky 定理和中心极限定理可知， <span class="math inline">\(\bar{X}/\bar{Y}\)</span> 近似服从 正态分布 <span class="math inline">\(\mathcal{N}(1,\frac{1-\theta}{m\theta})\)</span></p>
+<p>当 <span class="math inline">\((T^\star - 1)/\hat\sigma\)</span> 偏大时接受 <span class="math inline">\(H_0\)</span>，临界值可通过 <span class="math inline">\(\mathcal{N}(0, \hat\sigma^2)\)</span> 分布表计算得到， <span class="math inline">\(\hat\sigma^2\)</span> 是对 <span class="math inline">\(\frac{1-\theta}{m\theta}\)</span> 的估计，比如取 <span class="math inline">\(\hat\sigma^2 = \frac{1-\bar{Y}}{m}\cdot \frac{1}{\bar{Y}}\)</span> 或取 <span class="math inline">\(\hat\sigma^2 = \frac{1-\bar{Y}}{m}\cdot \frac{1}{\bar{X}}\)</span></p>
+<p>由于渐近方差形如 <span class="math inline">\(\frac{1-\theta}{m\theta}\)</span>，因而在 <span class="math inline">\(\theta\)</span> 较小，渐近方差较大，克服了之前 <span class="math inline">\(\bar{X} - \bar{Y}\)</span>的方差较小的问题</p>
+<p><span class="math inline">\(p,\theta\)</span> 很接近 1 时，我们取检验统计量</p>
+<p><span class="math display">\[
+T^{\star\star} = \frac{1-\bar{Y}}{1-\bar{X}}
+\]</span></p>
+<p>结论和 <span class="math inline">\(T^\star\)</span> 类似，当 <span class="math inline">\(T^{\star\star}\)</span> 偏大时，拒绝 <span class="math inline">\(H_0\)</span>。</p>
+</section><section id="多样本检验" class="level3" data-number="21.1.3"><h3 data-number="21.1.3" class="anchored" data-anchor-id="多样本检验">
+<span class="header-section-number">21.1.3</span> 多样本检验</h3>
+<section id="比例齐性检验" class="level4" data-number="21.1.3.1"><h4 data-number="21.1.3.1" class="anchored" data-anchor-id="比例齐性检验">
+<span class="header-section-number">21.1.3.1</span> 比例齐性检验</h4>
+<p>对多组数据的比例检验，可以理解为比例齐性检验。</p>
+</section><section id="比例趋势检验" class="level4" data-number="21.1.3.2"><h4 data-number="21.1.3.2" class="anchored" data-anchor-id="比例趋势检验">
+<span class="header-section-number">21.1.3.2</span> 比例趋势检验</h4>
+<p>比例趋势检验函数 <code><a href="https://rdrr.io/r/stats/prop.trend.test.html">prop.trend.test()</a></code> 的原假设：四个组里面病人中吸烟的比例是相同的。备择假设：四个组的吸烟比例是有趋势的。</p>
+<p><span class="math display">\[
+\begin{aligned}
+&amp; H_0: P_1 = P_2 = P_3 = P_4 \\
+&amp; H_1: P_1 &lt; P_2 &lt; P_3 &lt; P_4 ~\text{或者}~ P_1 &gt; P_2 &gt; P_3 &gt; P_4
+\end{aligned}
+\]</span></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1"></a>smokers <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">83</span>, <span class="dv">90</span>, <span class="dv">129</span>, <span class="dv">70</span>)</span>
+<span id="cb7-2"><a href="#cb7-2"></a>patients <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">86</span>, <span class="dv">93</span>, <span class="dv">136</span>, <span class="dv">82</span>)</span>
+<span id="cb7-3"><a href="#cb7-3"></a><span class="fu">prop.test</span>(smokers, patients)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt; 
+#&gt;  4-sample test for equality of proportions without continuity correction
+#&gt; 
+#&gt; data:  smokers out of patients
+#&gt; X-squared = 12.6, df = 3, p-value = 0.005585
+#&gt; alternative hypothesis: two.sided
+#&gt; sample estimates:
+#&gt;    prop 1    prop 2    prop 3    prop 4 
+#&gt; 0.9651163 0.9677419 0.9485294 0.8536585</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1"></a><span class="fu">prop.trend.test</span>(smokers, patients)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt; 
+#&gt;  Chi-squared Test for Trend in Proportions
+#&gt; 
+#&gt; data:  smokers out of patients ,
+#&gt;  using scores: 1 2 3 4
+#&gt; X-squared = 8.2249, df = 1, p-value = 0.004132</code></pre>
+</div>
+</div>
+</section></section></section><section id="sec-poisson-test" class="level2" data-number="21.2"><h2 data-number="21.2" class="anchored" data-anchor-id="sec-poisson-test">
+<span class="header-section-number">21.2</span> 泊松检验</h2>
+<p>泊松分布是 1837年由法国数学家泊松 （Poisson, 1781-1840） 首次提出。</p>
+<p><span class="math display">\[
+p(x) = \frac{\lambda^x\exp(-\lambda)}{x!}, x = 0, 1, \cdots .
+\]</span></p>
+<p>泊松分布的期望和方差都是 <span class="math inline">\(\lambda\)</span> ，一般要求 <span class="math inline">\(\lambda &gt; 0\)</span>。</p>
+<section id="单样本" class="level3" data-number="21.2.1"><h3 data-number="21.2.1" class="anchored" data-anchor-id="单样本">
+<span class="header-section-number">21.2.1</span> 单样本</h3>
+<p><code><a href="https://rdrr.io/r/stats/poisson.test.html">poisson.test()</a></code> 泊松分布的参数 <span class="math inline">\(\lambda\)</span> 的精确检验，适用于单样本和两样本。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1"></a><span class="fu">poisson.test</span>(x,</span>
+<span id="cb11-2"><a href="#cb11-2"></a>  <span class="at">T =</span> <span class="dv">1</span>, <span class="at">r =</span> <span class="dv">1</span>,</span>
+<span id="cb11-3"><a href="#cb11-3"></a>  <span class="at">alternative =</span> <span class="fu">c</span>(<span class="st">"two.sided"</span>, <span class="st">"less"</span>, <span class="st">"greater"</span>),</span>
+<span id="cb11-4"><a href="#cb11-4"></a>  <span class="at">conf.level =</span> <span class="fl">0.95</span></span>
+<span id="cb11-5"><a href="#cb11-5"></a>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>参数 <code>T</code> 数据的时间单位</p>
+</section><section id="两样本" class="level3" data-number="21.2.2"><h3 data-number="21.2.2" class="anchored" data-anchor-id="两样本">
+<span class="header-section-number">21.2.2</span> 两样本</h3>
+</section></section><section id="列联表描述" class="level2" data-number="21.3"><h2 data-number="21.3" class="anchored" data-anchor-id="列联表描述">
+<span class="header-section-number">21.3</span> 列联表描述</h2>
+<p>泰坦尼克号乘客生存死亡统计数据，Titanic 数据集</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1"></a>Titanic</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt; , , Age = Child, Survived = No
+#&gt; 
+#&gt;       Sex
+#&gt; Class  Male Female
+#&gt;   1st     0      0
+#&gt;   2nd     0      0
+#&gt;   3rd    35     17
+#&gt;   Crew    0      0
+#&gt; 
+#&gt; , , Age = Adult, Survived = No
+#&gt; 
+#&gt;       Sex
+#&gt; Class  Male Female
+#&gt;   1st   118      4
+#&gt;   2nd   154     13
+#&gt;   3rd   387     89
+#&gt;   Crew  670      3
+#&gt; 
+#&gt; , , Age = Child, Survived = Yes
+#&gt; 
+#&gt;       Sex
+#&gt; Class  Male Female
+#&gt;   1st     5      1
+#&gt;   2nd    11     13
+#&gt;   3rd    13     14
+#&gt;   Crew    0      0
+#&gt; 
+#&gt; , , Age = Adult, Survived = Yes
+#&gt; 
+#&gt;       Sex
+#&gt; Class  Male Female
+#&gt;   1st    57    140
+#&gt;   2nd    14     80
+#&gt;   3rd    75     76
+#&gt;   Crew  192     20</code></pre>
+</div>
+</div>
+<section id="行列分组表格" class="level3" data-number="21.3.1"><h3 data-number="21.3.1" class="anchored" data-anchor-id="行列分组表格">
+<span class="header-section-number">21.3.1</span> 行列分组表格</h3>
+<div class="cell">
+<details class="code-fold"><summary>代码</summary><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1"></a><span class="co"># 长格式转宽格式</span></span>
+<span id="cb14-2"><a href="#cb14-2"></a>titanic_data <span class="ot">&lt;-</span> <span class="fu">reshape</span>(</span>
+<span id="cb14-3"><a href="#cb14-3"></a>  <span class="at">data =</span> <span class="fu">as.data.frame</span>(Titanic), <span class="at">direction =</span> <span class="st">"wide"</span>,</span>
+<span id="cb14-4"><a href="#cb14-4"></a>  <span class="at">idvar =</span> <span class="fu">c</span>(<span class="st">"Class"</span>, <span class="st">"Sex"</span>, <span class="st">"Age"</span>),</span>
+<span id="cb14-5"><a href="#cb14-5"></a>  <span class="at">timevar =</span> <span class="st">"Survived"</span>, <span class="at">v.names =</span> <span class="st">"Freq"</span>, <span class="at">sep =</span> <span class="st">"_"</span></span>
+<span id="cb14-6"><a href="#cb14-6"></a>)</span>
+<span id="cb14-7"><a href="#cb14-7"></a></span>
+<span id="cb14-8"><a href="#cb14-8"></a><span class="co"># 制作表格</span></span>
+<span id="cb14-9"><a href="#cb14-9"></a>gt<span class="sc">::</span><span class="fu">gt</span>(titanic_data) <span class="sc">|&gt;</span> </span>
+<span id="cb14-10"><a href="#cb14-10"></a>  gt<span class="sc">::</span><span class="fu">cols_label</span>(</span>
+<span id="cb14-11"><a href="#cb14-11"></a>    <span class="at">Freq_Yes =</span> <span class="st">"存活"</span>,</span>
+<span id="cb14-12"><a href="#cb14-12"></a>    <span class="at">Freq_No =</span> <span class="st">"死亡"</span>,</span>
+<span id="cb14-13"><a href="#cb14-13"></a>    <span class="at">Class =</span> <span class="st">"船舱"</span>,</span>
+<span id="cb14-14"><a href="#cb14-14"></a>    <span class="at">Sex =</span> <span class="st">"性别"</span>,</span>
+<span id="cb14-15"><a href="#cb14-15"></a>    <span class="at">Age =</span> <span class="st">"年龄"</span></span>
+<span id="cb14-16"><a href="#cb14-16"></a>  )</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details><div id="tbl-titanic-data" class="cell anchored">
+<figure class="quarto-float quarto-float-tbl figure"><figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-titanic-data-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+表格&nbsp;21.1: 泰坦尼克号乘客生存死亡统计数据
+</figcaption><div aria-describedby="tbl-titanic-data-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="cell-output-display">
+<div id="mqixwoscuo" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#mqixwoscuo table {
+  font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#mqixwoscuo thead, #mqixwoscuo tbody, #mqixwoscuo tfoot, #mqixwoscuo tr, #mqixwoscuo td, #mqixwoscuo th {
+  border-style: none;
+}
+
+#mqixwoscuo p {
+  margin: 0;
+  padding: 0;
+}
+
+#mqixwoscuo .gt_table {
+  display: table;
+  border-collapse: collapse;
+  line-height: normal;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 16px;
+  font-weight: normal;
+  font-style: normal;
+  background-color: #FFFFFF;
+  width: auto;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#mqixwoscuo .gt_caption {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+#mqixwoscuo .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#mqixwoscuo .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 3px;
+  padding-bottom: 5px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#mqixwoscuo .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#mqixwoscuo .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#mqixwoscuo .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#mqixwoscuo .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#mqixwoscuo .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#mqixwoscuo .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#mqixwoscuo .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#mqixwoscuo .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#mqixwoscuo .gt_spanner_row {
+  border-bottom-style: hidden;
+}
+
+#mqixwoscuo .gt_group_heading {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  text-align: left;
+}
+
+#mqixwoscuo .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#mqixwoscuo .gt_from_md > :first-child {
+  margin-top: 0;
+}
+
+#mqixwoscuo .gt_from_md > :last-child {
+  margin-bottom: 0;
+}
+
+#mqixwoscuo .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#mqixwoscuo .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#mqixwoscuo .gt_stub_row_group {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 5px;
+  padding-right: 5px;
+  vertical-align: top;
+}
+
+#mqixwoscuo .gt_row_group_first td {
+  border-top-width: 2px;
+}
+
+#mqixwoscuo .gt_row_group_first th {
+  border-top-width: 2px;
+}
+
+#mqixwoscuo .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#mqixwoscuo .gt_first_summary_row {
+  border-top-style: solid;
+  border-top-color: #D3D3D3;
+}
+
+#mqixwoscuo .gt_first_summary_row.thick {
+  border-top-width: 2px;
+}
+
+#mqixwoscuo .gt_last_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#mqixwoscuo .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#mqixwoscuo .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#mqixwoscuo .gt_last_grand_summary_row_top {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-style: double;
+  border-bottom-width: 6px;
+  border-bottom-color: #D3D3D3;
+}
+
+#mqixwoscuo .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#mqixwoscuo .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#mqixwoscuo .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#mqixwoscuo .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#mqixwoscuo .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#mqixwoscuo .gt_sourcenote {
+  font-size: 90%;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#mqixwoscuo .gt_left {
+  text-align: left;
+}
+
+#mqixwoscuo .gt_center {
+  text-align: center;
+}
+
+#mqixwoscuo .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#mqixwoscuo .gt_font_normal {
+  font-weight: normal;
+}
+
+#mqixwoscuo .gt_font_bold {
+  font-weight: bold;
+}
+
+#mqixwoscuo .gt_font_italic {
+  font-style: italic;
+}
+
+#mqixwoscuo .gt_super {
+  font-size: 65%;
+}
+
+#mqixwoscuo .gt_footnote_marks {
+  font-size: 75%;
+  vertical-align: 0.4em;
+  position: initial;
+}
+
+#mqixwoscuo .gt_asterisk {
+  font-size: 100%;
+  vertical-align: 0;
+}
+
+#mqixwoscuo .gt_indent_1 {
+  text-indent: 5px;
+}
+
+#mqixwoscuo .gt_indent_2 {
+  text-indent: 10px;
+}
+
+#mqixwoscuo .gt_indent_3 {
+  text-indent: 15px;
+}
+
+#mqixwoscuo .gt_indent_4 {
+  text-indent: 20px;
+}
+
+#mqixwoscuo .gt_indent_5 {
+  text-indent: 25px;
+}
+</style>
+<table class="gt_table cell table table-sm table-striped small" data-quarto-postprocess="true" data-quarto-disable-processing="false" data-quarto-bootstrap="false">
+<thead><tr class="header gt_col_headings">
+<th id="船舱" class="gt_col_heading gt_columns_bottom_border gt_center" data-quarto-table-cell-role="th" scope="col">船舱</th>
+<th id="性别" class="gt_col_heading gt_columns_bottom_border gt_center" data-quarto-table-cell-role="th" scope="col">性别</th>
+<th id="年龄" class="gt_col_heading gt_columns_bottom_border gt_center" data-quarto-table-cell-role="th" scope="col">年龄</th>
+<th id="死亡" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">死亡</th>
+<th id="存活" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">存活</th>
+</tr></thead>
+<tbody class="gt_table_body">
+<tr class="odd">
+<td class="gt_row gt_center" headers="Class">1st</td>
+<td class="gt_row gt_center" headers="Sex">Male</td>
+<td class="gt_row gt_center" headers="Age">Child</td>
+<td class="gt_row gt_right" headers="Freq_No">0</td>
+<td class="gt_row gt_right" headers="Freq_Yes">5</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_center" headers="Class">2nd</td>
+<td class="gt_row gt_center" headers="Sex">Male</td>
+<td class="gt_row gt_center" headers="Age">Child</td>
+<td class="gt_row gt_right" headers="Freq_No">0</td>
+<td class="gt_row gt_right" headers="Freq_Yes">11</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_center" headers="Class">3rd</td>
+<td class="gt_row gt_center" headers="Sex">Male</td>
+<td class="gt_row gt_center" headers="Age">Child</td>
+<td class="gt_row gt_right" headers="Freq_No">35</td>
+<td class="gt_row gt_right" headers="Freq_Yes">13</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_center" headers="Class">Crew</td>
+<td class="gt_row gt_center" headers="Sex">Male</td>
+<td class="gt_row gt_center" headers="Age">Child</td>
+<td class="gt_row gt_right" headers="Freq_No">0</td>
+<td class="gt_row gt_right" headers="Freq_Yes">0</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_center" headers="Class">1st</td>
+<td class="gt_row gt_center" headers="Sex">Female</td>
+<td class="gt_row gt_center" headers="Age">Child</td>
+<td class="gt_row gt_right" headers="Freq_No">0</td>
+<td class="gt_row gt_right" headers="Freq_Yes">1</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_center" headers="Class">2nd</td>
+<td class="gt_row gt_center" headers="Sex">Female</td>
+<td class="gt_row gt_center" headers="Age">Child</td>
+<td class="gt_row gt_right" headers="Freq_No">0</td>
+<td class="gt_row gt_right" headers="Freq_Yes">13</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_center" headers="Class">3rd</td>
+<td class="gt_row gt_center" headers="Sex">Female</td>
+<td class="gt_row gt_center" headers="Age">Child</td>
+<td class="gt_row gt_right" headers="Freq_No">17</td>
+<td class="gt_row gt_right" headers="Freq_Yes">14</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_center" headers="Class">Crew</td>
+<td class="gt_row gt_center" headers="Sex">Female</td>
+<td class="gt_row gt_center" headers="Age">Child</td>
+<td class="gt_row gt_right" headers="Freq_No">0</td>
+<td class="gt_row gt_right" headers="Freq_Yes">0</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_center" headers="Class">1st</td>
+<td class="gt_row gt_center" headers="Sex">Male</td>
+<td class="gt_row gt_center" headers="Age">Adult</td>
+<td class="gt_row gt_right" headers="Freq_No">118</td>
+<td class="gt_row gt_right" headers="Freq_Yes">57</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_center" headers="Class">2nd</td>
+<td class="gt_row gt_center" headers="Sex">Male</td>
+<td class="gt_row gt_center" headers="Age">Adult</td>
+<td class="gt_row gt_right" headers="Freq_No">154</td>
+<td class="gt_row gt_right" headers="Freq_Yes">14</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_center" headers="Class">3rd</td>
+<td class="gt_row gt_center" headers="Sex">Male</td>
+<td class="gt_row gt_center" headers="Age">Adult</td>
+<td class="gt_row gt_right" headers="Freq_No">387</td>
+<td class="gt_row gt_right" headers="Freq_Yes">75</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_center" headers="Class">Crew</td>
+<td class="gt_row gt_center" headers="Sex">Male</td>
+<td class="gt_row gt_center" headers="Age">Adult</td>
+<td class="gt_row gt_right" headers="Freq_No">670</td>
+<td class="gt_row gt_right" headers="Freq_Yes">192</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_center" headers="Class">1st</td>
+<td class="gt_row gt_center" headers="Sex">Female</td>
+<td class="gt_row gt_center" headers="Age">Adult</td>
+<td class="gt_row gt_right" headers="Freq_No">4</td>
+<td class="gt_row gt_right" headers="Freq_Yes">140</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_center" headers="Class">2nd</td>
+<td class="gt_row gt_center" headers="Sex">Female</td>
+<td class="gt_row gt_center" headers="Age">Adult</td>
+<td class="gt_row gt_right" headers="Freq_No">13</td>
+<td class="gt_row gt_right" headers="Freq_Yes">80</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_center" headers="Class">3rd</td>
+<td class="gt_row gt_center" headers="Sex">Female</td>
+<td class="gt_row gt_center" headers="Age">Adult</td>
+<td class="gt_row gt_right" headers="Freq_No">89</td>
+<td class="gt_row gt_right" headers="Freq_Yes">76</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_center" headers="Class">Crew</td>
+<td class="gt_row gt_center" headers="Sex">Female</td>
+<td class="gt_row gt_center" headers="Age">Adult</td>
+<td class="gt_row gt_right" headers="Freq_No">3</td>
+<td class="gt_row gt_right" headers="Freq_Yes">20</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</figure>
+</div>
+</div>
+</section><section id="百分比堆积图" class="level3" data-number="21.3.2"><h3 data-number="21.3.2" class="anchored" data-anchor-id="百分比堆积图">
+<span class="header-section-number">21.3.2</span> 百分比堆积图</h3>
+<p>泰坦尼克号处女航乘客数量按船舱、性别、年龄和存活情况分层， <a href="https://github.com/larmarange/ggstats/"><strong>ggstats</strong></a> 包绘制百分比堆积柱形图展示多维分类数据。</p>
+<div class="cell">
+<details class="code-fold"><summary>代码</summary><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb15-2"><a href="#cb15-2"></a><span class="fu">library</span>(ggstats)</span>
+<span id="cb15-3"><a href="#cb15-3"></a><span class="fu">ggplot</span>(<span class="fu">as.data.frame</span>(Titanic)) <span class="sc">+</span></span>
+<span id="cb15-4"><a href="#cb15-4"></a>  <span class="fu">aes</span>(<span class="at">x =</span> Class, <span class="at">fill =</span> Survived, <span class="at">weight =</span> Freq, <span class="at">by =</span> Class) <span class="sc">+</span></span>
+<span id="cb15-5"><a href="#cb15-5"></a>  <span class="fu">geom_bar</span>(<span class="at">position =</span> <span class="st">"fill"</span>) <span class="sc">+</span></span>
+<span id="cb15-6"><a href="#cb15-6"></a>  <span class="fu">scale_y_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span><span class="fu">label_percent</span>()) <span class="sc">+</span></span>
+<span id="cb15-7"><a href="#cb15-7"></a>  <span class="fu">geom_text</span>(<span class="at">stat =</span> <span class="st">"prop"</span>, <span class="at">position =</span> <span class="fu">position_fill</span>(.<span class="dv">5</span>)) <span class="sc">+</span></span>
+<span id="cb15-8"><a href="#cb15-8"></a>  <span class="fu">facet_grid</span>(<span class="sc">~</span>Sex) <span class="sc">+</span></span>
+<span id="cb15-9"><a href="#cb15-9"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"船舱"</span>, <span class="at">y =</span> <span class="st">"比例"</span>, <span class="at">fill =</span> <span class="st">"存活"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details><div class="cell-output-display">
+<div id="fig-titanic-ggstats" class="quarto-figure quarto-figure-center anchored" width="672">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-titanic-ggstats-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="categorical-data-analysis_files/figure-html/fig-titanic-ggstats-1.png" class="img-fluid figure-img" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-titanic-ggstats-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;21.1: 百分比堆积柱形图展示多维分类数据
+</figcaption></figure>
+</div>
+</div>
+</div>
+<p><strong>ggstats</strong> 包提供的图层 <code>stat_prop()</code> 是 <code>stat_count()</code> 的变种， <code>as.data.frame(Titanic)</code> 中 Age 一列会自动聚合吗？ by = Class 按 Class 分组聚合，统计 Survived 的比例，提供 prop 计算的变量，传递给 <code>geom_text()</code> 以添加注释，position 设置将注释放在柱子的中间</p>
+</section><section id="桑基图" class="level3" data-number="21.3.3"><h3 data-number="21.3.3" class="anchored" data-anchor-id="桑基图">
+<span class="header-section-number">21.3.3</span> 桑基图</h3>
+<p>用 <a href="https://github.com/corybrunson/ggalluvial/"><strong>ggalluvial</strong></a> 包<span class="citation" data-cites="Brunson2020">(<a href="references.html#ref-Brunson2020" role="doc-biblioref">Brunson 2020</a>)</span>绘制桑基图展示多维分类数据。</p>
+<div class="cell">
+<details class="code-fold"><summary>代码</summary><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb16-2"><a href="#cb16-2"></a><span class="fu">library</span>(ggalluvial)</span>
+<span id="cb16-3"><a href="#cb16-3"></a><span class="fu">ggplot</span>(</span>
+<span id="cb16-4"><a href="#cb16-4"></a>  <span class="at">data =</span> <span class="fu">as.data.frame</span>(Titanic),</span>
+<span id="cb16-5"><a href="#cb16-5"></a>  <span class="fu">aes</span>(<span class="at">axis1 =</span> Class, <span class="at">axis2 =</span> Sex, <span class="at">axis3 =</span> Age, <span class="at">y =</span> Freq)</span>
+<span id="cb16-6"><a href="#cb16-6"></a>) <span class="sc">+</span></span>
+<span id="cb16-7"><a href="#cb16-7"></a>  <span class="fu">scale_x_discrete</span>(<span class="at">limits =</span> <span class="fu">c</span>(<span class="st">"Class"</span>, <span class="st">"Sex"</span>, <span class="st">"Age"</span>)) <span class="sc">+</span></span>
+<span id="cb16-8"><a href="#cb16-8"></a>  <span class="fu">geom_alluvium</span>(<span class="fu">aes</span>(<span class="at">fill =</span> Survived)) <span class="sc">+</span></span>
+<span id="cb16-9"><a href="#cb16-9"></a>  <span class="fu">geom_stratum</span>() <span class="sc">+</span></span>
+<span id="cb16-10"><a href="#cb16-10"></a>  <span class="fu">geom_text</span>(<span class="at">stat =</span> <span class="st">"stratum"</span>, <span class="fu">aes</span>(<span class="at">label =</span> <span class="fu">after_stat</span>(stratum))) <span class="sc">+</span></span>
+<span id="cb16-11"><a href="#cb16-11"></a>  <span class="fu">theme_classic</span>() <span class="sc">+</span></span>
+<span id="cb16-12"><a href="#cb16-12"></a>  <span class="fu">labs</span>(</span>
+<span id="cb16-13"><a href="#cb16-13"></a>    <span class="at">x =</span> <span class="st">"分层维度"</span>, <span class="at">y =</span> <span class="st">"人数"</span>, <span class="at">fill =</span> <span class="st">"存活"</span>,</span>
+<span id="cb16-14"><a href="#cb16-14"></a>    <span class="at">title =</span> <span class="st">"泰坦尼克号处女航乘客分层情况"</span></span>
+<span id="cb16-15"><a href="#cb16-15"></a>  )</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details><div class="cell-output-display">
+<div id="fig-titanic-alluvial" class="quarto-figure quarto-figure-center anchored" width="672">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-titanic-alluvial-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="categorical-data-analysis_files/figure-html/fig-titanic-alluvial-1.png" class="img-fluid figure-img" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-titanic-alluvial-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;21.2: 桑基图展示多维分类数据
+</figcaption></figure>
+</div>
+</div>
+</div>
+</section><section id="马赛克图" class="level3" data-number="21.3.4"><h3 data-number="21.3.4" class="anchored" data-anchor-id="马赛克图">
+<span class="header-section-number">21.3.4</span> 马赛克图</h3>
+<div class="cell">
+<details class="code-fold"><summary>代码</summary><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1"></a>op <span class="ot">&lt;-</span> <span class="fu">par</span>(<span class="at">mar =</span> <span class="fu">c</span>(<span class="fl">2.5</span>, <span class="fl">2.5</span>, <span class="fl">1.5</span>, <span class="fl">0.5</span>))</span>
+<span id="cb17-2"><a href="#cb17-2"></a><span class="fu">mosaicplot</span>(<span class="sc">~</span> Class <span class="sc">+</span> Sex <span class="sc">+</span> Age <span class="sc">+</span> Survived,</span>
+<span id="cb17-3"><a href="#cb17-3"></a>  <span class="at">data =</span> Titanic, <span class="co"># shade = TRUE, </span></span>
+<span id="cb17-4"><a href="#cb17-4"></a>  <span class="at">color =</span> <span class="cn">TRUE</span>, <span class="at">border =</span> <span class="st">"white"</span>,</span>
+<span id="cb17-5"><a href="#cb17-5"></a>  <span class="at">xlab =</span> <span class="st">"船舱"</span>, <span class="at">ylab =</span> <span class="st">"性别"</span>, <span class="at">main =</span> <span class="st">"泰坦尼克号"</span>)</span>
+<span id="cb17-6"><a href="#cb17-6"></a><span class="fu">par</span>(op)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details><div class="cell-output-display">
+<div id="fig-titanic-mosaicplot" class="quarto-figure quarto-figure-center anchored" width="672">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-titanic-mosaicplot-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="categorical-data-analysis_files/figure-html/fig-titanic-mosaicplot-1.png" class="img-fluid figure-img" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-titanic-mosaicplot-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;21.3: 马赛克图展示多维分类数据
+</figcaption></figure>
+</div>
+</div>
+</div>
+<p><a href="https://cran.r-project.org/package=vcd"><strong>vcd</strong></a> 包针对分类数据做了很多专门的可视化工作，内置了很多数据集和绘图函数，在 Base R 绘图基础上，整合了许多统计分析功能，提供了一个统一的可视化框架<span class="citation" data-cites="Meyer2006 Zeileis2007">(<a href="references.html#ref-Meyer2006" role="doc-biblioref">Meyer, Zeileis, 和 Hornik 2006</a>; <a href="references.html#ref-Zeileis2007" role="doc-biblioref">Zeileis, Meyer, 和 Hornik 2007</a>)</span>，更多细节见著作《Discrete Data Analysis with R: Visualization and Modeling Techniques for Categorical and Count Data》及其附带的 R 包 <a href="https://github.com/friendly/vcdExtra"><strong>vcdExtra</strong></a><span class="citation" data-cites="Friendly2016">(<a href="references.html#ref-Friendly2016" role="doc-biblioref">Friendly 和 Meyer 2016</a>)</span>。</p>
+<div class="cell">
+<details class="code-fold"><summary>代码</summary><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1"></a><span class="fu">library</span>(grid)</span>
+<span id="cb18-2"><a href="#cb18-2"></a><span class="fu">library</span>(vcd)</span>
+<span id="cb18-3"><a href="#cb18-3"></a><span class="fu">mosaic</span>(<span class="sc">~</span> Class <span class="sc">+</span> Sex <span class="sc">+</span> Age <span class="sc">+</span> Survived,</span>
+<span id="cb18-4"><a href="#cb18-4"></a>  <span class="at">data =</span> Titanic, <span class="at">shade =</span> <span class="cn">TRUE</span>, <span class="at">legend =</span> <span class="cn">TRUE</span></span>
+<span id="cb18-5"><a href="#cb18-5"></a>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details><div class="cell-output-display">
+<div id="fig-titanic-mosaic" class="quarto-figure quarto-figure-center anchored" width="672">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-titanic-mosaic-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="categorical-data-analysis_files/figure-html/fig-titanic-mosaic-1.png" class="img-fluid figure-img" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-titanic-mosaic-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;21.4: 马赛克图展示多维分类数据
+</figcaption></figure>
+</div>
+</div>
+</div>
+</section></section><section id="sec-chisq-test" class="level2" data-number="21.4"><h2 data-number="21.4" class="anchored" data-anchor-id="sec-chisq-test">
+<span class="header-section-number">21.4</span> 列联表分析</h2>
+<p>是否应该按照列联表的维度分类？还是应该从分析的目的和作用出发？比如我的目的是检验独立性。二者似乎也并不冲突。</p>
+<p>列联表中的数据服从多项分布，关于独立性检验，有如下几种常见类型：</p>
+<ol type="1">
+<li>相互独立 Mutual independence 所有变量之间相互独立，<span class="math inline">\(X \perp Y \perp Z\)</span> 。</li>
+<li>联合独立 Joint independence 两个变量的联合与第三个变量独立，<span class="math inline">\(XY \perp Z\)</span> 。</li>
+<li>边际独立 Marginal independence 当忽略第三个变量时，两个变量是独立的。列联表压缩</li>
+<li>条件独立 Conditional independence 当固定第三个变量时，两个变量是独立的，<span class="math inline">\(X \perp Y | Z\)</span>。</li>
+</ol>
+<p>本节数据来自著作《An Introduction to Categorical Data Analysis》<span class="citation" data-cites="Agresti2007">(<a href="references.html#ref-Agresti2007" role="doc-biblioref">Agresti 2007</a>)</span> 的第2章习题 2.33，探索 1976-1977 年美国佛罗里达州的凶杀案件中被告肤色和死刑判决的关系。</p>
+<div class="cell">
+<details class="code-fold"><summary>代码</summary><div class="sourceCode cell-code" id="cb19"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1"></a>tbl <span class="ot">&lt;-</span> <span class="fu">expand.grid</span>(</span>
+<span id="cb19-2"><a href="#cb19-2"></a>  <span class="at">Death =</span> <span class="fu">c</span>(<span class="st">"Yes"</span>, <span class="st">"No"</span>), <span class="co"># 判决结果 是否死刑</span></span>
+<span id="cb19-3"><a href="#cb19-3"></a>  <span class="at">Defend =</span> <span class="fu">c</span>(<span class="st">"白人"</span>, <span class="st">"黑人"</span>),  <span class="co"># 被告 肤色</span></span>
+<span id="cb19-4"><a href="#cb19-4"></a>  <span class="at">Victim =</span> <span class="fu">c</span>(<span class="st">"白人"</span>, <span class="st">"黑人"</span>)   <span class="co"># 原告 （被害人）肤色</span></span>
+<span id="cb19-5"><a href="#cb19-5"></a>)</span>
+<span id="cb19-6"><a href="#cb19-6"></a>ethnicity <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(tbl, <span class="at">Freq =</span> <span class="fu">c</span>(<span class="dv">19</span>, <span class="dv">132</span>, <span class="dv">11</span>, <span class="dv">52</span>, <span class="dv">0</span>, <span class="dv">9</span>,  <span class="dv">6</span>, <span class="dv">97</span>))</span>
+<span id="cb19-7"><a href="#cb19-7"></a></span>
+<span id="cb19-8"><a href="#cb19-8"></a><span class="co"># 长格式转宽格式</span></span>
+<span id="cb19-9"><a href="#cb19-9"></a>dat1 <span class="ot">&lt;-</span> <span class="fu">reshape</span>(</span>
+<span id="cb19-10"><a href="#cb19-10"></a>  <span class="at">data =</span> ethnicity, <span class="at">direction =</span> <span class="st">"wide"</span>,</span>
+<span id="cb19-11"><a href="#cb19-11"></a>  <span class="at">idvar =</span> <span class="fu">c</span>(<span class="st">"Defend"</span>, <span class="st">"Victim"</span>),</span>
+<span id="cb19-12"><a href="#cb19-12"></a>  <span class="at">timevar =</span> <span class="st">"Death"</span>, <span class="at">v.names =</span> <span class="st">"Freq"</span>, <span class="at">sep =</span> <span class="st">"_"</span></span>
+<span id="cb19-13"><a href="#cb19-13"></a>)</span>
+<span id="cb19-14"><a href="#cb19-14"></a><span class="co"># 制作表格</span></span>
+<span id="cb19-15"><a href="#cb19-15"></a>gt<span class="sc">::</span><span class="fu">gt</span>(dat1) <span class="sc">|&gt;</span> </span>
+<span id="cb19-16"><a href="#cb19-16"></a>  gt<span class="sc">::</span><span class="fu">cols_label</span>(</span>
+<span id="cb19-17"><a href="#cb19-17"></a>    <span class="at">Freq_Yes =</span> <span class="st">"是"</span>,</span>
+<span id="cb19-18"><a href="#cb19-18"></a>    <span class="at">Freq_No =</span> <span class="st">"否"</span>,</span>
+<span id="cb19-19"><a href="#cb19-19"></a>    <span class="at">Victim =</span> <span class="st">"被害人"</span>,</span>
+<span id="cb19-20"><a href="#cb19-20"></a>    <span class="at">Defend =</span> <span class="st">"被告"</span></span>
+<span id="cb19-21"><a href="#cb19-21"></a>  ) <span class="sc">|&gt;</span> </span>
+<span id="cb19-22"><a href="#cb19-22"></a>  gt<span class="sc">::</span><span class="fu">tab_spanner</span>(</span>
+<span id="cb19-23"><a href="#cb19-23"></a>    <span class="at">label =</span> <span class="st">"死刑"</span>,</span>
+<span id="cb19-24"><a href="#cb19-24"></a>    <span class="at">columns =</span> <span class="fu">c</span>(Freq_Yes, Freq_No)</span>
+<span id="cb19-25"><a href="#cb19-25"></a>  ) <span class="sc">|&gt;</span> </span>
+<span id="cb19-26"><a href="#cb19-26"></a>  gt<span class="sc">::</span><span class="fu">opt_row_striping</span>()</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details><div id="tbl-florida-ethnicity" class="cell anchored">
+<figure class="quarto-float quarto-float-tbl figure"><figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-florida-ethnicity-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+表格&nbsp;21.2: 佛罗里达州的凶杀案件统计数据
+</figcaption><div aria-describedby="tbl-florida-ethnicity-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="cell-output-display">
+<div id="tzlrepfhlz" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#tzlrepfhlz table {
+  font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#tzlrepfhlz thead, #tzlrepfhlz tbody, #tzlrepfhlz tfoot, #tzlrepfhlz tr, #tzlrepfhlz td, #tzlrepfhlz th {
+  border-style: none;
+}
+
+#tzlrepfhlz p {
+  margin: 0;
+  padding: 0;
+}
+
+#tzlrepfhlz .gt_table {
+  display: table;
+  border-collapse: collapse;
+  line-height: normal;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 16px;
+  font-weight: normal;
+  font-style: normal;
+  background-color: #FFFFFF;
+  width: auto;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#tzlrepfhlz .gt_caption {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+#tzlrepfhlz .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#tzlrepfhlz .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 3px;
+  padding-bottom: 5px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#tzlrepfhlz .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#tzlrepfhlz .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#tzlrepfhlz .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#tzlrepfhlz .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#tzlrepfhlz .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#tzlrepfhlz .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#tzlrepfhlz .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#tzlrepfhlz .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#tzlrepfhlz .gt_spanner_row {
+  border-bottom-style: hidden;
+}
+
+#tzlrepfhlz .gt_group_heading {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  text-align: left;
+}
+
+#tzlrepfhlz .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#tzlrepfhlz .gt_from_md > :first-child {
+  margin-top: 0;
+}
+
+#tzlrepfhlz .gt_from_md > :last-child {
+  margin-bottom: 0;
+}
+
+#tzlrepfhlz .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#tzlrepfhlz .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#tzlrepfhlz .gt_stub_row_group {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 5px;
+  padding-right: 5px;
+  vertical-align: top;
+}
+
+#tzlrepfhlz .gt_row_group_first td {
+  border-top-width: 2px;
+}
+
+#tzlrepfhlz .gt_row_group_first th {
+  border-top-width: 2px;
+}
+
+#tzlrepfhlz .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#tzlrepfhlz .gt_first_summary_row {
+  border-top-style: solid;
+  border-top-color: #D3D3D3;
+}
+
+#tzlrepfhlz .gt_first_summary_row.thick {
+  border-top-width: 2px;
+}
+
+#tzlrepfhlz .gt_last_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#tzlrepfhlz .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#tzlrepfhlz .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#tzlrepfhlz .gt_last_grand_summary_row_top {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-style: double;
+  border-bottom-width: 6px;
+  border-bottom-color: #D3D3D3;
+}
+
+#tzlrepfhlz .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#tzlrepfhlz .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#tzlrepfhlz .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#tzlrepfhlz .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#tzlrepfhlz .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#tzlrepfhlz .gt_sourcenote {
+  font-size: 90%;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#tzlrepfhlz .gt_left {
+  text-align: left;
+}
+
+#tzlrepfhlz .gt_center {
+  text-align: center;
+}
+
+#tzlrepfhlz .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#tzlrepfhlz .gt_font_normal {
+  font-weight: normal;
+}
+
+#tzlrepfhlz .gt_font_bold {
+  font-weight: bold;
+}
+
+#tzlrepfhlz .gt_font_italic {
+  font-style: italic;
+}
+
+#tzlrepfhlz .gt_super {
+  font-size: 65%;
+}
+
+#tzlrepfhlz .gt_footnote_marks {
+  font-size: 75%;
+  vertical-align: 0.4em;
+  position: initial;
+}
+
+#tzlrepfhlz .gt_asterisk {
+  font-size: 100%;
+  vertical-align: 0;
+}
+
+#tzlrepfhlz .gt_indent_1 {
+  text-indent: 5px;
+}
+
+#tzlrepfhlz .gt_indent_2 {
+  text-indent: 10px;
+}
+
+#tzlrepfhlz .gt_indent_3 {
+  text-indent: 15px;
+}
+
+#tzlrepfhlz .gt_indent_4 {
+  text-indent: 20px;
+}
+
+#tzlrepfhlz .gt_indent_5 {
+  text-indent: 25px;
+}
+</style>
+<table class="gt_table cell table table-sm table-striped small" data-quarto-postprocess="true" data-quarto-disable-processing="false" data-quarto-bootstrap="false">
+<thead>
+<tr class="header gt_col_headings gt_spanner_row">
+<th rowspan="2" id="被告" class="gt_col_heading gt_columns_bottom_border gt_center" data-quarto-table-cell-role="th" scope="col">被告</th>
+<th rowspan="2" id="被害人" class="gt_col_heading gt_columns_bottom_border gt_center" data-quarto-table-cell-role="th" scope="col">被害人</th>
+<th colspan="2" id="死刑" class="gt_center gt_columns_top_border gt_column_spanner_outer" data-quarto-table-cell-role="th" scope="colgroup"><span class="gt_column_spanner">死刑</span></th>
+</tr>
+<tr class="odd gt_col_headings">
+<th id="是" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">是</th>
+<th id="否" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">否</th>
+</tr>
+</thead>
+<tbody class="gt_table_body">
+<tr class="odd">
+<td class="gt_row gt_center" headers="Defend">白人</td>
+<td class="gt_row gt_center" headers="Victim">白人</td>
+<td class="gt_row gt_right" headers="Freq_Yes">19</td>
+<td class="gt_row gt_right" headers="Freq_No">132</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_center gt_striped" headers="Defend">黑人</td>
+<td class="gt_row gt_center gt_striped" headers="Victim">白人</td>
+<td class="gt_row gt_right gt_striped" headers="Freq_Yes">11</td>
+<td class="gt_row gt_right gt_striped" headers="Freq_No">52</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_center" headers="Defend">白人</td>
+<td class="gt_row gt_center" headers="Victim">黑人</td>
+<td class="gt_row gt_right" headers="Freq_Yes">0</td>
+<td class="gt_row gt_right" headers="Freq_No">9</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_center gt_striped" headers="Defend">黑人</td>
+<td class="gt_row gt_center gt_striped" headers="Victim">黑人</td>
+<td class="gt_row gt_right gt_striped" headers="Freq_Yes">6</td>
+<td class="gt_row gt_right gt_striped" headers="Freq_No">97</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</figure>
+</div>
+</div>
+<section id="相互独立性" class="level3" data-number="21.4.1"><h3 data-number="21.4.1" class="anchored" data-anchor-id="相互独立性">
+<span class="header-section-number">21.4.1</span> 相互独立性</h3>
+<p>皮尔逊卡方检验（ Pearson’s <span class="math inline">\(\chi^2\)</span> 检验） <code><a href="https://rdrr.io/r/stats/chisq.test.html">chisq.test()</a></code> 常用于列联表独立性检验和方差分析模型的拟合优度检验。下面是一个 <span class="math inline">\(2 \times 2\)</span> 的列联表。</p>
+<table class="table">
+<caption>卡方独立性检验</caption>
+<thead><tr class="header">
+<th></th>
+<th>第一列</th>
+<th>第二列</th>
+<th>合计</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td>第一行</td>
+<td><span class="math inline">\(a\)</span></td>
+<td><span class="math inline">\(b\)</span></td>
+<td><span class="math inline">\(a+b\)</span></td>
+</tr>
+<tr class="even">
+<td>第二行</td>
+<td><span class="math inline">\(c\)</span></td>
+<td><span class="math inline">\(d\)</span></td>
+<td><span class="math inline">\(c+d\)</span></td>
+</tr>
+<tr class="odd">
+<td>合计</td>
+<td><span class="math inline">\(a+c\)</span></td>
+<td><span class="math inline">\(b+d\)</span></td>
+<td><span class="math inline">\(a+b+c+d\)</span></td>
+</tr>
+</tbody>
+</table>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1"></a><span class="co"># Death 死刑与 Defend （被告）独立性检验</span></span>
+<span id="cb20-2"><a href="#cb20-2"></a>m <span class="ot">&lt;-</span> <span class="fu">xtabs</span>(Freq <span class="sc">~</span> Death <span class="sc">+</span> Defend, <span class="at">data =</span> ethnicity)</span>
+<span id="cb20-3"><a href="#cb20-3"></a>m</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt;      Defend
+#&gt; Death 白人 黑人
+#&gt;   Yes   19   17
+#&gt;   No   141  149</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1"></a><span class="fu">chisq.test</span>(m, <span class="at">correct =</span> <span class="cn">TRUE</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt; 
+#&gt;  Pearson's Chi-squared test with Yates' continuity correction
+#&gt; 
+#&gt; data:  m
+#&gt; X-squared = 0.086343, df = 1, p-value = 0.7689</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1"></a><span class="fu">chisq.test</span>(m, <span class="at">correct =</span> <span class="cn">FALSE</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt; 
+#&gt;  Pearson's Chi-squared test
+#&gt; 
+#&gt; data:  m
+#&gt; X-squared = 0.22145, df = 1, p-value = 0.6379</code></pre>
+</div>
+</div>
+<p>当被告是白人时，死刑判决 19 个，占总的死刑判决数量的 19/36 = 52.78%，当被告是黑人时，死刑判决 17 个，占总的死刑判决数量的 17/36 = 47.22%。判决结果与被告种族没有显著关系，但与原告（受害人）种族是有关系的，请继续往下看。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1"></a><span class="co"># Death 死刑与 Victim （原告）独立性检验</span></span>
+<span id="cb26-2"><a href="#cb26-2"></a>m <span class="ot">&lt;-</span> <span class="fu">xtabs</span>(Freq <span class="sc">~</span> Death <span class="sc">+</span> Victim, <span class="at">data =</span> ethnicity)</span>
+<span id="cb26-3"><a href="#cb26-3"></a><span class="fu">chisq.test</span>(m, <span class="at">correct =</span> <span class="cn">TRUE</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt; 
+#&gt;  Pearson's Chi-squared test with Yates' continuity correction
+#&gt; 
+#&gt; data:  m
+#&gt; X-squared = 4.7678, df = 1, p-value = 0.029</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1"></a><span class="fu">chisq.test</span>(m, <span class="at">correct =</span> <span class="cn">FALSE</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt; 
+#&gt;  Pearson's Chi-squared test
+#&gt; 
+#&gt; data:  m
+#&gt; X-squared = 5.6149, df = 1, p-value = 0.01781</code></pre>
+</div>
+</div>
+<p>当受害人是白人时，死刑判决 30 个，占总的死刑判决数量的 30/36 = 83.33%，当受害人是黑人时，死刑判决 6 个，占总的死刑判决数量的 6/36 = 16.67%。受害人是白人时，死刑判决明显多于黑人。</p>
+<p>多维列联表</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1"></a>m <span class="ot">&lt;-</span> <span class="fu">xtabs</span>(Freq <span class="sc">~</span> Death <span class="sc">+</span> Defend <span class="sc">+</span> Victim, <span class="at">data =</span> ethnicity)</span>
+<span id="cb30-2"><a href="#cb30-2"></a>m</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt; , , Victim = 白人
+#&gt; 
+#&gt;      Defend
+#&gt; Death 白人 黑人
+#&gt;   Yes   19   11
+#&gt;   No   132   52
+#&gt; 
+#&gt; , , Victim = 黑人
+#&gt; 
+#&gt;      Defend
+#&gt; Death 白人 黑人
+#&gt;   Yes    0    6
+#&gt;   No     9   97</code></pre>
+</div>
+</div>
+<p>判决结果、被告种族、原告种族三者是否存在联合独立性，即考虑 (Victim, Death) 是否与 Defend 独立，(Victim, Defend) 是否与 Death 独立，(Death, Defend) 与 Victim 是否相互独立。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1"></a>fm <span class="ot">&lt;-</span> <span class="fu">loglin</span>(<span class="at">table =</span> m, <span class="at">margin =</span> <span class="fu">list</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>), <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>), <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">3</span>)), <span class="at">print =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb32-2"><a href="#cb32-2"></a>fm </span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt; $lrt
+#&gt; [1] 0.7007504
+#&gt; 
+#&gt; $pearson
+#&gt; [1] 0.3751739
+#&gt; 
+#&gt; $df
+#&gt; [1] 1
+#&gt; 
+#&gt; $margin
+#&gt; $margin[[1]]
+#&gt; [1] "Death"  "Defend"
+#&gt; 
+#&gt; $margin[[2]]
+#&gt; [1] "Death"  "Victim"
+#&gt; 
+#&gt; $margin[[3]]
+#&gt; [1] "Defend" "Victim"</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1"></a><span class="co"># 拟合对数线性模型</span></span>
+<span id="cb34-2"><a href="#cb34-2"></a><span class="co"># fm &lt;- loglin(m, list(c(1), c(2), c(3)))</span></span>
+<span id="cb34-3"><a href="#cb34-3"></a><span class="co"># fm</span></span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>似然比检验统计量（Likelihood Ratio Test statistic），皮尔逊 <span class="math inline">\(\chi^2\)</span> 统计量（Pearson X-square Test statistic）</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1"></a><span class="dv">1</span> <span class="sc">-</span> <span class="fu">pchisq</span>(fm<span class="sc">$</span>lrt, fm<span class="sc">$</span>df)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt; [1] 0.4025317</code></pre>
+</div>
+</div>
+<p>拟合对数线性模型</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1"></a>fit_dvp <span class="ot">&lt;-</span> <span class="fu">glm</span>(Freq <span class="sc">~</span> ., <span class="at">data =</span> ethnicity, <span class="at">family =</span> <span class="fu">poisson</span>(<span class="at">link =</span> <span class="st">"log"</span>))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>模型输出</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1"></a><span class="fu">summary</span>(fit_dvp)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt; 
+#&gt; Call:
+#&gt; glm(formula = Freq ~ ., family = poisson(link = "log"), data = ethnicity)
+#&gt; 
+#&gt; Coefficients:
+#&gt;             Estimate Std. Error z value Pr(&gt;|z|)    
+#&gt; (Intercept)  2.45087    0.18046  13.582  &lt; 2e-16 ***
+#&gt; DeathNo      2.08636    0.17671  11.807  &lt; 2e-16 ***
+#&gt; Defend黑人   0.03681    0.11079   0.332     0.74    
+#&gt; Victim黑人  -0.64748    0.11662  -5.552 2.83e-08 ***
+#&gt; ---
+#&gt; Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+#&gt; 
+#&gt; (Dispersion parameter for poisson family taken to be 1)
+#&gt; 
+#&gt;     Null deviance: 395.92  on 7  degrees of freedom
+#&gt; Residual deviance: 137.93  on 4  degrees of freedom
+#&gt; AIC: 181.61
+#&gt; 
+#&gt; Number of Fisher Scoring iterations: 5</code></pre>
+</div>
+</div>
+<p>Pearson <span class="math inline">\(\chi^2\)</span> 统计量</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1"></a><span class="fu">sum</span>(<span class="fu">residuals</span>(fit_dvp, <span class="at">type =</span> <span class="st">"pearson"</span>)<span class="sc">^</span><span class="dv">2</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt; [1] 122.3975</code></pre>
+</div>
+</div>
+<p><strong>MASS</strong> 包计算模型参数的置信区间</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1"></a><span class="fu">confint</span>(fit_dvp, <span class="at">trace =</span> <span class="cn">FALSE</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt;                  2.5 %     97.5 %
+#&gt; (Intercept)  2.0802598  2.7893934
+#&gt; DeathNo      1.7546021  2.4493677
+#&gt; Defend黑人  -0.1803969  0.2543149
+#&gt; Victim黑人  -0.8790491 -0.4213701</code></pre>
+</div>
+</div>
+<p>对于单元格总样本量小于 40 或 T 小于 1 时，需采用费希尔精确检验（ Fisher ’s Exact 检验）。</p>
+</section><section id="边际独立性" class="level3" data-number="21.4.2"><h3 data-number="21.4.2" class="anchored" data-anchor-id="边际独立性">
+<span class="header-section-number">21.4.2</span> 边际独立性</h3>
+<p>费希尔精确检验：固定边际的情况下，检验列联表行和列之间的独立性 <code><a href="https://rdrr.io/r/stats/fisher.test.html">fisher.test()</a></code> 。</p>
+<p><code><a href="https://rdrr.io/r/stats/fisher.test.html">fisher.test()</a></code> 函数用法，统计原理和公式，适用范围和条件，概念背景和历史。</p>
+<p>费舍尔 (Sir Ronald Fisher, 1890.2 – 1962.7)<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a> 和一位女士打赌，女士说能品出奶茶中奶和茶的添加顺序。</p>
+<p><code><a href="https://rdrr.io/r/stats/fisher.test.html">fisher.test()</a></code> 针对计数数据，检验列联表中行和列的独立性。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1"></a>TeaTasting <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">3</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">3</span>),</span>
+<span id="cb44-2"><a href="#cb44-2"></a>  <span class="at">nrow =</span> <span class="dv">2</span>,</span>
+<span id="cb44-3"><a href="#cb44-3"></a>  <span class="at">dimnames =</span> <span class="fu">list</span>(</span>
+<span id="cb44-4"><a href="#cb44-4"></a>    <span class="at">Guess =</span> <span class="fu">c</span>(<span class="st">"Milk"</span>, <span class="st">"Tea"</span>),</span>
+<span id="cb44-5"><a href="#cb44-5"></a>    <span class="at">Truth =</span> <span class="fu">c</span>(<span class="st">"Milk"</span>, <span class="st">"Tea"</span>)</span>
+<span id="cb44-6"><a href="#cb44-6"></a>  )</span>
+<span id="cb44-7"><a href="#cb44-7"></a>)</span>
+<span id="cb44-8"><a href="#cb44-8"></a>TeaTasting</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt;       Truth
+#&gt; Guess  Milk Tea
+#&gt;   Milk    3   1
+#&gt;   Tea     1   3</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1"></a><span class="co"># 单边 P 值</span></span>
+<span id="cb46-2"><a href="#cb46-2"></a><span class="fu">fisher.test</span>(TeaTasting, <span class="at">alternative =</span> <span class="st">"greater"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt; 
+#&gt;  Fisher's Exact Test for Count Data
+#&gt; 
+#&gt; data:  TeaTasting
+#&gt; p-value = 0.2429
+#&gt; alternative hypothesis: true odds ratio is greater than 1
+#&gt; 95 percent confidence interval:
+#&gt;  0.3135693       Inf
+#&gt; sample estimates:
+#&gt; odds ratio 
+#&gt;   6.408309</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb48"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1"></a><span class="co"># 双边 P 值</span></span>
+<span id="cb48-2"><a href="#cb48-2"></a><span class="fu">fisher.test</span>(TeaTasting, <span class="at">alternative =</span> <span class="st">"two.sided"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt; 
+#&gt;  Fisher's Exact Test for Count Data
+#&gt; 
+#&gt; data:  TeaTasting
+#&gt; p-value = 0.4857
+#&gt; alternative hypothesis: true odds ratio is not equal to 1
+#&gt; 95 percent confidence interval:
+#&gt;    0.2117329 621.9337505
+#&gt; sample estimates:
+#&gt; odds ratio 
+#&gt;   6.408309</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb50"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb50-1"><a href="#cb50-1"></a><span class="co"># 单边 P 值</span></span>
+<span id="cb50-2"><a href="#cb50-2"></a><span class="fu">sum</span>(<span class="fu">dhyper</span>(<span class="at">x =</span> <span class="fu">c</span>(<span class="dv">3</span>, <span class="dv">4</span>), <span class="at">m =</span> <span class="dv">4</span>, <span class="at">n =</span> <span class="dv">4</span>, <span class="at">k =</span> <span class="dv">4</span>))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt; [1] 0.2428571</code></pre>
+</div>
+</div>
+</section><section id="对称性" class="level3" data-number="21.4.3"><h3 data-number="21.4.3" class="anchored" data-anchor-id="对称性">
+<span class="header-section-number">21.4.3</span> 对称性</h3>
+<p>用于计数数据的 McNemar 卡方检验（ McNemar <span class="math inline">\(\chi^2\)</span> 检验）：检验二维列联表行和列的对称性 <code><a href="https://rdrr.io/r/stats/mcnemar.test.html">mcnemar.test()</a></code>。怎么理解对称性？其实是配对检验。看帮助实例。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb52"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb52-1"><a href="#cb52-1"></a>Performance <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">794</span>, <span class="dv">86</span>, <span class="dv">150</span>, <span class="dv">570</span>),</span>
+<span id="cb52-2"><a href="#cb52-2"></a>  <span class="at">nrow =</span> <span class="dv">2</span>,</span>
+<span id="cb52-3"><a href="#cb52-3"></a>  <span class="at">dimnames =</span> <span class="fu">list</span>(</span>
+<span id="cb52-4"><a href="#cb52-4"></a>    <span class="st">"1st Survey"</span> <span class="ot">=</span> <span class="fu">c</span>(<span class="st">"Approve"</span>, <span class="st">"Disapprove"</span>),</span>
+<span id="cb52-5"><a href="#cb52-5"></a>    <span class="st">"2nd Survey"</span> <span class="ot">=</span> <span class="fu">c</span>(<span class="st">"Approve"</span>, <span class="st">"Disapprove"</span>)</span>
+<span id="cb52-6"><a href="#cb52-6"></a>  )</span>
+<span id="cb52-7"><a href="#cb52-7"></a>)</span>
+<span id="cb52-8"><a href="#cb52-8"></a>Performance</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt;             2nd Survey
+#&gt; 1st Survey   Approve Disapprove
+#&gt;   Approve        794        150
+#&gt;   Disapprove      86        570</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb54"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb54-1"><a href="#cb54-1"></a><span class="fu">mcnemar.test</span>(Performance)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt; 
+#&gt;  McNemar's Chi-squared test with continuity correction
+#&gt; 
+#&gt; data:  Performance
+#&gt; McNemar's chi-squared = 16.818, df = 1, p-value = 4.115e-05</code></pre>
+</div>
+</div>
+</section><section id="条件独立性" class="level3" data-number="21.4.4"><h3 data-number="21.4.4" class="anchored" data-anchor-id="条件独立性">
+<span class="header-section-number">21.4.4</span> 条件独立性</h3>
+<p>用于分层分类数据的 Cochran-Mantel-Haenszel 卡方检验：两个枚举（分类）变量的条件独立性，假定不存在三个因素的交互作用。Cochran-Mantel-Haenszel 检验 <code><a href="https://rdrr.io/r/stats/mantelhaen.test.html">mantelhaen.test()</a></code></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb56"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb56-1"><a href="#cb56-1"></a><span class="fu">str</span>(UCBAdmissions)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt;  'table' num [1:2, 1:2, 1:6] 512 313 89 19 353 207 17 8 120 205 ...
+#&gt;  - attr(*, "dimnames")=List of 3
+#&gt;   ..$ Admit : chr [1:2] "Admitted" "Rejected"
+#&gt;   ..$ Gender: chr [1:2] "Male" "Female"
+#&gt;   ..$ Dept  : chr [1:6] "A" "B" "C" "D" ...</code></pre>
+</div>
+</div>
+<p><code>UCBAdmissions</code> 数据集是一个 <span class="math inline">\(2\times 2 \times 6\)</span> 的三维列联表，R 语言中常用 table 类型表示。实际上，table 类型衍生自 array 数组类型，当把 <code>UCBAdmissions</code> 当作一个数组操作时，1、2、3 分别表示 Admit、Gender、Dept 三个维度。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb58"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb58-1"><a href="#cb58-1"></a><span class="fu">mantelhaen.test</span>(UCBAdmissions)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt; 
+#&gt;  Mantel-Haenszel chi-squared test with continuity correction
+#&gt; 
+#&gt; data:  UCBAdmissions
+#&gt; Mantel-Haenszel X-squared = 1.4269, df = 1, p-value = 0.2323
+#&gt; alternative hypothesis: true common odds ratio is not equal to 1
+#&gt; 95 percent confidence interval:
+#&gt;  0.7719074 1.0603298
+#&gt; sample estimates:
+#&gt; common odds ratio 
+#&gt;         0.9046968</code></pre>
+</div>
+</div>
+<p>没有证据表明院系与性别之间存在关联。在给定院系的情况下，是否录取和性别没有显著关系。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb60"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb60-1"><a href="#cb60-1"></a><span class="co"># 按系统计</span></span>
+<span id="cb60-2"><a href="#cb60-2"></a><span class="fu">apply</span>(UCBAdmissions, <span class="dv">3</span>, <span class="cf">function</span>(x) (x[<span class="dv">1</span>, <span class="dv">1</span>] <span class="sc">*</span> x[<span class="dv">2</span>, <span class="dv">2</span>]) <span class="sc">/</span> (x[<span class="dv">1</span>, <span class="dv">2</span>] <span class="sc">*</span> x[<span class="dv">2</span>, <span class="dv">1</span>]))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt;         A         B         C         D         E         F 
+#&gt; 0.3492120 0.8025007 1.1330596 0.9212838 1.2216312 0.8278727</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb62"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb62-1"><a href="#cb62-1"></a>woolf <span class="ot">&lt;-</span> <span class="cf">function</span>(x) {</span>
+<span id="cb62-2"><a href="#cb62-2"></a>  x <span class="ot">&lt;-</span> x <span class="sc">+</span> <span class="dv">1</span> <span class="sc">/</span> <span class="dv">2</span></span>
+<span id="cb62-3"><a href="#cb62-3"></a>  k <span class="ot">&lt;-</span> <span class="fu">dim</span>(x)[<span class="dv">3</span>]</span>
+<span id="cb62-4"><a href="#cb62-4"></a>  or <span class="ot">&lt;-</span> <span class="fu">apply</span>(x, <span class="dv">3</span>, <span class="cf">function</span>(x) (x[<span class="dv">1</span>, <span class="dv">1</span>] <span class="sc">*</span> x[<span class="dv">2</span>, <span class="dv">2</span>]) <span class="sc">/</span> (x[<span class="dv">1</span>, <span class="dv">2</span>] <span class="sc">*</span> x[<span class="dv">2</span>, <span class="dv">1</span>]))</span>
+<span id="cb62-5"><a href="#cb62-5"></a>  w <span class="ot">&lt;-</span> <span class="fu">apply</span>(x, <span class="dv">3</span>, <span class="cf">function</span>(x) <span class="dv">1</span> <span class="sc">/</span> <span class="fu">sum</span>(<span class="dv">1</span> <span class="sc">/</span> x))</span>
+<span id="cb62-6"><a href="#cb62-6"></a>  <span class="dv">1</span> <span class="sc">-</span> <span class="fu">pchisq</span>(<span class="fu">sum</span>(w <span class="sc">*</span> (<span class="fu">log</span>(or) <span class="sc">-</span> <span class="fu">weighted.mean</span>(<span class="fu">log</span>(or), w))<span class="sc">^</span><span class="dv">2</span>), k <span class="sc">-</span> <span class="dv">1</span>)</span>
+<span id="cb62-7"><a href="#cb62-7"></a>}</span>
+<span id="cb62-8"><a href="#cb62-8"></a><span class="fu">woolf</span>(UCBAdmissions)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt; [1] 0.0034272</code></pre>
+</div>
+</div>
+</section></section><section id="sec-ucb-admissions" class="level2" data-number="21.5"><h2 data-number="21.5" class="anchored" data-anchor-id="sec-ucb-admissions">
+<span class="header-section-number">21.5</span> 加州伯克利分校的录取情况</h2>
+<p>1973 年加州伯克利分校 6 个最大的院系的录取情况见下 <a href="#tbl-ucb-admissions" class="quarto-xref">表格&nbsp;<span>21.3</span></a> ，研究目标是加州伯克利分校在招生录取工作中是否有性别歧视？</p>
+<div class="cell">
+<div id="tbl-ucb-admissions" class="cell anchored">
+<figure class="quarto-float quarto-float-tbl figure"><figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-ucb-admissions-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+表格&nbsp;21.3: 加州伯克利分校的录取情况
+</figcaption><div aria-describedby="tbl-ucb-admissions-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="cell-output-display">
+<div id="coxtjnpqbd" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#coxtjnpqbd table {
+  font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#coxtjnpqbd thead, #coxtjnpqbd tbody, #coxtjnpqbd tfoot, #coxtjnpqbd tr, #coxtjnpqbd td, #coxtjnpqbd th {
+  border-style: none;
+}
+
+#coxtjnpqbd p {
+  margin: 0;
+  padding: 0;
+}
+
+#coxtjnpqbd .gt_table {
+  display: table;
+  border-collapse: collapse;
+  line-height: normal;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 16px;
+  font-weight: normal;
+  font-style: normal;
+  background-color: #FFFFFF;
+  width: auto;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#coxtjnpqbd .gt_caption {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+#coxtjnpqbd .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#coxtjnpqbd .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 3px;
+  padding-bottom: 5px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#coxtjnpqbd .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#coxtjnpqbd .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#coxtjnpqbd .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#coxtjnpqbd .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#coxtjnpqbd .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#coxtjnpqbd .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#coxtjnpqbd .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#coxtjnpqbd .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#coxtjnpqbd .gt_spanner_row {
+  border-bottom-style: hidden;
+}
+
+#coxtjnpqbd .gt_group_heading {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  text-align: left;
+}
+
+#coxtjnpqbd .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#coxtjnpqbd .gt_from_md > :first-child {
+  margin-top: 0;
+}
+
+#coxtjnpqbd .gt_from_md > :last-child {
+  margin-bottom: 0;
+}
+
+#coxtjnpqbd .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#coxtjnpqbd .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#coxtjnpqbd .gt_stub_row_group {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 5px;
+  padding-right: 5px;
+  vertical-align: top;
+}
+
+#coxtjnpqbd .gt_row_group_first td {
+  border-top-width: 2px;
+}
+
+#coxtjnpqbd .gt_row_group_first th {
+  border-top-width: 2px;
+}
+
+#coxtjnpqbd .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#coxtjnpqbd .gt_first_summary_row {
+  border-top-style: solid;
+  border-top-color: #D3D3D3;
+}
+
+#coxtjnpqbd .gt_first_summary_row.thick {
+  border-top-width: 2px;
+}
+
+#coxtjnpqbd .gt_last_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#coxtjnpqbd .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#coxtjnpqbd .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#coxtjnpqbd .gt_last_grand_summary_row_top {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-style: double;
+  border-bottom-width: 6px;
+  border-bottom-color: #D3D3D3;
+}
+
+#coxtjnpqbd .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#coxtjnpqbd .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#coxtjnpqbd .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#coxtjnpqbd .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#coxtjnpqbd .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#coxtjnpqbd .gt_sourcenote {
+  font-size: 90%;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#coxtjnpqbd .gt_left {
+  text-align: left;
+}
+
+#coxtjnpqbd .gt_center {
+  text-align: center;
+}
+
+#coxtjnpqbd .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#coxtjnpqbd .gt_font_normal {
+  font-weight: normal;
+}
+
+#coxtjnpqbd .gt_font_bold {
+  font-weight: bold;
+}
+
+#coxtjnpqbd .gt_font_italic {
+  font-style: italic;
+}
+
+#coxtjnpqbd .gt_super {
+  font-size: 65%;
+}
+
+#coxtjnpqbd .gt_footnote_marks {
+  font-size: 75%;
+  vertical-align: 0.4em;
+  position: initial;
+}
+
+#coxtjnpqbd .gt_asterisk {
+  font-size: 100%;
+  vertical-align: 0;
+}
+
+#coxtjnpqbd .gt_indent_1 {
+  text-indent: 5px;
+}
+
+#coxtjnpqbd .gt_indent_2 {
+  text-indent: 10px;
+}
+
+#coxtjnpqbd .gt_indent_3 {
+  text-indent: 15px;
+}
+
+#coxtjnpqbd .gt_indent_4 {
+  text-indent: 20px;
+}
+
+#coxtjnpqbd .gt_indent_5 {
+  text-indent: 25px;
+}
+</style>
+<table class="gt_table cell table table-sm table-striped small" data-quarto-postprocess="true" data-quarto-disable-processing="false" data-quarto-bootstrap="false">
+<thead>
+<tr class="header gt_col_headings gt_spanner_row">
+<th rowspan="2" id="院系" class="gt_col_heading gt_columns_bottom_border gt_center" data-quarto-table-cell-role="th" scope="col">院系</th>
+<th colspan="2" id="录取" class="gt_center gt_columns_top_border gt_column_spanner_outer" data-quarto-table-cell-role="th" scope="colgroup"><span class="gt_column_spanner">录取</span></th>
+<th colspan="2" id="拒绝" class="gt_center gt_columns_top_border gt_column_spanner_outer" data-quarto-table-cell-role="th" scope="colgroup"><span class="gt_column_spanner">拒绝</span></th>
+</tr>
+<tr class="odd gt_col_headings">
+<th id="男性" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">男性</th>
+<th id="女性" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">女性</th>
+<th id="男性" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">男性</th>
+<th id="女性" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">女性</th>
+</tr>
+</thead>
+<tbody class="gt_table_body">
+<tr class="odd">
+<td class="gt_row gt_center" headers="Dept">A</td>
+<td class="gt_row gt_right" headers="Freq_Male_Admitted">512</td>
+<td class="gt_row gt_right" headers="Freq_Female_Admitted">89</td>
+<td class="gt_row gt_right" headers="Freq_Male_Rejected">313</td>
+<td class="gt_row gt_right" headers="Freq_Female_Rejected">19</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_center gt_striped" headers="Dept">B</td>
+<td class="gt_row gt_right gt_striped" headers="Freq_Male_Admitted">353</td>
+<td class="gt_row gt_right gt_striped" headers="Freq_Female_Admitted">17</td>
+<td class="gt_row gt_right gt_striped" headers="Freq_Male_Rejected">207</td>
+<td class="gt_row gt_right gt_striped" headers="Freq_Female_Rejected">8</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_center" headers="Dept">C</td>
+<td class="gt_row gt_right" headers="Freq_Male_Admitted">120</td>
+<td class="gt_row gt_right" headers="Freq_Female_Admitted">202</td>
+<td class="gt_row gt_right" headers="Freq_Male_Rejected">205</td>
+<td class="gt_row gt_right" headers="Freq_Female_Rejected">391</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_center gt_striped" headers="Dept">D</td>
+<td class="gt_row gt_right gt_striped" headers="Freq_Male_Admitted">138</td>
+<td class="gt_row gt_right gt_striped" headers="Freq_Female_Admitted">131</td>
+<td class="gt_row gt_right gt_striped" headers="Freq_Male_Rejected">279</td>
+<td class="gt_row gt_right gt_striped" headers="Freq_Female_Rejected">244</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_center" headers="Dept">E</td>
+<td class="gt_row gt_right" headers="Freq_Male_Admitted">53</td>
+<td class="gt_row gt_right" headers="Freq_Female_Admitted">94</td>
+<td class="gt_row gt_right" headers="Freq_Male_Rejected">138</td>
+<td class="gt_row gt_right" headers="Freq_Female_Rejected">299</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_center gt_striped" headers="Dept">F</td>
+<td class="gt_row gt_right gt_striped" headers="Freq_Male_Admitted">22</td>
+<td class="gt_row gt_right gt_striped" headers="Freq_Female_Admitted">24</td>
+<td class="gt_row gt_right gt_striped" headers="Freq_Male_Rejected">351</td>
+<td class="gt_row gt_right gt_striped" headers="Freq_Female_Rejected">317</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</figure>
+</div>
+</div>
+<p>借助马赛克图 <a href="#fig-ucb-admissions-mosaicplot" class="quarto-xref">图&nbsp;<span>21.5</span></a> 可以更加直观的看出数据中的比例关系。</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-ucb-admissions-mosaicplot" class="quarto-figure quarto-figure-center anchored" width="672">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-ucb-admissions-mosaicplot-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="categorical-data-analysis_files/figure-html/fig-ucb-admissions-mosaicplot-1.png" class="img-fluid figure-img" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ucb-admissions-mosaicplot-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;21.5: 加州伯克利分校院系录取情况
+</figcaption></figure>
+</div>
+</div>
+</div>
+<p>接下来进行定量的分析，首先，按性别和录取情况统计人数，如下：</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb64"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb64-1"><a href="#cb64-1"></a>m <span class="ot">&lt;-</span> <span class="fu">xtabs</span>(Freq <span class="sc">~</span> Gender <span class="sc">+</span> Admit, <span class="at">data =</span> <span class="fu">as.data.frame</span>(UCBAdmissions))</span>
+<span id="cb64-2"><a href="#cb64-2"></a>m</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt;         Admit
+#&gt; Gender   Admitted Rejected
+#&gt;   Male       1198     1493
+#&gt;   Female      557     1278</code></pre>
+</div>
+</div>
+<p>可以看到，申请加州伯克利分校的女生当中，只有 <span class="math inline">\(557 / (557 + 1278) = 30.35\%\)</span> 录取了，而男生则有 <span class="math inline">\(1198 / (1198 + 1493) = 44.52\%\)</span> 的录取率。根据皮尔逊 <span class="math inline">\(\chi^2\)</span> 检验：</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb66"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb66-1"><a href="#cb66-1"></a><span class="co"># 不带耶茨矫正</span></span>
+<span id="cb66-2"><a href="#cb66-2"></a><span class="fu">chisq.test</span>(m, <span class="at">correct =</span> <span class="cn">FALSE</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt; 
+#&gt;  Pearson's Chi-squared test
+#&gt; 
+#&gt; data:  m
+#&gt; X-squared = 92.205, df = 1, p-value &lt; 2.2e-16</code></pre>
+</div>
+</div>
+<p>可知 <span class="math inline">\(\chi^2\)</span> 统计量的值为 <span class="math inline">\(92.205\)</span> 且 P 值远远小于 0.05， 差异达到统计显著性，不是随机因素导致的。因此，加州伯克利分校被指控在招生录取工作中存在性别歧视。然而，当我们细分到各个院系去看录取率（录取人数 / 申请人数），结果显示院系 A 的录取率为 64.41%，院系 B 的录取率为 63.24%，依次类推，各院系情况如下：</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb68"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb68-1"><a href="#cb68-1"></a><span class="fu">proportions</span>(<span class="fu">xtabs</span>(Freq <span class="sc">~</span> Dept <span class="sc">+</span> Admit,</span>
+<span id="cb68-2"><a href="#cb68-2"></a>  <span class="at">data =</span> <span class="fu">as.data.frame</span>(UCBAdmissions)</span>
+<span id="cb68-3"><a href="#cb68-3"></a>), <span class="at">margin =</span> <span class="dv">1</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt;     Admit
+#&gt; Dept   Admitted   Rejected
+#&gt;    A 0.64415863 0.35584137
+#&gt;    B 0.63247863 0.36752137
+#&gt;    C 0.35076253 0.64923747
+#&gt;    D 0.33964646 0.66035354
+#&gt;    E 0.25171233 0.74828767
+#&gt;    F 0.06442577 0.93557423</code></pre>
+</div>
+</div>
+<div class="cell" data-par="true">
+<div class="cell-output-display">
+<div id="fig-ucb-admissions-fourfoldplot" class="quarto-figure quarto-figure-center anchored" width="672">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-ucb-admissions-fourfoldplot-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="categorical-data-analysis_files/figure-html/fig-ucb-admissions-fourfoldplot-1.png" class="img-fluid figure-img" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ucb-admissions-fourfoldplot-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;21.6: 加州伯克利分校各院系录取情况
+</figcaption></figure>
+</div>
+</div>
+</div>
+<p>对每个院系，单独使用皮尔逊 <span class="math inline">\(\chi^2\)</span> 检验，发现只有 A 系的男、女生录取率的差异达到统计显著性，其它系的差异都不显著。辛普森悖论在这里出现了，在分类数据的分析中，常常遇到。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb70"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb70-1"><a href="#cb70-1"></a><span class="co"># 以 A 系为例</span></span>
+<span id="cb70-2"><a href="#cb70-2"></a>ma <span class="ot">&lt;-</span> <span class="fu">xtabs</span>(Freq <span class="sc">~</span> Gender <span class="sc">+</span> Admit,</span>
+<span id="cb70-3"><a href="#cb70-3"></a>  <span class="at">subset =</span> Dept <span class="sc">==</span> <span class="st">"A"</span>,</span>
+<span id="cb70-4"><a href="#cb70-4"></a>  <span class="at">data =</span> <span class="fu">as.data.frame</span>(UCBAdmissions)</span>
+<span id="cb70-5"><a href="#cb70-5"></a>)</span>
+<span id="cb70-6"><a href="#cb70-6"></a><span class="fu">chisq.test</span>(ma, <span class="at">correct =</span> <span class="cn">FALSE</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt; 
+#&gt;  Pearson's Chi-squared test
+#&gt; 
+#&gt; data:  ma
+#&gt; X-squared = 17.248, df = 1, p-value = 3.28e-05</code></pre>
+</div>
+</div>
+<p>为了经一步说明此现象的原因，建立对数线性模型来拟合数据，值得一提的是皮尔逊卡方检验可以从对数线性模型的角度来看，而对数线性模型是一种特殊的广义线性模型，针对计数数据建模。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb72"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb72-1"><a href="#cb72-1"></a>fit_ucb0 <span class="ot">&lt;-</span> <span class="fu">glm</span>(Freq <span class="sc">~</span> Dept <span class="sc">+</span> Admit <span class="sc">+</span> Gender,</span>
+<span id="cb72-2"><a href="#cb72-2"></a>  <span class="at">family =</span> <span class="fu">poisson</span>(<span class="at">link =</span> <span class="st">"log"</span>),</span>
+<span id="cb72-3"><a href="#cb72-3"></a>  <span class="at">data =</span> <span class="fu">as.data.frame</span>(UCBAdmissions)</span>
+<span id="cb72-4"><a href="#cb72-4"></a>)</span>
+<span id="cb72-5"><a href="#cb72-5"></a><span class="fu">summary</span>(fit_ucb0)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt; 
+#&gt; Call:
+#&gt; glm(formula = Freq ~ Dept + Admit + Gender, family = poisson(link = "log"), 
+#&gt;     data = as.data.frame(UCBAdmissions))
+#&gt; 
+#&gt; Coefficients:
+#&gt;               Estimate Std. Error z value Pr(&gt;|z|)    
+#&gt; (Intercept)    5.37111    0.03964 135.498  &lt; 2e-16 ***
+#&gt; DeptB         -0.46679    0.05274  -8.852  &lt; 2e-16 ***
+#&gt; DeptC         -0.01621    0.04649  -0.349 0.727355    
+#&gt; DeptD         -0.16384    0.04832  -3.391 0.000696 ***
+#&gt; DeptE         -0.46850    0.05276  -8.879  &lt; 2e-16 ***
+#&gt; DeptF         -0.26752    0.04972  -5.380 7.44e-08 ***
+#&gt; AdmitRejected  0.45674    0.03051  14.972  &lt; 2e-16 ***
+#&gt; GenderFemale  -0.38287    0.03027 -12.647  &lt; 2e-16 ***
+#&gt; ---
+#&gt; Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+#&gt; 
+#&gt; (Dispersion parameter for poisson family taken to be 1)
+#&gt; 
+#&gt;     Null deviance: 2650.1  on 23  degrees of freedom
+#&gt; Residual deviance: 2097.7  on 16  degrees of freedom
+#&gt; AIC: 2272.7
+#&gt; 
+#&gt; Number of Fisher Scoring iterations: 5</code></pre>
+</div>
+</div>
+<p>添加性别和院系的交互效应后，对数线性模型的 AIC 下降一半多，说明模型的交互效应是显著的，也就是说性别和院系之间存在非常强的关联。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb74"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb74-1"><a href="#cb74-1"></a>fit_ucb1 <span class="ot">&lt;-</span> <span class="fu">glm</span>(Freq <span class="sc">~</span> Dept <span class="sc">+</span> Admit <span class="sc">+</span> Gender <span class="sc">+</span> Dept <span class="sc">*</span> Gender,</span>
+<span id="cb74-2"><a href="#cb74-2"></a>  <span class="at">family =</span> <span class="fu">poisson</span>(<span class="at">link =</span> <span class="st">"log"</span>),</span>
+<span id="cb74-3"><a href="#cb74-3"></a>  <span class="at">data =</span> <span class="fu">as.data.frame</span>(UCBAdmissions)</span>
+<span id="cb74-4"><a href="#cb74-4"></a>)</span>
+<span id="cb74-5"><a href="#cb74-5"></a><span class="fu">summary</span>(fit_ucb1)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt; 
+#&gt; Call:
+#&gt; glm(formula = Freq ~ Dept + Admit + Gender + Dept * Gender, family = poisson(link = "log"), 
+#&gt;     data = as.data.frame(UCBAdmissions))
+#&gt; 
+#&gt; Coefficients:
+#&gt;                    Estimate Std. Error z value Pr(&gt;|z|)    
+#&gt; (Intercept)         5.76801    0.03951 145.992  &lt; 2e-16 ***
+#&gt; DeptB              -0.38745    0.05475  -7.076 1.48e-12 ***
+#&gt; DeptC              -0.93156    0.06549 -14.224  &lt; 2e-16 ***
+#&gt; DeptD              -0.68230    0.06008 -11.356  &lt; 2e-16 ***
+#&gt; DeptE              -1.46311    0.08030 -18.221  &lt; 2e-16 ***
+#&gt; DeptF              -0.79380    0.06239 -12.722  &lt; 2e-16 ***
+#&gt; AdmitRejected       0.45674    0.03051  14.972  &lt; 2e-16 ***
+#&gt; GenderFemale       -2.03325    0.10233 -19.870  &lt; 2e-16 ***
+#&gt; DeptB:GenderFemale -1.07581    0.22860  -4.706 2.52e-06 ***
+#&gt; DeptC:GenderFemale  2.63462    0.12343  21.345  &lt; 2e-16 ***
+#&gt; DeptD:GenderFemale  1.92709    0.12464  15.461  &lt; 2e-16 ***
+#&gt; DeptE:GenderFemale  2.75479    0.13510  20.391  &lt; 2e-16 ***
+#&gt; DeptF:GenderFemale  1.94356    0.12683  15.325  &lt; 2e-16 ***
+#&gt; ---
+#&gt; Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+#&gt; 
+#&gt; (Dispersion parameter for poisson family taken to be 1)
+#&gt; 
+#&gt;     Null deviance: 2650.10  on 23  degrees of freedom
+#&gt; Residual deviance:  877.06  on 11  degrees of freedom
+#&gt; AIC: 1062.1
+#&gt; 
+#&gt; Number of Fisher Scoring iterations: 5</code></pre>
+</div>
+</div>
+<p>此辛普森悖论现象的解释是女生倾向于申请录取率低的院系，而男生倾向于申请录取率高的院系，最终导致整体上，男生的录取率显著高于女生。至于为什么女生会倾向于申请录取率低的院系？这可能要看具体的院系是哪些，招生政策如何？这已经不是仅仅依靠招生办的统计数字就可以完全解释得了的，更多详情见文献 <span class="citation" data-cites="Bickel1975">Bickel, Hammel, 和 O’Connell (<a href="references.html#ref-Bickel1975" role="doc-biblioref">1975</a>)</span> 。</p>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+提示
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>对数线性模型的皮尔逊 <span class="math inline">\(\chi^2\)</span> 检验的统计量</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb76"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb76-1"><a href="#cb76-1"></a><span class="fu">sum</span>(<span class="fu">residuals</span>(fit_ucb1, <span class="at">type =</span> <span class="st">"pearson"</span>)<span class="sc">^</span><span class="dv">2</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt; [1] 797.7045</code></pre>
+</div>
+</div>
+<p>比较多个广义线性模型的拟合效果，除了看 AIC，还可以看对数似然，它越大越好。可以看到添加性别和院系的交互效应后，对数似然增加了一倍多。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb78"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb78-1"><a href="#cb78-1"></a><span class="co"># 基础模型</span></span>
+<span id="cb78-2"><a href="#cb78-2"></a><span class="fu">logLik</span>(fit_ucb0)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt; 'log Lik.' -1128.365 (df=8)</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb80"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb80-1"><a href="#cb80-1"></a><span class="co"># 添加交互效应</span></span>
+<span id="cb80-2"><a href="#cb80-2"></a><span class="fu">logLik</span>(fit_ucb1)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt; 'log Lik.' -518.0581 (df=13)</code></pre>
+</div>
+</div>
+</div>
+</div>
+</section><section id="sec-titanic" class="level2" data-number="21.6"><h2 data-number="21.6" class="anchored" data-anchor-id="sec-titanic">
+<span class="header-section-number">21.6</span> 分析泰坦尼克号乘客生存率</h2>
+<p>分析存活率的影响因素。</p>
+<p>除了从条件独立性检验的角度，下面从逻辑回归模型的角度分析这个高维列联表数据，由此，我们可以知道假设检验和广义线性模型之间的联系，针对复杂高维列联表数据进行关联分析和解释。</p>
+<p>响应变量是乘客的状态，存活还是死亡，titanic_data 是按船舱 Class、性别 Sex 和年龄 Age 分类汇总统计的数据，因此，下面的逻辑回归模型是对乘客群体的建模。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb82"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb82-1"><a href="#cb82-1"></a><span class="co"># 建立模型</span></span>
+<span id="cb82-2"><a href="#cb82-2"></a>fit_titanic <span class="ot">&lt;-</span> <span class="fu">glm</span>(<span class="fu">cbind</span>(Freq_Yes, Freq_No) <span class="sc">~</span> Class <span class="sc">+</span> Sex <span class="sc">+</span> Age,</span>
+<span id="cb82-3"><a href="#cb82-3"></a>  <span class="at">data =</span> titanic_data, <span class="at">family =</span> <span class="fu">binomial</span>(<span class="at">link =</span> <span class="st">"logit"</span>)</span>
+<span id="cb82-4"><a href="#cb82-4"></a>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>接着，我们查看模型输出的情况</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb83"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb83-1"><a href="#cb83-1"></a><span class="co"># 模型输出</span></span>
+<span id="cb83-2"><a href="#cb83-2"></a><span class="fu">summary</span>(fit_titanic)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt; 
+#&gt; Call:
+#&gt; glm(formula = cbind(Freq_Yes, Freq_No) ~ Class + Sex + Age, family = binomial(link = "logit"), 
+#&gt;     data = titanic_data)
+#&gt; 
+#&gt; Coefficients:
+#&gt;             Estimate Std. Error z value Pr(&gt;|z|)    
+#&gt; (Intercept)   0.6853     0.2730   2.510   0.0121 *  
+#&gt; Class2nd     -1.0181     0.1960  -5.194 2.05e-07 ***
+#&gt; Class3rd     -1.7778     0.1716 -10.362  &lt; 2e-16 ***
+#&gt; ClassCrew    -0.8577     0.1573  -5.451 5.00e-08 ***
+#&gt; SexFemale     2.4201     0.1404  17.236  &lt; 2e-16 ***
+#&gt; AgeAdult     -1.0615     0.2440  -4.350 1.36e-05 ***
+#&gt; ---
+#&gt; Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+#&gt; 
+#&gt; (Dispersion parameter for binomial family taken to be 1)
+#&gt; 
+#&gt;     Null deviance: 671.96  on 13  degrees of freedom
+#&gt; Residual deviance: 112.57  on  8  degrees of freedom
+#&gt; AIC: 171.19
+#&gt; 
+#&gt; Number of Fisher Scoring iterations: 5</code></pre>
+</div>
+</div>
+
+
+<div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list" style="display: none">
+<div id="ref-Agresti2007" class="csl-entry" role="listitem">
+Agresti, Alan. 2007. <em>An Introduction to Categorical Data Analysis</em>. 2nd 本. Hoboken, New Jersey: John Wiley &amp; Sons, Inc.
+</div>
+<div id="ref-Bickel1975" class="csl-entry" role="listitem">
+Bickel, P. J., E. A. Hammel, 和 J. W. O’Connell. 1975. <span>《Sex Bias in Graduate Admissions: Data from Berkeley》</span>. <em>Science</em> 187 (4175): 398–404. <a href="https://doi.org/10.1126/science.187.4175.398">https://doi.org/10.1126/science.187.4175.398</a>.
+</div>
+<div id="ref-Brunson2020" class="csl-entry" role="listitem">
+Brunson, Jason Cory. 2020. <span>《<span>ggalluvial</span>: Layered Grammar for Alluvial Plots》</span>. <em>Journal of Open Source Software</em> 5 (49): 2017. <a href="https://doi.org/10.21105/joss.02017">https://doi.org/10.21105/joss.02017</a>.
+</div>
+<div id="ref-Clopper1934" class="csl-entry" role="listitem">
+Clopper, C. J., 和 E. S. Pearson. 1934. <span>《The Use of Confidence or Fiducial Limits Illustrated In The Case of The Binomial》</span>. <em>Biometrika</em> 26 (4): 404–13. <a href="https://doi.org/10.1093/biomet/26.4.404">https://doi.org/10.1093/biomet/26.4.404</a>.
+</div>
+<div id="ref-Friendly2016" class="csl-entry" role="listitem">
+Friendly, Michael, 和 David Meyer. 2016. <em>Discrete Data Analysis with R: Visualization and Modeling Techniques for Categorical and Count Data</em>. 1st 本. Boca Raton, Florida: Chapman; Hall/CRC.
+</div>
+<div id="ref-Meyer2006" class="csl-entry" role="listitem">
+Meyer, David, Achim Zeileis, 和 Kurt Hornik. 2006. <span>《The Strucplot Framework: Visualizing Multi-Way Contingency Tables with <span>vcd</span>》</span>. <em>Journal of Statistical Software</em> 17 (3): 1–48. <a href="https://doi.org/10.18637/jss.v017.i03">https://doi.org/10.18637/jss.v017.i03</a>.
+</div>
+<div id="ref-Newcombe1998" class="csl-entry" role="listitem">
+Newcombe, Robert G. 1998. <span>《Interval estimation for the difference between independent proportions: comparison of eleven methods》</span>. <em>Statistics in Medicine</em> 17 (8): 873–90. <a href="https://doi.org/10.1002/(SICI)1097-0258(19980430)17:8<873::AID-SIM779>3.0.CO;2-I">https://doi.org/10.1002/(SICI)1097-0258(19980430)17:8&lt;873::AID-SIM779&gt;3.0.CO;2-I</a>.
+</div>
+<div id="ref-Wilson1927" class="csl-entry" role="listitem">
+Wilson, Edwin B. 1927. <span>《Probable inference, the law of succession, and statistical inference》</span>. <em>Journal of the American Statistical Association</em> 22 (158): 209–12. <a href="https://doi.org/10.1080/01621459.1927.10502953">https://doi.org/10.1080/01621459.1927.10502953</a>.
+</div>
+<div id="ref-Zeileis2007" class="csl-entry" role="listitem">
+Zeileis, Achim, David Meyer, 和 Kurt Hornik. 2007. <span>《Residual-based Shadings for Visualizing (Conditional) Independence》</span>. <em>Journal of Computational and Graphical Statistics</em> 16 (3): 507–25. <a href="https://doi.org/10.1198/106186007X237856">https://doi.org/10.1198/106186007X237856</a>.
+</div>
+<div id="ref-Song2011" class="csl-entry" role="listitem">
+宋泽熙. 2011. <span>《两个二项总体成功概率的比较》</span>. <em>中国校外教育（理论）</em> z1: 81. <a href="https://doi.org/10.3969/j.issn.1004-8502-B.2011.z1.0919">https://doi.org/10.3969/j.issn.1004-8502-B.2011.z1.0919</a>.
+</div>
+</div>
+</section><aside id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes"><hr>
+<ol>
+<li id="fn1"><p><a href="https://en.wikipedia.org/wiki/Ronald_Fisher" class="uri">https://en.wikipedia.org/wiki/Ronald_Fisher</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol></aside></main><!-- /main --><script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "已复制");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "已复制");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    const typesetMath = (el) => {
+      if (window.MathJax) {
+        // MathJax Typeset
+        window.MathJax.typeset([el]);
+      } else if (window.katex) {
+        // KaTeX Render
+        var mathElements = el.getElementsByClassName("math");
+        var macros = [];
+        for (var i = 0; i < mathElements.length; i++) {
+          var texText = mathElements[i].firstChild;
+          if (mathElements[i].tagName == "SPAN") {
+            window.katex.render(texText.data, mathElements[i], {
+              displayMode: mathElements[i].classList.contains('display'),
+              throwOnError: false,
+              macros: macros,
+              fleqn: false
+            });
+          }
+        }
+      }
+    }
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        typesetMath(container);
+        return container.innerHTML
+      } else {
+        typesetMath(note);
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      typesetMath(note);
+      return note.innerHTML;
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script><nav class="page-navigation"><div class="nav-page nav-page-previous">
+      <a href="./regression-and-correlation.html" class="pagination-link  aria-label=">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">回归与相关分析</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./power-analysis.html" class="pagination-link" aria-label="<span class='chapter-number'>22</span>&nbsp; <span class='chapter-title'>统计检验的功效</span>">
+        <span class="nav-page-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">统计检验的功效</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+</body></html>

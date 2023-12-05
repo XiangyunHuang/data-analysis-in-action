@@ -1,0 +1,1486 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh-Hans" xml:lang="zh-Hans"><head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.4.515">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>R 语言数据分析实战 - 20&nbsp; 回归与相关分析</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+  margin-bottom: 0em;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./categorical-data-analysis.html" rel="next">
+<link href="./common-statistical-tests.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light"><script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "没有结果",
+    "search-matching-documents-text": "匹配的文档",
+    "search-copy-link-title": "复制搜索链接",
+    "search-hide-matches-text": "隐藏其它匹配结果",
+    "search-more-match-text": "更多匹配结果",
+    "search-more-matches-text": "更多匹配结果",
+    "search-clear-button-title": "清除",
+    "search-detached-cancel-button-title": "取消",
+    "search-submit-button-title": "提交",
+    "search-label": "搜索"
+  }
+}</script><script async="" src="https://www.googletagmanager.com/gtag/js?id=G-ZPWJBMKFL8"></script><script type="text/javascript">
+
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-ZPWJBMKFL8', { 'anonymize_ip': true});
+</script><script>
+MathJax ={
+  tex: {
+    macros: {
+      bm: ["{\\boldsymbol #1}",1],
+    }
+  }
+};
+</script><script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script><script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+</head>
+<body class="nav-sidebar floating">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top"><nav class="quarto-secondary-nav"><div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="切换侧边栏导航" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./common-statistical-tests.html">统计分析</a></li><li class="breadcrumb-item"><a href="./regression-and-correlation.html"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">回归与相关分析</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="切换侧边栏导航" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav></header><!-- content --><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto"><div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">R 语言数据分析实战</a> 
+        <div class="sidebar-tools-main">
+    <a href="https://github.com/XiangyunHuang/data-analysis-in-action" title="Source Code" class="quarto-navigation-tool px-1" aria-label="Source Code"><i class="bi bi-github"></i></a>
+    <a href="./_main.pdf" title="Download PDF" class="quarto-navigation-tool px-1" aria-label="Download PDF"><i class="bi bi-file-pdf"></i></a>
+</div>
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="搜索"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">欢迎</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./preface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">前言</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./intro.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">介绍</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true">
+ <span class="menu-text">数据准备</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./wrangling-objects.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">数据对象</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./wrangling-collection.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">数据获取</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./wrangling-cleaning.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">数据清洗</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./wrangling-manipulation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">数据操作</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./wrangling-processing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">数据处理</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true">
+ <span class="menu-text">数据探索</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./visualization-basic.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">ggplot2 入门</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./visualization-intermediate.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">基础图形</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./visualization-advanced.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">统计图形</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./visualization-lattice.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">lattice 入门</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./visualization-graphics.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">graphics 入门</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./visualization-tikz.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">TikZ 入门</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./visualization-practice.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">探索实践</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true">
+ <span class="menu-text">数据交流</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./interactive-graphics.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">交互图形</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./interactive-tables.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">交互表格</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./interactive-applications.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">交互应用</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./documents-html.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">HTML 文档</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./documents-latex.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">PDF 文档</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./documents-office.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Office 文档</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-expanded="true">
+ <span class="menu-text">统计分析</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./common-statistical-tests.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">常见的统计检验</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./regression-and-correlation.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">回归与相关分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./categorical-data-analysis.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">分类数据的分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./power-analysis.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">统计检验的功效</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-expanded="true">
+ <span class="menu-text">数据建模</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./analyze-network-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">网络分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./analyze-text-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">文本分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./analyze-survival-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">生存分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./analyze-time-series-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">时序分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./analyze-point-pattern.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">空间点模式分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./analyze-spatial-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">预测核辐射强度的分布</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./analyze-areal-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">区域数据分析</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-expanded="true">
+ <span class="menu-text">优化建模</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./statistical-computation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">统计计算</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./numerical-optimization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">数值优化</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./optimization-problems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">优化问题</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" aria-expanded="true">
+ <span class="menu-text">贝叶斯建模</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./probabilistic-reasoning-framework.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">概率推理框架</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./generalized-linear-models.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">广义线性模型</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./hierarchical-normal-models.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">分层正态模型</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./mixed-effects-models.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">混合效应模型</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./generalized-additive-models.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">37</span>&nbsp; <span class="chapter-title">广义可加模型</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./gaussian-processes-regression.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">38</span>&nbsp; <span class="chapter-title">高斯过程回归</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./time-series-regression.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">39</span>&nbsp; <span class="chapter-title">时间序列回归</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" aria-expanded="true">
+ <span class="menu-text">机器学习</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./classification-problems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">40</span>&nbsp; <span class="chapter-title">分类问题</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./clustering-problems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">41</span>&nbsp; <span class="chapter-title">聚类问题</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./regression-problems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">42</span>&nbsp; <span class="chapter-title">回归问题</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">参考文献</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" aria-expanded="true">
+ <span class="menu-text">附录</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./notations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">数学符号</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./matrix-operations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">矩阵运算</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./git-github.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">Git 和 Github</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+    </ul>
+</div>
+</nav><div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active"><h2 id="toc-title">目录</h2>
+   
+  <ul>
+<li><a href="#sec-galton" id="toc-sec-galton" class="nav-link active" data-scroll-target="#sec-galton"><span class="header-section-number">20.1</span> 子代身高与亲代身高的关系</a></li>
+  <li><a href="#sec-state-x77" id="toc-sec-state-x77" class="nav-link" data-scroll-target="#sec-state-x77"><span class="header-section-number">20.2</span> 预期寿命与人均收入的关系</a></li>
+  <li><a href="#%E5%88%86%E6%9E%90%E5%BD%B1%E5%93%8D%E5%85%A5%E9%99%A2%E7%AD%89%E5%BE%85%E6%97%B6%E9%97%B4%E7%9A%84%E5%9B%A0%E7%B4%A0" id="toc-分析影响入院等待时间的因素" class="nav-link" data-scroll-target="#%E5%88%86%E6%9E%90%E5%BD%B1%E5%93%8D%E5%85%A5%E9%99%A2%E7%AD%89%E5%BE%85%E6%97%B6%E9%97%B4%E7%9A%84%E5%9B%A0%E7%B4%A0"><span class="header-section-number">20.3</span> 分析影响入院等待时间的因素</a></li>
+  <li><a href="#sec-exercise-regression-and-correlation" id="toc-sec-exercise-regression-and-correlation" class="nav-link" data-scroll-target="#sec-exercise-regression-and-correlation"><span class="header-section-number">20.4</span> 习题</a></li>
+  </ul><div class="toc-actions"><ul><li><a href="https://github.com/XiangyunHuang/data-analysis-in-action/blob/main/regression-and-correlation.qmd" class="toc-action"><i class="bi bi-github"></i>查看代码</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./common-statistical-tests.html">统计分析</a></li><li class="breadcrumb-item"><a href="./regression-and-correlation.html"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">回归与相关分析</span></a></li></ol></nav><div class="quarto-title">
+<h1 class="title"><span id="sec-regression-and-correlation" class="quarto-section-identifier"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">回归与相关分析</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header><section id="sec-galton" class="level2" data-number="20.1"><h2 data-number="20.1" class="anchored" data-anchor-id="sec-galton">
+<span class="header-section-number">20.1</span> 子代身高与亲代身高的关系</h2>
+<!-- 函数型数据探索、分析和可视化，关系 -->
+<p><a href="https://galton.org/">弗朗西斯·高尔顿</a>（Francis Galton, 1822-1911）是历史上著名的优生学家、心理学家、遗传学家和统计学家，是统计学中相关和回归等一批概念的提出者，是遗传学中回归现象的发现者。1885年，高尔顿以保密和给予金钱报酬的方式，向社会征集了 205 对夫妇及其 928 个成年子女的身高数据<span class="citation" data-cites="Galton1886">(<a href="references.html#ref-Galton1886" role="doc-biblioref">Galton 1886</a>)</span>。</p>
+<p>目前，Michael Friendly 从原始文献中整理后，将该数据集命名为 <code>GaltonFamilies</code>，放在 R 包 <strong>HistData</strong> <span class="citation" data-cites="Friendly2021">(<a href="references.html#ref-Friendly2021" role="doc-biblioref">Friendly 2021</a>)</span> 内，方便大家使用。篇幅所限，下 <a href="#tbl-galton" class="quarto-xref">表格&nbsp;<span>20.1</span></a> 展示该数据集的部分内容。</p>
+<div class="cell">
+<div id="tbl-galton" class="cell anchored">
+<figure class="quarto-float quarto-float-tbl figure"><figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-galton-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+表格&nbsp;20.1: 高尔顿收集的 205 对夫妇及其子女的身高数据（部分）
+</figcaption><div aria-describedby="tbl-galton-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="cell-output-display">
+<table class="cell table table-sm table-striped small">
+<colgroup>
+<col style="width: 12%">
+<col style="width: 12%">
+<col style="width: 12%">
+<col style="width: 12%">
+<col style="width: 12%">
+<col style="width: 12%">
+<col style="width: 12%">
+<col style="width: 12%">
+</colgroup>
+<thead><tr class="header">
+<th style="text-align: left;">家庭编号</th>
+<th style="text-align: right;">父亲身高</th>
+<th style="text-align: right;">母亲身高</th>
+<th style="text-align: right;">中亲身高</th>
+<th style="text-align: right;">子女数量</th>
+<th style="text-align: right;">子女编号</th>
+<th style="text-align: left;">子女性别</th>
+<th style="text-align: right;">子女身高</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">001</td>
+<td style="text-align: right;">78.5</td>
+<td style="text-align: right;">67.0</td>
+<td style="text-align: right;">75.43</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: left;">male</td>
+<td style="text-align: right;">73.2</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">001</td>
+<td style="text-align: right;">78.5</td>
+<td style="text-align: right;">67.0</td>
+<td style="text-align: right;">75.43</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: left;">female</td>
+<td style="text-align: right;">69.2</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">001</td>
+<td style="text-align: right;">78.5</td>
+<td style="text-align: right;">67.0</td>
+<td style="text-align: right;">75.43</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: left;">female</td>
+<td style="text-align: right;">69.0</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">001</td>
+<td style="text-align: right;">78.5</td>
+<td style="text-align: right;">67.0</td>
+<td style="text-align: right;">75.43</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: left;">female</td>
+<td style="text-align: right;">69.0</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">002</td>
+<td style="text-align: right;">75.5</td>
+<td style="text-align: right;">66.5</td>
+<td style="text-align: right;">73.66</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: left;">male</td>
+<td style="text-align: right;">73.5</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">002</td>
+<td style="text-align: right;">75.5</td>
+<td style="text-align: right;">66.5</td>
+<td style="text-align: right;">73.66</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: left;">male</td>
+<td style="text-align: right;">72.5</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</figure>
+</div>
+</div>
+<p>表中子女性别一栏，Male 表示男性，Female 表示女性。表中 1 号家庭父亲身高 78.5 英寸，母亲身高 67.0 英寸，育有 4 个成年子女，1 男 3 女，子女身高依次是 73.2 英寸、 69.2 英寸、 69.0 英寸 和 69.0 英寸。1 英寸相当于 2.54 厘米，78.5 英寸相当于 199.39 厘米，约等于 2 米的身高。</p>
+<p>高尔顿提出「中亲」概念，即父母的平均身高，认为子代身高只与父母平均身高相关，而与父母身高差无关，为了消除性别给身高带来的差异，女性身高均乘以 1.08。</p>
+<p>根据数据统计的均值和协方差，椭圆 level = 0.95</p>
+<div class="cell">
+<details class="code-fold"><summary>代码</summary><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb1-2"><a href="#cb1-2"></a><span class="fu">ggplot</span>(<span class="at">data =</span> GaltonFamilies, <span class="fu">aes</span>(<span class="at">x =</span> midparentHeight, <span class="at">y =</span> childHeight, <span class="at">color =</span> gender)) <span class="sc">+</span></span>
+<span id="cb1-3"><a href="#cb1-3"></a>  <span class="fu">geom_point</span>(<span class="fu">aes</span>(<span class="at">fill =</span> gender), <span class="at">pch =</span> <span class="dv">21</span>, <span class="at">color =</span> <span class="st">"white"</span>, </span>
+<span id="cb1-4"><a href="#cb1-4"></a>             <span class="at">size =</span> <span class="dv">2</span>, <span class="at">alpha =</span> <span class="fl">0.75</span>) <span class="sc">+</span></span>
+<span id="cb1-5"><a href="#cb1-5"></a>  <span class="fu">geom_smooth</span>(<span class="at">method =</span> <span class="st">"lm"</span>, <span class="at">formula =</span> <span class="st">"y~x"</span>, <span class="at">se =</span> <span class="cn">FALSE</span>) <span class="sc">+</span></span>
+<span id="cb1-6"><a href="#cb1-6"></a>  <span class="fu">stat_ellipse</span>(<span class="at">type =</span> <span class="st">"norm"</span>, <span class="at">level =</span> <span class="fl">0.95</span>, <span class="at">linetype =</span> <span class="dv">2</span>) <span class="sc">+</span></span>
+<span id="cb1-7"><a href="#cb1-7"></a>  <span class="fu">scale_color_brewer</span>(<span class="at">palette =</span> <span class="st">"Set1"</span>, <span class="at">labels =</span> <span class="fu">c</span>(<span class="at">male =</span> <span class="st">"男"</span>, <span class="at">female =</span> <span class="st">"女"</span>)) <span class="sc">+</span></span>
+<span id="cb1-8"><a href="#cb1-8"></a>  <span class="fu">scale_fill_brewer</span>(<span class="at">palette =</span> <span class="st">"Set1"</span>, <span class="at">labels =</span> <span class="fu">c</span>(<span class="at">male =</span> <span class="st">"男"</span>, <span class="at">female =</span> <span class="st">"女"</span>)) <span class="sc">+</span></span>
+<span id="cb1-9"><a href="#cb1-9"></a>  <span class="fu">guides</span>(<span class="at">fill =</span> <span class="fu">guide_legend</span>(<span class="at">reverse =</span> <span class="cn">TRUE</span>), </span>
+<span id="cb1-10"><a href="#cb1-10"></a>         <span class="at">color =</span> <span class="fu">guide_legend</span>(<span class="at">reverse =</span> <span class="cn">TRUE</span>)) <span class="sc">+</span></span>
+<span id="cb1-11"><a href="#cb1-11"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"父母平均身高"</span>, <span class="at">y =</span> <span class="st">"子女身高"</span>, <span class="at">fill =</span> <span class="st">"性别"</span>, <span class="at">color =</span> <span class="st">"性别"</span>) <span class="sc">+</span></span>
+<span id="cb1-12"><a href="#cb1-12"></a>  <span class="fu">theme_classic</span>()</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details><div class="cell-output-display">
+<div id="fig-galton-gender" class="quarto-figure quarto-figure-center anchored" width="576">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-galton-gender-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="regression-and-correlation_files/figure-html/fig-galton-gender-1.png" class="img-fluid figure-img" width="576">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-galton-gender-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;20.1: 子代身高与亲代身高的关系
+</figcaption></figure>
+</div>
+</div>
+</div>
+<p>女儿的身高乘以 1.08 后，两条回归线将几乎重合。<span class="citation" data-cites="Hanley2004">(<a href="references.html#ref-Hanley2004" role="doc-biblioref">Hanley 2004</a>)</span></p>
+<div class="cell">
+<details class="code-fold"><summary>代码</summary><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1"></a>GaltonFamilies[, height_children <span class="sc">:</span><span class="er">=</span> childHeight <span class="sc">*</span> <span class="fu">c</span>(<span class="st">"female"</span> <span class="ot">=</span> <span class="fl">1.08</span>, <span class="st">"male"</span> <span class="ot">=</span> <span class="dv">1</span>)[gender]] <span class="sc">|&gt;</span></span>
+<span id="cb2-2"><a href="#cb2-2"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> midparentHeight, <span class="at">y =</span> height_children, <span class="at">color =</span> gender)) <span class="sc">+</span></span>
+<span id="cb2-3"><a href="#cb2-3"></a>  <span class="fu">geom_smooth</span>(<span class="at">method =</span> <span class="st">"lm"</span>, <span class="at">formula =</span> <span class="st">"y~x"</span>, <span class="at">se =</span> <span class="cn">FALSE</span>) <span class="sc">+</span></span>
+<span id="cb2-4"><a href="#cb2-4"></a>  <span class="fu">geom_point</span>(<span class="at">size =</span> <span class="fl">1.5</span>, <span class="at">alpha =</span> <span class="fl">0.75</span>) <span class="sc">+</span></span>
+<span id="cb2-5"><a href="#cb2-5"></a>  <span class="fu">stat_ellipse</span>( <span class="at">type =</span> <span class="st">"norm"</span>, <span class="at">linetype =</span> <span class="dv">2</span>) <span class="sc">+</span></span>
+<span id="cb2-6"><a href="#cb2-6"></a>  <span class="fu">scale_color_brewer</span>(<span class="at">palette =</span> <span class="st">"Set1"</span>, <span class="at">labels =</span> <span class="fu">c</span>(<span class="at">male =</span> <span class="st">"男"</span>, <span class="at">female =</span> <span class="st">"女"</span>)) <span class="sc">+</span></span>
+<span id="cb2-7"><a href="#cb2-7"></a>  <span class="fu">guides</span>(<span class="at">color =</span> <span class="fu">guide_legend</span>(<span class="at">reverse =</span> <span class="cn">TRUE</span>)) <span class="sc">+</span></span>
+<span id="cb2-8"><a href="#cb2-8"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"父母平均身高"</span>, <span class="at">y =</span> <span class="st">"子女身高"</span>, <span class="at">color =</span> <span class="st">"性别"</span>) <span class="sc">+</span></span>
+<span id="cb2-9"><a href="#cb2-9"></a>  <span class="fu">theme_classic</span>()</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details><div class="cell-output-display">
+<div id="fig-galton" class="quarto-figure quarto-figure-center anchored" width="576">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-galton-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="regression-and-correlation_files/figure-html/fig-galton-1.png" class="img-fluid figure-img" width="576">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-galton-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;20.2: 子代身高与亲代身高的关系
+</figcaption></figure>
+</div>
+</div>
+</div>
+<p><span class="math display">\[
+\mathrm{height}_{children} = \alpha + \beta * \mathrm{height}_{midparent} + \epsilon
+\]</span></p>
+<div class="cell">
+<div id="tbl-galton-families" class="cell anchored">
+<figure class="quarto-float quarto-float-tbl figure"><figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-galton-families-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+表格&nbsp;20.2: 子女身高向中亲平均身高回归
+</figcaption><div aria-describedby="tbl-galton-families-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="cell-output-display">
+<table class="cell table table-sm table-striped small">
+<thead><tr class="header">
+<th style="text-align: left;">性别</th>
+<th style="text-align: right;">截距</th>
+<th style="text-align: right;">中亲身高</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">male</td>
+<td style="text-align: right;">19.91346</td>
+<td style="text-align: right;">0.7132745</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">female</td>
+<td style="text-align: right;">19.80016</td>
+<td style="text-align: right;">0.7136104</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</figure>
+</div>
+</div>
+<div class="cell" data-par="true">
+<details class="code-fold"><summary>代码</summary><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1"></a><span class="fu">data</span>(Galton, <span class="at">package =</span> <span class="st">"HistData"</span>)</span>
+<span id="cb3-2"><a href="#cb3-2"></a><span class="fu">plot</span>(Galton,</span>
+<span id="cb3-3"><a href="#cb3-3"></a>  <span class="at">pch =</span> <span class="dv">20</span>, <span class="at">panel.first =</span> <span class="fu">grid</span>(), <span class="at">cex =</span> <span class="dv">1</span>, <span class="at">ann =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb3-4"><a href="#cb3-4"></a>  <span class="at">xlim =</span> <span class="fu">c</span>(<span class="fl">63.5</span>, <span class="fl">73.5</span>),</span>
+<span id="cb3-5"><a href="#cb3-5"></a>  <span class="at">ylim =</span> <span class="fu">c</span>(<span class="dv">61</span>, <span class="fl">74.5</span>),</span>
+<span id="cb3-6"><a href="#cb3-6"></a>  <span class="at">col =</span> <span class="fu">densCols</span>(Galton,</span>
+<span id="cb3-7"><a href="#cb3-7"></a>    <span class="at">bandwidth =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>),</span>
+<span id="cb3-8"><a href="#cb3-8"></a>    <span class="at">nbin =</span> <span class="fu">c</span>(<span class="dv">11</span>L, <span class="dv">11</span>L), <span class="at">colramp =</span> hcl.colors</span>
+<span id="cb3-9"><a href="#cb3-9"></a>  )</span>
+<span id="cb3-10"><a href="#cb3-10"></a>)</span>
+<span id="cb3-11"><a href="#cb3-11"></a>reg <span class="ot">&lt;-</span> <span class="fu">lm</span>(child <span class="sc">~</span> parent, <span class="at">data =</span> Galton)</span>
+<span id="cb3-12"><a href="#cb3-12"></a><span class="fu">abline</span>(reg, <span class="at">lwd =</span> <span class="dv">2</span>)</span>
+<span id="cb3-13"><a href="#cb3-13"></a><span class="fu">lines</span>(<span class="fu">lowess</span>(<span class="at">x =</span> Galton<span class="sc">$</span>parent, <span class="at">y =</span> Galton<span class="sc">$</span>child), <span class="at">col =</span> <span class="st">"blue"</span>, <span class="at">lwd =</span> <span class="dv">2</span>)</span>
+<span id="cb3-14"><a href="#cb3-14"></a><span class="fu">library</span>(KernSmooth)</span>
+<span id="cb3-15"><a href="#cb3-15"></a>den <span class="ot">&lt;-</span> <span class="fu">bkde2D</span>(<span class="at">x =</span> Galton, <span class="at">bandwidth =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>), <span class="at">gridsize =</span> <span class="fu">c</span>(<span class="dv">11</span>L, <span class="dv">11</span>L))</span>
+<span id="cb3-16"><a href="#cb3-16"></a><span class="fu">contour</span>(den<span class="sc">$</span>x1, den<span class="sc">$</span>x2, den<span class="sc">$</span>fhat, <span class="at">nlevels =</span> <span class="dv">10</span>, <span class="at">add =</span> <span class="cn">TRUE</span>, <span class="at">family =</span> <span class="st">"sans"</span>)</span>
+<span id="cb3-17"><a href="#cb3-17"></a><span class="fu">title</span>(<span class="at">xlab =</span> <span class="st">"父母平均身高"</span>, <span class="at">ylab =</span> <span class="st">"子女身高"</span>, <span class="at">family =</span> <span class="st">"Noto Serif CJK SC"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details><div class="cell-output-display">
+<div id="fig-galton-bivar" class="quarto-figure quarto-figure-center anchored" width="432">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-galton-bivar-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="regression-and-correlation_files/figure-html/fig-galton-bivar-1.png" class="img-fluid figure-img" width="432">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-galton-bivar-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;20.3: 二维核密度估计与二元正态分布
+</figcaption></figure>
+</div>
+</div>
+</div>
+<p>向均值回归现象最早是高尔顿在甜豌豆实验中发现的，实际上，均值回归现象在社会经济和自然界中广泛存在，比如一个人的智力水平受家族平均水平的影响。</p>
+</section><section id="sec-state-x77" class="level2" data-number="20.2"><h2 data-number="20.2" class="anchored" data-anchor-id="sec-state-x77">
+<span class="header-section-number">20.2</span> 预期寿命与人均收入的关系</h2>
+<!-- 相关性探索、分析和可视化，关系 -->
+<p>生物遗传的回归现象，更确切地说是因果而不是相关，是一种近似的函数关系。与回归紧密相连的是另一个统计概念是相关，主要刻画数量指标之间的关系深浅程度，相关系数是其中一个度量。在经济、社会领域中，很多数据指标存在相关性，接下来的这个例子基于 1977 年美国人口调查局发布的统计数据，篇幅所限，下 <a href="#tbl-state-x77" class="quarto-xref">表格&nbsp;<span>20.3</span></a> 展示美国各州的部分统计数据。</p>
+<div class="cell">
+<div id="tbl-state-x77" class="cell anchored">
+<figure class="quarto-float quarto-float-tbl figure"><figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-state-x77-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+表格&nbsp;20.3: 1977 年美国人口调查局发布的各州统计数据（部分）
+</figcaption><div aria-describedby="tbl-state-x77-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="cell-output-display">
+<table class="cell table table-sm table-striped small">
+<thead><tr class="header">
+<th style="text-align: left;">州名</th>
+<th style="text-align: left;">区域划分</th>
+<th style="text-align: right;">人口数量</th>
+<th style="text-align: right;">人均收入</th>
+<th style="text-align: right;">预期寿命</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Alabama</td>
+<td style="text-align: left;">South</td>
+<td style="text-align: right;">3615</td>
+<td style="text-align: right;">3624</td>
+<td style="text-align: right;">69.05</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Alaska</td>
+<td style="text-align: left;">West</td>
+<td style="text-align: right;">365</td>
+<td style="text-align: right;">6315</td>
+<td style="text-align: right;">69.31</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Arizona</td>
+<td style="text-align: left;">West</td>
+<td style="text-align: right;">2212</td>
+<td style="text-align: right;">4530</td>
+<td style="text-align: right;">70.55</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Arkansas</td>
+<td style="text-align: left;">South</td>
+<td style="text-align: right;">2110</td>
+<td style="text-align: right;">3378</td>
+<td style="text-align: right;">70.66</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">California</td>
+<td style="text-align: left;">West</td>
+<td style="text-align: right;">21198</td>
+<td style="text-align: right;">5114</td>
+<td style="text-align: right;">71.71</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Colorado</td>
+<td style="text-align: left;">West</td>
+<td style="text-align: right;">2541</td>
+<td style="text-align: right;">4884</td>
+<td style="text-align: right;">72.06</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</figure>
+</div>
+</div>
+<p>该数据集在 R 环境中的结构如下：</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1"></a><span class="fu">str</span>(state_x77)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt; 'data.frame':    50 obs. of  10 variables:
+#&gt;  $ Population  : num  3615 365 2212 2110 21198 ...
+#&gt;  $ Income      : num  3624 6315 4530 3378 5114 ...
+#&gt;  $ Illiteracy  : num  2.1 1.5 1.8 1.9 1.1 0.7 1.1 0.9 1.3 2 ...
+#&gt;  $ Life Exp    : num  69 69.3 70.5 70.7 71.7 ...
+#&gt;  $ Murder      : num  15.1 11.3 7.8 10.1 10.3 6.8 3.1 6.2 10.7 13.9 ...
+#&gt;  $ HS Grad     : num  41.3 66.7 58.1 39.9 62.6 63.9 56 54.6 52.6 40.6 ...
+#&gt;  $ Frost       : num  20 152 15 65 20 166 139 103 11 60 ...
+#&gt;  $ Area        : num  50708 566432 113417 51945 156361 ...
+#&gt;  $ state_name  : chr  "Alabama" "Alaska" "Arizona" "Arkansas" ...
+#&gt;  $ state_region: Factor w/ 4 levels "Northeast","South",..: 2 4 4 2 4 4 1 2 2 2 ...</code></pre>
+</div>
+</div>
+<p>它是一个 50 行 10 列的数据框，其中，state_name（州名）是字符型变量， state_region（区域划分）是因子型变量。除了这两个变量外，Population（人口数量，单位：1000），Income（人均收入，单位：美元），Life Exp（预期寿命，单位：岁）等都是数值型的变量。下 <a href="#fig-state-x77-scatter" class="quarto-xref">图&nbsp;<span>20.4</span></a> 展示了1977 年美国各州的预期寿命和人均收入的关系，通过此图，可以初步观察出两个指标存在一些明显的正向相关性，也符合常识。</p>
+<div class="cell">
+<details class="code-fold"><summary>代码</summary><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb6-2"><a href="#cb6-2"></a><span class="fu">ggplot</span>(<span class="at">data =</span> state_x77, <span class="fu">aes</span>(<span class="at">x =</span> Income, <span class="at">y =</span> <span class="st">`</span><span class="at">Life Exp</span><span class="st">`</span>)) <span class="sc">+</span></span>
+<span id="cb6-3"><a href="#cb6-3"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span></span>
+<span id="cb6-4"><a href="#cb6-4"></a>  <span class="fu">labs</span>(</span>
+<span id="cb6-5"><a href="#cb6-5"></a>    <span class="at">x =</span> <span class="st">"人均收入（美元）"</span>, <span class="at">y =</span> <span class="st">"预期寿命（年）"</span>,</span>
+<span id="cb6-6"><a href="#cb6-6"></a>    <span class="at">title =</span> <span class="st">"1977 年各州预期寿命与人均收入的关系"</span>,</span>
+<span id="cb6-7"><a href="#cb6-7"></a>    <span class="at">caption =</span> <span class="st">"数据源：美国人口调查局"</span></span>
+<span id="cb6-8"><a href="#cb6-8"></a>  ) <span class="sc">+</span></span>
+<span id="cb6-9"><a href="#cb6-9"></a>  <span class="fu">theme_classic</span>() <span class="sc">+</span></span>
+<span id="cb6-10"><a href="#cb6-10"></a>  <span class="fu">theme</span>(</span>
+<span id="cb6-11"><a href="#cb6-11"></a>    <span class="at">panel.grid =</span> <span class="fu">element_line</span>(<span class="at">colour =</span> <span class="st">"gray92"</span>),</span>
+<span id="cb6-12"><a href="#cb6-12"></a>    <span class="at">panel.grid.major =</span> <span class="fu">element_line</span>(<span class="at">linewidth =</span> <span class="fu">rel</span>(<span class="fl">1.0</span>)),</span>
+<span id="cb6-13"><a href="#cb6-13"></a>    <span class="at">panel.grid.minor =</span> <span class="fu">element_line</span>(<span class="at">linewidth =</span> <span class="fu">rel</span>(<span class="fl">0.5</span>))</span>
+<span id="cb6-14"><a href="#cb6-14"></a>  )</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details><div class="cell-output-display">
+<div id="fig-state-x77-scatter" class="quarto-figure quarto-figure-center anchored" width="576">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-state-x77-scatter-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="regression-and-correlation_files/figure-html/fig-state-x77-scatter-1.png" class="img-fluid figure-img" width="576">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-state-x77-scatter-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;20.4: 预期寿命与人均收入的关系图
+</figcaption></figure>
+</div>
+</div>
+</div>
+<p>为了更加清楚地观察到哪些州预期寿命长，哪些州人均收入高，在 <a href="#fig-state-x77-scatter" class="quarto-xref">图&nbsp;<span>20.4</span></a> 基础上，在散点旁边添加州名。此外，为了观察各州的地域差异，根据各州所属区域，给散点分类，最后，将各州人口数量映射给散点的大小，形成如下 <a href="#fig-state-x77-bubble" class="quarto-xref">图&nbsp;<span>20.5</span></a> 所示的分类气泡图。</p>
+<div class="cell">
+<details class="code-fold"><summary>代码</summary><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb7-2"><a href="#cb7-2"></a><span class="fu">library</span>(ggrepel)</span>
+<span id="cb7-3"><a href="#cb7-3"></a><span class="fu">library</span>(scales)</span>
+<span id="cb7-4"><a href="#cb7-4"></a><span class="fu">ggplot</span>(<span class="at">data =</span> state_x77, <span class="fu">aes</span>(<span class="at">x =</span> Income, <span class="at">y =</span> <span class="st">`</span><span class="at">Life Exp</span><span class="st">`</span>)) <span class="sc">+</span></span>
+<span id="cb7-5"><a href="#cb7-5"></a>  <span class="fu">geom_point</span>(<span class="fu">aes</span>(<span class="at">size =</span> <span class="dv">1000</span> <span class="sc">*</span> Population, <span class="at">color =</span> state_region)) <span class="sc">+</span></span>
+<span id="cb7-6"><a href="#cb7-6"></a>  <span class="fu">geom_text_repel</span>(<span class="fu">aes</span>(<span class="at">label =</span> state_name), <span class="at">size =</span> <span class="dv">3</span>, <span class="at">seed =</span> <span class="dv">2022</span>) <span class="sc">+</span></span>
+<span id="cb7-7"><a href="#cb7-7"></a>  <span class="fu">scale_size</span>(<span class="at">labels =</span> <span class="fu">label_number</span>(<span class="at">scale_cut =</span> <span class="fu">cut_short_scale</span>())) <span class="sc">+</span></span>
+<span id="cb7-8"><a href="#cb7-8"></a>  <span class="fu">labs</span>(</span>
+<span id="cb7-9"><a href="#cb7-9"></a>    <span class="at">x =</span> <span class="st">"人均收入（美元）"</span>, <span class="at">y =</span> <span class="st">"预期寿命（年）"</span>,</span>
+<span id="cb7-10"><a href="#cb7-10"></a>    <span class="at">title =</span> <span class="st">"1977 年各州预期寿命与人均收入的关系（分地域）"</span>,</span>
+<span id="cb7-11"><a href="#cb7-11"></a>    <span class="at">caption =</span> <span class="st">"数据源：美国人口调查局"</span>,</span>
+<span id="cb7-12"><a href="#cb7-12"></a>    <span class="at">size =</span> <span class="st">"人口数量"</span>, <span class="at">color =</span> <span class="st">"区域划分"</span></span>
+<span id="cb7-13"><a href="#cb7-13"></a>  ) <span class="sc">+</span></span>
+<span id="cb7-14"><a href="#cb7-14"></a>  <span class="fu">theme_classic</span>() <span class="sc">+</span></span>
+<span id="cb7-15"><a href="#cb7-15"></a>  <span class="fu">theme</span>(</span>
+<span id="cb7-16"><a href="#cb7-16"></a>    <span class="at">panel.grid =</span> <span class="fu">element_line</span>(<span class="at">colour =</span> <span class="st">"gray92"</span>),</span>
+<span id="cb7-17"><a href="#cb7-17"></a>    <span class="at">panel.grid.major =</span> <span class="fu">element_line</span>(<span class="at">linewidth =</span> <span class="fu">rel</span>(<span class="fl">1.0</span>)),</span>
+<span id="cb7-18"><a href="#cb7-18"></a>    <span class="at">panel.grid.minor =</span> <span class="fu">element_line</span>(<span class="at">linewidth =</span> <span class="fu">rel</span>(<span class="fl">0.5</span>))</span>
+<span id="cb7-19"><a href="#cb7-19"></a>  )</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details><div class="cell-output-display">
+<div id="fig-state-x77-bubble" class="quarto-figure quarto-figure-center anchored" width="672">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-state-x77-bubble-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="regression-and-correlation_files/figure-html/fig-state-x77-bubble-1.png" class="img-fluid figure-img" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-state-x77-bubble-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;20.5: 分地域预期寿命与人均收入的气泡图
+</figcaption></figure>
+</div>
+</div>
+</div>
+<p>整体来说，预期寿命与人均收入息息相关。</p>
+<div class="cell">
+<details class="code-fold"><summary>代码</summary><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1"></a><span class="fu">ggplot</span>(<span class="at">data =</span> state_x77, <span class="fu">aes</span>(<span class="at">x =</span> Income, <span class="at">y =</span> <span class="st">`</span><span class="at">Life Exp</span><span class="st">`</span>)) <span class="sc">+</span></span>
+<span id="cb8-2"><a href="#cb8-2"></a>  <span class="fu">geom_point</span>(<span class="fu">aes</span>(<span class="at">size =</span> <span class="dv">1000</span> <span class="sc">*</span> Population, <span class="at">color =</span> state_region)) <span class="sc">+</span></span>
+<span id="cb8-3"><a href="#cb8-3"></a>  <span class="fu">geom_smooth</span>(<span class="at">method =</span> <span class="st">"lm"</span>, <span class="at">formula =</span> <span class="st">"y~x"</span>) <span class="sc">+</span></span>
+<span id="cb8-4"><a href="#cb8-4"></a>  <span class="fu">geom_text_repel</span>(<span class="fu">aes</span>(<span class="at">label =</span> state_name), <span class="at">size =</span> <span class="dv">3</span>, <span class="at">seed =</span> <span class="dv">2022</span>) <span class="sc">+</span></span>
+<span id="cb8-5"><a href="#cb8-5"></a>  <span class="fu">scale_size</span>(<span class="at">labels =</span> <span class="fu">label_number</span>(<span class="at">scale_cut =</span> <span class="fu">cut_short_scale</span>())) <span class="sc">+</span></span>
+<span id="cb8-6"><a href="#cb8-6"></a>  <span class="fu">labs</span>(</span>
+<span id="cb8-7"><a href="#cb8-7"></a>    <span class="at">x =</span> <span class="st">"人均收入（美元）"</span>, <span class="at">y =</span> <span class="st">"预期寿命（年）"</span>,</span>
+<span id="cb8-8"><a href="#cb8-8"></a>    <span class="at">title =</span> <span class="st">"1977 年各州预期寿命与人均收入的关系"</span>,</span>
+<span id="cb8-9"><a href="#cb8-9"></a>    <span class="at">caption =</span> <span class="st">"数据源：美国人口调查局"</span>,</span>
+<span id="cb8-10"><a href="#cb8-10"></a>    <span class="at">size =</span> <span class="st">"人口数量"</span>, <span class="at">color =</span> <span class="st">"区域划分"</span></span>
+<span id="cb8-11"><a href="#cb8-11"></a>  ) <span class="sc">+</span></span>
+<span id="cb8-12"><a href="#cb8-12"></a>  <span class="fu">theme_classic</span>() <span class="sc">+</span></span>
+<span id="cb8-13"><a href="#cb8-13"></a>  <span class="fu">theme</span>(</span>
+<span id="cb8-14"><a href="#cb8-14"></a>    <span class="at">panel.grid =</span> <span class="fu">element_line</span>(<span class="at">colour =</span> <span class="st">"gray92"</span>),</span>
+<span id="cb8-15"><a href="#cb8-15"></a>    <span class="at">panel.grid.major =</span> <span class="fu">element_line</span>(<span class="at">linewidth =</span> <span class="fu">rel</span>(<span class="fl">1.0</span>)),</span>
+<span id="cb8-16"><a href="#cb8-16"></a>    <span class="at">panel.grid.minor =</span> <span class="fu">element_line</span>(<span class="at">linewidth =</span> <span class="fu">rel</span>(<span class="fl">0.5</span>))</span>
+<span id="cb8-17"><a href="#cb8-17"></a>  )</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details><div class="cell-output-display">
+<div id="fig-state-x77-lm" class="quarto-figure quarto-figure-center anchored" width="672">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-state-x77-lm-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="regression-and-correlation_files/figure-html/fig-state-x77-lm-1.png" class="img-fluid figure-img" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-state-x77-lm-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;20.6: 1977 年美国各州预期寿命与人均收入的关系：回归分析
+</figcaption></figure>
+</div>
+</div>
+</div>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+提示
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>从 <a href="#fig-state-x77-bubble" class="quarto-xref">图&nbsp;<span>20.5</span></a> 到 <a href="#fig-state-x77-lm" class="quarto-xref">图&nbsp;<span>20.6</span></a> ，尝试初步量化两个变量之间的相关性之前，有没有想过，回归线应该更加陡峭一些，即回归线的斜率应该更大一些，是什么原因导致平缓了这么多？是阿拉斯加州和内华达州的数据偏离集体太远。那又是什么原因导致阿拉斯加州人均收入全美第一，而预期寿命倒数呢？同样的，内华达州的人均收入也不低，但预期寿命为什么上不去呢？</p>
+</div>
+</div>
+<div class="cell">
+<details class="code-fold"><summary>代码</summary><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1"></a><span class="fu">ggplot</span>(<span class="at">data =</span> state_x77, <span class="fu">aes</span>(<span class="at">x =</span> Income, <span class="at">y =</span> <span class="st">`</span><span class="at">Life Exp</span><span class="st">`</span>)) <span class="sc">+</span></span>
+<span id="cb9-2"><a href="#cb9-2"></a>  <span class="fu">geom_point</span>(<span class="fu">aes</span>(<span class="at">size =</span> <span class="dv">1000</span> <span class="sc">*</span> Population, <span class="at">color =</span> state_region)) <span class="sc">+</span></span>
+<span id="cb9-3"><a href="#cb9-3"></a>  <span class="fu">geom_smooth</span>(<span class="at">method =</span> <span class="st">"lm"</span>, <span class="at">formula =</span> <span class="st">"y~x"</span>, <span class="at">color =</span> <span class="st">"red"</span>) <span class="sc">+</span></span>
+<span id="cb9-4"><a href="#cb9-4"></a>  <span class="fu">geom_smooth</span>(<span class="at">data =</span> <span class="cf">function</span>(x) <span class="fu">subset</span>(x, <span class="sc">!</span>state_name <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"Nevada"</span>, <span class="st">"Alaska"</span>) ), <span class="at">method =</span> <span class="st">"lm"</span>, <span class="at">formula =</span> <span class="st">"y~x"</span>, <span class="at">color =</span> <span class="st">"green"</span>) <span class="sc">+</span></span>
+<span id="cb9-5"><a href="#cb9-5"></a>  <span class="fu">geom_text_repel</span>(<span class="fu">aes</span>(<span class="at">label =</span> state_name), <span class="at">size =</span> <span class="dv">3</span>, <span class="at">seed =</span> <span class="dv">2022</span>) <span class="sc">+</span></span>
+<span id="cb9-6"><a href="#cb9-6"></a>  <span class="fu">scale_size</span>(<span class="at">labels =</span> <span class="fu">label_number</span>(<span class="at">scale_cut =</span> <span class="fu">cut_short_scale</span>())) <span class="sc">+</span></span>
+<span id="cb9-7"><a href="#cb9-7"></a>  <span class="fu">labs</span>(</span>
+<span id="cb9-8"><a href="#cb9-8"></a>    <span class="at">x =</span> <span class="st">"人均收入（美元）"</span>, <span class="at">y =</span> <span class="st">"预期寿命（年）"</span>,</span>
+<span id="cb9-9"><a href="#cb9-9"></a>    <span class="at">title =</span> <span class="st">"1977 年各州预期寿命与人均收入的关系"</span>,</span>
+<span id="cb9-10"><a href="#cb9-10"></a>    <span class="at">caption =</span> <span class="st">"数据源：美国人口调查局"</span>,</span>
+<span id="cb9-11"><a href="#cb9-11"></a>    <span class="at">size =</span> <span class="st">"人口数量"</span>, <span class="at">color =</span> <span class="st">"区域划分"</span></span>
+<span id="cb9-12"><a href="#cb9-12"></a>  ) <span class="sc">+</span></span>
+<span id="cb9-13"><a href="#cb9-13"></a>  <span class="fu">theme_classic</span>() <span class="sc">+</span></span>
+<span id="cb9-14"><a href="#cb9-14"></a>  <span class="fu">theme</span>(</span>
+<span id="cb9-15"><a href="#cb9-15"></a>    <span class="at">panel.grid =</span> <span class="fu">element_line</span>(<span class="at">colour =</span> <span class="st">"gray92"</span>),</span>
+<span id="cb9-16"><a href="#cb9-16"></a>    <span class="at">panel.grid.major =</span> <span class="fu">element_line</span>(<span class="at">linewidth =</span> <span class="fu">rel</span>(<span class="fl">1.0</span>)),</span>
+<span id="cb9-17"><a href="#cb9-17"></a>    <span class="at">panel.grid.minor =</span> <span class="fu">element_line</span>(<span class="at">linewidth =</span> <span class="fu">rel</span>(<span class="fl">0.5</span>))</span>
+<span id="cb9-18"><a href="#cb9-18"></a>  )</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1"></a>m <span class="ot">&lt;-</span> <span class="fu">lm</span>(<span class="at">data =</span> state_x77, <span class="st">`</span><span class="at">Life Exp</span><span class="st">`</span> <span class="sc">~</span> Income)</span>
+<span id="cb10-2"><a href="#cb10-2"></a><span class="fu">summary</span>(m)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt; 
+#&gt; Call:
+#&gt; lm(formula = `Life Exp` ~ Income, data = state_x77)
+#&gt; 
+#&gt; Residuals:
+#&gt;      Min       1Q   Median       3Q      Max 
+#&gt; -2.96547 -0.76381 -0.03428  0.92876  2.32951 
+#&gt; 
+#&gt; Coefficients:
+#&gt;              Estimate Std. Error t value Pr(&gt;|t|)    
+#&gt; (Intercept) 6.758e+01  1.328e+00  50.906   &lt;2e-16 ***
+#&gt; Income      7.433e-04  2.965e-04   2.507   0.0156 *  
+#&gt; ---
+#&gt; Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+#&gt; 
+#&gt; Residual standard error: 1.275 on 48 degrees of freedom
+#&gt; Multiple R-squared:  0.1158, Adjusted R-squared:  0.09735 
+#&gt; F-statistic: 6.285 on 1 and 48 DF,  p-value: 0.01562</code></pre>
+</div>
+</div>
+<p>输出结果中各个量的计算公式及 R 语言实现，比如方差 Variance、偏差 Deviance/Bias、残差 Residual Error</p>
+</section><section id="分析影响入院等待时间的因素" class="level2" data-number="20.3"><h2 data-number="20.3" class="anchored" data-anchor-id="分析影响入院等待时间的因素">
+<span class="header-section-number">20.3</span> 分析影响入院等待时间的因素</h2>
+<p>医院的床位是非常重要的资源。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1"></a>hospital_waiting_time <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="at">file =</span> <span class="st">"data/hospital_waiting_time.rds"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1"></a><span class="fu">str</span>(hospital_waiting_time)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt; 'data.frame':    2625 obs. of  11 variables:
+#&gt;  $ 等待时间    : num  1 1.2 20 6 8.9 2.9 7.9 2.8 2.7 5 ...
+#&gt;  $ 门诊次      : int  2 7 43 1 3 1 10 3 6 2 ...
+#&gt;  $ 住院次      : int  1 1 1 1 1 1 1 1 1 1 ...
+#&gt;  $ 开住院条日期: int  3 3 3 3 3 3 3 3 3 3 ...
+#&gt;  $ 性别        : int  0 0 1 1 1 1 0 1 1 1 ...
+#&gt;  $ 年龄        : int  42 32 59 9 45 73 50 25 14 20 ...
+#&gt;  $ 入院疾病分类: int  3 1 1 3 3 3 4 1 2 3 ...
+#&gt;  $ 入院目的    : int  1 1 1 1 1 1 1 1 1 1 ...
+#&gt;  $ 住院类别    : int  2 2 2 2 2 2 2 2 2 2 ...
+#&gt;  $ 入院病情    : int  1 1 1 1 1 1 1 1 1 1 ...
+#&gt;  $ 医生        : int  2 2 2 2 2 4 2 2 4 4 ...</code></pre>
+</div>
+</div>
+</section><section id="sec-exercise-regression-and-correlation" class="level2" data-number="20.4"><h2 data-number="20.4" class="anchored" data-anchor-id="sec-exercise-regression-and-correlation">
+<span class="header-section-number">20.4</span> 习题</h2>
+<ol type="1">
+<li>R 软件内置的数据集 <code>esoph</code> 是一份关于法国伊勒-维莱讷地区食道癌的数据，请读者根据这份数据研究年龄组、烟草消费量、酒精消费量（每日喝酒量）和患食道癌的关系。</li>
+</ol>
+
+
+<div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list" style="display: none">
+<div id="ref-Friendly2021" class="csl-entry" role="listitem">
+Friendly, Michael. 2021. <em><span>HistData</span>: Data Sets from the History of Statistics and Data Visualization</em>. <a href="https://CRAN.R-project.org/package=HistData">https://CRAN.R-project.org/package=HistData</a>.
+</div>
+<div id="ref-Galton1886" class="csl-entry" role="listitem">
+Galton, F. 1886. <span>《Regression Towards Mediocrity in Hereditary Stature》</span>. <em>Journal of the Anthropological Institute</em> 15: 246–63.
+</div>
+<div id="ref-Hanley2004" class="csl-entry" role="listitem">
+Hanley, James A. 2004. <span>《’Transmuting’ women into men: Galton’s family data on human stature》</span>. <em>The American Statistician</em> 58 (3): 237–43.
+</div>
+</div>
+</section></main><!-- /main --><script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "已复制");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "已复制");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    const typesetMath = (el) => {
+      if (window.MathJax) {
+        // MathJax Typeset
+        window.MathJax.typeset([el]);
+      } else if (window.katex) {
+        // KaTeX Render
+        var mathElements = el.getElementsByClassName("math");
+        var macros = [];
+        for (var i = 0; i < mathElements.length; i++) {
+          var texText = mathElements[i].firstChild;
+          if (mathElements[i].tagName == "SPAN") {
+            window.katex.render(texText.data, mathElements[i], {
+              displayMode: mathElements[i].classList.contains('display'),
+              throwOnError: false,
+              macros: macros,
+              fleqn: false
+            });
+          }
+        }
+      }
+    }
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        typesetMath(container);
+        return container.innerHTML
+      } else {
+        typesetMath(note);
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      typesetMath(note);
+      return note.innerHTML;
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script><nav class="page-navigation"><div class="nav-page nav-page-previous">
+      <a href="./common-statistical-tests.html" class="pagination-link  aria-label=">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">常见的统计检验</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./categorical-data-analysis.html" class="pagination-link" aria-label="<span class='chapter-number'>21</span>&nbsp; <span class='chapter-title'>分类数据的分析</span>">
+        <span class="nav-page-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">分类数据的分析</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+</body></html>

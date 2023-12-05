@@ -1,0 +1,2140 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh-Hans" xml:lang="zh-Hans"><head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.4.515">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>R 语言数据分析实战 - 6&nbsp; ggplot2 入门</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+  margin-bottom: 0em;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./visualization-intermediate.html" rel="next">
+<link href="./wrangling-processing.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light"><script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "没有结果",
+    "search-matching-documents-text": "匹配的文档",
+    "search-copy-link-title": "复制搜索链接",
+    "search-hide-matches-text": "隐藏其它匹配结果",
+    "search-more-match-text": "更多匹配结果",
+    "search-more-matches-text": "更多匹配结果",
+    "search-clear-button-title": "清除",
+    "search-detached-cancel-button-title": "取消",
+    "search-submit-button-title": "提交",
+    "search-label": "搜索"
+  }
+}</script><script async="" src="https://www.googletagmanager.com/gtag/js?id=G-ZPWJBMKFL8"></script><script type="text/javascript">
+
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-ZPWJBMKFL8', { 'anonymize_ip': true});
+</script><script>
+MathJax ={
+  tex: {
+    macros: {
+      bm: ["{\\boldsymbol #1}",1],
+    }
+  }
+};
+</script><script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script><script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+</head>
+<body class="nav-sidebar floating">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top"><nav class="quarto-secondary-nav"><div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="切换侧边栏导航" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./visualization-basic.html">数据探索</a></li><li class="breadcrumb-item"><a href="./visualization-basic.html"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">ggplot2 入门</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="切换侧边栏导航" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav></header><!-- content --><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto"><div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">R 语言数据分析实战</a> 
+        <div class="sidebar-tools-main">
+    <a href="https://github.com/XiangyunHuang/data-analysis-in-action" title="Source Code" class="quarto-navigation-tool px-1" aria-label="Source Code"><i class="bi bi-github"></i></a>
+    <a href="./_main.pdf" title="Download PDF" class="quarto-navigation-tool px-1" aria-label="Download PDF"><i class="bi bi-file-pdf"></i></a>
+</div>
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="搜索"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">欢迎</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./preface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">前言</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./intro.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">介绍</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true">
+ <span class="menu-text">数据准备</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./wrangling-objects.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">数据对象</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./wrangling-collection.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">数据获取</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./wrangling-cleaning.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">数据清洗</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./wrangling-manipulation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">数据操作</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./wrangling-processing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">数据处理</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true">
+ <span class="menu-text">数据探索</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./visualization-basic.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">ggplot2 入门</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./visualization-intermediate.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">基础图形</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./visualization-advanced.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">统计图形</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./visualization-lattice.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">lattice 入门</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./visualization-graphics.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">graphics 入门</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./visualization-tikz.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">TikZ 入门</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./visualization-practice.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">探索实践</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true">
+ <span class="menu-text">数据交流</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./interactive-graphics.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">交互图形</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./interactive-tables.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">交互表格</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./interactive-applications.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">交互应用</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./documents-html.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">HTML 文档</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./documents-latex.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">PDF 文档</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./documents-office.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Office 文档</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-expanded="true">
+ <span class="menu-text">统计分析</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./common-statistical-tests.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">常见的统计检验</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./regression-and-correlation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">回归与相关分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./categorical-data-analysis.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">分类数据的分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./power-analysis.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">统计检验的功效</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-expanded="true">
+ <span class="menu-text">数据建模</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./analyze-network-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">网络分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./analyze-text-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">文本分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./analyze-survival-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">生存分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./analyze-time-series-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">时序分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./analyze-point-pattern.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">空间点模式分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./analyze-spatial-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">预测核辐射强度的分布</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./analyze-areal-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">区域数据分析</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-expanded="true">
+ <span class="menu-text">优化建模</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./statistical-computation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">统计计算</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./numerical-optimization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">数值优化</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./optimization-problems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">优化问题</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" aria-expanded="true">
+ <span class="menu-text">贝叶斯建模</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./probabilistic-reasoning-framework.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">概率推理框架</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./generalized-linear-models.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">广义线性模型</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./hierarchical-normal-models.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">分层正态模型</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./mixed-effects-models.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">混合效应模型</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./generalized-additive-models.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">37</span>&nbsp; <span class="chapter-title">广义可加模型</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./gaussian-processes-regression.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">38</span>&nbsp; <span class="chapter-title">高斯过程回归</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./time-series-regression.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">39</span>&nbsp; <span class="chapter-title">时间序列回归</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" aria-expanded="true">
+ <span class="menu-text">机器学习</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./classification-problems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">40</span>&nbsp; <span class="chapter-title">分类问题</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./clustering-problems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">41</span>&nbsp; <span class="chapter-title">聚类问题</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./regression-problems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">42</span>&nbsp; <span class="chapter-title">回归问题</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">参考文献</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" aria-expanded="true">
+ <span class="menu-text">附录</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./notations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">数学符号</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./matrix-operations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">矩阵运算</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./git-github.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">Git 和 Github</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+    </ul>
+</div>
+</nav><div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active"><h2 id="toc-title">目录</h2>
+   
+  <ul>
+<li><a href="#sec-layer" id="toc-sec-layer" class="nav-link active" data-scroll-target="#sec-layer"><span class="header-section-number">6.1</span> 图层</a></li>
+  <li><a href="#sec-label" id="toc-sec-label" class="nav-link" data-scroll-target="#sec-label"><span class="header-section-number">6.2</span> 标签</a></li>
+  <li><a href="#sec-scale" id="toc-sec-scale" class="nav-link" data-scroll-target="#sec-scale"><span class="header-section-number">6.3</span> 刻度</a></li>
+  <li><a href="#sec-color" id="toc-sec-color" class="nav-link" data-scroll-target="#sec-color"><span class="header-section-number">6.4</span> 配色</a></li>
+  <li><a href="#sec-legend" id="toc-sec-legend" class="nav-link" data-scroll-target="#sec-legend"><span class="header-section-number">6.5</span> 图例</a></li>
+  <li><a href="#sec-theme" id="toc-sec-theme" class="nav-link" data-scroll-target="#sec-theme"><span class="header-section-number">6.6</span> 主题</a></li>
+  <li><a href="#sec-annotation" id="toc-sec-annotation" class="nav-link" data-scroll-target="#sec-annotation"><span class="header-section-number">6.7</span> 注释</a></li>
+  <li><a href="#sec-facet" id="toc-sec-facet" class="nav-link" data-scroll-target="#sec-facet"><span class="header-section-number">6.8</span> 分面</a></li>
+  <li><a href="#sec-animate" id="toc-sec-animate" class="nav-link" data-scroll-target="#sec-animate"><span class="header-section-number">6.9</span> 动画</a></li>
+  <li><a href="#sec-combine" id="toc-sec-combine" class="nav-link" data-scroll-target="#sec-combine"><span class="header-section-number">6.10</span> 组合</a></li>
+  <li><a href="#sec-arts" id="toc-sec-arts" class="nav-link" data-scroll-target="#sec-arts"><span class="header-section-number">6.11</span> 艺术</a></li>
+  </ul><div class="toc-actions"><ul><li><a href="https://github.com/XiangyunHuang/data-analysis-in-action/blob/main/visualization-basic.qmd" class="toc-action"><i class="bi bi-github"></i>查看代码</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./visualization-basic.html">数据探索</a></li><li class="breadcrumb-item"><a href="./visualization-basic.html"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">ggplot2 入门</span></a></li></ol></nav><div class="quarto-title">
+<h1 class="title"><span id="sec-basic" class="quarto-section-identifier"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">ggplot2 入门</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header><p>2006 年 Hans Rosling（汉斯·罗琳）在 TED 做了一场精彩的演讲 — The best stats you’ve ever seen。演讲中展示了一系列生动形象的动画，用数据记录的事实帮助大家理解世界的变化，可谓是动态图形领域的惊世之作。时至今日，已经超过 1500 万人观看，产生了十分广泛的影响。下面从数据源头 — 世界银行获取数据，整理后取名 <code>gapminder</code>。本节将基于 <code>gapminder</code> 数据集介绍 <strong>ggplot2</strong> 绘图的基础知识，包括图层、标签、刻度、配色、图例、主题、文本、分面、字体、动画和组合等 11 个方面，理解这些有助于绘制和加工各种各样的统计图形，可以覆盖日常所需。gapminder 数据集以数据框的形式存储在 R 软件运行环境中，一共 4950 行，7 列。篇幅所限，下 <a href="#tbl-gapminder" class="quarto-xref">表格&nbsp;<span>6.1</span></a> 展示该数据集的部分内容，表中人均 GDP 和预期寿命两列四舍五入保留一位小数。</p>
+<div class="cell">
+<div id="tbl-gapminder" class="cell anchored">
+<figure class="quarto-float quarto-float-tbl figure"><figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-gapminder-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+表格&nbsp;6.1: gapminder 数据集（部分）
+</figcaption><div aria-describedby="tbl-gapminder-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="cell-output-display">
+<table class="cell table table-sm table-striped small">
+<colgroup>
+<col style="width: 6%">
+<col style="width: 14%">
+<col style="width: 30%">
+<col style="width: 12%">
+<col style="width: 12%">
+<col style="width: 12%">
+<col style="width: 12%">
+</colgroup>
+<thead><tr class="header">
+<th style="text-align: right;">年份</th>
+<th style="text-align: left;">国家或地区</th>
+<th style="text-align: left;">区域划分</th>
+<th style="text-align: left;">收入水平</th>
+<th style="text-align: right;">人均 GDP</th>
+<th style="text-align: right;">预期寿命</th>
+<th style="text-align: right;">人口总数</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">1991</td>
+<td style="text-align: left;">阿鲁巴</td>
+<td style="text-align: left;">拉丁美洲与加勒比海地区</td>
+<td style="text-align: left;">高收入</td>
+<td style="text-align: right;">13494.7</td>
+<td style="text-align: right;">73.5</td>
+<td style="text-align: right;">64623</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1992</td>
+<td style="text-align: left;">阿鲁巴</td>
+<td style="text-align: left;">拉丁美洲与加勒比海地区</td>
+<td style="text-align: left;">高收入</td>
+<td style="text-align: right;">14048.3</td>
+<td style="text-align: right;">73.5</td>
+<td style="text-align: right;">68240</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1993</td>
+<td style="text-align: left;">阿鲁巴</td>
+<td style="text-align: left;">拉丁美洲与加勒比海地区</td>
+<td style="text-align: left;">高收入</td>
+<td style="text-align: right;">14942.3</td>
+<td style="text-align: right;">73.6</td>
+<td style="text-align: right;">72495</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1994</td>
+<td style="text-align: left;">阿鲁巴</td>
+<td style="text-align: left;">拉丁美洲与加勒比海地区</td>
+<td style="text-align: left;">高收入</td>
+<td style="text-align: right;">16241.6</td>
+<td style="text-align: right;">73.6</td>
+<td style="text-align: right;">76705</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1995</td>
+<td style="text-align: left;">阿鲁巴</td>
+<td style="text-align: left;">拉丁美洲与加勒比海地区</td>
+<td style="text-align: left;">高收入</td>
+<td style="text-align: right;">16441.8</td>
+<td style="text-align: right;">73.6</td>
+<td style="text-align: right;">80324</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1996</td>
+<td style="text-align: left;">阿鲁巴</td>
+<td style="text-align: left;">拉丁美洲与加勒比海地区</td>
+<td style="text-align: left;">高收入</td>
+<td style="text-align: right;">16583.0</td>
+<td style="text-align: right;">73.6</td>
+<td style="text-align: right;">83211</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</figure>
+</div>
+</div>
+<p>在 R 环境中，加载 gapminder 数据集后，可以用 <code><a href="https://rdrr.io/r/utils/str.html">str()</a></code> 函数查看数据集 gapminder 各个列的数据类型和部分属性值。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a><span class="co"># 查看数据</span></span>
+<span id="cb1-2"><a href="#cb1-2"></a><span class="fu">str</span>(gapminder)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt; 'data.frame':    4950 obs. of  7 variables:
+#&gt;  $ year        : num  1991 1992 1993 1994 1995 ...
+#&gt;  $ country     : chr  "阿鲁巴" "阿鲁巴" "阿鲁巴" "阿鲁巴" ...
+#&gt;  $ region      : Factor w/ 7 levels "北美","拉丁美洲与加勒比海地区",..: 2 2 2 2 2 2 2 2 2 2 ...
+#&gt;  $ income_level: Ord.factor w/ 4 levels "低收入"&lt;"中低等收入"&lt;..: 4 4 4 4 4 4 4 4 4 4 ...
+#&gt;  $ gdpPercap   : num  13495 14048 14942 16242 16442 ...
+#&gt;  $ lifeExp     : num  73.5 73.5 73.6 73.6 73.6 ...
+#&gt;  $ pop         : num  64623 68240 72495 76705 80324 ...</code></pre>
+</div>
+</div>
+<p>其中，country（国家或地区）是字符型变量，region （区域）是因子型变量，income_level（收入水平）是有序的因子型变量，year （年份）、 pop （人口总数）、lifeExp （出生时的预期寿命，单位：岁）和 gdpPercap （人均 GDP，单位：美元）是数值型变量。</p>
+<section id="sec-layer" class="level2" data-number="6.1"><h2 data-number="6.1" class="anchored" data-anchor-id="sec-layer">
+<span class="header-section-number">6.1</span> 图层</h2>
+<p>ggplot2 绘图必须包含以下三个要素，缺少任何一个，图形都是不完整的。</p>
+<ol type="1">
+<li>数据，前面已经重点介绍和准备了；</li>
+<li>映射，数据中的变量与几何元素的对应关系；</li>
+<li>图层，至少需要一个图层用来渲染观察值。</li>
+</ol>
+<p>下面逐一说明三个要素的作用，为简单起见，从数据集 gapminder 中选取 2007 年的数据。</p>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb3-2"><a href="#cb3-2"></a>gapminder_2007 <span class="ot">&lt;-</span> gapminder[gapminder<span class="sc">$</span>year <span class="sc">==</span> <span class="dv">2007</span>, ]</span>
+<span id="cb3-3"><a href="#cb3-3"></a><span class="fu">ggplot</span>(<span class="at">data =</span> gapminder_2007)</span>
+<span id="cb3-4"><a href="#cb3-4"></a><span class="fu">ggplot</span>(<span class="at">data =</span> gapminder_2007, <span class="fu">aes</span>(<span class="at">x =</span> gdpPercap, <span class="at">y =</span> lifeExp))</span>
+<span id="cb3-5"><a href="#cb3-5"></a><span class="fu">ggplot</span>(<span class="at">data =</span> gapminder_2007, <span class="fu">aes</span>(<span class="at">x =</span> gdpPercap, <span class="at">y =</span> lifeExp)) <span class="sc">+</span></span>
+<span id="cb3-6"><a href="#cb3-6"></a>  <span class="fu">geom_point</span>()</span>
+<span id="cb3-7"><a href="#cb3-7"></a><span class="fu">ggplot</span>(<span class="at">data =</span> gapminder_2007, <span class="fu">aes</span>(<span class="at">x =</span> gdpPercap, <span class="at">y =</span> lifeExp)) <span class="sc">+</span></span>
+<span id="cb3-8"><a href="#cb3-8"></a>  <span class="fu">geom_point</span>(<span class="fu">aes</span>(<span class="at">size =</span> pop))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="fig-layer-point" class="quarto-layout-panel">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-layer-point-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="quarto-layout-row quarto-layout-valign-top">
+<div class="cell-output-display quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-layer-point" style="flex-basis: 50.0%;justify-content: center;">
+<div id="fig-layer-point-1" class="quarto-figure quarto-figure-center anchored" width="384">
+<figure class="quarto-float quarto-subfloat-fig figure"><div aria-describedby="fig-layer-point-1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="visualization-basic_files/figure-html/fig-layer-point-1.png" class="img-fluid figure-img" data-ref-parent="fig-layer-point" width="384">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-subfloat-caption quarto-subfloat-fig" id="fig-layer-point-1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+(a) 只有数据
+</figcaption></figure>
+</div>
+</div>
+<div class="cell-output-display quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-layer-point" style="flex-basis: 50.0%;justify-content: center;">
+<div id="fig-layer-point-2" class="quarto-figure quarto-figure-center anchored" width="384">
+<figure class="quarto-float quarto-subfloat-fig figure"><div aria-describedby="fig-layer-point-2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="visualization-basic_files/figure-html/fig-layer-point-2.png" class="img-fluid figure-img" data-ref-parent="fig-layer-point" width="384">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-subfloat-caption quarto-subfloat-fig" id="fig-layer-point-2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+(b) 只有数据和坐标映射
+</figcaption></figure>
+</div>
+</div>
+</div>
+<div class="quarto-layout-row quarto-layout-valign-top">
+<div class="cell-output-display quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-layer-point" style="flex-basis: 50.0%;justify-content: center;">
+<div id="fig-layer-point-3" class="quarto-figure quarto-figure-center anchored" width="384">
+<figure class="quarto-float quarto-subfloat-fig figure"><div aria-describedby="fig-layer-point-3-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="visualization-basic_files/figure-html/fig-layer-point-3.png" class="img-fluid figure-img" data-ref-parent="fig-layer-point" width="384">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-subfloat-caption quarto-subfloat-fig" id="fig-layer-point-3-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+(c) 数据、坐标映射和点图层
+</figcaption></figure>
+</div>
+</div>
+<div class="cell-output-display quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-layer-point" style="flex-basis: 50.0%;justify-content: center;">
+<div id="fig-layer-point-4" class="quarto-figure quarto-figure-center anchored" width="384">
+<figure class="quarto-float quarto-subfloat-fig figure"><div aria-describedby="fig-layer-point-4-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="visualization-basic_files/figure-html/fig-layer-point-4.png" class="img-fluid figure-img" data-ref-parent="fig-layer-point" width="384">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-subfloat-caption quarto-subfloat-fig" id="fig-layer-point-4-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+(d) 数据、坐标映射、点图层和视觉映射（可选）
+</figcaption></figure>
+</div>
+</div>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-layer-point-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;6.1: ggplot2 绘图三要素
+</figcaption></figure>
+</div>
+<p><a href="#fig-layer-point-1" class="quarto-xref">图&nbsp;<span>6.1 (a)</span></a> 仅提供数据，只渲染出来一个绘图区域。 <a href="#fig-layer-point-2" class="quarto-xref">图&nbsp;<span>6.1 (b)</span></a> 仅提供数据和映射，将变量 gdpPercap 映射给横轴，变量 lifeExp 映射给纵轴，继续渲染出来横、纵坐标轴及标签。 <a href="#fig-layer-point-3" class="quarto-xref">图&nbsp;<span>6.1 (c)</span></a> 提供了数据、映射和图层三要素，观察值根据几何图层 <code>geom_point()</code> 将几何元素 「点」渲染在绘图区域上，形成散点图。函数 <code>ggplot()</code> 和函数 <code>geom_point()</code> 之间是以加号 <code>+</code> 连接的。无论最终产出的图形如何复杂，这个模式贯穿 ggplot2 绘图。</p>
+<p>10 多年来，<strong>ggplot2</strong> 包陆续添加了很多几何图层，目前支持的有 53 个，如下：</p>
+<div id="tbl-ggplot2-layers" class="anchored">
+<figure class="quarto-float quarto-float-tbl figure"><figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-ggplot2-layers-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+表格&nbsp;6.2: <strong>ggplot2</strong> 包可以绘制丰富的统计图形
+</figcaption><div aria-describedby="tbl-ggplot2-layers-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<table class="table"><tbody>
+<tr class="odd">
+<td style="text-align: left;">geom_abline</td>
+<td style="text-align: left;">geom_dotplot</td>
+<td style="text-align: left;">geom_qq_line</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">geom_area</td>
+<td style="text-align: left;">geom_errorbar</td>
+<td style="text-align: left;">geom_quantile</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">geom_bar</td>
+<td style="text-align: left;">geom_errorbarh</td>
+<td style="text-align: left;">geom_raster</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">geom_bin_2d</td>
+<td style="text-align: left;">geom_freqpoly</td>
+<td style="text-align: left;">geom_rect</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">geom_bin2d</td>
+<td style="text-align: left;">geom_function</td>
+<td style="text-align: left;">geom_ribbon</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">geom_blank</td>
+<td style="text-align: left;">geom_hex</td>
+<td style="text-align: left;">geom_rug</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">geom_boxplot</td>
+<td style="text-align: left;">geom_histogram</td>
+<td style="text-align: left;">geom_segment</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">geom_col</td>
+<td style="text-align: left;">geom_hline</td>
+<td style="text-align: left;">geom_sf</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">geom_contour</td>
+<td style="text-align: left;">geom_jitter</td>
+<td style="text-align: left;">geom_sf_label</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">geom_contour_filled</td>
+<td style="text-align: left;">geom_label</td>
+<td style="text-align: left;">geom_sf_text</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">geom_count</td>
+<td style="text-align: left;">geom_line</td>
+<td style="text-align: left;">geom_smooth</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">geom_crossbar</td>
+<td style="text-align: left;">geom_linerange</td>
+<td style="text-align: left;">geom_spoke</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">geom_curve</td>
+<td style="text-align: left;">geom_map</td>
+<td style="text-align: left;">geom_step</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">geom_density</td>
+<td style="text-align: left;">geom_path</td>
+<td style="text-align: left;">geom_text</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">geom_density_2d</td>
+<td style="text-align: left;">geom_point</td>
+<td style="text-align: left;">geom_tile</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">geom_density_2d_filled</td>
+<td style="text-align: left;">geom_pointrange</td>
+<td style="text-align: left;">geom_violin</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">geom_density2d</td>
+<td style="text-align: left;">geom_polygon</td>
+<td style="text-align: left;">geom_vline</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">geom_density2d_filled</td>
+<td style="text-align: left;">geom_qq</td>
+<td style="text-align: left;"></td>
+</tr>
+</tbody></table>
+</div>
+</figure>
+</div>
+<p>也正因这些丰富多彩的图层，ggplot2 可以非常便捷地做各种数据探索和展示工作。从时间序列数据、网络社交数据到文本数据、空间数据，乃至时空数据都有它大显身手的地方。</p>
+</section><section id="sec-label" class="level2" data-number="6.2"><h2 data-number="6.2" class="anchored" data-anchor-id="sec-label">
+<span class="header-section-number">6.2</span> 标签</h2>
+<p>用函数 <code>labs()</code> 可以添加横轴、纵轴、图例的标题，整个图片的标题和副标题等。下图 <a href="#fig-label-1" class="quarto-xref">图&nbsp;<span>6.2 (a)</span></a> 是默认设置下显示的标签内容，而 <a href="#fig-label-2" class="quarto-xref">图&nbsp;<span>6.2 (b)</span></a> 是用户指定标签内容后的显示效果。</p>
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1"></a><span class="fu">ggplot</span>(<span class="at">data =</span> gapminder_2007, <span class="fu">aes</span>(<span class="at">x =</span> gdpPercap, <span class="at">y =</span> lifeExp)) <span class="sc">+</span></span>
+<span id="cb4-2"><a href="#cb4-2"></a>  <span class="fu">geom_point</span>(<span class="fu">aes</span>(<span class="at">color =</span> region))</span>
+<span id="cb4-3"><a href="#cb4-3"></a><span class="fu">ggplot</span>(<span class="at">data =</span> gapminder_2007, <span class="fu">aes</span>(<span class="at">x =</span> gdpPercap, <span class="at">y =</span> lifeExp)) <span class="sc">+</span></span>
+<span id="cb4-4"><a href="#cb4-4"></a>  <span class="fu">geom_point</span>(<span class="fu">aes</span>(<span class="at">color =</span> region)) <span class="sc">+</span></span>
+<span id="cb4-5"><a href="#cb4-5"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"人均 GDP"</span>, <span class="at">y =</span> <span class="st">"预期寿命"</span>, <span class="at">tag =</span> <span class="st">"标签"</span>,</span>
+<span id="cb4-6"><a href="#cb4-6"></a>       <span class="at">title =</span> <span class="st">"这里是标题"</span>, <span class="at">caption =</span> <span class="st">"这是图形说明"</span>, </span>
+<span id="cb4-7"><a href="#cb4-7"></a>       <span class="at">subtitle =</span> <span class="st">"这里是副标题"</span>, <span class="at">color =</span> <span class="st">"图例标题"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="fig-label" class="quarto-layout-panel">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-label-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="quarto-layout-row quarto-layout-valign-top">
+<div class="cell-output-display quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-label" style="flex-basis: 100.0%;justify-content: center;">
+<div id="fig-label-1" class="quarto-figure quarto-figure-center anchored" width="672">
+<figure class="quarto-float quarto-subfloat-fig figure"><div aria-describedby="fig-label-1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="visualization-basic_files/figure-html/fig-label-1.png" class="img-fluid figure-img" data-ref-parent="fig-label" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-subfloat-caption quarto-subfloat-fig" id="fig-label-1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+(a) 默认设置
+</figcaption></figure>
+</div>
+</div>
+</div>
+<div class="quarto-layout-row quarto-layout-valign-top">
+<div class="cell-output-display quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-label" style="flex-basis: 100.0%;justify-content: center;">
+<div id="fig-label-2" class="quarto-figure quarto-figure-center anchored" width="672">
+<figure class="quarto-float quarto-subfloat-fig figure"><div aria-describedby="fig-label-2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="visualization-basic_files/figure-html/fig-label-2.png" class="img-fluid figure-img" data-ref-parent="fig-label" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-subfloat-caption quarto-subfloat-fig" id="fig-label-2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+(b) 自定义标签
+</figcaption></figure>
+</div>
+</div>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-label-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;6.2: 添加标签
+</figcaption></figure>
+</div>
+</section><section id="sec-scale" class="level2" data-number="6.3"><h2 data-number="6.3" class="anchored" data-anchor-id="sec-scale">
+<span class="header-section-number">6.3</span> 刻度</h2>
+<!-- 
+几何元素的透明度 alpha、颜色 color、填充色 fill、线类型 linetype、几何元素的形状 shape 及大小 size，坐标轴 x/y 的变换 
+-->
+<p>有时候 <a href="#fig-layer-point-3" class="quarto-xref">图&nbsp;<span>6.1 (c)</span></a> 看起来不太好，收入低的国家太多，聚集在一起，重叠覆盖比较严重。而高收入国家相对较少，分布稀疏，距离低收入比较远，数据整体的分布很不平衡。此时，可以考虑对横轴标度做一些变换，常用的有以 10 为底的对数变换，如 <a href="#fig-scale-log10" class="quarto-xref">图&nbsp;<span>6.3</span></a> 。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1"></a><span class="fu">library</span>(scales)</span>
+<span id="cb5-2"><a href="#cb5-2"></a><span class="fu">ggplot</span>(<span class="at">data =</span> gapminder_2007, <span class="fu">aes</span>(<span class="at">x =</span> gdpPercap, <span class="at">y =</span> lifeExp)) <span class="sc">+</span></span>
+<span id="cb5-3"><a href="#cb5-3"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span></span>
+<span id="cb5-4"><a href="#cb5-4"></a>  <span class="fu">scale_x_log10</span>() <span class="sc">+</span></span>
+<span id="cb5-5"><a href="#cb5-5"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"人均 GDP"</span>, <span class="at">y =</span> <span class="st">"预期寿命"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-scale-log10" class="quarto-figure quarto-figure-center anchored" width="480">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-scale-log10-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="visualization-basic_files/figure-html/fig-scale-log10-1.png" class="img-fluid figure-img" width="480">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-scale-log10-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;6.3: 人均 GDP 做对数变换
+</figcaption></figure>
+</div>
+</div>
+</div>
+<p>为了更加醒目地展示横轴做了对数变换，需要添加对应的刻度标签。<strong>scales</strong> 包 <span class="citation" data-cites="scales2022">(<a href="references.html#ref-scales2022" role="doc-biblioref">H. Wickham 和 Seidel 2022</a>)</span> 提供很多刻度标签支持，比如函数 <code>label_log()</code> 默认提供以 10 为底的刻度标签，如 <a href="#fig-scale-labels" class="quarto-xref">图&nbsp;<span>6.4</span></a> 。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1"></a><span class="fu">ggplot</span>(<span class="at">data =</span> gapminder_2007, <span class="fu">aes</span>(<span class="at">x =</span> gdpPercap, <span class="at">y =</span> lifeExp)) <span class="sc">+</span></span>
+<span id="cb6-2"><a href="#cb6-2"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span></span>
+<span id="cb6-3"><a href="#cb6-3"></a>  <span class="fu">scale_x_log10</span>(<span class="at">labels =</span> <span class="fu">label_log</span>()) <span class="sc">+</span></span>
+<span id="cb6-4"><a href="#cb6-4"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"人均 GDP"</span>, <span class="at">y =</span> <span class="st">"预期寿命"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-scale-labels" class="quarto-figure quarto-figure-center anchored" width="480">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-scale-labels-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="visualization-basic_files/figure-html/fig-scale-labels-1.png" class="img-fluid figure-img" width="480">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-scale-labels-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;6.4: 刻度标签随数据变换调整
+</figcaption></figure>
+</div>
+</div>
+</div>
+<p>这其实还不够，有的刻度标签含义不够显然，且看 <a href="#fig-scale-labels" class="quarto-xref">图&nbsp;<span>6.4</span></a> 的横轴第一个刻度标签 <span class="math inline">\(10^{2.48}\)</span> 是用来替换 <a href="#fig-scale-log10" class="quarto-xref">图&nbsp;<span>6.3</span></a> 的横轴第一个刻度标签 300。10 的 2.48 次方可不容易看出是 300 的意思，实际上它等于 302。因此，结合人均 GDP 的实际范围，有必要适当调整横轴显示范围，这可以在函数 <code>scale_x_log10()</code> 中设置参数 <code>limits</code>，横轴刻度标签会随之适当调整，调整后的效果如 <a href="#fig-scale-limits" class="quarto-xref">图&nbsp;<span>6.5</span></a> 。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1"></a><span class="fu">ggplot</span>(<span class="at">data =</span> gapminder_2007, <span class="fu">aes</span>(<span class="at">x =</span> gdpPercap, <span class="at">y =</span> lifeExp)) <span class="sc">+</span></span>
+<span id="cb7-2"><a href="#cb7-2"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span></span>
+<span id="cb7-3"><a href="#cb7-3"></a>  <span class="fu">scale_x_log10</span>(<span class="at">labels =</span> <span class="fu">label_log</span>(), <span class="at">limits =</span> <span class="fu">c</span>(<span class="dv">100</span>, <span class="dv">110000</span>)) <span class="sc">+</span></span>
+<span id="cb7-4"><a href="#cb7-4"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"人均 GDP"</span>, <span class="at">y =</span> <span class="st">"预期寿命"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-scale-limits" class="quarto-figure quarto-figure-center anchored" width="480">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-scale-limits-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="visualization-basic_files/figure-html/fig-scale-limits-1.png" class="img-fluid figure-img" width="480">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-scale-limits-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;6.5: 设置数据展示范围
+</figcaption></figure>
+</div>
+</div>
+</div>
+<p>根据横轴所代表的人均 GDP （单位：美元）的实际含义，其实，可以进一步，添加更多的信息，即刻度标签带上数量单位，此处是美元符号。<strong>scales</strong> 包提供的函数 <code>label_dollar()</code> 可以实现，效果如 <a href="#fig-scale-dollar" class="quarto-xref">图&nbsp;<span>6.6</span></a> 。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1"></a><span class="fu">ggplot</span>(<span class="at">data =</span> gapminder_2007, <span class="fu">aes</span>(<span class="at">x =</span> gdpPercap, <span class="at">y =</span> lifeExp)) <span class="sc">+</span></span>
+<span id="cb8-2"><a href="#cb8-2"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span></span>
+<span id="cb8-3"><a href="#cb8-3"></a>  <span class="fu">scale_x_log10</span>(<span class="at">labels =</span> <span class="fu">label_dollar</span>(), <span class="at">limits =</span> <span class="fu">c</span>(<span class="dv">100</span>, <span class="dv">110000</span>)) <span class="sc">+</span></span>
+<span id="cb8-4"><a href="#cb8-4"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"人均 GDP"</span>, <span class="at">y =</span> <span class="st">"预期寿命"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-scale-dollar" class="quarto-figure quarto-figure-center anchored" width="480">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-scale-dollar-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="visualization-basic_files/figure-html/fig-scale-dollar-1.png" class="img-fluid figure-img" width="480">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-scale-dollar-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;6.6: 设置数据展示范围
+</figcaption></figure>
+</div>
+</div>
+</div>
+<p>最后，有必要添加次刻度线作为辅助参考线。图中点与点之间的横向距离代表人均 GDP 差距，以 10 为底的对数变换不是线性变化的，肉眼识别起来有点困难。从 100 美元到 100000 美元，在 100 美元、1000 美元、10000 美元和 100000 美元之间均添加 10 条次刻度线，每个区间内相邻的两条次刻度线之差保持恒定。下面构造刻度线的位置，了解原值和对数变换后的对应关系。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1"></a><span class="co"># 刻度线位置</span></span>
+<span id="cb9-2"><a href="#cb9-2"></a>mb <span class="ot">&lt;-</span> <span class="fu">unique</span>(<span class="fu">as.numeric</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">10</span> <span class="sc">%o%</span> <span class="dv">10</span><span class="sc">^</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>)))</span>
+<span id="cb9-3"><a href="#cb9-3"></a><span class="co"># 对数变换后</span></span>
+<span id="cb9-4"><a href="#cb9-4"></a><span class="fu">log10</span>(mb)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt;  [1] 1.000000 1.301030 1.477121 1.602060 1.698970 1.778151 1.845098 1.903090
+#&gt;  [9] 1.954243 2.000000 2.301030 2.477121 2.602060 2.698970 2.778151 2.845098
+#&gt; [17] 2.903090 2.954243 3.000000 3.301030 3.477121 3.602060 3.698970 3.778151
+#&gt; [25] 3.845098 3.903090 3.954243 4.000000 4.301030 4.477121 4.602060 4.698970
+#&gt; [33] 4.778151 4.845098 4.903090 4.954243 5.000000</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1"></a><span class="co"># 刻度线位置</span></span>
+<span id="cb11-2"><a href="#cb11-2"></a><span class="fu">format</span>(mb, <span class="at">big.mark =</span> <span class="st">","</span>, <span class="at">scientific =</span> <span class="dv">999</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt;  [1] "     10" "     20" "     30" "     40" "     50" "     60" "     70"
+#&gt;  [8] "     80" "     90" "    100" "    200" "    300" "    400" "    500"
+#&gt; [15] "    600" "    700" "    800" "    900" "  1,000" "  2,000" "  3,000"
+#&gt; [22] "  4,000" "  5,000" "  6,000" "  7,000" "  8,000" "  9,000" " 10,000"
+#&gt; [29] " 20,000" " 30,000" " 40,000" " 50,000" " 60,000" " 70,000" " 80,000"
+#&gt; [36] " 90,000" "100,000"</code></pre>
+</div>
+</div>
+<p>函数 <code>scale_x_log10()</code> 提供参数 <code>minor_breaks</code> 设定刻度线的位置。最终效果如 <a href="#fig-scale-minor-breaks" class="quarto-xref">图&nbsp;<span>6.7</span></a> 。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1"></a><span class="fu">ggplot</span>(<span class="at">data =</span> gapminder_2007, <span class="fu">aes</span>(<span class="at">x =</span> gdpPercap, <span class="at">y =</span> lifeExp)) <span class="sc">+</span></span>
+<span id="cb13-2"><a href="#cb13-2"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span></span>
+<span id="cb13-3"><a href="#cb13-3"></a>  <span class="fu">scale_x_log10</span>(</span>
+<span id="cb13-4"><a href="#cb13-4"></a>    <span class="at">labels =</span> <span class="fu">label_dollar</span>(), <span class="at">minor_breaks =</span> mb, <span class="at">limits =</span> <span class="fu">c</span>(<span class="dv">100</span>, <span class="dv">110000</span>)</span>
+<span id="cb13-5"><a href="#cb13-5"></a>  ) <span class="sc">+</span></span>
+<span id="cb13-6"><a href="#cb13-6"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"人均 GDP"</span>, <span class="at">y =</span> <span class="st">"预期寿命"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-scale-minor-breaks" class="quarto-figure quarto-figure-center anchored" width="480">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-scale-minor-breaks-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="visualization-basic_files/figure-html/fig-scale-minor-breaks-1.png" class="img-fluid figure-img" width="480">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-scale-minor-breaks-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;6.7: 添加次刻度线，提供更多参考
+</figcaption></figure>
+</div>
+</div>
+</div>
+</section><section id="sec-color" class="level2" data-number="6.4"><h2 data-number="6.4" class="anchored" data-anchor-id="sec-color">
+<span class="header-section-number">6.4</span> 配色</h2>
+<p>好的配色可以让图形产生眼前一亮的效果，R 语言社区在统计图形领域深耕 20 多年，陆续涌现很多专门调色的 R 包，常见的有：</p>
+<ul>
+<li>
+<strong>RColorBrewer</strong> <span class="citation" data-cites="RColorBrewer2022">(<a href="references.html#ref-RColorBrewer2022" role="doc-biblioref">Neuwirth 2022</a>)</span> (<a href="https://github.com/axismaps/colorbrewer/" class="uri">https://github.com/axismaps/colorbrewer/</a>)</li>
+<li>
+<strong>munsell</strong> <span class="citation" data-cites="munsell2018">(<a href="references.html#ref-munsell2018" role="doc-biblioref">C. Wickham 2018</a>)</span> (<a href="https://github.com/cwickham/munsell/" class="uri">https://github.com/cwickham/munsell/</a>)</li>
+<li>
+<strong>colorspace</strong> <span class="citation" data-cites="Zeileis2020">(<a href="references.html#ref-Zeileis2020" role="doc-biblioref">Zeileis 等 2020</a>)</span> (<a href="https://colorspace.r-forge.r-project.org/" class="uri">https://colorspace.r-forge.r-project.org/</a>)</li>
+<li>
+<strong>paletteer</strong> <span class="citation" data-cites="paletteer2021">(<a href="references.html#ref-paletteer2021" role="doc-biblioref">Hvitfeldt 2021</a>)</span> (<a href="https://github.com/EmilHvitfeldt/paletteer" class="uri">https://github.com/EmilHvitfeldt/paletteer</a>)</li>
+<li>
+<strong>scico</strong> <span class="citation" data-cites="scico2022">(<a href="references.html#ref-scico2022" role="doc-biblioref">Pedersen 和 Crameri 2022</a>)</span> (<a href="https://github.com/thomasp85/scico" class="uri">https://github.com/thomasp85/scico</a>)</li>
+<li>
+<strong>viridis</strong> <span class="citation" data-cites="viridis2021">(<a href="references.html#ref-viridis2021" role="doc-biblioref">Garnier 等 2021</a>)</span> (<a href="https://github.com/sjmgarnier/viridis/" class="uri">https://github.com/sjmgarnier/viridis/</a>)</li>
+<li>
+<strong>viridisLite</strong> <span class="citation" data-cites="viridis2021">(<a href="references.html#ref-viridis2021" role="doc-biblioref">Garnier 等 2021</a>)</span> (<a href="https://github.com/sjmgarnier/viridisLite/" class="uri">https://github.com/sjmgarnier/viridisLite/</a>)</li>
+<li>
+<strong>colormap</strong> <span class="citation" data-cites="colormap2016">(<a href="references.html#ref-colormap2016" role="doc-biblioref">Karambelkar 2016</a>)</span> (<a href="https://github.com/bhaskarvk/colormap" class="uri">https://github.com/bhaskarvk/colormap</a>)</li>
+</ul>
+<p><strong>ggplot2</strong> 提供多种方式给图形配色，最常见的要数函数 <code>scale_color_brewer()</code>，它调用 RColorBrewer 包制作离散型的调色板，根据离散型变量的具体情况，可分为发散型 qualitative、对撞型 Diverging、有序型 Sequential。在图 <a href="#fig-scale-minor-breaks" class="quarto-xref">图&nbsp;<span>6.7</span></a> 的基础上，将分类型的区域变量映射给散点的颜色，即得到 <a href="#fig-color-brewer" class="quarto-xref">图&nbsp;<span>6.8</span></a> 。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1"></a><span class="fu">ggplot</span>(<span class="at">data =</span> gapminder_2007, <span class="fu">aes</span>(<span class="at">x =</span> gdpPercap, <span class="at">y =</span> lifeExp)) <span class="sc">+</span></span>
+<span id="cb14-2"><a href="#cb14-2"></a>  <span class="fu">geom_point</span>(<span class="fu">aes</span>(<span class="at">color =</span> region)) <span class="sc">+</span></span>
+<span id="cb14-3"><a href="#cb14-3"></a>  <span class="fu">scale_color_brewer</span>(<span class="at">palette =</span> <span class="st">"Set1"</span>) <span class="sc">+</span></span>
+<span id="cb14-4"><a href="#cb14-4"></a>  <span class="fu">scale_x_log10</span>(</span>
+<span id="cb14-5"><a href="#cb14-5"></a>    <span class="at">labels =</span> <span class="fu">label_dollar</span>(), <span class="at">minor_breaks =</span> mb, <span class="at">limits =</span> <span class="fu">c</span>(<span class="dv">100</span>, <span class="dv">110000</span>)</span>
+<span id="cb14-6"><a href="#cb14-6"></a>  ) <span class="sc">+</span></span>
+<span id="cb14-7"><a href="#cb14-7"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"人均 GDP"</span>, <span class="at">y =</span> <span class="st">"预期寿命"</span>, <span class="at">color =</span> <span class="st">"区域"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-color-brewer" class="quarto-figure quarto-figure-center anchored" width="672">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-color-brewer-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="visualization-basic_files/figure-html/fig-color-brewer-1.png" class="img-fluid figure-img" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-color-brewer-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;6.8: 使用 RColorBrewer 包提供的 Set1 调色板
+</figcaption></figure>
+</div>
+</div>
+</div>
+<p>另一种方式是调用函数 <code>scale_color_manual()</code>，需要用户给分类变量值逐个指定颜色，即提供一个命名的向量，效果如 <a href="#fig-color-manual" class="quarto-xref">图&nbsp;<span>6.9</span></a> 。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1"></a><span class="fu">ggplot</span>(<span class="at">data =</span> gapminder_2007, <span class="fu">aes</span>(<span class="at">x =</span> gdpPercap, <span class="at">y =</span> lifeExp)) <span class="sc">+</span></span>
+<span id="cb15-2"><a href="#cb15-2"></a>  <span class="fu">geom_point</span>(<span class="fu">aes</span>(<span class="at">color =</span> region)) <span class="sc">+</span></span>
+<span id="cb15-3"><a href="#cb15-3"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(</span>
+<span id="cb15-4"><a href="#cb15-4"></a>    <span class="st">`</span><span class="at">拉丁美洲与加勒比海地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#E41A1C"</span>, <span class="st">`</span><span class="at">撒哈拉以南非洲地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#377EB8"</span>,</span>
+<span id="cb15-5"><a href="#cb15-5"></a>    <span class="st">`</span><span class="at">欧洲与中亚地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#4DAF4A"</span>, <span class="st">`</span><span class="at">中东与北非地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#984EA3"</span>,</span>
+<span id="cb15-6"><a href="#cb15-6"></a>    <span class="st">`</span><span class="at">东亚与太平洋地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#FF7F00"</span>, <span class="st">`</span><span class="at">南亚</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#FFFF33"</span>, <span class="st">`</span><span class="at">北美</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#A65628"</span></span>
+<span id="cb15-7"><a href="#cb15-7"></a>  )) <span class="sc">+</span></span>
+<span id="cb15-8"><a href="#cb15-8"></a>  <span class="fu">scale_x_log10</span>(</span>
+<span id="cb15-9"><a href="#cb15-9"></a>    <span class="at">labels =</span> <span class="fu">label_dollar</span>(), <span class="at">minor_breaks =</span> mb, <span class="at">limits =</span> <span class="fu">c</span>(<span class="dv">100</span>, <span class="dv">110000</span>)</span>
+<span id="cb15-10"><a href="#cb15-10"></a>  ) <span class="sc">+</span></span>
+<span id="cb15-11"><a href="#cb15-11"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"人均 GDP"</span>, <span class="at">y =</span> <span class="st">"预期寿命"</span>, <span class="at">color =</span> <span class="st">"区域"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-color-manual" class="quarto-figure quarto-figure-center anchored" width="672">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-color-manual-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="visualization-basic_files/figure-html/fig-color-manual-1.png" class="img-fluid figure-img" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-color-manual-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;6.9: 手动挨个指定分类变量的颜色
+</figcaption></figure>
+</div>
+</div>
+</div>
+</section><section id="sec-legend" class="level2" data-number="6.5"><h2 data-number="6.5" class="anchored" data-anchor-id="sec-legend">
+<span class="header-section-number">6.5</span> 图例</h2>
+<p>在 <a href="#fig-color-brewer" class="quarto-xref">图&nbsp;<span>6.8</span></a> 的基础上，继续将每个国家的人口总数映射给点的大小，绘制气泡图。此时有两个视觉映射变量 — 离散型的变量 country （国家）和连续型的变量 pop （人口总数）。不仅仅是图层函数 <code>geom_point()</code>，所有的几何图层都提供参数 <code>show.legend</code> 来控制图例的显示或隐藏。传递命名逻辑向量还可以在多个图例中选择性保留。 <a href="#fig-legend-show" class="quarto-xref">图&nbsp;<span>6.10</span></a> 在两个图例中保留一个，即人口总数。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1"></a><span class="fu">ggplot</span>(<span class="at">data =</span> gapminder_2007, <span class="fu">aes</span>(<span class="at">x =</span> gdpPercap, <span class="at">y =</span> lifeExp)) <span class="sc">+</span></span>
+<span id="cb16-2"><a href="#cb16-2"></a>  <span class="fu">geom_point</span>(<span class="fu">aes</span>(<span class="at">color =</span> region, <span class="at">size =</span> pop),</span>
+<span id="cb16-3"><a href="#cb16-3"></a>    <span class="at">show.legend =</span> <span class="fu">c</span>(<span class="at">color =</span> <span class="cn">FALSE</span>, <span class="at">size =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb16-4"><a href="#cb16-4"></a>  ) <span class="sc">+</span></span>
+<span id="cb16-5"><a href="#cb16-5"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(</span>
+<span id="cb16-6"><a href="#cb16-6"></a>    <span class="st">`</span><span class="at">拉丁美洲与加勒比海地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#E41A1C"</span>, <span class="st">`</span><span class="at">撒哈拉以南非洲地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#377EB8"</span>,</span>
+<span id="cb16-7"><a href="#cb16-7"></a>    <span class="st">`</span><span class="at">欧洲与中亚地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#4DAF4A"</span>, <span class="st">`</span><span class="at">中东与北非地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#984EA3"</span>,</span>
+<span id="cb16-8"><a href="#cb16-8"></a>    <span class="st">`</span><span class="at">东亚与太平洋地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#FF7F00"</span>, <span class="st">`</span><span class="at">南亚</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#FFFF33"</span>, <span class="st">`</span><span class="at">北美</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#A65628"</span></span>
+<span id="cb16-9"><a href="#cb16-9"></a>  )) <span class="sc">+</span></span>
+<span id="cb16-10"><a href="#cb16-10"></a>  <span class="fu">scale_size</span>(<span class="at">range =</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">12</span>)) <span class="sc">+</span></span>
+<span id="cb16-11"><a href="#cb16-11"></a>  <span class="fu">scale_x_log10</span>(</span>
+<span id="cb16-12"><a href="#cb16-12"></a>    <span class="at">labels =</span> <span class="fu">label_dollar</span>(), <span class="at">minor_breaks =</span> mb, <span class="at">limits =</span> <span class="fu">c</span>(<span class="dv">100</span>, <span class="dv">110000</span>)</span>
+<span id="cb16-13"><a href="#cb16-13"></a>  ) <span class="sc">+</span></span>
+<span id="cb16-14"><a href="#cb16-14"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"人均 GDP"</span>, <span class="at">y =</span> <span class="st">"预期寿命"</span>, <span class="at">size =</span> <span class="st">"人口总数"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-legend-show" class="quarto-figure quarto-figure-center anchored" width="576">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-legend-show-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="visualization-basic_files/figure-html/fig-legend-show-1.png" class="img-fluid figure-img" width="576">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-legend-show-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;6.10: 在两个图例中保留一个
+</figcaption></figure>
+</div>
+</div>
+</div>
+<p>全世界各个国家的人口总数从百万级横跨到十亿级，根据此实际情况，适当调整图例刻度标签是很有必要的，可以让图例内容更具可读性。 <a href="#fig-legend-label" class="quarto-xref">图&nbsp;<span>6.11</span></a> 是修改图例刻度标签后的效果，其中 M 表示 Million（百万），B 表示 Billion （十 亿）。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1"></a><span class="fu">ggplot</span>(<span class="at">data =</span> gapminder_2007, <span class="fu">aes</span>(<span class="at">x =</span> gdpPercap, <span class="at">y =</span> lifeExp)) <span class="sc">+</span></span>
+<span id="cb17-2"><a href="#cb17-2"></a>  <span class="fu">geom_point</span>(<span class="fu">aes</span>(<span class="at">color =</span> region, <span class="at">size =</span> pop),</span>
+<span id="cb17-3"><a href="#cb17-3"></a>    <span class="at">show.legend =</span> <span class="fu">c</span>(<span class="at">color =</span> <span class="cn">FALSE</span>, <span class="at">size =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb17-4"><a href="#cb17-4"></a>  ) <span class="sc">+</span></span>
+<span id="cb17-5"><a href="#cb17-5"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(</span>
+<span id="cb17-6"><a href="#cb17-6"></a>    <span class="st">`</span><span class="at">拉丁美洲与加勒比海地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#E41A1C"</span>, <span class="st">`</span><span class="at">撒哈拉以南非洲地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#377EB8"</span>,</span>
+<span id="cb17-7"><a href="#cb17-7"></a>    <span class="st">`</span><span class="at">欧洲与中亚地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#4DAF4A"</span>, <span class="st">`</span><span class="at">中东与北非地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#984EA3"</span>,</span>
+<span id="cb17-8"><a href="#cb17-8"></a>    <span class="st">`</span><span class="at">东亚与太平洋地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#FF7F00"</span>, <span class="st">`</span><span class="at">南亚</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#FFFF33"</span>, <span class="st">`</span><span class="at">北美</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#A65628"</span></span>
+<span id="cb17-9"><a href="#cb17-9"></a>  )) <span class="sc">+</span></span>
+<span id="cb17-10"><a href="#cb17-10"></a>  <span class="fu">scale_size</span>(<span class="at">range =</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">12</span>), <span class="at">labels =</span> <span class="fu">label_number</span>(<span class="at">scale_cut =</span> <span class="fu">cut_short_scale</span>())) <span class="sc">+</span></span>
+<span id="cb17-11"><a href="#cb17-11"></a>  <span class="fu">scale_x_log10</span>(</span>
+<span id="cb17-12"><a href="#cb17-12"></a>    <span class="at">labels =</span> <span class="fu">label_dollar</span>(), <span class="at">minor_breaks =</span> mb, <span class="at">limits =</span> <span class="fu">c</span>(<span class="dv">100</span>, <span class="dv">110000</span>)</span>
+<span id="cb17-13"><a href="#cb17-13"></a>  ) <span class="sc">+</span></span>
+<span id="cb17-14"><a href="#cb17-14"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"人均 GDP"</span>, <span class="at">y =</span> <span class="st">"预期寿命"</span>, <span class="at">size =</span> <span class="st">"人口总数"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-legend-label" class="quarto-figure quarto-figure-center anchored" width="576">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-legend-label-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="visualization-basic_files/figure-html/fig-legend-label-1.png" class="img-fluid figure-img" width="576">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-legend-label-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;6.11: 修改图例刻度标签
+</figcaption></figure>
+</div>
+</div>
+</div>
+</section><section id="sec-theme" class="level2" data-number="6.6"><h2 data-number="6.6" class="anchored" data-anchor-id="sec-theme">
+<span class="header-section-number">6.6</span> 主题</h2>
+<p>主题就是一系列风格样式的集合，提前设定标题、文本、坐标轴、图例等元素的默认参数，供后续调用。10 年来，R 语言社区陆续出现很多主题包。</p>
+<ul>
+<li>
+<strong>ggthemes</strong> <span class="citation" data-cites="ggthemes2021">(<a href="references.html#ref-ggthemes2021" role="doc-biblioref">Arnold 2021</a>)</span> 收集了网站（如 Fivethirtyeight）、杂志（如《经济学家》）、软件（如 Stata）等的配色主题，打包成可供 <strong>ggplot2</strong> 绘图的主题，更多内容见 (<a href="https://github.com/jrnold/ggthemes" class="uri">https://github.com/jrnold/ggthemes</a>)</li>
+<li>
+<strong>ggsci</strong> <span class="citation" data-cites="ggsci2018">(<a href="references.html#ref-ggsci2018" role="doc-biblioref">Xiao 2018</a>)</span> 包收集了多份期刊杂志的图形配色，将其融入 <strong>ggplot2</strong> 绘图主题中，更多内容见 (<a href="https://github.com/road2stat/ggsci" class="uri">https://github.com/road2stat/ggsci</a>)。</li>
+<li>
+<strong>ggpubr</strong> <span class="citation" data-cites="ggpubr2022">(<a href="references.html#ref-ggpubr2022" role="doc-biblioref">Kassambara 2022</a>)</span> 包在 <strong>ggplot2</strong> 之上封装一套更加易用的函数，可以快速绘制出版级的统计图形 (<a href="https://github.com/kassambara/ggpubr" class="uri">https://github.com/kassambara/ggpubr</a>)。</li>
+<li>
+<strong>ggcharts</strong> <span class="citation" data-cites="ggcharts2020">(<a href="references.html#ref-ggcharts2020" role="doc-biblioref">Neitmann 2020</a>)</span> 包类似 <strong>ggpubr</strong> 包，也提供一套更加快捷的函数接口，缩短数据可视化的想法与实际图形的距离，更多内容见 (<a href="https://github.com/thomas-neitmann/ggcharts" class="uri">https://github.com/thomas-neitmann/ggcharts</a>)。</li>
+<li>
+<strong>ggthemr</strong> <span class="citation" data-cites="ggthemr2020">(<a href="references.html#ref-ggthemr2020" role="doc-biblioref">Tobin 2020</a>)</span> 是比较早的 <strong>ggplot2</strong> 主题包，上游依赖少，更多内容见 (<a href="https://github.com/Mikata-Project/ggthemr" class="uri">https://github.com/Mikata-Project/ggthemr</a>)。</li>
+<li>
+<strong>ggtech</strong> <span class="citation" data-cites="ggtech2018">(<a href="references.html#ref-ggtech2018" role="doc-biblioref">Bion 2018</a>)</span> 包收集了许多科技公司的设计风格，将其制作成可供 ggplot2 绘图使用的主题，更多内容见 (<a href="https://github.com/ricardo-bion/ggtech" class="uri">https://github.com/ricardo-bion/ggtech</a>)。</li>
+<li>
+<strong>bbplot</strong> <span class="citation" data-cites="bbplot2022">(<a href="references.html#ref-bbplot2022" role="doc-biblioref">Stylianou 等 2022</a>)</span> 为 BBC 新闻定制的一套主题，更多内容见 (<a href="https://github.com/bbc/bbplot" class="uri">https://github.com/bbc/bbplot</a>)。</li>
+<li>
+<strong>pilot</strong> <span class="citation" data-cites="pilot2022">(<a href="references.html#ref-pilot2022" role="doc-biblioref">Hawkins 2022</a>)</span> 包提供一套简洁的 <strong>ggplot2</strong> 主题，特别是适合展示分类、离散型数据，更多内容见 (<a href="https://github.com/olihawkins/pilot" class="uri">https://github.com/olihawkins/pilot</a>)。</li>
+<li>
+<strong>ggthemeassist</strong> <span class="citation" data-cites="ggThemeAssist2016">(<a href="references.html#ref-ggThemeAssist2016" role="doc-biblioref">Gross 和 Ottolinger 2016</a>)</span> 包提供 RStudio IDE 插件，帮助用户以鼠标点击的交互方式设置 <strong>ggplot2</strong> 图形的主题样式，更多内容见 (<a href="https://github.com/calligross/ggthemeassist" class="uri">https://github.com/calligross/ggthemeassist</a>)。</li>
+</ul>
+<p>在 <a href="#fig-legend-label" class="quarto-xref">图&nbsp;<span>6.11</span></a> 的基础上，以 <strong>ggplot2</strong> 包内置的主题 <code>theme_classic()</code> 替换默认的主题，效果如下 <a href="#fig-theme-classic" class="quarto-xref">图&nbsp;<span>6.12</span></a> ，这是一套非常经典的主题，它去掉所有的背景色和参考系，显得非常简洁。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1"></a><span class="fu">ggplot</span>(<span class="at">data =</span> gapminder, <span class="fu">aes</span>(<span class="at">x =</span> gdpPercap, <span class="at">y =</span> lifeExp)) <span class="sc">+</span></span>
+<span id="cb18-2"><a href="#cb18-2"></a>  <span class="fu">geom_point</span>(</span>
+<span id="cb18-3"><a href="#cb18-3"></a>    <span class="at">data =</span> <span class="cf">function</span>(x) <span class="fu">subset</span>(x, year <span class="sc">==</span> <span class="dv">2007</span>),</span>
+<span id="cb18-4"><a href="#cb18-4"></a>    <span class="fu">aes</span>(<span class="at">fill =</span> region, <span class="at">size =</span> pop), <span class="at">shape =</span> <span class="dv">21</span>, <span class="at">col =</span> <span class="st">"white"</span>,</span>
+<span id="cb18-5"><a href="#cb18-5"></a>    <span class="at">show.legend =</span> <span class="fu">c</span>(<span class="at">fill =</span> <span class="cn">TRUE</span>, <span class="at">size =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb18-6"><a href="#cb18-6"></a>  ) <span class="sc">+</span></span>
+<span id="cb18-7"><a href="#cb18-7"></a>  <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(</span>
+<span id="cb18-8"><a href="#cb18-8"></a>    <span class="st">`</span><span class="at">拉丁美洲与加勒比海地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#E41A1C"</span>, <span class="st">`</span><span class="at">撒哈拉以南非洲地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#377EB8"</span>,</span>
+<span id="cb18-9"><a href="#cb18-9"></a>    <span class="st">`</span><span class="at">欧洲与中亚地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#4DAF4A"</span>, <span class="st">`</span><span class="at">中东与北非地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#984EA3"</span>,</span>
+<span id="cb18-10"><a href="#cb18-10"></a>    <span class="st">`</span><span class="at">东亚与太平洋地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#FF7F00"</span>, <span class="st">`</span><span class="at">南亚</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#FFFF33"</span>, <span class="st">`</span><span class="at">北美</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#A65628"</span></span>
+<span id="cb18-11"><a href="#cb18-11"></a>  )) <span class="sc">+</span></span>
+<span id="cb18-12"><a href="#cb18-12"></a>  <span class="fu">scale_size</span>(<span class="at">range =</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">12</span>)) <span class="sc">+</span></span>
+<span id="cb18-13"><a href="#cb18-13"></a>  <span class="fu">scale_x_log10</span>(</span>
+<span id="cb18-14"><a href="#cb18-14"></a>    <span class="at">labels =</span> <span class="fu">label_dollar</span>(), <span class="at">minor_breaks =</span> mb, <span class="at">limits =</span> <span class="fu">c</span>(<span class="dv">100</span>, <span class="dv">110000</span>)</span>
+<span id="cb18-15"><a href="#cb18-15"></a>  ) <span class="sc">+</span></span>
+<span id="cb18-16"><a href="#cb18-16"></a>  <span class="fu">theme_classic</span>() <span class="sc">+</span></span>
+<span id="cb18-17"><a href="#cb18-17"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"人均 GDP"</span>, <span class="at">y =</span> <span class="st">"预期寿命"</span>, <span class="at">fill =</span> <span class="st">"区域"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-theme-classic" class="quarto-figure quarto-figure-center anchored" width="576">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-theme-classic-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="visualization-basic_files/figure-html/fig-theme-classic-1.png" class="img-fluid figure-img" width="576">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-theme-classic-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;6.12: ggplot2 内置的经典主题风格
+</figcaption></figure>
+</div>
+</div>
+</div>
+<p>在已有主题的基础上，还可以进一步细微调整，比如，将图例移动至绘图区域的下方，见 <a href="#fig-theme-position" class="quarto-xref">图&nbsp;<span>6.13</span></a> 。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1"></a><span class="fu">ggplot</span>(<span class="at">data =</span> gapminder, <span class="fu">aes</span>(<span class="at">x =</span> gdpPercap, <span class="at">y =</span> lifeExp)) <span class="sc">+</span></span>
+<span id="cb19-2"><a href="#cb19-2"></a>  <span class="fu">geom_point</span>(</span>
+<span id="cb19-3"><a href="#cb19-3"></a>    <span class="at">data =</span> <span class="cf">function</span>(x) <span class="fu">subset</span>(x, year <span class="sc">==</span> <span class="dv">2007</span>),</span>
+<span id="cb19-4"><a href="#cb19-4"></a>    <span class="fu">aes</span>(<span class="at">fill =</span> region, <span class="at">size =</span> pop), <span class="at">shape =</span> <span class="dv">21</span>, <span class="at">col =</span> <span class="st">"white"</span>,</span>
+<span id="cb19-5"><a href="#cb19-5"></a>    <span class="at">show.legend =</span> <span class="fu">c</span>(<span class="at">fill =</span> <span class="cn">TRUE</span>, <span class="at">size =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb19-6"><a href="#cb19-6"></a>  ) <span class="sc">+</span></span>
+<span id="cb19-7"><a href="#cb19-7"></a>  <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(</span>
+<span id="cb19-8"><a href="#cb19-8"></a>    <span class="st">`</span><span class="at">拉丁美洲与加勒比海地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#E41A1C"</span>, <span class="st">`</span><span class="at">撒哈拉以南非洲地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#377EB8"</span>,</span>
+<span id="cb19-9"><a href="#cb19-9"></a>    <span class="st">`</span><span class="at">欧洲与中亚地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#4DAF4A"</span>, <span class="st">`</span><span class="at">中东与北非地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#984EA3"</span>,</span>
+<span id="cb19-10"><a href="#cb19-10"></a>    <span class="st">`</span><span class="at">东亚与太平洋地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#FF7F00"</span>, <span class="st">`</span><span class="at">南亚</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#FFFF33"</span>, <span class="st">`</span><span class="at">北美</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#A65628"</span></span>
+<span id="cb19-11"><a href="#cb19-11"></a>  )) <span class="sc">+</span></span>
+<span id="cb19-12"><a href="#cb19-12"></a>  <span class="fu">scale_size</span>(<span class="at">range =</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">12</span>)) <span class="sc">+</span></span>
+<span id="cb19-13"><a href="#cb19-13"></a>  <span class="fu">scale_x_log10</span>(</span>
+<span id="cb19-14"><a href="#cb19-14"></a>    <span class="at">labels =</span> <span class="fu">label_dollar</span>(), <span class="at">minor_breaks =</span> mb, <span class="at">limits =</span> <span class="fu">c</span>(<span class="dv">100</span>, <span class="dv">110000</span>)</span>
+<span id="cb19-15"><a href="#cb19-15"></a>  ) <span class="sc">+</span></span>
+<span id="cb19-16"><a href="#cb19-16"></a>  <span class="fu">theme_classic</span>() <span class="sc">+</span></span>
+<span id="cb19-17"><a href="#cb19-17"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"bottom"</span>) <span class="sc">+</span></span>
+<span id="cb19-18"><a href="#cb19-18"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"人均 GDP"</span>, <span class="at">y =</span> <span class="st">"预期寿命"</span>, <span class="at">fill =</span> <span class="st">"区域"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-theme-position" class="quarto-figure quarto-figure-center anchored" width="576">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-theme-position-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="visualization-basic_files/figure-html/fig-theme-position-1.png" class="img-fluid figure-img" width="576">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-theme-position-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;6.13: 图例置于图形下方
+</figcaption></figure>
+</div>
+</div>
+</div>
+<p>或者用户觉得合适的任意位置。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1"></a><span class="fu">ggplot</span>(<span class="at">data =</span> gapminder, <span class="fu">aes</span>(<span class="at">x =</span> gdpPercap, <span class="at">y =</span> lifeExp)) <span class="sc">+</span></span>
+<span id="cb20-2"><a href="#cb20-2"></a>  <span class="fu">geom_point</span>(</span>
+<span id="cb20-3"><a href="#cb20-3"></a>    <span class="at">data =</span> <span class="cf">function</span>(x) <span class="fu">subset</span>(x, year <span class="sc">==</span> <span class="dv">2007</span>),</span>
+<span id="cb20-4"><a href="#cb20-4"></a>    <span class="fu">aes</span>(<span class="at">fill =</span> region, <span class="at">size =</span> pop), <span class="at">shape =</span> <span class="dv">21</span>, <span class="at">col =</span> <span class="st">"white"</span>,</span>
+<span id="cb20-5"><a href="#cb20-5"></a>    <span class="at">show.legend =</span> <span class="fu">c</span>(<span class="at">fill =</span> <span class="cn">TRUE</span>, <span class="at">size =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb20-6"><a href="#cb20-6"></a>  ) <span class="sc">+</span></span>
+<span id="cb20-7"><a href="#cb20-7"></a>  <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(</span>
+<span id="cb20-8"><a href="#cb20-8"></a>    <span class="st">`</span><span class="at">拉丁美洲与加勒比海地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#E41A1C"</span>, <span class="st">`</span><span class="at">撒哈拉以南非洲地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#377EB8"</span>,</span>
+<span id="cb20-9"><a href="#cb20-9"></a>    <span class="st">`</span><span class="at">欧洲与中亚地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#4DAF4A"</span>, <span class="st">`</span><span class="at">中东与北非地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#984EA3"</span>,</span>
+<span id="cb20-10"><a href="#cb20-10"></a>    <span class="st">`</span><span class="at">东亚与太平洋地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#FF7F00"</span>, <span class="st">`</span><span class="at">南亚</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#FFFF33"</span>, <span class="st">`</span><span class="at">北美</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#A65628"</span></span>
+<span id="cb20-11"><a href="#cb20-11"></a>  )) <span class="sc">+</span></span>
+<span id="cb20-12"><a href="#cb20-12"></a>  <span class="fu">scale_size</span>(<span class="at">range =</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">12</span>)) <span class="sc">+</span></span>
+<span id="cb20-13"><a href="#cb20-13"></a>  <span class="fu">scale_x_log10</span>(</span>
+<span id="cb20-14"><a href="#cb20-14"></a>    <span class="at">labels =</span> <span class="fu">label_dollar</span>(), <span class="at">minor_breaks =</span> mb, <span class="at">limits =</span> <span class="fu">c</span>(<span class="dv">100</span>, <span class="dv">110000</span>)</span>
+<span id="cb20-15"><a href="#cb20-15"></a>  ) <span class="sc">+</span></span>
+<span id="cb20-16"><a href="#cb20-16"></a>  <span class="fu">theme_classic</span>() <span class="sc">+</span></span>
+<span id="cb20-17"><a href="#cb20-17"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span>  <span class="fu">c</span>(<span class="fl">0.875</span>, <span class="fl">0.3</span>)) <span class="sc">+</span></span>
+<span id="cb20-18"><a href="#cb20-18"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"人均 GDP"</span>, <span class="at">y =</span> <span class="st">"预期寿命"</span>, <span class="at">fill =</span> <span class="st">"区域"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-theme-custom" class="quarto-figure quarto-figure-center anchored" width="576">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-theme-custom-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="visualization-basic_files/figure-html/fig-theme-custom-1.png" class="img-fluid figure-img" width="576">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-theme-custom-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;6.14: 微调图例位置
+</figcaption></figure>
+</div>
+</div>
+</div>
+<p>或者更换其它主题，比如 <strong>ggthemes</strong> 包内置极简主题 <code>theme_tufte()</code>，它仅保留主刻度线，更加凸显数据。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1"></a><span class="fu">library</span>(ggthemes)</span>
+<span id="cb21-2"><a href="#cb21-2"></a><span class="fu">ggplot</span>(<span class="at">data =</span> gapminder, <span class="fu">aes</span>(<span class="at">x =</span> gdpPercap, <span class="at">y =</span> lifeExp)) <span class="sc">+</span></span>
+<span id="cb21-3"><a href="#cb21-3"></a>  <span class="fu">geom_point</span>(</span>
+<span id="cb21-4"><a href="#cb21-4"></a>    <span class="at">data =</span> <span class="cf">function</span>(x) <span class="fu">subset</span>(x, year <span class="sc">==</span> <span class="dv">2007</span>),</span>
+<span id="cb21-5"><a href="#cb21-5"></a>    <span class="fu">aes</span>(<span class="at">fill =</span> region, <span class="at">size =</span> pop),</span>
+<span id="cb21-6"><a href="#cb21-6"></a>    <span class="at">show.legend =</span> <span class="fu">c</span>(<span class="at">fill =</span> <span class="cn">TRUE</span>, <span class="at">size =</span> <span class="cn">FALSE</span>),</span>
+<span id="cb21-7"><a href="#cb21-7"></a>    <span class="at">shape =</span> <span class="dv">21</span>, <span class="at">col =</span> <span class="st">"white"</span></span>
+<span id="cb21-8"><a href="#cb21-8"></a>  ) <span class="sc">+</span></span>
+<span id="cb21-9"><a href="#cb21-9"></a>  <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(</span>
+<span id="cb21-10"><a href="#cb21-10"></a>    <span class="st">`</span><span class="at">拉丁美洲与加勒比海地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#E41A1C"</span>, <span class="st">`</span><span class="at">撒哈拉以南非洲地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#377EB8"</span>,</span>
+<span id="cb21-11"><a href="#cb21-11"></a>    <span class="st">`</span><span class="at">欧洲与中亚地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#4DAF4A"</span>, <span class="st">`</span><span class="at">中东与北非地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#984EA3"</span>,</span>
+<span id="cb21-12"><a href="#cb21-12"></a>    <span class="st">`</span><span class="at">东亚与太平洋地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#FF7F00"</span>, <span class="st">`</span><span class="at">南亚</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#FFFF33"</span>, <span class="st">`</span><span class="at">北美</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#A65628"</span></span>
+<span id="cb21-13"><a href="#cb21-13"></a>  )) <span class="sc">+</span></span>
+<span id="cb21-14"><a href="#cb21-14"></a>  <span class="fu">scale_size</span>(<span class="at">range =</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">12</span>)) <span class="sc">+</span></span>
+<span id="cb21-15"><a href="#cb21-15"></a>  <span class="fu">scale_x_log10</span>(</span>
+<span id="cb21-16"><a href="#cb21-16"></a>    <span class="at">labels =</span> <span class="fu">label_dollar</span>(), <span class="at">minor_breaks =</span> mb, <span class="at">limits =</span> <span class="fu">c</span>(<span class="dv">100</span>, <span class="dv">110000</span>)</span>
+<span id="cb21-17"><a href="#cb21-17"></a>  ) <span class="sc">+</span></span>
+<span id="cb21-18"><a href="#cb21-18"></a>  <span class="fu">theme_tufte</span>(<span class="at">base_family =</span> <span class="st">"Noto Serif CJK SC"</span>) <span class="sc">+</span></span>
+<span id="cb21-19"><a href="#cb21-19"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span>  <span class="fu">c</span>(<span class="fl">0.875</span>, <span class="fl">0.3</span>)) <span class="sc">+</span></span>
+<span id="cb21-20"><a href="#cb21-20"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"人均 GDP"</span>, <span class="at">y =</span> <span class="st">"预期寿命"</span>, <span class="at">fill =</span> <span class="st">"区域"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-theme-tufte" class="quarto-figure quarto-figure-center anchored" width="576">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-theme-tufte-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="visualization-basic_files/figure-html/fig-theme-tufte-1.png" class="img-fluid figure-img" width="576">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-theme-tufte-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;6.15: ggthemes 的极简主题 Tufte
+</figcaption></figure>
+</div>
+</div>
+</div>
+</section><section id="sec-annotation" class="level2" data-number="6.7"><h2 data-number="6.7" class="anchored" data-anchor-id="sec-annotation">
+<span class="header-section-number">6.7</span> 注释</h2>
+<p>注释可以是普通文本，数学公式，还可以是图形照片、表情包。注释功能非常强大，但也是非常灵活，往往使用起来颇费功夫，需要结合数据情况，从图形所要传递的信息出发，适当添加。R 语言社区陆续出现一些扩展包，让用户使用起来更方便些。</p>
+<ul>
+<li>
+<strong>ggrepel</strong> <span class="citation" data-cites="ggrepel2021">(<a href="references.html#ref-ggrepel2021" role="doc-biblioref">Slowikowski 2021</a>)</span> 包可以通过添加一定距离的扰动，可以缓解文本重叠的问题，更多内容见 (<a href="https://github.com/slowkow/ggrepel" class="uri">https://github.com/slowkow/ggrepel</a>)。</li>
+<li>
+<strong>ggtext</strong> <span class="citation" data-cites="ggtext2020">(<a href="references.html#ref-ggtext2020" role="doc-biblioref">Wilke 2020</a>)</span> 包支持以 Markdown 语法添加丰富的文本内容，更多内容见 (<a href="https://github.com/wilkelab/ggtext" class="uri">https://github.com/wilkelab/ggtext</a>)。</li>
+<li>
+<strong>string2path</strong> <span class="citation" data-cites="string2path2022">(<a href="references.html#ref-string2path2022" role="doc-biblioref">Yutani 2022</a>)</span> 包字体轮廓生成路径，注释文本随路径变化，更多内容见 (<a href="https://github.com/yutannihilation/string2path" class="uri">https://github.com/yutannihilation/string2path</a>)。</li>
+<li>
+<strong>ggimage</strong> <span class="citation" data-cites="ggimage2022">(<a href="references.html#ref-ggimage2022" role="doc-biblioref">Yu 2022</a>)</span> 包提供图像图层，实现以图片代替散点的效果，图片还可以是表情包，更多内容见 (<a href="https://github.com/GuangchuangYu/ggimage" class="uri">https://github.com/GuangchuangYu/ggimage</a>)。</li>
+</ul>
+<p>在 <a href="#fig-theme-tufte" class="quarto-xref">图&nbsp;<span>6.15</span></a> 的基础上，给人口总数大于 2 亿的国家添加文本注释。这可以用 <strong>ggplot2</strong> 包提供的文本图层函数 <code>geom_text()</code> 实现，效果如 <a href="#fig-text" class="quarto-xref">图&nbsp;<span>6.16</span></a> 。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1"></a><span class="fu">library</span>(ggrepel)</span>
+<span id="cb22-2"><a href="#cb22-2"></a><span class="fu">ggplot</span>(<span class="at">data =</span> gapminder, <span class="fu">aes</span>(<span class="at">x =</span> gdpPercap, <span class="at">y =</span> lifeExp)) <span class="sc">+</span></span>
+<span id="cb22-3"><a href="#cb22-3"></a>  <span class="fu">geom_point</span>(</span>
+<span id="cb22-4"><a href="#cb22-4"></a>    <span class="at">data =</span> <span class="cf">function</span>(x) <span class="fu">subset</span>(x, year <span class="sc">==</span> <span class="dv">2007</span>),</span>
+<span id="cb22-5"><a href="#cb22-5"></a>    <span class="fu">aes</span>(<span class="at">fill =</span> region, <span class="at">size =</span> pop),</span>
+<span id="cb22-6"><a href="#cb22-6"></a>    <span class="at">show.legend =</span> <span class="fu">c</span>(<span class="at">fill =</span> <span class="cn">TRUE</span>, <span class="at">size =</span> <span class="cn">FALSE</span>),</span>
+<span id="cb22-7"><a href="#cb22-7"></a>    <span class="at">shape =</span> <span class="dv">21</span>, <span class="at">col =</span> <span class="st">"white"</span></span>
+<span id="cb22-8"><a href="#cb22-8"></a>  ) <span class="sc">+</span></span>
+<span id="cb22-9"><a href="#cb22-9"></a>  <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(</span>
+<span id="cb22-10"><a href="#cb22-10"></a>    <span class="st">`</span><span class="at">拉丁美洲与加勒比海地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#E41A1C"</span>, <span class="st">`</span><span class="at">撒哈拉以南非洲地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#377EB8"</span>,</span>
+<span id="cb22-11"><a href="#cb22-11"></a>    <span class="st">`</span><span class="at">欧洲与中亚地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#4DAF4A"</span>, <span class="st">`</span><span class="at">中东与北非地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#984EA3"</span>,</span>
+<span id="cb22-12"><a href="#cb22-12"></a>    <span class="st">`</span><span class="at">东亚与太平洋地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#FF7F00"</span>, <span class="st">`</span><span class="at">南亚</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#FFFF33"</span>, <span class="st">`</span><span class="at">北美</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#A65628"</span></span>
+<span id="cb22-13"><a href="#cb22-13"></a>  )) <span class="sc">+</span></span>
+<span id="cb22-14"><a href="#cb22-14"></a>  <span class="fu">scale_x_log10</span>(</span>
+<span id="cb22-15"><a href="#cb22-15"></a>    <span class="at">labels =</span> <span class="fu">label_dollar</span>(), <span class="at">minor_breaks =</span> mb, <span class="at">limits =</span> <span class="fu">c</span>(<span class="dv">100</span>, <span class="dv">110000</span>)</span>
+<span id="cb22-16"><a href="#cb22-16"></a>  ) <span class="sc">+</span></span>
+<span id="cb22-17"><a href="#cb22-17"></a>  <span class="fu">geom_text</span>(</span>
+<span id="cb22-18"><a href="#cb22-18"></a>    <span class="at">data =</span> <span class="cf">function</span>(x) <span class="fu">subset</span>(x, year <span class="sc">==</span> <span class="dv">2007</span> <span class="sc">&amp;</span> pop <span class="sc">&gt;=</span> <span class="dv">20</span> <span class="sc">*</span> <span class="dv">10</span><span class="sc">^</span><span class="dv">7</span>),</span>
+<span id="cb22-19"><a href="#cb22-19"></a>    <span class="fu">aes</span>(<span class="at">label =</span> country), <span class="at">show.legend =</span> <span class="cn">FALSE</span></span>
+<span id="cb22-20"><a href="#cb22-20"></a>  ) <span class="sc">+</span></span>
+<span id="cb22-21"><a href="#cb22-21"></a>  <span class="fu">scale_size</span>(<span class="at">range =</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">12</span>)) <span class="sc">+</span></span>
+<span id="cb22-22"><a href="#cb22-22"></a>  <span class="fu">theme_tufte</span>(<span class="at">base_family =</span> <span class="st">"Noto Serif CJK SC"</span>) <span class="sc">+</span></span>
+<span id="cb22-23"><a href="#cb22-23"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="fu">c</span>(<span class="fl">0.9</span>, <span class="fl">0.3</span>)) <span class="sc">+</span></span>
+<span id="cb22-24"><a href="#cb22-24"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"人均 GDP"</span>, <span class="at">y =</span> <span class="st">"预期寿命"</span>, <span class="at">fill =</span> <span class="st">"区域"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-text" class="quarto-figure quarto-figure-center anchored" width="576">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-text-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="visualization-basic_files/figure-html/fig-text-1.png" class="img-fluid figure-img" width="576">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-text-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;6.16: 添加文本注释
+</figcaption></figure>
+</div>
+</div>
+</div>
+<p>当需要给许多点添加文本注释时，就难以避免地遇到注释文本重叠的问题。比如给人口总数大于 5000 万的国家添加文本注释，此时，适合使用 <strong>ggrepel</strong> 包，调用函数 <code>geom_text_repel()</code> — 这是一个新的文本图层，通过添加适当的位移缓解文本重叠问题。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1"></a><span class="fu">library</span>(ggrepel)</span>
+<span id="cb23-2"><a href="#cb23-2"></a><span class="fu">ggplot</span>(<span class="at">data =</span> gapminder, <span class="fu">aes</span>(<span class="at">x =</span> gdpPercap, <span class="at">y =</span> lifeExp)) <span class="sc">+</span></span>
+<span id="cb23-3"><a href="#cb23-3"></a>  <span class="fu">geom_point</span>(<span class="at">data =</span> <span class="cf">function</span>(x) <span class="fu">subset</span>(x, year <span class="sc">==</span> <span class="dv">2007</span>),</span>
+<span id="cb23-4"><a href="#cb23-4"></a>             <span class="fu">aes</span>(<span class="at">fill =</span> region, <span class="at">size =</span> pop),</span>
+<span id="cb23-5"><a href="#cb23-5"></a>    <span class="at">show.legend =</span> <span class="fu">c</span>(<span class="at">fill =</span> <span class="cn">TRUE</span>, <span class="at">size =</span> <span class="cn">FALSE</span>),</span>
+<span id="cb23-6"><a href="#cb23-6"></a>    <span class="at">shape =</span> <span class="dv">21</span>, <span class="at">col =</span> <span class="st">"white"</span></span>
+<span id="cb23-7"><a href="#cb23-7"></a>  ) <span class="sc">+</span></span>
+<span id="cb23-8"><a href="#cb23-8"></a>  <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(</span>
+<span id="cb23-9"><a href="#cb23-9"></a>    <span class="st">`</span><span class="at">拉丁美洲与加勒比海地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#E41A1C"</span>, <span class="st">`</span><span class="at">撒哈拉以南非洲地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#377EB8"</span>,</span>
+<span id="cb23-10"><a href="#cb23-10"></a>    <span class="st">`</span><span class="at">欧洲与中亚地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#4DAF4A"</span>, <span class="st">`</span><span class="at">中东与北非地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#984EA3"</span>,</span>
+<span id="cb23-11"><a href="#cb23-11"></a>    <span class="st">`</span><span class="at">东亚与太平洋地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#FF7F00"</span>, <span class="st">`</span><span class="at">南亚</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#FFFF33"</span>, <span class="st">`</span><span class="at">北美</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#A65628"</span></span>
+<span id="cb23-12"><a href="#cb23-12"></a>  )) <span class="sc">+</span></span>
+<span id="cb23-13"><a href="#cb23-13"></a>  <span class="fu">scale_x_log10</span>(</span>
+<span id="cb23-14"><a href="#cb23-14"></a>    <span class="at">labels =</span> <span class="fu">label_dollar</span>(), <span class="at">minor_breaks =</span> mb, <span class="at">limits =</span> <span class="fu">c</span>(<span class="dv">100</span>, <span class="dv">110000</span>)</span>
+<span id="cb23-15"><a href="#cb23-15"></a>  ) <span class="sc">+</span></span>
+<span id="cb23-16"><a href="#cb23-16"></a>  <span class="fu">geom_text_repel</span>(</span>
+<span id="cb23-17"><a href="#cb23-17"></a>    <span class="at">data =</span> <span class="cf">function</span>(x) <span class="fu">subset</span>(x, year <span class="sc">==</span> <span class="dv">2007</span> <span class="sc">&amp;</span> pop <span class="sc">&gt;=</span> <span class="dv">5</span> <span class="sc">*</span> <span class="dv">10</span><span class="sc">^</span><span class="dv">7</span>),</span>
+<span id="cb23-18"><a href="#cb23-18"></a>    <span class="fu">aes</span>(<span class="at">label =</span> country), <span class="at">size =</span> <span class="dv">3</span>, <span class="at">max.overlaps =</span> <span class="dv">50</span>,</span>
+<span id="cb23-19"><a href="#cb23-19"></a>    <span class="at">segment.colour =</span> <span class="st">"gray"</span>, <span class="at">seed =</span> <span class="dv">2022</span>, <span class="at">show.legend =</span> <span class="cn">FALSE</span></span>
+<span id="cb23-20"><a href="#cb23-20"></a>  ) <span class="sc">+</span></span>
+<span id="cb23-21"><a href="#cb23-21"></a>  <span class="fu">scale_size</span>(<span class="at">range =</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">12</span>)) <span class="sc">+</span></span>
+<span id="cb23-22"><a href="#cb23-22"></a>  <span class="fu">theme_tufte</span>(<span class="at">base_family =</span> <span class="st">"Noto Serif CJK SC"</span>) <span class="sc">+</span></span>
+<span id="cb23-23"><a href="#cb23-23"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="fu">c</span>(<span class="fl">0.9</span>, <span class="fl">0.3</span>)) <span class="sc">+</span></span>
+<span id="cb23-24"><a href="#cb23-24"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"人均 GDP"</span>, <span class="at">y =</span> <span class="st">"预期寿命"</span>, <span class="at">fill =</span> <span class="st">"区域"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-text-ggrepel" class="quarto-figure quarto-figure-center anchored" width="576">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-text-ggrepel-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="visualization-basic_files/figure-html/fig-text-ggrepel-1.png" class="img-fluid figure-img" width="576">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-text-ggrepel-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;6.17: 缓解文本注释相互覆盖的问题
+</figcaption></figure>
+</div>
+</div>
+</div>
+</section><section id="sec-facet" class="level2" data-number="6.8"><h2 data-number="6.8" class="anchored" data-anchor-id="sec-facet">
+<span class="header-section-number">6.8</span> 分面</h2>
+<p><strong>ggplot2</strong> 包有两个函数 <code>facet_wrap()</code> 和 <code>facet_grid()</code> 都可以用来实现分面操作，分面的目的是将数据切分，一块一块地展示。下面在 <a href="#fig-theme-tufte" class="quarto-xref">图&nbsp;<span>6.15</span></a> 的基础上，按收入水平变量分面，即将各个国家或地区按收入水平分开，效果如 <a href="#fig-facet-wrap" class="quarto-xref">图&nbsp;<span>6.18</span></a> 所示。<code>facet_grid()</code> 与 <code>facet_wrap()</code> 的效果是类似的，就不再赘述了。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1"></a><span class="fu">ggplot</span>(<span class="at">data =</span> gapminder, <span class="fu">aes</span>(<span class="at">x =</span> gdpPercap, <span class="at">y =</span> lifeExp)) <span class="sc">+</span></span>
+<span id="cb24-2"><a href="#cb24-2"></a>  <span class="fu">geom_point</span>(<span class="at">data =</span> <span class="cf">function</span>(x) <span class="fu">subset</span>(x, year <span class="sc">==</span> <span class="dv">2007</span>),</span>
+<span id="cb24-3"><a href="#cb24-3"></a>             <span class="fu">aes</span>(<span class="at">fill =</span> region, <span class="at">size =</span> pop),</span>
+<span id="cb24-4"><a href="#cb24-4"></a>    <span class="at">show.legend =</span> <span class="fu">c</span>(<span class="at">fill =</span> <span class="cn">TRUE</span>, <span class="at">size =</span> <span class="cn">FALSE</span>),</span>
+<span id="cb24-5"><a href="#cb24-5"></a>    <span class="at">shape =</span> <span class="dv">21</span>, <span class="at">col =</span> <span class="st">"white"</span></span>
+<span id="cb24-6"><a href="#cb24-6"></a>  ) <span class="sc">+</span></span>
+<span id="cb24-7"><a href="#cb24-7"></a>  <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(</span>
+<span id="cb24-8"><a href="#cb24-8"></a>    <span class="st">`</span><span class="at">拉丁美洲与加勒比海地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#E41A1C"</span>, <span class="st">`</span><span class="at">撒哈拉以南非洲地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#377EB8"</span>,</span>
+<span id="cb24-9"><a href="#cb24-9"></a>    <span class="st">`</span><span class="at">欧洲与中亚地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#4DAF4A"</span>, <span class="st">`</span><span class="at">中东与北非地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#984EA3"</span>,</span>
+<span id="cb24-10"><a href="#cb24-10"></a>    <span class="st">`</span><span class="at">东亚与太平洋地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#FF7F00"</span>, <span class="st">`</span><span class="at">南亚</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#FFFF33"</span>, <span class="st">`</span><span class="at">北美</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#A65628"</span></span>
+<span id="cb24-11"><a href="#cb24-11"></a>  )) <span class="sc">+</span></span>
+<span id="cb24-12"><a href="#cb24-12"></a>  <span class="fu">scale_size</span>(<span class="at">range =</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">12</span>)) <span class="sc">+</span></span>
+<span id="cb24-13"><a href="#cb24-13"></a>  <span class="fu">scale_x_log10</span>(<span class="at">labels =</span> <span class="fu">label_log</span>(), <span class="at">limits =</span> <span class="fu">c</span>(<span class="dv">100</span>, <span class="dv">110000</span>)) <span class="sc">+</span></span>
+<span id="cb24-14"><a href="#cb24-14"></a>  <span class="fu">facet_wrap</span>(<span class="at">facets =</span> <span class="sc">~</span>income_level, <span class="at">ncol =</span> <span class="dv">2</span>) <span class="sc">+</span></span>
+<span id="cb24-15"><a href="#cb24-15"></a>  <span class="fu">theme_classic</span>() <span class="sc">+</span></span>
+<span id="cb24-16"><a href="#cb24-16"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"人均 GDP"</span>, <span class="at">y =</span> <span class="st">"预期寿命"</span>, <span class="at">fill =</span> <span class="st">"区域"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-facet-wrap" class="quarto-figure quarto-figure-center anchored" width="672">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-facet-wrap-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="visualization-basic_files/figure-html/fig-facet-wrap-1.png" class="img-fluid figure-img" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-facet-wrap-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;6.18: 按收入水平变量分面
+</figcaption></figure>
+</div>
+</div>
+</div>
+<p>在函数 <code>facet_wrap()</code> 内设置不同的参数值，会有不同的排列效果。设置 <code>ncol = 3</code>，意味着排成 3 列，而分类变量 continent 总共有 5 种不同的类别，因此将会是 3 列 2 行的布局，效果如下 <a href="#fig-facet-ncol" class="quarto-xref">图&nbsp;<span>6.19</span></a> 。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1"></a><span class="fu">ggplot</span>(<span class="at">data =</span> gapminder, <span class="fu">aes</span>(<span class="at">x =</span> gdpPercap, <span class="at">y =</span> lifeExp)) <span class="sc">+</span></span>
+<span id="cb25-2"><a href="#cb25-2"></a>  <span class="fu">geom_point</span>(<span class="at">data =</span> <span class="cf">function</span>(x) <span class="fu">subset</span>(x, year <span class="sc">==</span> <span class="dv">2007</span>),</span>
+<span id="cb25-3"><a href="#cb25-3"></a>             <span class="fu">aes</span>(<span class="at">fill =</span> region, <span class="at">size =</span> pop),</span>
+<span id="cb25-4"><a href="#cb25-4"></a>    <span class="at">show.legend =</span> <span class="fu">c</span>(<span class="at">fill =</span> <span class="cn">TRUE</span>, <span class="at">size =</span> <span class="cn">FALSE</span>),</span>
+<span id="cb25-5"><a href="#cb25-5"></a>    <span class="at">shape =</span> <span class="dv">21</span>, <span class="at">col =</span> <span class="st">"white"</span></span>
+<span id="cb25-6"><a href="#cb25-6"></a>  ) <span class="sc">+</span></span>
+<span id="cb25-7"><a href="#cb25-7"></a>  <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(</span>
+<span id="cb25-8"><a href="#cb25-8"></a>    <span class="st">`</span><span class="at">拉丁美洲与加勒比海地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#E41A1C"</span>, <span class="st">`</span><span class="at">撒哈拉以南非洲地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#377EB8"</span>,</span>
+<span id="cb25-9"><a href="#cb25-9"></a>    <span class="st">`</span><span class="at">欧洲与中亚地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#4DAF4A"</span>, <span class="st">`</span><span class="at">中东与北非地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#984EA3"</span>,</span>
+<span id="cb25-10"><a href="#cb25-10"></a>    <span class="st">`</span><span class="at">东亚与太平洋地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#FF7F00"</span>, <span class="st">`</span><span class="at">南亚</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#FFFF33"</span>, <span class="st">`</span><span class="at">北美</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#A65628"</span></span>
+<span id="cb25-11"><a href="#cb25-11"></a>  )) <span class="sc">+</span></span>
+<span id="cb25-12"><a href="#cb25-12"></a>  <span class="fu">scale_size</span>(<span class="at">range =</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">12</span>)) <span class="sc">+</span></span>
+<span id="cb25-13"><a href="#cb25-13"></a>  <span class="fu">scale_x_log10</span>(<span class="at">labels =</span> <span class="fu">label_log</span>(), <span class="at">limits =</span> <span class="fu">c</span>(<span class="dv">100</span>, <span class="dv">110000</span>)) <span class="sc">+</span></span>
+<span id="cb25-14"><a href="#cb25-14"></a>  <span class="fu">facet_wrap</span>(<span class="at">facets =</span> <span class="sc">~</span>income_level, <span class="at">ncol =</span> <span class="dv">3</span>) <span class="sc">+</span></span>
+<span id="cb25-15"><a href="#cb25-15"></a>  <span class="fu">theme_classic</span>() <span class="sc">+</span></span>
+<span id="cb25-16"><a href="#cb25-16"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="fu">c</span>(<span class="fl">0.9</span>, <span class="fl">0.2</span>)) <span class="sc">+</span></span>
+<span id="cb25-17"><a href="#cb25-17"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"人均 GDP"</span>, <span class="at">y =</span> <span class="st">"预期寿命"</span>, <span class="at">fill =</span> <span class="st">"区域"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-facet-ncol" class="quarto-figure quarto-figure-center anchored" width="672">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-facet-ncol-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="visualization-basic_files/figure-html/fig-facet-ncol-1.png" class="img-fluid figure-img" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-facet-ncol-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;6.19: 按区域变量分面
+</figcaption></figure>
+</div>
+</div>
+</div>
+</section><section id="sec-animate" class="level2" data-number="6.9"><h2 data-number="6.9" class="anchored" data-anchor-id="sec-animate">
+<span class="header-section-number">6.9</span> 动画</h2>
+<p>从 1991 年至 2020 年，gapminder 数据集一共是 30 年的数据。根据 2007 年的数据绘制了 <a href="#fig-animate" class="quarto-xref">图&nbsp;<span>6.20</span></a> ，每年的数据绘制一幅图像，30 年总共可获得 30 帧图像，再以每秒播放 6 帧图像的速度将 30 帧图像合成 GIF 动画。因此，设置这个动画总共 30 帧，每秒播放的图像数为 6。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1"></a><span class="fu">options</span>(<span class="at">gganimate.nframes =</span> <span class="dv">30</span>, <span class="at">gganimate.fps =</span> <span class="dv">6</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p><strong>gganimate</strong> 包提供一套代码风格类似 <strong>ggplot2</strong> 包的动态图形语法，可以非常顺滑地与之连接。在了解了 ggplot2 绘制图形的过程后，用 <strong>gganimate</strong> 包制作动画是非常容易的。<strong>gganimate</strong> 包会调用 <strong>gifski</strong> (<a href="https://github.com/r-rust/gifski" class="uri">https://github.com/r-rust/gifski</a>) 包来合成动画，因此，除了安装 <strong>gganimate</strong> 包，还需要安装 <strong>gifski</strong> 包。接着，在已有的 <strong>ggplot2</strong> 绘图代码基础上，再追加一个转场图层函数 <code>transition_time()</code>，这里是按年逐帧展示图像，因此，其转场的时间变量为 gapminder 数据集中的变量 <code>year</code>。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1"></a><span class="fu">library</span>(gganimate)</span>
+<span id="cb27-2"><a href="#cb27-2"></a><span class="fu">ggplot</span>(<span class="at">data =</span> gapminder, <span class="fu">aes</span>(<span class="at">x =</span> gdpPercap, <span class="at">y =</span> lifeExp)) <span class="sc">+</span></span>
+<span id="cb27-3"><a href="#cb27-3"></a>  <span class="fu">geom_point</span>(<span class="fu">aes</span>(<span class="at">fill =</span> region, <span class="at">size =</span> pop),</span>
+<span id="cb27-4"><a href="#cb27-4"></a>    <span class="at">show.legend =</span> <span class="fu">c</span>(<span class="at">fill =</span> <span class="cn">TRUE</span>, <span class="at">size =</span> <span class="cn">FALSE</span>), </span>
+<span id="cb27-5"><a href="#cb27-5"></a>    <span class="at">alpha =</span> <span class="fl">0.65</span>, <span class="at">shape =</span> <span class="dv">21</span>, <span class="at">col =</span> <span class="st">"white"</span></span>
+<span id="cb27-6"><a href="#cb27-6"></a>  ) <span class="sc">+</span></span>
+<span id="cb27-7"><a href="#cb27-7"></a>  <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(</span>
+<span id="cb27-8"><a href="#cb27-8"></a>    <span class="st">`</span><span class="at">拉丁美洲与加勒比海地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#E41A1C"</span>, <span class="st">`</span><span class="at">撒哈拉以南非洲地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#377EB8"</span>,</span>
+<span id="cb27-9"><a href="#cb27-9"></a>    <span class="st">`</span><span class="at">欧洲与中亚地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#4DAF4A"</span>, <span class="st">`</span><span class="at">中东与北非地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#984EA3"</span>,</span>
+<span id="cb27-10"><a href="#cb27-10"></a>    <span class="st">`</span><span class="at">东亚与太平洋地区</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#FF7F00"</span>, <span class="st">`</span><span class="at">南亚</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#FFFF33"</span>, <span class="st">`</span><span class="at">北美</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#A65628"</span></span>
+<span id="cb27-11"><a href="#cb27-11"></a>  )) <span class="sc">+</span></span>
+<span id="cb27-12"><a href="#cb27-12"></a>  <span class="fu">scale_size</span>(<span class="at">range =</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">12</span>), <span class="at">labels =</span> <span class="fu">label_number</span>(<span class="at">scale_cut =</span> <span class="fu">cut_short_scale</span>())) <span class="sc">+</span></span>
+<span id="cb27-13"><a href="#cb27-13"></a>  <span class="fu">scale_x_log10</span>(<span class="at">labels =</span> <span class="fu">label_log</span>(), <span class="at">limits =</span> <span class="fu">c</span>(<span class="dv">10</span>, <span class="dv">130000</span>)) <span class="sc">+</span></span>
+<span id="cb27-14"><a href="#cb27-14"></a>  <span class="fu">facet_wrap</span>(<span class="at">facets =</span> <span class="sc">~</span>income_level) <span class="sc">+</span></span>
+<span id="cb27-15"><a href="#cb27-15"></a>  <span class="fu">theme_classic</span>() <span class="sc">+</span></span>
+<span id="cb27-16"><a href="#cb27-16"></a>  <span class="fu">labs</span>(</span>
+<span id="cb27-17"><a href="#cb27-17"></a>    <span class="at">title =</span> <span class="st">"{frame_time} 年"</span>, <span class="at">x =</span> <span class="st">"人均 GDP"</span>,</span>
+<span id="cb27-18"><a href="#cb27-18"></a>    <span class="at">y =</span> <span class="st">"预期寿命"</span>, <span class="at">size =</span> <span class="st">"人口总数"</span>, <span class="at">fill =</span> <span class="st">"区域"</span></span>
+<span id="cb27-19"><a href="#cb27-19"></a>  ) <span class="sc">+</span></span>
+<span id="cb27-20"><a href="#cb27-20"></a>  <span class="fu">transition_time</span>(<span class="at">time =</span> year)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-animate" class="quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-animate-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="visualization-basic_files/figure-html/fig-animate-1.gif" class="img-fluid figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-animate-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;6.20: 制作动画
+</figcaption></figure>
+</div>
+</div>
+</div>
+</section><section id="sec-combine" class="level2" data-number="6.10"><h2 data-number="6.10" class="anchored" data-anchor-id="sec-combine">
+<span class="header-section-number">6.10</span> 组合</h2>
+<p>将多幅小图组合起来构成一幅大图也是常见的需求，常见于出版级、产品级的作品中。组合涉及到布局，布局涉及到层次。有的组合图是从不同角度呈现数据，有的组合图是从传递信息的主次出发，等等。<strong>patchwork</strong> 包是非常流行的一个基于 <strong>ggplot2</strong> 的用于图形组合的 R 包，下面基于 faithful 数据展示绘制组合图形的过程。</p>
+<p>首先根据喷发时间将 faithful 数据分成两组。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1"></a><span class="co"># 根据喷发时间将数据分成两组</span></span>
+<span id="cb28-2"><a href="#cb28-2"></a>faithful <span class="ot">&lt;-</span> <span class="fu">transform</span>(faithful, <span class="at">group =</span> <span class="fu">ifelse</span>(eruptions <span class="sc">&gt;</span> <span class="dv">3</span>, <span class="st">"A"</span>, <span class="st">"B"</span>))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>绘制分组散点图，叠加二维核密度曲线。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1"></a><span class="co"># 绘制分组散点图</span></span>
+<span id="cb29-2"><a href="#cb29-2"></a>scatterplot <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(faithful, <span class="fu">aes</span>(eruptions, waiting, <span class="at">color =</span> group)) <span class="sc">+</span></span>
+<span id="cb29-3"><a href="#cb29-3"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span></span>
+<span id="cb29-4"><a href="#cb29-4"></a>  <span class="fu">geom_density_2d</span>() <span class="sc">+</span></span>
+<span id="cb29-5"><a href="#cb29-5"></a>  <span class="fu">theme_classic</span>() <span class="sc">+</span></span>
+<span id="cb29-6"><a href="#cb29-6"></a>  <span class="fu">theme</span>(<span class="at">axis.text =</span> <span class="fu">element_blank</span>(), <span class="at">axis.title =</span> <span class="fu">element_blank</span>())</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>将上图中的图例单独抽取出来，作为一个子图。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1"></a><span class="co"># https://stackoverflow.com/questions/46079033/</span></span>
+<span id="cb30-2"><a href="#cb30-2"></a><span class="co"># Extract legend from ggplot object</span></span>
+<span id="cb30-3"><a href="#cb30-3"></a>extract_legend <span class="ot">&lt;-</span> <span class="cf">function</span>(gg) {</span>
+<span id="cb30-4"><a href="#cb30-4"></a>  grobs <span class="ot">&lt;-</span> <span class="fu">ggplot_gtable</span>(<span class="fu">ggplot_build</span>(gg))</span>
+<span id="cb30-5"><a href="#cb30-5"></a>  foo <span class="ot">&lt;-</span> <span class="fu">which</span>(<span class="fu">sapply</span>(grobs<span class="sc">$</span>grobs, <span class="cf">function</span>(x) x<span class="sc">$</span>name) <span class="sc">==</span> <span class="st">"guide-box"</span>)</span>
+<span id="cb30-6"><a href="#cb30-6"></a>  grobs<span class="sc">$</span>grobs[[foo]]</span>
+<span id="cb30-7"><a href="#cb30-7"></a>}</span>
+<span id="cb30-8"><a href="#cb30-8"></a>legend <span class="ot">&lt;-</span> <span class="fu">extract_legend</span>(scatterplot)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>获得图例后，原图中不需要图例了。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1"></a>scatterplot <span class="ot">&lt;-</span> scatterplot <span class="sc">+</span> <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"none"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>准备两个箱线图分别描述 faithful 数据集中的等待时间 waiting 和喷发时间 eruptions 。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1"></a>boxplot_left <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(faithful, <span class="fu">aes</span>(group, waiting, <span class="at">fill =</span> group)) <span class="sc">+</span></span>
+<span id="cb32-2"><a href="#cb32-2"></a>  <span class="fu">geom_boxplot</span>() <span class="sc">+</span></span>
+<span id="cb32-3"><a href="#cb32-3"></a>  <span class="fu">theme_classic</span>() <span class="sc">+</span></span>
+<span id="cb32-4"><a href="#cb32-4"></a>  <span class="fu">theme</span>(</span>
+<span id="cb32-5"><a href="#cb32-5"></a>    <span class="at">legend.position =</span> <span class="st">"none"</span>, <span class="at">axis.ticks.x =</span> <span class="fu">element_blank</span>(),</span>
+<span id="cb32-6"><a href="#cb32-6"></a>    <span class="at">axis.text.x =</span> <span class="fu">element_blank</span>(), <span class="at">axis.title.x =</span> <span class="fu">element_blank</span>()</span>
+<span id="cb32-7"><a href="#cb32-7"></a>  )</span>
+<span id="cb32-8"><a href="#cb32-8"></a></span>
+<span id="cb32-9"><a href="#cb32-9"></a>boxplot_bottom <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(faithful, <span class="fu">aes</span>(group, eruptions, <span class="at">fill =</span> group)) <span class="sc">+</span></span>
+<span id="cb32-10"><a href="#cb32-10"></a>  <span class="fu">geom_boxplot</span>() <span class="sc">+</span></span>
+<span id="cb32-11"><a href="#cb32-11"></a>  <span class="fu">theme_classic</span>() <span class="sc">+</span></span>
+<span id="cb32-12"><a href="#cb32-12"></a>  <span class="fu">theme</span>(</span>
+<span id="cb32-13"><a href="#cb32-13"></a>    <span class="at">legend.position =</span> <span class="st">"none"</span>, <span class="at">axis.ticks.y =</span> <span class="fu">element_blank</span>(),</span>
+<span id="cb32-14"><a href="#cb32-14"></a>    <span class="at">axis.text.y =</span> <span class="fu">element_blank</span>(), <span class="at">axis.title.y =</span> <span class="fu">element_blank</span>()</span>
+<span id="cb32-15"><a href="#cb32-15"></a>  ) <span class="sc">+</span></span>
+<span id="cb32-16"><a href="#cb32-16"></a>  <span class="fu">coord_flip</span>()</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>加载 <strong>patchwork</strong> 包，使用函数 <code>wrap_plots()</code> 组合 <code>boxplot_left</code> 、<code>scatterplot</code> 、<code>legend</code> 和 <code>boxplot_bottom</code> 四个子图，最终效果见下图。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1"></a><span class="fu">library</span>(patchwork)</span>
+<span id="cb33-2"><a href="#cb33-2"></a>top <span class="ot">&lt;-</span> <span class="fu">wrap_plots</span>(boxplot_left, scatterplot, <span class="at">ncol =</span> <span class="dv">2</span>, <span class="at">widths =</span> <span class="fu">c</span>(<span class="fl">0.2</span>, <span class="fl">0.8</span>))</span>
+<span id="cb33-3"><a href="#cb33-3"></a>bottom <span class="ot">&lt;-</span> <span class="fu">wrap_plots</span>(legend, boxplot_bottom, <span class="at">ncol =</span> <span class="dv">2</span>, <span class="at">widths =</span> <span class="fu">c</span>(<span class="fl">0.22</span>, <span class="fl">0.8</span>))</span>
+<span id="cb33-4"><a href="#cb33-4"></a>final <span class="ot">&lt;-</span> <span class="fu">wrap_plots</span>(top, bottom, <span class="at">nrow =</span> <span class="dv">2</span>, <span class="at">heights =</span> <span class="fu">c</span>(<span class="fl">0.8</span>, <span class="fl">0.2</span>))</span>
+<span id="cb33-5"><a href="#cb33-5"></a>final</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-patchwork" class="quarto-figure quarto-figure-center anchored" width="576">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-patchwork-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="visualization-basic_files/figure-html/fig-patchwork-1.png" class="img-fluid figure-img" width="576">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-patchwork-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;6.21: patchwork 组合多幅子图
+</figcaption></figure>
+</div>
+</div>
+</div>
+<p>主图是占据着最大篇幅的叠加二维密度曲线的散点图，展示数据的二维分布，两个箱线图辅助展示等待时间 waiting 和喷发时间 eruptions 的分布，而左下角的图例是次要的说明。</p>
+</section><section id="sec-arts" class="level2" data-number="6.11"><h2 data-number="6.11" class="anchored" data-anchor-id="sec-arts">
+<span class="header-section-number">6.11</span> 艺术</h2>
+<p><a href="https://georgemsavva.github.io/creativecoding/">Georgios Karamanis</a> 基于 R 语言和扩展包 <strong>ggforce</strong> 制作了一系列生成艺术（Generative Arts）作品。下图是 <strong>ggforce</strong> 包的 4 个图层函数 <code>geom_regon()</code>、 <code>geom_spiro()</code>、 <code>geom_diagonal()</code> 和 <code>geom_spoke()</code> 分别生成的四幅图片。</p>
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1"></a><span class="fu">library</span>(ggforce)</span>
+<span id="cb34-2"><a href="#cb34-2"></a>s <span class="ot">&lt;-</span> <span class="dv">900</span></span>
+<span id="cb34-3"><a href="#cb34-3"></a><span class="fu">ggplot</span>() <span class="sc">+</span></span>
+<span id="cb34-4"><a href="#cb34-4"></a>  <span class="fu">geom_regon</span>(<span class="fu">aes</span>(</span>
+<span id="cb34-5"><a href="#cb34-5"></a>    <span class="at">x0 =</span> <span class="fu">cos</span>((<span class="dv">1</span><span class="sc">:</span>s) <span class="sc">/</span> <span class="dv">57</span>), <span class="at">y0 =</span> <span class="fu">sin</span>((<span class="dv">1</span><span class="sc">:</span>s) <span class="sc">/</span> <span class="dv">57</span>),</span>
+<span id="cb34-6"><a href="#cb34-6"></a>    <span class="at">sides =</span> <span class="dv">6</span>, <span class="at">r =</span> <span class="fu">cos</span>((<span class="dv">1</span><span class="sc">:</span>s) <span class="sc">/</span> <span class="dv">24</span>),</span>
+<span id="cb34-7"><a href="#cb34-7"></a>    <span class="at">angle =</span> <span class="fu">cos</span>((<span class="dv">1</span><span class="sc">:</span>s) <span class="sc">/</span> <span class="dv">23</span>), <span class="at">color =</span> <span class="dv">1</span><span class="sc">:</span>s <span class="sc">%%</span> <span class="dv">15</span></span>
+<span id="cb34-8"><a href="#cb34-8"></a>  ),</span>
+<span id="cb34-9"><a href="#cb34-9"></a>  <span class="at">linewidth =</span> <span class="fl">0.2</span>, <span class="at">fill =</span> <span class="cn">NA</span>, <span class="at">linetype =</span> <span class="st">"twodash"</span></span>
+<span id="cb34-10"><a href="#cb34-10"></a>  ) <span class="sc">+</span></span>
+<span id="cb34-11"><a href="#cb34-11"></a>  <span class="fu">scale_color_viridis_c</span>(<span class="at">option =</span> <span class="dv">15</span>, <span class="at">guide =</span> <span class="st">"none"</span>) <span class="sc">+</span></span>
+<span id="cb34-12"><a href="#cb34-12"></a>  <span class="fu">coord_fixed</span>() <span class="sc">+</span></span>
+<span id="cb34-13"><a href="#cb34-13"></a>  <span class="fu">theme_void</span>()</span>
+<span id="cb34-14"><a href="#cb34-14"></a></span>
+<span id="cb34-15"><a href="#cb34-15"></a>r <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">1</span>, <span class="dv">11</span>, <span class="fl">0.1</span>)</span>
+<span id="cb34-16"><a href="#cb34-16"></a><span class="fu">ggplot</span>() <span class="sc">+</span></span>
+<span id="cb34-17"><a href="#cb34-17"></a>  <span class="fu">geom_spiro</span>(<span class="fu">aes</span>(<span class="at">r =</span> r, <span class="at">R =</span> r <span class="sc">*</span> <span class="dv">20</span>, <span class="at">d =</span> r<span class="sc">^</span><span class="dv">2</span>, <span class="at">outer =</span> T, <span class="at">color =</span> r <span class="sc">%%</span> <span class="dv">10</span>), <span class="at">linewidth =</span> <span class="dv">3</span>) <span class="sc">+</span></span>
+<span id="cb34-18"><a href="#cb34-18"></a>  <span class="fu">scale_color_viridis_c</span>(<span class="at">option =</span> <span class="st">"turbo"</span>) <span class="sc">+</span></span>
+<span id="cb34-19"><a href="#cb34-19"></a>  <span class="fu">coord_fixed</span>() <span class="sc">+</span></span>
+<span id="cb34-20"><a href="#cb34-20"></a>  <span class="fu">theme_void</span>() <span class="sc">+</span></span>
+<span id="cb34-21"><a href="#cb34-21"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"none"</span>)</span>
+<span id="cb34-22"><a href="#cb34-22"></a></span>
+<span id="cb34-23"><a href="#cb34-23"></a>s <span class="ot">&lt;-</span> <span class="dv">1200</span></span>
+<span id="cb34-24"><a href="#cb34-24"></a><span class="fu">ggplot</span>() <span class="sc">+</span></span>
+<span id="cb34-25"><a href="#cb34-25"></a>  <span class="fu">geom_diagonal</span>(<span class="fu">aes</span>(</span>
+<span id="cb34-26"><a href="#cb34-26"></a>    <span class="at">x =</span> <span class="fu">cos</span>(<span class="fu">seq</span>(<span class="dv">0</span>, pi, <span class="at">length.out =</span> s)),</span>
+<span id="cb34-27"><a href="#cb34-27"></a>    <span class="at">y =</span> <span class="fu">sin</span>(<span class="fu">seq</span>(<span class="dv">0</span>, pi, <span class="at">length.out =</span> s)),</span>
+<span id="cb34-28"><a href="#cb34-28"></a>    <span class="at">xend =</span> <span class="fu">cos</span>(<span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">360</span> <span class="sc">*</span> pi, <span class="at">length.out =</span> s)),</span>
+<span id="cb34-29"><a href="#cb34-29"></a>    <span class="at">yend =</span> <span class="fu">sin</span>(<span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">360</span> <span class="sc">*</span> pi, <span class="at">length.out =</span> s))</span>
+<span id="cb34-30"><a href="#cb34-30"></a>  ),</span>
+<span id="cb34-31"><a href="#cb34-31"></a>  <span class="at">linewidth =</span> <span class="fl">0.1</span>, <span class="at">strength =</span> <span class="dv">1</span></span>
+<span id="cb34-32"><a href="#cb34-32"></a>  ) <span class="sc">+</span></span>
+<span id="cb34-33"><a href="#cb34-33"></a>  <span class="fu">coord_fixed</span>() <span class="sc">+</span></span>
+<span id="cb34-34"><a href="#cb34-34"></a>  <span class="fu">theme_void</span>()</span>
+<span id="cb34-35"><a href="#cb34-35"></a></span>
+<span id="cb34-36"><a href="#cb34-36"></a>e <span class="ot">&lt;-</span> <span class="fl">1e-3</span></span>
+<span id="cb34-37"><a href="#cb34-37"></a>s <span class="ot">&lt;-</span> <span class="fl">1e4</span></span>
+<span id="cb34-38"><a href="#cb34-38"></a>t <span class="ot">&lt;-</span> pi <span class="sc">/</span> <span class="dv">2</span> <span class="sc">*</span> <span class="fu">cumsum</span>(<span class="fu">seq</span>(e, <span class="sc">-</span>e, <span class="at">length.out =</span> s))<span class="sc">^</span><span class="dv">3</span></span>
+<span id="cb34-39"><a href="#cb34-39"></a><span class="fu">ggplot</span>() <span class="sc">+</span></span>
+<span id="cb34-40"><a href="#cb34-40"></a>  <span class="fu">geom_spoke</span>(<span class="fu">aes</span>(</span>
+<span id="cb34-41"><a href="#cb34-41"></a>    <span class="at">x =</span> <span class="fu">cumsum</span>(<span class="fu">cos</span>(t)), <span class="at">y =</span> <span class="fu">cumsum</span>(<span class="fu">sin</span>(t)),</span>
+<span id="cb34-42"><a href="#cb34-42"></a>    <span class="at">angle =</span> t, <span class="at">color =</span> t, <span class="at">radius =</span> <span class="dv">1</span><span class="sc">:</span>s <span class="sc">%%</span> <span class="dv">500</span></span>
+<span id="cb34-43"><a href="#cb34-43"></a>  ), <span class="at">alpha =</span> <span class="fl">0.5</span>) <span class="sc">+</span></span>
+<span id="cb34-44"><a href="#cb34-44"></a>  <span class="fu">scale_color_distiller</span>(<span class="at">palette =</span> <span class="dv">15</span>, <span class="at">guide =</span> <span class="st">"none"</span>) <span class="sc">+</span></span>
+<span id="cb34-45"><a href="#cb34-45"></a>  <span class="fu">coord_fixed</span>() <span class="sc">+</span></span>
+<span id="cb34-46"><a href="#cb34-46"></a>  <span class="fu">theme_void</span>()</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="fig-arts" class="quarto-layout-panel">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-arts-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="quarto-layout-row quarto-layout-valign-top">
+<div class="cell-output-display quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-arts" style="flex-basis: 50.0%;justify-content: center;">
+<div id="fig-arts-1" class="quarto-figure quarto-figure-center anchored" width="384">
+<figure class="quarto-float quarto-subfloat-fig figure"><div aria-describedby="fig-arts-1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="visualization-basic_files/figure-html/fig-arts-1.png" class="img-fluid figure-img" data-ref-parent="fig-arts" width="384">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-subfloat-caption quarto-subfloat-fig" id="fig-arts-1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+(a) 函数 <code>geom_regon()</code>
+</figcaption></figure>
+</div>
+</div>
+<div class="cell-output-display quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-arts" style="flex-basis: 50.0%;justify-content: center;">
+<div id="fig-arts-2" class="quarto-figure quarto-figure-center anchored" width="384">
+<figure class="quarto-float quarto-subfloat-fig figure"><div aria-describedby="fig-arts-2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="visualization-basic_files/figure-html/fig-arts-2.png" class="img-fluid figure-img" data-ref-parent="fig-arts" width="384">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-subfloat-caption quarto-subfloat-fig" id="fig-arts-2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+(b) 函数 <code>geom_spiro()</code>
+</figcaption></figure>
+</div>
+</div>
+</div>
+<div class="quarto-layout-row quarto-layout-valign-top">
+<div class="cell-output-display quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-arts" style="flex-basis: 50.0%;justify-content: center;">
+<div id="fig-arts-3" class="quarto-figure quarto-figure-center anchored" width="384">
+<figure class="quarto-float quarto-subfloat-fig figure"><div aria-describedby="fig-arts-3-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="visualization-basic_files/figure-html/fig-arts-3.png" class="img-fluid figure-img" data-ref-parent="fig-arts" width="384">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-subfloat-caption quarto-subfloat-fig" id="fig-arts-3-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+(c) 函数 <code>geom_diagonal()</code>
+</figcaption></figure>
+</div>
+</div>
+<div class="cell-output-display quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-arts" style="flex-basis: 50.0%;justify-content: center;">
+<div id="fig-arts-4" class="quarto-figure quarto-figure-center anchored" width="384">
+<figure class="quarto-float quarto-subfloat-fig figure"><div aria-describedby="fig-arts-4-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="visualization-basic_files/figure-html/fig-arts-4.png" class="img-fluid figure-img" data-ref-parent="fig-arts" width="384">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-subfloat-caption quarto-subfloat-fig" id="fig-arts-4-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+(d) 函数 <code>geom_spoke()</code>
+</figcaption></figure>
+</div>
+</div>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-arts-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;6.22: R 语言与生成艺术
+</figcaption></figure>
+</div>
+<p>需要充满想象，或借助数学、物理方程，或借助算法、数据生成。好看，但没什么用的生成艺术作品。</p>
+<ul>
+<li><a href="https://art-from-code.netlify.app/" class="uri">https://art-from-code.netlify.app/</a></li>
+<li><a href="https://clauswilke.com/art/project/before-after" class="uri">https://clauswilke.com/art/project/before-after</a></li>
+<li><a href="https://clauswilke.com/art/" class="uri">https://clauswilke.com/art/</a></li>
+<li><a href="https://art.djnavarro.net/" class="uri">https://art.djnavarro.net/</a></li>
+<li><a href="https://www.data-imaginist.com/art" class="uri">https://www.data-imaginist.com/art</a></li>
+</ul>
+
+
+<div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list" style="display: none">
+<div id="ref-ggthemes2021" class="csl-entry" role="listitem">
+Arnold, Jeffrey B. 2021. <em><span>ggthemes</span>: Extra Themes, Scales and Geoms for <span>ggplot2</span></em>. <a href="https://CRAN.R-project.org/package=ggthemes">https://CRAN.R-project.org/package=ggthemes</a>.
+</div>
+<div id="ref-ggtech2018" class="csl-entry" role="listitem">
+Bion, Ricardo. 2018. <em><span>ggtech</span>: <span>ggplot2</span> tech themes and scales</em>.
+</div>
+<div id="ref-viridis2021" class="csl-entry" role="listitem">
+Garnier, Simon, Ross, Noam, Rudis, Robert, Camargo, 等. 2021. <em><span>viridis</span>: Colorblind-Friendly Color Maps for <span>R</span></em>. <a href="https://doi.org/10.5281/zenodo.4679424">https://doi.org/10.5281/zenodo.4679424</a>.
+</div>
+<div id="ref-ggThemeAssist2016" class="csl-entry" role="listitem">
+Gross, Calli, 和 Philipp Ottolinger. 2016. <em><span>ggThemeAssist</span>: Add-in to Customize <span>ggplot2</span> Themes</em>. <a href="https://CRAN.R-project.org/package=ggThemeAssist">https://CRAN.R-project.org/package=ggThemeAssist</a>.
+</div>
+<div id="ref-pilot2022" class="csl-entry" role="listitem">
+Hawkins, Oliver. 2022. <em><span>pilot</span>: A minimal <span>ggplot2</span> theme with an accessible discrete color palette</em>. <a href="https://github.com/olihawkins/pilot">https://github.com/olihawkins/pilot</a>.
+</div>
+<div id="ref-paletteer2021" class="csl-entry" role="listitem">
+Hvitfeldt, Emil. 2021. <em><span>paletteer</span>: Comprehensive Collection of Color Palettes</em>. <a href="https://github.com/EmilHvitfeldt/paletteer">https://github.com/EmilHvitfeldt/paletteer</a>.
+</div>
+<div id="ref-colormap2016" class="csl-entry" role="listitem">
+Karambelkar, Bhaskar. 2016. <em><span>colormap</span>: Color Palettes using Colormaps Node Module</em>. <a href="https://CRAN.R-project.org/package=colormap">https://CRAN.R-project.org/package=colormap</a>.
+</div>
+<div id="ref-ggpubr2022" class="csl-entry" role="listitem">
+Kassambara, Alboukadel. 2022. <em><span>ggpubr</span>: <span>ggplot2</span> Based Publication Ready Plots</em>. <a href="https://CRAN.R-project.org/package=ggpubr">https://CRAN.R-project.org/package=ggpubr</a>.
+</div>
+<div id="ref-ggcharts2020" class="csl-entry" role="listitem">
+Neitmann, Thomas. 2020. <em><span>ggcharts</span>: Shorten the Distance from Data Visualization Idea to Actual Plot</em>. <a href="https://CRAN.R-project.org/package=ggcharts">https://CRAN.R-project.org/package=ggcharts</a>.
+</div>
+<div id="ref-RColorBrewer2022" class="csl-entry" role="listitem">
+Neuwirth, Erich. 2022. <em><span>RColorBrewer</span>: <span>ColorBrewer</span> Palettes</em>. <a href="https://CRAN.R-project.org/package=RColorBrewer">https://CRAN.R-project.org/package=RColorBrewer</a>.
+</div>
+<div id="ref-scico2022" class="csl-entry" role="listitem">
+Pedersen, Thomas Lin, 和 Fabio Crameri. 2022. <em><span>scico</span>: Colour Palettes Based on the Scientific Colour-Maps</em>. <a href="https://CRAN.R-project.org/package=scico">https://CRAN.R-project.org/package=scico</a>.
+</div>
+<div id="ref-ggrepel2021" class="csl-entry" role="listitem">
+Slowikowski, Kamil. 2021. <em><span>ggrepel</span>: Automatically Position Non-Overlapping Text Labels with <span>ggplot2</span></em>. <a href="https://CRAN.R-project.org/package=ggrepel">https://CRAN.R-project.org/package=ggrepel</a>.
+</div>
+<div id="ref-bbplot2022" class="csl-entry" role="listitem">
+Stylianou, Nassos, Will Dahlgreen, Robert Cuffe, Tom Calver, 和 Ransome Mpini. 2022. <em><span>bbplot</span>: making <span>ggplot2</span> graphics in <span>BBC NEWS</span> style</em>.
+</div>
+<div id="ref-ggthemr2020" class="csl-entry" role="listitem">
+Tobin, Ciaran. 2020. <em><span>ggthemr</span>: Themes for <span>ggplot2</span></em>.
+</div>
+<div id="ref-munsell2018" class="csl-entry" role="listitem">
+Wickham, Charlotte. 2018. <em><span>munsell</span>: Utilities for Using Munsell Colours</em>. <a href="https://CRAN.R-project.org/package=munsell">https://CRAN.R-project.org/package=munsell</a>.
+</div>
+<div id="ref-scales2022" class="csl-entry" role="listitem">
+Wickham, Hadley, 和 Dana Seidel. 2022. <em><span>scales</span>: Scale Functions for Visualization</em>. <a href="https://CRAN.R-project.org/package=scales">https://CRAN.R-project.org/package=scales</a>.
+</div>
+<div id="ref-ggtext2020" class="csl-entry" role="listitem">
+Wilke, Claus O. 2020. <em><span>ggtext</span>: Improved Text Rendering Support for <span>ggplot2</span></em>. <a href="https://CRAN.R-project.org/package=ggtext">https://CRAN.R-project.org/package=ggtext</a>.
+</div>
+<div id="ref-ggsci2018" class="csl-entry" role="listitem">
+Xiao, Nan. 2018. <em><span>ggsci</span>: Scientific Journal and Sci-Fi Themed Color Palettes for <span>ggplot2</span></em>. <a href="https://CRAN.R-project.org/package=ggsci">https://CRAN.R-project.org/package=ggsci</a>.
+</div>
+<div id="ref-ggimage2022" class="csl-entry" role="listitem">
+Yu, Guangchuang. 2022. <em><span>ggimage</span>: Use Image in <span>ggplot2</span></em>. <a href="https://CRAN.R-project.org/package=ggimage">https://CRAN.R-project.org/package=ggimage</a>.
+</div>
+<div id="ref-string2path2022" class="csl-entry" role="listitem">
+Yutani, Hiroaki. 2022. <em><span>string2path</span>: Rendering Font into <span>data.frame</span></em>. <a href="https://CRAN.R-project.org/package=string2path">https://CRAN.R-project.org/package=string2path</a>.
+</div>
+<div id="ref-Zeileis2020" class="csl-entry" role="listitem">
+Zeileis, Achim, Jason C. Fisher, Kurt Hornik, Ross Ihaka, Claire D. McWhite, Paul Murrell, Reto Stauffer, 和 Claus O. Wilke. 2020. <span>《<span>colorspace</span>: A Toolbox for Manipulating and Assessing Colors and Palettes》</span>. <em>Journal of Statistical Software</em> 96 (1): 1–49. <a href="https://doi.org/10.18637/jss.v096.i01">https://doi.org/10.18637/jss.v096.i01</a>.
+</div>
+</div>
+</section></main><!-- /main --><script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "已复制");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "已复制");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    const typesetMath = (el) => {
+      if (window.MathJax) {
+        // MathJax Typeset
+        window.MathJax.typeset([el]);
+      } else if (window.katex) {
+        // KaTeX Render
+        var mathElements = el.getElementsByClassName("math");
+        var macros = [];
+        for (var i = 0; i < mathElements.length; i++) {
+          var texText = mathElements[i].firstChild;
+          if (mathElements[i].tagName == "SPAN") {
+            window.katex.render(texText.data, mathElements[i], {
+              displayMode: mathElements[i].classList.contains('display'),
+              throwOnError: false,
+              macros: macros,
+              fleqn: false
+            });
+          }
+        }
+      }
+    }
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        typesetMath(container);
+        return container.innerHTML
+      } else {
+        typesetMath(note);
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      typesetMath(note);
+      return note.innerHTML;
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script><nav class="page-navigation"><div class="nav-page nav-page-previous">
+      <a href="./wrangling-processing.html" class="pagination-link  aria-label=">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">数据处理</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./visualization-intermediate.html" class="pagination-link" aria-label="<span class='chapter-number'>7</span>&nbsp; <span class='chapter-title'>基础图形</span>">
+        <span class="nav-page-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">基础图形</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+</body></html>

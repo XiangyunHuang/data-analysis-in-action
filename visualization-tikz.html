@@ -1,0 +1,1486 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh-Hans" xml:lang="zh-Hans"><head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.4.515">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>R 语言数据分析实战 - 11&nbsp; TikZ 入门</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./visualization-practice.html" rel="next">
+<link href="./visualization-graphics.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light"><script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "没有结果",
+    "search-matching-documents-text": "匹配的文档",
+    "search-copy-link-title": "复制搜索链接",
+    "search-hide-matches-text": "隐藏其它匹配结果",
+    "search-more-match-text": "更多匹配结果",
+    "search-more-matches-text": "更多匹配结果",
+    "search-clear-button-title": "清除",
+    "search-detached-cancel-button-title": "取消",
+    "search-submit-button-title": "提交",
+    "search-label": "搜索"
+  }
+}</script><script async="" src="https://www.googletagmanager.com/gtag/js?id=G-ZPWJBMKFL8"></script><script type="text/javascript">
+
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-ZPWJBMKFL8', { 'anonymize_ip': true});
+</script><script>
+MathJax ={
+  tex: {
+    macros: {
+      bm: ["{\\boldsymbol #1}",1],
+    }
+  }
+};
+</script><script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script><script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+</head>
+<body class="nav-sidebar floating">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top"><nav class="quarto-secondary-nav"><div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="切换侧边栏导航" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./visualization-basic.html">数据探索</a></li><li class="breadcrumb-item"><a href="./visualization-tikz.html"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">TikZ 入门</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="切换侧边栏导航" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav></header><!-- content --><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto"><div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">R 语言数据分析实战</a> 
+        <div class="sidebar-tools-main">
+    <a href="https://github.com/XiangyunHuang/data-analysis-in-action" title="Source Code" class="quarto-navigation-tool px-1" aria-label="Source Code"><i class="bi bi-github"></i></a>
+    <a href="./_main.pdf" title="Download PDF" class="quarto-navigation-tool px-1" aria-label="Download PDF"><i class="bi bi-file-pdf"></i></a>
+</div>
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="搜索"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">欢迎</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./preface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">前言</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./intro.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">介绍</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true">
+ <span class="menu-text">数据准备</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./wrangling-objects.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">数据对象</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./wrangling-collection.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">数据获取</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./wrangling-cleaning.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">数据清洗</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./wrangling-manipulation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">数据操作</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./wrangling-processing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">数据处理</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true">
+ <span class="menu-text">数据探索</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./visualization-basic.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">ggplot2 入门</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./visualization-intermediate.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">基础图形</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./visualization-advanced.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">统计图形</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./visualization-lattice.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">lattice 入门</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./visualization-graphics.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">graphics 入门</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./visualization-tikz.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">TikZ 入门</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./visualization-practice.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">探索实践</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true">
+ <span class="menu-text">数据交流</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./interactive-graphics.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">交互图形</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./interactive-tables.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">交互表格</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./interactive-applications.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">交互应用</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./documents-html.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">HTML 文档</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./documents-latex.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">PDF 文档</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./documents-office.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Office 文档</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-expanded="true">
+ <span class="menu-text">统计分析</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./common-statistical-tests.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">常见的统计检验</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./regression-and-correlation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">回归与相关分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./categorical-data-analysis.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">分类数据的分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./power-analysis.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">统计检验的功效</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-expanded="true">
+ <span class="menu-text">数据建模</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./analyze-network-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">网络分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./analyze-text-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">文本分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./analyze-survival-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">生存分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./analyze-time-series-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">时序分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./analyze-point-pattern.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">空间点模式分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./analyze-spatial-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">预测核辐射强度的分布</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./analyze-areal-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">区域数据分析</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-expanded="true">
+ <span class="menu-text">优化建模</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./statistical-computation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">统计计算</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./numerical-optimization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">数值优化</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./optimization-problems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">优化问题</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" aria-expanded="true">
+ <span class="menu-text">贝叶斯建模</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./probabilistic-reasoning-framework.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">概率推理框架</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./generalized-linear-models.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">广义线性模型</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./hierarchical-normal-models.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">分层正态模型</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./mixed-effects-models.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">混合效应模型</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./generalized-additive-models.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">37</span>&nbsp; <span class="chapter-title">广义可加模型</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./gaussian-processes-regression.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">38</span>&nbsp; <span class="chapter-title">高斯过程回归</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./time-series-regression.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">39</span>&nbsp; <span class="chapter-title">时间序列回归</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" aria-expanded="true">
+ <span class="menu-text">机器学习</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./classification-problems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">40</span>&nbsp; <span class="chapter-title">分类问题</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./clustering-problems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">41</span>&nbsp; <span class="chapter-title">聚类问题</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./regression-problems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">42</span>&nbsp; <span class="chapter-title">回归问题</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">参考文献</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" aria-expanded="true">
+ <span class="menu-text">附录</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./notations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">数学符号</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./matrix-operations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">矩阵运算</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./git-github.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">Git 和 Github</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+    </ul>
+</div>
+</nav><div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active"><h2 id="toc-title">目录</h2>
+   
+  <ul>
+<li><a href="#sec-tikz-standalone" id="toc-sec-tikz-standalone" class="nav-link active" data-scroll-target="#sec-tikz-standalone"><span class="header-section-number">11.1</span> standalone 宏包</a></li>
+  <li><a href="#sec-tikz-pgf" id="toc-sec-tikz-pgf" class="nav-link" data-scroll-target="#sec-tikz-pgf"><span class="header-section-number">11.2</span> PGF 宏包</a></li>
+  <li><a href="#sec-tikz-pgfplots" id="toc-sec-tikz-pgfplots" class="nav-link" data-scroll-target="#sec-tikz-pgfplots"><span class="header-section-number">11.3</span> 三维图</a></li>
+  <li><a href="#sec-tikz-network" id="toc-sec-tikz-network" class="nav-link" data-scroll-target="#sec-tikz-network"><span class="header-section-number">11.4</span> 网络图</a></li>
+  <li><a href="#sec-tikz-mindmap" id="toc-sec-tikz-mindmap" class="nav-link" data-scroll-target="#sec-tikz-mindmap"><span class="header-section-number">11.5</span> 思维导图</a></li>
+  <li><a href="#sec-smart-diagram" id="toc-sec-smart-diagram" class="nav-link" data-scroll-target="#sec-smart-diagram"><span class="header-section-number">11.6</span> SmartArt 图</a></li>
+  <li><a href="#sec-tikz-with-r" id="toc-sec-tikz-with-r" class="nav-link" data-scroll-target="#sec-tikz-with-r"><span class="header-section-number">11.7</span> TikZ 与 R</a></li>
+  </ul><div class="toc-actions"><ul><li><a href="https://github.com/XiangyunHuang/data-analysis-in-action/blob/main/visualization-tikz.qmd" class="toc-action"><i class="bi bi-github"></i>查看代码</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./visualization-basic.html">数据探索</a></li><li class="breadcrumb-item"><a href="./visualization-tikz.html"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">TikZ 入门</span></a></li></ol></nav><div class="quarto-title">
+<h1 class="title"><span id="sec-basic-tikz" class="quarto-section-identifier"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">TikZ 入门</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header><p>有一些示意图是用来表达数据探索的思路的，而不是直接探索数据的工具。比如象限图、甘特图、思维导图、网络图等，可以用 TikZ 绘制这类图形来阐述分析维度、思路、结构等。当然，绘制这类示意图不仅限于 TikZ，还有很多其它工具，如 LaTeX 社区的 PSTricks，JavaScripts 社区的 Mermaid，软件 Graphviz 等。</p>
+<section id="sec-tikz-standalone" class="level2" data-number="11.1"><h2 data-number="11.1" class="anchored" data-anchor-id="sec-tikz-standalone">
+<span class="header-section-number">11.1</span> standalone 宏包</h2>
+<p>最常见的 LaTeX 文档类有 article、report、beamer、book，分别对应文章、报告、演示和书籍。有的宏包在此基础上扩展功能，比如 ctex 宏包提供中文支持，有四个文档类 ctexart、 ctexrep 、ctexbeamer 和 ctexbook 与之对应起来。standalone 宏包提供 standalone 文类主要用于绘制独立的图片，默认情况下，文档四周多余的空白部分会被裁剪掉。在 LaTeX 环境中，推荐使用 TikZ 来绘图。standalone 文类可与 tikz 宏包一起使用，生成一张张由 TikZ 代码绘制的独立图片。下面举个简单的例子，用 TikZ 绘制两个坐标轴。</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode numberSource latex number-lines code-with-copy"><code class="sourceCode latex"><span id="cb1-1"><a href="#cb1-1"></a><span class="bu">\documentclass</span>[tikz,border=1mm]{<span class="ex">standalone</span>}</span>
+<span id="cb1-2"><a href="#cb1-2"></a><span class="kw">\begin</span>{<span class="ex">document</span>}</span>
+<span id="cb1-3"><a href="#cb1-3"></a><span class="kw">\begin</span>{<span class="ex">tikzpicture</span>}</span>
+<span id="cb1-4"><a href="#cb1-4"></a><span class="fu">\draw</span>[&lt;-&gt;] (6,0) -- (0,0) -- (0,6);</span>
+<span id="cb1-5"><a href="#cb1-5"></a><span class="kw">\end</span>{<span class="ex">tikzpicture</span>}</span>
+<span id="cb1-6"><a href="#cb1-6"></a><span class="kw">\end</span>{<span class="ex">document</span>}</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>standalone 文类启用 <code>tikz</code> 选项来绘图，选项 <code>border=1mm</code> 表示图片四周的边空保留 1 毫米，文档内容放在 document 环境里，TikZ 绘图代码放在 tikzpicture 环境中，命令 <code>\draw</code> 负责绘制具体的图形，用 XeLaTeX 编译，效果如 <a href="#fig-tikz" class="quarto-xref">图&nbsp;<span>11.1</span></a> 所示。</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-tikz" class="quarto-figure quarto-figure-center anchored" width="288">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-tikz-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="visualization-tikz_files/figure-html/fig-tikz-1.png" class="img-fluid figure-img" width="288">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-tikz-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;11.1: TikZ 绘图
+</figcaption></figure>
+</div>
+</div>
+</div>
+<p>standalone 文类有很多选项，下面介绍 4 个选项的常用内容。</p>
+<ul>
+<li><p><code>class</code> 选项指定文类环境，默认值为 <code>article</code>，表示在 article 文类中绘图。其它选项还有 <code>beamer</code> ，表示在演示环境中绘图。在不同的文类中，图片渲染出来的效果不同。</p></li>
+<li><p><code>tikz=true|false</code> 选项是否启用 TikZ 绘图，默认值是 <code>false</code> 。当显式地在 standalone 文类中启用 <code>tikz</code> 选项，就表示用 TikZ 绘图，将自动加载 tikz 宏包。与之类似的选项 <code>pstricks=true|false</code> ，表示是否启用 PSTricks 绘图，PSTricks 是LaTeX 社区中一套语法不同于 TikZ 的绘图工具。</p></li>
+<li><p><code>crop=true|false</code> 选项是否裁剪变空，默认值是 <code>true</code> ，表示绘图区域以外的部分都裁剪掉。与之相关的另一个选项是 <code>border</code> ，可以更加精细地控制图片四周的各个边空。</p></li>
+<li><p><code>border</code> 选项指定边空大小，默认值是 0，表示无边空。当 <code>crop=true</code> 时，再指定 <code>border</code> 选项，比如 <code>border=1mm</code> 表示图片四周的边空保留 1 毫米。图片四周的边空大小可以按照左、下、右、上的顺序指定，比如 <code>border={5mm 6mm 0mm -2mm}</code> 表示图片左边空 5 毫米、下边空 6 毫米、右边空 0 毫米、上边空负 2 毫米。</p></li>
+</ul>
+<p>standalone 文类是支持 PSTricks 绘图的，下面在直角坐标系中绘制一个带阴影效果的圆，示例代码如下：</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode numberSource latex number-lines code-with-copy"><code class="sourceCode latex"><span id="cb2-1"><a href="#cb2-1"></a><span class="bu">\documentclass</span>[pstricks,border={5mm 6mm 0mm -2mm}]{<span class="ex">standalone</span>}</span>
+<span id="cb2-2"><a href="#cb2-2"></a><span class="bu">\usepackage</span>{<span class="ex">pst-plot</span>}</span>
+<span id="cb2-3"><a href="#cb2-3"></a><span class="kw">\begin</span>{<span class="ex">document</span>}</span>
+<span id="cb2-4"><a href="#cb2-4"></a><span class="fu">\psset</span>{xunit=0.15in, yunit=0.15in}</span>
+<span id="cb2-5"><a href="#cb2-5"></a><span class="kw">\begin</span>{<span class="ex">pspicture</span>}(0,0)(11,11)</span>
+<span id="cb2-6"><a href="#cb2-6"></a><span class="fu">\psaxes</span>[Dx=4,Dy=4, subticks=4]{-&gt;}(0,0)(0,0)(10,10)[<span class="ss">$x$</span>,0][<span class="ss">$y$</span>,0]</span>
+<span id="cb2-7"><a href="#cb2-7"></a><span class="fu">\pscircle</span>[runit=0.15in, fillcolor=orange!50, fillstyle=solid,shadow=true](5,5){3}</span>
+<span id="cb2-8"><a href="#cb2-8"></a><span class="kw">\end</span>{<span class="ex">pspicture</span>}</span>
+<span id="cb2-9"><a href="#cb2-9"></a><span class="kw">\end</span>{<span class="ex">document</span>}</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>standalone 文类的选项 <code>pstricks</code> 表示启用 PSTricks 绘图环境，加载 pst-plot 宏包提供额外的命令，PSTricks 是基于 PostScript 语言的，每一个绘图命令都是 <code>\ps</code> 开头的，比如 <code>\psset</code> 、<code>\psaxes</code>、<code>\pscircle</code> 等。<code>\begin{pspicture}</code> 和 <code>\end{pspicture}</code> 之间是 PSTricks 绘图代码，<code>\begin{pspicture}</code> 之后的 <code>(0,0)(11,11)</code> 是左下和右上角两个坐标，定义了一个绘图区域。和 TikZ 绘图代码一样，也用 XeLaTeX 编译，效果如 <a href="#fig-pstricks" class="quarto-xref">图&nbsp;<span>11.2</span></a> 所示。</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-pstricks" class="quarto-figure quarto-figure-center anchored" width="288">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-pstricks-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="visualization-tikz_files/figure-html/fig-pstricks-1.png" class="img-fluid figure-img" width="288">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-pstricks-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;11.2: PSTricks 绘图
+</figcaption></figure>
+</div>
+</div>
+</div>
+<p>可以在 Quarto 和 R Markdown 文档中插入 PSTricks 绘图代码，使用 <strong>knitr</strong> 包的 <code>tikz</code> 引擎绘图。只要修改模版文件 <code>tikz2pdf.tex</code> ，移除一行 <code>\usetikzlibrary{matrix}</code> ，不再加载 tikz 宏包及其 matrix 库。<code>TIKZ_CLASSOPTION</code> 不再仅限于 TikZ ，而是 standalone 文类的选项，相应地，<code>EXTRA_TIKZ_PREAMBLE_CODE</code> 变成一般的 LaTeX 文档的导言区，<code>TIKZ_CODE</code> 可以是 PSTricks 代码。新的模版文件 <code>tikz2pdf.tex</code> 如下：</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode numberSource latex number-lines code-with-copy"><code class="sourceCode latex"><span id="cb3-1"><a href="#cb3-1"></a><span class="bu">\documentclass</span>[</span>
+<span id="cb3-2"><a href="#cb3-2"></a><span class="co">%% TIKZ_CLASSOPTION %%</span></span>
+<span id="cb3-3"><a href="#cb3-3"></a>]{<span class="ex">standalone</span>}</span>
+<span id="cb3-4"><a href="#cb3-4"></a><span class="co">%% EXTRA_TIKZ_PREAMBLE_CODE %%</span></span>
+<span id="cb3-5"><a href="#cb3-5"></a><span class="kw">\begin</span>{<span class="ex">document</span>}</span>
+<span id="cb3-6"><a href="#cb3-6"></a><span class="co">%% TIKZ_CODE %%</span></span>
+<span id="cb3-7"><a href="#cb3-7"></a><span class="kw">\end</span>{<span class="ex">document</span>}</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>上 <a href="#fig-pstricks" class="quarto-xref">图&nbsp;<span>11.2</span></a> 即是由 <strong>knitr</strong> 包的 <code>tikz</code> 引擎渲染出来的。在代码块选项 <code>engine-opts</code> 中，传递一个列表，分别包含 <code>classoption</code>（standalone 文类选项）、 <code>extra.preamble</code>（导言区）、 <code>template</code> （TikZ 模版文件）三块内容。生成 <a href="#fig-pstricks" class="quarto-xref">图&nbsp;<span>11.2</span></a> 的 <code>engine-opts</code> 设置如下：</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1"></a><span class="fu">list</span>(</span>
+<span id="cb4-2"><a href="#cb4-2"></a>  <span class="at">classoption =</span> <span class="st">"pstricks,border={5mm 6mm 0mm -2mm}"</span>,</span>
+<span id="cb4-3"><a href="#cb4-3"></a>  <span class="at">extra.preamble =</span> <span class="st">"</span><span class="sc">\\</span><span class="st">usepackage{pst-plot}"</span>,</span>
+<span id="cb4-4"><a href="#cb4-4"></a>  <span class="at">template =</span> <span class="st">"code/tikz2pdf.tex"</span></span>
+<span id="cb4-5"><a href="#cb4-5"></a>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>其它选项和更多详细介绍见 standalone 宏包帮助文档。</p>
+</section><section id="sec-tikz-pgf" class="level2" data-number="11.2"><h2 data-number="11.2" class="anchored" data-anchor-id="sec-tikz-pgf">
+<span class="header-section-number">11.2</span> PGF 宏包</h2>
+<p>PGF 宏包提供一套易于学习和使用的绘图语法 TikZ，TikZ 是 TikZ ist kein Zeichenprogramm 的简写，命名有 Linux 哲学意味。下面比较详细的介绍 LaTeX 宏包 <a href="https://ctan.org/pkg/pgf">PGF</a> 绘制曲线图的过程。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode numberSource tex number-lines code-with-copy"><code class="sourceCode latex"><span id="cb5-1"><a href="#cb5-1"></a><span class="kw">\begin</span>{<span class="ex">tikzpicture</span>}</span>
+<span id="cb5-2"><a href="#cb5-2"></a><span class="fu">\draw</span>[&lt;-&gt;] (6,0) -- (0,0) -- (0,6);</span>
+<span id="cb5-3"><a href="#cb5-3"></a><span class="kw">\end</span>{<span class="ex">tikzpicture</span>}</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-tikz-pgf1" class="quarto-figure quarto-figure-center anchored" width="288">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-tikz-pgf1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="visualization-tikz_files/figure-html/fig-tikz-pgf1-1.png" class="img-fluid figure-img" width="288">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-tikz-pgf1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;11.3: PGF 绘制曲线图
+</figcaption></figure>
+</div>
+</div>
+</div>
+<p>首先，<code>\draw</code> 命令绘制带箭头的坐标轴，坐标轴的范围 <span class="math inline">\([0,6]\times[0,6]\)</span> 。坐标轴是由线构成的，线有虚线、实线，也有宽度和颜色，虚线还有不同类型，这些都是可以设置的参数，比如将 <code>\draw[&lt;-&gt;]</code> 改为 <code>\draw[color=red,&lt;-&gt;]</code> ，坐标轴颜色设置为红色。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode numberSource tex number-lines code-with-copy"><code class="sourceCode latex"><span id="cb6-1"><a href="#cb6-1"></a><span class="kw">\begin</span>{<span class="ex">tikzpicture</span>}</span>
+<span id="cb6-2"><a href="#cb6-2"></a><span class="fu">\draw</span>[&lt;-&gt;] (6,0) node[below]{<span class="ss">$q$</span>} -- (0,0) -- (0,6) node[left]{<span class="ss">$V(q)$</span>};</span>
+<span id="cb6-3"><a href="#cb6-3"></a><span class="kw">\end</span>{<span class="ex">tikzpicture</span>}</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-tikz-pgf2" class="quarto-figure quarto-figure-center anchored" width="288">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-tikz-pgf2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="visualization-tikz_files/figure-html/fig-tikz-pgf2-1.png" class="img-fluid figure-img" width="288">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-tikz-pgf2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;11.4: PGF 绘制曲线图
+</figcaption></figure>
+</div>
+</div>
+</div>
+<p>然后，在位置 (6,0) 和 (0,6) 分别添加节点 <code>node[below]{$q$}</code> 和 <code>node[left]{$V(q)$}</code> 。node 表示节点，节点的标签内容在大括号内，标签的位置在中括号内，这里，below 表示在位置 (6,0) 的下方。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode numberSource tex number-lines code-with-copy"><code class="sourceCode latex"><span id="cb7-1"><a href="#cb7-1"></a><span class="kw">\begin</span>{<span class="ex">tikzpicture</span>}</span>
+<span id="cb7-2"><a href="#cb7-2"></a><span class="fu">\draw</span>[&lt;-&gt;] (6,0) node[below]{<span class="ss">$q$</span>} -- (0,0) -- (0,6) node[left]{<span class="ss">$V(q)$</span>};</span>
+<span id="cb7-3"><a href="#cb7-3"></a><span class="fu">\draw</span>[very thick] (0,0) to [out=90,in=145] (5,4.5);</span>
+<span id="cb7-4"><a href="#cb7-4"></a><span class="kw">\end</span>{<span class="ex">tikzpicture</span>}</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-tikz-pgf3" class="quarto-figure quarto-figure-center anchored" width="288">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-tikz-pgf3-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="visualization-tikz_files/figure-html/fig-tikz-pgf3-1.png" class="img-fluid figure-img" width="288">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-tikz-pgf3-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;11.5: PGF 绘制曲线图
+</figcaption></figure>
+</div>
+</div>
+</div>
+<p>最后，从点 (0,0) 至点 (5,4.5) 绘制一条非常粗的曲线。曲线从点 (0,0) 出去的时候，是以 90 度垂直水平轴的方向出去的，到点 (5,4.5) 是以 145 度方向进入的。角度是按照逆时针方向计算的。线的粗细、方向都是由参数决定的。</p>
+<p>在这里，TikZ 是用来绘制示意图的，不需要知道每个命令的每个参数的取值有哪些。关键是知道自己想要画什么，其实，可以用铅笔在纸上以最快的方式绘制草图，了解每个绘图元素，然后查找 PGF 帮助手册，找到对应的命令和参数，将草图工整地誊抄一遍。</p>
+</section><section id="sec-tikz-pgfplots" class="level2" data-number="11.3"><h2 data-number="11.3" class="anchored" data-anchor-id="sec-tikz-pgfplots">
+<span class="header-section-number">11.3</span> 三维图</h2>
+<p>顾名思义，<a href="https://ctan.org/pkg/pgfplots">pgfplots</a> 宏包基于 PGF 的，用它来绘制三维图形是非常方便的。</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode numberSource latex number-lines code-with-copy"><code class="sourceCode latex"><span id="cb8-1"><a href="#cb8-1"></a><span class="bu">\documentclass</span>[tikz]{<span class="ex">standalone</span>}</span>
+<span id="cb8-2"><a href="#cb8-2"></a><span class="bu">\usepackage</span>{<span class="ex">pgfplots</span>}</span>
+<span id="cb8-3"><a href="#cb8-3"></a><span class="fu">\pgfplotsset</span>{width=7cm,compat=1.18}</span>
+<span id="cb8-4"><a href="#cb8-4"></a><span class="kw">\begin</span>{<span class="ex">document</span>}</span>
+<span id="cb8-5"><a href="#cb8-5"></a><span class="co">%% TikZ 代码%%</span></span>
+<span id="cb8-6"><a href="#cb8-6"></a><span class="kw">\end</span>{<span class="ex">document</span>}</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>首先加载 pgfplots 宏包，设置全局的绘图参数，<code>width=7cm</code> 表示绘图页面宽度，<code>compat=1.18</code> 表示使用 pgfplots 的版本。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode numberSource tex number-lines code-with-copy"><code class="sourceCode latex"><span id="cb9-1"><a href="#cb9-1"></a><span class="kw">\begin</span>{<span class="ex">tikzpicture</span>}</span>
+<span id="cb9-2"><a href="#cb9-2"></a><span class="kw">\begin</span>{<span class="ex">axis</span>}[</span>
+<span id="cb9-3"><a href="#cb9-3"></a>    hide axis,</span>
+<span id="cb9-4"><a href="#cb9-4"></a>    colormap/viridis</span>
+<span id="cb9-5"><a href="#cb9-5"></a>]</span>
+<span id="cb9-6"><a href="#cb9-6"></a><span class="fu">\addplot</span>3[</span>
+<span id="cb9-7"><a href="#cb9-7"></a>    mesh,</span>
+<span id="cb9-8"><a href="#cb9-8"></a>    samples=50,</span>
+<span id="cb9-9"><a href="#cb9-9"></a>    domain=-8:8</span>
+<span id="cb9-10"><a href="#cb9-10"></a>]</span>
+<span id="cb9-11"><a href="#cb9-11"></a>{ sin(deg(sqrt(x^2+y^2)))/sqrt(x^2+y^2) };</span>
+<span id="cb9-12"><a href="#cb9-12"></a><span class="fu">\addlegendentry</span>{<span class="ss">$</span><span class="sc">\frac</span><span class="ss">{</span><span class="sc">\sin</span><span class="ss">(r)}{r}$</span>}</span>
+<span id="cb9-13"><a href="#cb9-13"></a><span class="kw">\end</span>{<span class="ex">axis</span>}</span>
+<span id="cb9-14"><a href="#cb9-14"></a><span class="kw">\end</span>{<span class="ex">tikzpicture</span>}</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-tikz-viridis" class="quarto-figure quarto-figure-center anchored" width="384">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-tikz-viridis-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="visualization-tikz_files/figure-html/fig-tikz-viridis-1.png" class="img-fluid figure-img" width="384">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-tikz-viridis-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;11.6: TikZ 绘制三维图 viridis 调色板
+</figcaption></figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode numberSource tex number-lines code-with-copy"><code class="sourceCode latex"><span id="cb10-1"><a href="#cb10-1"></a><span class="kw">\begin</span>{<span class="ex">tikzpicture</span>}</span>
+<span id="cb10-2"><a href="#cb10-2"></a><span class="kw">\begin</span>{<span class="ex">axis</span>}[</span>
+<span id="cb10-3"><a href="#cb10-3"></a>    hide axis,</span>
+<span id="cb10-4"><a href="#cb10-4"></a>    colormap/jet</span>
+<span id="cb10-5"><a href="#cb10-5"></a>]</span>
+<span id="cb10-6"><a href="#cb10-6"></a><span class="fu">\addplot</span>3[</span>
+<span id="cb10-7"><a href="#cb10-7"></a>    mesh,</span>
+<span id="cb10-8"><a href="#cb10-8"></a>    samples=50,</span>
+<span id="cb10-9"><a href="#cb10-9"></a>    domain=-8:8</span>
+<span id="cb10-10"><a href="#cb10-10"></a>]</span>
+<span id="cb10-11"><a href="#cb10-11"></a>{ sin(deg(sqrt(x^2+y^2)))/sqrt(x^2+y^2) };</span>
+<span id="cb10-12"><a href="#cb10-12"></a><span class="fu">\addlegendentry</span>{<span class="ss">$</span><span class="sc">\frac</span><span class="ss">{</span><span class="sc">\sin</span><span class="ss">(r)}{r}$</span>}</span>
+<span id="cb10-13"><a href="#cb10-13"></a><span class="kw">\end</span>{<span class="ex">axis</span>}</span>
+<span id="cb10-14"><a href="#cb10-14"></a><span class="kw">\end</span>{<span class="ex">tikzpicture</span>}</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-tikz-jet" class="quarto-figure quarto-figure-center anchored" width="384">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-tikz-jet-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="visualization-tikz_files/figure-html/fig-tikz-jet-1.png" class="img-fluid figure-img" width="384">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-tikz-jet-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;11.7: TikZ 绘制三维图 jet 调色板
+</figcaption></figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode numberSource tex number-lines code-with-copy"><code class="sourceCode latex"><span id="cb11-1"><a href="#cb11-1"></a><span class="kw">\begin</span>{<span class="ex">tikzpicture</span>}</span>
+<span id="cb11-2"><a href="#cb11-2"></a><span class="kw">\begin</span>{<span class="ex">axis</span>}[</span>
+<span id="cb11-3"><a href="#cb11-3"></a>    hide axis,</span>
+<span id="cb11-4"><a href="#cb11-4"></a>    colormap/cool,</span>
+<span id="cb11-5"><a href="#cb11-5"></a>    colorbar sampled,</span>
+<span id="cb11-6"><a href="#cb11-6"></a>    domain=-8:8</span>
+<span id="cb11-7"><a href="#cb11-7"></a>]</span>
+<span id="cb11-8"><a href="#cb11-8"></a><span class="fu">\addplot</span>3[</span>
+<span id="cb11-9"><a href="#cb11-9"></a>    contour filled={</span>
+<span id="cb11-10"><a href="#cb11-10"></a>      number=20,</span>
+<span id="cb11-11"><a href="#cb11-11"></a>    },</span>
+<span id="cb11-12"><a href="#cb11-12"></a>    ]{sin(deg(sqrt(x^2+y^2)))/sqrt(x^2+y^2)};</span>
+<span id="cb11-13"><a href="#cb11-13"></a><span class="fu">\addlegendentry</span>{<span class="ss">$</span><span class="sc">\frac</span><span class="ss">{</span><span class="sc">\sin</span><span class="ss">(r)}{r}$</span>}</span>
+<span id="cb11-14"><a href="#cb11-14"></a><span class="kw">\end</span>{<span class="ex">axis</span>}</span>
+<span id="cb11-15"><a href="#cb11-15"></a><span class="kw">\end</span>{<span class="ex">tikzpicture</span>}</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-tikz-cool" class="quarto-figure quarto-figure-center anchored" width="480">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-tikz-cool-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="visualization-tikz_files/figure-html/fig-tikz-cool-1.png" class="img-fluid figure-img" width="480">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-tikz-cool-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;11.8: TikZ 绘制三维图 cool 调色板
+</figcaption></figure>
+</div>
+</div>
+</div>
+<ul>
+<li>
+<code>\begin{axis}</code> 和 <code>\end{axis}</code> 环境有很多配置选项，参数值 <code>[hide axis, colormap/viridis]</code> 中 <code>hide axis</code> 表示隐藏坐标轴，<code>colormap/viridis</code> 表示三维图形的调色板采用 viridis 。<code>colormap</code> 支持很多不同的调色板，上面列举了两个。其实还可以增加不同的选项，比如添加选项 <code>colorbar sampled</code> 会生成一个颜色条，还可以添加选项 <code>colorbar horizontal</code> 来水平放置颜色条。</li>
+<li>可以在导言区加载 <code>\usetikzlibrary{pgfplots.colorbrewer}</code> 导入 <a href="https://colorbrewer2.org/">ColorBrewer</a> 系列调色板，方便后续绘图时调用。作用与 R 语言中的 <strong>RColorBrewer</strong> 包类似，调色板名称略有不同，前者 <code>PuBu-9</code> 对应后者 <code>PuBu</code> 。</li>
+<li>
+<code>\addplot3</code> 命令绘制函数 <code>sin(deg(sqrt(x^2+y^2)))/sqrt(x^2+y^2)</code> 的三维图像，即函数 <span class="math inline">\(f(x,y)=\frac{\sin(\sqrt{x^2 + y^2})}{\sqrt{x^2 + y^2}}\)</span> 的三维图像。参数值 <code>[mesh, samples=50, domain=-8:8]</code> 中 <code>mesh</code> 表示三维图形是网格状，其它可选值还有曲面图 <code>surf</code> 、填充等值线图 <code>contour filled</code> 等，<code>samples=50</code> 表示网格密度是 50，<code>domain=-8:8</code> 表示横纵坐标的范围都是 <span class="math inline">\([-8,8]\)</span> 。</li>
+<li>
+<code>\addlegendentry</code> 添加图例，图例标签是 <span class="math inline">\(\frac{\sin(r)}{r}\)</span> ，颜色会随着调色板变化。</li>
+</ul></section><section id="sec-tikz-network" class="level2" data-number="11.4"><h2 data-number="11.4" class="anchored" data-anchor-id="sec-tikz-network">
+<span class="header-section-number">11.4</span> 网络图</h2>
+<p>绘制网络图用 <a href="https://ctan.org/pkg/tikz-network">tikz-network</a> 宏包，也是 PGF 的一个扩展包。图结构是根据顶点和边来定义的，图的复杂程度也可以用顶点和边的规模来衡量。图描述一种非线性的关系，有自己的一套语言，定义顶点 <code>\Vertex</code> 和边 <code>\Edge</code> 的两个命令是最基础的。下面绘制柯尼斯堡七桥问题对应的图。</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode numberSource latex number-lines code-with-copy"><code class="sourceCode latex"><span id="cb12-1"><a href="#cb12-1"></a><span class="bu">\documentclass</span>[tikz]{<span class="ex">standalone</span>}</span>
+<span id="cb12-2"><a href="#cb12-2"></a><span class="bu">\usepackage</span>{<span class="ex">tikz-network</span>}</span>
+<span id="cb12-3"><a href="#cb12-3"></a><span class="kw">\begin</span>{<span class="ex">document</span>}</span>
+<span id="cb12-4"><a href="#cb12-4"></a><span class="co">%% TikZ 代码%%</span></span>
+<span id="cb12-5"><a href="#cb12-5"></a><span class="kw">\end</span>{<span class="ex">document</span>}</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode numberSource tex number-lines code-with-copy"><code class="sourceCode latex"><span id="cb13-1"><a href="#cb13-1"></a><span class="kw">\begin</span>{<span class="ex">tikzpicture</span>}</span>
+<span id="cb13-2"><a href="#cb13-2"></a><span class="fu">\Vertex</span>[IdAsLabel, x=5, color=gray, size=1, fontsize=<span class="fu">\large</span>]{A}</span>
+<span id="cb13-3"><a href="#cb13-3"></a><span class="fu">\Vertex</span>[IdAsLabel, x=10, color=gray, size=1, fontsize=<span class="fu">\large</span>]{B}</span>
+<span id="cb13-4"><a href="#cb13-4"></a><span class="fu">\Vertex</span>[IdAsLabel, x=15, color=gray, size=1, fontsize=<span class="fu">\large</span>]{C}</span>
+<span id="cb13-5"><a href="#cb13-5"></a><span class="fu">\Vertex</span>[IdAsLabel, x=10, y=6, color=gray, size=1, fontsize=<span class="fu">\large</span>]{D}</span>
+<span id="cb13-6"><a href="#cb13-6"></a></span>
+<span id="cb13-7"><a href="#cb13-7"></a><span class="fu">\Edge</span>[label=2, bend=45, fontscale=2](A)(B)</span>
+<span id="cb13-8"><a href="#cb13-8"></a><span class="fu">\Edge</span>[label=6, bend=30, fontscale=2](A)(D)</span>
+<span id="cb13-9"><a href="#cb13-9"></a><span class="fu">\Edge</span>[label=3, bend=45, fontscale=2](B)(A)</span>
+<span id="cb13-10"><a href="#cb13-10"></a><span class="fu">\Edge</span>[label=5, bend=45, fontscale=2](B)(C)</span>
+<span id="cb13-11"><a href="#cb13-11"></a><span class="fu">\Edge</span>[label=4, bend=45, fontscale=2](C)(B)</span>
+<span id="cb13-12"><a href="#cb13-12"></a><span class="fu">\Edge</span>[label=7, bend=30, fontscale=2](D)(C)</span>
+<span id="cb13-13"><a href="#cb13-13"></a><span class="fu">\Edge</span>[label=1, fontscale=2](D)(B)</span>
+<span id="cb13-14"><a href="#cb13-14"></a><span class="kw">\end</span>{<span class="ex">tikzpicture</span>}</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-network-seven-bridges" class="quarto-figure quarto-figure-center anchored" width="480">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-network-seven-bridges-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="visualization-tikz_files/figure-html/fig-network-seven-bridges-1.png" class="img-fluid figure-img" width="480">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-network-seven-bridges-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;11.9: 柯尼斯堡七桥
+</figcaption></figure>
+</div>
+</div>
+</div>
+<ul>
+<li><p><code>\Vertex</code> 命令定义顶点（含标签），参数 <code>IdAsLabel</code> 表示顶点 ID 作为标签，参数 <code>x</code> 和 <code>y</code> 表示坐标位置，参数 <code>color</code> 表示顶点的填充色，参数 <code>size</code> 表示顶点的大小，参数 <code>fontsize</code> 表示标签文本的大小。</p></li>
+<li><p><code>\Edge</code> 命令在已有顶点的基础上定义边，<code>(A)(B)</code> 表示从顶点 A 到顶点 B 有一条边，参数<code>label</code> 表示边上的标签文本，参数 <code>bend</code> 表示边的弧度，参数 <code>fontscale</code> 表示标签文本的大小。</p></li>
+</ul>
+<p>不难看出，无论是顶点还是边，都有颜色、大小、标签等参数，尽管参数名称有所不同。</p>
+</section><section id="sec-tikz-mindmap" class="level2" data-number="11.5"><h2 data-number="11.5" class="anchored" data-anchor-id="sec-tikz-mindmap">
+<span class="header-section-number">11.5</span> 思维导图</h2>
+<p>思维导图是非常常见的一种树状图，用于梳理层次关系。TikZ 绘制思维导图是通过 mindmap 库实现的，它是 PGF 的一个库。如 <a href="#fig-tikz-mindmap" class="quarto-xref">图&nbsp;<span>11.10</span></a> 所示，看着和脑神经网络有某种相似性，所以，有时候，思维导图也叫脑图。</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode numberSource latex number-lines code-with-copy"><code class="sourceCode latex"><span id="cb14-1"><a href="#cb14-1"></a><span class="bu">\documentclass</span>[tikz,svgnames]{<span class="ex">standalone</span>}</span>
+<span id="cb14-2"><a href="#cb14-2"></a><span class="bu">\usepackage</span>[fontset=fandol]{<span class="ex">ctex</span>}</span>
+<span id="cb14-3"><a href="#cb14-3"></a><span class="fu">\usetikzlibrary</span>{mindmap}</span>
+<span id="cb14-4"><a href="#cb14-4"></a><span class="kw">\begin</span>{<span class="ex">document</span>}</span>
+<span id="cb14-5"><a href="#cb14-5"></a><span class="co">%% TikZ 代码%%</span></span>
+<span id="cb14-6"><a href="#cb14-6"></a><span class="kw">\end</span>{<span class="ex">document</span>}</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode numberSource tex number-lines code-with-copy"><code class="sourceCode latex"><span id="cb15-1"><a href="#cb15-1"></a><span class="kw">\begin</span>{<span class="ex">tikzpicture</span>}[</span>
+<span id="cb15-2"><a href="#cb15-2"></a>    mindmap, every node/.style=concept, concept color=orange, text=white,</span>
+<span id="cb15-3"><a href="#cb15-3"></a>    level 1/.append style={level distance=5cm, sibling angle=60, font=<span class="fu">\LARGE</span>},</span>
+<span id="cb15-4"><a href="#cb15-4"></a>    level 2/.append style={level distance=3.5cm, sibling angle=45, font=<span class="fu">\large</span>}</span>
+<span id="cb15-5"><a href="#cb15-5"></a>  ]</span>
+<span id="cb15-6"><a href="#cb15-6"></a></span>
+<span id="cb15-7"><a href="#cb15-7"></a>  <span class="fu">\node</span>{<span class="fu">\huge</span>{<span class="fu">\textsf</span>{数据分析}}} [clockwise from=60]</span>
+<span id="cb15-8"><a href="#cb15-8"></a>  child [concept color=DarkMagenta] {</span>
+<span id="cb15-9"><a href="#cb15-9"></a>      node {<span class="fu">\textit</span>{数据准备}} [clockwise from=120]</span>
+<span id="cb15-10"><a href="#cb15-10"></a>      child { node {数据对象}}</span>
+<span id="cb15-11"><a href="#cb15-11"></a>      child { node {数据获取}}</span>
+<span id="cb15-12"><a href="#cb15-12"></a>      child { node {数据清洗}}</span>
+<span id="cb15-13"><a href="#cb15-13"></a>      child { node {数据操作}}</span>
+<span id="cb15-14"><a href="#cb15-14"></a>    }</span>
+<span id="cb15-15"><a href="#cb15-15"></a>  child [concept color=DarkBlue] {</span>
+<span id="cb15-16"><a href="#cb15-16"></a>      node {<span class="fu">\textit</span>{数据探索}} [clockwise from=30]</span>
+<span id="cb15-17"><a href="#cb15-17"></a>      child { node {ggplot2 入门}}</span>
+<span id="cb15-18"><a href="#cb15-18"></a>      child { node {基础图形}}</span>
+<span id="cb15-19"><a href="#cb15-19"></a>      child { node {统计图形}}</span>
+<span id="cb15-20"><a href="#cb15-20"></a>    }</span>
+<span id="cb15-21"><a href="#cb15-21"></a>  child [concept color=Brown] {</span>
+<span id="cb15-22"><a href="#cb15-22"></a>      node {<span class="fu">\textit</span>{数据交流}} [clockwise from=-30]</span>
+<span id="cb15-23"><a href="#cb15-23"></a>      child { node {交互图形}}</span>
+<span id="cb15-24"><a href="#cb15-24"></a>      child { node {交互表格}}</span>
+<span id="cb15-25"><a href="#cb15-25"></a>      child { node {交互应用}}</span>
+<span id="cb15-26"><a href="#cb15-26"></a>    }</span>
+<span id="cb15-27"><a href="#cb15-27"></a>  child [concept color=teal] {</span>
+<span id="cb15-28"><a href="#cb15-28"></a>      node {<span class="fu">\textit</span>{统计分析}} [clockwise from=-75]</span>
+<span id="cb15-29"><a href="#cb15-29"></a>      child { node {统计检验}}</span>
+<span id="cb15-30"><a href="#cb15-30"></a>      child { node {回归分析}}</span>
+<span id="cb15-31"><a href="#cb15-31"></a>      child { node {功效分析}}</span>
+<span id="cb15-32"><a href="#cb15-32"></a>    }</span>
+<span id="cb15-33"><a href="#cb15-33"></a>  child [concept color=purple] {</span>
+<span id="cb15-34"><a href="#cb15-34"></a>      node {<span class="fu">\textit</span>{数据建模}} [clockwise from=-120]</span>
+<span id="cb15-35"><a href="#cb15-35"></a>      child { node {网络分析}}</span>
+<span id="cb15-36"><a href="#cb15-36"></a>      child { node {文本分析}}</span>
+<span id="cb15-37"><a href="#cb15-37"></a>      child { node {时序分析}}</span>
+<span id="cb15-38"><a href="#cb15-38"></a>    }</span>
+<span id="cb15-39"><a href="#cb15-39"></a>  child [concept color=DarkGreen] {</span>
+<span id="cb15-40"><a href="#cb15-40"></a>      node {<span class="fu">\textit</span>{优化建模}} [clockwise from=180]</span>
+<span id="cb15-41"><a href="#cb15-41"></a>      child { node {统计计算}}</span>
+<span id="cb15-42"><a href="#cb15-42"></a>      child { node {数值优化}}</span>
+<span id="cb15-43"><a href="#cb15-43"></a>      child { node {优化问题}}</span>
+<span id="cb15-44"><a href="#cb15-44"></a>    };</span>
+<span id="cb15-45"><a href="#cb15-45"></a><span class="kw">\end</span>{<span class="ex">tikzpicture</span>}</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-tikz-mindmap" class="quarto-figure quarto-figure-center anchored" width="672">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-tikz-mindmap-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="visualization-tikz_files/figure-html/fig-tikz-mindmap-1.png" class="img-fluid figure-img" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-tikz-mindmap-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;11.10: TikZ 绘制思维导图
+</figcaption></figure>
+</div>
+</div>
+</div>
+<p>根节点视为一层，则该思维导图有三层。不同的颜色和字体来区分不同的层次或分类，数据分析划分为不同的部分，每个部分有若干章。根节点字体为黑体、第二、三级节点分别为楷体、宋体。</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode numberSource latex number-lines code-with-copy"><code class="sourceCode latex"><span id="cb16-1"><a href="#cb16-1"></a><span class="fu">\node</span>{<span class="fu">\huge</span>{<span class="fu">\textsf</span>{数据科学}}} [clockwise from=60]</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>定义根节点，节点的文本设置为黑体，大小设置为 <code>\huge</code> 。由根节点向外辐射生成 6 个子节点，每隔 60 度设置一个子节点。</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode numberSource latex number-lines code-with-copy"><code class="sourceCode latex"><span id="cb17-1"><a href="#cb17-1"></a>  child [concept color=DarkMagenta] {</span>
+<span id="cb17-2"><a href="#cb17-2"></a>      node {<span class="fu">\textit</span>{数据准备}} [clockwise from=120]</span>
+<span id="cb17-3"><a href="#cb17-3"></a>      child { node {数据对象}}</span>
+<span id="cb17-4"><a href="#cb17-4"></a>      child { node {数据获取}}</span>
+<span id="cb17-5"><a href="#cb17-5"></a>      child { node {数据清洗}}</span>
+<span id="cb17-6"><a href="#cb17-6"></a>      child { node {数据操作}}</span>
+<span id="cb17-7"><a href="#cb17-7"></a>    }</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>第一个子节点，颜色为饱和的紫色 DarkMagenta，二级子节点为「数据准备」，三级子节点有 4 个，逆时针 120 度的位置设置第一个三级子节点「数据对象」，然后顺时针往下，依次是「数据获取」、「数据清洗」和「数据操作」。</p>
+</section><section id="sec-smart-diagram" class="level2" data-number="11.6"><h2 data-number="11.6" class="anchored" data-anchor-id="sec-smart-diagram">
+<span class="header-section-number">11.6</span> SmartArt 图</h2>
+<p>Office 办公软件中有一个 SmartArt 绘图模块，专门用来绘制各类示意图。LaTeX 宏包 <a href="https://ctan.org/pkg/smartdiagram">smartdiagram</a> 基于 TikZ 定制了一套风格类似的绘图库。 smartdiagram 宏包的主要绘图命令是 <code>\smartdiagram[参数值]</code> ，设置不同的参数值可以绘制不同的图形，如气泡图 <code>bubble diagram</code> 和描述图 <code>descriptive diagram</code> 等。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode numberSource tex number-lines code-with-copy"><code class="sourceCode latex"><span id="cb18-1"><a href="#cb18-1"></a><span class="fu">\smartdiagram</span>[bubble diagram]{</span>
+<span id="cb18-2"><a href="#cb18-2"></a>  Pandoc,</span>
+<span id="cb18-3"><a href="#cb18-3"></a>  编程语言~<span class="fu">\\</span> (Python<span class="fu">\\</span>R/Julia<span class="fu">\\</span>JavaScript), </span>
+<span id="cb18-4"><a href="#cb18-4"></a>  编译引擎~<span class="fu">\\</span> (Jupyter<span class="fu">\\</span>Knitr<span class="fu">\\</span>Observable), </span>
+<span id="cb18-5"><a href="#cb18-5"></a>  扩展Pandoc~<span class="fu">\\</span> (交叉引用<span class="fu">\\</span>悬浮引用<span class="fu">\\</span>布局面板), </span>
+<span id="cb18-6"><a href="#cb18-6"></a>  文档项目~<span class="fu">\\</span> (批量渲染<span class="fu">\\</span>共享配置),</span>
+<span id="cb18-7"><a href="#cb18-7"></a>  扩展接口~<span class="fu">\\</span> (RStudio<span class="fu">\\</span>VS Code<span class="fu">\\</span>JupyterLab) </span>
+<span id="cb18-8"><a href="#cb18-8"></a>}</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-smartdiagram-bubble" class="quarto-figure quarto-figure-center anchored" width="384">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-smartdiagram-bubble-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="visualization-tikz_files/figure-html/fig-smartdiagram-bubble-1.png" class="img-fluid figure-img" width="384">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-smartdiagram-bubble-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;11.11: 气泡图
+</figcaption></figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode numberSource tex number-lines code-with-copy"><code class="sourceCode latex"><span id="cb19-1"><a href="#cb19-1"></a><span class="fu">\smartdiagram</span>[descriptive diagram]{</span>
+<span id="cb19-2"><a href="#cb19-2"></a>  {编程语言, {Python、R、Julia、JavaScript}}, </span>
+<span id="cb19-3"><a href="#cb19-3"></a>  {编译引擎, {Jupyter、Knitr、Observable}}, </span>
+<span id="cb19-4"><a href="#cb19-4"></a>  {扩展Pandoc, {交叉引用、悬浮引用、布局面板}}, </span>
+<span id="cb19-5"><a href="#cb19-5"></a>  {文档项目, {批量渲染、共享配置}},</span>
+<span id="cb19-6"><a href="#cb19-6"></a>  {扩展接口, {RStudio、VS Code、JupyterLab}},</span>
+<span id="cb19-7"><a href="#cb19-7"></a>}</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-smartdiagram-descriptive" class="quarto-figure quarto-figure-center anchored" width="384">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-smartdiagram-descriptive-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="visualization-tikz_files/figure-html/fig-smartdiagram-descriptive-1.png" class="img-fluid figure-img" width="384">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-smartdiagram-descriptive-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;11.12: 描述图
+</figcaption></figure>
+</div>
+</div>
+</div>
+</section><section id="sec-tikz-with-r" class="level2" data-number="11.7"><h2 data-number="11.7" class="anchored" data-anchor-id="sec-tikz-with-r">
+<span class="header-section-number">11.7</span> TikZ 与 R</h2>
+<p>TikZ 绘图的优势有很多，语法简单、易于上手、功能强大、资源丰富、成熟稳定等，可以说几乎是集所有优点于一身。正因如此，<strong>knitr</strong> 包和 <strong>tikzDevice</strong> 包将其引入 R 语言社区中。<strong>knitr</strong> 包的 <code>tikz</code> 引擎是用来编译 TikZ 代码的，默认使用的是 standalone 文类。</p>
+<p>R 语言绘图遇到公式时，略显不足，而排版公式是 LaTeX 的优势。正因为有所不足，所以我也不会纠结于工具层面的东西，什么好用用什么！三维 <a href="#fig-tikz-viridis" class="quarto-xref">图&nbsp;<span>11.6</span></a> 是用 LaTeX 里的优秀绘图工具 TikZ 制作的，细心的读者会发现本书多次用到这个工具。</p>
+<p>众所周知，Donald Knuth 十年磨一剑，开发了 TeX 排版系统，就是解决排版数学公式的痛点。如 <a href="#fig-linear-model" class="quarto-xref">图&nbsp;<span>11.13</span></a> 所示，因图形中包含数学公式和符号，为了获得原汁原味的渲染效果，在使用 Base R 绘图的过程中通过 <a href="https://github.com/daqana/tikzDevice"><strong>tikzDevice</strong></a> 包引入了 LaTeX 中的 TikZ 绘图引擎。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1"></a>opar <span class="ot">&lt;-</span> <span class="fu">par</span>(<span class="at">mgp =</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="fl">0.7</span>, <span class="dv">0</span>), <span class="at">mar =</span> <span class="fu">c</span>(<span class="dv">4</span>, <span class="dv">3</span>, <span class="dv">4</span>, <span class="dv">1</span>) <span class="sc">+</span> <span class="fl">0.1</span>, <span class="at">no.readonly =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb20-2"><a href="#cb20-2"></a><span class="fu">set.seed</span>(<span class="dv">2021</span>)</span>
+<span id="cb20-3"><a href="#cb20-3"></a>x <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="dv">10</span>)</span>
+<span id="cb20-4"><a href="#cb20-4"></a>y <span class="ot">&lt;-</span> x <span class="sc">+</span> <span class="fu">rnorm</span>(<span class="dv">5</span>, <span class="at">sd =</span> <span class="fl">0.25</span>)</span>
+<span id="cb20-5"><a href="#cb20-5"></a>lab <span class="ot">&lt;-</span> <span class="fu">sample</span>(</span>
+<span id="cb20-6"><a href="#cb20-6"></a>  <span class="at">x =</span> <span class="fu">paste0</span>(<span class="st">"$</span><span class="sc">\\</span><span class="st">mathcal{"</span>, LETTERS, <span class="st">"}$"</span>),</span>
+<span id="cb20-7"><a href="#cb20-7"></a>  <span class="at">size =</span> <span class="dv">10</span>, <span class="at">replace =</span> <span class="cn">FALSE</span></span>
+<span id="cb20-8"><a href="#cb20-8"></a>)</span>
+<span id="cb20-9"><a href="#cb20-9"></a>model <span class="ot">&lt;-</span> <span class="fu">lm</span>(y <span class="sc">~</span> x)</span>
+<span id="cb20-10"><a href="#cb20-10"></a>rsq <span class="ot">&lt;-</span> <span class="fu">summary</span>(model)<span class="sc">$</span>r.squared</span>
+<span id="cb20-11"><a href="#cb20-11"></a>rsq <span class="ot">&lt;-</span> <span class="fu">signif</span>(rsq, <span class="dv">4</span>)</span>
+<span id="cb20-12"><a href="#cb20-12"></a><span class="fu">plot</span>(x, y,</span>
+<span id="cb20-13"><a href="#cb20-13"></a>  <span class="at">main =</span> <span class="st">"你好 </span><span class="sc">\\</span><span class="st">LaTeX!"</span>, <span class="co"># 引入 7 号文本字体</span></span>
+<span id="cb20-14"><a href="#cb20-14"></a>  <span class="at">sub =</span> <span class="st">"$</span><span class="sc">\\</span><span class="st">mathcal{N}(x;</span><span class="sc">\\</span><span class="st">mu,</span><span class="sc">\\</span><span class="st">Sigma)$"</span>,</span>
+<span id="cb20-15"><a href="#cb20-15"></a>  <span class="at">xlab =</span> <span class="st">"$x$"</span>, <span class="at">ylab =</span> <span class="st">"$y$"</span>, <span class="at">type =</span> <span class="st">"n"</span></span>
+<span id="cb20-16"><a href="#cb20-16"></a>)</span>
+<span id="cb20-17"><a href="#cb20-17"></a><span class="fu">text</span>(<span class="at">x =</span> x, <span class="at">y =</span> y, <span class="at">labels =</span> lab)</span>
+<span id="cb20-18"><a href="#cb20-18"></a><span class="fu">abline</span>(model, <span class="at">col =</span> <span class="st">"black"</span>)</span>
+<span id="cb20-19"><a href="#cb20-19"></a><span class="co"># 引入 7 号数学字体</span></span>
+<span id="cb20-20"><a href="#cb20-20"></a><span class="fu">mtext</span>(<span class="fu">paste</span>(<span class="st">"线性模型: $</span><span class="sc">\\</span><span class="st">mathsf{R}^{2}="</span>, rsq, <span class="st">"$"</span>), <span class="at">line =</span> <span class="fl">0.5</span>)</span>
+<span id="cb20-21"><a href="#cb20-21"></a><span class="fu">legend</span>(<span class="st">"bottomright"</span>,</span>
+<span id="cb20-22"><a href="#cb20-22"></a>  <span class="at">legend =</span> <span class="fu">paste0</span>(</span>
+<span id="cb20-23"><a href="#cb20-23"></a>    <span class="st">"$y = "</span>, <span class="fu">round</span>(<span class="fu">coef</span>(model)[<span class="dv">2</span>], <span class="dv">3</span>), <span class="st">"x +"</span>,</span>
+<span id="cb20-24"><a href="#cb20-24"></a>    <span class="fu">round</span>(<span class="fu">coef</span>(model)[<span class="dv">1</span>], <span class="dv">3</span>), <span class="st">"$"</span></span>
+<span id="cb20-25"><a href="#cb20-25"></a>  ),</span>
+<span id="cb20-26"><a href="#cb20-26"></a>  <span class="at">bty =</span> <span class="st">"n"</span></span>
+<span id="cb20-27"><a href="#cb20-27"></a>)</span>
+<span id="cb20-28"><a href="#cb20-28"></a><span class="fu">on.exit</span>(<span class="fu">par</span>(opar), <span class="at">add =</span> <span class="cn">TRUE</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-linear-model" class="quarto-figure quarto-figure-center anchored" width="60%">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-linear-model-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="visualization-tikz_files/figure-html/fig-linear-model-1.png" class="img-fluid figure-img" style="width:60.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-linear-model-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;11.13: 简单线性模型
+</figcaption></figure>
+</div>
+</div>
+</div>
+<p><a href="#fig-bessel-function" class="quarto-xref">图&nbsp;<span>11.14</span></a> 是贝塞尔函数 <span class="math inline">\(\mathcal{K}_{\kappa}(u)\)</span> 在区间 <span class="math inline">\((10^{-8}, 10^2)\)</span> 和 <span class="math inline">\((0, 4)\)</span> 上的图像。其中，<a href="#fig-bessel-function-1" class="quarto-xref">图&nbsp;<span>11.14 (a)</span></a> 是区间 <span class="math inline">\((10^{-8}, 10^2)\)</span> 上的贝塞尔函数 <span class="math inline">\(\mathcal{K}_{\kappa}(u)\)</span>， <a href="#fig-bessel-function-2" class="quarto-xref">图&nbsp;<span>11.14 (b)</span></a> 是区间 <span class="math inline">\((0, 4)\)</span> 上的贝塞尔函数 <span class="math inline">\(\mathcal{K}_{\kappa}(u)\)</span> 。</p>
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1"></a>x0 <span class="ot">&lt;-</span> <span class="dv">2</span><span class="sc">^</span>(<span class="sc">-</span><span class="dv">20</span><span class="sc">:</span><span class="dv">10</span>)</span>
+<span id="cb21-2"><a href="#cb21-2"></a>nus <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">2</span><span class="sc">:</span><span class="dv">5</span>, <span class="dv">10</span>, <span class="dv">20</span>)</span>
+<span id="cb21-3"><a href="#cb21-3"></a>x <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">4</span>, <span class="at">length.out =</span> <span class="dv">501</span>)</span>
+<span id="cb21-4"><a href="#cb21-4"></a></span>
+<span id="cb21-5"><a href="#cb21-5"></a><span class="fu">plot</span>(x0, x0<span class="sc">^-</span><span class="dv">8</span>,</span>
+<span id="cb21-6"><a href="#cb21-6"></a>  <span class="at">frame.plot =</span> <span class="cn">TRUE</span>, <span class="co"># 添加绘图框</span></span>
+<span id="cb21-7"><a href="#cb21-7"></a>  <span class="at">log =</span> <span class="st">"xy"</span>,    <span class="co"># x 和 y 轴都取对数尺度</span></span>
+<span id="cb21-8"><a href="#cb21-8"></a>  <span class="at">axes =</span> <span class="cn">FALSE</span>,  <span class="co"># 去掉坐标轴</span></span>
+<span id="cb21-9"><a href="#cb21-9"></a>  <span class="at">xlab =</span> <span class="st">"$u$"</span>, <span class="at">ylab =</span> <span class="st">"$</span><span class="sc">\\</span><span class="st">mathcal{K}_{</span><span class="sc">\\</span><span class="st">kappa}(u)$"</span>, <span class="co"># 设置坐标轴标签</span></span>
+<span id="cb21-10"><a href="#cb21-10"></a>  <span class="at">type =</span> <span class="st">"n"</span>, <span class="co"># 清除绘图区域的内容</span></span>
+<span id="cb21-11"><a href="#cb21-11"></a>  <span class="at">ann =</span> <span class="cn">TRUE</span>, <span class="co"># 添加标题 x和y轴标签</span></span>
+<span id="cb21-12"><a href="#cb21-12"></a>  <span class="at">panel.first =</span> <span class="fu">grid</span>() <span class="co"># 添加背景参考线</span></span>
+<span id="cb21-13"><a href="#cb21-13"></a>)</span>
+<span id="cb21-14"><a href="#cb21-14"></a></span>
+<span id="cb21-15"><a href="#cb21-15"></a><span class="fu">axis</span>(<span class="dv">1</span>,</span>
+<span id="cb21-16"><a href="#cb21-16"></a>  <span class="at">at =</span> <span class="dv">10</span><span class="sc">^</span>(<span class="sc">-</span><span class="dv">8</span> <span class="sc">+</span> <span class="dv">2</span> <span class="sc">*</span> <span class="dv">0</span><span class="sc">:</span><span class="dv">5</span>),</span>
+<span id="cb21-17"><a href="#cb21-17"></a>  <span class="at">labels =</span> <span class="fu">paste0</span>(<span class="st">"$</span><span class="sc">\\</span><span class="st">mathsf{10^{"</span>, <span class="sc">-</span><span class="dv">8</span> <span class="sc">+</span> <span class="dv">2</span> <span class="sc">*</span> <span class="dv">0</span><span class="sc">:</span><span class="dv">5</span>, <span class="st">"}}$"</span>)</span>
+<span id="cb21-18"><a href="#cb21-18"></a>)</span>
+<span id="cb21-19"><a href="#cb21-19"></a><span class="fu">axis</span>(<span class="dv">2</span>,</span>
+<span id="cb21-20"><a href="#cb21-20"></a>  <span class="at">at =</span> <span class="dv">10</span><span class="sc">^</span>(<span class="sc">-</span><span class="dv">8</span> <span class="sc">+</span> <span class="dv">16</span> <span class="sc">*</span> <span class="dv">0</span><span class="sc">:</span><span class="dv">4</span>),</span>
+<span id="cb21-21"><a href="#cb21-21"></a>  <span class="at">labels =</span> <span class="fu">paste0</span>(<span class="st">"$</span><span class="sc">\\</span><span class="st">mathsf{10^{"</span>, <span class="sc">-</span><span class="dv">8</span> <span class="sc">+</span> <span class="dv">16</span> <span class="sc">*</span> <span class="dv">0</span><span class="sc">:</span><span class="dv">4</span>, <span class="st">"}}$"</span>), <span class="at">las =</span> <span class="dv">1</span></span>
+<span id="cb21-22"><a href="#cb21-22"></a>)</span>
+<span id="cb21-23"><a href="#cb21-23"></a></span>
+<span id="cb21-24"><a href="#cb21-24"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq</span>(<span class="fu">length</span>(nus))) {</span>
+<span id="cb21-25"><a href="#cb21-25"></a>  <span class="fu">lines</span>(x0, <span class="fu">besselK</span>(x0, <span class="at">nu =</span> nus[i]), <span class="at">col =</span> <span class="fu">hcl.colors</span>(<span class="dv">9</span>)[i], <span class="at">lwd =</span> <span class="dv">2</span>)</span>
+<span id="cb21-26"><a href="#cb21-26"></a>}</span>
+<span id="cb21-27"><a href="#cb21-27"></a><span class="fu">legend</span>(<span class="st">"topright"</span>,</span>
+<span id="cb21-28"><a href="#cb21-28"></a>  <span class="at">legend =</span> <span class="fu">paste0</span>(<span class="st">"$</span><span class="sc">\\</span><span class="st">kappa="</span>, <span class="fu">rev</span>(nus), <span class="st">"$"</span>),</span>
+<span id="cb21-29"><a href="#cb21-29"></a>  <span class="at">col =</span> <span class="fu">hcl.colors</span>(<span class="dv">9</span>, <span class="at">rev =</span> <span class="cn">TRUE</span>), <span class="at">lwd =</span> <span class="dv">2</span>, <span class="at">cex =</span> <span class="dv">1</span></span>
+<span id="cb21-30"><a href="#cb21-30"></a>)</span>
+<span id="cb21-31"><a href="#cb21-31"></a></span>
+<span id="cb21-32"><a href="#cb21-32"></a>x <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">4</span>, <span class="at">length.out =</span> <span class="dv">501</span>)</span>
+<span id="cb21-33"><a href="#cb21-33"></a>x <span class="ot">&lt;-</span> x[x <span class="sc">&gt;</span> <span class="dv">0</span>]</span>
+<span id="cb21-34"><a href="#cb21-34"></a><span class="fu">plot</span>(x, x,</span>
+<span id="cb21-35"><a href="#cb21-35"></a>  <span class="at">frame.plot =</span> <span class="cn">TRUE</span>, <span class="at">ylim =</span> <span class="fu">c</span>(<span class="fl">1e+0</span>, <span class="fl">1e+20</span>), <span class="at">log =</span> <span class="st">"y"</span>,</span>
+<span id="cb21-36"><a href="#cb21-36"></a>  <span class="at">xlab =</span> <span class="st">"$u$"</span>, <span class="at">ylab =</span> <span class="st">"$</span><span class="sc">\\</span><span class="st">mathcal{K}_{</span><span class="sc">\\</span><span class="st">kappa}(u)$"</span>,</span>
+<span id="cb21-37"><a href="#cb21-37"></a>  <span class="at">type =</span> <span class="st">"n"</span>, <span class="at">yaxt =</span> <span class="st">"n"</span>, <span class="at">ann =</span> <span class="cn">TRUE</span>, <span class="at">panel.first =</span> <span class="fu">grid</span>()</span>
+<span id="cb21-38"><a href="#cb21-38"></a>)</span>
+<span id="cb21-39"><a href="#cb21-39"></a><span class="fu">axis</span>(<span class="dv">2</span>,</span>
+<span id="cb21-40"><a href="#cb21-40"></a>  <span class="at">at =</span> <span class="fu">c</span>(<span class="fl">1e+0</span>, <span class="fl">1e+05</span>, <span class="fl">1e+10</span>, <span class="fl">1e+15</span>, <span class="fl">1e+20</span>),</span>
+<span id="cb21-41"><a href="#cb21-41"></a>  <span class="at">labels =</span> <span class="fu">paste0</span>(<span class="st">"$</span><span class="sc">\\</span><span class="st">mathsf{10^{"</span>, <span class="dv">5</span> <span class="sc">*</span> <span class="dv">0</span><span class="sc">:</span><span class="dv">4</span>, <span class="st">"}}$"</span>), <span class="at">las =</span> <span class="dv">1</span></span>
+<span id="cb21-42"><a href="#cb21-42"></a>)</span>
+<span id="cb21-43"><a href="#cb21-43"></a></span>
+<span id="cb21-44"><a href="#cb21-44"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq</span>(<span class="fu">length</span>(nus))) {</span>
+<span id="cb21-45"><a href="#cb21-45"></a>  <span class="fu">lines</span>(x, <span class="fu">besselK</span>(x, <span class="at">nu =</span> nus[i]), <span class="at">col =</span> <span class="fu">hcl.colors</span>(<span class="dv">9</span>)[i], <span class="at">lwd =</span> <span class="dv">2</span>)</span>
+<span id="cb21-46"><a href="#cb21-46"></a>}</span>
+<span id="cb21-47"><a href="#cb21-47"></a><span class="fu">legend</span>(<span class="st">"topright"</span>,</span>
+<span id="cb21-48"><a href="#cb21-48"></a>  <span class="at">legend =</span> <span class="fu">paste0</span>(<span class="st">"$</span><span class="sc">\\</span><span class="st">kappa="</span>, <span class="fu">rev</span>(nus), <span class="st">"$"</span>),</span>
+<span id="cb21-49"><a href="#cb21-49"></a>  <span class="at">col =</span> <span class="fu">hcl.colors</span>(<span class="dv">9</span>, <span class="at">rev =</span> <span class="cn">TRUE</span>), <span class="at">lwd =</span> <span class="dv">2</span>, <span class="at">cex =</span> <span class="dv">1</span></span>
+<span id="cb21-50"><a href="#cb21-50"></a>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="fig-bessel-function" class="quarto-layout-panel">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-bessel-function-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="quarto-layout-row quarto-layout-valign-top">
+<div class="cell-output-display quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-bessel-function" style="flex-basis: 50.0%;justify-content: center;">
+<div id="fig-bessel-function-1" class="quarto-figure quarto-figure-center anchored" width="336">
+<figure class="quarto-float quarto-subfloat-fig figure"><div aria-describedby="fig-bessel-function-1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="visualization-tikz_files/figure-html/fig-bessel-function-1.png" class="img-fluid figure-img" data-ref-parent="fig-bessel-function" width="336">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-subfloat-caption quarto-subfloat-fig" id="fig-bessel-function-1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+(a) 区间 <span class="math inline">\((10^{-8}, 10^2)\)</span> 上的贝塞尔函数
+</figcaption></figure>
+</div>
+</div>
+<div class="cell-output-display quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-bessel-function" style="flex-basis: 50.0%;justify-content: center;">
+<div id="fig-bessel-function-2" class="quarto-figure quarto-figure-center anchored" width="336">
+<figure class="quarto-float quarto-subfloat-fig figure"><div aria-describedby="fig-bessel-function-2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="visualization-tikz_files/figure-html/fig-bessel-function-2.png" class="img-fluid figure-img" data-ref-parent="fig-bessel-function" width="336">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-subfloat-caption quarto-subfloat-fig" id="fig-bessel-function-2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+(b) 区间 <span class="math inline">\((0, 4)\)</span> 上的贝塞尔函数
+</figcaption></figure>
+</div>
+</div>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-bessel-function-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;11.14: 贝塞尔函数图像
+</figcaption></figure>
+</div>
+
+
+</section></main><!-- /main --><script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "已复制");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "已复制");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    const typesetMath = (el) => {
+      if (window.MathJax) {
+        // MathJax Typeset
+        window.MathJax.typeset([el]);
+      } else if (window.katex) {
+        // KaTeX Render
+        var mathElements = el.getElementsByClassName("math");
+        var macros = [];
+        for (var i = 0; i < mathElements.length; i++) {
+          var texText = mathElements[i].firstChild;
+          if (mathElements[i].tagName == "SPAN") {
+            window.katex.render(texText.data, mathElements[i], {
+              displayMode: mathElements[i].classList.contains('display'),
+              throwOnError: false,
+              macros: macros,
+              fleqn: false
+            });
+          }
+        }
+      }
+    }
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        typesetMath(container);
+        return container.innerHTML
+      } else {
+        typesetMath(note);
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      typesetMath(note);
+      return note.innerHTML;
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script><nav class="page-navigation"><div class="nav-page nav-page-previous">
+      <a href="./visualization-graphics.html" class="pagination-link  aria-label=">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">graphics 入门</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./visualization-practice.html" class="pagination-link" aria-label="<span class='chapter-number'>12</span>&nbsp; <span class='chapter-title'>探索实践</span>">
+        <span class="nav-page-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">探索实践</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+</body></html>

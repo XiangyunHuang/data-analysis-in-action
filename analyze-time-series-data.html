@@ -1,0 +1,1891 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh-Hans" xml:lang="zh-Hans"><head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.4.515">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>R 语言数据分析实战 - 26&nbsp; 时序分析</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+  margin-bottom: 0em;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./analyze-point-pattern.html" rel="next">
+<link href="./analyze-survival-data.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light"><script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "没有结果",
+    "search-matching-documents-text": "匹配的文档",
+    "search-copy-link-title": "复制搜索链接",
+    "search-hide-matches-text": "隐藏其它匹配结果",
+    "search-more-match-text": "更多匹配结果",
+    "search-more-matches-text": "更多匹配结果",
+    "search-clear-button-title": "清除",
+    "search-detached-cancel-button-title": "取消",
+    "search-submit-button-title": "提交",
+    "search-label": "搜索"
+  }
+}</script><script async="" src="https://www.googletagmanager.com/gtag/js?id=G-ZPWJBMKFL8"></script><script type="text/javascript">
+
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-ZPWJBMKFL8', { 'anonymize_ip': true});
+</script><script>
+MathJax ={
+  tex: {
+    macros: {
+      bm: ["{\\boldsymbol #1}",1],
+    }
+  }
+};
+</script><script src="site_libs/htmlwidgets-1.6.3/htmlwidgets.js"></script><script src="site_libs/jquery-1.11.1/jquery.min.js"></script><link href="site_libs/dygraphs-1.1.1/dygraph.css" rel="stylesheet">
+<script src="site_libs/dygraphs-1.1.1/dygraph-combined.js"></script><script src="site_libs/dygraphs-1.1.1/shapes.js"></script><script src="site_libs/moment-2.8.4/moment.js"></script><script src="site_libs/moment-timezone-0.2.5/moment-timezone-with-data.js"></script><script src="site_libs/moment-fquarter-1.0.0/moment-fquarter.min.js"></script><script src="site_libs/dygraphs-binding-1.1.1.6/dygraphs.js"></script><script src="site_libs/Dygraph.Plugins.Unzoom-1.0/unzoom.js"></script><script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script><script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+</head>
+<body class="nav-sidebar floating">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top"><nav class="quarto-secondary-nav"><div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="切换侧边栏导航" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./analyze-network-data.html">数据建模</a></li><li class="breadcrumb-item"><a href="./analyze-time-series-data.html"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">时序分析</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="切换侧边栏导航" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav></header><!-- content --><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto"><div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">R 语言数据分析实战</a> 
+        <div class="sidebar-tools-main">
+    <a href="https://github.com/XiangyunHuang/data-analysis-in-action" title="Source Code" class="quarto-navigation-tool px-1" aria-label="Source Code"><i class="bi bi-github"></i></a>
+    <a href="./_main.pdf" title="Download PDF" class="quarto-navigation-tool px-1" aria-label="Download PDF"><i class="bi bi-file-pdf"></i></a>
+</div>
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="搜索"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">欢迎</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./preface.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">前言</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./intro.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">介绍</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true">
+ <span class="menu-text">数据准备</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./wrangling-objects.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">数据对象</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./wrangling-collection.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">数据获取</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./wrangling-cleaning.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">数据清洗</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./wrangling-manipulation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">数据操作</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./wrangling-processing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">数据处理</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true">
+ <span class="menu-text">数据探索</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./visualization-basic.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">ggplot2 入门</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./visualization-intermediate.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">基础图形</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./visualization-advanced.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">统计图形</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./visualization-lattice.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">lattice 入门</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./visualization-graphics.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">graphics 入门</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./visualization-tikz.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">TikZ 入门</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./visualization-practice.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">探索实践</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true">
+ <span class="menu-text">数据交流</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./interactive-graphics.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">交互图形</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./interactive-tables.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">交互表格</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./interactive-applications.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title">交互应用</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./documents-html.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">16</span>&nbsp; <span class="chapter-title">HTML 文档</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./documents-latex.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">17</span>&nbsp; <span class="chapter-title">PDF 文档</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./documents-office.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">Office 文档</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-expanded="true">
+ <span class="menu-text">统计分析</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./common-statistical-tests.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">常见的统计检验</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./regression-and-correlation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">20</span>&nbsp; <span class="chapter-title">回归与相关分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./categorical-data-analysis.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">21</span>&nbsp; <span class="chapter-title">分类数据的分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./power-analysis.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">统计检验的功效</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-expanded="true">
+ <span class="menu-text">数据建模</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./analyze-network-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">网络分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./analyze-text-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">文本分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./analyze-survival-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">生存分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./analyze-time-series-data.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">时序分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./analyze-point-pattern.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">空间点模式分析</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./analyze-spatial-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">28</span>&nbsp; <span class="chapter-title">预测核辐射强度的分布</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./analyze-areal-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">29</span>&nbsp; <span class="chapter-title">区域数据分析</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-expanded="true">
+ <span class="menu-text">优化建模</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./statistical-computation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">统计计算</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./numerical-optimization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">31</span>&nbsp; <span class="chapter-title">数值优化</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./optimization-problems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">32</span>&nbsp; <span class="chapter-title">优化问题</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" aria-expanded="true">
+ <span class="menu-text">贝叶斯建模</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./probabilistic-reasoning-framework.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">概率推理框架</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./generalized-linear-models.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">34</span>&nbsp; <span class="chapter-title">广义线性模型</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./hierarchical-normal-models.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">35</span>&nbsp; <span class="chapter-title">分层正态模型</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./mixed-effects-models.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">36</span>&nbsp; <span class="chapter-title">混合效应模型</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./generalized-additive-models.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">37</span>&nbsp; <span class="chapter-title">广义可加模型</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./gaussian-processes-regression.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">38</span>&nbsp; <span class="chapter-title">高斯过程回归</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./time-series-regression.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">39</span>&nbsp; <span class="chapter-title">时间序列回归</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" aria-expanded="true">
+ <span class="menu-text">机器学习</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./classification-problems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">40</span>&nbsp; <span class="chapter-title">分类问题</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./clustering-problems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">41</span>&nbsp; <span class="chapter-title">聚类问题</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./regression-problems.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">42</span>&nbsp; <span class="chapter-title">回归问题</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">参考文献</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" aria-expanded="true">
+ <span class="menu-text">附录</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" aria-expanded="true" aria-label="切換部分">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./notations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">数学符号</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./matrix-operations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">B</span>&nbsp; <span class="chapter-title">矩阵运算</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./git-github.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">C</span>&nbsp; <span class="chapter-title">Git 和 Github</span></span></a>
+  </div>
+</li>
+      </ul>
+</li>
+    </ul>
+</div>
+</nav><div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active"><h2 id="toc-title">目录</h2>
+   
+  <ul>
+<li><a href="#%E6%95%B0%E6%8D%AE%E8%8E%B7%E5%8F%96" id="toc-数据获取" class="nav-link active" data-scroll-target="#%E6%95%B0%E6%8D%AE%E8%8E%B7%E5%8F%96"><span class="header-section-number">26.1</span> 数据获取</a></li>
+  <li>
+<a href="#%E6%95%B0%E6%8D%AE%E6%8E%A2%E7%B4%A2" id="toc-数据探索" class="nav-link" data-scroll-target="#%E6%95%B0%E6%8D%AE%E6%8E%A2%E7%B4%A2"><span class="header-section-number">26.2</span> 数据探索</a>
+  <ul class="collapse">
+<li><a href="#zoo" id="toc-zoo" class="nav-link" data-scroll-target="#zoo"><span class="header-section-number">26.2.1</span> zoo</a></li>
+  <li><a href="#xts" id="toc-xts" class="nav-link" data-scroll-target="#xts"><span class="header-section-number">26.2.2</span> xts</a></li>
+  <li><a href="#ggfortify" id="toc-ggfortify" class="nav-link" data-scroll-target="#ggfortify"><span class="header-section-number">26.2.3</span> ggfortify</a></li>
+  <li><a href="#dygraphs" id="toc-dygraphs" class="nav-link" data-scroll-target="#dygraphs"><span class="header-section-number">26.2.4</span> dygraphs</a></li>
+  </ul>
+</li>
+  <li>
+<a href="#%E5%B9%B3%E7%A8%B3%E6%80%A7%E8%AF%8A%E6%96%AD" id="toc-平稳性诊断" class="nav-link" data-scroll-target="#%E5%B9%B3%E7%A8%B3%E6%80%A7%E8%AF%8A%E6%96%AD"><span class="header-section-number">26.3</span> 平稳性诊断</a>
+  <ul class="collapse">
+<li><a href="#%E8%87%AA%E7%9B%B8%E5%85%B3%E5%9B%BE" id="toc-自相关图" class="nav-link" data-scroll-target="#%E8%87%AA%E7%9B%B8%E5%85%B3%E5%9B%BE"><span class="header-section-number">26.3.1</span> 自相关图</a></li>
+  <li><a href="#%E5%81%8F%E8%87%AA%E7%9B%B8%E5%85%B3%E5%9B%BE" id="toc-偏自相关图" class="nav-link" data-scroll-target="#%E5%81%8F%E8%87%AA%E7%9B%B8%E5%85%B3%E5%9B%BE"><span class="header-section-number">26.3.2</span> 偏自相关图</a></li>
+  <li><a href="#sec-lag-operator" id="toc-sec-lag-operator" class="nav-link" data-scroll-target="#sec-lag-operator"><span class="header-section-number">26.3.3</span> 延迟算子</a></li>
+  <li><a href="#sec-diff-operator" id="toc-sec-diff-operator" class="nav-link" data-scroll-target="#sec-diff-operator"><span class="header-section-number">26.3.4</span> 差分算子</a></li>
+  <li><a href="#sec-unitroot-test" id="toc-sec-unitroot-test" class="nav-link" data-scroll-target="#sec-unitroot-test"><span class="header-section-number">26.3.5</span> 单位根检验</a></li>
+  <li><a href="#sec-granger-causality-test" id="toc-sec-granger-causality-test" class="nav-link" data-scroll-target="#sec-granger-causality-test"><span class="header-section-number">26.3.6</span> 格兰杰因果检验</a></li>
+  </ul>
+</li>
+  <li>
+<a href="#sec-exponential-smoothing" id="toc-sec-exponential-smoothing" class="nav-link" data-scroll-target="#sec-exponential-smoothing"><span class="header-section-number">26.4</span> 指数平滑模型</a>
+  <ul class="collapse">
+<li><a href="#%E6%8C%87%E6%95%B0%E5%B9%B3%E6%BB%91" id="toc-指数平滑" class="nav-link" data-scroll-target="#%E6%8C%87%E6%95%B0%E5%B9%B3%E6%BB%91"><span class="header-section-number">26.4.1</span> 指数平滑</a></li>
+  <li><a href="#%E5%87%BD%E6%95%B0-filter" id="toc-函数-filter" class="nav-link" data-scroll-target="#%E5%87%BD%E6%95%B0-filter"><span class="header-section-number">26.4.2</span> 函数 <code>filter()</code></a></li>
+  <li><a href="#%E7%AE%80%E5%8D%95%E6%8C%87%E6%95%B0%E5%B9%B3%E6%BB%91" id="toc-简单指数平滑" class="nav-link" data-scroll-target="#%E7%AE%80%E5%8D%95%E6%8C%87%E6%95%B0%E5%B9%B3%E6%BB%91"><span class="header-section-number">26.4.3</span> 简单指数平滑</a></li>
+  <li><a href="#sec-holt" id="toc-sec-holt" class="nav-link" data-scroll-target="#sec-holt"><span class="header-section-number">26.4.4</span> Holt 指数平滑</a></li>
+  <li><a href="#sec-holt-winters" id="toc-sec-holt-winters" class="nav-link" data-scroll-target="#sec-holt-winters"><span class="header-section-number">26.4.5</span> Holt-Winters 指数平滑</a></li>
+  </ul>
+</li>
+  <li>
+<a href="#sec-time-series-decomposition" id="toc-sec-time-series-decomposition" class="nav-link" data-scroll-target="#sec-time-series-decomposition"><span class="header-section-number">26.5</span> 时间序列分解</a>
+  <ul class="collapse">
+<li><a href="#sec-decompose" id="toc-sec-decompose" class="nav-link" data-scroll-target="#sec-decompose"><span class="header-section-number">26.5.1</span> 函数 <code>decompose()</code></a></li>
+  <li><a href="#sec-stl" id="toc-sec-stl" class="nav-link" data-scroll-target="#sec-stl"><span class="header-section-number">26.5.2</span> 函数 <code>stl()</code></a></li>
+  </ul>
+</li>
+  <li>
+<a href="#sec-classic-time-series-models" id="toc-sec-classic-time-series-models" class="nav-link" data-scroll-target="#sec-classic-time-series-models"><span class="header-section-number">26.6</span> 经典时间序列模型</a>
+  <ul class="collapse">
+<li><a href="#sec-autoregressive-models" id="toc-sec-autoregressive-models" class="nav-link" data-scroll-target="#sec-autoregressive-models"><span class="header-section-number">26.6.1</span> 自回归模型</a></li>
+  <li><a href="#sec-moving-average-models" id="toc-sec-moving-average-models" class="nav-link" data-scroll-target="#sec-moving-average-models"><span class="header-section-number">26.6.2</span> 移动平均模型</a></li>
+  <li><a href="#sec-autoregressive-moving-average-models" id="toc-sec-autoregressive-moving-average-models" class="nav-link" data-scroll-target="#sec-autoregressive-moving-average-models"><span class="header-section-number">26.6.3</span> 自回归移动平均模型</a></li>
+  </ul>
+</li>
+  <li><a href="#sec-time-series-summary" id="toc-sec-time-series-summary" class="nav-link" data-scroll-target="#sec-time-series-summary"><span class="header-section-number">26.7</span> 总结</a></li>
+  </ul><div class="toc-actions"><ul><li><a href="https://github.com/XiangyunHuang/data-analysis-in-action/blob/main/analyze-time-series-data.qmd" class="toc-action"><i class="bi bi-github"></i>查看代码</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./analyze-network-data.html">数据建模</a></li><li class="breadcrumb-item"><a href="./analyze-time-series-data.html"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">时序分析</span></a></li></ol></nav><div class="quarto-title">
+<h1 class="title"><span id="sec-analyze-time-series-data" class="quarto-section-identifier"><span class="chapter-number">26</span>&nbsp; <span class="chapter-title">时序分析</span></span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header><p>预测是非常古老的话题，几乎人人都想拥有预测未来的能力，唐朝袁天罡和李淳风的故事至今还广为流传。事实上，古时候只有至高无上的皇帝才可以去问钦天监了解星辰大海和国运命脉。时间序列数据的分析，以及根据分析得到的一般规律进行预测是经久不衰的命题。预测既包含一般规律指向的确定性，又有无法预知的不确定性，且<strong>同时</strong>包含认知局限带来的不确定性，后者往往更大。无休止地渴求往往伴随着巨大的挑战，而更大的挑战则是预测效果常常不能满足期待。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a><span class="fu">library</span>(quantmod)    <span class="co"># 获取数据</span></span>
+<span id="cb1-2"><a href="#cb1-2"></a><span class="fu">library</span>(ggplot2)     <span class="co"># 可视化</span></span>
+<span id="cb1-3"><a href="#cb1-3"></a><span class="fu">library</span>(ggfortify)   <span class="co"># 静态展示</span></span>
+<span id="cb1-4"><a href="#cb1-4"></a><span class="fu">library</span>(lmtest)      <span class="co"># 格兰杰因果检验</span></span>
+<span id="cb1-5"><a href="#cb1-5"></a><span class="fu">library</span>(dygraphs)    <span class="co"># 交互展示</span></span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>本章主要从以下几个方面展开：数据获取、数据探索、平稳性诊断、时间序列分解、模型拟合和预测。</p>
+<section id="数据获取" class="level2" data-number="26.1"><h2 data-number="26.1" class="anchored" data-anchor-id="数据获取">
+<span class="header-section-number">26.1</span> 数据获取</h2>
+<p>Joshua M. Ulrich 开发维护的 <a href="https://github.com/joshuaulrich/quantmod"><strong>quantmod</strong></a> 包可以下载国内外股票市场的数据。本节主要以美团股价数据为例，美团自 2018-09-20 在香港挂牌上市，股票代码 3690.HK。首先用 <strong>quantmod</strong> 包 <span class="citation" data-cites="quantmod2022">(<a href="references.html#ref-quantmod2022" role="doc-biblioref">Ryan 和 Ulrich 2022</a>)</span> 获取美团上市至 2023-11-24 每天的股价数据，包含 Open 开盘价、High 最高价、Low 最低价、Close 闭市价、Adjusted 调整价和 Volume 成交量数据。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1"></a><span class="fu">library</span>(quantmod)</span>
+<span id="cb2-2"><a href="#cb2-2"></a><span class="co"># 美团股票代码 3690</span></span>
+<span id="cb2-3"><a href="#cb2-3"></a>meituan <span class="ot">&lt;-</span> <span class="fu">getSymbols</span>(<span class="st">"3690.HK"</span>, <span class="at">auto.assign =</span> <span class="cn">FALSE</span>, <span class="at">src =</span> <span class="st">"yahoo"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>先来看数据的类型，数据类型颇为复杂，是由 <code>xts</code> 和 <code>zoo</code> 两种类型复合而成，<code>xts</code> 类型是继承自 <code>zoo</code> 类型的。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1"></a><span class="fu">class</span>(meituan)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "xts" "zoo"</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1"></a><span class="fu">str</span>(meituan)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>An xts object on 2018-09-20 / 2023-11-24 containing: 
+  Data:    double [1275, 6]
+  Columns: 3690.HK.Open, 3690.HK.High, 3690.HK.Low, 3690.HK.Close, 3690.HK.Volume ... with 1 more column
+  Index:   Date [1275] (TZ: "UTC")
+  xts Attributes:
+    $ src    : chr "yahoo"
+    $ updated: POSIXct[1:1], format: "2023-11-27 06:31:12"</code></pre>
+</div>
+</div>
+<p>数据集 <code>meituan</code> 是一个 <code>xts</code> 类型的时间序列数据对象，时间范围是 2018-09-20 至 2023-11-24，包含 4 个成分，分别如下</p>
+<ul>
+<li>Data 部分显示为 906 行 6 列的双精度浮点存储的数值。</li>
+<li>Columns 部分显示列名，依次是 3690.HK.Open、3690.HK.High、 3690.HK.Low 和 3690.HK.Close 等，当列数很多时，显示时会省略。</li>
+<li>Index 部分表示索引列，有序是时间序列数据的本质特点。示例中索引存储数据点产生的先后顺序，索引是用日期来表示的，日期所在的时区是 “UTC”。</li>
+<li>xts 部分是数据类型的一些属性（元数据），说明数据集的来源，什么时候制作的数据。示例中数据是从雅虎财经下载的，下载时间是 2023-11-27 14:31:12。</li>
+</ul>
+<p>与时间序列数据相关的数据类型有很多，比如 Base R 提供的 Date 和 POSIX 等，扩展包 <strong>timeDate</strong> 和 <strong>chron</strong> 也都有自己的一套数据类型及处理方法。<a href="https://github.com/joshuaulrich/xts"><strong>xts</strong></a> 包是处理时间序列数据的主要工具之一，xts 是 eXtensible Time Series 的缩写。为了进一步了解用法，下面举个例子，使用该 R 包的函数 <code>xts()</code> 构造时间序列对象。</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1"></a><span class="fu">xts</span>(<span class="at">x =</span> <span class="cn">NULL</span>,</span>
+<span id="cb7-2"><a href="#cb7-2"></a>    <span class="at">order.by =</span> <span class="fu">index</span>(x),</span>
+<span id="cb7-3"><a href="#cb7-3"></a>    <span class="at">frequency =</span> <span class="cn">NULL</span>,</span>
+<span id="cb7-4"><a href="#cb7-4"></a>    <span class="at">unique =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb7-5"><a href="#cb7-5"></a>    <span class="at">tzone =</span> <span class="fu">Sys.getenv</span>(<span class="st">"TZ"</span>),</span>
+<span id="cb7-6"><a href="#cb7-6"></a>    ...)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<ul>
+<li>参数 <code>x</code> 表示数据。</li>
+<li>参数 <code>order.by</code> 表示索引数据。</li>
+<li>参数 <code>frequency</code> 表示频率。</li>
+<li>参数 <code>unique</code> 表示唯一。</li>
+<li>参数 <code>tzone</code> 表示时区。</li>
+</ul>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1"></a><span class="fu">library</span>(zoo)</span>
+<span id="cb8-2"><a href="#cb8-2"></a><span class="fu">library</span>(xts)</span>
+<span id="cb8-3"><a href="#cb8-3"></a><span class="co"># 数据矩阵</span></span>
+<span id="cb8-4"><a href="#cb8-4"></a>x <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>, <span class="at">ncol =</span> <span class="dv">2</span>, <span class="at">nrow =</span> <span class="dv">2</span>)</span>
+<span id="cb8-5"><a href="#cb8-5"></a><span class="co"># 日期索引</span></span>
+<span id="cb8-6"><a href="#cb8-6"></a>idx <span class="ot">&lt;-</span> <span class="fu">as.Date</span>(<span class="fu">c</span>(<span class="st">"2018-01-01"</span>, <span class="st">"2019-12-12"</span>))</span>
+<span id="cb8-7"><a href="#cb8-7"></a><span class="co"># xts = matrix + index</span></span>
+<span id="cb8-8"><a href="#cb8-8"></a><span class="fu">xts</span>(x, <span class="at">order.by =</span> idx)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>           [,1] [,2]
+2018-01-01    1    3
+2019-12-12    2    4</code></pre>
+</div>
+</div>
+</section><section id="数据探索" class="level2" data-number="26.2"><h2 data-number="26.2" class="anchored" data-anchor-id="数据探索">
+<span class="header-section-number">26.2</span> 数据探索</h2>
+<section id="zoo" class="level3" data-number="26.2.1"><h3 data-number="26.2.1" class="anchored" data-anchor-id="zoo">
+<span class="header-section-number">26.2.1</span> zoo</h3>
+<p><strong>zoo</strong> 包提供 S3 范型函数 <code>autoplot.zoo()</code> 专门可视化 <code>zoo</code> 类型的数据，它接受一个 <code>zoo</code> 类型的数据对象，返回一个 <code>ggplot2</code> 数据对象，然后用户可以添加自定义的绘图设置，更多详情见帮助文档 <code>?autoplot.zoo()</code> 。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1"></a><span class="co"># xts 包需要先加载，否则 Index 不是日期类型而是数值类型</span></span>
+<span id="cb10-2"><a href="#cb10-2"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb10-3"><a href="#cb10-3"></a><span class="fu">autoplot</span>(meituan[, <span class="st">"3690.HK.Adjusted"</span>]) <span class="sc">+</span></span>
+<span id="cb10-4"><a href="#cb10-4"></a>  <span class="fu">theme_classic</span>() <span class="sc">+</span></span>
+<span id="cb10-5"><a href="#cb10-5"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"日期"</span>, <span class="at">y =</span> <span class="st">"股价"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-meituan-ggplot2" class="quarto-figure quarto-figure-center anchored" width="672">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-meituan-ggplot2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="analyze-time-series-data_files/figure-html/fig-meituan-ggplot2-1.png" class="img-fluid figure-img" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-meituan-ggplot2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;26.1: 美团在香港上市以来的股价走势
+</figcaption></figure>
+</div>
+</div>
+</div>
+<p><strong>zoo</strong> 包还提供另一个范型函数 <code>fortify()</code> 将 <code>zoo</code> 数据对象转化为 <code>data.frame</code> ，这可以方便使用 <strong>ggplot2</strong> 包来展示数据。参数 <code>melt = TRUE</code> 意味着重塑原数据集，将数据从宽格式转长格式。参数 <code>names = c(Index = "Date")</code> 表示将 Index 列重命名为 date 列。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1"></a>meituan_df <span class="ot">&lt;-</span> <span class="fu">fortify</span>(</span>
+<span id="cb11-2"><a href="#cb11-2"></a>  meituan[, <span class="fu">c</span>(<span class="st">"3690.HK.Adjusted"</span>, <span class="st">"3690.HK.High"</span>)],</span>
+<span id="cb11-3"><a href="#cb11-3"></a>  <span class="at">melt =</span> <span class="cn">TRUE</span>, <span class="at">names =</span> <span class="fu">c</span>(<span class="at">Index =</span> <span class="st">"Date"</span>)</span>
+<span id="cb11-4"><a href="#cb11-4"></a>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>数据集 <code>meituan_df</code> 中的 Series 列是因子型的，将其标签 <code>3690.HK.Adjusted</code> 、<code>3690.HK.High</code> 调整为调整价、最高价。根据日期字段 <code>Date</code> 提取年份字段 <code>year</code> 和一年中的第几天的字段 <code>day_of_year</code>。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1"></a>meituan_df <span class="ot">&lt;-</span> <span class="fu">within</span>(meituan_df, {</span>
+<span id="cb12-2"><a href="#cb12-2"></a>  <span class="co"># 调整 Series 的标签</span></span>
+<span id="cb12-3"><a href="#cb12-3"></a>  Series <span class="ot">&lt;-</span> <span class="fu">factor</span>(Series, <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">"调整价"</span>, <span class="st">"最高价"</span>))</span>
+<span id="cb12-4"><a href="#cb12-4"></a>  <span class="co"># 日期字段 Date 获取年份</span></span>
+<span id="cb12-5"><a href="#cb12-5"></a>  year <span class="ot">&lt;-</span> <span class="fu">format</span>(Date, <span class="st">"%Y"</span>)</span>
+<span id="cb12-6"><a href="#cb12-6"></a>  <span class="co"># 日期字段 Date 一年中的第几天</span></span>
+<span id="cb12-7"><a href="#cb12-7"></a>  day_of_year <span class="ot">&lt;-</span> <span class="fu">as.integer</span>(<span class="fu">format</span>(Date, <span class="st">"%j"</span>))</span>
+<span id="cb12-8"><a href="#cb12-8"></a>})</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>调用 <strong>ggplot2</strong> 包绘制分面、分组时间序列图，以 <code>day_of_year</code> 为横轴，股价 <code>Value</code> 为纵轴，按 <code>year</code> 分组，按 <code>Series</code> 分面。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1"></a><span class="fu">ggplot</span>(<span class="at">data =</span> meituan_df, <span class="fu">aes</span>(<span class="at">x =</span> day_of_year, <span class="at">y =</span> Value)) <span class="sc">+</span></span>
+<span id="cb13-2"><a href="#cb13-2"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">color =</span> year)) <span class="sc">+</span></span>
+<span id="cb13-3"><a href="#cb13-3"></a>  <span class="fu">facet_wrap</span>(<span class="sc">~</span>Series, <span class="at">ncol =</span> <span class="dv">1</span>) <span class="sc">+</span> </span>
+<span id="cb13-4"><a href="#cb13-4"></a>  <span class="fu">theme_classic</span>() <span class="sc">+</span></span>
+<span id="cb13-5"><a href="#cb13-5"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"一年中的第几天"</span>, <span class="at">y =</span> <span class="st">"调整的股价"</span>, <span class="at">color =</span> <span class="st">"年份"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-meituan-by-year" class="quarto-figure quarto-figure-center anchored" width="672">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-meituan-by-year-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="analyze-time-series-data_files/figure-html/fig-meituan-by-year-1.png" class="img-fluid figure-img" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-meituan-by-year-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;26.2: 美团调整的股价逐年走势
+</figcaption></figure>
+</div>
+</div>
+</div>
+<p>2019 年底开始出现疫情，2020 年整年陆续有疫情，美团股价一路狂飙突进，因疫情，利好外卖业务，市场看好外卖业务。2021 年政府去杠杆，互联网监管趋严，又监又管，受外部大环境，逆全球化趋势影响，整年股价一路走低。进入 2022 年，股价在 200 附近徘徊。</p>
+</section><section id="xts" class="level3" data-number="26.2.2"><h3 data-number="26.2.2" class="anchored" data-anchor-id="xts">
+<span class="header-section-number">26.2.2</span> xts</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1"></a><span class="fu">library</span>(xts)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p><strong>xts</strong> 包提供 S3 泛型函数 <code>plot.xts()</code> 专门用来可视化 <code>xts</code> 类型的时间序列数据</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1"></a><span class="fu">plot</span>(meituan[, <span class="st">"3690.HK.Adjusted"</span>], <span class="at">main =</span> <span class="st">"调整的股价"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-meituan-plot" class="quarto-figure quarto-figure-center anchored" width="672">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-meituan-plot-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="analyze-time-series-data_files/figure-html/fig-meituan-plot-1.png" class="img-fluid figure-img" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-meituan-plot-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;26.3: 美团在香港上市以来的股价走势
+</figcaption></figure>
+</div>
+</div>
+</div>
+<p>还可以任意选择一个时间窗口，展示相关数据</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1"></a><span class="fu">plot</span>(meituan[, <span class="st">"3690.HK.Adjusted"</span>],</span>
+<span id="cb16-2"><a href="#cb16-2"></a>  <span class="at">subset =</span> <span class="st">"2022-01-01/2022-12-31"</span>, <span class="at">main =</span> <span class="st">"调整的股价"</span></span>
+<span id="cb16-3"><a href="#cb16-3"></a>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-meituan-plot-xts" class="quarto-figure quarto-figure-center anchored" width="672">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-meituan-plot-xts-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="analyze-time-series-data_files/figure-html/fig-meituan-plot-xts-1.png" class="img-fluid figure-img" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-meituan-plot-xts-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;26.4: 美团 2021 年的股价走势
+</figcaption></figure>
+</div>
+</div>
+</div>
+<p>元旦节三天不开市，所以假期没有数据。</p>
+</section><section id="ggfortify" class="level3" data-number="26.2.3"><h3 data-number="26.2.3" class="anchored" data-anchor-id="ggfortify">
+<span class="header-section-number">26.2.3</span> ggfortify</h3>
+<p><strong>ggfortify</strong> <span class="citation" data-cites="Tang2016">(<a href="references.html#ref-Tang2016" role="doc-biblioref">Tang, Horikoshi, 和 Li 2016</a>)</span> 支持快速地可视化 <code>ts</code>、<code>timeSeries</code> 、<code>stl</code> 等多种类型的时序数据， <strong>ggplot2</strong> 做数据探索会有一些帮助。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1"></a><span class="fu">library</span>(ggfortify)</span>
+<span id="cb17-2"><a href="#cb17-2"></a><span class="fu">autoplot</span>(meituan[, <span class="st">"3690.HK.Adjusted"</span>], <span class="at">ts.geom =</span> <span class="st">"line"</span>) <span class="sc">+</span></span>
+<span id="cb17-3"><a href="#cb17-3"></a>  <span class="fu">scale_x_date</span>(</span>
+<span id="cb17-4"><a href="#cb17-4"></a>    <span class="at">date_breaks =</span> <span class="st">"1 year"</span>,</span>
+<span id="cb17-5"><a href="#cb17-5"></a>    <span class="at">date_minor_breaks =</span> <span class="st">"6 months"</span>,</span>
+<span id="cb17-6"><a href="#cb17-6"></a>    <span class="at">date_labels =</span> <span class="st">"%b</span><span class="sc">\n</span><span class="st">%Y"</span></span>
+<span id="cb17-7"><a href="#cb17-7"></a>  ) <span class="sc">+</span></span>
+<span id="cb17-8"><a href="#cb17-8"></a>  <span class="fu">theme_classic</span>()</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-meituan-ggfortify" class="quarto-figure quarto-figure-center anchored" width="672">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-meituan-ggfortify-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="analyze-time-series-data_files/figure-html/fig-meituan-ggfortify-1.png" class="img-fluid figure-img" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-meituan-ggfortify-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;26.5: 美团股价走势
+</figcaption></figure>
+</div>
+</div>
+</div>
+</section><section id="dygraphs" class="level3" data-number="26.2.4"><h3 data-number="26.2.4" class="anchored" data-anchor-id="dygraphs">
+<span class="header-section-number">26.2.4</span> dygraphs</h3>
+<p><a href="https://github.com/rstudio/dygraphs"><strong>dygraphs</strong></a> 包专门绘制交互式时间序列图形，它封装了时序数据可视化库 <a href="https://github.com/danvk/dygraphs">dygraphs</a> ，更多情况见 <a href="https://dygraphs.com/" class="uri">https://dygraphs.com/</a>。下面以美团股价为例，展示时间窗口筛选、坐标轴名称、刻度标签、注释、事件标注、缩放等功能。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1"></a><span class="fu">library</span>(dygraphs)</span>
+<span id="cb18-2"><a href="#cb18-2"></a><span class="co"># 缩放</span></span>
+<span id="cb18-3"><a href="#cb18-3"></a>dyUnzoom <span class="ot">&lt;-</span> <span class="cf">function</span>(dygraph) {</span>
+<span id="cb18-4"><a href="#cb18-4"></a>  <span class="fu">dyPlugin</span>(</span>
+<span id="cb18-5"><a href="#cb18-5"></a>    <span class="at">dygraph =</span> dygraph,</span>
+<span id="cb18-6"><a href="#cb18-6"></a>    <span class="at">name =</span> <span class="st">"Unzoom"</span>,</span>
+<span id="cb18-7"><a href="#cb18-7"></a>    <span class="at">path =</span> <span class="fu">system.file</span>(<span class="st">"plugins/unzoom.js"</span>, <span class="at">package =</span> <span class="st">"dygraphs"</span>)</span>
+<span id="cb18-8"><a href="#cb18-8"></a>  )</span>
+<span id="cb18-9"><a href="#cb18-9"></a>}</span>
+<span id="cb18-10"><a href="#cb18-10"></a></span>
+<span id="cb18-11"><a href="#cb18-11"></a><span class="co"># 年月</span></span>
+<span id="cb18-12"><a href="#cb18-12"></a>getYearMonth <span class="ot">&lt;-</span> <span class="st">'</span></span>
+<span id="cb18-13"><a href="#cb18-13"></a><span class="st">  function(d) {</span></span>
+<span id="cb18-14"><a href="#cb18-14"></a><span class="st">    var monthNames = ["01", "02", "03", "04", "05", "06","07", "08", "09", "10", "11", "12"];</span></span>
+<span id="cb18-15"><a href="#cb18-15"></a><span class="st">    date = new Date(d);</span></span>
+<span id="cb18-16"><a href="#cb18-16"></a><span class="st">    return date.getFullYear() + "-" + monthNames[date.getMonth()]; </span></span>
+<span id="cb18-17"><a href="#cb18-17"></a><span class="st">  }'</span></span>
+<span id="cb18-18"><a href="#cb18-18"></a></span>
+<span id="cb18-19"><a href="#cb18-19"></a><span class="co"># 绘图</span></span>
+<span id="cb18-20"><a href="#cb18-20"></a><span class="fu">dygraph</span>(meituan[, <span class="st">"3690.HK.Adjusted"</span>], <span class="at">main =</span> <span class="st">"美团股价走势"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb18-21"><a href="#cb18-21"></a>  <span class="fu">dyRangeSelector</span>(<span class="at">dateWindow =</span> <span class="fu">c</span>(<span class="st">"2023-01-01"</span>, <span class="st">"2023-11-24"</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb18-22"><a href="#cb18-22"></a>  <span class="fu">dyAxis</span>(<span class="at">name =</span> <span class="st">"x"</span>, <span class="at">axisLabelFormatter =</span> getYearMonth) <span class="sc">|&gt;</span></span>
+<span id="cb18-23"><a href="#cb18-23"></a>  <span class="fu">dyAxis</span>(<span class="st">"y"</span>, <span class="at">valueRange =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">500</span>), <span class="at">label =</span> <span class="st">"美团股价"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb18-24"><a href="#cb18-24"></a>  <span class="fu">dyEvent</span>(<span class="st">"2020-01-23"</span>, <span class="st">"武汉封城"</span>, <span class="at">labelLoc =</span> <span class="st">"bottom"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb18-25"><a href="#cb18-25"></a>  <span class="fu">dyShading</span>(<span class="at">from =</span> <span class="st">"2020-01-23"</span>, <span class="at">to =</span> <span class="st">"2020-04-08"</span>, <span class="at">color =</span> <span class="st">"#FFE6E6"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb18-26"><a href="#cb18-26"></a>  <span class="fu">dyAnnotation</span>(<span class="st">"2020-01-23"</span>, <span class="at">text =</span> <span class="st">"武汉封城"</span>, <span class="at">tooltip =</span> <span class="st">"武汉封城"</span>, <span class="at">width =</span> <span class="dv">60</span>) <span class="sc">|&gt;</span></span>
+<span id="cb18-27"><a href="#cb18-27"></a>  <span class="fu">dyAnnotation</span>(<span class="st">"2020-04-08"</span>, <span class="at">text =</span> <span class="st">"武汉解封"</span>, <span class="at">tooltip =</span> <span class="st">"武汉解封"</span>, <span class="at">width =</span> <span class="dv">60</span>) <span class="sc">|&gt;</span></span>
+<span id="cb18-28"><a href="#cb18-28"></a>  <span class="fu">dyHighlight</span>(<span class="at">highlightSeriesOpts =</span> <span class="fu">list</span>(<span class="at">strokeWidth =</span> <span class="dv">2</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb18-29"><a href="#cb18-29"></a>  <span class="fu">dySeries</span>(<span class="at">label =</span> <span class="st">"调整股价"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb18-30"><a href="#cb18-30"></a>  <span class="fu">dyLegend</span>(<span class="at">show =</span> <span class="st">"follow"</span>, <span class="at">hideOnMouseOut =</span> <span class="cn">FALSE</span>) <span class="sc">|&gt;</span></span>
+<span id="cb18-31"><a href="#cb18-31"></a>  <span class="fu">dyOptions</span>(<span class="at">fillGraph =</span> <span class="cn">TRUE</span>, <span class="at">drawGrid =</span> <span class="cn">FALSE</span>, <span class="at">gridLineColor =</span> <span class="st">"lightblue"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb18-32"><a href="#cb18-32"></a>  <span class="fu">dyUnzoom</span>()</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="fig-meituan-dygraphs" class="cell-output-display quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-meituan-dygraphs-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="dygraphs html-widget html-fill-item" id="htmlwidget-c1a633e5518a228d1a12" style="width:100%;height:433px;"></div>
+<script type="application/json" data-for="htmlwidget-c1a633e5518a228d1a12">{"x":{"attrs":{"axes":{"x":{"pixelsPerLabel":60,"axisLabelFormatter":"\n  function(d) {\n    var monthNames = [\"01\", \"02\", \"03\", \"04\", \"05\", \"06\",\"07\", \"08\", \"09\", \"10\", \"11\", \"12\"];\n    date = new Date(d);\n    return date.getFullYear() + \"-\" + monthNames[date.getMonth()]; \n  }","drawAxis":true},"y":{"valueRange":[0,500],"drawAxis":true}},"title":"美团股价走势","labels":["day","调整股价"],"retainDateWindow":false,"showRangeSelector":true,"dateWindow":["2023-01-01T00:00:00.000Z","2023-11-24T00:00:00.000Z"],"rangeSelectorHeight":40,"rangeSelectorPlotFillColor":" #A7B1C4","rangeSelectorPlotStrokeColor":"#808FAB","interactionModel":"Dygraph.Interaction.defaultModel","ylabel":"美团股价","highlightCircleSize":3,"highlightSeriesBackgroundAlpha":0.5,"highlightSeriesOpts":{"strokeWidth":2},"series":{"调整股价":{"axis":"y"}},"legend":"follow","labelsDivWidth":250,"labelsShowZeroValues":true,"labelsSeparateLines":false,"hideOverlayOnMouseOut":false,"stackedGraph":false,"fillGraph":true,"fillAlpha":0.15,"stepPlot":false,"drawPoints":false,"pointSize":1,"drawGapEdgePoints":false,"connectSeparatedPoints":false,"strokeWidth":1,"strokeBorderColor":"white","colorValue":0.5,"colorSaturation":1,"includeZero":false,"drawAxesAtZero":false,"logscale":false,"axisTickSize":3,"axisLineColor":"black","axisLineWidth":0.3,"axisLabelColor":"black","axisLabelFontSize":14,"axisLabelWidth":60,"drawGrid":false,"gridLineColor":"lightblue","gridLineWidth":0.3,"rightGap":5,"digitsAfterDecimal":2,"labelsKMB":false,"labelsKMG2":false,"labelsUTC":false,"maxNumberWidth":6,"animatedZooms":false,"mobileDisableYTouch":true,"disableZoom":false},"scale":"daily","annotations":[{"x":"2020-01-23T00:00:00.000Z","shortText":"武汉封城","text":"武汉封城","width":60,"attachAtBottom":false,"series":"3690.HK.Adjusted"},{"x":"2020-04-08T00:00:00.000Z","shortText":"武汉解封","text":"武汉解封","width":60,"attachAtBottom":false,"series":"3690.HK.Adjusted"}],"shadings":[{"from":"2020-01-23T00:00:00.000Z","to":"2020-04-08T00:00:00.000Z","color":"#FFE6E6","axis":"x"}],"events":[{"pos":"2020-01-23T00:00:00.000Z","label":"武汉封城","labelLoc":"bottom","color":"black","strokePattern":[7,3],"axis":"x"}],"format":"date","data":[["2018-09-20T00:00:00.000Z","2018-09-21T00:00:00.000Z","2018-09-24T00:00:00.000Z","2018-09-26T00:00:00.000Z","2018-09-27T00:00:00.000Z","2018-09-28T00:00:00.000Z","2018-10-02T00:00:00.000Z","2018-10-03T00:00:00.000Z","2018-10-04T00:00:00.000Z","2018-10-05T00:00:00.000Z","2018-10-08T00:00:00.000Z","2018-10-09T00:00:00.000Z","2018-10-10T00:00:00.000Z","2018-10-11T00:00:00.000Z","2018-10-12T00:00:00.000Z","2018-10-15T00:00:00.000Z","2018-10-16T00:00:00.000Z","2018-10-18T00:00:00.000Z","2018-10-19T00:00:00.000Z","2018-10-22T00:00:00.000Z","2018-10-23T00:00:00.000Z","2018-10-24T00:00:00.000Z","2018-10-25T00:00:00.000Z","2018-10-26T00:00:00.000Z","2018-10-29T00:00:00.000Z","2018-10-30T00:00:00.000Z","2018-10-31T00:00:00.000Z","2018-11-01T00:00:00.000Z","2018-11-02T00:00:00.000Z","2018-11-05T00:00:00.000Z","2018-11-06T00:00:00.000Z","2018-11-07T00:00:00.000Z","2018-11-08T00:00:00.000Z","2018-11-09T00:00:00.000Z","2018-11-12T00:00:00.000Z","2018-11-13T00:00:00.000Z","2018-11-14T00:00:00.000Z","2018-11-15T00:00:00.000Z","2018-11-16T00:00:00.000Z","2018-11-19T00:00:00.000Z","2018-11-20T00:00:00.000Z","2018-11-21T00:00:00.000Z","2018-11-22T00:00:00.000Z","2018-11-23T00:00:00.000Z","2018-11-26T00:00:00.000Z","2018-11-27T00:00:00.000Z","2018-11-28T00:00:00.000Z","2018-11-29T00:00:00.000Z","2018-11-30T00:00:00.000Z","2018-12-03T00:00:00.000Z","2018-12-04T00:00:00.000Z","2018-12-05T00:00:00.000Z","2018-12-06T00:00:00.000Z","2018-12-07T00:00:00.000Z","2018-12-10T00:00:00.000Z","2018-12-11T00:00:00.000Z","2018-12-12T00:00:00.000Z","2018-12-13T00:00:00.000Z","2018-12-14T00:00:00.000Z","2018-12-17T00:00:00.000Z","2018-12-18T00:00:00.000Z","2018-12-19T00:00:00.000Z","2018-12-20T00:00:00.000Z","2018-12-21T00:00:00.000Z","2018-12-24T00:00:00.000Z","2018-12-27T00:00:00.000Z","2018-12-28T00:00:00.000Z","2018-12-31T00:00:00.000Z","2019-01-02T00:00:00.000Z","2019-01-03T00:00:00.000Z","2019-01-04T00:00:00.000Z","2019-01-07T00:00:00.000Z","2019-01-08T00:00:00.000Z","2019-01-09T00:00:00.000Z","2019-01-10T00:00:00.000Z","2019-01-11T00:00:00.000Z","2019-01-14T00:00:00.000Z","2019-01-15T00:00:00.000Z","2019-01-16T00:00:00.000Z","2019-01-17T00:00:00.000Z","2019-01-18T00:00:00.000Z","2019-01-21T00:00:00.000Z","2019-01-22T00:00:00.000Z","2019-01-23T00:00:00.000Z","2019-01-24T00:00:00.000Z","2019-01-25T00:00:00.000Z","2019-01-28T00:00:00.000Z","2019-01-29T00:00:00.000Z","2019-01-30T00:00:00.000Z","2019-01-31T00:00:00.000Z","2019-02-01T00:00:00.000Z","2019-02-04T00:00:00.000Z","2019-02-08T00:00:00.000Z","2019-02-11T00:00:00.000Z","2019-02-12T00:00:00.000Z","2019-02-13T00:00:00.000Z","2019-02-14T00:00:00.000Z","2019-02-15T00:00:00.000Z","2019-02-18T00:00:00.000Z","2019-02-19T00:00:00.000Z","2019-02-20T00:00:00.000Z","2019-02-21T00:00:00.000Z","2019-02-22T00:00:00.000Z","2019-02-25T00:00:00.000Z","2019-02-26T00:00:00.000Z","2019-02-27T00:00:00.000Z","2019-02-28T00:00:00.000Z","2019-03-01T00:00:00.000Z","2019-03-04T00:00:00.000Z","2019-03-05T00:00:00.000Z","2019-03-06T00:00:00.000Z","2019-03-07T00:00:00.000Z","2019-03-08T00:00:00.000Z","2019-03-11T00:00:00.000Z","2019-03-12T00:00:00.000Z","2019-03-13T00:00:00.000Z","2019-03-14T00:00:00.000Z","2019-03-15T00:00:00.000Z","2019-03-18T00:00:00.000Z","2019-03-19T00:00:00.000Z","2019-03-20T00:00:00.000Z","2019-03-21T00:00:00.000Z","2019-03-22T00:00:00.000Z","2019-03-25T00:00:00.000Z","2019-03-26T00:00:00.000Z","2019-03-27T00:00:00.000Z","2019-03-28T00:00:00.000Z","2019-03-29T00:00:00.000Z","2019-04-01T00:00:00.000Z","2019-04-02T00:00:00.000Z","2019-04-03T00:00:00.000Z","2019-04-04T00:00:00.000Z","2019-04-08T00:00:00.000Z","2019-04-09T00:00:00.000Z","2019-04-10T00:00:00.000Z","2019-04-11T00:00:00.000Z","2019-04-12T00:00:00.000Z","2019-04-15T00:00:00.000Z","2019-04-16T00:00:00.000Z","2019-04-17T00:00:00.000Z","2019-04-18T00:00:00.000Z","2019-04-23T00:00:00.000Z","2019-04-24T00:00:00.000Z","2019-04-25T00:00:00.000Z","2019-04-26T00:00:00.000Z","2019-04-29T00:00:00.000Z","2019-04-30T00:00:00.000Z","2019-05-02T00:00:00.000Z","2019-05-03T00:00:00.000Z","2019-05-06T00:00:00.000Z","2019-05-07T00:00:00.000Z","2019-05-08T00:00:00.000Z","2019-05-09T00:00:00.000Z","2019-05-10T00:00:00.000Z","2019-05-14T00:00:00.000Z","2019-05-15T00:00:00.000Z","2019-05-16T00:00:00.000Z","2019-05-17T00:00:00.000Z","2019-05-20T00:00:00.000Z","2019-05-21T00:00:00.000Z","2019-05-22T00:00:00.000Z","2019-05-23T00:00:00.000Z","2019-05-24T00:00:00.000Z","2019-05-27T00:00:00.000Z","2019-05-28T00:00:00.000Z","2019-05-29T00:00:00.000Z","2019-05-30T00:00:00.000Z","2019-05-31T00:00:00.000Z","2019-06-03T00:00:00.000Z","2019-06-04T00:00:00.000Z","2019-06-05T00:00:00.000Z","2019-06-06T00:00:00.000Z","2019-06-10T00:00:00.000Z","2019-06-11T00:00:00.000Z","2019-06-12T00:00:00.000Z","2019-06-13T00:00:00.000Z","2019-06-14T00:00:00.000Z","2019-06-17T00:00:00.000Z","2019-06-18T00:00:00.000Z","2019-06-19T00:00:00.000Z","2019-06-20T00:00:00.000Z","2019-06-21T00:00:00.000Z","2019-06-24T00:00:00.000Z","2019-06-25T00:00:00.000Z","2019-06-26T00:00:00.000Z","2019-06-27T00:00:00.000Z","2019-06-28T00:00:00.000Z","2019-07-02T00:00:00.000Z","2019-07-03T00:00:00.000Z","2019-07-04T00:00:00.000Z","2019-07-05T00:00:00.000Z","2019-07-08T00:00:00.000Z","2019-07-09T00:00:00.000Z","2019-07-10T00:00:00.000Z","2019-07-11T00:00:00.000Z","2019-07-12T00:00:00.000Z","2019-07-15T00:00:00.000Z","2019-07-16T00:00:00.000Z","2019-07-17T00:00:00.000Z","2019-07-18T00:00:00.000Z","2019-07-19T00:00:00.000Z","2019-07-22T00:00:00.000Z","2019-07-23T00:00:00.000Z","2019-07-24T00:00:00.000Z","2019-07-25T00:00:00.000Z","2019-07-26T00:00:00.000Z","2019-07-29T00:00:00.000Z","2019-07-30T00:00:00.000Z","2019-07-31T00:00:00.000Z","2019-08-01T00:00:00.000Z","2019-08-02T00:00:00.000Z","2019-08-05T00:00:00.000Z","2019-08-06T00:00:00.000Z","2019-08-07T00:00:00.000Z","2019-08-08T00:00:00.000Z","2019-08-09T00:00:00.000Z","2019-08-12T00:00:00.000Z","2019-08-13T00:00:00.000Z","2019-08-14T00:00:00.000Z","2019-08-15T00:00:00.000Z","2019-08-16T00:00:00.000Z","2019-08-19T00:00:00.000Z","2019-08-20T00:00:00.000Z","2019-08-21T00:00:00.000Z","2019-08-22T00:00:00.000Z","2019-08-23T00:00:00.000Z","2019-08-26T00:00:00.000Z","2019-08-27T00:00:00.000Z","2019-08-28T00:00:00.000Z","2019-08-29T00:00:00.000Z","2019-08-30T00:00:00.000Z","2019-09-02T00:00:00.000Z","2019-09-03T00:00:00.000Z","2019-09-04T00:00:00.000Z","2019-09-05T00:00:00.000Z","2019-09-06T00:00:00.000Z","2019-09-09T00:00:00.000Z","2019-09-10T00:00:00.000Z","2019-09-11T00:00:00.000Z","2019-09-12T00:00:00.000Z","2019-09-13T00:00:00.000Z","2019-09-16T00:00:00.000Z","2019-09-17T00:00:00.000Z","2019-09-18T00:00:00.000Z","2019-09-19T00:00:00.000Z","2019-09-20T00:00:00.000Z","2019-09-23T00:00:00.000Z","2019-09-24T00:00:00.000Z","2019-09-25T00:00:00.000Z","2019-09-26T00:00:00.000Z","2019-09-27T00:00:00.000Z","2019-09-30T00:00:00.000Z","2019-10-02T00:00:00.000Z","2019-10-03T00:00:00.000Z","2019-10-04T00:00:00.000Z","2019-10-08T00:00:00.000Z","2019-10-09T00:00:00.000Z","2019-10-10T00:00:00.000Z","2019-10-11T00:00:00.000Z","2019-10-14T00:00:00.000Z","2019-10-15T00:00:00.000Z","2019-10-16T00:00:00.000Z","2019-10-17T00:00:00.000Z","2019-10-18T00:00:00.000Z","2019-10-21T00:00:00.000Z","2019-10-22T00:00:00.000Z","2019-10-23T00:00:00.000Z","2019-10-24T00:00:00.000Z","2019-10-25T00:00:00.000Z","2019-10-28T00:00:00.000Z","2019-10-29T00:00:00.000Z","2019-10-30T00:00:00.000Z","2019-10-31T00:00:00.000Z","2019-11-01T00:00:00.000Z","2019-11-04T00:00:00.000Z","2019-11-05T00:00:00.000Z","2019-11-06T00:00:00.000Z","2019-11-07T00:00:00.000Z","2019-11-08T00:00:00.000Z","2019-11-11T00:00:00.000Z","2019-11-12T00:00:00.000Z","2019-11-13T00:00:00.000Z","2019-11-14T00:00:00.000Z","2019-11-15T00:00:00.000Z","2019-11-18T00:00:00.000Z","2019-11-19T00:00:00.000Z","2019-11-20T00:00:00.000Z","2019-11-21T00:00:00.000Z","2019-11-22T00:00:00.000Z","2019-11-25T00:00:00.000Z","2019-11-26T00:00:00.000Z","2019-11-27T00:00:00.000Z","2019-11-28T00:00:00.000Z","2019-11-29T00:00:00.000Z","2019-12-02T00:00:00.000Z","2019-12-03T00:00:00.000Z","2019-12-04T00:00:00.000Z","2019-12-05T00:00:00.000Z","2019-12-06T00:00:00.000Z","2019-12-09T00:00:00.000Z","2019-12-10T00:00:00.000Z","2019-12-11T00:00:00.000Z","2019-12-12T00:00:00.000Z","2019-12-13T00:00:00.000Z","2019-12-16T00:00:00.000Z","2019-12-17T00:00:00.000Z","2019-12-18T00:00:00.000Z","2019-12-19T00:00:00.000Z","2019-12-20T00:00:00.000Z","2019-12-23T00:00:00.000Z","2019-12-24T00:00:00.000Z","2019-12-27T00:00:00.000Z","2019-12-30T00:00:00.000Z","2019-12-31T00:00:00.000Z","2020-01-02T00:00:00.000Z","2020-01-03T00:00:00.000Z","2020-01-06T00:00:00.000Z","2020-01-07T00:00:00.000Z","2020-01-08T00:00:00.000Z","2020-01-09T00:00:00.000Z","2020-01-10T00:00:00.000Z","2020-01-13T00:00:00.000Z","2020-01-14T00:00:00.000Z","2020-01-15T00:00:00.000Z","2020-01-16T00:00:00.000Z","2020-01-17T00:00:00.000Z","2020-01-20T00:00:00.000Z","2020-01-21T00:00:00.000Z","2020-01-22T00:00:00.000Z","2020-01-23T00:00:00.000Z","2020-01-24T00:00:00.000Z","2020-01-29T00:00:00.000Z","2020-01-30T00:00:00.000Z","2020-01-31T00:00:00.000Z","2020-02-03T00:00:00.000Z","2020-02-04T00:00:00.000Z","2020-02-05T00:00:00.000Z","2020-02-06T00:00:00.000Z","2020-02-07T00:00:00.000Z","2020-02-10T00:00:00.000Z","2020-02-11T00:00:00.000Z","2020-02-12T00:00:00.000Z","2020-02-13T00:00:00.000Z","2020-02-14T00:00:00.000Z","2020-02-17T00:00:00.000Z","2020-02-18T00:00:00.000Z","2020-02-19T00:00:00.000Z","2020-02-20T00:00:00.000Z","2020-02-21T00:00:00.000Z","2020-02-24T00:00:00.000Z","2020-02-25T00:00:00.000Z","2020-02-26T00:00:00.000Z","2020-02-27T00:00:00.000Z","2020-02-28T00:00:00.000Z","2020-03-02T00:00:00.000Z","2020-03-03T00:00:00.000Z","2020-03-04T00:00:00.000Z","2020-03-05T00:00:00.000Z","2020-03-06T00:00:00.000Z","2020-03-09T00:00:00.000Z","2020-03-10T00:00:00.000Z","2020-03-11T00:00:00.000Z","2020-03-12T00:00:00.000Z","2020-03-13T00:00:00.000Z","2020-03-16T00:00:00.000Z","2020-03-17T00:00:00.000Z","2020-03-18T00:00:00.000Z","2020-03-19T00:00:00.000Z","2020-03-20T00:00:00.000Z","2020-03-23T00:00:00.000Z","2020-03-24T00:00:00.000Z","2020-03-25T00:00:00.000Z","2020-03-26T00:00:00.000Z","2020-03-27T00:00:00.000Z","2020-03-30T00:00:00.000Z","2020-03-31T00:00:00.000Z","2020-04-01T00:00:00.000Z","2020-04-02T00:00:00.000Z","2020-04-03T00:00:00.000Z","2020-04-06T00:00:00.000Z","2020-04-07T00:00:00.000Z","2020-04-08T00:00:00.000Z","2020-04-09T00:00:00.000Z","2020-04-14T00:00:00.000Z","2020-04-15T00:00:00.000Z","2020-04-16T00:00:00.000Z","2020-04-17T00:00:00.000Z","2020-04-20T00:00:00.000Z","2020-04-21T00:00:00.000Z","2020-04-22T00:00:00.000Z","2020-04-23T00:00:00.000Z","2020-04-24T00:00:00.000Z","2020-04-27T00:00:00.000Z","2020-04-28T00:00:00.000Z","2020-04-29T00:00:00.000Z","2020-05-04T00:00:00.000Z","2020-05-05T00:00:00.000Z","2020-05-06T00:00:00.000Z","2020-05-07T00:00:00.000Z","2020-05-08T00:00:00.000Z","2020-05-11T00:00:00.000Z","2020-05-12T00:00:00.000Z","2020-05-13T00:00:00.000Z","2020-05-14T00:00:00.000Z","2020-05-15T00:00:00.000Z","2020-05-18T00:00:00.000Z","2020-05-19T00:00:00.000Z","2020-05-20T00:00:00.000Z","2020-05-21T00:00:00.000Z","2020-05-22T00:00:00.000Z","2020-05-25T00:00:00.000Z","2020-05-26T00:00:00.000Z","2020-05-27T00:00:00.000Z","2020-05-28T00:00:00.000Z","2020-05-29T00:00:00.000Z","2020-06-01T00:00:00.000Z","2020-06-02T00:00:00.000Z","2020-06-03T00:00:00.000Z","2020-06-04T00:00:00.000Z","2020-06-05T00:00:00.000Z","2020-06-08T00:00:00.000Z","2020-06-09T00:00:00.000Z","2020-06-10T00:00:00.000Z","2020-06-11T00:00:00.000Z","2020-06-12T00:00:00.000Z","2020-06-15T00:00:00.000Z","2020-06-16T00:00:00.000Z","2020-06-17T00:00:00.000Z","2020-06-18T00:00:00.000Z","2020-06-19T00:00:00.000Z","2020-06-22T00:00:00.000Z","2020-06-23T00:00:00.000Z","2020-06-24T00:00:00.000Z","2020-06-26T00:00:00.000Z","2020-06-29T00:00:00.000Z","2020-06-30T00:00:00.000Z","2020-07-02T00:00:00.000Z","2020-07-03T00:00:00.000Z","2020-07-06T00:00:00.000Z","2020-07-07T00:00:00.000Z","2020-07-08T00:00:00.000Z","2020-07-09T00:00:00.000Z","2020-07-10T00:00:00.000Z","2020-07-13T00:00:00.000Z","2020-07-14T00:00:00.000Z","2020-07-15T00:00:00.000Z","2020-07-16T00:00:00.000Z","2020-07-17T00:00:00.000Z","2020-07-20T00:00:00.000Z","2020-07-21T00:00:00.000Z","2020-07-22T00:00:00.000Z","2020-07-23T00:00:00.000Z","2020-07-24T00:00:00.000Z","2020-07-27T00:00:00.000Z","2020-07-28T00:00:00.000Z","2020-07-29T00:00:00.000Z","2020-07-30T00:00:00.000Z","2020-07-31T00:00:00.000Z","2020-08-03T00:00:00.000Z","2020-08-04T00:00:00.000Z","2020-08-05T00:00:00.000Z","2020-08-06T00:00:00.000Z","2020-08-07T00:00:00.000Z","2020-08-10T00:00:00.000Z","2020-08-11T00:00:00.000Z","2020-08-12T00:00:00.000Z","2020-08-13T00:00:00.000Z","2020-08-14T00:00:00.000Z","2020-08-17T00:00:00.000Z","2020-08-18T00:00:00.000Z","2020-08-19T00:00:00.000Z","2020-08-20T00:00:00.000Z","2020-08-21T00:00:00.000Z","2020-08-24T00:00:00.000Z","2020-08-25T00:00:00.000Z","2020-08-26T00:00:00.000Z","2020-08-27T00:00:00.000Z","2020-08-28T00:00:00.000Z","2020-08-31T00:00:00.000Z","2020-09-01T00:00:00.000Z","2020-09-02T00:00:00.000Z","2020-09-03T00:00:00.000Z","2020-09-04T00:00:00.000Z","2020-09-07T00:00:00.000Z","2020-09-08T00:00:00.000Z","2020-09-09T00:00:00.000Z","2020-09-10T00:00:00.000Z","2020-09-11T00:00:00.000Z","2020-09-14T00:00:00.000Z","2020-09-15T00:00:00.000Z","2020-09-16T00:00:00.000Z","2020-09-17T00:00:00.000Z","2020-09-18T00:00:00.000Z","2020-09-21T00:00:00.000Z","2020-09-22T00:00:00.000Z","2020-09-23T00:00:00.000Z","2020-09-24T00:00:00.000Z","2020-09-25T00:00:00.000Z","2020-09-28T00:00:00.000Z","2020-09-29T00:00:00.000Z","2020-09-30T00:00:00.000Z","2020-10-05T00:00:00.000Z","2020-10-06T00:00:00.000Z","2020-10-07T00:00:00.000Z","2020-10-08T00:00:00.000Z","2020-10-09T00:00:00.000Z","2020-10-12T00:00:00.000Z","2020-10-14T00:00:00.000Z","2020-10-15T00:00:00.000Z","2020-10-16T00:00:00.000Z","2020-10-19T00:00:00.000Z","2020-10-20T00:00:00.000Z","2020-10-21T00:00:00.000Z","2020-10-22T00:00:00.000Z","2020-10-23T00:00:00.000Z","2020-10-27T00:00:00.000Z","2020-10-28T00:00:00.000Z","2020-10-29T00:00:00.000Z","2020-10-30T00:00:00.000Z","2020-11-02T00:00:00.000Z","2020-11-03T00:00:00.000Z","2020-11-04T00:00:00.000Z","2020-11-05T00:00:00.000Z","2020-11-06T00:00:00.000Z","2020-11-09T00:00:00.000Z","2020-11-10T00:00:00.000Z","2020-11-11T00:00:00.000Z","2020-11-12T00:00:00.000Z","2020-11-13T00:00:00.000Z","2020-11-16T00:00:00.000Z","2020-11-17T00:00:00.000Z","2020-11-18T00:00:00.000Z","2020-11-19T00:00:00.000Z","2020-11-20T00:00:00.000Z","2020-11-23T00:00:00.000Z","2020-11-24T00:00:00.000Z","2020-11-25T00:00:00.000Z","2020-11-26T00:00:00.000Z","2020-11-27T00:00:00.000Z","2020-11-30T00:00:00.000Z","2020-12-01T00:00:00.000Z","2020-12-02T00:00:00.000Z","2020-12-03T00:00:00.000Z","2020-12-04T00:00:00.000Z","2020-12-07T00:00:00.000Z","2020-12-08T00:00:00.000Z","2020-12-09T00:00:00.000Z","2020-12-10T00:00:00.000Z","2020-12-11T00:00:00.000Z","2020-12-14T00:00:00.000Z","2020-12-15T00:00:00.000Z","2020-12-16T00:00:00.000Z","2020-12-17T00:00:00.000Z","2020-12-18T00:00:00.000Z","2020-12-21T00:00:00.000Z","2020-12-22T00:00:00.000Z","2020-12-23T00:00:00.000Z","2020-12-24T00:00:00.000Z","2020-12-28T00:00:00.000Z","2020-12-29T00:00:00.000Z","2020-12-30T00:00:00.000Z","2020-12-31T00:00:00.000Z","2021-01-04T00:00:00.000Z","2021-01-05T00:00:00.000Z","2021-01-06T00:00:00.000Z","2021-01-07T00:00:00.000Z","2021-01-08T00:00:00.000Z","2021-01-11T00:00:00.000Z","2021-01-12T00:00:00.000Z","2021-01-13T00:00:00.000Z","2021-01-14T00:00:00.000Z","2021-01-15T00:00:00.000Z","2021-01-18T00:00:00.000Z","2021-01-19T00:00:00.000Z","2021-01-20T00:00:00.000Z","2021-01-21T00:00:00.000Z","2021-01-22T00:00:00.000Z","2021-01-25T00:00:00.000Z","2021-01-26T00:00:00.000Z","2021-01-27T00:00:00.000Z","2021-01-28T00:00:00.000Z","2021-01-29T00:00:00.000Z","2021-02-01T00:00:00.000Z","2021-02-02T00:00:00.000Z","2021-02-03T00:00:00.000Z","2021-02-04T00:00:00.000Z","2021-02-05T00:00:00.000Z","2021-02-08T00:00:00.000Z","2021-02-09T00:00:00.000Z","2021-02-10T00:00:00.000Z","2021-02-11T00:00:00.000Z","2021-02-16T00:00:00.000Z","2021-02-17T00:00:00.000Z","2021-02-18T00:00:00.000Z","2021-02-19T00:00:00.000Z","2021-02-22T00:00:00.000Z","2021-02-23T00:00:00.000Z","2021-02-24T00:00:00.000Z","2021-02-25T00:00:00.000Z","2021-02-26T00:00:00.000Z","2021-03-01T00:00:00.000Z","2021-03-02T00:00:00.000Z","2021-03-03T00:00:00.000Z","2021-03-04T00:00:00.000Z","2021-03-05T00:00:00.000Z","2021-03-08T00:00:00.000Z","2021-03-09T00:00:00.000Z","2021-03-10T00:00:00.000Z","2021-03-11T00:00:00.000Z","2021-03-12T00:00:00.000Z","2021-03-15T00:00:00.000Z","2021-03-16T00:00:00.000Z","2021-03-17T00:00:00.000Z","2021-03-18T00:00:00.000Z","2021-03-19T00:00:00.000Z","2021-03-22T00:00:00.000Z","2021-03-23T00:00:00.000Z","2021-03-24T00:00:00.000Z","2021-03-25T00:00:00.000Z","2021-03-26T00:00:00.000Z","2021-03-29T00:00:00.000Z","2021-03-30T00:00:00.000Z","2021-03-31T00:00:00.000Z","2021-04-01T00:00:00.000Z","2021-04-07T00:00:00.000Z","2021-04-08T00:00:00.000Z","2021-04-09T00:00:00.000Z","2021-04-12T00:00:00.000Z","2021-04-13T00:00:00.000Z","2021-04-14T00:00:00.000Z","2021-04-15T00:00:00.000Z","2021-04-16T00:00:00.000Z","2021-04-19T00:00:00.000Z","2021-04-20T00:00:00.000Z","2021-04-21T00:00:00.000Z","2021-04-22T00:00:00.000Z","2021-04-23T00:00:00.000Z","2021-04-26T00:00:00.000Z","2021-04-27T00:00:00.000Z","2021-04-28T00:00:00.000Z","2021-04-29T00:00:00.000Z","2021-04-30T00:00:00.000Z","2021-05-03T00:00:00.000Z","2021-05-04T00:00:00.000Z","2021-05-05T00:00:00.000Z","2021-05-06T00:00:00.000Z","2021-05-07T00:00:00.000Z","2021-05-10T00:00:00.000Z","2021-05-11T00:00:00.000Z","2021-05-12T00:00:00.000Z","2021-05-13T00:00:00.000Z","2021-05-14T00:00:00.000Z","2021-05-17T00:00:00.000Z","2021-05-18T00:00:00.000Z","2021-05-20T00:00:00.000Z","2021-05-21T00:00:00.000Z","2021-05-24T00:00:00.000Z","2021-05-25T00:00:00.000Z","2021-05-26T00:00:00.000Z","2021-05-27T00:00:00.000Z","2021-05-28T00:00:00.000Z","2021-05-31T00:00:00.000Z","2021-06-01T00:00:00.000Z","2021-06-02T00:00:00.000Z","2021-06-03T00:00:00.000Z","2021-06-04T00:00:00.000Z","2021-06-07T00:00:00.000Z","2021-06-08T00:00:00.000Z","2021-06-09T00:00:00.000Z","2021-06-10T00:00:00.000Z","2021-06-11T00:00:00.000Z","2021-06-15T00:00:00.000Z","2021-06-16T00:00:00.000Z","2021-06-17T00:00:00.000Z","2021-06-18T00:00:00.000Z","2021-06-21T00:00:00.000Z","2021-06-22T00:00:00.000Z","2021-06-23T00:00:00.000Z","2021-06-24T00:00:00.000Z","2021-06-25T00:00:00.000Z","2021-06-28T00:00:00.000Z","2021-06-29T00:00:00.000Z","2021-06-30T00:00:00.000Z","2021-07-02T00:00:00.000Z","2021-07-05T00:00:00.000Z","2021-07-06T00:00:00.000Z","2021-07-07T00:00:00.000Z","2021-07-08T00:00:00.000Z","2021-07-09T00:00:00.000Z","2021-07-12T00:00:00.000Z","2021-07-13T00:00:00.000Z","2021-07-14T00:00:00.000Z","2021-07-15T00:00:00.000Z","2021-07-16T00:00:00.000Z","2021-07-19T00:00:00.000Z","2021-07-20T00:00:00.000Z","2021-07-21T00:00:00.000Z","2021-07-22T00:00:00.000Z","2021-07-23T00:00:00.000Z","2021-07-26T00:00:00.000Z","2021-07-27T00:00:00.000Z","2021-07-28T00:00:00.000Z","2021-07-29T00:00:00.000Z","2021-07-30T00:00:00.000Z","2021-08-02T00:00:00.000Z","2021-08-03T00:00:00.000Z","2021-08-04T00:00:00.000Z","2021-08-05T00:00:00.000Z","2021-08-06T00:00:00.000Z","2021-08-09T00:00:00.000Z","2021-08-10T00:00:00.000Z","2021-08-11T00:00:00.000Z","2021-08-12T00:00:00.000Z","2021-08-13T00:00:00.000Z","2021-08-16T00:00:00.000Z","2021-08-17T00:00:00.000Z","2021-08-18T00:00:00.000Z","2021-08-19T00:00:00.000Z","2021-08-20T00:00:00.000Z","2021-08-23T00:00:00.000Z","2021-08-24T00:00:00.000Z","2021-08-25T00:00:00.000Z","2021-08-26T00:00:00.000Z","2021-08-27T00:00:00.000Z","2021-08-30T00:00:00.000Z","2021-08-31T00:00:00.000Z","2021-09-01T00:00:00.000Z","2021-09-02T00:00:00.000Z","2021-09-03T00:00:00.000Z","2021-09-06T00:00:00.000Z","2021-09-07T00:00:00.000Z","2021-09-08T00:00:00.000Z","2021-09-09T00:00:00.000Z","2021-09-10T00:00:00.000Z","2021-09-13T00:00:00.000Z","2021-09-14T00:00:00.000Z","2021-09-15T00:00:00.000Z","2021-09-16T00:00:00.000Z","2021-09-17T00:00:00.000Z","2021-09-20T00:00:00.000Z","2021-09-21T00:00:00.000Z","2021-09-23T00:00:00.000Z","2021-09-24T00:00:00.000Z","2021-09-27T00:00:00.000Z","2021-09-28T00:00:00.000Z","2021-09-29T00:00:00.000Z","2021-09-30T00:00:00.000Z","2021-10-04T00:00:00.000Z","2021-10-05T00:00:00.000Z","2021-10-06T00:00:00.000Z","2021-10-07T00:00:00.000Z","2021-10-08T00:00:00.000Z","2021-10-11T00:00:00.000Z","2021-10-12T00:00:00.000Z","2021-10-15T00:00:00.000Z","2021-10-18T00:00:00.000Z","2021-10-19T00:00:00.000Z","2021-10-20T00:00:00.000Z","2021-10-21T00:00:00.000Z","2021-10-22T00:00:00.000Z","2021-10-25T00:00:00.000Z","2021-10-26T00:00:00.000Z","2021-10-27T00:00:00.000Z","2021-10-28T00:00:00.000Z","2021-10-29T00:00:00.000Z","2021-11-01T00:00:00.000Z","2021-11-02T00:00:00.000Z","2021-11-03T00:00:00.000Z","2021-11-04T00:00:00.000Z","2021-11-05T00:00:00.000Z","2021-11-08T00:00:00.000Z","2021-11-09T00:00:00.000Z","2021-11-10T00:00:00.000Z","2021-11-11T00:00:00.000Z","2021-11-12T00:00:00.000Z","2021-11-15T00:00:00.000Z","2021-11-16T00:00:00.000Z","2021-11-17T00:00:00.000Z","2021-11-18T00:00:00.000Z","2021-11-19T00:00:00.000Z","2021-11-22T00:00:00.000Z","2021-11-23T00:00:00.000Z","2021-11-24T00:00:00.000Z","2021-11-25T00:00:00.000Z","2021-11-26T00:00:00.000Z","2021-11-29T00:00:00.000Z","2021-11-30T00:00:00.000Z","2021-12-01T00:00:00.000Z","2021-12-02T00:00:00.000Z","2021-12-03T00:00:00.000Z","2021-12-06T00:00:00.000Z","2021-12-07T00:00:00.000Z","2021-12-08T00:00:00.000Z","2021-12-09T00:00:00.000Z","2021-12-10T00:00:00.000Z","2021-12-13T00:00:00.000Z","2021-12-14T00:00:00.000Z","2021-12-15T00:00:00.000Z","2021-12-16T00:00:00.000Z","2021-12-17T00:00:00.000Z","2021-12-20T00:00:00.000Z","2021-12-21T00:00:00.000Z","2021-12-22T00:00:00.000Z","2021-12-23T00:00:00.000Z","2021-12-24T00:00:00.000Z","2021-12-28T00:00:00.000Z","2021-12-29T00:00:00.000Z","2021-12-30T00:00:00.000Z","2021-12-31T00:00:00.000Z","2022-01-03T00:00:00.000Z","2022-01-04T00:00:00.000Z","2022-01-05T00:00:00.000Z","2022-01-06T00:00:00.000Z","2022-01-07T00:00:00.000Z","2022-01-10T00:00:00.000Z","2022-01-11T00:00:00.000Z","2022-01-12T00:00:00.000Z","2022-01-13T00:00:00.000Z","2022-01-14T00:00:00.000Z","2022-01-17T00:00:00.000Z","2022-01-18T00:00:00.000Z","2022-01-19T00:00:00.000Z","2022-01-20T00:00:00.000Z","2022-01-21T00:00:00.000Z","2022-01-24T00:00:00.000Z","2022-01-25T00:00:00.000Z","2022-01-26T00:00:00.000Z","2022-01-27T00:00:00.000Z","2022-01-28T00:00:00.000Z","2022-01-31T00:00:00.000Z","2022-02-04T00:00:00.000Z","2022-02-07T00:00:00.000Z","2022-02-08T00:00:00.000Z","2022-02-09T00:00:00.000Z","2022-02-10T00:00:00.000Z","2022-02-11T00:00:00.000Z","2022-02-14T00:00:00.000Z","2022-02-15T00:00:00.000Z","2022-02-16T00:00:00.000Z","2022-02-17T00:00:00.000Z","2022-02-18T00:00:00.000Z","2022-02-21T00:00:00.000Z","2022-02-22T00:00:00.000Z","2022-02-23T00:00:00.000Z","2022-02-24T00:00:00.000Z","2022-02-25T00:00:00.000Z","2022-02-28T00:00:00.000Z","2022-03-01T00:00:00.000Z","2022-03-02T00:00:00.000Z","2022-03-03T00:00:00.000Z","2022-03-04T00:00:00.000Z","2022-03-07T00:00:00.000Z","2022-03-08T00:00:00.000Z","2022-03-09T00:00:00.000Z","2022-03-10T00:00:00.000Z","2022-03-11T00:00:00.000Z","2022-03-14T00:00:00.000Z","2022-03-15T00:00:00.000Z","2022-03-16T00:00:00.000Z","2022-03-17T00:00:00.000Z","2022-03-18T00:00:00.000Z","2022-03-21T00:00:00.000Z","2022-03-22T00:00:00.000Z","2022-03-23T00:00:00.000Z","2022-03-24T00:00:00.000Z","2022-03-25T00:00:00.000Z","2022-03-28T00:00:00.000Z","2022-03-29T00:00:00.000Z","2022-03-30T00:00:00.000Z","2022-03-31T00:00:00.000Z","2022-04-01T00:00:00.000Z","2022-04-04T00:00:00.000Z","2022-04-06T00:00:00.000Z","2022-04-07T00:00:00.000Z","2022-04-08T00:00:00.000Z","2022-04-11T00:00:00.000Z","2022-04-12T00:00:00.000Z","2022-04-13T00:00:00.000Z","2022-04-14T00:00:00.000Z","2022-04-19T00:00:00.000Z","2022-04-20T00:00:00.000Z","2022-04-21T00:00:00.000Z","2022-04-22T00:00:00.000Z","2022-04-25T00:00:00.000Z","2022-04-26T00:00:00.000Z","2022-04-27T00:00:00.000Z","2022-04-28T00:00:00.000Z","2022-04-29T00:00:00.000Z","2022-05-03T00:00:00.000Z","2022-05-04T00:00:00.000Z","2022-05-05T00:00:00.000Z","2022-05-06T00:00:00.000Z","2022-05-10T00:00:00.000Z","2022-05-11T00:00:00.000Z","2022-05-12T00:00:00.000Z","2022-05-13T00:00:00.000Z","2022-05-16T00:00:00.000Z","2022-05-17T00:00:00.000Z","2022-05-18T00:00:00.000Z","2022-05-19T00:00:00.000Z","2022-05-20T00:00:00.000Z","2022-05-23T00:00:00.000Z","2022-05-24T00:00:00.000Z","2022-05-25T00:00:00.000Z","2022-05-26T00:00:00.000Z","2022-05-27T00:00:00.000Z","2022-05-30T00:00:00.000Z","2022-05-31T00:00:00.000Z","2022-06-01T00:00:00.000Z","2022-06-02T00:00:00.000Z","2022-06-06T00:00:00.000Z","2022-06-07T00:00:00.000Z","2022-06-08T00:00:00.000Z","2022-06-09T00:00:00.000Z","2022-06-10T00:00:00.000Z","2022-06-13T00:00:00.000Z","2022-06-14T00:00:00.000Z","2022-06-15T00:00:00.000Z","2022-06-16T00:00:00.000Z","2022-06-17T00:00:00.000Z","2022-06-20T00:00:00.000Z","2022-06-21T00:00:00.000Z","2022-06-22T00:00:00.000Z","2022-06-23T00:00:00.000Z","2022-06-24T00:00:00.000Z","2022-06-27T00:00:00.000Z","2022-06-28T00:00:00.000Z","2022-06-29T00:00:00.000Z","2022-06-30T00:00:00.000Z","2022-07-04T00:00:00.000Z","2022-07-05T00:00:00.000Z","2022-07-06T00:00:00.000Z","2022-07-07T00:00:00.000Z","2022-07-08T00:00:00.000Z","2022-07-11T00:00:00.000Z","2022-07-12T00:00:00.000Z","2022-07-13T00:00:00.000Z","2022-07-14T00:00:00.000Z","2022-07-15T00:00:00.000Z","2022-07-18T00:00:00.000Z","2022-07-19T00:00:00.000Z","2022-07-20T00:00:00.000Z","2022-07-21T00:00:00.000Z","2022-07-22T00:00:00.000Z","2022-07-25T00:00:00.000Z","2022-07-26T00:00:00.000Z","2022-07-27T00:00:00.000Z","2022-07-28T00:00:00.000Z","2022-07-29T00:00:00.000Z","2022-08-01T00:00:00.000Z","2022-08-02T00:00:00.000Z","2022-08-03T00:00:00.000Z","2022-08-04T00:00:00.000Z","2022-08-05T00:00:00.000Z","2022-08-08T00:00:00.000Z","2022-08-09T00:00:00.000Z","2022-08-10T00:00:00.000Z","2022-08-11T00:00:00.000Z","2022-08-12T00:00:00.000Z","2022-08-15T00:00:00.000Z","2022-08-16T00:00:00.000Z","2022-08-17T00:00:00.000Z","2022-08-18T00:00:00.000Z","2022-08-19T00:00:00.000Z","2022-08-22T00:00:00.000Z","2022-08-23T00:00:00.000Z","2022-08-24T00:00:00.000Z","2022-08-25T00:00:00.000Z","2022-08-26T00:00:00.000Z","2022-08-29T00:00:00.000Z","2022-08-30T00:00:00.000Z","2022-08-31T00:00:00.000Z","2022-09-01T00:00:00.000Z","2022-09-02T00:00:00.000Z","2022-09-05T00:00:00.000Z","2022-09-06T00:00:00.000Z","2022-09-07T00:00:00.000Z","2022-09-08T00:00:00.000Z","2022-09-09T00:00:00.000Z","2022-09-13T00:00:00.000Z","2022-09-14T00:00:00.000Z","2022-09-15T00:00:00.000Z","2022-09-16T00:00:00.000Z","2022-09-19T00:00:00.000Z","2022-09-20T00:00:00.000Z","2022-09-21T00:00:00.000Z","2022-09-22T00:00:00.000Z","2022-09-23T00:00:00.000Z","2022-09-26T00:00:00.000Z","2022-09-27T00:00:00.000Z","2022-09-28T00:00:00.000Z","2022-09-29T00:00:00.000Z","2022-09-30T00:00:00.000Z","2022-10-03T00:00:00.000Z","2022-10-05T00:00:00.000Z","2022-10-06T00:00:00.000Z","2022-10-07T00:00:00.000Z","2022-10-10T00:00:00.000Z","2022-10-11T00:00:00.000Z","2022-10-12T00:00:00.000Z","2022-10-13T00:00:00.000Z","2022-10-14T00:00:00.000Z","2022-10-17T00:00:00.000Z","2022-10-18T00:00:00.000Z","2022-10-19T00:00:00.000Z","2022-10-20T00:00:00.000Z","2022-10-21T00:00:00.000Z","2022-10-24T00:00:00.000Z","2022-10-25T00:00:00.000Z","2022-10-26T00:00:00.000Z","2022-10-27T00:00:00.000Z","2022-10-28T00:00:00.000Z","2022-10-31T00:00:00.000Z","2022-11-01T00:00:00.000Z","2022-11-02T00:00:00.000Z","2022-11-03T00:00:00.000Z","2022-11-04T00:00:00.000Z","2022-11-07T00:00:00.000Z","2022-11-08T00:00:00.000Z","2022-11-09T00:00:00.000Z","2022-11-10T00:00:00.000Z","2022-11-11T00:00:00.000Z","2022-11-14T00:00:00.000Z","2022-11-15T00:00:00.000Z","2022-11-16T00:00:00.000Z","2022-11-17T00:00:00.000Z","2022-11-18T00:00:00.000Z","2022-11-21T00:00:00.000Z","2022-11-22T00:00:00.000Z","2022-11-23T00:00:00.000Z","2022-11-24T00:00:00.000Z","2022-11-25T00:00:00.000Z","2022-11-28T00:00:00.000Z","2022-11-29T00:00:00.000Z","2022-11-30T00:00:00.000Z","2022-12-01T00:00:00.000Z","2022-12-02T00:00:00.000Z","2022-12-05T00:00:00.000Z","2022-12-06T00:00:00.000Z","2022-12-07T00:00:00.000Z","2022-12-08T00:00:00.000Z","2022-12-09T00:00:00.000Z","2022-12-12T00:00:00.000Z","2022-12-13T00:00:00.000Z","2022-12-14T00:00:00.000Z","2022-12-15T00:00:00.000Z","2022-12-16T00:00:00.000Z","2022-12-19T00:00:00.000Z","2022-12-20T00:00:00.000Z","2022-12-21T00:00:00.000Z","2022-12-22T00:00:00.000Z","2022-12-23T00:00:00.000Z","2022-12-28T00:00:00.000Z","2022-12-29T00:00:00.000Z","2022-12-30T00:00:00.000Z","2023-01-03T00:00:00.000Z","2023-01-04T00:00:00.000Z","2023-01-05T00:00:00.000Z","2023-01-06T00:00:00.000Z","2023-01-09T00:00:00.000Z","2023-01-10T00:00:00.000Z","2023-01-11T00:00:00.000Z","2023-01-12T00:00:00.000Z","2023-01-13T00:00:00.000Z","2023-01-16T00:00:00.000Z","2023-01-17T00:00:00.000Z","2023-01-18T00:00:00.000Z","2023-01-19T00:00:00.000Z","2023-01-20T00:00:00.000Z","2023-01-26T00:00:00.000Z","2023-01-27T00:00:00.000Z","2023-01-30T00:00:00.000Z","2023-01-31T00:00:00.000Z","2023-02-01T00:00:00.000Z","2023-02-02T00:00:00.000Z","2023-02-03T00:00:00.000Z","2023-02-06T00:00:00.000Z","2023-02-07T00:00:00.000Z","2023-02-08T00:00:00.000Z","2023-02-09T00:00:00.000Z","2023-02-10T00:00:00.000Z","2023-02-13T00:00:00.000Z","2023-02-14T00:00:00.000Z","2023-02-15T00:00:00.000Z","2023-02-16T00:00:00.000Z","2023-02-17T00:00:00.000Z","2023-02-20T00:00:00.000Z","2023-02-21T00:00:00.000Z","2023-02-22T00:00:00.000Z","2023-02-23T00:00:00.000Z","2023-02-24T00:00:00.000Z","2023-02-27T00:00:00.000Z","2023-02-28T00:00:00.000Z","2023-03-01T00:00:00.000Z","2023-03-02T00:00:00.000Z","2023-03-03T00:00:00.000Z","2023-03-06T00:00:00.000Z","2023-03-07T00:00:00.000Z","2023-03-08T00:00:00.000Z","2023-03-09T00:00:00.000Z","2023-03-10T00:00:00.000Z","2023-03-13T00:00:00.000Z","2023-03-14T00:00:00.000Z","2023-03-15T00:00:00.000Z","2023-03-16T00:00:00.000Z","2023-03-17T00:00:00.000Z","2023-03-20T00:00:00.000Z","2023-03-21T00:00:00.000Z","2023-03-22T00:00:00.000Z","2023-03-23T00:00:00.000Z","2023-03-24T00:00:00.000Z","2023-03-27T00:00:00.000Z","2023-03-28T00:00:00.000Z","2023-03-29T00:00:00.000Z","2023-03-30T00:00:00.000Z","2023-03-31T00:00:00.000Z","2023-04-03T00:00:00.000Z","2023-04-04T00:00:00.000Z","2023-04-06T00:00:00.000Z","2023-04-11T00:00:00.000Z","2023-04-12T00:00:00.000Z","2023-04-13T00:00:00.000Z","2023-04-14T00:00:00.000Z","2023-04-17T00:00:00.000Z","2023-04-18T00:00:00.000Z","2023-04-19T00:00:00.000Z","2023-04-20T00:00:00.000Z","2023-04-21T00:00:00.000Z","2023-04-24T00:00:00.000Z","2023-04-25T00:00:00.000Z","2023-04-26T00:00:00.000Z","2023-04-27T00:00:00.000Z","2023-04-28T00:00:00.000Z","2023-05-02T00:00:00.000Z","2023-05-03T00:00:00.000Z","2023-05-04T00:00:00.000Z","2023-05-05T00:00:00.000Z","2023-05-08T00:00:00.000Z","2023-05-09T00:00:00.000Z","2023-05-10T00:00:00.000Z","2023-05-11T00:00:00.000Z","2023-05-12T00:00:00.000Z","2023-05-15T00:00:00.000Z","2023-05-16T00:00:00.000Z","2023-05-17T00:00:00.000Z","2023-05-18T00:00:00.000Z","2023-05-19T00:00:00.000Z","2023-05-22T00:00:00.000Z","2023-05-23T00:00:00.000Z","2023-05-24T00:00:00.000Z","2023-05-25T00:00:00.000Z","2023-05-29T00:00:00.000Z","2023-05-30T00:00:00.000Z","2023-05-31T00:00:00.000Z","2023-06-01T00:00:00.000Z","2023-06-02T00:00:00.000Z","2023-06-05T00:00:00.000Z","2023-06-06T00:00:00.000Z","2023-06-07T00:00:00.000Z","2023-06-08T00:00:00.000Z","2023-06-09T00:00:00.000Z","2023-06-12T00:00:00.000Z","2023-06-13T00:00:00.000Z","2023-06-14T00:00:00.000Z","2023-06-15T00:00:00.000Z","2023-06-16T00:00:00.000Z","2023-06-19T00:00:00.000Z","2023-06-20T00:00:00.000Z","2023-06-21T00:00:00.000Z","2023-06-23T00:00:00.000Z","2023-06-26T00:00:00.000Z","2023-06-27T00:00:00.000Z","2023-06-28T00:00:00.000Z","2023-06-29T00:00:00.000Z","2023-06-30T00:00:00.000Z","2023-07-03T00:00:00.000Z","2023-07-04T00:00:00.000Z","2023-07-05T00:00:00.000Z","2023-07-06T00:00:00.000Z","2023-07-07T00:00:00.000Z","2023-07-10T00:00:00.000Z","2023-07-11T00:00:00.000Z","2023-07-12T00:00:00.000Z","2023-07-13T00:00:00.000Z","2023-07-14T00:00:00.000Z","2023-07-18T00:00:00.000Z","2023-07-19T00:00:00.000Z","2023-07-20T00:00:00.000Z","2023-07-21T00:00:00.000Z","2023-07-24T00:00:00.000Z","2023-07-25T00:00:00.000Z","2023-07-26T00:00:00.000Z","2023-07-27T00:00:00.000Z","2023-07-28T00:00:00.000Z","2023-07-31T00:00:00.000Z","2023-08-01T00:00:00.000Z","2023-08-02T00:00:00.000Z","2023-08-03T00:00:00.000Z","2023-08-04T00:00:00.000Z","2023-08-07T00:00:00.000Z","2023-08-08T00:00:00.000Z","2023-08-09T00:00:00.000Z","2023-08-10T00:00:00.000Z","2023-08-11T00:00:00.000Z","2023-08-14T00:00:00.000Z","2023-08-15T00:00:00.000Z","2023-08-16T00:00:00.000Z","2023-08-17T00:00:00.000Z","2023-08-18T00:00:00.000Z","2023-08-21T00:00:00.000Z","2023-08-22T00:00:00.000Z","2023-08-23T00:00:00.000Z","2023-08-24T00:00:00.000Z","2023-08-25T00:00:00.000Z","2023-08-28T00:00:00.000Z","2023-08-29T00:00:00.000Z","2023-08-30T00:00:00.000Z","2023-08-31T00:00:00.000Z","2023-09-04T00:00:00.000Z","2023-09-05T00:00:00.000Z","2023-09-06T00:00:00.000Z","2023-09-07T00:00:00.000Z","2023-09-11T00:00:00.000Z","2023-09-12T00:00:00.000Z","2023-09-13T00:00:00.000Z","2023-09-14T00:00:00.000Z","2023-09-15T00:00:00.000Z","2023-09-18T00:00:00.000Z","2023-09-19T00:00:00.000Z","2023-09-20T00:00:00.000Z","2023-09-21T00:00:00.000Z","2023-09-22T00:00:00.000Z","2023-09-25T00:00:00.000Z","2023-09-26T00:00:00.000Z","2023-09-27T00:00:00.000Z","2023-09-28T00:00:00.000Z","2023-09-29T00:00:00.000Z","2023-10-03T00:00:00.000Z","2023-10-04T00:00:00.000Z","2023-10-05T00:00:00.000Z","2023-10-06T00:00:00.000Z","2023-10-09T00:00:00.000Z","2023-10-10T00:00:00.000Z","2023-10-11T00:00:00.000Z","2023-10-12T00:00:00.000Z","2023-10-13T00:00:00.000Z","2023-10-16T00:00:00.000Z","2023-10-17T00:00:00.000Z","2023-10-18T00:00:00.000Z","2023-10-19T00:00:00.000Z","2023-10-20T00:00:00.000Z","2023-10-24T00:00:00.000Z","2023-10-25T00:00:00.000Z","2023-10-26T00:00:00.000Z","2023-10-27T00:00:00.000Z","2023-10-30T00:00:00.000Z","2023-10-31T00:00:00.000Z","2023-11-01T00:00:00.000Z","2023-11-02T00:00:00.000Z","2023-11-03T00:00:00.000Z","2023-11-06T00:00:00.000Z","2023-11-07T00:00:00.000Z","2023-11-08T00:00:00.000Z","2023-11-09T00:00:00.000Z","2023-11-10T00:00:00.000Z","2023-11-13T00:00:00.000Z","2023-11-14T00:00:00.000Z","2023-11-15T00:00:00.000Z","2023-11-16T00:00:00.000Z","2023-11-17T00:00:00.000Z","2023-11-20T00:00:00.000Z","2023-11-21T00:00:00.000Z","2023-11-22T00:00:00.000Z","2023-11-23T00:00:00.000Z","2023-11-24T00:00:00.000Z"],[72.65000152587891,72.09999847412109,69,68.80000305175781,67,68.75,66.69999694824219,65.05000305175781,65.05000305175781,67.90000152587891,68.44999694824219,68.94999694824219,69,62,59.29999923706055,55.45000076293945,56,55,55,58.5,55.04999923706055,52.75,55,52.75,52.84999847412109,50.15000152587891,50.70000076293945,56.34999847412109,61.34999847412109,62.15000152587891,62.79999923706055,62.04999923706055,59.79999923706055,56.29999923706055,53.95000076293945,54.54999923706055,56.90000152587891,57.5,58.29999923706055,58.34999847412109,57,59.70000076293945,61.04999923706055,53.84999847412109,52.65000152587891,50.95000076293945,53,50.5,52.45000076293945,55.5,53.84999847412109,54.65000152587891,54,54,52.04999923706055,52.5,52.29999923706055,52.34999847412109,52.59999847412109,51.84999847412109,47.90000152587891,45.79999923706055,44.84999847412109,46.90000152587891,44.25,45.79999923706055,44.04999923706055,43.90000152587891,41.20000076293945,41.25,44,45.45000076293945,43.90000152587891,45.59999847412109,44.95000076293945,45.5,43.90000152587891,43.75,44.59999847412109,44.20000076293945,45.54999923706055,45.65000152587891,43.90000152587891,43.45000076293945,43.59999847412109,47.84999847412109,47.45000076293945,47.5,49,53.29999923706055,53.79999923706055,54.65000152587891,57.90000152587891,62.40000152587891,59.84999847412109,58.65000152587891,61,58.40000152587891,58.29999923706055,56,56.75,58.54999923706055,58.75,61,58.5,58.90000152587891,60.90000152587891,60,60.79999923706055,60.84999847412109,61.20000076293945,59.59999847412109,56.84999847412109,58.90000152587891,52.34999847412109,49.79999923706055,48.29999923706055,53.95000076293945,55.34999847412109,51.95000076293945,50,48.90000152587891,49.70000076293945,50,50.29999923706055,52.5,52,52.90000152587891,52.70000076293945,51.75,52.29999923706055,51.25,51.79999923706055,53.15000152587891,53.75,53.04999923706055,53.75,55.15000152587891,55.29999923706055,55.20000076293945,55.20000076293945,56.20000076293945,57.79999923706055,56.25,56.79999923706055,56.79999923706055,57,55.15000152587891,55.5,55.25,56.79999923706055,57.59999847412109,57.29999923706055,58.95000076293945,58.29999923706055,60.20000076293945,60,61.84999847412109,61.45000076293945,60.45000076293945,61.70000076293945,58.15000152587891,61,60.79999923706055,61.09999847412109,60.90000152587891,60.04999923706055,60.54999923706055,60.34999847412109,58,59.65000152587891,59.65000152587891,60.20000076293945,61.29999923706055,61.29999923706055,61.5,61,61.04999923706055,61.29999923706055,62.45000076293945,62.70000076293945,64.30000305175781,63.75,63.59999847412109,64.34999847412109,68.5,68.5,69.25,68.80000305175781,70,69.09999847412109,68.65000152587891,68,67.44999694824219,66,65,65.05000305175781,64.5,65.75,65.55000305175781,67.25,65.59999847412109,65.05000305175781,65.75,65.30000305175781,64.80000305175781,64.94999694824219,64.75,63.95000076293945,66.44999694824219,63.90000152587891,62.15000152587891,61.59999847412109,61.34999847412109,62.5,63.5,63.65000152587891,62.34999847412109,63.70000076293945,65,66.15000152587891,69.25,68.94999694824219,68.75,70.09999847412109,70,76.19999694824219,75,74.80000305175781,74.65000152587891,74.34999847412109,74.05000305175781,73.55000305175781,74.05000305175781,73.55000305175781,73.75,72.44999694824219,70.30000305175781,71.59999847412109,72.19999694824219,73.59999847412109,72.30000305175781,72,75.40000152587891,75.30000305175781,77.5,76.05000305175781,78.25,79.5,79.65000152587891,81,80.09999847412109,81.5,82.40000152587891,84.69999694824219,89,89.44999694824219,91.15000152587891,88.44999694824219,88,90.75,90.44999694824219,90.90000152587891,92.75,96.75,90.55000305175781,89,88.59999847412109,90.55000305175781,93.69999694824219,92,94,93.65000152587891,93.80000305175781,98.40000152587891,97.15000152587891,96.59999847412109,98.5,94.59999847412109,91.34999847412109,95.5,95.05000305175781,93.75,96.84999847412109,97.65000152587891,96,97.30000305175781,91.90000152587891,98.05000305175781,98.30000305175781,100.8000030517578,104.1999969482422,106.5,103.1999969482422,104.6999969482422,103.5999984741211,100.5,102.1999969482422,103.5999984741211,103.3000030517578,101,101.6999969482422,100.1999969482422,101.0999984741211,102.3000030517578,104.5,103.0999984741211,103.5,102,101,102.3000030517578,102.6999969482422,102.5,101.9000015258789,103.5,104.1999969482422,109.5,110.4000015258789,106.4000015258789,108.4000015258789,109.5999984741211,113.0999984741211,112.3000030517578,114.0999984741211,112.3000030517578,111.9000015258789,110.5999984741211,105.8000030517578,108.3000030517578,102.5999984741211,102.3000030517578,101.1999969482422,96.84999847412109,99.30000305175781,99.5,101,99.5,101.6999969482422,101.9000015258789,95.80000305175781,99.19999694824219,103,102.5,100.9000015258789,101.5,100.5999984741211,100.4000015258789,103.3000030517578,103.1999969482422,100.5,103.3000030517578,102,103.3000030517578,98.90000152587891,99.30000305175781,98.84999847412109,99.19999694824219,103.5,100.6999969482422,96,98.75,95.65000152587891,90.80000305175781,89,82.19999694824219,82.15000152587891,75.55000305175781,72.40000152587891,84,80.80000305175781,85.5,90.75,90.15000152587891,89.30000305175781,88,93.65000152587891,92.84999847412109,93.94999694824219,92.84999847412109,94.44999694824219,97.55000305175781,96.80000305175781,97.25,97.75,97.84999847412109,98.84999847412109,100,100.9000015258789,98.55000305175781,101.3000030517578,100,99.19999694824219,100.0999984741211,101,103.8000030517578,100.6999969482422,104.3000030517578,108,107.6999969482422,111.5999984741211,109.6999969482422,112,118.0999984741211,121.5,119.4000015258789,121.9000015258789,125.8000030517578,128.5,127.5999984741211,118.5,125.8000030517578,138.8999938964844,135.3000030517578,137,146.6999969482422,150,147.1000061035156,155.3000030517578,164.1999969482422,159,154.8000030517578,151.5,159.6000061035156,165,165.6000061035156,159.5,172,172.3999938964844,172.5,174,170.5,176.8000030517578,178.3999938964844,174.6999969482422,171.6999969482422,171.8999938964844,179.3999938964844,191.6999969482422,191,185,199.8000030517578,209.8000030517578,208.1999969482422,206,197.1000061035156,200.6000061035156,185.1000061035156,191.1000061035156,188.3999938964844,205,192.1999969482422,199,190.6999969482422,185,191,193,195,191.8999938964844,200.6000061035156,218,218.3999938964844,221.1999969482422,222.3999938964844,223,218.3999938964844,213.8000030517578,211.3999938964844,219.8000030517578,218.1999969482422,235,231,234.6000061035156,245.1999969482422,265.7999877929688,257.6000061035156,258.7999877929688,271,265.2000122070312,255.6000061035156,264.6000061035156,272.7999877929688,262.6000061035156,261.7999877929688,248.1999969482422,238,232,233,242.8000030517578,244.6000061035156,243.6000061035156,248.1999969482422,240.8000030517578,241.6000061035156,241.6000061035156,242.6000061035156,250,238.6000061035156,232,237,234.6000061035156,241.8000030517578,245.8000030517578,258,267.7999877929688,266.7999877929688,270,275.2000122070312,278.3999938964844,265,265.7999877929688,259,260.7999877929688,269,269,262.3999938964844,266,280,297.2000122070312,288.2000122070312,294.6000061035156,296,313.7999877929688,329.6000061035156,326.7999877929688,335.2000122070312,300,271,286.7999877929688,305.7999877929688,318.3999938964844,303,300,294,304.2000122070312,308,303.3999938964844,293.6000061035156,308,312,290,289.2000122070312,277.7999877929688,275.7999877929688,288.6000061035156,282.3999938964844,287.6000061035156,286.3999938964844,287,293.7999877929688,282.6000061035156,274.2000122070312,279.2000122070312,285,278.3999938964844,278.3999938964844,276.2000122070312,287,278.2000122070312,260,273.3999938964844,287.7999877929688,294,292.6000061035156,296.6000061035156,310,308,318,309.6000061035156,302,296.3999938964844,313.2000122070312,307.6000061035156,325,341,372,375.2000122070312,380.2000122070312,399.7999877929688,378.6000061035156,364,355.6000061035156,355.7999877929688,391,395,414.2000122070312,401,401.3999938964844,406.3999938964844,409,430.3999938964844,443.2000122070312,439.2000122070312,451.3999938964844,428,423.6000061035156,400.2000122070312,392.7999877929688,365.7999877929688,370.3999938964844,340,366.7999877929688,362.3999938964844,372.6000061035156,340,337,308.7999877929688,302,317,344.6000061035156,333,317.2000122070312,329.6000061035156,325.3999938964844,337.3999938964844,333,320.6000061035156,303.7999877929688,292,287.3999938964844,302,280.3999938964844,293.6000061035156,298.2000122070312,325.7999877929688,318,320.7999877929688,314,298.2000122070312,276,286,284.7999877929688,290.2000122070312,289.2000122070312,293.6000061035156,282.2000122070312,292,306.3999938964844,305,313,309.3999938964844,309.2000122070312,298,293.2000122070312,291.7999877929688,287,285.7999877929688,282.7999877929688,262.7999877929688,249,255.1999969482422,251.6000061035156,244,254.1999969482422,260,273.2000122070312,275.2000122070312,271,276.6000061035156,279.6000061035156,271.7999877929688,265.2000122070312,294,313,311.7999877929688,307.3999938964844,302.2000122070312,300,297,293.2000122070312,298,307.2000122070312,302.3999938964844,288.7999877929688,290,300.6000061035156,301.7999877929688,292.7999877929688,308,315,330,328.6000061035156,323.7999877929688,320.3999938964844,304,287,289.7999877929688,286,267.6000061035156,279.2000122070312,285.2000122070312,295,290,290.3999938964844,290.7999877929688,276.2000122070312,275.2000122070312,270.2000122070312,279.7999877929688,273.2000122070312,235.6000061035156,194,208.6000061035156,228.3999938964844,215,216,211.6000061035156,213.6000061035156,211.1999969482422,213.8000030517578,220.3999938964844,239,237.1999969482422,236.6000061035156,233.3999938964844,221.3999938964844,213.6000061035156,218.1999969482422,202.6000061035156,193.3999938964844,195.3999938964844,221.8000030517578,227,226.8000030517578,225,228.3999938964844,249,253.3999938964844,253.6000061035156,244.8000030517578,247.3999938964844,257.3999938964844,261,248.6000061035156,259.3999938964844,247.8000030517578,245,234,232.6000061035156,240.8000030517578,234.6000061035156,230.6000061035156,242.6000061035156,244.6000061035156,248.3999938964844,251.8000030517578,250,246.6000061035156,236.8000030517578,233.6000061035156,228.6000061035156,250.8000030517578,256,277.3999938964844,269,280.7999877929688,280.3999938964844,285.6000061035156,293.7999877929688,288.3999938964844,289.2000122070312,286.7999877929688,283,268.6000061035156,272.2000122070312,269.6000061035156,267.3999938964844,271,277,286,276.7999877929688,271.2000122070312,270.3999938964844,277.3999938964844,282.3999938964844,289.7999877929688,289.6000061035156,297.3999938964844,292.6000061035156,285.3999938964844,280.7999877929688,274,265.3999938964844,273.3999938964844,274.2000122070312,263.6000061035156,245,238,244.6000061035156,247.8000030517578,241.1999969482422,232.3999938964844,245.8000030517578,245.1999969482422,247,243,248,246.1999969482422,241.8000030517578,238.3999938964844,225.8000030517578,219.1999969482422,229,230.3999938964844,226.6000061035156,225.3999938964844,223.3999938964844,216,218.3999938964844,225.3999938964844,223.3999938964844,219.6000061035156,195.1000061035156,202.1999969482422,204,206.6000061035156,208,227,226.1999969482422,220.6000061035156,216.6000061035156,215.8000030517578,214.3999938964844,238,238,232.8000030517578,225.8000030517578,225,209.3999938964844,208,220.1999969482422,226.8000030517578,225.8000030517578,221,229.1999969482422,233,227.8000030517578,219.6000061035156,214,219.3999938964844,220.8000030517578,188,180.5,171.3000030517578,176.6000061035156,170.1999969482422,170.1999969482422,172.1999969482422,173.3999938964844,176.3999938964844,174.1999969482422,164.8000030517578,146.1999969482422,145.5,148.5,144.1999969482422,135.3999938964844,112.5999984741211,106,140,157.1999969482422,153.3000030517578,143.8999938964844,153,156.1999969482422,147,135,150.6000061035156,159.3000030517578,160.1000061035156,155.6000061035156,155.5,167,160.8999938964844,159.3000030517578,156.5,147.5,153.8999938964844,154.1000061035156,155.1999969482422,146,144.8999938964844,137.8000030517578,141.3999938964844,138.6000061035156,145.3000030517578,147.8999938964844,148.8999938964844,172,172.3999938964844,164.5,164.6999969482422,157,151.8000030517578,161.3999938964844,157,167.6000061035156,163.5,173.6999969482422,172,165.5,173,167.6999969482422,159.6000061035156,159.6999969482422,158.6000061035156,163.8999938964844,175.1000061035156,187,182.5,180.1999969482422,198.1000061035156,199,208.1999969482422,201.8000030517578,201.1999969482422,188.1999969482422,194.3999938964844,197,189.1999969482422,199.1000061035156,199.3999938964844,201.1999969482422,191.6000061035156,192.6000061035156,198.1000061035156,205,207.6000061035156,202.8000030517578,194.1999969482422,201.1999969482422,197.6999969482422,195.8999938964844,194.3999938964844,192.3000030517578,181.6000061035156,178,180.5,182.5,179.1999969482422,189.6999969482422,189.1000061035156,194.6999969482422,190.3999938964844,191.6999969482422,188.1999969482422,190.6999969482422,190.1000061035156,188,176.3000030517578,180,176.1999969482422,177.1000061035156,183.8000030517578,183.5,179.6000061035156,176,169.6000061035156,176.3999938964844,179.1000061035156,180.8999938964844,164.5,170,171.1000061035156,169.8999938964844,171.1000061035156,168.6999969482422,164.1000061035156,177.3000030517578,181.8999938964844,186.6999969482422,185,189.8000030517578,178.6999969482422,176.1999969482422,173.6000061035156,173.3999938964844,172.1000061035156,171.5,179.8999938964844,177.8000030517578,173.8000030517578,175.3999938964844,171.8999938964844,169.3999938964844,172.6000061035156,167.5,164.8999938964844,160.3000030517578,167.5,174.1999969482422,168.8000030517578,170.1999969482422,165.6000061035156,161.6999969482422,174.8999938964844,177.1000061035156,172.8999938964844,161.3000030517578,151.3999938964844,150.3999938964844,146,149,149.6999969482422,154,144.5,140.8000030517578,141.6000061035156,120.5999984741211,123.5,129.6999969482422,131.8000030517578,121.8000030517578,124.8000030517578,139.6000061035156,146.6999969482422,141.5,149.5,153,148.8000030517578,144.3000030517578,141.8999938964844,159.6000061035156,156.5,166.3999938964844,162.3000030517578,153,160.3999938964844,152.5,139.8999938964844,138.3999938964844,138.8999938964844,136.6000061035156,139.3999938964844,155.3999938964844,163.6000061035156,163,168,174.3000030517578,173.8000030517578,167.5,178.3000030517578,188.5,175.3999938964844,179,182.8000030517578,176.8000030517578,175.8999938964844,178.8000030517578,175.5,174.1999969482422,186.1999969482422,183.1999969482422,184.1999969482422,183.8000030517578,174.6999969482422,176.8000030517578,181.3000030517578,190.8000030517578,182.6999969482422,180.6000061035156,178.5,174,173,171.1999969482422,165.6000061035156,164.8000030517578,163.6000061035156,160.1999969482422,168.1000061035156,172.3999938964844,174.8999938964844,173.5,174.6000061035156,180.1000061035156,176.6000061035156,172.8000030517578,164.1000061035156,163.6999969482422,153.1000061035156,153.5,148.1000061035156,148.1999969482422,147.6999969482422,145.8999938964844,148.3000030517578,144.1999969482422,145.8000030517578,139.8000030517578,140,139.1000061035156,134.3999938964844,136.1999969482422,136.1000061035156,142.8000030517578,141.3000030517578,142.3000030517578,142.8999938964844,137.8999938964844,131.8999938964844,129.3999938964844,127.4000015258789,129,125.4000015258789,126.6999969482422,126.3000030517578,130.3999938964844,128.8999938964844,130.1000061035156,130.3000030517578,141.1000061035156,140.1999969482422,131.3999938964844,134.6000061035156,140,142,143.5,140,133.8999938964844,133.8000030517578,135.3999938964844,131,130.8999938964844,129.5,135.6000061035156,135.3000030517578,135.6000061035156,140.3999938964844,137.6999969482422,137.6000061035156,131.6000061035156,133.1000061035156,134,133,132.5,131.3000030517578,132,135.6000061035156,134.1999969482422,130.3000030517578,129,128.5,131.8000030517578,136.3000030517578,137.3999938964844,133,133.5,128.6000061035156,132.6000061035156,132.8000030517578,130.3999938964844,126,115.8000030517578,116.4000015258789,110.1999969482422,112.8000030517578,121.5999984741211,121.5999984741211,121.8000030517578,123.5,124.4000015258789,127.0999984741211,127.5999984741211,128,127.3000030517578,137.1999969482422,138,137,132.3000030517578,127.5999984741211,124.6999969482422,124,126.1999969482422,127.0999984741211,124.6999969482422,122.3000030517578,126.4000015258789,127.5999984741211,124.5,120.5999984741211,119.0999984741211,121.0999984741211,122,127.3000030517578,134.6000061035156,132.5,129.1000061035156,127.6999969482422,126.6999969482422,128.1999969482422,125,134.8000030517578,134.8999938964844,136.6000061035156,142.3999938964844,146.3000030517578,145.5,140.6999969482422,140.1999969482422,144,144.6999969482422,140.1000061035156,140.8999938964844,141,137.1999969482422,135.3999938964844,133.8999938964844,132.3999938964844,133.6000061035156,129.8999938964844,127,129.1999969482422,130.3000030517578,140,132.1999969482422,134.6999969482422,137.3000030517578,134.1999969482422,128.5,132.6999969482422,128.6000061035156,128.3000030517578,125,125.6999969482422,124.8000030517578,123.0999984741211,123,124.3000030517578,122,121.6999969482422,119.1999969482422,116.3000030517578,120.8000030517578,117.1999969482422,116.3000030517578,114.8000030517578,110.8000030517578,114.5999984741211,110,106.9000015258789,105.9000015258789,108.3000030517578,108.9000015258789,112.3000030517578,116.5,118.4000015258789,114.5999984741211,113.6999969482422,114.5,113.6999969482422,110.4000015258789,107.8000030517578,107.5,109.5999984741211,109.8000030517578,113,114,110.5999984741211,109,108,111,117.1999969482422,115.5,115,115,110.6999969482422,111.5999984741211,108.3000030517578,113.3000030517578,111.6999969482422,107.3000030517578,109,110.5,111.4000015258789,112.1999969482422,109.0999984741211]],"fixedtz":false,"tzone":"UTC","plugins":{"Unzoom":"{}"}},"evals":["attrs.axes.x.axisLabelFormatter","attrs.interactionModel","plugins.Unzoom"],"jsHooks":[]}</script>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-meituan-dygraphs-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;26.6: 美团股价变化趋势
+</figcaption></figure>
+</div>
+</div>
+<p>上图默认展示 YTD 数据，在一个动态的时间窗口内显示数据，假如今天是 2023-07-15，则展示 2023-01-01 至 2023-07-15 的股价数据。在函数 <code>dyRangeSelector()</code> 中设定时间窗口参数 <code>dateWindow</code>，实现数据范围的筛选。</p>
+</section></section><section id="平稳性诊断" class="level2" data-number="26.3"><h2 data-number="26.3" class="anchored" data-anchor-id="平稳性诊断">
+<span class="header-section-number">26.3</span> 平稳性诊断</h2>
+<section id="自相关图" class="level3" data-number="26.3.1"><h3 data-number="26.3.1" class="anchored" data-anchor-id="自相关图">
+<span class="header-section-number">26.3.1</span> 自相关图</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1"></a><span class="fu">autoplot</span>(<span class="fu">acf</span>(AirPassengers, <span class="at">plot =</span> <span class="cn">FALSE</span>)) <span class="sc">+</span></span>
+<span id="cb19-2"><a href="#cb19-2"></a>  <span class="fu">theme_classic</span>()</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-airpassengers-acf" class="quarto-figure quarto-figure-center anchored" width="480">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-airpassengers-acf-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="analyze-time-series-data_files/figure-html/fig-airpassengers-acf-1.png" class="img-fluid figure-img" width="480">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-airpassengers-acf-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;26.7: 乘客数量自相关图
+</figcaption></figure>
+</div>
+</div>
+</div>
+</section><section id="偏自相关图" class="level3" data-number="26.3.2"><h3 data-number="26.3.2" class="anchored" data-anchor-id="偏自相关图">
+<span class="header-section-number">26.3.2</span> 偏自相关图</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1"></a><span class="fu">autoplot</span>(<span class="fu">pacf</span>(AirPassengers, <span class="at">plot =</span> <span class="cn">FALSE</span>)) <span class="sc">+</span></span>
+<span id="cb20-2"><a href="#cb20-2"></a>  <span class="fu">theme_classic</span>()</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-airpassengers-pacf" class="quarto-figure quarto-figure-center anchored" width="480">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-airpassengers-pacf-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="analyze-time-series-data_files/figure-html/fig-airpassengers-pacf-1.png" class="img-fluid figure-img" width="480">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-airpassengers-pacf-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;26.8: 乘客数量偏自相关图
+</figcaption></figure>
+</div>
+</div>
+</div>
+</section><section id="sec-lag-operator" class="level3" data-number="26.3.3"><h3 data-number="26.3.3" class="anchored" data-anchor-id="sec-lag-operator">
+<span class="header-section-number">26.3.3</span> 延迟算子</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1"></a><span class="co"># 原始序列</span></span>
+<span id="cb21-2"><a href="#cb21-2"></a>AirPassengers</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>     Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec
+1949 112 118 132 129 121 135 148 148 136 119 104 118
+1950 115 126 141 135 125 149 170 170 158 133 114 140
+1951 145 150 178 163 172 178 199 199 184 162 146 166
+1952 171 180 193 181 183 218 230 242 209 191 172 194
+1953 196 196 236 235 229 243 264 272 237 211 180 201
+1954 204 188 235 227 234 264 302 293 259 229 203 229
+1955 242 233 267 269 270 315 364 347 312 274 237 278
+1956 284 277 317 313 318 374 413 405 355 306 271 306
+1957 315 301 356 348 355 422 465 467 404 347 305 336
+1958 340 318 362 348 363 435 491 505 404 359 310 337
+1959 360 342 406 396 420 472 548 559 463 407 362 405
+1960 417 391 419 461 472 535 622 606 508 461 390 432</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1"></a><span class="co"># 延迟 1 期</span></span>
+<span id="cb23-2"><a href="#cb23-2"></a><span class="fu">lag</span>(AirPassengers, <span class="at">k =</span> <span class="dv">1</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>     Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec
+1948                                             112
+1949 118 132 129 121 135 148 148 136 119 104 118 115
+1950 126 141 135 125 149 170 170 158 133 114 140 145
+1951 150 178 163 172 178 199 199 184 162 146 166 171
+1952 180 193 181 183 218 230 242 209 191 172 194 196
+1953 196 236 235 229 243 264 272 237 211 180 201 204
+1954 188 235 227 234 264 302 293 259 229 203 229 242
+1955 233 267 269 270 315 364 347 312 274 237 278 284
+1956 277 317 313 318 374 413 405 355 306 271 306 315
+1957 301 356 348 355 422 465 467 404 347 305 336 340
+1958 318 362 348 363 435 491 505 404 359 310 337 360
+1959 342 406 396 420 472 548 559 463 407 362 405 417
+1960 391 419 461 472 535 622 606 508 461 390 432    </code></pre>
+</div>
+</div>
+</section><section id="sec-diff-operator" class="level3" data-number="26.3.4"><h3 data-number="26.3.4" class="anchored" data-anchor-id="sec-diff-operator">
+<span class="header-section-number">26.3.4</span> 差分算子</h3>
+<p>函数 <code><a href="https://rdrr.io/r/base/diff.html">diff()</a></code> 实现差分算子，默认参数 <code>lag = 1</code> ，<code>differences = 1</code> 表示延迟期数为 1 的一阶差分。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1"></a><span class="co"># 延迟 1 期 1 阶差分</span></span>
+<span id="cb25-2"><a href="#cb25-2"></a><span class="fu">diff</span>(AirPassengers, <span class="at">lag =</span> <span class="dv">1</span>, <span class="at">differences =</span> <span class="dv">1</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>      Jan  Feb  Mar  Apr  May  Jun  Jul  Aug  Sep  Oct  Nov  Dec
+1949         6   14   -3   -8   14   13    0  -12  -17  -15   14
+1950   -3   11   15   -6  -10   24   21    0  -12  -25  -19   26
+1951    5    5   28  -15    9    6   21    0  -15  -22  -16   20
+1952    5    9   13  -12    2   35   12   12  -33  -18  -19   22
+1953    2    0   40   -1   -6   14   21    8  -35  -26  -31   21
+1954    3  -16   47   -8    7   30   38   -9  -34  -30  -26   26
+1955   13   -9   34    2    1   45   49  -17  -35  -38  -37   41
+1956    6   -7   40   -4    5   56   39   -8  -50  -49  -35   35
+1957    9  -14   55   -8    7   67   43    2  -63  -57  -42   31
+1958    4  -22   44  -14   15   72   56   14 -101  -45  -49   27
+1959   23  -18   64  -10   24   52   76   11  -96  -56  -45   43
+1960   12  -26   28   42   11   63   87  -16  -98  -47  -71   42</code></pre>
+</div>
+</div>
+</section><section id="sec-unitroot-test" class="level3" data-number="26.3.5"><h3 data-number="26.3.5" class="anchored" data-anchor-id="sec-unitroot-test">
+<span class="header-section-number">26.3.5</span> 单位根检验</h3>
+</section><section id="sec-granger-causality-test" class="level3" data-number="26.3.6"><h3 data-number="26.3.6" class="anchored" data-anchor-id="sec-granger-causality-test">
+<span class="header-section-number">26.3.6</span> 格兰杰因果检验</h3>
+<p>1969 年 Clive Granger 提出格兰杰因果检验，R 语言中 <strong>lmtest</strong> 包的函数 <code>grangertest()</code> 可以检验序列中变量之间的时间落差的相关性。</p>
+</section></section><section id="sec-exponential-smoothing" class="level2" data-number="26.4"><h2 data-number="26.4" class="anchored" data-anchor-id="sec-exponential-smoothing">
+<span class="header-section-number">26.4</span> 指数平滑模型</h2>
+<section id="指数平滑" class="level3" data-number="26.4.1"><h3 data-number="26.4.1" class="anchored" data-anchor-id="指数平滑">
+<span class="header-section-number">26.4.1</span> 指数平滑</h3>
+<p>首先来回答何为指数平滑？用历史数据的线性组合预测下一个时期的值，线性组合的权重随距离变远而按指数衰减。不妨设观测序列数据为 <span class="math inline">\(\{x_i\}\)</span> ，预测序列数据为 <span class="math inline">\(\{y_i\}\)</span>，用数学公式表达，如下：</p>
+<p><span class="math display">\[
+y_h(1) = wx_h + w^2x_{h-1} + \cdots = \sum_{j=1}^{\infty} w^j x_{h+1-j}
+\]</span></p>
+<p>其中，权重 <span class="math inline">\(0 &lt; w &lt; 1\)</span> ，权重越小表示距离远的历史数据对当前预测的贡献越小。线性组合的权重之和等于 1，所以</p>
+<p><span class="math display">\[
+\sum_{j=1}^{\infty} w^j = \frac{w}{1-w}
+\]</span></p>
+<p>则第 <span class="math inline">\(j\)</span> 个权重应为</p>
+<p><span class="math display">\[
+\frac{w^j}{\frac{w}{1-w}} = (1-w)w^{j-1},j=1,2,\ldots
+\]</span></p>
+<p>则根据历史的 <span class="math inline">\(h\)</span> 期数据预测未来的 1 期数据 <span class="math inline">\(y_h(1)\)</span> 如下：</p>
+<p><span class="math display">\[
+y_h(1) = (1-w)(x_h + wx_{h-1} + w^2x_{h-2} + \cdots) = (1-w)\sum_{j=0}^{\infty}w^j x_{h-j}
+\]</span></p>
+<p>以上就是指数平滑（exponential smoothing），在早期应用中，权重 <span class="math inline">\(w\)</span> 的选取主要依靠经验。适用于没有明显趋势性、季节性、周期性的时间序列数据。</p>
+</section><section id="函数-filter" class="level3" data-number="26.4.2"><h3 data-number="26.4.2" class="anchored" data-anchor-id="函数-filter">
+<span class="header-section-number">26.4.2</span> 函数 <code>filter()</code>
+</h3>
+<p>函数 <code><a href="https://rdrr.io/r/stats/filter.html">filter()</a></code> 实现一元时间序列的线性过滤，或者对多元时间序列的单个序列分别做线性变换，它只是根据既定的平滑模型变换数据，没有拟合数据。函数 <code><a href="https://rdrr.io/r/stats/filter.html">filter()</a></code> 实现递归过滤和卷积过滤两种数据变换方式，分别对应自回归和移动平均两种时间序列平滑模型。</p>
+<ul>
+<li>递归过滤（自回归）</li>
+</ul>
+<p><span id="eq-filter-recursive"><span class="math display">\[
+y_{i} = x_{i} + f_1 y_{i-1} +\cdots+ f_p y_{i-p}
+\tag{26.1}\]</span></span></p>
+<ul>
+<li>卷积过滤（移动平均）</li>
+</ul>
+<p><span id="eq-filter-convolution"><span class="math display">\[
+y_{i} = f_1 x_{i+o} + \cdots + f_p x_{i+o-(p-1)}
+\tag{26.2}\]</span></span></p>
+<p>其中，<span class="math inline">\(p\)</span> 代表模型的阶数， <span class="math inline">\(o\)</span> 代表漂移项，O 表示英文单词 offset 的首字母。下面举个具体的例子来说明函数 <code><a href="https://rdrr.io/r/stats/filter.html">filter()</a></code> 的作用，设输入序列 <span class="math inline">\(\{x_i\}\)</span> 是从 1 至 10 的整数。首先考虑自回归的情况，代码如下：</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1"></a>x <span class="ot">&lt;-</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">10</span></span>
+<span id="cb27-2"><a href="#cb27-2"></a><span class="co"># 自回归</span></span>
+<span id="cb27-3"><a href="#cb27-3"></a><span class="fu">filter</span>(x, <span class="at">filter =</span> <span class="fu">c</span>(<span class="dv">2</span> <span class="sc">/</span> <span class="dv">3</span>, <span class="dv">1</span> <span class="sc">/</span> <span class="dv">6</span>, <span class="dv">1</span> <span class="sc">/</span> <span class="dv">6</span>), <span class="at">method =</span> <span class="st">"recursive"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Time Series:
+Start = 1 
+End = 10 
+Frequency = 1 
+ [1]  1.000000  2.666667  4.944444  7.907407 11.540123 15.835391 20.798182
+ [8] 26.428041 32.724289 39.687230</code></pre>
+</div>
+</div>
+<p>参数 <code>x</code> 指定输入的时间序列 <span class="math inline">\(\{x_i\}\)</span>，参数 <code>method</code> 指定平滑的方法，<code>method = "recursive"</code> 表示使用自回归方法，参数 <code>filter</code> 表示自回归的系数，系数向量的长度代表模型 <a href="#eq-filter-recursive" class="quarto-xref">方程式&nbsp;<span>26.1</span></a> 中的 <span class="math inline">\(p\)</span> ，<code>filter = c(2 / 3, 1 / 6, 1 / 6)</code> 对应的模型如下：</p>
+<p><span class="math display">\[
+\begin{aligned}
+y_1 &amp;= x_1 \\
+y_2 &amp;= x_2 + \frac{2}{3} y_1 \\
+y_3 &amp;= x_3 + \frac{2}{3} y_2 + \frac{1}{6} y_1 \\
+y_i &amp;= x_i + \frac{2}{3} y_{i-1} + \frac{1}{6} y_{i - 2} + \frac{1}{6} y_{i - 3}, \quad i \geq 4 \\
+\end{aligned}
+\]</span></p>
+<p>其中，序列 <span class="math inline">\(\{y_i\}\)</span> 表示函数 <code><a href="https://rdrr.io/r/stats/filter.html">filter()</a></code> 的输出结果，由上述方程不难看出自回归模型的递归的特点。为了理解自回归和递归的过程，下面依次计算 <span class="math inline">\(y_1\)</span> 至 <span class="math inline">\(y_4\)</span> 。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1"></a><span class="co"># y1</span></span>
+<span id="cb29-2"><a href="#cb29-2"></a><span class="dv">1</span></span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 1</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1"></a><span class="co"># y2</span></span>
+<span id="cb31-2"><a href="#cb31-2"></a><span class="dv">2</span> <span class="sc">+</span> <span class="dv">2</span><span class="sc">/</span><span class="dv">3</span> <span class="sc">*</span> <span class="dv">1</span></span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 2.666667</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1"></a><span class="co"># y3</span></span>
+<span id="cb33-2"><a href="#cb33-2"></a><span class="dv">3</span> <span class="sc">+</span> <span class="dv">2</span><span class="sc">/</span><span class="dv">3</span> <span class="sc">*</span> (<span class="dv">2</span> <span class="sc">+</span> <span class="dv">2</span><span class="sc">/</span><span class="dv">3</span> <span class="sc">*</span> <span class="dv">1</span>) <span class="sc">+</span> <span class="dv">1</span><span class="sc">/</span><span class="dv">6</span> <span class="sc">*</span> <span class="dv">1</span></span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 4.944444</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1"></a><span class="co"># y4</span></span>
+<span id="cb35-2"><a href="#cb35-2"></a><span class="dv">4</span> <span class="sc">+</span> <span class="dv">2</span><span class="sc">/</span><span class="dv">3</span> <span class="sc">*</span> (<span class="dv">3</span> <span class="sc">+</span> <span class="dv">2</span><span class="sc">/</span><span class="dv">3</span> <span class="sc">*</span> (<span class="dv">2</span> <span class="sc">+</span> <span class="dv">2</span><span class="sc">/</span><span class="dv">3</span> <span class="sc">*</span> <span class="dv">1</span>) <span class="sc">+</span> <span class="dv">1</span><span class="sc">/</span><span class="dv">6</span> <span class="sc">*</span> <span class="dv">1</span>) <span class="sc">+</span> <span class="dv">1</span><span class="sc">/</span><span class="dv">6</span> <span class="sc">*</span>(<span class="dv">2</span> <span class="sc">+</span> <span class="dv">2</span><span class="sc">/</span><span class="dv">3</span> <span class="sc">*</span> <span class="dv">1</span>) <span class="sc">+</span> <span class="dv">1</span><span class="sc">/</span><span class="dv">6</span> <span class="sc">*</span> <span class="dv">1</span></span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 7.907407</code></pre>
+</div>
+</div>
+<p>接下来，考虑移动平均的情况，代码如下：</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1"></a><span class="co"># 移动平均</span></span>
+<span id="cb37-2"><a href="#cb37-2"></a><span class="fu">filter</span>(x, <span class="at">filter =</span> <span class="fu">c</span>(<span class="dv">2</span> <span class="sc">/</span> <span class="dv">3</span>, <span class="dv">1</span> <span class="sc">/</span> <span class="dv">6</span>, <span class="dv">1</span> <span class="sc">/</span> <span class="dv">6</span>), <span class="at">method =</span> <span class="st">"convolution"</span>, <span class="at">sides =</span> <span class="dv">1</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Time Series:
+Start = 1 
+End = 10 
+Frequency = 1 
+ [1]  NA  NA 2.5 3.5 4.5 5.5 6.5 7.5 8.5 9.5</code></pre>
+</div>
+</div>
+<p>参数 <code>method = "convolution"</code> 表示使用移动平均。参数 <code>sides</code> 仅适用于卷积过滤，<code>sides = 1</code> 表示系数都是作用于过去的值。为了对比自回归和移动平均，不妨设移动平均的系数同自回归的系数，则移动平均模型如下：</p>
+<p><span class="math display">\[
+\begin{aligned}
+y_1 &amp;~~ \text{不存在}\\
+y_2 &amp;~~ \text{不存在}\\
+y_3 &amp;= \frac{2}{3} x_{3} + \frac{1}{6} x_2 + \frac{1}{6} x_1\\
+y_i &amp;= \frac{2}{3} x_{i} + \frac{1}{6} x_{i - 1} + \frac{1}{6} x_{i - 2}, \quad i \geq 3
+\end{aligned}
+\]</span></p>
+<p>比照模型 <a href="#eq-filter-convolution" class="quarto-xref">方程式&nbsp;<span>26.2</span></a> ，漂移项参数 <span class="math inline">\(o\)</span> 为 0，也就是没有漂移，移动平均作用于过去的 3 期数据，也就是 <span class="math inline">\(p = 3\)</span> 。因输出序列 <span class="math inline">\(\{y_i\}\)</span> 中 <span class="math inline">\(y_1,y_2\)</span> 不存在，下面仅计算 <span class="math inline">\(y_3,y_4\)</span> 。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1"></a><span class="co"># y3</span></span>
+<span id="cb39-2"><a href="#cb39-2"></a><span class="dv">2</span><span class="sc">/</span><span class="dv">3</span> <span class="sc">*</span> <span class="dv">3</span> <span class="sc">+</span> <span class="dv">1</span><span class="sc">/</span><span class="dv">6</span> <span class="sc">*</span> <span class="dv">2</span> <span class="sc">+</span> <span class="dv">1</span><span class="sc">/</span><span class="dv">6</span> <span class="sc">*</span> <span class="dv">1</span></span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 2.5</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1"></a><span class="co"># y4</span></span>
+<span id="cb41-2"><a href="#cb41-2"></a><span class="dv">2</span><span class="sc">/</span><span class="dv">3</span> <span class="sc">*</span> <span class="dv">4</span> <span class="sc">+</span> <span class="dv">1</span><span class="sc">/</span><span class="dv">6</span> <span class="sc">*</span> <span class="dv">3</span> <span class="sc">+</span> <span class="dv">1</span><span class="sc">/</span><span class="dv">6</span> <span class="sc">*</span> <span class="dv">2</span></span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 3.5</code></pre>
+</div>
+</div>
+<p><strong>TTR</strong> 包提供许多移动平均的计算函数，比如 <code>SMA()</code> ，下面计算过去 3 个观察值的算术平均。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb43"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1"></a><span class="fu">library</span>(TTR)</span>
+<span id="cb43-2"><a href="#cb43-2"></a><span class="fu">SMA</span>(x, <span class="at">n =</span> <span class="dv">3</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> [1] NA NA  2  3  4  5  6  7  8  9</code></pre>
+</div>
+</div>
+</section><section id="简单指数平滑" class="level3" data-number="26.4.3"><h3 data-number="26.4.3" class="anchored" data-anchor-id="简单指数平滑">
+<span class="header-section-number">26.4.3</span> 简单指数平滑</h3>
+<p>当时间序列不含趋势和季节性成分的时候，可以用简单指数平滑模型来拟合和预测。简单指数平滑模型如下：</p>
+<p><span class="math display">\[
+\begin{aligned}
+\hat{y}_{t+h} &amp;= a_{t} + h \times b_{t} + s_{t - p + 1 + (h - 1) \mod p} \\
+a_{t} &amp;= \alpha (y_{t} - s_{t-p}) + (1-\alpha) (a_{t-1} + b_{t-1}) \\
+b_{t} &amp;= b_{t-1} \\
+s_{t} &amp;= s_{t-p}
+\end{aligned}
+\]</span></p>
+<p>其中，周期 <span class="math inline">\(p\)</span></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb45"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1"></a>air_passengers_exp <span class="ot">&lt;-</span> <span class="fu">HoltWinters</span>(AirPassengers, <span class="at">gamma =</span> <span class="cn">FALSE</span>, <span class="at">beta =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb45-2"><a href="#cb45-2"></a>air_passengers_exp</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Holt-Winters exponential smoothing without trend and without seasonal component.
+
+Call:
+HoltWinters(x = AirPassengers, beta = FALSE, gamma = FALSE)
+
+Smoothing parameters:
+ alpha: 0.9999339
+ beta : FALSE
+ gamma: FALSE
+
+Coefficients:
+      [,1]
+a 431.9972</code></pre>
+</div>
+</div>
+<p>预测的残差平方和 SSE sum-of-squared-errors</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb47"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1"></a>air_passengers_exp<span class="sc">$</span>SSE</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 162510.6</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb49"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1"></a><span class="co"># plot(air_passengers_exp)</span></span>
+<span id="cb49-2"><a href="#cb49-2"></a><span class="fu">autoplot</span>(air_passengers_exp) <span class="sc">+</span></span>
+<span id="cb49-3"><a href="#cb49-3"></a>  <span class="fu">theme_classic</span>()</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 1 row containing missing values (`geom_line()`).</code></pre>
+</div>
+<div class="cell-output-display">
+<div id="fig-airpassengers-exp-fitted" class="quarto-figure quarto-figure-center anchored" width="480">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-airpassengers-exp-fitted-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="analyze-time-series-data_files/figure-html/fig-airpassengers-exp-fitted-1.png" class="img-fluid figure-img" width="480">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-airpassengers-exp-fitted-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;26.9: 简单指数平滑模型
+</figcaption></figure>
+</div>
+</div>
+</div>
+<p>向前预测 5 期</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb51"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb51-1"><a href="#cb51-1"></a>air_passengers_pred <span class="ot">&lt;-</span> <span class="fu">predict</span>(air_passengers_exp, <span class="at">n.ahead =</span> <span class="dv">10</span>, <span class="at">prediction.interval =</span> <span class="cn">TRUE</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>预测值及其预测区间</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb52"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb52-1"><a href="#cb52-1"></a><span class="fu">plot</span>(air_passengers_exp, air_passengers_pred)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-airpassengers-exp-pred" class="quarto-figure quarto-figure-center anchored" width="480">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-airpassengers-exp-pred-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="analyze-time-series-data_files/figure-html/fig-airpassengers-exp-pred-1.png" class="img-fluid figure-img" width="480">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-airpassengers-exp-pred-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;26.10: 简单指数平滑模型预测
+</figcaption></figure>
+</div>
+</div>
+</div>
+</section><section id="sec-holt" class="level3" data-number="26.4.4"><h3 data-number="26.4.4" class="anchored" data-anchor-id="sec-holt">
+<span class="header-section-number">26.4.4</span> Holt 指数平滑</h3>
+<p>当时间序列不含季节性成分，可以用 Holt 指数平滑模型拟合和预测 <span class="citation" data-cites="Holt2004">(<a href="references.html#ref-Holt2004" role="doc-biblioref">Holt 2004</a>)</span> 。</p>
+<p><span class="math display">\[
+\begin{aligned}
+\hat{y}_{t+h} &amp;= a_{t} + h \times b_{t} + s_{t - p + 1 + (h - 1) \mod p} \\
+a_{t} &amp;= \alpha (y_{t} - s_{t-p}) + (1-\alpha) (a_{t-1} + b_{t-1}) \\
+b_{t} &amp;= \beta (a_{t} - a_{t-1}) + (1-\beta) b_{t-1} \\
+s_{t} &amp;= s_{t-p}
+\end{aligned}
+\]</span></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb53"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb53-1"><a href="#cb53-1"></a>air_passengers_holt <span class="ot">&lt;-</span> <span class="fu">HoltWinters</span>(AirPassengers, <span class="at">gamma =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb53-2"><a href="#cb53-2"></a>air_passengers_holt</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Holt-Winters exponential smoothing with trend and without seasonal component.
+
+Call:
+HoltWinters(x = AirPassengers, gamma = FALSE)
+
+Smoothing parameters:
+ alpha: 1
+ beta : 0.003218516
+ gamma: FALSE
+
+Coefficients:
+        [,1]
+a 432.000000
+b   4.597605</code></pre>
+</div>
+</div>
+<p>可知，<span class="math inline">\(\alpha = 1,\beta = 0.0032\)</span></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb55"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb55-1"><a href="#cb55-1"></a><span class="fu">plot</span>(air_passengers_holt)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-airpassengers-holt-fitted" class="quarto-figure quarto-figure-center anchored" width="480">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-airpassengers-holt-fitted-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="analyze-time-series-data_files/figure-html/fig-airpassengers-holt-fitted-1.png" class="img-fluid figure-img" width="480">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-airpassengers-holt-fitted-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;26.11: holt 指数平滑模型
+</figcaption></figure>
+</div>
+</div>
+</div>
+</section><section id="sec-holt-winters" class="level3" data-number="26.4.5"><h3 data-number="26.4.5" class="anchored" data-anchor-id="sec-holt-winters">
+<span class="header-section-number">26.4.5</span> Holt-Winters 指数平滑</h3>
+<p>时间序列同时含有趋势成分、季节性成分、随机成分，可以用 Holt-Winters 平滑模型来拟合和预测。根据趋势和季节性的关系，Holt-Winters 平滑模型分为可加 Holt-Winters 平滑和可乘 Holt-Winters 平滑。R 提供函数 <code><a href="https://rdrr.io/r/stats/HoltWinters.html">HoltWinters()</a></code> 拟合 Holt-Winters 平滑模型<span class="citation" data-cites="Holt2004 Winters1960">(<a href="references.html#ref-Holt2004" role="doc-biblioref">Holt 2004</a>; <a href="references.html#ref-Winters1960" role="doc-biblioref">Winters 1960</a>)</span>。</p>
+<p>可加 Holt-Winters 平滑模型如下：</p>
+<p><span class="math display">\[
+\begin{aligned}
+\hat{y}_{t+h} &amp;= a_{t} + h \times b_{t} + s_{t - p + 1 + (h - 1) \mod p} \\
+a_{t} &amp;= \alpha (y_{t} - s_{t-p}) + (1-\alpha) (a_{t-1} + b_{t-1}) \\
+b_{t} &amp;= \beta (a_{t} - a_{t-1}) + (1-\beta) b_{t-1} \\
+s_{t} &amp;= \gamma (y_{t} - a_{t}) + (1-\gamma) s_{t-p}
+\end{aligned}
+\]</span></p>
+<p>可乘 Holt-Winters 平滑模型如下：</p>
+<p><span class="math display">\[
+\begin{aligned}
+\hat{y}_{t+h} &amp;= (a_{t} + h \times b_{t}) \times s_{t - p + 1 + (h - 1) \mod p} \\
+a_{t} &amp;= \alpha (y_{t} / s_{t-p}) + (1-\alpha) (a_{t-1} + b_{t-1}) \\
+b_{t} &amp;= \beta (a_{t} - a_{t-1}) + (1-\beta) b_{t-1} \\
+s_{t} &amp;= \gamma (y_{t} / a_{t}) + (1-\gamma) s_{t-p}
+\end{aligned}
+\]</span></p>
+<p>其中 <span class="math inline">\(\alpha, \beta, \gamma\)</span> 是参数，<span class="math inline">\(p\)</span> 为周期长度，<span class="math inline">\(a_{t}, b_{t}, s_{t}\)</span> 分别代表水平、趋势和季节性成分。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb56"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb56-1"><a href="#cb56-1"></a>air_passengers_add <span class="ot">&lt;-</span> <span class="fu">HoltWinters</span>(AirPassengers, <span class="at">seasonal =</span> <span class="st">"additive"</span>)</span>
+<span id="cb56-2"><a href="#cb56-2"></a>air_passengers_add</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Holt-Winters exponential smoothing with trend and additive seasonal component.
+
+Call:
+HoltWinters(x = AirPassengers, seasonal = "additive")
+
+Smoothing parameters:
+ alpha: 0.2479595
+ beta : 0.03453373
+ gamma: 1
+
+Coefficients:
+          [,1]
+a   477.827781
+b     3.127627
+s1  -27.457685
+s2  -54.692464
+s3  -20.174608
+s4   12.919120
+s5   18.873607
+s6   75.294426
+s7  152.888368
+s8  134.613464
+s9   33.778349
+s10 -18.379060
+s11 -87.772408
+s12 -45.827781</code></pre>
+</div>
+</div>
+<p>可知，<span class="math inline">\(\alpha = 0.248,\beta = 0.0345,\gamma = 1\)</span></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb58"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb58-1"><a href="#cb58-1"></a><span class="fu">autoplot</span>(air_passengers_add) <span class="sc">+</span></span>
+<span id="cb58-2"><a href="#cb58-2"></a>  <span class="fu">theme_classic</span>()</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 12 rows containing missing values (`geom_line()`).</code></pre>
+</div>
+<div class="cell-output-display">
+<div id="fig-airpassengers-add-fitted" class="quarto-figure quarto-figure-center anchored" width="480">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-airpassengers-add-fitted-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="analyze-time-series-data_files/figure-html/fig-airpassengers-add-fitted-1.png" class="img-fluid figure-img" width="480">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-airpassengers-add-fitted-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;26.12: 可加 Holt-Winters 平滑模型拟合
+</figcaption></figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb60"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb60-1"><a href="#cb60-1"></a>air_passengers_mult <span class="ot">&lt;-</span> <span class="fu">HoltWinters</span>(AirPassengers, <span class="at">seasonal =</span> <span class="st">"mult"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb61"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb61-1"><a href="#cb61-1"></a><span class="fu">autoplot</span>(air_passengers_mult) <span class="sc">+</span></span>
+<span id="cb61-2"><a href="#cb61-2"></a>  <span class="fu">theme_classic</span>()</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 12 rows containing missing values (`geom_line()`).</code></pre>
+</div>
+<div class="cell-output-display">
+<div id="fig-airpassengers-mult-fitted" class="quarto-figure quarto-figure-center anchored" width="480">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-airpassengers-mult-fitted-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="analyze-time-series-data_files/figure-html/fig-airpassengers-mult-fitted-1.png" class="img-fluid figure-img" width="480">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-airpassengers-mult-fitted-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;26.13: 可乘 Holt-Winters 平滑模型拟合
+</figcaption></figure>
+</div>
+</div>
+</div>
+<p>做一个 Shiny 应用展示参数 <span class="math inline">\(\alpha, \beta, \gamma\)</span> 对 Holt-Winters 平滑预测的影响。</p>
+</section></section><section id="sec-time-series-decomposition" class="level2" data-number="26.5"><h2 data-number="26.5" class="anchored" data-anchor-id="sec-time-series-decomposition">
+<span class="header-section-number">26.5</span> 时间序列分解</h2>
+<ul>
+<li>可加模型</li>
+</ul>
+<p><span class="math display">\[
+y_t = T_t + S_t + e_t
+\]</span></p>
+<ul>
+<li>可乘模型</li>
+</ul>
+<p><span class="math display">\[
+y_t = T_t \times S_t \times e_t
+\]</span></p>
+<p>对时间序列 <span class="math inline">\(\{y_t\}\)</span> 分解，趋势性成分 <span class="math inline">\(T_t\)</span>、季节性成分 <span class="math inline">\(S_t\)</span>、剩余成分 <span class="math inline">\(e_t\)</span></p>
+<section id="sec-decompose" class="level3" data-number="26.5.1"><h3 data-number="26.5.1" class="anchored" data-anchor-id="sec-decompose">
+<span class="header-section-number">26.5.1</span> 函数 <code>decompose()</code>
+</h3>
+<p>函数 <code><a href="https://rdrr.io/r/stats/decompose.html">decompose()</a></code> 分解</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb63"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb63-1"><a href="#cb63-1"></a>air_decomp_add <span class="ot">&lt;-</span> <span class="fu">decompose</span>(<span class="at">x =</span> AirPassengers, <span class="at">type =</span> <span class="st">"additive"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>函数返回一个列表，包含 6 个元素，分别是 <code>x</code> 原始序列，<code>seasonal</code> 季节性成分，<code>figure</code> 估计的季节图，<code>trend</code> 趋势成分，<code>random</code> 剩余成分，<code>type</code> 分解方法。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb64"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb64-1"><a href="#cb64-1"></a><span class="co"># plot(air_decomp_add)</span></span>
+<span id="cb64-2"><a href="#cb64-2"></a><span class="fu">autoplot</span>(air_decomp_add) <span class="sc">+</span></span>
+<span id="cb64-3"><a href="#cb64-3"></a>  <span class="fu">theme_classic</span>()</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 24 rows containing missing values (`geom_line()`).</code></pre>
+</div>
+<div class="cell-output-display">
+<div id="fig-airpassengers-decomp" class="quarto-figure quarto-figure-center anchored" width="672">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-airpassengers-decomp-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="analyze-time-series-data_files/figure-html/fig-airpassengers-decomp-1.png" class="img-fluid figure-img" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-airpassengers-decomp-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;26.14: 变化趋势的分解
+</figcaption></figure>
+</div>
+</div>
+</div>
+<p>去掉季节性部分</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb66"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb66-1"><a href="#cb66-1"></a>AirPassengers_adjusted <span class="ot">&lt;-</span> AirPassengers <span class="sc">-</span> air_decomp_add<span class="sc">$</span>seasonal</span>
+<span id="cb66-2"><a href="#cb66-2"></a><span class="fu">plot</span>(AirPassengers_adjusted)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-airpassengers-adjusted" class="quarto-figure quarto-figure-center anchored" width="480">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-airpassengers-adjusted-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="analyze-time-series-data_files/figure-html/fig-airpassengers-adjusted-1.png" class="img-fluid figure-img" width="480">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-airpassengers-adjusted-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;26.15: 季节性调整
+</figcaption></figure>
+</div>
+</div>
+</div>
+</section><section id="sec-stl" class="level3" data-number="26.5.2"><h3 data-number="26.5.2" class="anchored" data-anchor-id="sec-stl">
+<span class="header-section-number">26.5.2</span> 函数 <code>stl()</code>
+</h3>
+<p>函数 <code><a href="https://rdrr.io/r/stats/stl.html">stl()</a></code> 将时间序列分解为趋势性成分、季节性成分（周期性）、剩余成分。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb67"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb67-1"><a href="#cb67-1"></a>air_stl <span class="ot">&lt;-</span> <span class="fu">stl</span>(<span class="at">x =</span> AirPassengers, <span class="at">s.window =</span> <span class="dv">12</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb68"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb68-1"><a href="#cb68-1"></a><span class="fu">autoplot</span>(air_stl) <span class="sc">+</span></span>
+<span id="cb68-2"><a href="#cb68-2"></a>  <span class="fu">theme_classic</span>()</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-airpassengers-stl" class="quarto-figure quarto-figure-center anchored" width="672">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-airpassengers-stl-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="analyze-time-series-data_files/figure-html/fig-airpassengers-stl-1.png" class="img-fluid figure-img" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-airpassengers-stl-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;26.16: 变化趋势的分解
+</figcaption></figure>
+</div>
+</div>
+</div>
+<p>剩余成分不是平稳序列，是异方差的。</p>
+<p><strong>xts</strong> 包的 <code>periodicity()</code> 函数可以检测时间序列数据的周期，但时序数据对象最好是在 <strong>xts</strong> 框架内。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb69"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb69-1"><a href="#cb69-1"></a>xts<span class="sc">::</span><span class="fu">periodicity</span>(AirPassengers)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Monthly periodicity from Jan 1949 to Dec 1960 </code></pre>
+</div>
+</div>
+</section></section><section id="sec-classic-time-series-models" class="level2" data-number="26.6"><h2 data-number="26.6" class="anchored" data-anchor-id="sec-classic-time-series-models">
+<span class="header-section-number">26.6</span> 经典时间序列模型</h2>
+<section id="sec-autoregressive-models" class="level3" data-number="26.6.1"><h3 data-number="26.6.1" class="anchored" data-anchor-id="sec-autoregressive-models">
+<span class="header-section-number">26.6.1</span> 自回归模型</h3>
+<p>函数 <code><a href="https://rdrr.io/r/stats/ar.html">ar()</a></code> 拟合 AR 模型</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb71"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb71-1"><a href="#cb71-1"></a><span class="fu">ar</span>(AirPassengers, <span class="at">order.max =</span> <span class="dv">3</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+ar(x = AirPassengers, order.max = 3)
+
+Coefficients:
+      1        2  
+ 1.1656  -0.2294  
+
+Order selected 2  sigma^2 estimated as  1399</code></pre>
+</div>
+</div>
+</section><section id="sec-moving-average-models" class="level3" data-number="26.6.2"><h3 data-number="26.6.2" class="anchored" data-anchor-id="sec-moving-average-models">
+<span class="header-section-number">26.6.2</span> 移动平均模型</h3>
+<p>将自回归的阶设为 0，函数 <code><a href="https://rdrr.io/r/stats/arima.html">arima()</a></code> 也可以用来拟合 MA 模型。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb73"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb73-1"><a href="#cb73-1"></a><span class="fu">arima</span>(AirPassengers, <span class="at">order =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">3</span>))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+arima(x = AirPassengers, order = c(0, 1, 3))
+
+Coefficients:
+         ma1     ma2      ma3
+      0.1309  -0.359  -0.3599
+s.e.  0.0741   0.090   0.0907
+
+sigma^2 estimated as 949.5:  log likelihood = -693.45,  aic = 1394.91</code></pre>
+</div>
+</div>
+</section><section id="sec-autoregressive-moving-average-models" class="level3" data-number="26.6.3"><h3 data-number="26.6.3" class="anchored" data-anchor-id="sec-autoregressive-moving-average-models">
+<span class="header-section-number">26.6.3</span> 自回归移动平均模型</h3>
+<p>函数 <code><a href="https://rdrr.io/r/stats/arima.html">arima()</a></code> 拟合 ARIMA 模型</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb75"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb75-1"><a href="#cb75-1"></a><span class="fu">arima</span>(AirPassengers, <span class="at">order =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">3</span>))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+arima(x = AirPassengers, order = c(1, 1, 3))
+
+Coefficients:
+         ar1      ma1      ma2      ma3
+      0.5227  -0.2906  -0.3884  -0.1219
+s.e.  0.1291   0.1284   0.1445   0.1322
+
+sigma^2 estimated as 886:  log likelihood = -688.45,  aic = 1386.89</code></pre>
+</div>
+</div>
+<p><strong>forecast</strong> 包提供函数 <code>auto.arima()</code> 自动选择合适的自回归、差分和移动平均的阶来拟合数据。</p>
+<div class="sourceCode" id="cb77"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb77-1"><a href="#cb77-1"></a>forecast<span class="sc">::</span><span class="fu">auto.arima</span>(AirPassengers)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<pre><code>Series: AirPassengers 
+ARIMA(2,1,1)(0,1,0)[12] 
+
+Coefficients:
+         ar1     ar2      ma1
+      0.5960  0.2143  -0.9819
+s.e.  0.0888  0.0880   0.0292
+
+sigma^2 = 132.3:  log likelihood = -504.92
+AIC=1017.85   AICc=1018.17   BIC=1029.35</code></pre>
+</section></section><section id="sec-time-series-summary" class="level2" data-number="26.7"><h2 data-number="26.7" class="anchored" data-anchor-id="sec-time-series-summary">
+<span class="header-section-number">26.7</span> 总结</h2>
+<p>方法没有好坏，只有适合与否。Holt-Winter 适合预警任务，算法简单，可以及时出预测结果，仅需要一步预测，不需要给出多步预测，要求快，以便迅速作出反应。Prophet 实现的贝叶斯结构可加模型适合短期预测任务，只要在可容许的时间范围内出结果即可，可以迅速出结果当然更好，需要给出多步预测结果，且结果需要强解释性，以便提前做一些商家供给、平台资源的分配。商分模型常常需要比较强的可解释性，算法策略模型重在预测精准度，对可解释性要求不高。</p>
+<p>在时间序列数据的可视化方面，除了 Base R 提供的绘图方法外，静态的时序图 <strong>lattice</strong> 和 <strong>ggplot2</strong> 都不错，而交互式图形推荐使用 <strong>plotly</strong> 和 <strong>dygraphs</strong>。</p>
+<p><strong>PortfolioAnalytics</strong> 包做投资组合优化，均值-方差，收益和风险权衡。 <a href="https://www.rmetrics.org/">Rmetrics</a> 提供系列时间序列数据分析和建模的 R 包，包括投资组合优化 <strong>fPortfolio</strong>、多元分析 <strong>fMultivar、</strong>自回归条件异方差模型 <strong>fGarch</strong>、二元相依结构的 Copulae 分析 <strong>fCopulae</strong> 、市场和基础统计 <strong>fBasics</strong> 。</p>
+<p><strong>fable</strong> 一元到多元时间序列预测问题，提供 ETS、ARIMA、TSLM 等模型，并有书籍时间序列预测原则。值得一提， <strong>forecast</strong> 包开发者 Rob J Hyndman 称已不再开发新的功能，推荐大家使用 <strong>fable</strong> 包。<strong>feasts</strong> 包辅助特征抽取、序列分解、汇总统计和绘制图形等， 插件包 <strong>fable.prophet</strong> 接入 Prophet 的预测能力。<a href="https://github.com/business-science/timetk"><strong>timetk</strong></a> 时间序列数据处理、分析、预测和可视化工具箱，提供一致的操作方式，试图形成完成的解决方案。The Rmetrics Association 开发了一系列 R 包专门处理金融时间序列数据，比如 <strong>fGarch</strong> 包提供条件自回归异方差模型。</p>
+<p>从时间序列中寻找规律，这样才是真的数据建模，从数据到模型，而不是相反 <a href="https://mason.gmu.edu/~jgentle/papers/FindingPatternsTimeSeriesDraft.pdf">Finding Patterns in Time Series</a>，识别金融时间序列的模式和统计规律。</p>
+
+
+<div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list" style="display: none">
+<div id="ref-Holt2004" class="csl-entry" role="listitem">
+Holt, Charles C. 2004. <span>《Forecasting seasonals and trends by exponentially weighted moving averages》</span>. <em>International Journal of Forecasting</em> 20 (1): 5–10. <a href="https://doi.org/10.1016/j.ijforecast.2003.09.015">https://doi.org/10.1016/j.ijforecast.2003.09.015</a>.
+</div>
+<div id="ref-quantmod2022" class="csl-entry" role="listitem">
+Ryan, Jeffrey A., 和 Joshua M. Ulrich. 2022. <em><span>quantmod</span>: Quantitative Financial Modelling Framework</em>. <a href="https://CRAN.R-project.org/package=quantmod">https://CRAN.R-project.org/package=quantmod</a>.
+</div>
+<div id="ref-Tang2016" class="csl-entry" role="listitem">
+Tang, Yuan, Masaaki Horikoshi, 和 Wenxuan Li. 2016. <span>《<span>ggfortify</span>: Unified Interface to Visualize Statistical Result of Popular R Packages》</span>. <em>The R Journal</em> 8 (2): 474–85. <a href="https://doi.org/10.32614/RJ-2016-060">https://doi.org/10.32614/RJ-2016-060</a>.
+</div>
+<div id="ref-Winters1960" class="csl-entry" role="listitem">
+Winters, Peter R. 1960. <span>《Forecasting sales by exponentially weighted moving averages》</span>. <em>Management Science</em> 6 (3): 324–42. <a href="https://doi.org/10.1287/mnsc.6.3.324">https://doi.org/10.1287/mnsc.6.3.324</a>.
+</div>
+</div>
+</section></main><!-- /main --><script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "已复制");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "已复制");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    const typesetMath = (el) => {
+      if (window.MathJax) {
+        // MathJax Typeset
+        window.MathJax.typeset([el]);
+      } else if (window.katex) {
+        // KaTeX Render
+        var mathElements = el.getElementsByClassName("math");
+        var macros = [];
+        for (var i = 0; i < mathElements.length; i++) {
+          var texText = mathElements[i].firstChild;
+          if (mathElements[i].tagName == "SPAN") {
+            window.katex.render(texText.data, mathElements[i], {
+              displayMode: mathElements[i].classList.contains('display'),
+              throwOnError: false,
+              macros: macros,
+              fleqn: false
+            });
+          }
+        }
+      }
+    }
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        typesetMath(container);
+        return container.innerHTML
+      } else {
+        typesetMath(note);
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      typesetMath(note);
+      return note.innerHTML;
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script><nav class="page-navigation"><div class="nav-page nav-page-previous">
+      <a href="./analyze-survival-data.html" class="pagination-link  aria-label=">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">25</span>&nbsp; <span class="chapter-title">生存分析</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./analyze-point-pattern.html" class="pagination-link" aria-label="<span class='chapter-number'>27</span>&nbsp; <span class='chapter-title'>空间点模式分析</span>">
+        <span class="nav-page-text"><span class="chapter-number">27</span>&nbsp; <span class="chapter-title">空间点模式分析</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+</body></html>
