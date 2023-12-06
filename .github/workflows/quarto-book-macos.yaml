@@ -34,16 +34,6 @@ jobs:
         env:
           # install full prebuilt version
           TINYTEX_INSTALLER: TinyTeX
-          
-      - name: Setup Python
-        run: |
-          pip install virtualenv
-          sudo mkdir -p /opt/.virtualenvs/r-tensorflow
-          sudo chown -R $(whoami):staff /opt/.virtualenvs/r-tensorflow
-          virtualenv -p /usr/bin/python3 $RETICULATE_PYTHON_ENV
-          source $RETICULATE_PYTHON_ENV/bin/activate
-          pip install -r requirements.txt
-          deactivate
 
       - name: Setup CmdStan
         run: |
@@ -56,11 +46,20 @@ jobs:
 
       - name: Install Fonts From System
         run: |
-          brew install ghostscript graphviz optipng xquartz pkg-config jags
+          brew install ghostscript graphviz optipng xquartz pkg-config jags virtualenv
           brew tap homebrew/cask-fonts
           brew install --cask font-noto-sans-cjk-sc font-noto-serif-cjk-sc
           fc-list | sort
 
+      - name: Setup Python
+        run: |
+          sudo mkdir -p /opt/.virtualenvs/r-tensorflow
+          sudo chown -R $(whoami):staff /opt/.virtualenvs/r-tensorflow
+          virtualenv -p /usr/bin/python3 $RETICULATE_PYTHON_ENV
+          source $RETICULATE_PYTHON_ENV/bin/activate
+          pip3 install -r requirements.txt
+          deactivate
+          
       - name: Install LaTeX packages
         run: |
           if(!require('tinytex')) install.packages('tinytex')
