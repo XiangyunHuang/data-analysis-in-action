@@ -4,11 +4,11 @@ on:
   pull_request:
     branches: main
 
-name: Book-MacOS
+name: Book-Ubuntu
 
 jobs:
   build-deploy:
-    runs-on: macos-12
+    runs-on: ubuntu-22.04
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       CMDSTAN_VERSION: "2.33.1"
@@ -34,32 +34,31 @@ jobs:
         env:
           # install full prebuilt version
           TINYTEX_INSTALLER: TinyTeX
+          
+      - name: Setup Python
+        run: |
+          pip install virtualenv
+          mkdir -p /opt/.virtualenvs/r-tensorflow
+          virtualenv -p /usr/bin/python3 $RETICULATE_PYTHON_ENV
+          source $RETICULATE_PYTHON_ENV/bin/activate
+          pip install -r requirements.txt
+          deactivate
 
       - name: Setup CmdStan
         run: |
           curl -fLo cmdstan-${CMDSTAN_VERSION}.tar.gz https://github.com/stan-dev/cmdstan/releases/download/v${CMDSTAN_VERSION}/cmdstan-${CMDSTAN_VERSION}.tar.gz
-          sudo mkdir -p /opt/cmdstan/
-          sudo chown -R $(whoami):staff /opt/cmdstan/
+          mkdir -p /opt/cmdstan/
           tar -xzf cmdstan-${CMDSTAN_VERSION}.tar.gz -C /opt/cmdstan/
           make build -C /opt/cmdstan/cmdstan-${CMDSTAN_VERSION}
           rm cmdstan-${CMDSTAN_VERSION}.tar.gz
 
       - name: Install Fonts From System
         run: |
-          brew install graphviz optipng xquartz jags virtualenv
-          brew tap homebrew/cask-fonts
-          brew install --cask font-noto-sans-cjk-sc font-noto-serif-cjk-sc
+          sudo apt-get install -y ghostscript graphviz optipng
+          sudo apt-get install -y fonts-noto-core fonts-noto-cjk
+          fc-list | grep 'noto' | sort
           fc-list | sort
 
-      - name: Setup Python
-        run: |
-          sudo mkdir -p /opt/.virtualenvs/r-tensorflow
-          sudo chown -R $(whoami):staff /opt/.virtualenvs/r-tensorflow
-          virtualenv -p /usr/bin/python3 $RETICULATE_PYTHON_ENV
-          source $RETICULATE_PYTHON_ENV/bin/activate
-          pip3 install -r requirements.txt
-          deactivate
-          
       - name: Install LaTeX packages
         run: |
           if(!require('tinytex')) install.packages('tinytex')
@@ -73,12 +72,18 @@ jobs:
         run: |
           install.packages(c("Matrix", "MatrixModels", "rjags", "lme4", "TMB", "glmmTMB"), repos = "https://cran.r-project.org/", type = "source")
         shell: Rscript {0}
+        
+      - name: Setup magick
+        run: |
+          sudo sed -i_bak \
+             's/name="disk" value="1GiB"/name="disk" value="8GiB"/' \
+             /etc/ImageMagick-6/policy.xml
 
       - name: Render Book
         run: |
           source $RETICULATE_PYTHON_ENV/bin/activate
           quarto check
-          quarto render --to html
+          quarto render --to pdf
         shell: bash
         env:
           RETICULATE_PYTHON_ENV: /opt/.virtualenvs/r-tensorflow
@@ -90,6 +95,8 @@ jobs:
         with:
           git-config-name: GitHub Actions
           git-config-email: actions@github.com
+          repository-name: XiangyunHuang/tidyverse
+          token: ${{ secrets.GH_DA_TOKEN }}
           branch: gh-pages
           folder: _book
           clean: true
