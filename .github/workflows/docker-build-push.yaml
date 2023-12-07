@@ -13,6 +13,7 @@ jobs:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       QUARTO_VERSION: "1.4.515"
       CMDSTAN_VERSION: "2.33.1"
+      RSTUDIO_VERSION: "2023.09.1-494"
       REGISTRY: ghcr.io/xiangyunhuang
     steps:
       - name: Checkout
@@ -53,6 +54,22 @@ jobs:
       #     tags: ${{ env.REGISTRY }}/rockylinux-rstudio-pro:${{ env.QUARTO_VERSION }}
       #     cache-from: type=local,src=/tmp/.buildx-cache
       #     cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+
+      - name: Build and push Rocky Linux 9
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./rockylinux_rstudio.Dockerfile
+          target: rockylinux-rstudio
+          pull: true
+          push: true
+          build-args: |
+            QUARTO_VERSION=${{ env.QUARTO_VERSION }}
+            GITHUB_PAT=${{ env.GITHUB_PAT }}
+            RSTUDIO_VERSION=${{ env.RSTUDIO_VERSION }}
+          tags: ${{ env.REGISTRY }}/rockylinux-rstudio:${{ env.QUARTO_VERSION }}
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
 
       - name: Build and push fedora-rstudio-pro
         uses: docker/build-push-action@v5
