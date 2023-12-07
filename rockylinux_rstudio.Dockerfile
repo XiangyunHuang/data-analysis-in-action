@@ -21,7 +21,14 @@ RUN dnf -y upgrade  \
 
 # Setup Texlive
 RUN dnf install -y texinfo \
-    texlive-fandol \
+    texlive-awesomebox \
+    texlive-fontawesome5 \
+    texlive-fontawesome \
+    texlive-tcolorbox \
+    texlive-standalone \
+    texlive-titling \
+    texlive-pgfplots \
+    texlive-framed \
     texlive-dvisvgm \
     texlive-dvips \
     texlive-dvipng \
