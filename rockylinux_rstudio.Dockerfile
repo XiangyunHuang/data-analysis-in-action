@@ -3,7 +3,7 @@ FROM rockylinux:9 AS rockylinux-rstudio
 ARG QUARTO_VERSION=1.2.280
 ARG PASSWORD=docker123
 ARG QUARTO_LINK=https://github.com/quarto-dev/quarto-cli/releases/download
-ARG RSTUDIO_LINK=https://download1.rstudio.org/electron/rhel9/x86_64
+ARG RSTUDIO_LINK=https://download2.rstudio.org/server/rhel9/x86_64
 ARG RSTUDIO_VERSION=2023.09.1-494
 
 # Setup R and Texlive
@@ -62,12 +62,9 @@ RUN groupadd staff \
   && chmod a+r /usr/lib64/R/etc/Rprofile.site \
   && echo "LANG=en_US.UTF-8" >> /usr/lib64/R/etc/Renviron.site \
   && Rscript -e "install.packages(c('rmarkdown', 'knitr'))" \
-  && curl -fLo rstudio.rpm ${RSTUDIO_LINK}/rstudio-${RSTUDIO_VERSION}-x86_64.rpm \
-  && gpg --export --armor 51C0B5BB19F92D60 > posit-signing.key \
-  && rpm --import posit-signing.key \
-  && rpm -K rstudio.rpm \
-  && dnf -y localinstall rstudio.rpm \
-  && rm -f rstudio.rpm posit-signing.key  \
+  && curl -fLo rstudio.rpm ${RSTUDIO_LINK}/rstudio-server-rhel-${RSTUDIO_VERSION}-x86_64.rpm \
+  && dnf install -y rstudio.rpm \
+  && rm -f rstudio.rpm \
   && dnf clean all
 
 # Setup locale and timezone
