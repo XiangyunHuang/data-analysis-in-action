@@ -21,7 +21,6 @@ RUN dnf -y upgrade  \
 # Setup Texlive
 RUN dnf install -y texinfo \
     texlive-awesomebox \
-    texlive-fontawesome5 \
     texlive-fontawesome \
     texlive-tcolorbox \
     texlive-standalone \
