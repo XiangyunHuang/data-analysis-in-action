@@ -30,6 +30,7 @@ RUN dnf -y install cargo \
    passwd \
    initscripts \
    firewalld \
+   chromium \
    python3-virtualenv \
    google-noto-serif-cjk-fonts \
   # Setup password use passwd
@@ -67,7 +68,6 @@ RUN ln -s /usr/lib64/R/library/littler/examples/install.r /usr/bin/install.r \
  && ln -s /opt/quarto/quarto-${QUARTO_VERSION}/bin/quarto /usr/bin/quarto \
  && mv -f /usr/bin/pandoc /usr/bin/pandoc.bak \
  && ln -s /opt/quarto/quarto-${QUARTO_VERSION}/bin/tools/x86_64/pandoc /usr/bin/pandoc \
- && quarto install --quiet chromium \
  && rm -f quarto.tar.gz
 
 # Setup locale and timezone
@@ -127,7 +127,7 @@ RUN dnf -y install texlive-sourcecodepro \
 # Install Extra R Packages
 COPY desc_pkgs.txt desc_pkgs.txt
 RUN dnf -y copr enable iucar/cran \
-  && dnf -y install R-CoprManager xz \
+  && dnf -y install R-CoprManager xz libcurl-devel \
   && dnf -y install $(cat desc_pkgs.txt) \
   && dnf clean all \
   && rm -f desc_pkgs.txt

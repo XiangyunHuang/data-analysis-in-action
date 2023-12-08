@@ -41,7 +41,7 @@ RUN dnf install -y texinfo \
   && dnf clean all
 
 # Setup Fonts and cargo 
-RUN dnf install -y cargo \
+RUN dnf install -y cargo chromium \
     python3-virtualenv \
     google-noto-cjk-fonts-common \
     google-noto-sans-cjk-ttc-fonts \
@@ -58,7 +58,6 @@ RUN groupadd staff \
   && ln -s /opt/quarto/quarto-${QUARTO_VERSION}/bin/quarto /usr/bin/quarto \
   && ln -s /opt/quarto/quarto-${QUARTO_VERSION}/bin/tools/x86_64/pandoc /usr/bin/pandoc \
   && rm -f quarto.tar.gz \
-  && quarto install --quiet chromium \
   && mkdir -p /usr/local/lib/R/site-library \
   && chown -R docker:staff /usr/local/lib/R/site-library \
   && echo "options(repos = c(CRAN = 'https://cran.r-project.org/'))" | tee -a /usr/lib64/R/etc/Rprofile.site \

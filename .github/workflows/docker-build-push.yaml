@@ -40,7 +40,7 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # - name: Build and push Rocky Linux 9 with RStudio Server
+      # - name: Build and push Rocky Linux with RStudio Server
       #   uses: docker/build-push-action@v5
       #   with:
       #     context: docker
@@ -55,8 +55,8 @@ jobs:
       #     tags: ${{ env.REGISTRY }}/rockylinux-rstudio:${{ env.QUARTO_VERSION }}
       #     cache-from: type=local,src=/tmp/.buildx-cache
       #     cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
-
-      # - name: Build and push Rocky Linux 9 with RStudio Server Pro
+      # 
+      # - name: Build and push Rocky Linux with RStudio Server Pro
       #   uses: docker/build-push-action@v5
       #   with:
       #     context: docker
@@ -72,7 +72,28 @@ jobs:
       #     tags: ${{ env.REGISTRY }}/rockylinux-rstudio-pro:${{ env.QUARTO_VERSION }}
       #     cache-from: type=local,src=/tmp/.buildx-cache
       #     cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+      # 
+      # - name: Session Info Rocky Linux
+      #   run: |
+      #     docker run --rm ${{ env.REGISTRY }}/rockylinux-rstudio-pro:${{ env.QUARTO_VERSION }} \
+      #       Rscript -e 'xfun::session_info(packages = .packages(TRUE), dependencies = FALSE)'
 
+      - name: Build and push fedora-rstudio
+        uses: docker/build-push-action@v5
+        with:
+          context: docker
+          file: docker/fedora_rstudio_pro.Dockerfile
+          target: fedora-rstudio
+          pull: true
+          push: true
+          build-args: |
+            QUARTO_VERSION=${{ env.QUARTO_VERSION }}
+            CMDSTAN_VERSION=${{ env.CMDSTAN_VERSION }}
+            GITHUB_PAT=${{ env.GITHUB_PAT }}
+          tags: ${{ env.REGISTRY }}/fedora-rstudio:${{ env.QUARTO_VERSION }}
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+          
       - name: Build and push fedora-rstudio-pro
         uses: docker/build-push-action@v5
         with:
@@ -89,7 +110,7 @@ jobs:
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
 
-      - name: Session Info
+      - name: Session Info Fedora
         run: |
           docker run --rm ${{ env.REGISTRY }}/fedora-rstudio-pro:${{ env.QUARTO_VERSION }} \
             Rscript -e 'xfun::session_info(packages = .packages(TRUE), dependencies = FALSE)'
