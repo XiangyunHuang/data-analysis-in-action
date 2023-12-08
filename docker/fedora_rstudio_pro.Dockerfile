@@ -1,8 +1,5 @@
 FROM fedora:39 AS fedora-rstudio
 
-RUN groupadd staff \
-  && useradd -g staff -d /home/docker docker
-
 LABEL org.label-schema.license="GPL-3.0" \
       org.label-schema.vcs-url="https://github.com/XiangyunHuang/data-analysis-in-action" \
       org.label-schema.vendor="Book Project" \
@@ -36,9 +33,11 @@ RUN dnf -y install cargo \
    python3-virtualenv \
    google-noto-serif-cjk-fonts \
    chromium \
- # Setup password use passwd
- && echo 'docker:docker123' | chpasswd \
- && dnf clean all
+  # Setup password use passwd
+  && groupadd staff \
+  && useradd -g staff -d /home/docker docker \
+  && echo 'docker:docker123' | chpasswd \
+  && dnf clean all
 
 # Setup R and RStudio Server Open Source
 RUN ln -s /usr/lib64/R/library/littler/examples/install.r /usr/bin/install.r \
@@ -126,7 +125,7 @@ RUN dnf -y install texlive-sourcecodepro \
  && dnf clean all
 
 # Install Extra R Packages
-COPY docker/desc_pkgs.txt desc_pkgs.txt
+COPY desc_pkgs.txt desc_pkgs.txt
 RUN dnf -y copr enable iucar/cran \
   && dnf -y install R-CoprManager xz \
   && dnf -y install $(cat desc_pkgs.txt) \
@@ -136,7 +135,7 @@ RUN dnf -y copr enable iucar/cran \
 # For R
 COPY DESCRIPTION DESCRIPTION
 # For Python
-COPY docker/requirements.txt requirements.txt
+COPY requirements.txt requirements.txt
 # Setup Matrix showtext V8 and INLA
 RUN install2.r MatrixModels TMB glmmTMB showtextdb showtext \
   && export GITHUB_PAT=${GITHUB_PAT} \

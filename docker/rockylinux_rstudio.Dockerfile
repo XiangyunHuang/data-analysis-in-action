@@ -66,7 +66,7 @@ RUN groupadd staff \
   && echo "export LANG=en_US.UTF-8"  >> /etc/profile \
   && chmod a+r /usr/lib64/R/etc/Rprofile.site \
   && echo "LANG=en_US.UTF-8" >> /usr/lib64/R/etc/Renviron.site \
-  && Rscript -e "install.packages('rspm');rspm::enable();" \
+  && Rscript -e "install.packages('rspm');rspm::enable();rspm::install_sysreqs();" \
   && curl -fLo rstudio.rpm ${RSTUDIO_LINK}/rstudio-server-rhel-${RSTUDIO_VERSION}-x86_64.rpm \
   && dnf install -y rstudio.rpm \
   && rm -f rstudio.rpm \
