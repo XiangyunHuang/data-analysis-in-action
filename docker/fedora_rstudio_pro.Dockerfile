@@ -32,7 +32,6 @@ RUN dnf -y install cargo \
    firewalld \
    python3-virtualenv \
    google-noto-serif-cjk-fonts \
-   chromium \
   # Setup password use passwd
   && groupadd staff \
   && useradd -g staff -d /home/docker docker \
@@ -68,6 +67,7 @@ RUN ln -s /usr/lib64/R/library/littler/examples/install.r /usr/bin/install.r \
  && ln -s /opt/quarto/quarto-${QUARTO_VERSION}/bin/quarto /usr/bin/quarto \
  && mv -f /usr/bin/pandoc /usr/bin/pandoc.bak \
  && ln -s /opt/quarto/quarto-${QUARTO_VERSION}/bin/tools/x86_64/pandoc /usr/bin/pandoc \
+ && quarto install --quiet chromium \
  && rm -f quarto.tar.gz
 
 # Setup locale and timezone
