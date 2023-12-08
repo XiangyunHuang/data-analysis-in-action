@@ -1,6 +1,6 @@
 FROM ghcr.io/xiangyunhuang/rockylinux-rstudio:1.4.515
 
-ENV USERID=1000
+ENV USERID=10001
 ENV USER=rstudio
 ENV PASSWORD=rstudio
 
