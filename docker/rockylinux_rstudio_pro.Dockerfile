@@ -1,7 +1,7 @@
 ARG QUARTO_VERSION=1.2.280
-ARG REGISTRY=ghcr.io
+ARG REGISTRY=ghcr.io/xiangyunhuang
 
-FROM ${REGISTRY}/xiangyunhuang/rockylinux-rstudio:${QUARTO_VERSION}
+FROM ${REGISTRY}/rockylinux-rstudio:${QUARTO_VERSION} AS rockylinux-rstudio-pro
 
 ARG CMDSTAN_VERSION=2.32.2
 ARG GITHUB_PAT=abc123

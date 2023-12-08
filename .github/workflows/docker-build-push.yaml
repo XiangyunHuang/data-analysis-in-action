@@ -15,7 +15,7 @@ jobs:
       QUARTO_VERSION: "1.4.515"
       CMDSTAN_VERSION: "2.33.1"
       RSTUDIO_VERSION: "2023.09.1-494"
-      REGISTRY: ghcr.io
+      REGISTRY: ghcr.io/xiangyunhuang
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -36,7 +36,7 @@ jobs:
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
-          registry: ${{ env.REGISTRY }}
+          registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
@@ -45,14 +45,14 @@ jobs:
         with:
           context: docker
           file: docker/rockylinux_rstudio.Dockerfile
-          target: xiangyunhuang/rockylinux-rstudio
+          target: rockylinux-rstudio
           pull: true
           push: true
           build-args: |
             QUARTO_VERSION=${{ env.QUARTO_VERSION }}
             GITHUB_PAT=${{ env.GITHUB_PAT }}
             RSTUDIO_VERSION=${{ env.RSTUDIO_VERSION }}
-          tags: ${{ env.REGISTRY }}/xiangyunhuang/rockylinux-rstudio:${{ env.QUARTO_VERSION }}
+          tags: ${{ env.REGISTRY }}/rockylinux-rstudio:${{ env.QUARTO_VERSION }}
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
 
@@ -61,7 +61,7 @@ jobs:
         with:
           context: docker
           file: docker/rockylinux_rstudio_pro.Dockerfile
-          target: xiangyunhuang/rockylinux-rstudio-pro
+          target: rockylinux-rstudio-pro
           pull: true
           push: true
           build-args: |
@@ -69,7 +69,7 @@ jobs:
             CMDSTAN_VERSION=${{ env.CMDSTAN_VERSION }}
             GITHUB_PAT=${{ env.GITHUB_PAT }}
             REGISTRY=${{ env.REGISTRY }}
-          tags: ${{ env.REGISTRY }}/xiangyunhuang/rockylinux-rstudio-pro:${{ env.QUARTO_VERSION }}
+          tags: ${{ env.REGISTRY }}/rockylinux-rstudio-pro:${{ env.QUARTO_VERSION }}
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
 
@@ -78,20 +78,20 @@ jobs:
         with:
           context: docker
           file: docker/fedora_rstudio_pro.Dockerfile
-          target: xiangyunhuang/fedora-rstudio-pro
+          target: fedora-rstudio-pro
           pull: true
           push: true
           build-args: |
             QUARTO_VERSION=${{ env.QUARTO_VERSION }}
             CMDSTAN_VERSION=${{ env.CMDSTAN_VERSION }}
             GITHUB_PAT=${{ env.GITHUB_PAT }}
-          tags: ${{ env.REGISTRY }}/xiangyunhuang/fedora-rstudio-pro:${{ env.QUARTO_VERSION }}
+          tags: ${{ env.REGISTRY }}/fedora-rstudio-pro:${{ env.QUARTO_VERSION }}
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
 
       - name: Session Info
         run: |
-          docker run --rm ${{ env.REGISTRY }}/xiangyunhuang/fedora-rstudio-pro:${{ env.QUARTO_VERSION }} \
+          docker run --rm ${{ env.REGISTRY }}/fedora-rstudio-pro:${{ env.QUARTO_VERSION }} \
             Rscript -e 'xfun::session_info(packages = .packages(TRUE), dependencies = FALSE)'
 
       - name: Move cache
