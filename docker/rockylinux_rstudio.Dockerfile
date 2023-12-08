@@ -1,7 +1,6 @@
 FROM rockylinux:9 AS rockylinux-rstudio
 
 ARG QUARTO_VERSION=1.2.280
-ARG PASSWORD=docker123
 ARG QUARTO_LINK=https://github.com/quarto-dev/quarto-cli/releases/download
 ARG RSTUDIO_LINK=https://download2.rstudio.org/server/rhel9/x86_64
 ARG RSTUDIO_VERSION=2023.09.1-494
@@ -53,14 +52,14 @@ RUN dnf install -y cargo \
 # Setup Group authority, Quarto, Pandoc, Chromium and R Library
 RUN groupadd staff \
   && useradd -g staff -d /home/docker docker \
-  && echo 'docker:${PASSWORD}' | chpasswd \
+  && echo 'docker:docker123' | chpasswd \
   && curl -fLo quarto.tar.gz ${QUARTO_LINK}/v${QUARTO_VERSION}/quarto-${QUARTO_VERSION}-linux-amd64.tar.gz \
   && mkdir -p /opt/quarto/ \
   && tar -xzf quarto.tar.gz -C /opt/quarto/ \
   && ln -s /opt/quarto/quarto-${QUARTO_VERSION}/bin/quarto /usr/bin/quarto \
   && ln -s /opt/quarto/quarto-${QUARTO_VERSION}/bin/tools/x86_64/pandoc /usr/bin/pandoc \
   && rm -f quarto.tar.gz \
-  && quarto install chromium \
+  && quarto install --quiet chromium \
   && mkdir -p /usr/local/lib/R/site-library \
   && chown -R docker:staff /usr/local/lib/R/site-library \
   && echo "options(repos = c(CRAN = 'https://cran.r-project.org/'))" | tee -a /usr/lib64/R/etc/Rprofile.site \
@@ -68,7 +67,7 @@ RUN groupadd staff \
   && echo "export LANG=en_US.UTF-8"  >> /etc/profile \
   && chmod a+r /usr/lib64/R/etc/Rprofile.site \
   && echo "LANG=en_US.UTF-8" >> /usr/lib64/R/etc/Renviron.site \
-  && Rscript -e "install.packages(c('rmarkdown', 'knitr'))" \
+  && Rscript -e "install.packages('rspm');rspm::enable();" \
   && curl -fLo rstudio.rpm ${RSTUDIO_LINK}/rstudio-server-rhel-${RSTUDIO_VERSION}-x86_64.rpm \
   && dnf install -y rstudio.rpm \
   && rm -f rstudio.rpm \
@@ -78,7 +77,7 @@ RUN groupadd staff \
 ENV LANG=en_US.UTF-8 \
     LANGUAGE=en_US.UTF-8 \
     LC_ALL=en_US.UTF-8 \
-    TZ=UTC
+    TZ=Etc/UTC
 
 WORKDIR /home/docker/
 

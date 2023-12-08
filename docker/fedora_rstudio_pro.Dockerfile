@@ -126,7 +126,7 @@ RUN dnf -y install texlive-sourcecodepro \
  && dnf clean all
 
 # Install Extra R Packages
-COPY desc_pkgs.txt desc_pkgs.txt
+COPY docker/desc_pkgs.txt desc_pkgs.txt
 RUN dnf -y copr enable iucar/cran \
   && dnf -y install R-CoprManager xz \
   && dnf -y install $(cat desc_pkgs.txt) \
@@ -136,7 +136,7 @@ RUN dnf -y copr enable iucar/cran \
 # For R
 COPY DESCRIPTION DESCRIPTION
 # For Python
-COPY requirements.txt requirements.txt
+COPY docker/requirements.txt requirements.txt
 # Setup Matrix showtext V8 and INLA
 RUN install2.r MatrixModels TMB glmmTMB showtextdb showtext \
   && export GITHUB_PAT=${GITHUB_PAT} \

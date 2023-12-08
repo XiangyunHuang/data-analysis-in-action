@@ -59,8 +59,8 @@ jobs:
       - name: Build and push Rocky Linux 9
         uses: docker/build-push-action@v5
         with:
-          context: .
-          file: ./rockylinux_rstudio.Dockerfile
+          context: docker
+          file: docker/rockylinux_rstudio.Dockerfile
           target: rockylinux-rstudio
           pull: true
           push: true
@@ -69,14 +69,13 @@ jobs:
             GITHUB_PAT=${{ env.GITHUB_PAT }}
             RSTUDIO_VERSION=${{ env.RSTUDIO_VERSION }}
           tags: ${{ env.REGISTRY }}/rockylinux-rstudio:${{ env.QUARTO_VERSION }}
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+
 
       - name: Build and push fedora-rstudio-pro
         uses: docker/build-push-action@v5
         with:
-          context: .
-          file: ./fedora_rstudio_pro.Dockerfile
+          context: docker
+          file: docker/fedora_rstudio_pro.Dockerfile
           target: fedora-rstudio-pro
           pull: true
           push: true
@@ -85,15 +84,9 @@ jobs:
             CMDSTAN_VERSION=${{ env.CMDSTAN_VERSION }}
             GITHUB_PAT=${{ env.GITHUB_PAT }}
           tags: ${{ env.REGISTRY }}/fedora-rstudio-pro:${{ env.QUARTO_VERSION }}
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
 
       - name: Session Info
         run: |
           docker run --rm ${{ env.REGISTRY }}/fedora-rstudio-pro:${{ env.QUARTO_VERSION }} \
             Rscript -e 'xfun::session_info(packages = .packages(TRUE), dependencies = FALSE)'
 
-      - name: Move cache
-        run: |
-          rm -rf /tmp/.buildx-cache
-          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
