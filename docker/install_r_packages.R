@@ -11,3 +11,5 @@ install.packages("plot2", repos = c(getOption("repos"), PLOT = "https://grantmcd
 remotes::install_github(c("davidsjoberg/ggbump", "davidsjoberg/ggstream"))
 
 install.packages(pkgs = setdiff(pkgs, .packages(T)))
+
+# rjags and rstanarm can't be installed because Rocky Linux 9 doesn't have JAGS and Posit doesn't have rstanarm 
