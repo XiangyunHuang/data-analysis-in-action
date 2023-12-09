@@ -6,16 +6,19 @@ ARG RSTUDIO_LINK=https://download2.rstudio.org/server/rhel9/x86_64
 ARG RSTUDIO_VERSION=2023.09.1-494
 
 # Setup R and Texlive
-RUN dnf -y upgrade  \
+RUN dnf -y update  \
   && echo "install_weak_deps=False" >> /etc/dnf/dnf.conf \
-  && dnf install -y dnf-plugins-core glibc-langpack-en epel-release \
-  && /usr/bin/crb enable \
-  && dnf -y upgrade \
+  && dnf -y install "dnf-command(config-manager)" \
+  && dnf -y config-manager --set-enabled crb \
+  && dnf install -y epel-release \
+  && dnf -y update \
   && dnf install -y R-devel \
     initscripts \
     bzip2 \
     passwd \
     firewalld \
+    dnf-plugins-core \
+    glibc-langpack-en \
   && dnf clean all
 
 # Setup Texlive
@@ -50,7 +53,7 @@ RUN dnf install -y xz cargo chromium \
 
 # Setup Group authority, Quarto, Pandoc, Chromium and R Library
 RUN groupadd staff \
-  && useradd -g staff -d /home/docker docker \
+  && useradd -g staff -d /home/docker -u 10001 docker \
   && echo 'docker:docker123' | chpasswd \
   && curl -fLo quarto.tar.gz ${QUARTO_LINK}/v${QUARTO_VERSION}/quarto-${QUARTO_VERSION}-linux-amd64.tar.gz \
   && mkdir -p /opt/quarto/ \
@@ -65,7 +68,7 @@ RUN groupadd staff \
   && echo "export LANG=en_US.UTF-8"  >> /etc/profile \
   && chmod a+r /usr/lib64/R/etc/Rprofile.site \
   && echo "LANG=en_US.UTF-8" >> /usr/lib64/R/etc/Renviron.site \
-  && Rscript -e "install.packages('rspm');rspm::enable();rspm::install_sysreqs();" \
+  && Rscript -e "install.packages('rspm');rspm::enable();install.packages('magick');rspm::install_sysreqs();" \
   && curl -fLo rstudio.rpm ${RSTUDIO_LINK}/rstudio-server-rhel-${RSTUDIO_VERSION}-x86_64.rpm \
   && dnf install -y rstudio.rpm \
   && rm -f rstudio.rpm \

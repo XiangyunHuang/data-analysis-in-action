@@ -11,7 +11,8 @@ COPY DESCRIPTION DESCRIPTION
 COPY install_r_packages.R install_r_packages.R
 RUN export GITHUB_PAT=${GITHUB_PAT} \
   && export DOWNLOAD_STATIC_LIBV8=1 \
-  && Rscript install_r_packages.R
+  && Rscript install_r_packages.R \
+  && rm -f install_r_packages.R DESCRIPTION
 
 # Setup Python and CmdStan
 COPY requirements.txt requirements.txt
