@@ -10,6 +10,10 @@ jobs:
   docker:
     if: "contains(github.event.head_commit.message, '[docker]')"
     runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [rockylinux, fedora]
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       QUARTO_VERSION: "1.4.515"
@@ -39,50 +43,48 @@ jobs:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      # - name: Build and push Rocky Linux with RStudio Server
-      #   uses: docker/build-push-action@v5
-      #   with:
-      #     context: docker
-      #     file: docker/rockylinux_rstudio.Dockerfile
-      #     target: rockylinux-rstudio
-      #     pull: true
-      #     push: true
-      #     build-args: |
-      #       QUARTO_VERSION=${{ env.QUARTO_VERSION }}
-      #       GITHUB_PAT=${{ env.GITHUB_PAT }}
-      #       RSTUDIO_VERSION=${{ env.RSTUDIO_VERSION }}
-      #     tags: ${{ env.REGISTRY }}/rockylinux-rstudio:${{ env.QUARTO_VERSION }}
-      #     cache-from: type=local,src=/tmp/.buildx-cache
-      #     cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
-      # 
-      # - name: Build and push Rocky Linux with RStudio Server Pro
-      #   uses: docker/build-push-action@v5
-      #   with:
-      #     context: docker
-      #     file: docker/rockylinux_rstudio_pro.Dockerfile
-      #     target: rockylinux-rstudio-pro
-      #     pull: true
-      #     push: true
-      #     build-args: |
-      #       QUARTO_VERSION=${{ env.QUARTO_VERSION }}
-      #       CMDSTAN_VERSION=${{ env.CMDSTAN_VERSION }}
-      #       GITHUB_PAT=${{ env.GITHUB_PAT }}
-      #       REGISTRY=${{ env.REGISTRY }}
-      #     tags: ${{ env.REGISTRY }}/rockylinux-rstudio-pro:${{ env.QUARTO_VERSION }}
-      #     cache-from: type=local,src=/tmp/.buildx-cache
-      #     cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
-      # 
-      # - name: Session Info Rocky Linux
-      #   run: |
-      #     docker run --rm ${{ env.REGISTRY }}/rockylinux-rstudio-pro:${{ env.QUARTO_VERSION }} \
-      #       Rscript -e 'xfun::session_info(packages = .packages(TRUE), dependencies = FALSE)'
-
-      - name: Build and push fedora-rstudio
+      
+      - name: Rocky Linux with RStudio Server
+        if: ${{ matrix.os }} == "rockylinux"
         uses: docker/build-push-action@v5
         with:
           context: docker
-          file: docker/fedora_rstudio_pro.Dockerfile
+          file: docker/rockylinux_rstudio.Dockerfile
+          target: rockylinux-rstudio
+          pull: true
+          push: true
+          build-args: |
+            QUARTO_VERSION=${{ env.QUARTO_VERSION }}
+            GITHUB_PAT=${{ env.GITHUB_PAT }}
+            RSTUDIO_VERSION=${{ env.RSTUDIO_VERSION }}
+          tags: ${{ env.REGISTRY }}/rockylinux-rstudio:${{ env.QUARTO_VERSION }}
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+      
+      - name: Rocky Linux with RStudio Server Pro
+        if: ${{ matrix.os }} == "rockylinux"
+        uses: docker/build-push-action@v5
+        with:
+          context: docker
+          file: docker/rockylinux_rstudio_pro.Dockerfile
+          target: rockylinux-rstudio-pro
+          pull: true
+          push: true
+          build-args: |
+            QUARTO_VERSION=${{ env.QUARTO_VERSION }}
+            CMDSTAN_VERSION=${{ env.CMDSTAN_VERSION }}
+            GITHUB_PAT=${{ env.GITHUB_PAT }}
+            REGISTRY=${{ env.REGISTRY }}
+          tags: ${{ env.REGISTRY }}/rockylinux-rstudio-pro:${{ env.QUARTO_VERSION }}
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+      
+      - name: fedora with RStudio Server
+        if: ${{ matrix.os }} == "fedora"
+        uses: docker/build-push-action@v5
+        with:
+          context: docker
+          file: docker/fedora_rstudio.Dockerfile
           target: fedora-rstudio
           pull: true
           push: true
@@ -94,7 +96,8 @@ jobs:
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
           
-      - name: Build and push fedora-rstudio-pro
+      - name: fedora with RStudio Server Pro
+        if: ${{ matrix.os }} == "fedora"
         uses: docker/build-push-action@v5
         with:
           context: docker
@@ -106,13 +109,14 @@ jobs:
             QUARTO_VERSION=${{ env.QUARTO_VERSION }}
             CMDSTAN_VERSION=${{ env.CMDSTAN_VERSION }}
             GITHUB_PAT=${{ env.GITHUB_PAT }}
+            REGISTRY=${{ env.REGISTRY }}
           tags: ${{ env.REGISTRY }}/fedora-rstudio-pro:${{ env.QUARTO_VERSION }}
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
 
-      - name: Session Info Fedora
+      - name: Session Info
         run: |
-          docker run --rm ${{ env.REGISTRY }}/fedora-rstudio-pro:${{ env.QUARTO_VERSION }} \
+          docker run --rm ${{ env.REGISTRY }}/${{ matrix.os }}-rstudio-pro:${{ env.QUARTO_VERSION }} \
             Rscript -e 'xfun::session_info(packages = .packages(TRUE), dependencies = FALSE)'
 
       - name: Move cache
