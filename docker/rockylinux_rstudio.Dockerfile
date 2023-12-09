@@ -41,7 +41,7 @@ RUN dnf install -y texinfo \
   && dnf clean all
 
 # Setup Fonts and cargo 
-RUN dnf install -y cargo chromium \
+RUN dnf install -y xz cargo chromium \
     python3-virtualenv \
     google-noto-cjk-fonts-common \
     google-noto-sans-cjk-ttc-fonts \
