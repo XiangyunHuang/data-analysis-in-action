@@ -11,3 +11,6 @@ remotes::install_github(c("davidsjoberg/ggbump", "davidsjoberg/ggstream"))
 # INLA 包含一些旧的动态链接库，最好放最后安装
 install.packages("INLA", repos = c(getOption("repos"), INLA = "https://inla.r-inla-download.org/R/stable"))
 # rjags and rstanarm can't be installed because Rocky Linux 9 doesn't have JAGS and Posit doesn't have rstanarm 
+rspm::disable()
+# 从源码安装 Matrix MatrixModels lme4 TMB glmmTMB INLA
+install.packages(c("Matrix", "MatrixModels", "lme4", "TMB", "glmmTMB"), repos = "https://cran.r-project.org/", type = "source")

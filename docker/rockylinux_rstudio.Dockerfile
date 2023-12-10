@@ -36,12 +36,44 @@ RUN dnf install -y texinfo \
     texlive-ctex \
     texlive-fandol \
     texlive-xetex \
+    texlive-rsfs \
     texlive-jknapltx \
     texlive-mathspec \
     texlive-mdwtools \
     texlive-lm-math \
     texlive-makeindex \
-  && dnf clean all
+    texlive-xifthen \
+    texlive-xstring \
+  && dnf clean all \
+  && export TEXLIVE_REPO=https://www.tug.org/texlive//Contents/live/texmf-dist/tex/latex \
+  && export TEXLIVE_DIR=/usr/share/texlive/texmf-dist/tex/latex \
+  && mkdir -p ${TEXLIVE_DIR}/everysel \
+  && curl -fLo ${TEXLIVE_DIR}/everysel/everysel-2011-10-28.sty ${TEXLIVE_REPO}/everysel/everysel-2011-10-28.sty \
+  && curl -fLo ${TEXLIVE_DIR}/everysel/everysel.sty ${TEXLIVE_REPO}/everysel/everysel.sty \
+  && mkdir -p ${TEXLIVE_DIR}/tikz-network \
+  && curl -fLo ${TEXLIVE_DIR}/tikz-network/tikz-network.sty ${TEXLIVE_REPO}/tikz-network/tikz-network.sty \
+  && mkdir -p ${TEXLIVE_DIR}/datatool \
+  && curl -fLo ${TEXLIVE_DIR}/datatool/databar.sty  ${TEXLIVE_REPO}/datatool/databar.sty \
+  && curl -fLo ${TEXLIVE_DIR}/datatool/databib.sty  ${TEXLIVE_REPO}/datatool/databib.sty \
+  && curl -fLo ${TEXLIVE_DIR}/datatool/datagidx.sty ${TEXLIVE_REPO}/datatool/datagidx.sty \
+  && curl -fLo ${TEXLIVE_DIR}/datatool/datapie.sty  ${TEXLIVE_REPO}/datatool/datapie.sty \
+  && curl -fLo ${TEXLIVE_DIR}/datatool/dataplot.sty  ${TEXLIVE_REPO}/datatool/dataplot.sty \
+  && curl -fLo ${TEXLIVE_DIR}/datatool/datatool-base.sty ${TEXLIVE_REPO}/datatool/datatool-base.sty \
+  && curl -fLo ${TEXLIVE_DIR}/datatool/datatool-fp.sty   ${TEXLIVE_REPO}/datatool/datatool-fp.sty \
+  && curl -fLo ${TEXLIVE_DIR}/datatool/datatool-pgfmath.sty	 ${TEXLIVE_REPO}/datatool/datatool-pgfmath.sty \
+  && curl -fLo ${TEXLIVE_DIR}/datatool/datatool.sty  ${TEXLIVE_REPO}/datatool/datatool.sty \
+  && curl -fLo ${TEXLIVE_DIR}/datatool/person.sty    ${TEXLIVE_REPO}/datatool/person.sty \
+  && mkdir -p ${TEXLIVE_DIR}/xfor \
+  && curl -fLo ${TEXLIVE_DIR}/xfor/xfor.sty  ${TEXLIVE_REPO}/xfor/xfor.sty \
+  && mkdir -p ${TEXLIVE_DIR}/substr \
+  && curl -fLo ${TEXLIVE_DIR}/substr/substr.sty  ${TEXLIVE_REPO}/substr/substr.sty \
+  && mkdir -p ${TEXLIVE_DIR}/smartdiagram \
+  && curl -fLo ${TEXLIVE_DIR}/smartdiagram/smartdiagram.sty  ${TEXLIVE_REPO}/smartdiagram/smartdiagram.sty \
+  && curl -fLo ${TEXLIVE_DIR}/smartdiagram/smartdiagramlibraryadditions.code.tex  ${TEXLIVE_REPO}/smartdiagram/smartdiagramlibraryadditions.code.tex \
+  && curl -fLo ${TEXLIVE_DIR}/smartdiagram/smartdiagramlibrarycore.commands.code.tex  ${TEXLIVE_REPO}/smartdiagram/smartdiagramlibrarycore.commands.code.tex \
+  && curl -fLo ${TEXLIVE_DIR}/smartdiagram/smartdiagramlibrarycore.definitions.code.tex  ${TEXLIVE_REPO}/smartdiagram/smartdiagramlibrarycore.definitions.code.tex \
+  && curl -fLo ${TEXLIVE_DIR}/smartdiagram/smartdiagramlibrarycore.styles.code.tex  ${TEXLIVE_REPO}/smartdiagram/smartdiagramlibrarycore.styles.code.tex \
+  && texhash
 
 # Setup Fonts and cargo 
 RUN dnf install -y xz cargo chromium \
