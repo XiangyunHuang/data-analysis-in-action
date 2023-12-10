@@ -10,7 +10,7 @@ knitr::opts_chunk$set(
   comment = "#>"
 )
 
-if (xfun::is_macos()) {
+if (grepl(x = sessionInfo()$running, pattern = "macOS")) {
   # 准备 Noto 中英文字体
   sysfonts::font_paths(new = "~/Library/Fonts/")
   ## 宋体
@@ -19,9 +19,15 @@ if (xfun::is_macos()) {
     regular = "NotoSerifCJKsc-Regular.otf",
     bold = "NotoSerifCJKsc-Bold.otf"
   )
+  ## 黑体
+  sysfonts::font_add(
+    family = "Noto Sans CJK SC",
+    regular = "NotoSansCJKsc-Regular.otf",
+    bold = "NotoSansCJKsc-Bold.otf"
+  )
 } else if (grepl(x = sessionInfo()$running, pattern = "Fedora")) { # Github Action custom Docker Container Based on Fedora
   sysfonts::font_paths(new = c(
-    "/usr/share/fonts/google-noto-serif-cjk-fonts" # Fedora 38
+    "/usr/share/fonts/google-noto-serif-cjk-fonts" # Fedora 39
   ))
   ## 宋体
   sysfonts::font_add(
@@ -29,7 +35,23 @@ if (xfun::is_macos()) {
     regular = "NotoSerifCJK-Regular.ttc",
     bold = "NotoSerifCJK-Bold.ttc"
   )
-} else {
+} else if (grepl(x = sessionInfo()$running, pattern = "Rocky")) {
+  sysfonts::font_paths(new = c(
+    "/usr/share/fonts/google-noto-cjk/" # Rocky Linux 9
+  ))
+  ## 宋体
+  sysfonts::font_add(
+    family = "Noto Serif CJK SC",
+    regular = "NotoSerifCJK-Regular.ttc",
+    bold = "NotoSerifCJK-Bold.ttc"
+  )
+  ## 黑体
+  sysfonts::font_add(
+    family = "Noto Sans CJK SC",
+    regular = "NotoSansCJK-Regular.ttc",
+    bold = "NotoSansCJK-Bold.ttc"
+  )
+} else { # Ubuntu
   sysfonts::font_paths(new = c(
     "/usr/share/fonts/opentype/noto/",
     "/usr/share/fonts/truetype/noto/"
