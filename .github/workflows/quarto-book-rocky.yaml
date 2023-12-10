@@ -3,13 +3,8 @@ on:
     branches: main
   pull_request:
     branches: main
-  # to be able to trigger a manual build
-  workflow_dispatch:
-  schedule:
-    # 每周四 早上 7 点
-    - cron: '0 23 * * 3'
 
-name: Book-Fedora
+name: Book-Rocky
 
 env:
   isExtPR: ${{ github.event.pull_request.head.repo.fork == true }}
@@ -22,7 +17,7 @@ jobs:
     env:
       CMDSTAN_VERSION: "2.33.1"
     container:
-      image: ghcr.io/xiangyunhuang/fedora-rstudio-pro:1.4.515
+      image: ghcr.io/xiangyunhuang/rocky-rstudio-pro:1.4.515
       credentials:
          username: ${{ github.repository_owner }}
          password: ${{ secrets.GITHUB_TOKEN }}
@@ -34,18 +29,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Render Book (all)
-        if: github.event_name == 'push'
-        run: |
-          quarto render
-        shell: bash
-        env:
-          RETICULATE_PYTHON_ENV: /opt/.virtualenvs/r-tensorflow
-          RETICULATE_PYTHON: /opt/.virtualenvs/r-tensorflow/bin/python
-          CMDSTAN: /opt/cmdstan/cmdstan-${{ env.CMDSTAN_VERSION }}
-
       - name: Render Book (html)
-        if: github.event_name != 'push'
         run: |
           quarto render --to html
         shell: bash
@@ -54,14 +38,22 @@ jobs:
           RETICULATE_PYTHON: /opt/.virtualenvs/r-tensorflow/bin/python
           CMDSTAN: /opt/cmdstan/cmdstan-${{ env.CMDSTAN_VERSION }}
 
-      - name: Deploy book to bookdown.org
-        if: github.event_name == 'push'
+      - name: Deploy to Netlify
+        if: contains(env.isExtPR, 'false')
+        id: netlify-deploy
+        uses: nwtgck/actions-netlify@v2
+        with:
+          publish-dir: './_book'
+          production-branch: main
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          deploy-message:
+            'Deploy from GHA: ${{ github.event.pull_request.title || github.event.head_commit.message }} (${{ github.sha }})'
+          enable-pull-request-comment: true
+          enable-commit-comment: true
         env:
-          CONNECT_API_KEY: ${{ secrets.RSC_BOOKDOWN_TOKEN }}
-          CONTENT_ID: ${{ secrets.RSC_BOOKDOWN_APP_ID }}
-        run: |
-          Rscript '_deploy.R'
-        shell: bash
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        timeout-minutes: 10
 
       - name: Upload book folder for debug
         if: failure()
