@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ["rockylinux", "rockylinx2", "fedora"]
+        os: ["rockylinux", "fedora"]
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       QUARTO_VERSION: "1.4.515"
@@ -35,8 +35,8 @@ jobs:
         uses: actions/cache@v3
         with:
           path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ github.sha }}
-          restore-keys: ${{ runner.os }}-buildx-
+          key: ${{ runner.os }}-${{ matrix.os }}-buildx-${{ github.sha }}
+          restore-keys: ${{ runner.os }}-${{ matrix.os }}-buildx-
         
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
@@ -44,6 +44,24 @@ jobs:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      
+      
+      - name: Rocky Linux with RStudio Server Pro
+        if: matrix.os == 'rockylinux'
+        uses: docker/build-push-action@v5
+        with:
+          context: docker
+          file: docker/rockylinux_rstudio_max.Dockerfile
+          target: rockylinux-rstudio-max
+          pull: true
+          push: true
+          build-args: |
+            QUARTO_VERSION=${{ env.QUARTO_VERSION }}
+            R_VERSION=${{ env.R_VERSION }}
+            RSTUDIO_VERSION=${{ env.RSTUDIO_VERSION }}
+          tags: ${{ env.REGISTRY }}/${{ matrix.os }}-rstudio-max:${{ env.QUARTO_VERSION }}
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
       
       - name: Rocky Linux with RStudio Server
         if: matrix.os == 'rockylinux'
@@ -58,7 +76,7 @@ jobs:
             QUARTO_VERSION=${{ env.QUARTO_VERSION }}
             GITHUB_PAT=${{ env.GITHUB_PAT }}
             RSTUDIO_VERSION=${{ env.RSTUDIO_VERSION }}
-          tags: ${{ env.REGISTRY }}/rockylinux-rstudio:${{ env.QUARTO_VERSION }}
+          tags: ${{ env.REGISTRY }}/${{ matrix.os }}-rstudio:${{ env.QUARTO_VERSION }}
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
       
@@ -76,27 +94,10 @@ jobs:
             CMDSTAN_VERSION=${{ env.CMDSTAN_VERSION }}
             GITHUB_PAT=${{ env.GITHUB_PAT }}
             REGISTRY=${{ env.REGISTRY }}
-          tags: ${{ env.REGISTRY }}/rockylinux-rstudio-pro:${{ env.QUARTO_VERSION }}
+          tags: ${{ env.REGISTRY }}/${{ matrix.os }}-rstudio-pro:${{ env.QUARTO_VERSION }}
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
       
-      
-      - name: Rocky Linux with RStudio Server Pro
-        if: matrix.os == 'rockylinux2'
-        uses: docker/build-push-action@v5
-        with:
-          context: docker
-          file: docker/rockylinux_rstudio_max.Dockerfile
-          target: rockylinux-rstudio-max
-          pull: true
-          push: true
-          build-args: |
-            QUARTO_VERSION=${{ env.QUARTO_VERSION }}
-            R_VERSION=${{ env.R_VERSION }}
-            RSTUDIO_VERSION=${{ env.RSTUDIO_VERSION }}
-          tags: ${{ env.REGISTRY }}/rockylinux-rstudio-max:${{ env.QUARTO_VERSION }}
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
       
       - name: fedora with RStudio Server
         if: matrix.os == 'fedora'
@@ -111,7 +112,7 @@ jobs:
             QUARTO_VERSION=${{ env.QUARTO_VERSION }}
             CMDSTAN_VERSION=${{ env.CMDSTAN_VERSION }}
             GITHUB_PAT=${{ env.GITHUB_PAT }}
-          tags: ${{ env.REGISTRY }}/fedora-rstudio:${{ env.QUARTO_VERSION }}
+          tags: ${{ env.REGISTRY }}/${{ matrix.os }}-rstudio:${{ env.QUARTO_VERSION }}
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
           
@@ -129,7 +130,7 @@ jobs:
             CMDSTAN_VERSION=${{ env.CMDSTAN_VERSION }}
             GITHUB_PAT=${{ env.GITHUB_PAT }}
             REGISTRY=${{ env.REGISTRY }}
-          tags: ${{ env.REGISTRY }}/fedora-rstudio-pro:${{ env.QUARTO_VERSION }}
+          tags: ${{ env.REGISTRY }}/${{ matrix.os }}-rstudio-pro:${{ env.QUARTO_VERSION }}
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
 
