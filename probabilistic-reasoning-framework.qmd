@@ -258,10 +258,10 @@ fit_gaussian$summary(.num_args = list(sigfig = 4, notation = "dec"))
 
 ### Stan 的变量类型 {#sec-stan-variables}
 
-变量的声明没有太多的内涵，就是 C++ 和 Stan 定义的语法，比如整型用 `int` 声明。建模过程中，时常需要将 R 语言环境中的数据传递给 Stan 代码编译出来的模型，而 Stan 是基于 C++ 语言，在变量类型方面有继承有发展。下表给出 Stan 与 R 语言中的变量类型对应关系。值得注意， R 语言的类型检查是不严格的，使用变量也不需要提前声明和初始化。Stan 语言中向量、矩阵的类型都是实数，下标也从 1 开始，元组类型和 R 语言中的列表类似，所有向量默认都是列向量。
+Stan 语言和 C/C++ 语言比较类似，变量需要先声明再使用，函数需要用 `return` 返回值，总而言之，类型声明比较严格。变量的声明没有太多的内涵，就是 C++ 和 Stan 定义的语法，比如整型用 `int` 声明。建模过程中，时常需要将 R 语言环境中的数据传递给 Stan 代码编译出来的模型，而 Stan 是基于 C++ 语言，在变量类型方面有继承有发展。下表给出 Stan 与 R 语言中的变量类型对应关系。值得注意， R 语言的类型检查是不严格的，使用变量也不需要提前声明和初始化。Stan 语言中向量、矩阵的类型都是实数，下标也从 1 开始，元组类型和 R 语言中的列表类似，所有向量默认都是列向量。
 
 | 类型 | Stan 语言                       | R 语言                                          |
-|--------------|-----------------------|-----------------------------------|
+|-----------------|----------------------|---------------------------------|
 | 整型 | `int x = 1;`                    | `x = 1L`                                        |
 | 实数 | `real x = 3.14;`                | `x = 3.14`                                      |
 | 向量 | `vector[3] x = [1, 2, 3]';`     | `x = c(1L, 2L, 3L)`                             |
@@ -296,6 +296,83 @@ generated quantities {
    // ... declarations ... statements ...
 }
 ```
+
+### Stan 的函数使用 {#sec-stan-function}
+
+Stan 有大量的内建函数，然而，有时候，Stan 内建的函数不足以满足需求，需要自己创建函数。下面以函数 `cholesky_decompose` 为例介绍 Stan 内置/一般函数的调用，在该函数的基础上自定义函数 `cholesky_decompose2` ，这不过是对它改个名字，其它内容只要符合 Stan 语言即可，不甚重要。
+
+根据 Stan 官网函数 `cholesky_decompose` 帮助文档，Cholesky 分解的形式（Cholesky 分解有多种形式）如下：
+
+$$
+M = LL^{\top}
+$$
+
+$M$ 是一个对称正定的矩阵，而 $L$ 是一个下三角矩阵。函数 `cholesky_decompose` 有一个参数 A， A 需要传递一个对称正定的矩阵。不妨设这个对称正定的矩阵为
+
+$$
+M = \begin{bmatrix}
+4 & 1 \\
+1 & 1
+\end{bmatrix}
+$$
+
+```{r}
+# 准备函数
+stan_file <- write_stan_file("
+functions {
+ matrix cholesky_decompose2(matrix A) {
+   return cholesky_decompose(A);
+ }
+}
+parameters {
+ real x;
+}
+model {
+ x ~ std_normal();
+}
+")
+```
+
+接着，将以上 Stan 代码编译
+
+```{r}
+mod_cholesky_decompose <- cmdstan_model(stan_file = stan_file, compile = TRUE)
+```
+
+准备测试数据，只要是一个对称正定的矩阵都可以做 cholesky 分解。
+
+```{r}
+# 测试矩阵
+M <- rbind(c(4, 1), c(1, 1))
+```
+
+**cmdstanr** 包导出函数的方法将以上 Stan 代码中的函数部分独立导出。
+
+```{r}
+# 编译独立的函数
+mod_cholesky_decompose$expose_functions()
+```
+
+现在，可以直接调用导出的函数 `cholesky_decompose2` 。
+
+```{r}
+# cholesky 分解
+mod_cholesky_decompose$functions$cholesky_decompose2(A = M)
+```
+
+最后，将 Stan 函数计算的结果与 R 语言内置的 cholesky 分解函数的结果比较。发现，函数 `chol()` 的结果正好是 `cholesky_decompose2` 的转置。
+
+```{r}
+chol(M)
+```
+
+查看帮助文档，可知 R 软件对 Cholesky 分解的定义如下：
+
+$$
+M = L^{\top}L
+$$
+
+根据数学表达式，感觉上都是差不多的。R 与 Stan 混编需要注意这些表达上不同的问题，不然，排错会很麻烦。
 
 ## 先验分布 {#sec-choose-prior}
 
@@ -686,7 +763,9 @@ fit_advi_logit$summary(c("alpha", "beta", "lambda", "lp__"))
 
 ### 拉普拉斯近似算法 {#sec-laplace-approximation-algorithms}
 
-### 探路者算法 {#sec-pathfinder-algorithms}
+### 探路者变分算法 {#sec-pathfinder-algorithms}
+
+探路者算法 Pathfinder 属于变分法，针对可微的对数目标密度函数，沿着逆牛顿优化算法的迭代路径，获得目标密度函数的正态近似。正态近似中的局部协方差的估计采用 LBFGS 计算的负逆 Hessian 矩阵。探路者算法的优势是可以极大地减少对数密度函数和梯度的计算次数，缓解迭代陷入局部最优点和鞍点（何为鞍点，一个可视化示例详见 @sec-gaussian-process-regression ）。
 
 CmdStan 已经集成，但 **cmdstanr** 包对该算法的支持还在开发中。
 
