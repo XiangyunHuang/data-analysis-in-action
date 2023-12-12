@@ -96,6 +96,24 @@ RUN export CRAN_REPO=https://cran.r-project.org \
   && chmod -R g+wx /usr/local/lib64/R/site-library \
   && rm -f texlive.txt
 
+# Setup JAGS and CmdStan
+RUN export JAGS_LINK=https://zenlayer.dl.sourceforge.net/project/mcmc-jags/JAGS \
+  && curl -fLo JAGS-${JAGS_VERSION}.tar.gz ${JAGS_LINK}/${JAGS_MAJOR}.x/Source/JAGS-${JAGS_VERSION}.tar.gz \
+  && tar -xzf JAGS-${JAGS_VERSION}.tar.gz \
+  && cd JAGS-${JAGS_VERSION} && ./configure && make && make install && cd .. \
+  && export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig/ \
+  && Rscript -e "install.packages('rjags', configure.args='--enable-rpath')" \
+  && rm -f JAGS-${JAGS_VERSION}.tar.gz && rm -rf JAGS-${JAGS_VERSION} \
+  && dnf clean all \
+  && export CMSTAN_LINK=https://github.com/stan-dev/cmdstan/releases/download \
+  && curl -fLo cmdstan-${CMDSTAN_VERSION}.tar.gz ${CMSTAN_LINK}/v${CMDSTAN_VERSION}/cmdstan-${CMDSTAN_VERSION}.tar.gz \
+  && mkdir -p /opt/cmdstan/ \
+  && tar -xzf cmdstan-${CMDSTAN_VERSION}.tar.gz -C /opt/cmdstan/ \
+  && make build -C /opt/cmdstan/cmdstan-${CMDSTAN_VERSION} \
+  && chown -R ${USER}:staff /opt/cmdstan/ \
+  && chmod -R g+wx /opt/cmdstan/ \
+  && rm cmdstan-${CMDSTAN_VERSION}.tar.gz
+
 # Setup fonts, chromium and cargo for gganimate, gifski and mermaid
 RUN dnf install -y chromium \
   && dnf clean all
@@ -123,24 +141,6 @@ RUN export RSTUDIO_LINK=https://download2.rstudio.org/server/rhel9/x86_64 \
   && deactivate \
   && rm -f requirements.txt \
   && dnf clean all
-
-# Setup JAGS and CmdStan
-RUN export JAGS_LINK=https://zenlayer.dl.sourceforge.net/project/mcmc-jags/JAGS \
-  && curl -fLo JAGS-${JAGS_VERSION}.tar.gz ${JAGS_LINK}/${JAGS_MAJOR}.x/Source/JAGS-${JAGS_VERSION}.tar.gz \
-  && tar -xzf JAGS-${JAGS_VERSION}.tar.gz \
-  && cd JAGS-${JAGS_VERSION} && ./configure && make && make install && cd .. \
-  && export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig/ \
-  && Rscript -e "install.packages('rjags', configure.args='--enable-rpath')" \
-  && rm -f JAGS-${JAGS_VERSION}.tar.gz && rm -rf JAGS-${JAGS_VERSION} \
-  && dnf clean all \
-  && export CMSTAN_LINK=https://github.com/stan-dev/cmdstan/releases/download \
-  && curl -fLo cmdstan-${CMDSTAN_VERSION}.tar.gz ${CMSTAN_LINK}/v${CMDSTAN_VERSION}/cmdstan-${CMDSTAN_VERSION}.tar.gz \
-  && mkdir -p /opt/cmdstan/ \
-  && tar -xzf cmdstan-${CMDSTAN_VERSION}.tar.gz -C /opt/cmdstan/ \
-  && make build -C /opt/cmdstan/cmdstan-${CMDSTAN_VERSION} \
-  && chown -R ${USER}:staff /opt/cmdstan/ \
-  && chmod -R g+wx /opt/cmdstan/ \
-  && rm cmdstan-${CMDSTAN_VERSION}.tar.gz
 
 # Setup Extra R Packages
 COPY DESCRIPTION DESCRIPTION
