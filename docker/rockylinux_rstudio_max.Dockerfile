@@ -51,6 +51,8 @@ RUN dnf -y update  \
     libcurl-devel \
     libjpeg-turbo-devel \
     libtiff-devel  \
+    lapack-devel \
+    blas-devel \
     pango-devel \
     libtool \
     texinfo \
