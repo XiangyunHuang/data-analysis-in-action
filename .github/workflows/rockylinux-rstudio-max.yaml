@@ -10,10 +10,6 @@ jobs:
   docker:
     if: "contains(github.event.head_commit.message, '[docker]')"
     runs-on: ubuntu-22.04
-    strategy:
-      fail-fast: false
-      matrix:
-        os: ["rockylinux", "fedora"]
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       QUARTO_VERSION: "1.4.515"
@@ -46,7 +42,6 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Rocky Linux with RStudio Server Max
-        if: matrix.os == 'rockylinux'
         uses: docker/build-push-action@v5
         with:
           context: docker
@@ -60,13 +55,13 @@ jobs:
             RSTUDIO_VERSION=${{ env.RSTUDIO_VERSION }}
             CMDSTAN_VERSION=${{ env.CMDSTAN_VERSION }}
             GITHUB_PAT=${{ env.GITHUB_PAT }}
-          tags: ${{ env.REGISTRY }}/${{ matrix.os }}-rstudio-max:${{ env.QUARTO_VERSION }}
+          tags: ${{ env.REGISTRY }}/rockylinux-rstudio-max:${{ env.QUARTO_VERSION }}
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
 
       - name: Session Info
         run: |
-          docker run --rm ${{ env.REGISTRY }}/${{ matrix.os }}-rstudio-max:${{ env.QUARTO_VERSION }} \
+          docker run --rm ${{ env.REGISTRY }}/rockylinux-rstudio-max:${{ env.QUARTO_VERSION }} \
             Rscript -e 'xfun::session_info(packages = .packages(TRUE), dependencies = FALSE)'
 
       - name: Move cache
