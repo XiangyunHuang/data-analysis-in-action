@@ -1,6 +1,7 @@
 FROM rockylinux:9 AS rockylinux-rstudio-max
 
 ARG QUARTO_VERSION=1.2.280
+ARG R_MAJOR=4
 ARG R_VERSION=4.3.2
 ARG RSTUDIO_VERSION=2023.09.1-494
 ARG CMDSTAN_VERSION=2.32.2
@@ -43,7 +44,6 @@ RUN dnf -y update  \
     zlib-devel \
     readline-devel \
     autoconf \
-    automake \
     libXmu-devel \
     libXt-devel \
     java-11-openjdk-devel \
@@ -52,9 +52,6 @@ RUN dnf -y update  \
     libjpeg-turbo-devel \
     libtiff-devel  \
     pango-devel \
-    blas-devel \
-    lapack-devel \
-    openblas-devel \
     libtool \
     texinfo \
     perl-File-Find
@@ -75,12 +72,13 @@ RUN export QUARTO_LINK=https://github.com/quarto-dev/quarto-cli/releases/downloa
   && /opt/TinyTeX/bin/*/tlmgr option sys_bin /usr/local/bin \
   && /opt/TinyTeX/bin/*/tlmgr path add \
   && chown -R ${USER}:staff /opt/TinyTeX \
-  && chmod -R g+wx /opt/TinyTeX \
-  && export CRAN_REPO=https://cran.r-project.org \
-  && curl -fLo R-${R_VERSION}.tar.gz ${CRAN_REPO}/src/base/R-4/R-${R_VERSION}.tar.gz \
+  && chmod -R g+wx /opt/TinyTeX
+  
+RUN export CRAN_REPO=https://cran.r-project.org \
+  && curl -fLo R-${R_VERSION}.tar.gz ${CRAN_REPO}/src/base/R-${R_MAJOR}/R-${R_VERSION}.tar.gz \
   && tar -xzf R-${R_VERSION}.tar.gz \
   && cd R-${R_VERSION} \
-  && ./configure --enable-R-shlib --enable-BLAS-shlib --enable-memory-profiling --with-blas="-lopenblas" \
+  && ./configure --enable-R-shlib --enable-BLAS-shlib --enable-memory-profiling \
   && make \
   && make install \
   && cd .. && rm -rf R-${R_VERSION} \
@@ -96,8 +94,11 @@ RUN export QUARTO_LINK=https://github.com/quarto-dev/quarto-cli/releases/downloa
   && chmod -R g+wx /usr/local/lib64/R/site-library \
   && rm -f texlive.txt
 
-# Setup fonts, chromium and cargo for gganimate, gifski, mermaid
-RUN dnf install -y xz cargo chromium \
+# Setup fonts, chromium and cargo for gganimate, gifski and mermaid
+RUN dnf install -y chromium \
+  && dnf clean all
+
+RUN dnf install -y xz cargo rust \
     google-noto-cjk-fonts-common \
     google-noto-sans-cjk-ttc-fonts \
     google-noto-serif-cjk-ttc-fonts \
@@ -149,7 +150,7 @@ RUN export GITHUB_PAT=${GITHUB_PAT} \
   && chmod -R g+wx /usr/local/lib64/R/site-library \
   && rm -f install_r_packages.R DESCRIPTION
 
-# Setup locale and timezone
+# Setup Locale and Timezone
 ENV LANG=en_US.UTF-8
 ENV LANGUAGE=en_US.UTF-8
 ENV LC_ALL=en_US.UTF-8
