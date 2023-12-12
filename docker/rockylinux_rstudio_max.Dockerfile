@@ -77,6 +77,7 @@ RUN quarto install tinytex --quiet \
   && chown -R ${USER}:staff /opt/TinyTeX \
   && chmod -R g+wx /opt/TinyTeX
 
+COPY texlive.txt texlive.txt
 RUN export CRAN_REPO=https://cran.r-project.org \
   && curl -fLo R-${R_VERSION}.tar.gz ${CRAN_REPO}/src/base/R-4/R-${R_VERSION}.tar.gz \
   && tar -xzf R-${R_VERSION}.tar.gz \
@@ -94,7 +95,8 @@ RUN export CRAN_REPO=https://cran.r-project.org \
   && chmod a+r /usr/local/lib64/R/etc/Rprofile.site \
   && echo "LANG=en_US.UTF-8" >> /usr/local/lib64/R/etc/Renviron.site \
   && Rscript -e "install.packages('rspm');rspm::enable();install.packages('rmarkdown');" \
-  && Rscript -e "tinytex::tlmgr_install('ctex')"
+  && Rscript -e "tinytex::tlmgr_install(readLines('texlive.txt'))" \
+  && rm -f texlive.txt
 
 RUN export RSTUDIO_LINK=https://download2.rstudio.org/server/rhel9/x86_64 \
   && curl -fLo rstudio.rpm ${RSTUDIO_LINK}/rstudio-server-rhel-${RSTUDIO_VERSION}-x86_64.rpm \
