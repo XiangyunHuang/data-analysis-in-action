@@ -85,8 +85,6 @@ RUN export QUARTO_LINK=https://github.com/quarto-dev/quarto-cli/releases/downloa
   && make install \
   && cd .. && rm -rf R-${R_VERSION} \
   && mkdir -p /usr/local/lib64/R/site-library \
-  && chown -R ${USER}:staff /usr/local/lib64/R/ \
-  && chmod -R g+wx /usr/local/lib64/R/ \
   && echo "options(repos = c(CRAN = 'https://cran.r-project.org/'))" | tee -a /usr/local/lib64/R/etc/Rprofile.site \
   && echo "export LC_ALL=en_US.UTF-8"  >> /etc/profile \
   && echo "export LANG=en_US.UTF-8"  >> /etc/profile \
@@ -94,6 +92,8 @@ RUN export QUARTO_LINK=https://github.com/quarto-dev/quarto-cli/releases/downloa
   && echo "LANG=en_US.UTF-8" >> /usr/local/lib64/R/etc/Renviron.site \
   && Rscript -e "install.packages('rspm');rspm::enable();install.packages('rmarkdown');" \
   && Rscript -e "tinytex::tlmgr_install(readLines('texlive.txt'))" \
+  && chown -R ${USER}:staff /usr/local/lib64/R/site-library \
+  && chmod -R g+wx /usr/local/lib64/R/site-library \
   && rm -f texlive.txt
 
 # Setup fonts, chromium and cargo for gganimate, gifski, mermaid
@@ -121,14 +121,6 @@ RUN export RSTUDIO_LINK=https://download2.rstudio.org/server/rhel9/x86_64 \
   && rm -f requirements.txt \
   && dnf clean all
 
-# Setup Extra R Packages
-COPY DESCRIPTION DESCRIPTION
-COPY install_r_packages.R install_r_packages.R
-RUN export GITHUB_PAT=${GITHUB_PAT} \
-  && export DOWNLOAD_STATIC_LIBV8=1 \
-  && Rscript install_r_packages.R \
-  && rm -f install_r_packages.R DESCRIPTION
-
 # Setup JAGS and CmdStan
 RUN export JAGS_LINK=https://zenlayer.dl.sourceforge.net/project/mcmc-jags/JAGS \
   && curl -fLo JAGS-${JAGS_VERSION}.tar.gz ${JAGS_LINK}/${JAGS_MAJOR}.x/Source/JAGS-${JAGS_VERSION}.tar.gz \
@@ -141,10 +133,21 @@ RUN export JAGS_LINK=https://zenlayer.dl.sourceforge.net/project/mcmc-jags/JAGS 
   && export CMSTAN_LINK=https://github.com/stan-dev/cmdstan/releases/download \
   && curl -fLo cmdstan-${CMDSTAN_VERSION}.tar.gz ${CMSTAN_LINK}/v${CMDSTAN_VERSION}/cmdstan-${CMDSTAN_VERSION}.tar.gz \
   && mkdir -p /opt/cmdstan/ \
-  && chown -R $(whoami):staff /opt/cmdstan/ \
   && tar -xzf cmdstan-${CMDSTAN_VERSION}.tar.gz -C /opt/cmdstan/ \
   && make build -C /opt/cmdstan/cmdstan-${CMDSTAN_VERSION} \
+  && chown -R ${USER}:staff /opt/cmdstan/ \
+  && chmod -R g+wx /opt/cmdstan/ \
   && rm cmdstan-${CMDSTAN_VERSION}.tar.gz
+
+# Setup Extra R Packages
+COPY DESCRIPTION DESCRIPTION
+COPY install_r_packages.R install_r_packages.R
+RUN export GITHUB_PAT=${GITHUB_PAT} \
+  && export DOWNLOAD_STATIC_LIBV8=1 \
+  && Rscript install_r_packages.R \
+  && chown -R ${USER}:staff /usr/local/lib64/R/site-library \
+  && chmod -R g+wx /usr/local/lib64/R/site-library \
+  && rm -f install_r_packages.R DESCRIPTION
 
 # Setup locale and timezone
 ENV LANG=en_US.UTF-8
