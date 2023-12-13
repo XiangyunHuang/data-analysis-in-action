@@ -57,7 +57,6 @@ RUN dnf -y update  \
     perl-File-Find
 
 # Setup Quarto, Pandoc, TinyTeX, R Library and RStudio
-COPY texlive.txt texlive.txt
 RUN export QUARTO_LINK=https://github.com/quarto-dev/quarto-cli/releases/download \
   && curl -fLo quarto.tar.gz ${QUARTO_LINK}/v${QUARTO_VERSION}/quarto-${QUARTO_VERSION}-linux-amd64.tar.gz \
   && mkdir -p /opt/quarto/ \
@@ -73,7 +72,8 @@ RUN export QUARTO_LINK=https://github.com/quarto-dev/quarto-cli/releases/downloa
   && /opt/TinyTeX/bin/*/tlmgr path add \
   && chown -R ${USER}:staff /opt/TinyTeX \
   && chmod -R g+wx /opt/TinyTeX
-  
+
+COPY texlive.txt texlive.txt
 RUN dnf install -y blas-devel lapack-devel  openblas-devel \
   && export CRAN_REPO=https://cran.r-project.org \
   && curl -fLo R-${R_VERSION}.tar.gz ${CRAN_REPO}/src/base/R-${R_MAJOR}/R-${R_VERSION}.tar.gz \
@@ -107,9 +107,8 @@ RUN dnf install -y lapack-devel blas-devel \
   && export PKG_CONFIG_PATH=/opt/JAGS-${JAGS_VERSION}/lib/pkgconfig/ \
   && export LD_RUN_PATH=/opt/JAGS-${JAGS_VERSION}/lib \
   && Rscript -e "install.packages('rjags', configure.args='--enable-rpath')" \
-  && dnf clean all
-
-RUN export CMDSTAN_LINK=https://github.com/stan-dev/cmdstan/releases/download \
+  && dnf clean all \
+  && export CMDSTAN_LINK=https://github.com/stan-dev/cmdstan/releases/download \
   && curl -fLo cmdstan-${CMDSTAN_VERSION}.tar.gz ${CMDSTAN_LINK}/v${CMDSTAN_VERSION}/cmdstan-${CMDSTAN_VERSION}.tar.gz \
   && mkdir -p /opt/cmdstan/ \
   && tar -xzf cmdstan-${CMDSTAN_VERSION}.tar.gz -C /opt/cmdstan/ \
@@ -123,7 +122,7 @@ RUN export CMDSTAN_LINK=https://github.com/stan-dev/cmdstan/releases/download \
 RUN dnf install -y chromium \
   && dnf clean all
 
-RUN dnf install -y xz cargo rust \
+RUN dnf install -y xz cargo rust ghostscript \
     google-noto-cjk-fonts-common \
     google-noto-sans-cjk-ttc-fonts \
     google-noto-serif-cjk-ttc-fonts \
@@ -152,10 +151,12 @@ COPY DESCRIPTION DESCRIPTION
 COPY install_r_packages.R install_r_packages.R
 RUN export GITHUB_PAT=${GITHUB_PAT} \
   && export DOWNLOAD_STATIC_LIBV8=1 \
+  && dnf install -y cmake \
   && Rscript install_r_packages.R \
   && chown -R ${USER}:staff /opt/R-${R_VERSION}/lib64/R/site-library \
   && chmod -R g+wx /opt/R-${R_VERSION}/lib64/R/site-library \
-  && rm -f install_r_packages.R DESCRIPTION
+  && rm -f install_r_packages.R DESCRIPTION \
+  && dnf clean all
 
 
 # Setup Locale and Timezone
