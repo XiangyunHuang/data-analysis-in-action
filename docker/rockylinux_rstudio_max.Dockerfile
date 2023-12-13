@@ -74,10 +74,11 @@ RUN export QUARTO_LINK=https://github.com/quarto-dev/quarto-cli/releases/downloa
   && chown -R ${USER}:staff /opt/TinyTeX \
   && chmod -R g+wx /opt/TinyTeX
   
-RUN export CRAN_REPO=https://cran.r-project.org \
+RUN dnf install -y blas-devel lapack-devel  openblas-devel \
+  && export CRAN_REPO=https://cran.r-project.org \
   && curl -fLo R-${R_VERSION}.tar.gz ${CRAN_REPO}/src/base/R-${R_MAJOR}/R-${R_VERSION}.tar.gz \
   && tar -xzf R-${R_VERSION}.tar.gz && cd R-${R_VERSION} \
-  && ./configure --prefix=/opt/R-${R_VERSION} --enable-R-shlib --enable-BLAS-shlib --enable-memory-profiling \
+  && ./configure --prefix=/opt/R-${R_VERSION} --enable-R-shlib --enable-BLAS-shlib --enable-memory-profiling --with-blas="-lopenblas" \
   && make && make install && cd .. && rm -rf R-${R_VERSION} && rm -f R-${R_VERSION}.tar.gz \
   && mkdir -p /opt/R-${R_VERSION}/lib64/R/site-library \
   && echo "options(repos = c(CRAN = 'https://cran.r-project.org/'))" | tee -a /opt/R-${R_VERSION}/lib64/R/etc/Rprofile.site \
@@ -89,7 +90,8 @@ RUN export CRAN_REPO=https://cran.r-project.org \
   && Rscript -e "tinytex::tlmgr_install(readLines('texlive.txt'))" \
   && chown -R ${USER}:staff /opt/R-${R_VERSION}/lib64/R/site-library \
   && chmod -R g+wx /opt/R-${R_VERSION}/lib64/R/site-library \
-  && rm -f texlive.txt
+  && rm -f texlive.txt \
+  && dnf clean all
 
 # Setup JAGS and CmdStan
 RUN dnf install -y lapack-devel blas-devel \
@@ -100,12 +102,15 @@ RUN dnf install -y lapack-devel blas-devel \
   && make && make install && cd .. \
   && rm -f JAGS-${JAGS_VERSION}.tar.gz && rm -rf JAGS-${JAGS_VERSION} \
   && ln -s /opt/JAGS-${JAGS_VERSION}/bin/jags /usr/local/bin/jags \
+  && chown -R ${USER}:staff /opt/JAGS-${JAGS_VERSION} \
+  && chmod -R g+wx /opt/JAGS-${JAGS_VERSION} \
   && export PKG_CONFIG_PATH=/opt/JAGS-${JAGS_VERSION}/lib/pkgconfig/ \
+  && export LD_RUN_PATH=/opt/JAGS-${JAGS_VERSION}/lib \
   && Rscript -e "install.packages('rjags', configure.args='--enable-rpath')" \
   && dnf clean all
 
 RUN export CMDSTAN_LINK=https://github.com/stan-dev/cmdstan/releases/download \
-  && curl -fLo cmdstan-${CMDSTAN_VERSION}.tar.gz ${CMDTAN_LINK}/v${CMDSTAN_VERSION}/cmdstan-${CMDSTAN_VERSION}.tar.gz \
+  && curl -fLo cmdstan-${CMDSTAN_VERSION}.tar.gz ${CMDSTAN_LINK}/v${CMDSTAN_VERSION}/cmdstan-${CMDSTAN_VERSION}.tar.gz \
   && mkdir -p /opt/cmdstan/ \
   && tar -xzf cmdstan-${CMDSTAN_VERSION}.tar.gz -C /opt/cmdstan/ \
   && make build -C /opt/cmdstan/cmdstan-${CMDSTAN_VERSION} \
@@ -151,6 +156,7 @@ RUN export GITHUB_PAT=${GITHUB_PAT} \
   && chown -R ${USER}:staff /opt/R-${R_VERSION}/lib64/R/site-library \
   && chmod -R g+wx /opt/R-${R_VERSION}/lib64/R/site-library \
   && rm -f install_r_packages.R DESCRIPTION
+
 
 # Setup Locale and Timezone
 ENV LANG=en_US.UTF-8
