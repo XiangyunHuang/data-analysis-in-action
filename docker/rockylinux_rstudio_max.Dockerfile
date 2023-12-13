@@ -51,8 +51,6 @@ RUN dnf -y update  \
     libcurl-devel \
     libjpeg-turbo-devel \
     libtiff-devel  \
-    lapack-devel \
-    blas-devel \
     pango-devel \
     libtool \
     texinfo \
@@ -78,41 +76,43 @@ RUN export QUARTO_LINK=https://github.com/quarto-dev/quarto-cli/releases/downloa
   
 RUN export CRAN_REPO=https://cran.r-project.org \
   && curl -fLo R-${R_VERSION}.tar.gz ${CRAN_REPO}/src/base/R-${R_MAJOR}/R-${R_VERSION}.tar.gz \
-  && tar -xzf R-${R_VERSION}.tar.gz \
-  && cd R-${R_VERSION} \
-  && ./configure --enable-R-shlib --enable-BLAS-shlib --enable-memory-profiling \
-  && make \
-  && make install \
-  && cd .. && rm -rf R-${R_VERSION} \
-  && mkdir -p /usr/local/lib64/R/site-library \
-  && echo "options(repos = c(CRAN = 'https://cran.r-project.org/'))" | tee -a /usr/local/lib64/R/etc/Rprofile.site \
-  && echo "export LC_ALL=en_US.UTF-8"  >> /etc/profile \
-  && echo "export LANG=en_US.UTF-8"  >> /etc/profile \
-  && chmod a+r /usr/local/lib64/R/etc/Rprofile.site \
-  && echo "LANG=en_US.UTF-8" >> /usr/local/lib64/R/etc/Renviron.site \
+  && tar -xzf R-${R_VERSION}.tar.gz && cd R-${R_VERSION} \
+  && ./configure --prefix=/opt/R-${R_VERSION} --enable-R-shlib --enable-BLAS-shlib --enable-memory-profiling \
+  && make && make install && cd .. && rm -rf R-${R_VERSION} && rm -f R-${R_VERSION}.tar.gz \
+  && mkdir -p /opt/R-${R_VERSION}/lib64/R/site-library \
+  && echo "options(repos = c(CRAN = 'https://cran.r-project.org/'))" | tee -a /opt/R-${R_VERSION}/lib64/R/etc/Rprofile.site \
+  && chmod a+r /opt/R-${R_VERSION}/lib64/R/etc/Rprofile.site \
+  && echo "LANG=en_US.UTF-8" >> /opt/R-${R_VERSION}/lib64/R/etc/Renviron.site \
+  && ln -s /opt/R-${R_VERSION}/bin/R /usr/local/bin/R \
+  && ln -s /opt/R-${R_VERSION}/bin/Rscript /usr/local/bin/Rscript \
   && Rscript -e "install.packages('rspm');rspm::enable();install.packages('rmarkdown');" \
   && Rscript -e "tinytex::tlmgr_install(readLines('texlive.txt'))" \
-  && chown -R ${USER}:staff /usr/local/lib64/R/site-library \
-  && chmod -R g+wx /usr/local/lib64/R/site-library \
+  && chown -R ${USER}:staff /opt/R-${R_VERSION}/lib64/R/site-library \
+  && chmod -R g+wx /opt/R-${R_VERSION}/lib64/R/site-library \
   && rm -f texlive.txt
 
 # Setup JAGS and CmdStan
-RUN export JAGS_LINK=https://zenlayer.dl.sourceforge.net/project/mcmc-jags/JAGS \
+RUN dnf install -y lapack-devel blas-devel \
+  && export JAGS_LINK=https://zenlayer.dl.sourceforge.net/project/mcmc-jags/JAGS \
   && curl -fLo JAGS-${JAGS_VERSION}.tar.gz ${JAGS_LINK}/${JAGS_MAJOR}.x/Source/JAGS-${JAGS_VERSION}.tar.gz \
   && tar -xzf JAGS-${JAGS_VERSION}.tar.gz \
-  && cd JAGS-${JAGS_VERSION} && ./configure && make && make install && cd .. \
-  && export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig/ \
-  && Rscript -e "install.packages('rjags', configure.args='--enable-rpath')" \
+  && cd JAGS-${JAGS_VERSION} && ./configure --prefix=/opt/JAGS-${JAGS_VERSION} \
+  && make && make install && cd .. \
   && rm -f JAGS-${JAGS_VERSION}.tar.gz && rm -rf JAGS-${JAGS_VERSION} \
-  && dnf clean all \
-  && export CMSTAN_LINK=https://github.com/stan-dev/cmdstan/releases/download \
-  && curl -fLo cmdstan-${CMDSTAN_VERSION}.tar.gz ${CMSTAN_LINK}/v${CMDSTAN_VERSION}/cmdstan-${CMDSTAN_VERSION}.tar.gz \
+  && ln -s /opt/JAGS-${JAGS_VERSION}/bin/jags /usr/local/bin/jags \
+  && export PKG_CONFIG_PATH=/opt/JAGS-${JAGS_VERSION}/lib/pkgconfig/ \
+  && Rscript -e "install.packages('rjags', configure.args='--enable-rpath')" \
+  && dnf clean all
+
+RUN export CMDSTAN_LINK=https://github.com/stan-dev/cmdstan/releases/download \
+  && curl -fLo cmdstan-${CMDSTAN_VERSION}.tar.gz ${CMDTAN_LINK}/v${CMDSTAN_VERSION}/cmdstan-${CMDSTAN_VERSION}.tar.gz \
   && mkdir -p /opt/cmdstan/ \
   && tar -xzf cmdstan-${CMDSTAN_VERSION}.tar.gz -C /opt/cmdstan/ \
   && make build -C /opt/cmdstan/cmdstan-${CMDSTAN_VERSION} \
   && chown -R ${USER}:staff /opt/cmdstan/ \
   && chmod -R g+wx /opt/cmdstan/ \
   && rm cmdstan-${CMDSTAN_VERSION}.tar.gz
+
 
 # Setup fonts, chromium and cargo for gganimate, gifski and mermaid
 RUN dnf install -y chromium \
@@ -148,8 +148,8 @@ COPY install_r_packages.R install_r_packages.R
 RUN export GITHUB_PAT=${GITHUB_PAT} \
   && export DOWNLOAD_STATIC_LIBV8=1 \
   && Rscript install_r_packages.R \
-  && chown -R ${USER}:staff /usr/local/lib64/R/site-library \
-  && chmod -R g+wx /usr/local/lib64/R/site-library \
+  && chown -R ${USER}:staff /opt/R-${R_VERSION}/lib64/R/site-library \
+  && chmod -R g+wx /opt/R-${R_VERSION}/lib64/R/site-library \
   && rm -f install_r_packages.R DESCRIPTION
 
 # Setup Locale and Timezone
