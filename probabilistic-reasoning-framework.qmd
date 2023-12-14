@@ -260,18 +260,22 @@ fit_gaussian$summary(.num_args = list(sigfig = 4, notation = "dec"))
 
 Stan 语言和 C/C++ 语言比较类似，变量需要先声明再使用，函数需要用 `return` 返回值，总而言之，类型声明比较严格。变量的声明没有太多的内涵，就是 C++ 和 Stan 定义的语法，比如整型用 `int` 声明。建模过程中，时常需要将 R 语言环境中的数据传递给 Stan 代码编译出来的模型，而 Stan 是基于 C++ 语言，在变量类型方面有继承有发展。下表给出 Stan 与 R 语言中的变量类型对应关系。值得注意， R 语言的类型检查是不严格的，使用变量也不需要提前声明和初始化。Stan 语言中向量、矩阵的类型都是实数，下标也从 1 开始，元组类型和 R 语言中的列表类似，所有向量默认都是列向量。
 
+下表第一列表示 Stan 语言的变量类型，第二列给出使用该变量的声明示例，第三列给出 R 语言中构造该类型变量的示例。
+
 | 类型 | Stan 语言                       | R 语言                                          |
-|------------------|----------------------|--------------------------------|
+|----------|----------------------|--------------------------------|
 | 整型 | `int x = 1;`                    | `x = 1L`                                        |
 | 实数 | `real x = 3.14;`                | `x = 3.14`                                      |
-| 向量 | `vector[3] x = [1, 2, 3]';`     | `x = c(1L, 2L, 3L)`                             |
-| 矩阵 | `matrix[3,1] x;`                | `matrix(data = c(1L, 2L, 3L), nrow = 3)`        |
+| 向量 | `vector[3] x = [1, 2, 3]';`     | `x = c(1, 2, 3)`                                |
+| 矩阵 | `matrix[3,1] x;`                | `matrix(data = c(1, 2, 3), nrow = 3)`           |
 | 数组 | `array[3] int x;`               | `array(data = c(1L, 2L, 3L), dim = c(3, 1, 1))` |
-| 元组 | `tuple(vector[3],vector[3]) x;` | `list(x = c(1L, 2L, 3L), y = c(1, 2, 3))`       |
+| 元组 | `tuple(vector[3],vector[3]) x;` | `list(x = c(1, 2, 3), y = c(4, 5, 6))`          |
 
 : Stan 变量类型和 R 语言中的对应 {#tbl-stan-var-dec}
 
 ### Stan 的代码结构 {#sec-stan-code}
+
+Stan 代码文件最多有如下 7 块内容，模拟、拟合和预测模型会用到其中的一部分或全部。
 
 ``` stan
 functions {
@@ -376,7 +380,7 @@ $$
 M = L^{\top}L
 $$
 
-根据数学表达式，感觉上都是差不多的。R 与 Stan 混编需要注意这些表达上不同的问题，不然，排错会很麻烦。
+根据数学表达式，感觉上都是差不多的，但还是有差异。R 与 Stan 混合编程就需要注意这些表达上不同的，不然，排错会很麻烦。
 
 ## 先验分布 {#sec-choose-prior}
 
@@ -767,11 +771,37 @@ fit_advi_logit$summary(c("alpha", "beta", "lambda", "lp__"))
 
 ### 拉普拉斯近似算法 {#sec-laplace-approximation-algorithms}
 
+Stan 内置的 Laplace 近似算法是对后验分布的 Laplace 正态近似，再从近似的后验分布中采样获得样本，最后，对样本进行统计分析获得参数的后验估计。详见 Stan 语言参考手册的[Laplace Approximation 一章](https://mc-stan.org/docs/reference-manual/laplace-approximation.html)。
+
+```{r}
+# Laplace 算法
+fit_laplace_logit <- mod_logit_lasso$laplace(
+  data = mdata, # 观测数据
+  init = 0,     # 所有参数初值设为 0
+  refresh = 0,  # 不显示迭代进程
+  threads = 1,    # 单线程
+  seed = 20232023 # 随机数种子
+)
+
+fit_laplace_logit$summary(c("alpha", "beta", "lambda", "lp__"))
+```
+
 ### 探路者变分算法 {#sec-pathfinder-algorithms}
 
 探路者算法 Pathfinder 属于变分法，针对可微的对数目标密度函数，沿着逆牛顿优化算法的迭代路径，获得目标密度函数的正态近似。正态近似中的局部协方差的估计采用 LBFGS 计算的负逆 Hessian 矩阵。探路者算法的优势是可以极大地减少对数密度函数和梯度的计算次数，缓解迭代陷入局部最优点和鞍点（何为鞍点，一个可视化示例详见 @sec-gaussian-process-regression ）。
 
-CmdStan 已经集成，但 **cmdstanr** 包对该算法的支持还在开发中。
+```{r}
+# Pathfinder 算法
+fit_pathfinder_logit <- mod_logit_lasso$pathfinder(
+  data = mdata, # 观测数据
+  init = 0,     # 所有参数初值设为 0
+  refresh = 0,  # 不显示迭代进程
+  num_threads = 1,    # 单线程
+  seed = 20232023 # 随机数种子
+)
+
+fit_pathfinder_logit$summary(c("alpha", "beta", "lambda", "lp__"))
+```
 
 ## 习题
 
