@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="zh-Hans" xml:lang="zh-Hans"><head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.4.515">
+<meta name="generator" content="quarto-1.4.527">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 <title>R 语言数据分析实战 - 42&nbsp; 回归问题</title>
 <style>
@@ -113,6 +113,7 @@ div.csl-indent {
     "search-more-match-text": "更多匹配结果",
     "search-more-matches-text": "更多匹配结果",
     "search-clear-button-title": "清除",
+    "search-text-placeholder": "",
     "search-detached-cancel-button-title": "取消",
     "search-submit-button-title": "提交",
     "search-label": "搜索"
@@ -131,7 +132,32 @@ MathJax ={
     }
   }
 };
-</script><script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script><script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+</script><script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script><script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script><script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 </head>
 <body class="nav-sidebar floating">
 
@@ -781,8 +807,8 @@ MathJax ={
 #&gt; VALIDATION: RMSEP
 #&gt; Cross-validated using 10 random segments.
 #&gt;        (Intercept)  1 comps  2 comps  3 comps  4 comps  5 comps  6 comps
-#&gt; CV           9.206    8.026     7.89    7.628    6.503    5.890    5.743
-#&gt; adjCV        9.206    8.025     7.89    7.626    6.504    5.884    5.739
+#&gt; CV           9.206    8.045    7.915    7.657    6.568    5.948    5.775
+#&gt; adjCV        9.206    8.043    7.915    7.654    6.561    5.940    5.769
 #&gt; 
 #&gt; TRAINING: % variance explained
 #&gt;       1 comps  2 comps  3 comps  4 comps  5 comps  6 comps
@@ -820,8 +846,8 @@ MathJax ={
 #&gt; VALIDATION: RMSEP
 #&gt; Cross-validated using 10 random segments.
 #&gt;        (Intercept)  1 comps  2 comps  3 comps  4 comps  5 comps  6 comps
-#&gt; CV           9.206    8.055    8.032    7.805    7.778    7.599    6.055
-#&gt; adjCV        9.206    8.053    8.030    7.803    7.775    7.601    6.047
+#&gt; CV           9.206    8.038    8.013    7.807    7.779    7.658    6.045
+#&gt; adjCV        9.206    8.038    8.012    7.804    7.776    7.686    6.038
 #&gt; 
 #&gt; TRAINING: % variance explained
 #&gt;       1 comps  2 comps  3 comps  4 comps  5 comps  6 comps
@@ -910,8 +936,8 @@ MathJax ={
 <span id="cb14-4"><a href="#cb14-4"></a>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div id="fig-ridge-glmnet" class="quarto-layout-panel">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-ridge-glmnet-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-<div class="quarto-layout-row quarto-layout-valign-top">
-<div class="cell-output-display quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-ridge-glmnet" style="flex-basis: 50.0%;justify-content: center;">
+<div class="quarto-layout-row">
+<div class="cell-output-display quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-ridge-glmnet" style="flex-basis: 50.0%;justify-content: flex-start;display: flex;">
 <div id="fig-ridge-glmnet-1" class="quarto-figure quarto-figure-center anchored" width="480">
 <figure class="quarto-float quarto-subfloat-fig figure"><div aria-describedby="fig-ridge-glmnet-1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <img src="regression-problems_files/figure-html/fig-ridge-glmnet-1.png" class="img-fluid figure-img" data-ref-parent="fig-ridge-glmnet" width="480">
@@ -921,7 +947,7 @@ MathJax ={
 </figcaption></figure>
 </div>
 </div>
-<div class="cell-output-display quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-ridge-glmnet" style="flex-basis: 50.0%;justify-content: center;">
+<div class="cell-output-display quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-ridge-glmnet" style="flex-basis: 50.0%;justify-content: flex-start;display: flex;">
 <div id="fig-ridge-glmnet-2" class="quarto-figure quarto-figure-center anchored" width="480">
 <figure class="quarto-float quarto-subfloat-fig figure"><div aria-describedby="fig-ridge-glmnet-2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <img src="regression-problems_files/figure-html/fig-ridge-glmnet-2.png" class="img-fluid figure-img" data-ref-parent="fig-ridge-glmnet" width="480">
@@ -978,8 +1004,8 @@ MathJax ={
 <span id="cb20-5"><a href="#cb20-5"></a>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div id="fig-lasso-glmnet" class="quarto-layout-panel">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-lasso-glmnet-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-<div class="quarto-layout-row quarto-layout-valign-top">
-<div class="cell-output-display quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-lasso-glmnet" style="flex-basis: 50.0%;justify-content: center;">
+<div class="quarto-layout-row">
+<div class="cell-output-display quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-lasso-glmnet" style="flex-basis: 50.0%;justify-content: flex-start;display: flex;">
 <div id="fig-lasso-glmnet-1" class="quarto-figure quarto-figure-center anchored" width="480">
 <figure class="quarto-float quarto-subfloat-fig figure"><div aria-describedby="fig-lasso-glmnet-1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <img src="regression-problems_files/figure-html/fig-lasso-glmnet-1.png" class="img-fluid figure-img" data-ref-parent="fig-lasso-glmnet" width="480">
@@ -989,7 +1015,7 @@ MathJax ={
 </figcaption></figure>
 </div>
 </div>
-<div class="cell-output-display quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-lasso-glmnet" style="flex-basis: 50.0%;justify-content: center;">
+<div class="cell-output-display quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-lasso-glmnet" style="flex-basis: 50.0%;justify-content: flex-start;display: flex;">
 <div id="fig-lasso-glmnet-2" class="quarto-figure quarto-figure-center anchored" width="480">
 <figure class="quarto-float quarto-subfloat-fig figure"><div aria-describedby="fig-lasso-glmnet-2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <img src="regression-problems_files/figure-html/fig-lasso-glmnet-2.png" class="img-fluid figure-img" data-ref-parent="fig-lasso-glmnet" width="480">
@@ -1046,8 +1072,8 @@ MathJax ={
 <span id="cb26-5"><a href="#cb26-5"></a>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div id="fig-elasticnet-glmnet" class="quarto-layout-panel">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-elasticnet-glmnet-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-<div class="quarto-layout-row quarto-layout-valign-top">
-<div class="cell-output-display quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-elasticnet-glmnet" style="flex-basis: 50.0%;justify-content: center;">
+<div class="quarto-layout-row">
+<div class="cell-output-display quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-elasticnet-glmnet" style="flex-basis: 50.0%;justify-content: flex-start;display: flex;">
 <div id="fig-elasticnet-glmnet-1" class="quarto-figure quarto-figure-center anchored" width="480">
 <figure class="quarto-float quarto-subfloat-fig figure"><div aria-describedby="fig-elasticnet-glmnet-1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <img src="regression-problems_files/figure-html/fig-elasticnet-glmnet-1.png" class="img-fluid figure-img" data-ref-parent="fig-elasticnet-glmnet" width="480">
@@ -1057,7 +1083,7 @@ MathJax ={
 </figcaption></figure>
 </div>
 </div>
-<div class="cell-output-display quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-elasticnet-glmnet" style="flex-basis: 50.0%;justify-content: center;">
+<div class="cell-output-display quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-elasticnet-glmnet" style="flex-basis: 50.0%;justify-content: flex-start;display: flex;">
 <div id="fig-elasticnet-glmnet-2" class="quarto-figure quarto-figure-center anchored" width="480">
 <figure class="quarto-float quarto-subfloat-fig figure"><div aria-describedby="fig-elasticnet-glmnet-2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <img src="regression-problems_files/figure-html/fig-elasticnet-glmnet-2.png" class="img-fluid figure-img" data-ref-parent="fig-elasticnet-glmnet" width="480">
@@ -1130,8 +1156,8 @@ MathJax ={
 <span id="cb32-2"><a href="#cb32-2"></a><span class="fu">plot</span>(fit_adaptive_lasso)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div id="fig-adaptive-lasso" class="quarto-layout-panel">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-adaptive-lasso-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-<div class="quarto-layout-row quarto-layout-valign-top">
-<div class="cell-output-display quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-adaptive-lasso" style="flex-basis: 50.0%;justify-content: center;">
+<div class="quarto-layout-row">
+<div class="cell-output-display quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-adaptive-lasso" style="flex-basis: 50.0%;justify-content: flex-start;display: flex;">
 <div id="fig-adaptive-lasso-1" class="quarto-figure quarto-figure-center anchored" width="384">
 <figure class="quarto-float quarto-subfloat-fig figure"><div aria-describedby="fig-adaptive-lasso-1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <img src="regression-problems_files/figure-html/fig-adaptive-lasso-1.png" class="img-fluid figure-img" data-ref-parent="fig-adaptive-lasso" width="384">
@@ -1141,7 +1167,7 @@ MathJax ={
 </figcaption></figure>
 </div>
 </div>
-<div class="cell-output-display quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-adaptive-lasso" style="flex-basis: 50.0%;justify-content: center;">
+<div class="cell-output-display quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-adaptive-lasso" style="flex-basis: 50.0%;justify-content: flex-start;display: flex;">
 <div id="fig-adaptive-lasso-2" class="quarto-figure quarto-figure-center anchored" width="384">
 <figure class="quarto-float quarto-subfloat-fig figure"><div aria-describedby="fig-adaptive-lasso-2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <img src="regression-problems_files/figure-html/fig-adaptive-lasso-2.png" class="img-fluid figure-img" data-ref-parent="fig-adaptive-lasso" width="384">
@@ -1492,8 +1518,8 @@ MathJax ={
 <span id="cb71-2"><a href="#cb71-2"></a><span class="fu">plot</span>(fit_lars_lar)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div id="fig-lars-lasso" class="quarto-layout-panel">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-lars-lasso-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-<div class="quarto-layout-row quarto-layout-valign-top">
-<div class="cell-output-display quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-lars-lasso" style="flex-basis: 50.0%;justify-content: center;">
+<div class="quarto-layout-row">
+<div class="cell-output-display quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-lars-lasso" style="flex-basis: 50.0%;justify-content: flex-start;display: flex;">
 <div id="fig-lars-lasso-1" class="quarto-figure quarto-figure-center anchored" width="384">
 <figure class="quarto-float quarto-subfloat-fig figure"><div aria-describedby="fig-lars-lasso-1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <img src="regression-problems_files/figure-html/fig-lars-lasso-1.png" class="img-fluid figure-img" data-ref-parent="fig-lars-lasso" width="384">
@@ -1503,7 +1529,7 @@ MathJax ={
 </figcaption></figure>
 </div>
 </div>
-<div class="cell-output-display quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-lars-lasso" style="flex-basis: 50.0%;justify-content: center;">
+<div class="cell-output-display quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-lars-lasso" style="flex-basis: 50.0%;justify-content: flex-start;display: flex;">
 <div id="fig-lars-lasso-2" class="quarto-figure quarto-figure-center anchored" width="384">
 <figure class="quarto-float quarto-subfloat-fig figure"><div aria-describedby="fig-lars-lasso-2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <img src="regression-problems_files/figure-html/fig-lars-lasso-2.png" class="img-fluid figure-img" data-ref-parent="fig-lars-lasso" width="384">
@@ -1532,8 +1558,8 @@ MathJax ={
 <span id="cb72-10"><a href="#cb72-10"></a>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div id="fig-cv-lars" class="quarto-layout-panel">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-cv-lars-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-<div class="quarto-layout-row quarto-layout-valign-top">
-<div class="cell-output-display quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-cv-lars" style="flex-basis: 50.0%;justify-content: center;">
+<div class="quarto-layout-row">
+<div class="cell-output-display quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-cv-lars" style="flex-basis: 50.0%;justify-content: flex-start;display: flex;">
 <div id="fig-cv-lars-1" class="quarto-figure quarto-figure-center anchored" width="480">
 <figure class="quarto-float quarto-subfloat-fig figure"><div aria-describedby="fig-cv-lars-1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <img src="regression-problems_files/figure-html/fig-cv-lars-1.png" class="img-fluid figure-img" data-ref-parent="fig-cv-lars" width="480">
@@ -1543,7 +1569,7 @@ MathJax ={
 </figcaption></figure>
 </div>
 </div>
-<div class="cell-output-display quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-cv-lars" style="flex-basis: 50.0%;justify-content: center;">
+<div class="cell-output-display quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-cv-lars" style="flex-basis: 50.0%;justify-content: flex-start;display: flex;">
 <div id="fig-cv-lars-2" class="quarto-figure quarto-figure-center anchored" width="480">
 <figure class="quarto-float quarto-subfloat-fig figure"><div aria-describedby="fig-cv-lars-2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <img src="regression-problems_files/figure-html/fig-cv-lars-2.png" class="img-fluid figure-img" data-ref-parent="fig-cv-lars" width="480">
@@ -1575,8 +1601,8 @@ MathJax ={
 <span id="cb74-2"><a href="#cb74-2"></a><span class="fu">plot</span>(fit_abess, <span class="at">type =</span> <span class="st">"tune"</span>, <span class="at">main =</span> <span class="st">"交叉验证筛选变量个数"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div id="fig-abess-lambda" class="quarto-layout-panel">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-abess-lambda-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-<div class="quarto-layout-row quarto-layout-valign-top">
-<div class="cell-output-display quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-abess-lambda" style="flex-basis: 50.0%;justify-content: center;">
+<div class="quarto-layout-row">
+<div class="cell-output-display quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-abess-lambda" style="flex-basis: 50.0%;justify-content: flex-start;display: flex;">
 <div id="fig-abess-lambda-1" class="quarto-figure quarto-figure-center anchored" width="480">
 <figure class="quarto-float quarto-subfloat-fig figure"><div aria-describedby="fig-abess-lambda-1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <img src="regression-problems_files/figure-html/fig-abess-lambda-1.png" class="img-fluid figure-img" data-ref-parent="fig-abess-lambda" width="480">
@@ -1586,7 +1612,7 @@ MathJax ={
 </figcaption></figure>
 </div>
 </div>
-<div class="cell-output-display quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-abess-lambda" style="flex-basis: 50.0%;justify-content: center;">
+<div class="cell-output-display quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-abess-lambda" style="flex-basis: 50.0%;justify-content: flex-start;display: flex;">
 <div id="fig-abess-lambda-2" class="quarto-figure quarto-figure-center anchored" width="480">
 <figure class="quarto-float quarto-subfloat-fig figure"><div aria-describedby="fig-abess-lambda-2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <img src="regression-problems_files/figure-html/fig-abess-lambda-2.png" class="img-fluid figure-img" data-ref-parent="fig-abess-lambda" width="480">
@@ -1639,12 +1665,12 @@ MathJax ={
 #&gt;  parameter : epsilon = 0.1  cost C = 1 
 #&gt; 
 #&gt; Gaussian Radial Basis kernel function. 
-#&gt;  Hyperparameter : sigma =  0.102621202742628 
+#&gt;  Hyperparameter : sigma =  0.115169271969748 
 #&gt; 
-#&gt; Number of Support Vectors : 339 
+#&gt; Number of Support Vectors : 334 
 #&gt; 
-#&gt; Objective Function Value : -79.6324 
-#&gt; Training error : 0.096994</code></pre>
+#&gt; Objective Function Value : -79.1046 
+#&gt; Training error : 0.093866</code></pre>
 </div>
 </div>
 <div class="cell">
@@ -1653,7 +1679,7 @@ MathJax ={
 <span id="cb79-3"><a href="#cb79-3"></a><span class="co"># RMSE</span></span>
 <span id="cb79-4"><a href="#cb79-4"></a><span class="fu">rmse</span>(Boston<span class="sc">$</span>medv, pred_medv_svm)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>#&gt; [1] 2.864336</code></pre>
+<pre><code>#&gt; [1] 2.817769</code></pre>
 </div>
 </div>
 </section><section id="sec-nnet-regression" class="level2" data-number="42.4"><h2 data-number="42.4" class="anchored" data-anchor-id="sec-nnet-regression">
@@ -1671,7 +1697,7 @@ MathJax ={
 <span id="cb81-9"><a href="#cb81-9"></a>pred_medv_nnet <span class="ot">&lt;-</span> <span class="fu">predict</span>(fit_nnet, <span class="at">newdata =</span> Boston[, <span class="sc">-</span><span class="dv">14</span>], <span class="at">type =</span> <span class="st">"raw"</span>)</span>
 <span id="cb81-10"><a href="#cb81-10"></a><span class="fu">rmse</span>(Boston<span class="sc">$</span>medv, pred_medv_nnet)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>#&gt; [1] 3.278019</code></pre>
+<pre><code>#&gt; [1] 2.755992</code></pre>
 </div>
 </div>
 </section><section id="sec-rpart-regression" class="level2" data-number="42.5"><h2 data-number="42.5" class="anchored" data-anchor-id="sec-rpart-regression">
@@ -1717,13 +1743,13 @@ MathJax ={
 #&gt;                      Number of trees: 500
 #&gt; No. of variables tried at each split: 4
 #&gt; 
-#&gt;           Mean of squared residuals: 9.852708
-#&gt;                     % Var explained: 88.33</code></pre>
+#&gt;           Mean of squared residuals: 9.952852
+#&gt;                     % Var explained: 88.21</code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb88"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb88-1"><a href="#cb88-1"></a>pred_medv_rf <span class="ot">&lt;-</span> <span class="fu">predict</span>(fit_rf, <span class="at">newdata =</span> Boston[, <span class="sc">-</span><span class="dv">14</span>])</span>
 <span id="cb88-2"><a href="#cb88-2"></a><span class="fu">rmse</span>(Boston<span class="sc">$</span>medv, pred_medv_rf)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>#&gt; [1] 1.400718</code></pre>
+<pre><code>#&gt; [1] 1.393163</code></pre>
 </div>
 </div>
 </section><section id="sec-boosting-regression" class="level2" data-number="42.7"><h2 data-number="42.7" class="anchored" data-anchor-id="sec-boosting-regression">
@@ -2076,27 +2102,6 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
       }
     }
     stripColumnClz(note)
-    const typesetMath = (el) => {
-      if (window.MathJax) {
-        // MathJax Typeset
-        window.MathJax.typeset([el]);
-      } else if (window.katex) {
-        // KaTeX Render
-        var mathElements = el.getElementsByClassName("math");
-        var macros = [];
-        for (var i = 0; i < mathElements.length; i++) {
-          var texText = mathElements[i].firstChild;
-          if (mathElements[i].tagName == "SPAN") {
-            window.katex.render(texText.data, mathElements[i], {
-              displayMode: mathElements[i].classList.contains('display'),
-              throwOnError: false,
-              macros: macros,
-              fleqn: false
-            });
-          }
-        }
-      }
-    }
     if (id === null || id.startsWith('sec-')) {
       // Special case sections, only their first couple elements
       const container = document.createElement("div");
@@ -2111,10 +2116,14 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
             break;
           }
         }
-        typesetMath(container);
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
         return container.innerHTML
       } else {
-        typesetMath(note);
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
         return note.innerHTML;
       }
     } else {
@@ -2123,7 +2132,9 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
       if (anchorLink) {
         anchorLink.remove();
       }
-      typesetMath(note);
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
       return note.innerHTML;
     }
   }
@@ -2359,4 +2370,4 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 
 
 
-</body></html>
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/XiangyunHuang/data-analysis-in-action/blob/main/regression-problems.qmd" class="toc-action"><i class="bi bi-github"></i>查看代码</a></li></ul></div></div></div></footer></body></html>

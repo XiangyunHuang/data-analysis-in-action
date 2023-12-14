@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="zh-Hans" xml:lang="zh-Hans"><head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.4.515">
+<meta name="generator" content="quarto-1.4.527">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 <title>R 语言数据分析实战 - 15&nbsp; 交互应用</title>
 <style>
@@ -93,6 +93,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     "search-more-match-text": "更多匹配结果",
     "search-more-matches-text": "更多匹配结果",
     "search-clear-button-title": "清除",
+    "search-text-placeholder": "",
     "search-detached-cancel-button-title": "取消",
     "search-submit-button-title": "提交",
     "search-label": "搜索"
@@ -1129,8 +1130,8 @@ MathJax ={
 <div class="cell">
 <div id="fig-shiny-ecosystem" class="cell-output-display quarto-figure quarto-figure-center anchored">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-shiny-ecosystem-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-<div class="nomnoml html-widget html-fill-item" id="htmlwidget-cd40eb032ac17082feea" style="width:100%;height:464px;"></div>
-<script type="application/json" data-for="htmlwidget-cd40eb032ac17082feea">{"x":{"code":"\n#fill: #FEFEFF\n#lineWidth: 1\n#zoom: 4\n#direction: right\n\n#stroke: #26A63A\n#.box: dashed visual=ellipse\n#direction: down\n\n[<box>HTML]       -> [网页三剑客]\n[<box>JavaScript] -> [网页三剑客]\n[<box>CSS]        -> [<table>网页三剑客|htmlwidgets|htmltools||sass|bslib||thematic|jquerylib]\n\n[设计布局|bs4Dash|flexdashboard|shinydashboard] -> [<actor>开发应用|R Shiny]\n[设计交互|waiter|shinyFeedback|shinyToastify] -> [<actor>开发应用|R Shiny]\n[权限代理|shinyproxy|shinyauthr|shinymanager] -> [<actor>开发应用|R Shiny]\n\n[网页三剑客]  -> [<actor>开发应用|R Shiny]\n[网页三剑客]  -> [<actor>开发应用|R Shiny]\n[网页三剑客]  -> [<actor>开发应用|R Shiny]\n\n[开发应用] <- [<table>处理数据|Base R|SQL||data.table|dplyr||tidyr|purrr]\n[开发应用] <- [<table>制作表格|DT|gt||reactable|formattable||kableExtra|sparkline]\n[开发应用] <- [<table>制作图形|ggplot2|plotly||echarts4r|leaflet||dygraphs|visNetwork]","svg":false,"png":null},"evals":[],"jsHooks":[]}</script>
+<div class="nomnoml html-widget html-fill-item" id="htmlwidget-79cb675c010b6877ca27" style="width:100%;height:464px;"></div>
+<script type="application/json" data-for="htmlwidget-79cb675c010b6877ca27">{"x":{"code":"\n#fill: #FEFEFF\n#lineWidth: 1\n#zoom: 4\n#direction: right\n\n#stroke: #26A63A\n#.box: dashed visual=ellipse\n#direction: down\n\n[<box>HTML]       -> [网页三剑客]\n[<box>JavaScript] -> [网页三剑客]\n[<box>CSS]        -> [<table>网页三剑客|htmlwidgets|htmltools||sass|bslib||thematic|jquerylib]\n\n[设计布局|bs4Dash|flexdashboard|shinydashboard] -> [<actor>开发应用|R Shiny]\n[设计交互|waiter|shinyFeedback|shinyToastify] -> [<actor>开发应用|R Shiny]\n[权限代理|shinyproxy|shinyauthr|shinymanager] -> [<actor>开发应用|R Shiny]\n\n[网页三剑客]  -> [<actor>开发应用|R Shiny]\n[网页三剑客]  -> [<actor>开发应用|R Shiny]\n[网页三剑客]  -> [<actor>开发应用|R Shiny]\n\n[开发应用] <- [<table>处理数据|Base R|SQL||data.table|dplyr||tidyr|purrr]\n[开发应用] <- [<table>制作表格|DT|gt||reactable|formattable||kableExtra|sparkline]\n[开发应用] <- [<table>制作图形|ggplot2|plotly||echarts4r|leaflet||dygraphs|visNetwork]","svg":false,"png":null},"evals":[],"jsHooks":[]}</script>
 </div>
 <figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-shiny-ecosystem-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 图&nbsp;15.1: Shiny 生态系统
@@ -1436,27 +1437,6 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
       }
     }
     stripColumnClz(note)
-    const typesetMath = (el) => {
-      if (window.MathJax) {
-        // MathJax Typeset
-        window.MathJax.typeset([el]);
-      } else if (window.katex) {
-        // KaTeX Render
-        var mathElements = el.getElementsByClassName("math");
-        var macros = [];
-        for (var i = 0; i < mathElements.length; i++) {
-          var texText = mathElements[i].firstChild;
-          if (mathElements[i].tagName == "SPAN") {
-            window.katex.render(texText.data, mathElements[i], {
-              displayMode: mathElements[i].classList.contains('display'),
-              throwOnError: false,
-              macros: macros,
-              fleqn: false
-            });
-          }
-        }
-      }
-    }
     if (id === null || id.startsWith('sec-')) {
       // Special case sections, only their first couple elements
       const container = document.createElement("div");
@@ -1471,10 +1451,14 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
             break;
           }
         }
-        typesetMath(container);
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
         return container.innerHTML
       } else {
-        typesetMath(note);
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
         return note.innerHTML;
       }
     } else {
@@ -1483,7 +1467,9 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
       if (anchorLink) {
         anchorLink.remove();
       }
-      typesetMath(note);
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
       return note.innerHTML;
     }
   }
@@ -1719,4 +1705,4 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 
 
 
-</body></html>
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/XiangyunHuang/data-analysis-in-action/blob/main/interactive-applications.qmd" class="toc-action"><i class="bi bi-github"></i>查看代码</a></li></ul></div></div></div></footer></body></html>

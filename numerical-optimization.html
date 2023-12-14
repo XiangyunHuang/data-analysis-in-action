@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="zh-Hans" xml:lang="zh-Hans"><head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.4.515">
+<meta name="generator" content="quarto-1.4.527">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 <title>R 语言数据分析实战 - 31&nbsp; 数值优化</title>
 <style>
@@ -113,6 +113,7 @@ div.csl-indent {
     "search-more-match-text": "更多匹配结果",
     "search-more-matches-text": "更多匹配结果",
     "search-clear-button-title": "清除",
+    "search-text-placeholder": "",
     "search-detached-cancel-button-title": "取消",
     "search-submit-button-title": "提交",
     "search-label": "搜索"
@@ -132,7 +133,32 @@ MathJax ={
   }
 };
 </script><script src="site_libs/quarto-diagram/mermaid.min.js"></script><script src="site_libs/quarto-diagram/mermaid-init.js"></script><link href="site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
-<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script><script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script><script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script><script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 </head>
 <body class="nav-sidebar floating">
 
@@ -642,7 +668,7 @@ MathJax ={
 </div>
 <p>本章介绍五类典型的优化问题及 R 语言求解过程，按从易到难的顺序分别是线性优化、凸二次优化、凸锥优化、非线性优化、整数优化。学习完本章内容，读者可以灵活运用各类软件工具包解决各类标准优化问题。本章内容不涉及优化算法理论，对理论感兴趣的读者可以寻着 R 包参考文献或者相关书籍进一步学习。</p>
 <p>除了 R 软件内置一些数值优化求解器，R 语言社区还有大量数值优化方面的函数和 R 包。特别是 <strong>ROI</strong> 包 <span class="citation" data-cites="ROI2020">(<a href="references.html#ref-ROI2020" role="doc-biblioref">Theußl, Schwendinger, 和 Hornik 2020</a>)</span>，它通过插件包对 20 多个 R 包提供统一的函数调用方式，相当于一个运筹优化方面的基础设施平台，极大地方便学习和使用。</p>
-<div class="cell" data-fig-width="6.5">
+<div class="cell" data-fig-width="6.5" data-layout-align="default">
 <div class="cell-output-display">
 <div id="fig-roi-plugin" class="quarto-figure quarto-figure-center anchored">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-roi-plugin-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
@@ -1936,8 +1962,8 @@ f(x) =
 <span id="cb86-59"><a href="#cb86-59"></a>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details><div id="fig-super-function" class="quarto-layout-panel">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-super-function-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-<div class="quarto-layout-row quarto-layout-valign-top">
-<div class="cell-output-display quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-super-function" style="flex-basis: 100.0%;justify-content: center;">
+<div class="quarto-layout-row">
+<div class="cell-output-display quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-super-function" style="flex-basis: 100.0%;justify-content: flex-start;display: flex;">
 <div id="fig-super-function-1" class="quarto-figure quarto-figure-center anchored" width="432">
 <figure class="quarto-float quarto-subfloat-fig figure"><div aria-describedby="fig-super-function-1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <img src="numerical-optimization_files/figure-html/fig-super-function-1.png" class="img-fluid figure-img" data-ref-parent="fig-super-function" width="432">
@@ -1948,8 +1974,8 @@ f(x) =
 </div>
 </div>
 </div>
-<div class="quarto-layout-row quarto-layout-valign-top">
-<div class="cell-output-display quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-super-function" style="flex-basis: 100.0%;justify-content: center;">
+<div class="quarto-layout-row">
+<div class="cell-output-display quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-super-function" style="flex-basis: 100.0%;justify-content: flex-start;display: flex;">
 <div id="fig-super-function-2" class="quarto-figure quarto-figure-center anchored" width="432">
 <figure class="quarto-float quarto-subfloat-fig figure"><div aria-describedby="fig-super-function-2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <img src="numerical-optimization_files/figure-html/fig-super-function-2.png" class="img-fluid figure-img" data-ref-parent="fig-super-function" width="432">
@@ -1974,11 +2000,11 @@ f(x) =
 <span id="cb87-5"><a href="#cb87-5"></a>nlp <span class="ot">&lt;-</span> <span class="fu">ROI_solve</span>(op, <span class="at">solver =</span> <span class="st">"nloptr.directL"</span>)</span>
 <span id="cb87-6"><a href="#cb87-6"></a>nlp<span class="sc">$</span>solution</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>#&gt; [1] -21.99115   0.00000</code></pre>
+<pre><code>#&gt; [1]  0.00000 22.22222</code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb89"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb89-1"><a href="#cb89-1"></a>nlp<span class="sc">$</span>objval</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>#&gt; [1] -1</code></pre>
+<pre><code>#&gt; [1] -0.9734211</code></pre>
 </div>
 </div>
 <p>结果还是陷入局部最优解。运筹优化方面的商业软件，著名的有 Lingo 和 Matlab，下面采用 Lingo 20 求解，Lingo 代码如下：</p>
@@ -2321,15 +2347,14 @@ b = \begin{bmatrix}
 <span id="cb114-2"><a href="#cb114-2"></a><span class="co"># 目标函数值</span></span>
 <span id="cb114-3"><a href="#cb114-3"></a>nlp<span class="sc">$</span>objval</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>#&gt; [1] 368.1061</code></pre>
+<pre><code>#&gt; [1] 368.1059</code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb116"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb116-1"><a href="#cb116-1"></a><span class="co"># 最优解</span></span>
 <span id="cb116-2"><a href="#cb116-2"></a>nlp<span class="sc">$</span>solution</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>#&gt;  [1] 2.000000 2.000000 2.000000 2.000000 2.000000 2.000000 2.000000 2.000000
-#&gt;  [9] 2.000000 2.000000 2.000000 2.000000 2.000000 2.000000 2.000000 2.000000
-#&gt; [17] 2.000000 2.000000 2.000000 2.000000 2.000000 2.000000 2.000000 2.109093
-#&gt; [25] 4.000000</code></pre>
+<pre><code>#&gt;  [1] 2.00000 2.00000 2.00000 2.00000 2.00000 2.00000 2.00000 2.00000 2.00000
+#&gt; [10] 2.00000 2.00000 2.00000 2.00000 2.00000 2.00000 2.00000 2.00000 2.00000
+#&gt; [19] 2.00000 2.00000 2.00000 2.00000 2.00000 2.10913 4.00000</code></pre>
 </div>
 </div>
 </section></section><section id="sec-linearly-constrained-optimization" class="level3" data-number="31.4.5"><h3 data-number="31.4.5" class="anchored" data-anchor-id="sec-linearly-constrained-optimization">
@@ -2682,11 +2707,11 @@ b = \begin{bmatrix}
 <div class="sourceCode cell-code" id="cb145"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb145-1"><a href="#cb145-1"></a>nlp <span class="ot">&lt;-</span> <span class="fu">ROI_solve</span>(op, <span class="at">solver =</span> <span class="st">"nloptr.isres"</span>, <span class="at">start =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">5</span>, <span class="dv">5</span>, <span class="dv">1</span>))</span>
 <span id="cb145-2"><a href="#cb145-2"></a>nlp<span class="sc">$</span>solution</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>#&gt; [1] 1.220356 4.437963 4.126868 1.337658</code></pre>
+<pre><code>#&gt; [1] 1.212787 4.313650 4.321008 1.120105</code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb147"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb147-1"><a href="#cb147-1"></a>nlp<span class="sc">$</span>objval</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>#&gt; [1] 20.10039</code></pre>
+<pre><code>#&gt; [1] 17.69825</code></pre>
 </div>
 </div>
 <p>可以看出，<strong>nloptr</strong> 提供的优化能力可以覆盖 <a href="https://github.com/coin-or/Ipopt">Ipopt 求解器</a>，从以上求解的情况来看，推荐使用 <code>nloptr.slsqp</code> 求解器，这也是 Octave 的选择。</p>
@@ -3692,27 +3717,6 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
       }
     }
     stripColumnClz(note)
-    const typesetMath = (el) => {
-      if (window.MathJax) {
-        // MathJax Typeset
-        window.MathJax.typeset([el]);
-      } else if (window.katex) {
-        // KaTeX Render
-        var mathElements = el.getElementsByClassName("math");
-        var macros = [];
-        for (var i = 0; i < mathElements.length; i++) {
-          var texText = mathElements[i].firstChild;
-          if (mathElements[i].tagName == "SPAN") {
-            window.katex.render(texText.data, mathElements[i], {
-              displayMode: mathElements[i].classList.contains('display'),
-              throwOnError: false,
-              macros: macros,
-              fleqn: false
-            });
-          }
-        }
-      }
-    }
     if (id === null || id.startsWith('sec-')) {
       // Special case sections, only their first couple elements
       const container = document.createElement("div");
@@ -3727,10 +3731,14 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
             break;
           }
         }
-        typesetMath(container);
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
         return container.innerHTML
       } else {
-        typesetMath(note);
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
         return note.innerHTML;
       }
     } else {
@@ -3739,7 +3747,9 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
       if (anchorLink) {
         anchorLink.remove();
       }
-      typesetMath(note);
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
       return note.innerHTML;
     }
   }
@@ -3975,4 +3985,4 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 
 
 
-</body></html>
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/XiangyunHuang/data-analysis-in-action/blob/main/numerical-optimization.qmd" class="toc-action"><i class="bi bi-github"></i>查看代码</a></li></ul></div></div></div></footer></body></html>
