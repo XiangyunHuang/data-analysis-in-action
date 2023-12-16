@@ -611,8 +611,7 @@ window.Quarto = {
 <a href="#%E4%B8%80%E4%BA%9B%E9%9D%9E%E5%8F%82%E6%95%B0%E6%A8%A1%E5%9E%8B" id="toc-一些非参数模型" class="nav-link" data-scroll-target="#%E4%B8%80%E4%BA%9B%E9%9D%9E%E5%8F%82%E6%95%B0%E6%A8%A1%E5%9E%8B"><span class="header-section-number">39.3</span> 一些非参数模型</a>
   <ul class="collapse">
 <li><a href="#sec-gnu-mgcv" id="toc-sec-gnu-mgcv" class="nav-link" data-scroll-target="#sec-gnu-mgcv"><span class="header-section-number">39.3.1</span> mgcv 包</a></li>
-  <li><a href="#nnet-%E5%8C%85" id="toc-nnet-包" class="nav-link" data-scroll-target="#nnet-%E5%8C%85"><span class="header-section-number">39.3.2</span> nnet 包</a></li>
-  <li><a href="#sec-google-tensorflow" id="toc-sec-google-tensorflow" class="nav-link" data-scroll-target="#sec-google-tensorflow"><span class="header-section-number">39.3.3</span> tensorflow 框架</a></li>
+  <li><a href="#sec-google-tensorflow" id="toc-sec-google-tensorflow" class="nav-link" data-scroll-target="#sec-google-tensorflow"><span class="header-section-number">39.3.2</span> tensorflow 框架</a></li>
   </ul>
 </li>
   <li><a href="#%E4%B9%A0%E9%A2%98" id="toc-习题" class="nav-link" data-scroll-target="#%E4%B9%A0%E9%A2%98"><span class="header-section-number">39.4</span> 习题</a></li>
@@ -816,7 +815,7 @@ r_t &amp;= \mu + a_t, \quad a_t = \sigma_t \epsilon_t, \quad \epsilon_t \sim \ma
 #&gt; 
 #&gt; Mean and Variance Equation:
 #&gt;  data ~ 1 + garch(2, 0)
-#&gt; &lt;environment: 0x7fe14667b938&gt;
+#&gt; &lt;environment: 0x7fe24ddf4790&gt;
 #&gt;  [data = meituan_log_return]
 #&gt; 
 #&gt; Conditional Distribution:
@@ -843,7 +842,7 @@ r_t &amp;= \mu + a_t, \quad a_t = \sigma_t \epsilon_t, \quad \epsilon_t \sim \ma
 #&gt;  2459.91    normalized:  1.930856 
 #&gt; 
 #&gt; Description:
-#&gt;  Thu Dec 14 07:03:46 2023 by user:  
+#&gt;  Sat Dec 16 14:09:28 2023 by user:  
 #&gt; 
 #&gt; 
 #&gt; Standardised Residuals Tests:
@@ -892,7 +891,7 @@ r_t &amp;= \mu + a_t, \quad a_t = \sigma_t \epsilon_t, \quad \epsilon_t \sim \ma
 #&gt; 
 #&gt; Mean and Variance Equation:
 #&gt;  data ~ 1 + garch(1, 1)
-#&gt; &lt;environment: 0x7fe1484a9828&gt;
+#&gt; &lt;environment: 0x7fe24cfc4bb0&gt;
 #&gt;  [data = meituan_log_return]
 #&gt; 
 #&gt; Conditional Distribution:
@@ -919,7 +918,7 @@ r_t &amp;= \mu + a_t, \quad a_t = \sigma_t \epsilon_t, \quad \epsilon_t \sim \ma
 #&gt;  2478.786    normalized:  1.945672 
 #&gt; 
 #&gt; Description:
-#&gt;  Thu Dec 14 07:03:46 2023 by user:  
+#&gt;  Sat Dec 16 14:09:28 2023 by user:  
 #&gt; 
 #&gt; 
 #&gt; Standardised Residuals Tests:
@@ -964,40 +963,149 @@ r_t &amp;= \mu + a_t, \quad a_t = \sigma_t \epsilon_t, \quad \epsilon_t \sim \ma
 <div class="cell">
 <div class="sourceCode cell-code" id="cb17"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1"></a><span class="fu">library</span>(mgcv)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-</section><section id="nnet-包" class="level3" data-number="39.3.2"><h3 data-number="39.3.2" class="anchored" data-anchor-id="nnet-包">
-<span class="header-section-number">39.3.2</span> nnet 包</h3>
-<p>多层感知机是一种前馈神经网络，<strong>nnet</strong> 包的函数 <code>nnet()</code> 实现了单隐藏层的简单神经网络。</p>
+</section><section id="sec-google-tensorflow" class="level3" data-number="39.3.2"><h3 data-number="39.3.2" class="anchored" data-anchor-id="sec-google-tensorflow">
+<span class="header-section-number">39.3.2</span> tensorflow 框架</h3>
+<p>前面介绍的模型都具有非常强的可解释性，比如各个参数对模型的作用。对于复杂的时间序列数据，比较适合用复杂的模型来拟合，看重模型的泛化能力，而不那么关注模型的机理。</p>
+<p>多层感知机是一种全连接层的前馈神经网络。<strong>nnet</strong> 包的函数 <code>nnet()</code> 实现了单隐藏层的简单前馈神经网络，可用于时间序列预测，也可用于分类数据的预测。作为对比的基础，下面先用 nnet 包训练和预测数据。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1"></a><span class="co"># library(nnet) </span></span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1"></a><span class="co"># 准备数据</span></span>
+<span id="cb18-2"><a href="#cb18-2"></a>air_passengers <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(<span class="fu">embed</span>(AirPassengers, <span class="dv">4</span>))</span>
+<span id="cb18-3"><a href="#cb18-3"></a><span class="fu">colnames</span>(air_passengers) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"y"</span>, <span class="st">"x3"</span>, <span class="st">"x2"</span>, <span class="st">"x1"</span>)</span>
+<span id="cb18-4"><a href="#cb18-4"></a>data_size <span class="ot">&lt;-</span> <span class="fu">nrow</span>(air_passengers)</span>
+<span id="cb18-5"><a href="#cb18-5"></a><span class="co"># 拆分数据集</span></span>
+<span id="cb18-6"><a href="#cb18-6"></a>train_size <span class="ot">&lt;-</span> <span class="fu">floor</span>(data_size <span class="sc">*</span> <span class="fl">0.67</span>)</span>
+<span id="cb18-7"><a href="#cb18-7"></a>train_data <span class="ot">&lt;-</span> air_passengers[<span class="dv">1</span><span class="sc">:</span>train_size, ]</span>
+<span id="cb18-8"><a href="#cb18-8"></a>test_data <span class="ot">&lt;-</span> air_passengers[train_size<span class="sc">:</span>data_size, ]</span>
+<span id="cb18-9"><a href="#cb18-9"></a></span>
+<span id="cb18-10"><a href="#cb18-10"></a><span class="co"># 随机数种子对结果的影响非常大 试试 set.seed(20232023) </span></span>
+<span id="cb18-11"><a href="#cb18-11"></a><span class="fu">set.seed</span>(<span class="dv">20222022</span>) </span>
+<span id="cb18-12"><a href="#cb18-12"></a><span class="co"># 单隐藏层 8 个神经元</span></span>
+<span id="cb18-13"><a href="#cb18-13"></a>mod_nnet <span class="ot">&lt;-</span> nnet<span class="sc">::</span><span class="fu">nnet</span>(</span>
+<span id="cb18-14"><a href="#cb18-14"></a>  y <span class="sc">~</span> x1 <span class="sc">+</span> x2 <span class="sc">+</span> x3,</span>
+<span id="cb18-15"><a href="#cb18-15"></a>  <span class="at">data =</span> air_passengers, <span class="co"># 数据集</span></span>
+<span id="cb18-16"><a href="#cb18-16"></a>  <span class="at">subset =</span> <span class="dv">1</span><span class="sc">:</span>train_size, <span class="co"># 训练数据的指标向量</span></span>
+<span id="cb18-17"><a href="#cb18-17"></a>  <span class="at">linout =</span> <span class="cn">TRUE</span>, <span class="at">size =</span> <span class="dv">4</span>, <span class="at">rang =</span> <span class="fl">0.1</span>,</span>
+<span id="cb18-18"><a href="#cb18-18"></a>  <span class="at">decay =</span> <span class="fl">5e-4</span>, <span class="at">maxit =</span> <span class="dv">400</span>, <span class="at">trace =</span> <span class="cn">FALSE</span></span>
+<span id="cb18-19"><a href="#cb18-19"></a>)</span>
+<span id="cb18-20"><a href="#cb18-20"></a></span>
+<span id="cb18-21"><a href="#cb18-21"></a><span class="co"># 预测</span></span>
+<span id="cb18-22"><a href="#cb18-22"></a>train_pred <span class="ot">&lt;-</span> <span class="fu">predict</span>(mod_nnet, <span class="at">newdata =</span> air_passengers[<span class="dv">1</span><span class="sc">:</span>train_size,], <span class="at">type =</span> <span class="st">"raw"</span>)</span>
+<span id="cb18-23"><a href="#cb18-23"></a><span class="co"># 训练集 RMSE</span></span>
+<span id="cb18-24"><a href="#cb18-24"></a><span class="fu">sqrt</span>(<span class="fu">mean</span>((air_passengers[<span class="dv">1</span><span class="sc">:</span>train_size, <span class="st">"y"</span>] <span class="sc">-</span> train_pred )<span class="sc">^</span><span class="dv">2</span>))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt; [1] 21.59392</code></pre>
 </div>
-</section><section id="sec-google-tensorflow" class="level3" data-number="39.3.3"><h3 data-number="39.3.3" class="anchored" data-anchor-id="sec-google-tensorflow">
-<span class="header-section-number">39.3.3</span> tensorflow 框架</h3>
-<p>前面介绍的模型都具有非常强的可解释性，比如各个参数对模型的作用。对于复杂的时间序列数据，比较适合用复杂的模型来拟合，看重模型的泛化能力，而不那么关注模型的机理。下面用 LSTM （长短期记忆）神经网络来训练时间序列数据，预测未来一周的趋势。</p>
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1"></a><span class="co"># 预测</span></span>
+<span id="cb20-2"><a href="#cb20-2"></a>test_pred <span class="ot">&lt;-</span> <span class="fu">predict</span>(mod_nnet, <span class="at">newdata =</span> air_passengers[<span class="sc">-</span>(<span class="dv">1</span><span class="sc">:</span>train_size),], <span class="at">type =</span> <span class="st">"raw"</span>)</span>
+<span id="cb20-3"><a href="#cb20-3"></a><span class="co"># 测试集 RMSE</span></span>
+<span id="cb20-4"><a href="#cb20-4"></a><span class="fu">sqrt</span>(<span class="fu">mean</span>((air_passengers[<span class="sc">-</span>(<span class="dv">1</span><span class="sc">:</span>train_size), <span class="st">"y"</span>] <span class="sc">-</span> test_pred)<span class="sc">^</span><span class="dv">2</span>))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt; [1] 53.79107</code></pre>
+</div>
+</div>
+<p>下面将原观测序列，训练集和测试集上的预测序列放在一张图上展示。图中，红色曲线表示训练集上的预测结果，绿色曲线为测试集上预测结果。</p>
+<div class="cell" data-par="true">
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1"></a>train_pred_ts <span class="ot">&lt;-</span> <span class="fu">ts</span>(<span class="at">data =</span> train_pred, <span class="at">start =</span> <span class="fu">c</span>(<span class="dv">1949</span>, <span class="dv">4</span>), <span class="at">frequency =</span> <span class="dv">12</span>)</span>
+<span id="cb22-2"><a href="#cb22-2"></a>test_pred_ts <span class="ot">&lt;-</span> <span class="fu">ts</span>(<span class="at">data =</span> test_pred, <span class="at">start =</span> <span class="fu">c</span>(<span class="dv">1957</span>, <span class="dv">2</span>), <span class="at">frequency =</span> <span class="dv">12</span>)</span>
+<span id="cb22-3"><a href="#cb22-3"></a><span class="fu">plot</span>(AirPassengers)</span>
+<span id="cb22-4"><a href="#cb22-4"></a><span class="fu">lines</span>(train_pred_ts, <span class="at">col =</span> <span class="st">"red"</span>)</span>
+<span id="cb22-5"><a href="#cb22-5"></a><span class="fu">lines</span>(test_pred_ts, <span class="at">col =</span> <span class="st">"green"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-nnet" class="quarto-figure quarto-figure-center anchored" width="480">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-nnet-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="time-series-regression_files/figure-html/fig-nnet-1.png" class="img-fluid figure-img" width="480">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-nnet-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;39.5: 预测
+</figcaption></figure>
+</div>
+</div>
+</div>
+<p>由图可知，在测试集上，随着时间拉长，预测越来越不准。</p>
+<p>下面使用 tensorflow 包构造<strong>多层</strong>感知机训练数据和预测。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1"></a><span class="fu">library</span>(tensorflow)</span>
-<span id="cb19-2"><a href="#cb19-2"></a><span class="co"># tf$abs(x = c(-1, 1, 2))</span></span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1"></a><span class="fu">library</span>(tensorflow)</span>
+<span id="cb23-2"><a href="#cb23-2"></a><span class="fu">library</span>(keras)</span>
+<span id="cb23-3"><a href="#cb23-3"></a><span class="co"># 模型结构</span></span>
+<span id="cb23-4"><a href="#cb23-4"></a>model <span class="ot">&lt;-</span> <span class="fu">keras_model_sequential</span>() <span class="sc">|&gt;</span> </span>
+<span id="cb23-5"><a href="#cb23-5"></a>  <span class="fu">layer_dense</span>(<span class="at">units =</span> <span class="dv">12</span>, <span class="at">activation =</span> <span class="st">"relu"</span>, <span class="at">input_shape =</span> <span class="fu">c</span>(<span class="dv">3</span>)) <span class="sc">|&gt;</span> </span>
+<span id="cb23-6"><a href="#cb23-6"></a>  <span class="fu">layer_dense</span>(<span class="at">units =</span> <span class="dv">8</span>, <span class="at">activation =</span> <span class="st">"relu"</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb23-7"><a href="#cb23-7"></a>  <span class="fu">layer_dense</span>(<span class="at">units =</span> <span class="dv">1</span>)</span>
+<span id="cb23-8"><a href="#cb23-8"></a><span class="co"># 训练目标</span></span>
+<span id="cb23-9"><a href="#cb23-9"></a><span class="fu">compile</span>(model,</span>
+<span id="cb23-10"><a href="#cb23-10"></a>  <span class="at">loss =</span> <span class="st">"mse"</span>, <span class="co"># 损失函数</span></span>
+<span id="cb23-11"><a href="#cb23-11"></a>  <span class="at">optimizer =</span> <span class="st">"adam"</span>, <span class="co"># 优化器</span></span>
+<span id="cb23-12"><a href="#cb23-12"></a>  <span class="at">metrics =</span> <span class="st">"mae"</span> <span class="co"># 监控度量</span></span>
+<span id="cb23-13"><a href="#cb23-13"></a>)</span>
+<span id="cb23-14"><a href="#cb23-14"></a><span class="co"># 模型概览</span></span>
+<span id="cb23-15"><a href="#cb23-15"></a><span class="fu">summary</span>(model)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt; Model: "sequential"
+#&gt; ________________________________________________________________________________
+#&gt;  Layer (type)                       Output Shape                    Param #     
+#&gt; ================================================================================
+#&gt;  dense_2 (Dense)                    (None, 12)                      48          
+#&gt;  dense_1 (Dense)                    (None, 8)                       104         
+#&gt;  dense (Dense)                      (None, 1)                       9           
+#&gt; ================================================================================
+#&gt; Total params: 161 (644.00 Byte)
+#&gt; Trainable params: 161 (644.00 Byte)
+#&gt; Non-trainable params: 0 (0.00 Byte)
+#&gt; ________________________________________________________________________________</code></pre>
 </div>
-<p><a href="https://github.com/nredell/forecastML/">forecastML</a> 采用机器学习方法可以一次向前预测多期。</p>
+</div>
+<p>输入层为 3 个节点，中间两个隐藏层，第一层为 12 个节点，第二层为 8 个节点，全连接网络，最后输出为一层单节点，意味着单个输出。每一层都有节点和权重，参数总数为 161。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1"></a><span class="co"># 拟合模型</span></span>
+<span id="cb25-2"><a href="#cb25-2"></a>mod_mlp <span class="ot">&lt;-</span> <span class="fu">fit</span>(model,</span>
+<span id="cb25-3"><a href="#cb25-3"></a>  <span class="at">x =</span> train_data[, <span class="fu">c</span>(<span class="st">"x1"</span>, <span class="st">"x2"</span>, <span class="st">"x3"</span>)],</span>
+<span id="cb25-4"><a href="#cb25-4"></a>  <span class="at">y =</span> train_data[, <span class="st">"y"</span>],</span>
+<span id="cb25-5"><a href="#cb25-5"></a>  <span class="at">epochs =</span> <span class="dv">200</span>,</span>
+<span id="cb25-6"><a href="#cb25-6"></a>  <span class="at">batch_size =</span> <span class="dv">10</span>, <span class="co"># 每次更新梯度所用的样本量</span></span>
+<span id="cb25-7"><a href="#cb25-7"></a>  <span class="at">validation_split =</span> <span class="fl">0.2</span>, <span class="co"># 从训练数据中拆分一部分用作验证集</span></span>
+<span id="cb25-8"><a href="#cb25-8"></a>  <span class="at">verbose =</span> <span class="dv">0</span> <span class="co"># 不显示训练进度</span></span>
+<span id="cb25-9"><a href="#cb25-9"></a>)</span>
+<span id="cb25-10"><a href="#cb25-10"></a><span class="co"># 将测试数据代入模型，计算损失函数和监控度量</span></span>
+<span id="cb25-11"><a href="#cb25-11"></a><span class="fu">evaluate</span>(model, test_data[, <span class="fu">c</span>(<span class="st">"x1"</span>, <span class="st">"x2"</span>, <span class="st">"x3"</span>)], test_data[, <span class="st">"y"</span>])</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt; 2/2 - 0s - loss: 4697.5454 - mae: 54.3451 - 17ms/epoch - 8ms/step</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt;       loss        mae 
+#&gt; 4697.54541   54.34505</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1"></a><span class="co"># 测试集上的预测</span></span>
+<span id="cb28-2"><a href="#cb28-2"></a>mod_mlp_pred <span class="ot">&lt;-</span> <span class="fu">predict</span>(model, test_data[, <span class="fu">c</span>(<span class="st">"x1"</span>, <span class="st">"x2"</span>, <span class="st">"x3"</span>)]) </span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt; 2/2 - 0s - 65ms/epoch - 33ms/step</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1"></a><span class="fu">sqrt</span>(<span class="fu">mean</span>((test_data[, <span class="st">"y"</span>] <span class="sc">-</span> mod_mlp_pred)<span class="sc">^</span><span class="dv">2</span>)) <span class="co"># 计算均方根误差</span></span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt; [1] 68.53864</code></pre>
+</div>
+</div>
+<p>从 RMSE 来看，MLP（多层感知机）预测效果比单层感知机稍好些，可网络复杂度是增加很多的。</p>
+<p>下面用 LSTM （长短期记忆）神经网络来训练时间序列数据，预测未来一周的趋势。输出不再是一天（单点输出），而是 7 天的预测值（多点输出）。参考 <strong>tensorflow</strong> 包的<a href="https://tensorflow.rstudio.com/guides/keras/working_with_rnns#introduction">官网</a>中 RNN 递归神经网络的介绍。</p>
 </section></section><section id="习题" class="level2" data-number="39.4"><h2 data-number="39.4" class="anchored" data-anchor-id="习题">
 <span class="header-section-number">39.4</span> 习题</h2>
 <ol type="1">
 <li>
 <p>基于 R 软件内置的数据集 <code>sunspots</code> 和 <code>sunspot.month</code> 比较 INLA 和 <strong>mgcv</strong> 框架的预测效果。</p>
 <div class="cell">
-<details class="code-fold"><summary>代码</summary><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1"></a>sunspots_tbl <span class="ot">&lt;-</span> broom<span class="sc">::</span><span class="fu">tidy</span>(sunspots)</span>
-<span id="cb20-2"><a href="#cb20-2"></a>sunspots_month_tbl <span class="ot">&lt;-</span> broom<span class="sc">::</span><span class="fu">tidy</span>(sunspot.month)</span>
-<span id="cb20-3"><a href="#cb20-3"></a><span class="fu">ggplot</span>() <span class="sc">+</span></span>
-<span id="cb20-4"><a href="#cb20-4"></a>  <span class="fu">geom_line</span>(<span class="at">data =</span> sunspots_month_tbl, <span class="fu">aes</span>(<span class="at">x =</span> index, <span class="at">y =</span> value), <span class="at">color =</span> <span class="st">"red"</span>) <span class="sc">+</span></span>
-<span id="cb20-5"><a href="#cb20-5"></a>  <span class="fu">geom_line</span>(<span class="at">data =</span> sunspots_tbl, <span class="fu">aes</span>(<span class="at">x =</span> index, <span class="at">y =</span> value)) <span class="sc">+</span></span>
-<span id="cb20-6"><a href="#cb20-6"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span></span>
-<span id="cb20-7"><a href="#cb20-7"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"年月"</span>, <span class="at">y =</span> <span class="st">"数量"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<details class="code-fold"><summary>代码</summary><div class="sourceCode cell-code" id="cb32"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1"></a>sunspots_tbl <span class="ot">&lt;-</span> broom<span class="sc">::</span><span class="fu">tidy</span>(sunspots)</span>
+<span id="cb32-2"><a href="#cb32-2"></a>sunspots_month_tbl <span class="ot">&lt;-</span> broom<span class="sc">::</span><span class="fu">tidy</span>(sunspot.month)</span>
+<span id="cb32-3"><a href="#cb32-3"></a><span class="fu">ggplot</span>() <span class="sc">+</span></span>
+<span id="cb32-4"><a href="#cb32-4"></a>  <span class="fu">geom_line</span>(<span class="at">data =</span> sunspots_month_tbl, <span class="fu">aes</span>(<span class="at">x =</span> index, <span class="at">y =</span> value), <span class="at">color =</span> <span class="st">"red"</span>) <span class="sc">+</span></span>
+<span id="cb32-5"><a href="#cb32-5"></a>  <span class="fu">geom_line</span>(<span class="at">data =</span> sunspots_tbl, <span class="fu">aes</span>(<span class="at">x =</span> index, <span class="at">y =</span> value)) <span class="sc">+</span></span>
+<span id="cb32-6"><a href="#cb32-6"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span></span>
+<span id="cb32-7"><a href="#cb32-7"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"年月"</span>, <span class="at">y =</span> <span class="st">"数量"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details><div class="cell-output-display">
 <div id="fig-sunspots" class="quarto-figure quarto-figure-center anchored" width="672">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-sunspots-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <img src="time-series-regression_files/figure-html/fig-sunspots-1.png" class="img-fluid figure-img" width="672">
 </div>
 <figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-sunspots-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-图&nbsp;39.5: 预测月粒度太阳黑子数量
+图&nbsp;39.6: 预测月粒度太阳黑子数量
 </figcaption></figure>
 </div>
 </div>

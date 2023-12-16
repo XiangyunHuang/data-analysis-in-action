@@ -112,6 +112,31 @@ MathJax ={
     }
   }
 };
+</script><script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script><script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script><script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
 </script>
 </head>
 <body class="nav-sidebar floating">
@@ -630,6 +655,100 @@ MathJax ={
 </div>
 </section><section id="坐标转化" class="level3" data-number="27.1.2"><h3 data-number="27.1.2" class="anchored" data-anchor-id="坐标转化">
 <span class="header-section-number">27.1.2</span> 坐标转化</h3>
+<p>如果知道两个投影坐标系的 EPSG 代码，输入坐标就可以完成转化。如将坐标系 <code>EPSG:4326</code> 下的坐标 <span class="math inline">\((2,49)\)</span> 投影到另一个坐标系 <code>EPSG:3857</code> 。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1"></a><span class="fu">st_transform</span>(</span>
+<span id="cb4-2"><a href="#cb4-2"></a>  <span class="at">x =</span> <span class="fu">st_sfc</span>(<span class="fu">st_point</span>(<span class="at">x =</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">49</span>)), <span class="at">crs =</span> <span class="dv">4326</span>), <span class="at">crs =</span> <span class="dv">3857</span></span>
+<span id="cb4-3"><a href="#cb4-3"></a>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt; Geometry set for 1 feature 
+#&gt; Geometry type: POINT
+#&gt; Dimension:     XY
+#&gt; Bounding box:  xmin: 222639 ymin: 6274861 xmax: 222639 ymax: 6274861
+#&gt; Projected CRS: WGS 84 / Pseudo-Mercator</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>#&gt; POINT (222639 6274861)</code></pre>
+</div>
+</div>
+<table class="table">
+<thead><tr class="header">
+<th>名称</th>
+<th>EPSG</th>
+<th>赤道半径</th>
+<th>半轴</th>
+<th>发明者</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td>GRS80</td>
+<td>3857</td>
+<td>a=6378137.0</td>
+<td>rf=298.257222101</td>
+<td>GRS 1980(IUGG, 1980)</td>
+</tr>
+<tr class="even">
+<td>WGS84</td>
+<td>4326</td>
+<td>a=6378137.0</td>
+<td>rf=298.257223563</td>
+<td>WGS 84</td>
+</tr>
+</tbody>
+</table>
+<p>函数 <code>st_crs()</code> 查看坐标参考系的信息，比如 EPSG 代码为 4326 对应的坐标参考系统信息。我们也可以通过<a href="https://epsg.io/3832">网站</a>查询 EPSG 代码对应的坐标参考系统的详细介绍。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1"></a><span class="fu">st_crs</span>(<span class="st">"EPSG:4326"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt; Coordinate Reference System:
+#&gt;   User input: EPSG:4326 
+#&gt;   wkt:
+#&gt; GEOGCRS["WGS 84",
+#&gt;     ENSEMBLE["World Geodetic System 1984 ensemble",
+#&gt;         MEMBER["World Geodetic System 1984 (Transit)"],
+#&gt;         MEMBER["World Geodetic System 1984 (G730)"],
+#&gt;         MEMBER["World Geodetic System 1984 (G873)"],
+#&gt;         MEMBER["World Geodetic System 1984 (G1150)"],
+#&gt;         MEMBER["World Geodetic System 1984 (G1674)"],
+#&gt;         MEMBER["World Geodetic System 1984 (G1762)"],
+#&gt;         MEMBER["World Geodetic System 1984 (G2139)"],
+#&gt;         ELLIPSOID["WGS 84",6378137,298.257223563,
+#&gt;             LENGTHUNIT["metre",1]],
+#&gt;         ENSEMBLEACCURACY[2.0]],
+#&gt;     PRIMEM["Greenwich",0,
+#&gt;         ANGLEUNIT["degree",0.0174532925199433]],
+#&gt;     CS[ellipsoidal,2],
+#&gt;         AXIS["geodetic latitude (Lat)",north,
+#&gt;             ORDER[1],
+#&gt;             ANGLEUNIT["degree",0.0174532925199433]],
+#&gt;         AXIS["geodetic longitude (Lon)",east,
+#&gt;             ORDER[2],
+#&gt;             ANGLEUNIT["degree",0.0174532925199433]],
+#&gt;     USAGE[
+#&gt;         SCOPE["Horizontal component of 3D system."],
+#&gt;         AREA["World."],
+#&gt;         BBOX[-90,-180,90,180]],
+#&gt;     ID["EPSG",4326]]</code></pre>
+</div>
+</div>
+<p>地球看作一个椭球体 ELLIPSOID，长半轴 6378137 米，短半轴 298.257223563 米，椭圆形的两个轴，纬度单位 0.0174532925199433， 经度单位 0.0174532925199433 。</p>
+<p>地球是一个不规则的球体，不同的坐标参考系对地球的抽象简化不同，会体现在坐标原点、长半轴、短半轴等属性上。为了方便在平面上展示地理信息，需要将地球表面投影到平面上，墨卡托投影是其中非常重要的一种投影方式，墨卡托投影的详细介绍见 <a href="https://proj.org/operations/projections/merc.html">PROJ 网站</a> 。WGS 84 / Pseudo-Mercator 投影主要用于网页上的地理可视化，UTM 是 Universal Transverse Mercator 的缩写。360 度对应全球 60 个时区，每个时区横跨 6 经度。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1"></a><span class="fu">st_transform</span>(</span>
+<span id="cb9-2"><a href="#cb9-2"></a>  <span class="at">x =</span> <span class="fu">st_sfc</span>(<span class="fu">st_point</span>(<span class="at">x =</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">49</span>)), <span class="at">crs =</span> <span class="dv">4326</span>),</span>
+<span id="cb9-3"><a href="#cb9-3"></a>  <span class="at">crs =</span> <span class="fu">st_crs</span>(<span class="st">"+proj=utm +zone=32 +ellps=GRS80"</span>)</span>
+<span id="cb9-4"><a href="#cb9-4"></a>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt; Geometry set for 1 feature 
+#&gt; Geometry type: POINT
+#&gt; Dimension:     XY
+#&gt; Bounding box:  xmin: -11818.95 ymin: 5451107 xmax: -11818.95 ymax: 5451107
+#&gt; Projected CRS: +proj=utm +zone=32 +ellps=GRS80</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>#&gt; POINT (-11818.95 5451107)</code></pre>
+</div>
+</div>
 <p>快速简单绘图，可采用图层 <code>geom_sf()</code>，它相当于统计图层 <code>stat_sf()</code> 和坐标映射图层 <code>coord_sf()</code> 的叠加，<code>geom_sf()</code> 支持点、线和多边形等数据数据对象，可以混合叠加。 <code>coord_sf()</code> 有几个重要的参数：</p>
 <ol type="1">
 <li><p><code>crs</code>：在绘图前将各个 <code>geom_sf()</code> 图层中的<strong>数据</strong>映射到该坐标参考系。</p></li>
@@ -637,16 +756,12 @@ MathJax ={
 <li><p><code>datum</code>：经纬网线的坐标参考系，默认值 <code>sf::st_crs(4326)</code>。</p></li>
 </ol>
 <p>下图的右子图将 quakes_sf 数据集投影到坐标参考系统<a href="https://epsg.io/3460">EPSG:3460</a>。</p>
-<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1"></a><span class="fu">library</span>(ggplot2)</span>
-<span id="cb4-2"><a href="#cb4-2"></a><span class="fu">ggplot</span>() <span class="sc">+</span></span>
-<span id="cb4-3"><a href="#cb4-3"></a>  <span class="fu">geom_sf</span>(</span>
-<span id="cb4-4"><a href="#cb4-4"></a>    <span class="at">data =</span> quakes_sf, <span class="fu">aes</span>(<span class="at">color =</span> mag)</span>
-<span id="cb4-5"><a href="#cb4-5"></a>  )</span>
-<span id="cb4-6"><a href="#cb4-6"></a><span class="fu">ggplot</span>() <span class="sc">+</span></span>
-<span id="cb4-7"><a href="#cb4-7"></a>  <span class="fu">geom_sf</span>(</span>
-<span id="cb4-8"><a href="#cb4-8"></a>    <span class="at">data =</span> quakes_sf, <span class="fu">aes</span>(<span class="at">color =</span> mag)</span>
-<span id="cb4-9"><a href="#cb4-9"></a>  ) <span class="sc">+</span></span>
-<span id="cb4-10"><a href="#cb4-10"></a>  <span class="fu">coord_sf</span>(<span class="at">crs =</span> <span class="dv">3460</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb12-2"><a href="#cb12-2"></a><span class="fu">ggplot</span>() <span class="sc">+</span></span>
+<span id="cb12-3"><a href="#cb12-3"></a>  <span class="fu">geom_sf</span>(<span class="at">data =</span> quakes_sf, <span class="fu">aes</span>(<span class="at">color =</span> mag))</span>
+<span id="cb12-4"><a href="#cb12-4"></a><span class="fu">ggplot</span>() <span class="sc">+</span></span>
+<span id="cb12-5"><a href="#cb12-5"></a>  <span class="fu">geom_sf</span>(<span class="at">data =</span> quakes_sf, <span class="fu">aes</span>(<span class="at">color =</span> mag)) <span class="sc">+</span></span>
+<span id="cb12-6"><a href="#cb12-6"></a>  <span class="fu">coord_sf</span>(<span class="at">crs =</span> <span class="dv">3460</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div id="fig-quakes-ggplot2-grid" class="quarto-layout-panel">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-quakes-ggplot2-grid-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="quarto-layout-row">
@@ -678,34 +793,31 @@ MathJax ={
 </div>
 <p>数据集 quakes_sf 已经准备了坐标参考系统，此时，<code>coord_sf()</code> 就会采用数据集相应的坐标参考系统，即 <code>sf::st_crs(4326)</code>。上图的左子图相当于：</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1"></a><span class="fu">ggplot</span>() <span class="sc">+</span></span>
-<span id="cb5-2"><a href="#cb5-2"></a>  <span class="fu">geom_sf</span>(</span>
-<span id="cb5-3"><a href="#cb5-3"></a>    <span class="at">data =</span> quakes_sf, <span class="fu">aes</span>(<span class="at">color =</span> mag)</span>
-<span id="cb5-4"><a href="#cb5-4"></a>  ) <span class="sc">+</span></span>
-<span id="cb5-5"><a href="#cb5-5"></a>  <span class="fu">coord_sf</span>(</span>
-<span id="cb5-6"><a href="#cb5-6"></a>    <span class="at">crs =</span> <span class="dv">4326</span>,</span>
-<span id="cb5-7"><a href="#cb5-7"></a>    <span class="at">datum =</span> sf<span class="sc">::</span><span class="fu">st_crs</span>(<span class="dv">4326</span>),</span>
-<span id="cb5-8"><a href="#cb5-8"></a>    <span class="at">default_crs =</span> sf<span class="sc">::</span><span class="fu">st_crs</span>(<span class="dv">4326</span>)</span>
-<span id="cb5-9"><a href="#cb5-9"></a>  )</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1"></a><span class="fu">ggplot</span>() <span class="sc">+</span></span>
+<span id="cb13-2"><a href="#cb13-2"></a>  <span class="fu">geom_sf</span>(<span class="at">data =</span> quakes_sf, <span class="fu">aes</span>(<span class="at">color =</span> mag)) <span class="sc">+</span></span>
+<span id="cb13-3"><a href="#cb13-3"></a>  <span class="fu">coord_sf</span>(</span>
+<span id="cb13-4"><a href="#cb13-4"></a>    <span class="at">crs =</span> <span class="dv">4326</span>, <span class="at">datum =</span> sf<span class="sc">::</span><span class="fu">st_crs</span>(<span class="dv">4326</span>),</span>
+<span id="cb13-5"><a href="#cb13-5"></a>    <span class="at">default_crs =</span> sf<span class="sc">::</span><span class="fu">st_crs</span>(<span class="dv">4326</span>)</span>
+<span id="cb13-6"><a href="#cb13-6"></a>  )</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section><section id="凸包操作" class="level3" data-number="27.1.3"><h3 data-number="27.1.3" class="anchored" data-anchor-id="凸包操作">
 <span class="header-section-number">27.1.3</span> 凸包操作</h3>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1"></a>quakes_sf <span class="ot">&lt;-</span> <span class="fu">st_transform</span>(quakes_sf, <span class="at">crs =</span> <span class="dv">3460</span>)</span>
-<span id="cb6-2"><a href="#cb6-2"></a><span class="co"># 组合 POINT 构造 POLYGON</span></span>
-<span id="cb6-3"><a href="#cb6-3"></a>quakes_sfp <span class="ot">&lt;-</span> <span class="fu">st_cast</span>(<span class="fu">st_combine</span>(<span class="fu">st_geometry</span>(quakes_sf)), <span class="st">"POLYGON"</span>)</span>
-<span id="cb6-4"><a href="#cb6-4"></a><span class="co"># 构造 POLYGON 的凸包</span></span>
-<span id="cb6-5"><a href="#cb6-5"></a>quakes_sfp_hull <span class="ot">&lt;-</span> <span class="fu">st_convex_hull</span>(<span class="fu">st_geometry</span>(quakes_sfp))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1"></a>quakes_sf <span class="ot">&lt;-</span> <span class="fu">st_transform</span>(quakes_sf, <span class="at">crs =</span> <span class="dv">3460</span>)</span>
+<span id="cb14-2"><a href="#cb14-2"></a><span class="co"># 组合 POINT 构造 POLYGON</span></span>
+<span id="cb14-3"><a href="#cb14-3"></a>quakes_sfp <span class="ot">&lt;-</span> <span class="fu">st_cast</span>(<span class="fu">st_combine</span>(<span class="fu">st_geometry</span>(quakes_sf)), <span class="st">"POLYGON"</span>)</span>
+<span id="cb14-4"><a href="#cb14-4"></a><span class="co"># 构造 POLYGON 的凸包</span></span>
+<span id="cb14-5"><a href="#cb14-5"></a>quakes_sfp_hull <span class="ot">&lt;-</span> <span class="fu">st_convex_hull</span>(<span class="fu">st_geometry</span>(quakes_sfp))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1"></a><span class="co"># 绘制点及其包络</span></span>
-<span id="cb7-2"><a href="#cb7-2"></a><span class="fu">plot</span>(<span class="fu">st_geometry</span>(quakes_sf))</span>
-<span id="cb7-3"><a href="#cb7-3"></a><span class="co"># 添加凸包曲线</span></span>
-<span id="cb7-4"><a href="#cb7-4"></a><span class="fu">plot</span>(quakes_sfp_hull, <span class="at">add =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb7-5"><a href="#cb7-5"></a></span>
-<span id="cb7-6"><a href="#cb7-6"></a><span class="fu">ggplot</span>() <span class="sc">+</span></span>
-<span id="cb7-7"><a href="#cb7-7"></a>  <span class="fu">geom_sf</span>(<span class="at">data =</span> quakes_sf) <span class="sc">+</span></span>
-<span id="cb7-8"><a href="#cb7-8"></a>  <span class="fu">geom_sf</span>(<span class="at">data =</span> quakes_sfp_hull, <span class="at">fill =</span> <span class="cn">NA</span>) <span class="sc">+</span></span>
-<span id="cb7-9"><a href="#cb7-9"></a>  <span class="fu">coord_sf</span>(<span class="at">crs =</span> <span class="dv">3460</span>, <span class="at">xlim =</span> <span class="fu">c</span>(<span class="dv">569061</span>, <span class="dv">3008322</span>), <span class="at">ylim =</span> <span class="fu">c</span>(<span class="dv">1603260</span>, <span class="dv">4665206</span>))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1"></a><span class="co"># 绘制点及其包络</span></span>
+<span id="cb15-2"><a href="#cb15-2"></a><span class="fu">plot</span>(<span class="fu">st_geometry</span>(quakes_sf))</span>
+<span id="cb15-3"><a href="#cb15-3"></a><span class="co"># 添加凸包曲线</span></span>
+<span id="cb15-4"><a href="#cb15-4"></a><span class="fu">plot</span>(quakes_sfp_hull, <span class="at">add =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb15-5"><a href="#cb15-5"></a></span>
+<span id="cb15-6"><a href="#cb15-6"></a><span class="fu">ggplot</span>() <span class="sc">+</span></span>
+<span id="cb15-7"><a href="#cb15-7"></a>  <span class="fu">geom_sf</span>(<span class="at">data =</span> quakes_sf) <span class="sc">+</span></span>
+<span id="cb15-8"><a href="#cb15-8"></a>  <span class="fu">geom_sf</span>(<span class="at">data =</span> quakes_sfp_hull, <span class="at">fill =</span> <span class="cn">NA</span>) <span class="sc">+</span></span>
+<span id="cb15-9"><a href="#cb15-9"></a>  <span class="fu">coord_sf</span>(<span class="at">crs =</span> <span class="dv">3460</span>, <span class="at">xlim =</span> <span class="fu">c</span>(<span class="dv">569061</span>, <span class="dv">3008322</span>), <span class="at">ylim =</span> <span class="fu">c</span>(<span class="dv">1603260</span>, <span class="dv">4665206</span>))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div id="fig-convex-hull" class="quarto-layout-panel">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-convex-hull-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="quarto-layout-row">
@@ -741,36 +853,36 @@ MathJax ={
 <span class="header-section-number">27.2.1</span> 核密度估计</h3>
 <p>给定边界内的<a href="https://stackoverflow.com/questions/68643517">核密度估计与绘制热力图</a></p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1"></a><span class="co"># spatial point pattern ppp 类型</span></span>
-<span id="cb8-2"><a href="#cb8-2"></a>quakes_ppp <span class="ot">&lt;-</span> spatstat.geom<span class="sc">::</span><span class="fu">as.ppp</span>(quakes_sf)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1"></a><span class="co"># spatial point pattern ppp 类型</span></span>
+<span id="cb16-2"><a href="#cb16-2"></a>quakes_ppp <span class="ot">&lt;-</span> spatstat.geom<span class="sc">::</span><span class="fu">as.ppp</span>(quakes_sf)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>#&gt; Warning in as.ppp.sf(quakes_sf): only first attribute column is used for marks</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1"></a><span class="co"># 限制散点在给定的窗口边界内平滑</span></span>
-<span id="cb10-2"><a href="#cb10-2"></a>spatstat.geom<span class="sc">::</span><span class="fu">Window</span>(quakes_ppp) <span class="ot">&lt;-</span> spatstat.geom<span class="sc">::</span><span class="fu">as.owin</span>(quakes_sfp_hull)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1"></a><span class="co"># 限制散点在给定的窗口边界内平滑</span></span>
+<span id="cb18-2"><a href="#cb18-2"></a>spatstat.geom<span class="sc">::</span><span class="fu">Window</span>(quakes_ppp) <span class="ot">&lt;-</span> spatstat.geom<span class="sc">::</span><span class="fu">as.owin</span>(quakes_sfp_hull)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>#&gt; Warning: point-in-polygon test had difficulty with 1 point (total score not 0
 #&gt; or 1)</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1"></a><span class="co"># 密度估计</span></span>
-<span id="cb12-2"><a href="#cb12-2"></a>density_spatstat <span class="ot">&lt;-</span> spatstat.explore<span class="sc">::</span><span class="fu">density.ppp</span>(quakes_ppp, <span class="at">dimyx =</span> <span class="dv">256</span>)</span>
-<span id="cb12-3"><a href="#cb12-3"></a><span class="co"># 转化为 stars 对象 栅格数据</span></span>
-<span id="cb12-4"><a href="#cb12-4"></a>density_stars <span class="ot">&lt;-</span> stars<span class="sc">::</span><span class="fu">st_as_stars</span>(density_spatstat)</span>
-<span id="cb12-5"><a href="#cb12-5"></a><span class="co"># 设置坐标参考系</span></span>
-<span id="cb12-6"><a href="#cb12-6"></a>density_sf <span class="ot">&lt;-</span> <span class="fu">st_set_crs</span>(<span class="fu">st_as_sf</span>(density_stars), <span class="dv">3460</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1"></a><span class="co"># 密度估计</span></span>
+<span id="cb20-2"><a href="#cb20-2"></a>density_spatstat <span class="ot">&lt;-</span> spatstat.explore<span class="sc">::</span><span class="fu">density.ppp</span>(quakes_ppp, <span class="at">dimyx =</span> <span class="dv">256</span>)</span>
+<span id="cb20-3"><a href="#cb20-3"></a><span class="co"># 转化为 stars 对象 栅格数据</span></span>
+<span id="cb20-4"><a href="#cb20-4"></a>density_stars <span class="ot">&lt;-</span> stars<span class="sc">::</span><span class="fu">st_as_stars</span>(density_spatstat)</span>
+<span id="cb20-5"><a href="#cb20-5"></a><span class="co"># 设置坐标参考系</span></span>
+<span id="cb20-6"><a href="#cb20-6"></a>density_sf <span class="ot">&lt;-</span> <span class="fu">st_set_crs</span>(<span class="fu">st_as_sf</span>(density_stars), <span class="dv">3460</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section><section id="绘制热力图" class="level3" data-number="27.2.2"><h3 data-number="27.2.2" class="anchored" data-anchor-id="绘制热力图">
 <span class="header-section-number">27.2.2</span> 绘制热力图</h3>
-<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1"></a><span class="fu">ggplot</span>() <span class="sc">+</span></span>
-<span id="cb13-2"><a href="#cb13-2"></a>  <span class="fu">geom_sf</span>(<span class="at">data =</span> density_sf, <span class="fu">aes</span>(<span class="at">fill =</span> v), <span class="at">col =</span> <span class="cn">NA</span>) <span class="sc">+</span></span>
-<span id="cb13-3"><a href="#cb13-3"></a>  <span class="fu">scale_fill_viridis_c</span>() <span class="sc">+</span></span>
-<span id="cb13-4"><a href="#cb13-4"></a>  <span class="fu">geom_sf</span>(<span class="at">data =</span> <span class="fu">st_boundary</span>(quakes_sfp_hull))</span>
-<span id="cb13-5"><a href="#cb13-5"></a></span>
-<span id="cb13-6"><a href="#cb13-6"></a><span class="fu">ggplot</span>() <span class="sc">+</span></span>
-<span id="cb13-7"><a href="#cb13-7"></a>  <span class="fu">geom_sf</span>(<span class="at">data =</span> density_sf, <span class="fu">aes</span>(<span class="at">fill =</span> v), <span class="at">col =</span> <span class="cn">NA</span>) <span class="sc">+</span></span>
-<span id="cb13-8"><a href="#cb13-8"></a>  <span class="fu">scale_fill_viridis_c</span>() <span class="sc">+</span></span>
-<span id="cb13-9"><a href="#cb13-9"></a>  <span class="fu">geom_sf</span>(<span class="at">data =</span> <span class="fu">st_boundary</span>(quakes_sfp_hull)) <span class="sc">+</span></span>
-<span id="cb13-10"><a href="#cb13-10"></a>  <span class="fu">geom_sf</span>(<span class="at">data =</span> quakes_sf, <span class="at">size =</span> <span class="dv">1</span>, <span class="at">col =</span> <span class="st">"black"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1"></a><span class="fu">ggplot</span>() <span class="sc">+</span></span>
+<span id="cb21-2"><a href="#cb21-2"></a>  <span class="fu">geom_sf</span>(<span class="at">data =</span> density_sf, <span class="fu">aes</span>(<span class="at">fill =</span> v), <span class="at">col =</span> <span class="cn">NA</span>) <span class="sc">+</span></span>
+<span id="cb21-3"><a href="#cb21-3"></a>  <span class="fu">scale_fill_viridis_c</span>() <span class="sc">+</span></span>
+<span id="cb21-4"><a href="#cb21-4"></a>  <span class="fu">geom_sf</span>(<span class="at">data =</span> <span class="fu">st_boundary</span>(quakes_sfp_hull))</span>
+<span id="cb21-5"><a href="#cb21-5"></a></span>
+<span id="cb21-6"><a href="#cb21-6"></a><span class="fu">ggplot</span>() <span class="sc">+</span></span>
+<span id="cb21-7"><a href="#cb21-7"></a>  <span class="fu">geom_sf</span>(<span class="at">data =</span> density_sf, <span class="fu">aes</span>(<span class="at">fill =</span> v), <span class="at">col =</span> <span class="cn">NA</span>) <span class="sc">+</span></span>
+<span id="cb21-8"><a href="#cb21-8"></a>  <span class="fu">scale_fill_viridis_c</span>() <span class="sc">+</span></span>
+<span id="cb21-9"><a href="#cb21-9"></a>  <span class="fu">geom_sf</span>(<span class="at">data =</span> <span class="fu">st_boundary</span>(quakes_sfp_hull)) <span class="sc">+</span></span>
+<span id="cb21-10"><a href="#cb21-10"></a>  <span class="fu">geom_sf</span>(<span class="at">data =</span> quakes_sf, <span class="at">size =</span> <span class="dv">1</span>, <span class="at">col =</span> <span class="st">"black"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div id="fig-kernel-heatmap" class="quarto-layout-panel">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-kernel-heatmap-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="quarto-layout-row">
