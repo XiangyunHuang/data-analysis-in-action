@@ -43,6 +43,36 @@ quakes_sf
 
 ### 坐标转化
 
+如果知道两个投影坐标系的 EPSG 代码，输入坐标就可以完成转化。如将坐标系 `EPSG:4326` 下的坐标 $(2,49)$ 投影到另一个坐标系 `EPSG:3857` 。
+
+```{r}
+st_transform(
+  x = st_sfc(st_point(x = c(2, 49)), crs = 4326), crs = 3857
+)
+```
+
+| 名称  | EPSG | 赤道半径    | 半轴             | 发明者               |
+|-------|------|-------------|------------------|----------------------|
+| GRS80 | 3857 | a=6378137.0 | rf=298.257222101 | GRS 1980(IUGG, 1980) |
+| WGS84 | 4326 | a=6378137.0 | rf=298.257223563 | WGS 84               |
+
+函数 `st_crs()` 查看坐标参考系的信息，比如 EPSG 代码为 4326 对应的坐标参考系统信息。我们也可以通过[网站](https://epsg.io/3832)查询 EPSG 代码对应的坐标参考系统的详细介绍。
+
+```{r}
+st_crs("EPSG:4326")
+```
+
+地球看作一个椭球体 ELLIPSOID，长半轴 6378137 米，短半轴 298.257223563 米，椭圆形的两个轴，纬度单位 0.0174532925199433， 经度单位 0.0174532925199433 。
+
+地球是一个不规则的球体，不同的坐标参考系对地球的抽象简化不同，会体现在坐标原点、长半轴、短半轴等属性上。为了方便在平面上展示地理信息，需要将地球表面投影到平面上，墨卡托投影是其中非常重要的一种投影方式，墨卡托投影的详细介绍见 [PROJ 网站](https://proj.org/operations/projections/merc.html) 。WGS 84 / Pseudo-Mercator 投影主要用于网页上的地理可视化，UTM 是 Universal Transverse Mercator 的缩写。360 度对应全球 60 个时区，每个时区横跨 6 经度。
+
+```{r}
+st_transform(
+  x = st_sfc(st_point(x = c(2, 49)), crs = 4326),
+  crs = st_crs("+proj=utm +zone=32 +ellps=GRS80")
+)
+```
+
 快速简单绘图，可采用图层 `geom_sf()`，它相当于统计图层 `stat_sf()` 和坐标映射图层 `coord_sf()` 的叠加，`geom_sf()` 支持点、线和多边形等数据数据对象，可以混合叠加。 `coord_sf()` 有几个重要的参数：
 
 1.  `crs`：在绘图前将各个 `geom_sf()` 图层中的**数据**映射到该坐标参考系。
@@ -66,13 +96,9 @@ quakes_sf
 
 library(ggplot2)
 ggplot() +
-  geom_sf(
-    data = quakes_sf, aes(color = mag)
-  )
+  geom_sf(data = quakes_sf, aes(color = mag))
 ggplot() +
-  geom_sf(
-    data = quakes_sf, aes(color = mag)
-  ) +
+  geom_sf(data = quakes_sf, aes(color = mag)) +
   coord_sf(crs = 3460)
 ```
 
@@ -82,12 +108,9 @@ ggplot() +
 #| eval: false
 
 ggplot() +
-  geom_sf(
-    data = quakes_sf, aes(color = mag)
-  ) +
+  geom_sf(data = quakes_sf, aes(color = mag)) +
   coord_sf(
-    crs = 4326,
-    datum = sf::st_crs(4326),
+    crs = 4326, datum = sf::st_crs(4326),
     default_crs = sf::st_crs(4326)
   )
 ```

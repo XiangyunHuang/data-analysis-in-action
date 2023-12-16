@@ -210,24 +210,107 @@ library(INLA)
 library(mgcv)
 ```
 
-### nnet 包
-
-多层感知机是一种前馈神经网络，**nnet** 包的函数 `nnet()` 实现了单隐藏层的简单神经网络。
-
-```{r}
-# library(nnet) 
-```
-
 ### tensorflow 框架 {#sec-google-tensorflow}
 
-前面介绍的模型都具有非常强的可解释性，比如各个参数对模型的作用。对于复杂的时间序列数据，比较适合用复杂的模型来拟合，看重模型的泛化能力，而不那么关注模型的机理。下面用 LSTM （长短期记忆）神经网络来训练时间序列数据，预测未来一周的趋势。
+前面介绍的模型都具有非常强的可解释性，比如各个参数对模型的作用。对于复杂的时间序列数据，比较适合用复杂的模型来拟合，看重模型的泛化能力，而不那么关注模型的机理。
+
+多层感知机是一种全连接层的前馈神经网络。**nnet** 包的函数 `nnet()` 实现了单隐藏层的简单前馈神经网络，可用于时间序列预测，也可用于分类数据的预测。作为对比的基础，下面先用 nnet 包训练和预测数据。
 
 ```{r}
-library(tensorflow)
-# tf$abs(x = c(-1, 1, 2))
+# 准备数据
+air_passengers <- as.matrix(embed(AirPassengers, 4))
+colnames(air_passengers) <- c("y", "x3", "x2", "x1")
+data_size <- nrow(air_passengers)
+# 拆分数据集
+train_size <- floor(data_size * 0.67)
+train_data <- air_passengers[1:train_size, ]
+test_data <- air_passengers[train_size:data_size, ]
+
+# 随机数种子对结果的影响非常大 试试 set.seed(20232023) 
+set.seed(20222022) 
+# 单隐藏层 8 个神经元
+mod_nnet <- nnet::nnet(
+  y ~ x1 + x2 + x3,
+  data = air_passengers, # 数据集
+  subset = 1:train_size, # 训练数据的指标向量
+  linout = TRUE, size = 4, rang = 0.1,
+  decay = 5e-4, maxit = 400, trace = FALSE
+)
+
+# 预测
+train_pred <- predict(mod_nnet, newdata = air_passengers[1:train_size,], type = "raw")
+# 训练集 RMSE
+sqrt(mean((air_passengers[1:train_size, "y"] - train_pred )^2))
+
+# 预测
+test_pred <- predict(mod_nnet, newdata = air_passengers[-(1:train_size),], type = "raw")
+# 测试集 RMSE
+sqrt(mean((air_passengers[-(1:train_size), "y"] - test_pred)^2))
 ```
 
-[forecastML](https://github.com/nredell/forecastML/) 采用机器学习方法可以一次向前预测多期。
+下面将原观测序列，训练集和测试集上的预测序列放在一张图上展示。图中，红色曲线表示训练集上的预测结果，绿色曲线为测试集上预测结果。
+
+```{r}
+#| label: fig-nnet
+#| fig-cap: 预测
+#| fig-showtext: true
+#| fig-width: 5
+#| fig-height: 4
+#| par: true
+
+train_pred_ts <- ts(data = train_pred, start = c(1949, 4), frequency = 12)
+test_pred_ts <- ts(data = test_pred, start = c(1957, 2), frequency = 12)
+plot(AirPassengers)
+lines(train_pred_ts, col = "red")
+lines(test_pred_ts, col = "green")
+```
+
+由图可知，在测试集上，随着时间拉长，预测越来越不准。
+
+下面使用 tensorflow 包构造**多层**感知机训练数据和预测。
+
+```{r}
+#| message: false
+
+library(tensorflow)
+library(keras)
+# 模型结构
+model <- keras_model_sequential() |> 
+  layer_dense(units = 12, activation = "relu", input_shape = c(3)) |> 
+  layer_dense(units = 8, activation = "relu") |> 
+  layer_dense(units = 1)
+# 训练目标
+compile(model,
+  loss = "mse", # 损失函数
+  optimizer = "adam", # 优化器
+  metrics = "mae" # 监控度量
+)
+# 模型概览
+summary(model)
+```
+
+输入层为 3 个节点，中间两个隐藏层，第一层为 12 个节点，第二层为 8 个节点，全连接网络，最后输出为一层单节点，意味着单个输出。每一层都有节点和权重，参数总数为 161。
+
+```{r}
+# 拟合模型
+mod_mlp <- fit(model,
+  x = train_data[, c("x1", "x2", "x3")],
+  y = train_data[, "y"],
+  epochs = 200,
+  batch_size = 10, # 每次更新梯度所用的样本量
+  validation_split = 0.2, # 从训练数据中拆分一部分用作验证集
+  verbose = 0 # 不显示训练进度
+)
+# 将测试数据代入模型，计算损失函数和监控度量
+evaluate(model, test_data[, c("x1", "x2", "x3")], test_data[, "y"])
+# 测试集上的预测
+mod_mlp_pred <- predict(model, test_data[, c("x1", "x2", "x3")]) 
+sqrt(mean((test_data[, "y"] - mod_mlp_pred)^2)) # 计算均方根误差
+```
+
+从 RMSE 来看，MLP（多层感知机）预测效果比单层感知机稍好些，可网络复杂度是增加很多的。
+
+下面用 LSTM （长短期记忆）神经网络来训练时间序列数据，预测未来一周的趋势。输出不再是一天（单点输出），而是 7 天的预测值（多点输出）。参考 **tensorflow** 包的[官网](https://tensorflow.rstudio.com/guides/keras/working_with_rnns#introduction)中 RNN 递归神经网络的介绍。
 
 ## 习题
 
