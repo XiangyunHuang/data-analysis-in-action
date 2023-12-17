@@ -236,12 +236,10 @@ mod_nnet <- nnet::nnet(
   linout = TRUE, size = 4, rang = 0.1,
   decay = 5e-4, maxit = 400, trace = FALSE
 )
-
 # 预测
 train_pred <- predict(mod_nnet, newdata = air_passengers[1:train_size,], type = "raw")
 # 训练集 RMSE
 sqrt(mean((air_passengers[1:train_size, "y"] - train_pred )^2))
-
 # 预测
 test_pred <- predict(mod_nnet, newdata = air_passengers[-(1:train_size),], type = "raw")
 # 测试集 RMSE
@@ -252,14 +250,14 @@ sqrt(mean((air_passengers[-(1:train_size), "y"] - test_pred)^2))
 
 ```{r}
 #| label: fig-nnet
-#| fig-cap: 预测
+#| fig-cap: 单层感知机预测
 #| fig-showtext: true
 #| fig-width: 5
 #| fig-height: 4
 #| par: true
 
-train_pred_ts <- ts(data = train_pred, start = c(1949, 4), frequency = 12)
-test_pred_ts <- ts(data = test_pred, start = c(1957, 2), frequency = 12)
+train_pred_ts <- ts(data = train_pred, start = c(1949, 3), frequency = 12)
+test_pred_ts <- ts(data = test_pred, start = c(1957, 1), frequency = 12)
 plot(AirPassengers)
 lines(train_pred_ts, col = "red")
 lines(test_pred_ts, col = "green")
@@ -274,26 +272,27 @@ lines(test_pred_ts, col = "green")
 
 library(tensorflow)
 library(keras)
+set_random_seed(20222022)
 # 模型结构
-model <- keras_model_sequential() |> 
+mod_mlp <- keras_model_sequential() |> 
   layer_dense(units = 12, activation = "relu", input_shape = c(3)) |> 
   layer_dense(units = 8, activation = "relu") |> 
   layer_dense(units = 1)
 # 训练目标
-compile(model,
+compile(mod_mlp,
   loss = "mse", # 损失函数
   optimizer = "adam", # 优化器
   metrics = "mae" # 监控度量
 )
 # 模型概览
-summary(model)
+summary(mod_mlp)
 ```
 
 输入层为 3 个节点，中间两个隐藏层，第一层为 12 个节点，第二层为 8 个节点，全连接网络，最后输出为一层单节点，意味着单个输出。每一层都有节点和权重，参数总数为 161。
 
 ```{r}
 # 拟合模型
-mod_mlp <- fit(model,
+fit(mod_mlp,
   x = train_data[, c("x1", "x2", "x3")],
   y = train_data[, "y"],
   epochs = 200,
@@ -302,13 +301,29 @@ mod_mlp <- fit(model,
   verbose = 0 # 不显示训练进度
 )
 # 将测试数据代入模型，计算损失函数和监控度量
-evaluate(model, test_data[, c("x1", "x2", "x3")], test_data[, "y"])
+evaluate(mod_mlp, test_data[, c("x1", "x2", "x3")], test_data[, "y"])
 # 测试集上的预测
-mod_mlp_pred <- predict(model, test_data[, c("x1", "x2", "x3")]) 
-sqrt(mean((test_data[, "y"] - mod_mlp_pred)^2)) # 计算均方根误差
+mlp_test_pred <- predict(mod_mlp, test_data[, c("x1", "x2", "x3")]) 
+mlp_train_pred <- predict(mod_mlp, train_data[, c("x1", "x2", "x3")]) 
+sqrt(mean((test_data[, "y"] - mlp_test_pred)^2)) # 计算均方根误差
 ```
 
 从 RMSE 来看，MLP（多层感知机）预测效果比单层感知机稍好些，可网络复杂度是增加很多的。
+
+```{r}
+#| label: fig-tensorflow-mlp
+#| fig-cap: 多层感知机预测
+#| fig-showtext: true
+#| fig-width: 5
+#| fig-height: 4
+#| par: true
+
+mlp_train_pred_ts <- ts(data = mlp_train_pred, start = c(1949, 3), frequency = 12)
+mlp_test_pred_ts <- ts(data = mlp_test_pred, start = c(1957, 1), frequency = 12)
+plot(AirPassengers)
+lines(mlp_train_pred_ts, col = "red")
+lines(mlp_test_pred_ts, col = "green")
+```
 
 下面用 LSTM （长短期记忆）神经网络来训练时间序列数据，预测未来一周的趋势。输出不再是一天（单点输出），而是 7 天的预测值（多点输出）。参考 **tensorflow** 包的[官网](https://tensorflow.rstudio.com/guides/keras/working_with_rnns#introduction)中 RNN 递归神经网络的介绍。
 
