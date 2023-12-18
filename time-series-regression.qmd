@@ -224,6 +224,39 @@ summary(meituan_garch2)
 
 大规模时间序列回归，观察值是比较多的，可达数十万、数百万，乃至更多。粗粒度时时间跨度往往很长，比如数十年的天粒度数据，细粒度时时间跨度可短可长，比如数年的半小时级数据，总之，需要包含多个季节的数据，各种季节性重复出现。通过时序图可以观察到明显的季节性，而且往往是多种周期不同的季节性混合在一起，有时还包含一定的趋势性。举例来说，比如 2018-2023 年美国旧金山犯罪[事件报告数据](https://data.sfgov.org/Public-Safety/Police-Department-Incident-Reports-2018-to-Present/wg3w-h783)，事件数量的变化趋势，除了上述季节性因素，特殊事件疫情肯定会影响，数据规模约 200 M 。再比如 2018-2023 年美国境内和跨境旅游业中的[航班数据](https://www.transtats.bts.gov/)，原始数据非常大，R 包 [nycflights13](https://github.com/tidyverse/nycflights13) 提供纽约机场的部分航班数据。
 
+为简单起见，下面以 R 内置的数据集 AirPassengers 为例，介绍 Stan 框架和 INLA 框架建模的过程。数据集 AirPassengers 包含周期性（季节性）和趋势性。作为对比的基础，下面建立非线性回归模型，趋势项和周期项是可加的形式：
+
+$$
+y = at + b + c \sin(\frac{t}{12} \times 2\pi) + d \cos(\frac{t}{12} \times 2\pi) + \epsilon
+$$
+
+根据数据变化的周期规律，设置周期为 12，还可以在模型中添加周期为 3 或 4 的小周期。其中，$y$ 代表观察值， $a,b,c,d$ 为待定的参数，$\epsilon$ 代表服从标准正态分布的随机误差。
+
+```{r}
+#| label: fig-lm
+#| fig-cap: 非线性回归
+#| fig-showtext: true
+#| fig-width: 5
+#| fig-height: 4
+#| par: true
+
+air_passengers_df <- data.frame(y = as.vector(AirPassengers), t = 1:144)
+fit_lm1 <- lm(y ~ t + sin(t / 12 * 2 * pi) + cos(t / 12 * 2 * pi), data = air_passengers_df)
+fit_lm2 <- lm(y ~ t + sin(t / 12 * 2 * pi) + cos(t / 12 * 2 * pi) + 
+                sin(t / 12 * 2 * 2 * pi) + cos(t / 12 * 2 * 2 * pi), 
+              data = air_passengers_df)
+fit_lm3 <- lm(y ~ t + sin(t / 12 * 2 * pi) + cos(t / 12 * 2 * pi) + 
+                sin(t / 12 * 2 * 2 * pi) + cos(t / 12 * 2 * 2 * pi) + 
+                sin(t / 12 * 3 * 2 * pi) + cos(t / 12 * 3 * 2 * pi), 
+              data = air_passengers_df)
+plot(y ~ t, air_passengers_df, type = "l")
+lines(x = air_passengers_df$t, y = fit_lm1$fitted.values, col = "red")
+lines(x = air_passengers_df$t, y = fit_lm2$fitted.values, col = "green")
+lines(x = air_passengers_df$t, y = fit_lm3$fitted.values, col = "orange")
+```
+
+模型 1 已经很好地捕捉到趋势和周期信息，当添加小周期后，略有改善，继续添加更多的小周期，不再有明显改善。实际上，小周期对应的回归系数也将不再显著。所以，这类模型的优化空间见顶了，需要进一步观察和利用残差的规律，使用更加复杂的模型。
+
 ### Stan 框架
 
 ```{r}
