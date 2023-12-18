@@ -101,8 +101,52 @@ Box.test((meituan_log_return - mean(meituan_log_return))^2, lag = 12, type = "Lj
 
 ### Stan 框架
 
+随机波动率模型如下
+
+$$
+\begin{aligned}
+y_t        &=    \epsilon_t \exp(h_t / 2) \\
+h_{t+1}    &=    \mu + \phi (h_t - \mu) + \delta_t \sigma \\
+h_1        &\sim \textsf{normal}\left( \mu, \frac{\sigma}{\sqrt{1 - \phi^2}} \right) \\
+\epsilon_t &\sim \textsf{normal}(0,1) \\
+\delta_t   &\sim \textsf{normal}(0,1)
+\end{aligned}
+$$
+
+其中， $y_t$ 表示在时间 $t$ 时股价的回报，$\epsilon_t$ 表示股价回报在时间 $t$ 时的白噪声扰/波动，$\delta_t$ 表示波动率在时间$t$ 时的波动。$h_t$ 表示对数波动率，带有参数 $\mu$ （对数波动率的均值），$\phi$ （对数波动率的趋势）。代表波动率的序列 $\{h_t\}$ 假定是平稳 $(|\phi| < 1)$ 的随机过程，$h_1$ 来自平稳的分布（此处为正态分布），$\epsilon_t$ 和 $\delta_t$ 是服从不相关的标准正态分布。
+
+Stan 代码如下
+
+```{verbatim, file="code/stochastic_volatility_models.stan", lang="stan"}
+```
+
+编译和拟合模型
+
 ```{r}
+#| message: false
+
 library(cmdstanr)
+# 编译模型
+mod_volatility_normal <- cmdstan_model(
+  stan_file = "code/stochastic_volatility_models.stan",
+  compile = TRUE, cpp_options = list(stan_threads = TRUE)
+)
+# 准备数据
+mdata = list(T = 1274, y = as.vector(meituan_log_return))
+# 拟合模型
+fit_volatility_normal <- mod_volatility_normal$sample(
+  data = mdata,
+  chains = 2,
+  parallel_chains = 2,
+  iter_warmup = 1000, 
+  iter_sampling = 1000, 
+  threads_per_chain = 2, 
+  seed = 20232023,
+  show_messages = FALSE,
+  refresh = 0
+)
+# 输出结果
+fit_volatility_normal$summary(c("mu", "phi", "sigma", "lp__"))
 ```
 
 ### fGarch 包
