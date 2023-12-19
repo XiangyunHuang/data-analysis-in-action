@@ -280,79 +280,97 @@ library(INLA)
 
 ### mgcv 包 {#sec-gnu-mgcv}
 
-**mgcv** 包 [@Wood2017] 是 R 软件内置的推荐组件，由 Simon Wood 开发和维护，历经多年，成熟稳定。对于时间序列数据预测，数万和百万级观测值都可以 [@wood2015]。函数 `bam()` 相比于函数 `gam()` 的优势是可以处理大规模的时间序列数据。
-
-GAM 估计时序数据中的非线性趋势，残差看作平稳的随机过程，残差序列的相关性由函数 `gamm()` 中参数 correlation 指定。函数 `corCAR1()` 表示一阶条件自回归，这里的条件是指，给定响应变量的分布后，残差序列服从 AR(1) 过程。
+**mgcv** 包 [@Wood2017] 是 R 软件内置的推荐组件，由 Simon Wood 开发和维护，历经多年，成熟稳定。函数 `bam()` 相比于函数 `gam()` 的优势是可以处理大规模的时间序列数据。对于时间序列数据预测，数万和百万级观测值都可以 [@wood2015]。
 
 ```{r}
-library(mgcv)
-mod <- gamm(y ~ s(t, k = 15),
-  data = air_passengers_df, family = gaussian,
-  correlation = corCAR1(form = ~t), method = "REML"
+air_passengers_tbl <- data.frame(
+  y = as.vector(AirPassengers),
+  year = rep(1949:1960, each = 12),
+  month = rep(1:12, times = 12)
 )
-summary(mod$lme)
-```
-
-提取 AR(1) 中的参数 $\phi$ 的估计和置信区间
-
-```{r}
-airPhi <- intervals(mod$lme, which = "var-cov")$corStruct
-airPhi
-```
-
-```{r}
-# 趋势估计结果
-summary(mod$gam)
-```
-
-函数 `gam()` 相比于 `lm()` 的优势是可以用样条拟合非线性趋势，不局限于线性趋势。
-
-```{r}
-#| label: fig-mgcv-linear-trend
-#| fig-cap: 趋势拟合图
-#| fig-showtext: true
-#| fig-width: 5
-#| fig-height: 4
-#| par: true
-
-plot(mod$gam)
-```
-
-输出结果显示存在线性趋势，符合预期。不过，就此数据集而言，使用 mgcv 包来建模有点杀鸡用牛刀。线性趋势的拟合结果见下图。
-
-```{r}
-#| label: fig-mgcv-trend-fitted
-#| fig-cap: 线性趋势拟合
-#| fig-showtext: true
-#| fig-width: 5
-#| fig-height: 4
-#| par: true
-
-plot(y ~ t, air_passengers_df, type = "l")
-lines(x = air_passengers_df$t, y = mod$gam$fitted.values, col = "red")
-```
-
-可以仿照前面 `lm()` 的介绍，引入三角函数来刻画周期性成分。残差序列不仅限于自回归模型，还可以是一般的 ARMA 模型，比如下面将移动自回归模型的阶定为 p = 2, q = 1。
-
-```{r}
-mod2 <- gamm(
-  y ~ s(t, k = 15) + I(sin(t / 12 * 2 * pi)) + I(cos(t / 12 * 2 * pi)),
-  data = air_passengers_df, family = gaussian,
-  correlation = corARMA(form = ~ t, p = 2, q = 1), method = "REML"
+mod1 <- gam(y ~ s(year) + s(month, bs = "cr", k = 12),
+  data = air_passengers_tbl, family = gaussian
 )
-summary(mod2$lme)
+summary(mod1)
 ```
 
+年和月的趋势变化
+
 ```{r}
-#| label: fig-mgcv-seasonal-fitted
-#| fig-cap: 趋势和季节性拟合
+#| label: fig-mgcv
+#| fig-cap: 年和月的趋势变化
 #| fig-showtext: true
 #| fig-width: 5
 #| fig-height: 4
 #| par: true
 
-plot(y ~ t, air_passengers_df, type = "l")
-lines(x = air_passengers_df$t, y = mod2$gam$fitted.values, col = "red")
+layout(matrix(1:2, nrow = 1))
+plot(mod1, shade = TRUE)
+```
+
+拟合效果
+
+```{r}
+#| label: fig-mgcv-1
+#| fig-cap: 趋势拟合效果
+#| fig-showtext: true
+#| fig-width: 5
+#| fig-height: 4
+#| par: true
+
+air_passengers_ts <- ts(mod$fitted.values, start = c(1949, 1), frequency = 12)
+plot(AirPassengers)
+lines(air_passengers_ts, col = "red")
+```
+
+从拟合结果来看，存在欠拟合，年周期内波动幅度随时间有变化趋势，趋势和周期存在交互作用
+
+```{r}
+mod2 <- gam(y ~ s(year, month),
+  data = air_passengers_tbl, family = gaussian
+)
+summary(mod2)
+```
+
+交互作用图
+
+```{r}
+#| label: fig-mgcv-interaction
+#| fig-cap: 交互作用
+#| fig-showtext: true
+#| fig-width: 5
+#| fig-height: 4
+#| par: true
+
+plot(mod2)
+```
+
+趋势拟合
+
+```{r}
+#| label: fig-mgcv-persp
+#| fig-cap: 趋势拟合效果
+#| fig-showtext: true
+#| fig-width: 5
+#| fig-height: 4
+#| par: true
+
+vis.gam(mod2, theta = -35, phi = 20, ticktype = "detailed", expand = .65)
+```
+
+拟合趋势图
+
+```{r}
+#| label: fig-mgcv-2
+#| fig-cap: 趋势拟合效果
+#| fig-showtext: true
+#| fig-width: 5
+#| fig-height: 4
+#| par: true
+
+air_passengers_ts <- ts(mod2$fitted.values, start = c(1949, 1), frequency = 12)
+plot(AirPassengers)
+lines(air_passengers_ts, col = "red")
 ```
 
 ### tensorflow 框架 {#sec-google-tensorflow}
