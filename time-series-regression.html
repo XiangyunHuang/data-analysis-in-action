@@ -749,8 +749,78 @@ window.Quarto = {
 <p>结果高度显著，说明有 ARCH 效应。</p>
 <section id="stan-框架" class="level3" data-number="39.1.1"><h3 data-number="39.1.1" class="anchored" data-anchor-id="stan-框架">
 <span class="header-section-number">39.1.1</span> Stan 框架</h3>
+<p>随机波动率模型如下</p>
+<p><span class="math display">\[
+\begin{aligned}
+y_t        &amp;=    \epsilon_t \exp(h_t / 2) \\
+h_{t+1}    &amp;=    \mu + \phi (h_t - \mu) + \delta_t \sigma \\
+h_1        &amp;\sim \textsf{normal}\left( \mu, \frac{\sigma}{\sqrt{1 - \phi^2}} \right) \\
+\epsilon_t &amp;\sim \textsf{normal}(0,1) \\
+\delta_t   &amp;\sim \textsf{normal}(0,1)
+\end{aligned}
+\]</span></p>
+<p>其中， <span class="math inline">\(y_t\)</span> 表示在时间 <span class="math inline">\(t\)</span> 时股价的回报，<span class="math inline">\(\epsilon_t\)</span> 表示股价回报在时间 <span class="math inline">\(t\)</span> 时的白噪声扰/波动，<span class="math inline">\(\delta_t\)</span> 表示波动率在时间<span class="math inline">\(t\)</span> 时的波动。<span class="math inline">\(h_t\)</span> 表示对数波动率，带有参数 <span class="math inline">\(\mu\)</span> （对数波动率的均值），<span class="math inline">\(\phi\)</span> （对数波动率的趋势）。代表波动率的序列 <span class="math inline">\(\{h_t\}\)</span> 假定是平稳 <span class="math inline">\((|\phi| &lt; 1)\)</span> 的随机过程，<span class="math inline">\(h_1\)</span> 来自平稳的分布（此处为正态分布），<span class="math inline">\(\epsilon_t\)</span> 和 <span class="math inline">\(\delta_t\)</span> 是服从不相关的标准正态分布。</p>
+<p>Stan 代码如下</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode numberSource stan number-lines code-with-copy"><code class="sourceCode stan"><span id="cb9-1"><a href="#cb9-1"></a><span class="kw">data</span> {</span>
+<span id="cb9-2"><a href="#cb9-2"></a>  <span class="dt">int</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; T;   <span class="co">// # time points (equally spaced)</span></span>
+<span id="cb9-3"><a href="#cb9-3"></a>  <span class="dt">vector</span>[T] y;      <span class="co">// mean corrected return at time t</span></span>
+<span id="cb9-4"><a href="#cb9-4"></a>}</span>
+<span id="cb9-5"><a href="#cb9-5"></a><span class="kw">parameters</span> {</span>
+<span id="cb9-6"><a href="#cb9-6"></a>  <span class="dt">real</span> mu;                     <span class="co">// mean log volatility</span></span>
+<span id="cb9-7"><a href="#cb9-7"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span>=-<span class="dv">1</span>, <span class="kw">upper</span>=<span class="dv">1</span>&gt; phi; <span class="co">// persistence of volatility</span></span>
+<span id="cb9-8"><a href="#cb9-8"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; sigma;         <span class="co">// white noise shock scale</span></span>
+<span id="cb9-9"><a href="#cb9-9"></a>  <span class="dt">vector</span>[T] h_std;             <span class="co">// std log volatility time t</span></span>
+<span id="cb9-10"><a href="#cb9-10"></a>}</span>
+<span id="cb9-11"><a href="#cb9-11"></a><span class="kw">transformed parameters</span> {</span>
+<span id="cb9-12"><a href="#cb9-12"></a>  <span class="dt">vector</span>[T] h = h_std * sigma;  <span class="co">// now h ~ normal(0, sigma)</span></span>
+<span id="cb9-13"><a href="#cb9-13"></a>  h[<span class="dv">1</span>] /= sqrt(<span class="dv">1</span> - phi * phi);  <span class="co">// rescale h[1]</span></span>
+<span id="cb9-14"><a href="#cb9-14"></a>  h += mu;</span>
+<span id="cb9-15"><a href="#cb9-15"></a>  <span class="cf">for</span> (t <span class="cf">in</span> <span class="dv">2</span>:T) {</span>
+<span id="cb9-16"><a href="#cb9-16"></a>    h[t] += phi * (h[t - <span class="dv">1</span>] - mu);</span>
+<span id="cb9-17"><a href="#cb9-17"></a>  }</span>
+<span id="cb9-18"><a href="#cb9-18"></a>}</span>
+<span id="cb9-19"><a href="#cb9-19"></a><span class="kw">model</span> {</span>
+<span id="cb9-20"><a href="#cb9-20"></a>  phi ~ uniform(-<span class="dv">1</span>, <span class="dv">1</span>);</span>
+<span id="cb9-21"><a href="#cb9-21"></a>  sigma ~ cauchy(<span class="dv">0</span>, <span class="dv">5</span>);</span>
+<span id="cb9-22"><a href="#cb9-22"></a>  mu ~ cauchy(<span class="dv">0</span>, <span class="dv">10</span>);</span>
+<span id="cb9-23"><a href="#cb9-23"></a>  </span>
+<span id="cb9-24"><a href="#cb9-24"></a>  h_std ~ std_normal();</span>
+<span id="cb9-25"><a href="#cb9-25"></a>  y ~ normal(<span class="dv">0</span>, exp(h / <span class="dv">2</span>));</span>
+<span id="cb9-26"><a href="#cb9-26"></a>}</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>编译和拟合模型</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1"></a><span class="fu">library</span>(cmdstanr)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1"></a><span class="fu">library</span>(cmdstanr)</span>
+<span id="cb10-2"><a href="#cb10-2"></a><span class="co"># 编译模型</span></span>
+<span id="cb10-3"><a href="#cb10-3"></a>mod_volatility_normal <span class="ot">&lt;-</span> <span class="fu">cmdstan_model</span>(</span>
+<span id="cb10-4"><a href="#cb10-4"></a>  <span class="at">stan_file =</span> <span class="st">"code/stochastic_volatility_models.stan"</span>,</span>
+<span id="cb10-5"><a href="#cb10-5"></a>  <span class="at">compile =</span> <span class="cn">TRUE</span>, <span class="at">cpp_options =</span> <span class="fu">list</span>(<span class="at">stan_threads =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb10-6"><a href="#cb10-6"></a>)</span>
+<span id="cb10-7"><a href="#cb10-7"></a><span class="co"># 准备数据</span></span>
+<span id="cb10-8"><a href="#cb10-8"></a>mdata <span class="ot">=</span> <span class="fu">list</span>(<span class="at">T =</span> <span class="dv">1274</span>, <span class="at">y =</span> <span class="fu">as.vector</span>(meituan_log_return))</span>
+<span id="cb10-9"><a href="#cb10-9"></a><span class="co"># 拟合模型</span></span>
+<span id="cb10-10"><a href="#cb10-10"></a>fit_volatility_normal <span class="ot">&lt;-</span> mod_volatility_normal<span class="sc">$</span><span class="fu">sample</span>(</span>
+<span id="cb10-11"><a href="#cb10-11"></a>  <span class="at">data =</span> mdata,</span>
+<span id="cb10-12"><a href="#cb10-12"></a>  <span class="at">chains =</span> <span class="dv">2</span>,</span>
+<span id="cb10-13"><a href="#cb10-13"></a>  <span class="at">parallel_chains =</span> <span class="dv">2</span>,</span>
+<span id="cb10-14"><a href="#cb10-14"></a>  <span class="at">iter_warmup =</span> <span class="dv">1000</span>, </span>
+<span id="cb10-15"><a href="#cb10-15"></a>  <span class="at">iter_sampling =</span> <span class="dv">1000</span>, </span>
+<span id="cb10-16"><a href="#cb10-16"></a>  <span class="at">threads_per_chain =</span> <span class="dv">2</span>, </span>
+<span id="cb10-17"><a href="#cb10-17"></a>  <span class="at">seed =</span> <span class="dv">20232023</span>,</span>
+<span id="cb10-18"><a href="#cb10-18"></a>  <span class="at">show_messages =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb10-19"><a href="#cb10-19"></a>  <span class="at">refresh =</span> <span class="dv">0</span></span>
+<span id="cb10-20"><a href="#cb10-20"></a>)</span>
+<span id="cb10-21"><a href="#cb10-21"></a><span class="co"># 输出结果</span></span>
+<span id="cb10-22"><a href="#cb10-22"></a>fit_volatility_normal<span class="sc">$</span><span class="fu">summary</span>(<span class="fu">c</span>(<span class="st">"mu"</span>, <span class="st">"phi"</span>, <span class="st">"sigma"</span>, <span class="st">"lp__"</span>))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt; # A tibble: 4 × 10
+#&gt;   variable     mean   median      sd     mad       q5      q95  rhat ess_bulk
+#&gt;   &lt;chr&gt;       &lt;dbl&gt;    &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;    &lt;dbl&gt;    &lt;dbl&gt; &lt;dbl&gt;    &lt;dbl&gt;
+#&gt; 1 mu         -6.86    -6.87   0.116   0.113    -7.05    -6.67   1.00    1188.
+#&gt; 2 phi         0.910    0.914  0.0326  0.0309    0.848    0.953  1.01     325.
+#&gt; 3 sigma       0.311    0.305  0.0613  0.0606    0.219    0.421  1.01     357.
+#&gt; 4 lp__     3092.    3091.    29.9    30.3    3044.    3142.     1.00     553.
+#&gt; # ℹ 1 more variable: ess_tail &lt;dbl&gt;</code></pre>
+</div>
 </div>
 </section><section id="fgarch-包" class="level3" data-number="39.1.2"><h3 data-number="39.1.2" class="anchored" data-anchor-id="fgarch-包">
 <span class="header-section-number">39.1.2</span> fGarch 包</h3>
@@ -760,8 +830,8 @@ window.Quarto = {
 <li>广义自回归条件异方差模型 （Generalized Autoregressive Conditional Heteroskedasticity，简称 GARCH ）</li>
 </ul>
 <p>确定 ARCH 模型的阶，观察残差的平方的 ACF 和 PACF 。</p>
-<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1"></a><span class="fu">acf</span>((meituan_log_return <span class="sc">-</span> <span class="fu">mean</span>(meituan_log_return))<span class="sc">^</span><span class="dv">2</span>, <span class="at">main =</span> <span class="st">""</span>)</span>
-<span id="cb10-2"><a href="#cb10-2"></a><span class="fu">pacf</span>((meituan_log_return <span class="sc">-</span> <span class="fu">mean</span>(meituan_log_return))<span class="sc">^</span><span class="dv">2</span>, <span class="at">main =</span> <span class="st">""</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1"></a><span class="fu">acf</span>((meituan_log_return <span class="sc">-</span> <span class="fu">mean</span>(meituan_log_return))<span class="sc">^</span><span class="dv">2</span>, <span class="at">main =</span> <span class="st">""</span>)</span>
+<span id="cb12-2"><a href="#cb12-2"></a><span class="fu">pacf</span>((meituan_log_return <span class="sc">-</span> <span class="fu">mean</span>(meituan_log_return))<span class="sc">^</span><span class="dv">2</span>, <span class="at">main =</span> <span class="st">""</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div id="fig-log-return-resid" class="quarto-layout-panel">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-log-return-resid-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="quarto-layout-row">
@@ -801,9 +871,9 @@ r_t &amp;= \mu + a_t, \quad a_t = \sigma_t \epsilon_t, \quad \epsilon_t \sim \ma
 \]</span></p>
 <p>拟合 ARCH 模型，比较模型估计结果，根据系数显著性的结果，采纳 ARCH(2) 模型。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1"></a><span class="fu">library</span>(fGarch)</span>
-<span id="cb11-2"><a href="#cb11-2"></a>meituan_garch1 <span class="ot">&lt;-</span> <span class="fu">garchFit</span>(<span class="sc">~</span> <span class="dv">1</span> <span class="sc">+</span> <span class="fu">garch</span>(<span class="dv">2</span>, <span class="dv">0</span>), <span class="at">data =</span> meituan_log_return, <span class="at">trace =</span> <span class="cn">FALSE</span>, <span class="at">cond.dist =</span> <span class="st">"std"</span>)</span>
-<span id="cb11-3"><a href="#cb11-3"></a><span class="fu">summary</span>(meituan_garch1)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1"></a><span class="fu">library</span>(fGarch)</span>
+<span id="cb13-2"><a href="#cb13-2"></a>meituan_garch1 <span class="ot">&lt;-</span> <span class="fu">garchFit</span>(<span class="sc">~</span> <span class="dv">1</span> <span class="sc">+</span> <span class="fu">garch</span>(<span class="dv">2</span>, <span class="dv">0</span>), <span class="at">data =</span> meituan_log_return, <span class="at">trace =</span> <span class="cn">FALSE</span>, <span class="at">cond.dist =</span> <span class="st">"std"</span>)</span>
+<span id="cb13-3"><a href="#cb13-3"></a><span class="fu">summary</span>(meituan_garch1)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; 
 #&gt; Title:
@@ -815,7 +885,7 @@ r_t &amp;= \mu + a_t, \quad a_t = \sigma_t \epsilon_t, \quad \epsilon_t \sim \ma
 #&gt; 
 #&gt; Mean and Variance Equation:
 #&gt;  data ~ 1 + garch(2, 0)
-#&gt; &lt;environment: 0x7fe24ddf4790&gt;
+#&gt; &lt;environment: 0x7fcd268331c8&gt;
 #&gt;  [data = meituan_log_return]
 #&gt; 
 #&gt; Conditional Distribution:
@@ -842,7 +912,7 @@ r_t &amp;= \mu + a_t, \quad a_t = \sigma_t \epsilon_t, \quad \epsilon_t \sim \ma
 #&gt;  2459.91    normalized:  1.930856 
 #&gt; 
 #&gt; Description:
-#&gt;  Sat Dec 16 14:09:28 2023 by user:  
+#&gt;  Tue Dec 19 15:06:24 2023 by user:  
 #&gt; 
 #&gt; 
 #&gt; Standardised Residuals Tests:
@@ -878,8 +948,8 @@ r_t &amp;= \mu + a_t, \quad a_t = \sigma_t \epsilon_t, \quad \epsilon_t \sim \ma
 \end{aligned}
 \]</span></p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1"></a>meituan_garch2 <span class="ot">&lt;-</span> <span class="fu">garchFit</span>(<span class="sc">~</span> <span class="dv">1</span> <span class="sc">+</span> <span class="fu">garch</span>(<span class="dv">1</span>, <span class="dv">1</span>), <span class="at">data =</span> meituan_log_return, <span class="at">trace =</span> <span class="cn">FALSE</span>, <span class="at">cond.dist =</span> <span class="st">"std"</span>)</span>
-<span id="cb13-2"><a href="#cb13-2"></a><span class="fu">summary</span>(meituan_garch2)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1"></a>meituan_garch2 <span class="ot">&lt;-</span> <span class="fu">garchFit</span>(<span class="sc">~</span> <span class="dv">1</span> <span class="sc">+</span> <span class="fu">garch</span>(<span class="dv">1</span>, <span class="dv">1</span>), <span class="at">data =</span> meituan_log_return, <span class="at">trace =</span> <span class="cn">FALSE</span>, <span class="at">cond.dist =</span> <span class="st">"std"</span>)</span>
+<span id="cb15-2"><a href="#cb15-2"></a><span class="fu">summary</span>(meituan_garch2)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; 
 #&gt; Title:
@@ -891,7 +961,7 @@ r_t &amp;= \mu + a_t, \quad a_t = \sigma_t \epsilon_t, \quad \epsilon_t \sim \ma
 #&gt; 
 #&gt; Mean and Variance Equation:
 #&gt;  data ~ 1 + garch(1, 1)
-#&gt; &lt;environment: 0x7fe24cfc4bb0&gt;
+#&gt; &lt;environment: 0x7fcd3f8e4ba8&gt;
 #&gt;  [data = meituan_log_return]
 #&gt; 
 #&gt; Conditional Distribution:
@@ -918,7 +988,7 @@ r_t &amp;= \mu + a_t, \quad a_t = \sigma_t \epsilon_t, \quad \epsilon_t \sim \ma
 #&gt;  2478.786    normalized:  1.945672 
 #&gt; 
 #&gt; Description:
-#&gt;  Sat Dec 16 14:09:28 2023 by user:  
+#&gt;  Tue Dec 19 15:06:24 2023 by user:  
 #&gt; 
 #&gt; 
 #&gt; Standardised Residuals Tests:
@@ -942,81 +1012,281 @@ r_t &amp;= \mu + a_t, \quad a_t = \sigma_t \epsilon_t, \quad \epsilon_t \sim \ma
 </section></section><section id="贝叶斯可加模型" class="level2" data-number="39.2"><h2 data-number="39.2" class="anchored" data-anchor-id="贝叶斯可加模型">
 <span class="header-section-number">39.2</span> 贝叶斯可加模型</h2>
 <p>大规模时间序列回归，观察值是比较多的，可达数十万、数百万，乃至更多。粗粒度时时间跨度往往很长，比如数十年的天粒度数据，细粒度时时间跨度可短可长，比如数年的半小时级数据，总之，需要包含多个季节的数据，各种季节性重复出现。通过时序图可以观察到明显的季节性，而且往往是多种周期不同的季节性混合在一起，有时还包含一定的趋势性。举例来说，比如 2018-2023 年美国旧金山犯罪<a href="https://data.sfgov.org/Public-Safety/Police-Department-Incident-Reports-2018-to-Present/wg3w-h783">事件报告数据</a>，事件数量的变化趋势，除了上述季节性因素，特殊事件疫情肯定会影响，数据规模约 200 M 。再比如 2018-2023 年美国境内和跨境旅游业中的<a href="https://www.transtats.bts.gov/">航班数据</a>，原始数据非常大，R 包 <a href="https://github.com/tidyverse/nycflights13">nycflights13</a> 提供纽约机场的部分航班数据。</p>
+<p>为简单起见，下面以 R 内置的数据集 AirPassengers 为例，介绍 Stan 框架和 INLA 框架建模的过程。数据集 AirPassengers 包含周期性（季节性）和趋势性。作为对比的基础，下面建立非线性回归模型，趋势项和周期项是可加的形式：</p>
+<p><span class="math display">\[
+y = at + b + c \sin(\frac{t}{12} \times 2\pi) + d \cos(\frac{t}{12} \times 2\pi) + \epsilon
+\]</span></p>
+<p>根据数据变化的周期规律，设置周期为 12，还可以在模型中添加周期为 3 或 4 的小周期。其中，<span class="math inline">\(y\)</span> 代表观察值， <span class="math inline">\(a,b,c,d\)</span> 为待定的参数，<span class="math inline">\(\epsilon\)</span> 代表服从标准正态分布的随机误差。</p>
+<div class="cell" data-par="true">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1"></a>air_passengers_df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">y =</span> <span class="fu">as.vector</span>(AirPassengers), <span class="at">t =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">144</span>)</span>
+<span id="cb17-2"><a href="#cb17-2"></a>fit_lm1 <span class="ot">&lt;-</span> <span class="fu">lm</span>(y <span class="sc">~</span> t <span class="sc">+</span> <span class="fu">sin</span>(t <span class="sc">/</span> <span class="dv">12</span> <span class="sc">*</span> <span class="dv">2</span> <span class="sc">*</span> pi) <span class="sc">+</span> <span class="fu">cos</span>(t <span class="sc">/</span> <span class="dv">12</span> <span class="sc">*</span> <span class="dv">2</span> <span class="sc">*</span> pi), <span class="at">data =</span> air_passengers_df)</span>
+<span id="cb17-3"><a href="#cb17-3"></a>fit_lm2 <span class="ot">&lt;-</span> <span class="fu">update</span>(fit_lm1, . <span class="sc">~</span> . <span class="sc">+</span></span>
+<span id="cb17-4"><a href="#cb17-4"></a>  <span class="fu">sin</span>(t <span class="sc">/</span> <span class="dv">12</span> <span class="sc">*</span> <span class="dv">2</span> <span class="sc">*</span> <span class="dv">2</span> <span class="sc">*</span> pi) <span class="sc">+</span> <span class="fu">cos</span>(t <span class="sc">/</span> <span class="dv">12</span> <span class="sc">*</span> <span class="dv">2</span> <span class="sc">*</span> <span class="dv">2</span> <span class="sc">*</span> pi),</span>
+<span id="cb17-5"><a href="#cb17-5"></a><span class="at">data =</span> air_passengers_df</span>
+<span id="cb17-6"><a href="#cb17-6"></a>)</span>
+<span id="cb17-7"><a href="#cb17-7"></a>fit_lm3 <span class="ot">&lt;-</span> <span class="fu">update</span>(fit_lm2, . <span class="sc">~</span> . <span class="sc">+</span></span>
+<span id="cb17-8"><a href="#cb17-8"></a>  <span class="fu">sin</span>(t <span class="sc">/</span> <span class="dv">12</span> <span class="sc">*</span> <span class="dv">3</span> <span class="sc">*</span> <span class="dv">2</span> <span class="sc">*</span> pi) <span class="sc">+</span> <span class="fu">cos</span>(t <span class="sc">/</span> <span class="dv">12</span> <span class="sc">*</span> <span class="dv">3</span> <span class="sc">*</span> <span class="dv">2</span> <span class="sc">*</span> pi),</span>
+<span id="cb17-9"><a href="#cb17-9"></a><span class="at">data =</span> air_passengers_df</span>
+<span id="cb17-10"><a href="#cb17-10"></a>)</span>
+<span id="cb17-11"><a href="#cb17-11"></a><span class="fu">plot</span>(y <span class="sc">~</span> t, air_passengers_df, <span class="at">type =</span> <span class="st">"l"</span>)</span>
+<span id="cb17-12"><a href="#cb17-12"></a><span class="fu">lines</span>(<span class="at">x =</span> air_passengers_df<span class="sc">$</span>t, <span class="at">y =</span> fit_lm1<span class="sc">$</span>fitted.values, <span class="at">col =</span> <span class="st">"red"</span>)</span>
+<span id="cb17-13"><a href="#cb17-13"></a><span class="fu">lines</span>(<span class="at">x =</span> air_passengers_df<span class="sc">$</span>t, <span class="at">y =</span> fit_lm2<span class="sc">$</span>fitted.values, <span class="at">col =</span> <span class="st">"green"</span>)</span>
+<span id="cb17-14"><a href="#cb17-14"></a><span class="fu">lines</span>(<span class="at">x =</span> air_passengers_df<span class="sc">$</span>t, <span class="at">y =</span> fit_lm3<span class="sc">$</span>fitted.values, <span class="at">col =</span> <span class="st">"orange"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-lm" class="quarto-figure quarto-figure-center anchored" width="480">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-lm-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="time-series-regression_files/figure-html/fig-lm-1.png" class="img-fluid figure-img" width="480">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-lm-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;39.5: 非线性回归
+</figcaption></figure>
+</div>
+</div>
+</div>
+<p>模型 1 已经很好地捕捉到趋势和周期信息，当添加小周期后，略有改善，继续添加更多的小周期，不再有明显改善。实际上，小周期对应的回归系数也将不再显著。所以，这类模型的优化空间见顶了，需要进一步观察和利用残差的规律，使用更加复杂的模型。</p>
 <section id="stan-框架-1" class="level3" data-number="39.2.1"><h3 data-number="39.2.1" class="anchored" data-anchor-id="stan-框架-1">
 <span class="header-section-number">39.2.1</span> Stan 框架</h3>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1"></a><span class="fu">library</span>(cmdstanr)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1"></a><span class="fu">library</span>(cmdstanr)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section><section id="sec-kaust-inla" class="level3" data-number="39.2.2"><h3 data-number="39.2.2" class="anchored" data-anchor-id="sec-kaust-inla">
 <span class="header-section-number">39.2.2</span> INLA 框架</h3>
 <p>模型内容、成分结构和参数解释</p>
 <p>阿卜杜拉国王科技大学（King Abdullah University of Science and Technology 简称 KAUST）的 Håvard Rue 等开发了 INLA 框架 <span class="citation" data-cites="Rue2009">(<a href="references.html#ref-Rue2009" role="doc-biblioref">Rue, Martino, 和 Chopin 2009</a>)</span>。INLA 动态时间序列建模 <span class="citation" data-cites="Nalini2022">(<a href="references.html#ref-Nalini2022" role="doc-biblioref">Nalini Ravishanker 和 Soyer 2022</a>)</span></p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1"></a><span class="fu">library</span>(INLA)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1"></a><span class="fu">library</span>(INLA)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section></section><section id="一些非参数模型" class="level2" data-number="39.3"><h2 data-number="39.3" class="anchored" data-anchor-id="一些非参数模型">
 <span class="header-section-number">39.3</span> 一些非参数模型</h2>
 <section id="sec-gnu-mgcv" class="level3" data-number="39.3.1"><h3 data-number="39.3.1" class="anchored" data-anchor-id="sec-gnu-mgcv">
 <span class="header-section-number">39.3.1</span> mgcv 包</h3>
-<p>模型内容、成分结构和参数解释。一般可加模型，在似然函数中添加平滑样条，与 Lasso 回归模型在形式上有相似之处，属于频率派方法。</p>
-<p><strong>mgcv</strong> 包 <span class="citation" data-cites="Wood2017">(<a href="references.html#ref-Wood2017" role="doc-biblioref">S. N. Wood 2017</a>)</span> 是 R 软件内置的推荐组件，由 Simon Wood 开发和维护，历经多年，成熟稳定。对于时间序列数据预测，数万和百万级观测值都可以 <span class="citation" data-cites="wood2015">(<a href="references.html#ref-wood2015" role="doc-biblioref">Simon N. Wood, Goude, 和 Shaw 2015</a>)</span>。函数 <code>bam()</code></p>
+<p><strong>mgcv</strong> 包 <span class="citation" data-cites="Wood2017">(<a href="references.html#ref-Wood2017" role="doc-biblioref">S. N. Wood 2017</a>)</span> 是 R 软件内置的推荐组件，由 Simon Wood 开发和维护，历经多年，成熟稳定。对于时间序列数据预测，数万和百万级观测值都可以 <span class="citation" data-cites="wood2015">(<a href="references.html#ref-wood2015" role="doc-biblioref">Simon N. Wood, Goude, 和 Shaw 2015</a>)</span>。函数 <code>bam()</code> 相比于函数 <code>gam()</code> 的优势是可以处理大规模的时间序列数据。</p>
+<p>GAM 估计时序数据中的非线性趋势，残差看作平稳的随机过程，残差序列的相关性由函数 <code>gamm()</code> 中参数 correlation 指定。函数 <code>corCAR1()</code> 表示一阶条件自回归，这里的条件是指，给定响应变量的分布后，残差序列服从 AR(1) 过程。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1"></a><span class="fu">library</span>(mgcv)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1"></a><span class="fu">library</span>(mgcv)</span>
+<span id="cb20-2"><a href="#cb20-2"></a>mod <span class="ot">&lt;-</span> <span class="fu">gamm</span>(y <span class="sc">~</span> <span class="fu">s</span>(t, <span class="at">k =</span> <span class="dv">15</span>),</span>
+<span id="cb20-3"><a href="#cb20-3"></a>  <span class="at">data =</span> air_passengers_df, <span class="at">family =</span> gaussian,</span>
+<span id="cb20-4"><a href="#cb20-4"></a>  <span class="at">correlation =</span> <span class="fu">corCAR1</span>(<span class="at">form =</span> <span class="sc">~</span>t), <span class="at">method =</span> <span class="st">"REML"</span></span>
+<span id="cb20-5"><a href="#cb20-5"></a>)</span>
+<span id="cb20-6"><a href="#cb20-6"></a><span class="fu">summary</span>(mod<span class="sc">$</span>lme)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt; Linear mixed-effects model fit by REML
+#&gt;   Data: strip.offset(mf) 
+#&gt;        AIC     BIC    logLik
+#&gt;   1397.761 1412.54 -693.8806
+#&gt; 
+#&gt; Random effects:
+#&gt;  Formula: ~Xr - 1 | g
+#&gt;  Structure: pdIdnot
+#&gt;                Xr1        Xr2        Xr3        Xr4        Xr5        Xr6
+#&gt; StdDev: 0.03231805 0.03231805 0.03231805 0.03231805 0.03231805 0.03231805
+#&gt;                Xr7        Xr8        Xr9       Xr10       Xr11       Xr12
+#&gt; StdDev: 0.03231805 0.03231805 0.03231805 0.03231805 0.03231805 0.03231805
+#&gt;               Xr13 Residual
+#&gt; StdDev: 0.03231805  47.7783
+#&gt; 
+#&gt; Correlation Structure: Continuous AR(1)
+#&gt;  Formula: ~t | g 
+#&gt;  Parameter estimate(s):
+#&gt;       Phi 
+#&gt; 0.7526301 
+#&gt; Fixed effects:  y.0 ~ X - 1 
+#&gt;                  Value Std.Error  DF   t-value p-value
+#&gt; X(Intercept)  279.9622 10.380869 142  26.96905       0
+#&gt; Xs(t)Fx1     -108.4201  9.960488 142 -10.88502       0
+#&gt;  Correlation: 
+#&gt;          X(Int)
+#&gt; Xs(t)Fx1 0     
+#&gt; 
+#&gt; Standardized Within-Group Residuals:
+#&gt;         Min          Q1         Med          Q3         Max 
+#&gt; -1.90977053 -0.62931863 -0.09587495  0.46864121  3.52857874 
+#&gt; 
+#&gt; Number of Observations: 144
+#&gt; Number of Groups: 1</code></pre>
+</div>
+</div>
+<p>提取 AR(1) 中的参数 <span class="math inline">\(\phi\)</span> 的估计和置信区间</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1"></a>airPhi <span class="ot">&lt;-</span> <span class="fu">intervals</span>(mod<span class="sc">$</span>lme, <span class="at">which =</span> <span class="st">"var-cov"</span>)<span class="sc">$</span>corStruct</span>
+<span id="cb22-2"><a href="#cb22-2"></a>airPhi</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt;        lower      est.     upper
+#&gt; Phi 0.618817 0.7526301 0.8507948
+#&gt; attr(,"label")
+#&gt; [1] "Correlation structure:"</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1"></a><span class="co"># 趋势估计结果</span></span>
+<span id="cb24-2"><a href="#cb24-2"></a><span class="fu">summary</span>(mod<span class="sc">$</span>gam)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt; 
+#&gt; Family: gaussian 
+#&gt; Link function: identity 
+#&gt; 
+#&gt; Formula:
+#&gt; y ~ s(t, k = 15)
+#&gt; 
+#&gt; Parametric coefficients:
+#&gt;             Estimate Std. Error t value Pr(&gt;|t|)    
+#&gt; (Intercept)   279.96      10.38   26.97   &lt;2e-16 ***
+#&gt; ---
+#&gt; Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+#&gt; 
+#&gt; Approximate significance of smooth terms:
+#&gt;      edf Ref.df     F p-value    
+#&gt; s(t)   1      1 118.5  &lt;2e-16 ***
+#&gt; ---
+#&gt; Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+#&gt; 
+#&gt; R-sq.(adj) =  0.852   
+#&gt;   Scale est. = 2282.8    n = 144</code></pre>
+</div>
+</div>
+<p>函数 <code>gam()</code> 相比于 <code><a href="https://rdrr.io/r/stats/lm.html">lm()</a></code> 的优势是可以用样条拟合非线性趋势，不局限于线性趋势。</p>
+<div class="cell" data-par="true">
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1"></a><span class="fu">plot</span>(mod<span class="sc">$</span>gam)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-mgcv-linear-trend" class="quarto-figure quarto-figure-center anchored" width="480">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-mgcv-linear-trend-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="time-series-regression_files/figure-html/fig-mgcv-linear-trend-1.png" class="img-fluid figure-img" width="480">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-mgcv-linear-trend-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;39.6: 趋势拟合图
+</figcaption></figure>
+</div>
+</div>
+</div>
+<p>输出结果显示存在线性趋势，符合预期。不过，就此数据集而言，使用 mgcv 包来建模有点杀鸡用牛刀。线性趋势的拟合结果见下图。</p>
+<div class="cell" data-par="true">
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1"></a><span class="fu">plot</span>(y <span class="sc">~</span> t, air_passengers_df, <span class="at">type =</span> <span class="st">"l"</span>)</span>
+<span id="cb27-2"><a href="#cb27-2"></a><span class="fu">lines</span>(<span class="at">x =</span> air_passengers_df<span class="sc">$</span>t, <span class="at">y =</span> mod<span class="sc">$</span>gam<span class="sc">$</span>fitted.values, <span class="at">col =</span> <span class="st">"red"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-mgcv-trend-fitted" class="quarto-figure quarto-figure-center anchored" width="480">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-mgcv-trend-fitted-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="time-series-regression_files/figure-html/fig-mgcv-trend-fitted-1.png" class="img-fluid figure-img" width="480">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-mgcv-trend-fitted-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;39.7: 线性趋势拟合
+</figcaption></figure>
+</div>
+</div>
+</div>
+<p>可以仿照前面 <code><a href="https://rdrr.io/r/stats/lm.html">lm()</a></code> 的介绍，引入三角函数来刻画周期性成分。残差序列不仅限于自回归模型，还可以是一般的 ARMA 模型，比如下面将移动自回归模型的阶定为 p = 2, q = 1。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1"></a>mod2 <span class="ot">&lt;-</span> <span class="fu">gamm</span>(</span>
+<span id="cb28-2"><a href="#cb28-2"></a>  y <span class="sc">~</span> <span class="fu">s</span>(t, <span class="at">k =</span> <span class="dv">15</span>) <span class="sc">+</span> <span class="fu">I</span>(<span class="fu">sin</span>(t <span class="sc">/</span> <span class="dv">12</span> <span class="sc">*</span> <span class="dv">2</span> <span class="sc">*</span> pi)) <span class="sc">+</span> <span class="fu">I</span>(<span class="fu">cos</span>(t <span class="sc">/</span> <span class="dv">12</span> <span class="sc">*</span> <span class="dv">2</span> <span class="sc">*</span> pi)),</span>
+<span id="cb28-3"><a href="#cb28-3"></a>  <span class="at">data =</span> air_passengers_df, <span class="at">family =</span> gaussian,</span>
+<span id="cb28-4"><a href="#cb28-4"></a>  <span class="at">correlation =</span> <span class="fu">corARMA</span>(<span class="at">form =</span> <span class="sc">~</span> t, <span class="at">p =</span> <span class="dv">2</span>, <span class="at">q =</span> <span class="dv">1</span>), <span class="at">method =</span> <span class="st">"REML"</span></span>
+<span id="cb28-5"><a href="#cb28-5"></a>)</span>
+<span id="cb28-6"><a href="#cb28-6"></a><span class="fu">summary</span>(mod2<span class="sc">$</span>lme)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt; Linear mixed-effects model fit by REML
+#&gt;   Data: strip.offset(mf) 
+#&gt;        AIC      BIC    logLik
+#&gt;   1312.486 1338.961 -647.2432
+#&gt; 
+#&gt; Random effects:
+#&gt;  Formula: ~Xr - 1 | g
+#&gt;  Structure: pdIdnot
+#&gt;              Xr1      Xr2      Xr3      Xr4      Xr5      Xr6      Xr7      Xr8
+#&gt; StdDev: 46.44981 46.44981 46.44981 46.44981 46.44981 46.44981 46.44981 46.44981
+#&gt;              Xr9     Xr10     Xr11     Xr12     Xr13 Residual
+#&gt; StdDev: 46.44981 46.44981 46.44981 46.44981 46.44981 31.21244
+#&gt; 
+#&gt; Correlation Structure: ARMA(2,1)
+#&gt;  Formula: ~t | g 
+#&gt;  Parameter estimate(s):
+#&gt;       Phi1       Phi2     Theta1 
+#&gt;  0.9421997 -0.5287227 -0.1672696 
+#&gt; Fixed effects:  y.0 ~ X - 1 
+#&gt;                             Value Std.Error  DF   t-value p-value
+#&gt; X(Intercept)            280.50692  2.730607 140 102.72693  0.0000
+#&gt; XI(sin(t/12 * 2 * pi))  -17.18966  5.193080 140  -3.31011  0.0012
+#&gt; XI(cos(t/12 * 2 * pi))  -41.76694  5.182424 140  -8.05934  0.0000
+#&gt; Xs(t)Fx1               -109.29853 14.895531 140  -7.33767  0.0000
+#&gt;  Correlation: 
+#&gt;                        X(Int) XI(s(/12*2*p)) XI(c(/12*2*p))
+#&gt; XI(sin(t/12 * 2 * pi))  0.001                              
+#&gt; XI(cos(t/12 * 2 * pi))  0.002 -0.001                       
+#&gt; Xs(t)Fx1                0.000 -0.068          0.018        
+#&gt; 
+#&gt; Standardized Within-Group Residuals:
+#&gt;        Min         Q1        Med         Q3        Max 
+#&gt; -2.2632860 -0.6252144 -0.1616049  0.6414269  3.2900361 
+#&gt; 
+#&gt; Number of Observations: 144
+#&gt; Number of Groups: 1</code></pre>
+</div>
+</div>
+<div class="cell" data-par="true">
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1"></a><span class="fu">plot</span>(y <span class="sc">~</span> t, air_passengers_df, <span class="at">type =</span> <span class="st">"l"</span>)</span>
+<span id="cb30-2"><a href="#cb30-2"></a><span class="fu">lines</span>(<span class="at">x =</span> air_passengers_df<span class="sc">$</span>t, <span class="at">y =</span> mod2<span class="sc">$</span>gam<span class="sc">$</span>fitted.values, <span class="at">col =</span> <span class="st">"red"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-mgcv-seasonal-fitted" class="quarto-figure quarto-figure-center anchored" width="480">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-mgcv-seasonal-fitted-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="time-series-regression_files/figure-html/fig-mgcv-seasonal-fitted-1.png" class="img-fluid figure-img" width="480">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-mgcv-seasonal-fitted-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;39.8: 趋势和季节性拟合
+</figcaption></figure>
+</div>
+</div>
 </div>
 </section><section id="sec-google-tensorflow" class="level3" data-number="39.3.2"><h3 data-number="39.3.2" class="anchored" data-anchor-id="sec-google-tensorflow">
 <span class="header-section-number">39.3.2</span> tensorflow 框架</h3>
 <p>前面介绍的模型都具有非常强的可解释性，比如各个参数对模型的作用。对于复杂的时间序列数据，比较适合用复杂的模型来拟合，看重模型的泛化能力，而不那么关注模型的机理。</p>
 <p>多层感知机是一种全连接层的前馈神经网络。<strong>nnet</strong> 包的函数 <code>nnet()</code> 实现了单隐藏层的简单前馈神经网络，可用于时间序列预测，也可用于分类数据的预测。作为对比的基础，下面先用 nnet 包训练和预测数据。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1"></a><span class="co"># 准备数据</span></span>
-<span id="cb18-2"><a href="#cb18-2"></a>air_passengers <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(<span class="fu">embed</span>(AirPassengers, <span class="dv">4</span>))</span>
-<span id="cb18-3"><a href="#cb18-3"></a><span class="fu">colnames</span>(air_passengers) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"y"</span>, <span class="st">"x3"</span>, <span class="st">"x2"</span>, <span class="st">"x1"</span>)</span>
-<span id="cb18-4"><a href="#cb18-4"></a>data_size <span class="ot">&lt;-</span> <span class="fu">nrow</span>(air_passengers)</span>
-<span id="cb18-5"><a href="#cb18-5"></a><span class="co"># 拆分数据集</span></span>
-<span id="cb18-6"><a href="#cb18-6"></a>train_size <span class="ot">&lt;-</span> <span class="fu">floor</span>(data_size <span class="sc">*</span> <span class="fl">0.67</span>)</span>
-<span id="cb18-7"><a href="#cb18-7"></a>train_data <span class="ot">&lt;-</span> air_passengers[<span class="dv">1</span><span class="sc">:</span>train_size, ]</span>
-<span id="cb18-8"><a href="#cb18-8"></a>test_data <span class="ot">&lt;-</span> air_passengers[train_size<span class="sc">:</span>data_size, ]</span>
-<span id="cb18-9"><a href="#cb18-9"></a></span>
-<span id="cb18-10"><a href="#cb18-10"></a><span class="co"># 随机数种子对结果的影响非常大 试试 set.seed(20232023) </span></span>
-<span id="cb18-11"><a href="#cb18-11"></a><span class="fu">set.seed</span>(<span class="dv">20222022</span>) </span>
-<span id="cb18-12"><a href="#cb18-12"></a><span class="co"># 单隐藏层 8 个神经元</span></span>
-<span id="cb18-13"><a href="#cb18-13"></a>mod_nnet <span class="ot">&lt;-</span> nnet<span class="sc">::</span><span class="fu">nnet</span>(</span>
-<span id="cb18-14"><a href="#cb18-14"></a>  y <span class="sc">~</span> x1 <span class="sc">+</span> x2 <span class="sc">+</span> x3,</span>
-<span id="cb18-15"><a href="#cb18-15"></a>  <span class="at">data =</span> air_passengers, <span class="co"># 数据集</span></span>
-<span id="cb18-16"><a href="#cb18-16"></a>  <span class="at">subset =</span> <span class="dv">1</span><span class="sc">:</span>train_size, <span class="co"># 训练数据的指标向量</span></span>
-<span id="cb18-17"><a href="#cb18-17"></a>  <span class="at">linout =</span> <span class="cn">TRUE</span>, <span class="at">size =</span> <span class="dv">4</span>, <span class="at">rang =</span> <span class="fl">0.1</span>,</span>
-<span id="cb18-18"><a href="#cb18-18"></a>  <span class="at">decay =</span> <span class="fl">5e-4</span>, <span class="at">maxit =</span> <span class="dv">400</span>, <span class="at">trace =</span> <span class="cn">FALSE</span></span>
-<span id="cb18-19"><a href="#cb18-19"></a>)</span>
-<span id="cb18-20"><a href="#cb18-20"></a></span>
-<span id="cb18-21"><a href="#cb18-21"></a><span class="co"># 预测</span></span>
-<span id="cb18-22"><a href="#cb18-22"></a>train_pred <span class="ot">&lt;-</span> <span class="fu">predict</span>(mod_nnet, <span class="at">newdata =</span> air_passengers[<span class="dv">1</span><span class="sc">:</span>train_size,], <span class="at">type =</span> <span class="st">"raw"</span>)</span>
-<span id="cb18-23"><a href="#cb18-23"></a><span class="co"># 训练集 RMSE</span></span>
-<span id="cb18-24"><a href="#cb18-24"></a><span class="fu">sqrt</span>(<span class="fu">mean</span>((air_passengers[<span class="dv">1</span><span class="sc">:</span>train_size, <span class="st">"y"</span>] <span class="sc">-</span> train_pred )<span class="sc">^</span><span class="dv">2</span>))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1"></a><span class="co"># 准备数据</span></span>
+<span id="cb31-2"><a href="#cb31-2"></a>air_passengers <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(<span class="fu">embed</span>(AirPassengers, <span class="dv">4</span>))</span>
+<span id="cb31-3"><a href="#cb31-3"></a><span class="fu">colnames</span>(air_passengers) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"y"</span>, <span class="st">"x3"</span>, <span class="st">"x2"</span>, <span class="st">"x1"</span>)</span>
+<span id="cb31-4"><a href="#cb31-4"></a>data_size <span class="ot">&lt;-</span> <span class="fu">nrow</span>(air_passengers)</span>
+<span id="cb31-5"><a href="#cb31-5"></a><span class="co"># 拆分数据集</span></span>
+<span id="cb31-6"><a href="#cb31-6"></a>train_size <span class="ot">&lt;-</span> <span class="fu">floor</span>(data_size <span class="sc">*</span> <span class="fl">0.67</span>)</span>
+<span id="cb31-7"><a href="#cb31-7"></a>train_data <span class="ot">&lt;-</span> air_passengers[<span class="dv">1</span><span class="sc">:</span>train_size, ]</span>
+<span id="cb31-8"><a href="#cb31-8"></a>test_data <span class="ot">&lt;-</span> air_passengers[train_size<span class="sc">:</span>data_size, ]</span>
+<span id="cb31-9"><a href="#cb31-9"></a></span>
+<span id="cb31-10"><a href="#cb31-10"></a><span class="co"># 随机数种子对结果的影响非常大 试试 set.seed(20232023) </span></span>
+<span id="cb31-11"><a href="#cb31-11"></a><span class="fu">set.seed</span>(<span class="dv">20222022</span>) </span>
+<span id="cb31-12"><a href="#cb31-12"></a><span class="co"># 单隐藏层 8 个神经元</span></span>
+<span id="cb31-13"><a href="#cb31-13"></a>mod_nnet <span class="ot">&lt;-</span> nnet<span class="sc">::</span><span class="fu">nnet</span>(</span>
+<span id="cb31-14"><a href="#cb31-14"></a>  y <span class="sc">~</span> x1 <span class="sc">+</span> x2 <span class="sc">+</span> x3,</span>
+<span id="cb31-15"><a href="#cb31-15"></a>  <span class="at">data =</span> air_passengers, <span class="co"># 数据集</span></span>
+<span id="cb31-16"><a href="#cb31-16"></a>  <span class="at">subset =</span> <span class="dv">1</span><span class="sc">:</span>train_size, <span class="co"># 训练数据的指标向量</span></span>
+<span id="cb31-17"><a href="#cb31-17"></a>  <span class="at">linout =</span> <span class="cn">TRUE</span>, <span class="at">size =</span> <span class="dv">4</span>, <span class="at">rang =</span> <span class="fl">0.1</span>,</span>
+<span id="cb31-18"><a href="#cb31-18"></a>  <span class="at">decay =</span> <span class="fl">5e-4</span>, <span class="at">maxit =</span> <span class="dv">400</span>, <span class="at">trace =</span> <span class="cn">FALSE</span></span>
+<span id="cb31-19"><a href="#cb31-19"></a>)</span>
+<span id="cb31-20"><a href="#cb31-20"></a><span class="co"># 预测</span></span>
+<span id="cb31-21"><a href="#cb31-21"></a>train_pred <span class="ot">&lt;-</span> <span class="fu">predict</span>(mod_nnet, <span class="at">newdata =</span> air_passengers[<span class="dv">1</span><span class="sc">:</span>train_size,], <span class="at">type =</span> <span class="st">"raw"</span>)</span>
+<span id="cb31-22"><a href="#cb31-22"></a><span class="co"># 训练集 RMSE</span></span>
+<span id="cb31-23"><a href="#cb31-23"></a><span class="fu">sqrt</span>(<span class="fu">mean</span>((air_passengers[<span class="dv">1</span><span class="sc">:</span>train_size, <span class="st">"y"</span>] <span class="sc">-</span> train_pred )<span class="sc">^</span><span class="dv">2</span>))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; [1] 21.59392</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1"></a><span class="co"># 预测</span></span>
-<span id="cb20-2"><a href="#cb20-2"></a>test_pred <span class="ot">&lt;-</span> <span class="fu">predict</span>(mod_nnet, <span class="at">newdata =</span> air_passengers[<span class="sc">-</span>(<span class="dv">1</span><span class="sc">:</span>train_size),], <span class="at">type =</span> <span class="st">"raw"</span>)</span>
-<span id="cb20-3"><a href="#cb20-3"></a><span class="co"># 测试集 RMSE</span></span>
-<span id="cb20-4"><a href="#cb20-4"></a><span class="fu">sqrt</span>(<span class="fu">mean</span>((air_passengers[<span class="sc">-</span>(<span class="dv">1</span><span class="sc">:</span>train_size), <span class="st">"y"</span>] <span class="sc">-</span> test_pred)<span class="sc">^</span><span class="dv">2</span>))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1"></a><span class="co"># 预测</span></span>
+<span id="cb33-2"><a href="#cb33-2"></a>test_pred <span class="ot">&lt;-</span> <span class="fu">predict</span>(mod_nnet, <span class="at">newdata =</span> air_passengers[<span class="sc">-</span>(<span class="dv">1</span><span class="sc">:</span>train_size),], <span class="at">type =</span> <span class="st">"raw"</span>)</span>
+<span id="cb33-3"><a href="#cb33-3"></a><span class="co"># 测试集 RMSE</span></span>
+<span id="cb33-4"><a href="#cb33-4"></a><span class="fu">sqrt</span>(<span class="fu">mean</span>((air_passengers[<span class="sc">-</span>(<span class="dv">1</span><span class="sc">:</span>train_size), <span class="st">"y"</span>] <span class="sc">-</span> test_pred)<span class="sc">^</span><span class="dv">2</span>))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; [1] 53.79107</code></pre>
 </div>
 </div>
 <p>下面将原观测序列，训练集和测试集上的预测序列放在一张图上展示。图中，红色曲线表示训练集上的预测结果，绿色曲线为测试集上预测结果。</p>
 <div class="cell" data-par="true">
-<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1"></a>train_pred_ts <span class="ot">&lt;-</span> <span class="fu">ts</span>(<span class="at">data =</span> train_pred, <span class="at">start =</span> <span class="fu">c</span>(<span class="dv">1949</span>, <span class="dv">4</span>), <span class="at">frequency =</span> <span class="dv">12</span>)</span>
-<span id="cb22-2"><a href="#cb22-2"></a>test_pred_ts <span class="ot">&lt;-</span> <span class="fu">ts</span>(<span class="at">data =</span> test_pred, <span class="at">start =</span> <span class="fu">c</span>(<span class="dv">1957</span>, <span class="dv">2</span>), <span class="at">frequency =</span> <span class="dv">12</span>)</span>
-<span id="cb22-3"><a href="#cb22-3"></a><span class="fu">plot</span>(AirPassengers)</span>
-<span id="cb22-4"><a href="#cb22-4"></a><span class="fu">lines</span>(train_pred_ts, <span class="at">col =</span> <span class="st">"red"</span>)</span>
-<span id="cb22-5"><a href="#cb22-5"></a><span class="fu">lines</span>(test_pred_ts, <span class="at">col =</span> <span class="st">"green"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1"></a>train_pred_ts <span class="ot">&lt;-</span> <span class="fu">ts</span>(<span class="at">data =</span> train_pred, <span class="at">start =</span> <span class="fu">c</span>(<span class="dv">1949</span>, <span class="dv">3</span>), <span class="at">frequency =</span> <span class="dv">12</span>)</span>
+<span id="cb35-2"><a href="#cb35-2"></a>test_pred_ts <span class="ot">&lt;-</span> <span class="fu">ts</span>(<span class="at">data =</span> test_pred, <span class="at">start =</span> <span class="fu">c</span>(<span class="dv">1957</span>, <span class="dv">1</span>), <span class="at">frequency =</span> <span class="dv">12</span>)</span>
+<span id="cb35-3"><a href="#cb35-3"></a><span class="fu">plot</span>(AirPassengers)</span>
+<span id="cb35-4"><a href="#cb35-4"></a><span class="fu">lines</span>(train_pred_ts, <span class="at">col =</span> <span class="st">"red"</span>)</span>
+<span id="cb35-5"><a href="#cb35-5"></a><span class="fu">lines</span>(test_pred_ts, <span class="at">col =</span> <span class="st">"green"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div id="fig-nnet" class="quarto-figure quarto-figure-center anchored" width="480">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-nnet-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <img src="time-series-regression_files/figure-html/fig-nnet-1.png" class="img-fluid figure-img" width="480">
 </div>
 <figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-nnet-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-图&nbsp;39.5: 预测
+图&nbsp;39.9: 单层感知机预测
 </figcaption></figure>
 </div>
 </div>
@@ -1024,21 +1294,22 @@ r_t &amp;= \mu + a_t, \quad a_t = \sigma_t \epsilon_t, \quad \epsilon_t \sim \ma
 <p>由图可知，在测试集上，随着时间拉长，预测越来越不准。</p>
 <p>下面使用 tensorflow 包构造<strong>多层</strong>感知机训练数据和预测。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1"></a><span class="fu">library</span>(tensorflow)</span>
-<span id="cb23-2"><a href="#cb23-2"></a><span class="fu">library</span>(keras)</span>
-<span id="cb23-3"><a href="#cb23-3"></a><span class="co"># 模型结构</span></span>
-<span id="cb23-4"><a href="#cb23-4"></a>model <span class="ot">&lt;-</span> <span class="fu">keras_model_sequential</span>() <span class="sc">|&gt;</span> </span>
-<span id="cb23-5"><a href="#cb23-5"></a>  <span class="fu">layer_dense</span>(<span class="at">units =</span> <span class="dv">12</span>, <span class="at">activation =</span> <span class="st">"relu"</span>, <span class="at">input_shape =</span> <span class="fu">c</span>(<span class="dv">3</span>)) <span class="sc">|&gt;</span> </span>
-<span id="cb23-6"><a href="#cb23-6"></a>  <span class="fu">layer_dense</span>(<span class="at">units =</span> <span class="dv">8</span>, <span class="at">activation =</span> <span class="st">"relu"</span>) <span class="sc">|&gt;</span> </span>
-<span id="cb23-7"><a href="#cb23-7"></a>  <span class="fu">layer_dense</span>(<span class="at">units =</span> <span class="dv">1</span>)</span>
-<span id="cb23-8"><a href="#cb23-8"></a><span class="co"># 训练目标</span></span>
-<span id="cb23-9"><a href="#cb23-9"></a><span class="fu">compile</span>(model,</span>
-<span id="cb23-10"><a href="#cb23-10"></a>  <span class="at">loss =</span> <span class="st">"mse"</span>, <span class="co"># 损失函数</span></span>
-<span id="cb23-11"><a href="#cb23-11"></a>  <span class="at">optimizer =</span> <span class="st">"adam"</span>, <span class="co"># 优化器</span></span>
-<span id="cb23-12"><a href="#cb23-12"></a>  <span class="at">metrics =</span> <span class="st">"mae"</span> <span class="co"># 监控度量</span></span>
-<span id="cb23-13"><a href="#cb23-13"></a>)</span>
-<span id="cb23-14"><a href="#cb23-14"></a><span class="co"># 模型概览</span></span>
-<span id="cb23-15"><a href="#cb23-15"></a><span class="fu">summary</span>(model)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1"></a><span class="fu">library</span>(tensorflow)</span>
+<span id="cb36-2"><a href="#cb36-2"></a><span class="fu">library</span>(keras)</span>
+<span id="cb36-3"><a href="#cb36-3"></a><span class="fu">set_random_seed</span>(<span class="dv">20222022</span>)</span>
+<span id="cb36-4"><a href="#cb36-4"></a><span class="co"># 模型结构</span></span>
+<span id="cb36-5"><a href="#cb36-5"></a>mod_mlp <span class="ot">&lt;-</span> <span class="fu">keras_model_sequential</span>() <span class="sc">|&gt;</span> </span>
+<span id="cb36-6"><a href="#cb36-6"></a>  <span class="fu">layer_dense</span>(<span class="at">units =</span> <span class="dv">12</span>, <span class="at">activation =</span> <span class="st">"relu"</span>, <span class="at">input_shape =</span> <span class="fu">c</span>(<span class="dv">3</span>)) <span class="sc">|&gt;</span> </span>
+<span id="cb36-7"><a href="#cb36-7"></a>  <span class="fu">layer_dense</span>(<span class="at">units =</span> <span class="dv">8</span>, <span class="at">activation =</span> <span class="st">"relu"</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb36-8"><a href="#cb36-8"></a>  <span class="fu">layer_dense</span>(<span class="at">units =</span> <span class="dv">1</span>)</span>
+<span id="cb36-9"><a href="#cb36-9"></a><span class="co"># 训练目标</span></span>
+<span id="cb36-10"><a href="#cb36-10"></a><span class="fu">compile</span>(mod_mlp,</span>
+<span id="cb36-11"><a href="#cb36-11"></a>  <span class="at">loss =</span> <span class="st">"mse"</span>, <span class="co"># 损失函数</span></span>
+<span id="cb36-12"><a href="#cb36-12"></a>  <span class="at">optimizer =</span> <span class="st">"adam"</span>, <span class="co"># 优化器</span></span>
+<span id="cb36-13"><a href="#cb36-13"></a>  <span class="at">metrics =</span> <span class="st">"mae"</span> <span class="co"># 监控度量</span></span>
+<span id="cb36-14"><a href="#cb36-14"></a>)</span>
+<span id="cb36-15"><a href="#cb36-15"></a><span class="co"># 模型概览</span></span>
+<span id="cb36-16"><a href="#cb36-16"></a><span class="fu">summary</span>(mod_mlp)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; Model: "sequential"
 #&gt; ________________________________________________________________________________
@@ -1056,35 +1327,56 @@ r_t &amp;= \mu + a_t, \quad a_t = \sigma_t \epsilon_t, \quad \epsilon_t \sim \ma
 </div>
 <p>输入层为 3 个节点，中间两个隐藏层，第一层为 12 个节点，第二层为 8 个节点，全连接网络，最后输出为一层单节点，意味着单个输出。每一层都有节点和权重，参数总数为 161。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1"></a><span class="co"># 拟合模型</span></span>
-<span id="cb25-2"><a href="#cb25-2"></a>mod_mlp <span class="ot">&lt;-</span> <span class="fu">fit</span>(model,</span>
-<span id="cb25-3"><a href="#cb25-3"></a>  <span class="at">x =</span> train_data[, <span class="fu">c</span>(<span class="st">"x1"</span>, <span class="st">"x2"</span>, <span class="st">"x3"</span>)],</span>
-<span id="cb25-4"><a href="#cb25-4"></a>  <span class="at">y =</span> train_data[, <span class="st">"y"</span>],</span>
-<span id="cb25-5"><a href="#cb25-5"></a>  <span class="at">epochs =</span> <span class="dv">200</span>,</span>
-<span id="cb25-6"><a href="#cb25-6"></a>  <span class="at">batch_size =</span> <span class="dv">10</span>, <span class="co"># 每次更新梯度所用的样本量</span></span>
-<span id="cb25-7"><a href="#cb25-7"></a>  <span class="at">validation_split =</span> <span class="fl">0.2</span>, <span class="co"># 从训练数据中拆分一部分用作验证集</span></span>
-<span id="cb25-8"><a href="#cb25-8"></a>  <span class="at">verbose =</span> <span class="dv">0</span> <span class="co"># 不显示训练进度</span></span>
-<span id="cb25-9"><a href="#cb25-9"></a>)</span>
-<span id="cb25-10"><a href="#cb25-10"></a><span class="co"># 将测试数据代入模型，计算损失函数和监控度量</span></span>
-<span id="cb25-11"><a href="#cb25-11"></a><span class="fu">evaluate</span>(model, test_data[, <span class="fu">c</span>(<span class="st">"x1"</span>, <span class="st">"x2"</span>, <span class="st">"x3"</span>)], test_data[, <span class="st">"y"</span>])</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1"></a><span class="co"># 拟合模型</span></span>
+<span id="cb38-2"><a href="#cb38-2"></a><span class="fu">fit</span>(mod_mlp,</span>
+<span id="cb38-3"><a href="#cb38-3"></a>  <span class="at">x =</span> train_data[, <span class="fu">c</span>(<span class="st">"x1"</span>, <span class="st">"x2"</span>, <span class="st">"x3"</span>)],</span>
+<span id="cb38-4"><a href="#cb38-4"></a>  <span class="at">y =</span> train_data[, <span class="st">"y"</span>],</span>
+<span id="cb38-5"><a href="#cb38-5"></a>  <span class="at">epochs =</span> <span class="dv">200</span>,</span>
+<span id="cb38-6"><a href="#cb38-6"></a>  <span class="at">batch_size =</span> <span class="dv">10</span>, <span class="co"># 每次更新梯度所用的样本量</span></span>
+<span id="cb38-7"><a href="#cb38-7"></a>  <span class="at">validation_split =</span> <span class="fl">0.2</span>, <span class="co"># 从训练数据中拆分一部分用作验证集</span></span>
+<span id="cb38-8"><a href="#cb38-8"></a>  <span class="at">verbose =</span> <span class="dv">0</span> <span class="co"># 不显示训练进度</span></span>
+<span id="cb38-9"><a href="#cb38-9"></a>)</span>
+<span id="cb38-10"><a href="#cb38-10"></a><span class="co"># 将测试数据代入模型，计算损失函数和监控度量</span></span>
+<span id="cb38-11"><a href="#cb38-11"></a><span class="fu">evaluate</span>(mod_mlp, test_data[, <span class="fu">c</span>(<span class="st">"x1"</span>, <span class="st">"x2"</span>, <span class="st">"x3"</span>)], test_data[, <span class="st">"y"</span>])</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>#&gt; 2/2 - 0s - loss: 4697.5454 - mae: 54.3451 - 17ms/epoch - 8ms/step</code></pre>
+<pre><code>#&gt; 2/2 - 0s - loss: 2517.1836 - mae: 40.8876 - 19ms/epoch - 9ms/step</code></pre>
 </div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt;       loss        mae 
-#&gt; 4697.54541   54.34505</code></pre>
+#&gt; 2517.18359   40.88759</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1"></a><span class="co"># 测试集上的预测</span></span>
-<span id="cb28-2"><a href="#cb28-2"></a>mod_mlp_pred <span class="ot">&lt;-</span> <span class="fu">predict</span>(model, test_data[, <span class="fu">c</span>(<span class="st">"x1"</span>, <span class="st">"x2"</span>, <span class="st">"x3"</span>)]) </span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1"></a><span class="co"># 测试集上的预测</span></span>
+<span id="cb41-2"><a href="#cb41-2"></a>mlp_test_pred <span class="ot">&lt;-</span> <span class="fu">predict</span>(mod_mlp, test_data[, <span class="fu">c</span>(<span class="st">"x1"</span>, <span class="st">"x2"</span>, <span class="st">"x3"</span>)]) </span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>#&gt; 2/2 - 0s - 65ms/epoch - 33ms/step</code></pre>
+<pre><code>#&gt; 2/2 - 0s - 69ms/epoch - 34ms/step</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1"></a><span class="fu">sqrt</span>(<span class="fu">mean</span>((test_data[, <span class="st">"y"</span>] <span class="sc">-</span> mod_mlp_pred)<span class="sc">^</span><span class="dv">2</span>)) <span class="co"># 计算均方根误差</span></span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb43"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1"></a>mlp_train_pred <span class="ot">&lt;-</span> <span class="fu">predict</span>(mod_mlp, train_data[, <span class="fu">c</span>(<span class="st">"x1"</span>, <span class="st">"x2"</span>, <span class="st">"x3"</span>)]) </span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>#&gt; [1] 68.53864</code></pre>
+<pre><code>#&gt; 3/3 - 0s - 16ms/epoch - 5ms/step</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb45"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1"></a><span class="fu">sqrt</span>(<span class="fu">mean</span>((test_data[, <span class="st">"y"</span>] <span class="sc">-</span> mlp_test_pred)<span class="sc">^</span><span class="dv">2</span>)) <span class="co"># 计算均方根误差</span></span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt; [1] 50.17154</code></pre>
 </div>
 </div>
 <p>从 RMSE 来看，MLP（多层感知机）预测效果比单层感知机稍好些，可网络复杂度是增加很多的。</p>
+<div class="cell" data-par="true">
+<div class="sourceCode cell-code" id="cb47"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1"></a>mlp_train_pred_ts <span class="ot">&lt;-</span> <span class="fu">ts</span>(<span class="at">data =</span> mlp_train_pred, <span class="at">start =</span> <span class="fu">c</span>(<span class="dv">1949</span>, <span class="dv">3</span>), <span class="at">frequency =</span> <span class="dv">12</span>)</span>
+<span id="cb47-2"><a href="#cb47-2"></a>mlp_test_pred_ts <span class="ot">&lt;-</span> <span class="fu">ts</span>(<span class="at">data =</span> mlp_test_pred, <span class="at">start =</span> <span class="fu">c</span>(<span class="dv">1957</span>, <span class="dv">1</span>), <span class="at">frequency =</span> <span class="dv">12</span>)</span>
+<span id="cb47-3"><a href="#cb47-3"></a><span class="fu">plot</span>(AirPassengers)</span>
+<span id="cb47-4"><a href="#cb47-4"></a><span class="fu">lines</span>(mlp_train_pred_ts, <span class="at">col =</span> <span class="st">"red"</span>)</span>
+<span id="cb47-5"><a href="#cb47-5"></a><span class="fu">lines</span>(mlp_test_pred_ts, <span class="at">col =</span> <span class="st">"green"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-tensorflow-mlp" class="quarto-figure quarto-figure-center anchored" width="480">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-tensorflow-mlp-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="time-series-regression_files/figure-html/fig-tensorflow-mlp-1.png" class="img-fluid figure-img" width="480">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-tensorflow-mlp-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;39.10: 多层感知机预测
+</figcaption></figure>
+</div>
+</div>
+</div>
 <p>下面用 LSTM （长短期记忆）神经网络来训练时间序列数据，预测未来一周的趋势。输出不再是一天（单点输出），而是 7 天的预测值（多点输出）。参考 <strong>tensorflow</strong> 包的<a href="https://tensorflow.rstudio.com/guides/keras/working_with_rnns#introduction">官网</a>中 RNN 递归神经网络的介绍。</p>
 </section></section><section id="习题" class="level2" data-number="39.4"><h2 data-number="39.4" class="anchored" data-anchor-id="习题">
 <span class="header-section-number">39.4</span> 习题</h2>
@@ -1092,20 +1384,20 @@ r_t &amp;= \mu + a_t, \quad a_t = \sigma_t \epsilon_t, \quad \epsilon_t \sim \ma
 <li>
 <p>基于 R 软件内置的数据集 <code>sunspots</code> 和 <code>sunspot.month</code> 比较 INLA 和 <strong>mgcv</strong> 框架的预测效果。</p>
 <div class="cell">
-<details class="code-fold"><summary>代码</summary><div class="sourceCode cell-code" id="cb32"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1"></a>sunspots_tbl <span class="ot">&lt;-</span> broom<span class="sc">::</span><span class="fu">tidy</span>(sunspots)</span>
-<span id="cb32-2"><a href="#cb32-2"></a>sunspots_month_tbl <span class="ot">&lt;-</span> broom<span class="sc">::</span><span class="fu">tidy</span>(sunspot.month)</span>
-<span id="cb32-3"><a href="#cb32-3"></a><span class="fu">ggplot</span>() <span class="sc">+</span></span>
-<span id="cb32-4"><a href="#cb32-4"></a>  <span class="fu">geom_line</span>(<span class="at">data =</span> sunspots_month_tbl, <span class="fu">aes</span>(<span class="at">x =</span> index, <span class="at">y =</span> value), <span class="at">color =</span> <span class="st">"red"</span>) <span class="sc">+</span></span>
-<span id="cb32-5"><a href="#cb32-5"></a>  <span class="fu">geom_line</span>(<span class="at">data =</span> sunspots_tbl, <span class="fu">aes</span>(<span class="at">x =</span> index, <span class="at">y =</span> value)) <span class="sc">+</span></span>
-<span id="cb32-6"><a href="#cb32-6"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span></span>
-<span id="cb32-7"><a href="#cb32-7"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"年月"</span>, <span class="at">y =</span> <span class="st">"数量"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<details class="code-fold"><summary>代码</summary><div class="sourceCode cell-code" id="cb48"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1"></a>sunspots_tbl <span class="ot">&lt;-</span> broom<span class="sc">::</span><span class="fu">tidy</span>(sunspots)</span>
+<span id="cb48-2"><a href="#cb48-2"></a>sunspots_month_tbl <span class="ot">&lt;-</span> broom<span class="sc">::</span><span class="fu">tidy</span>(sunspot.month)</span>
+<span id="cb48-3"><a href="#cb48-3"></a><span class="fu">ggplot</span>() <span class="sc">+</span></span>
+<span id="cb48-4"><a href="#cb48-4"></a>  <span class="fu">geom_line</span>(<span class="at">data =</span> sunspots_month_tbl, <span class="fu">aes</span>(<span class="at">x =</span> index, <span class="at">y =</span> value), <span class="at">color =</span> <span class="st">"red"</span>) <span class="sc">+</span></span>
+<span id="cb48-5"><a href="#cb48-5"></a>  <span class="fu">geom_line</span>(<span class="at">data =</span> sunspots_tbl, <span class="fu">aes</span>(<span class="at">x =</span> index, <span class="at">y =</span> value)) <span class="sc">+</span></span>
+<span id="cb48-6"><a href="#cb48-6"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span></span>
+<span id="cb48-7"><a href="#cb48-7"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"年月"</span>, <span class="at">y =</span> <span class="st">"数量"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details><div class="cell-output-display">
 <div id="fig-sunspots" class="quarto-figure quarto-figure-center anchored" width="672">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-sunspots-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <img src="time-series-regression_files/figure-html/fig-sunspots-1.png" class="img-fluid figure-img" width="672">
 </div>
 <figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-sunspots-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-图&nbsp;39.6: 预测月粒度太阳黑子数量
+图&nbsp;39.11: 预测月粒度太阳黑子数量
 </figcaption></figure>
 </div>
 </div>
