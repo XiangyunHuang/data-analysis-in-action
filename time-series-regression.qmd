@@ -242,13 +242,14 @@ $$
 
 air_passengers_df <- data.frame(y = as.vector(AirPassengers), t = 1:144)
 fit_lm1 <- lm(y ~ t + sin(t / 12 * 2 * pi) + cos(t / 12 * 2 * pi), data = air_passengers_df)
-fit_lm2 <- lm(y ~ t + sin(t / 12 * 2 * pi) + cos(t / 12 * 2 * pi) + 
-                sin(t / 12 * 2 * 2 * pi) + cos(t / 12 * 2 * 2 * pi), 
-              data = air_passengers_df)
-fit_lm3 <- lm(y ~ t + sin(t / 12 * 2 * pi) + cos(t / 12 * 2 * pi) + 
-                sin(t / 12 * 2 * 2 * pi) + cos(t / 12 * 2 * 2 * pi) + 
-                sin(t / 12 * 3 * 2 * pi) + cos(t / 12 * 3 * 2 * pi), 
-              data = air_passengers_df)
+fit_lm2 <- update(fit_lm1, . ~ . +
+  sin(t / 12 * 2 * 2 * pi) + cos(t / 12 * 2 * 2 * pi),
+data = air_passengers_df
+)
+fit_lm3 <- update(fit_lm2, . ~ . +
+  sin(t / 12 * 3 * 2 * pi) + cos(t / 12 * 3 * 2 * pi),
+data = air_passengers_df
+)
 plot(y ~ t, air_passengers_df, type = "l")
 lines(x = air_passengers_df$t, y = fit_lm1$fitted.values, col = "red")
 lines(x = air_passengers_df$t, y = fit_lm2$fitted.values, col = "green")
@@ -279,12 +280,56 @@ library(INLA)
 
 ### mgcv 包 {#sec-gnu-mgcv}
 
-模型内容、成分结构和参数解释。一般可加模型，在似然函数中添加平滑样条，与 Lasso 回归模型在形式上有相似之处，属于频率派方法。
+**mgcv** 包 [@Wood2017] 是 R 软件内置的推荐组件，由 Simon Wood 开发和维护，历经多年，成熟稳定。对于时间序列数据预测，数万和百万级观测值都可以 [@wood2015]。函数 `bam()` 相比于函数 `gam()` 的优势是可以处理大规模的时间序列数据。
 
-**mgcv** 包 [@Wood2017] 是 R 软件内置的推荐组件，由 Simon Wood 开发和维护，历经多年，成熟稳定。对于时间序列数据预测，数万和百万级观测值都可以 [@wood2015]。函数 `bam()`
+GAM 估计时序数据中的非线性趋势，残差看作平稳的随机过程，残差序列的相关性由函数 `gamm()` 中参数 correlation 指定。函数 `corCAR1()` 表示一阶条件自回归，这里的条件是指，给定响应变量的分布后，残差序列服从 AR(1) 过程。
 
 ```{r}
 library(mgcv)
+mod <- gamm(y ~ s(t, k = 15),
+  data = air_passengers_df, family = gaussian,
+  correlation = corCAR1(form = ~t), method = "REML"
+)
+summary(mod$lme)
+```
+
+提取 AR(1) 中的参数 $\phi$ 的估计和置信区间
+
+```{r}
+airPhi <- intervals(mod$lme, which = "var-cov")$corStruct
+airPhi
+```
+
+```{r}
+# 趋势估计结果
+summary(mod$gam)
+```
+
+函数 `gam()` 相比于 `lm()` 的优势是可以用样条拟合非线性趋势，不局限于线性趋势。
+
+```{r}
+#| label: fig-mgcv-gam
+#| fig-cap: 趋势拟合图
+#| fig-showtext: true
+#| fig-width: 5
+#| fig-height: 4
+#| par: true
+
+plot(mod$gam)
+```
+
+输出结果显示存在线性趋势，符合预期。拟合结果见下图
+
+```{r}
+#| label: fig-mgcv-fitted
+#| fig-cap: 时间序列回归拟合
+#| fig-showtext: true
+#| fig-width: 5
+#| fig-height: 4
+#| par: true
+
+plot(y ~ t, air_passengers_df, type = "l")
+lines(x = air_passengers_df$t, y = mod$gam$fitted.values, col = "red")
 ```
 
 ### tensorflow 框架 {#sec-google-tensorflow}
