@@ -308,7 +308,7 @@ summary(mod$gam)
 函数 `gam()` 相比于 `lm()` 的优势是可以用样条拟合非线性趋势，不局限于线性趋势。
 
 ```{r}
-#| label: fig-mgcv-gam
+#| label: fig-mgcv-linear-trend
 #| fig-cap: 趋势拟合图
 #| fig-showtext: true
 #| fig-width: 5
@@ -321,8 +321,8 @@ plot(mod$gam)
 输出结果显示存在线性趋势，符合预期。不过，就此数据集而言，使用 mgcv 包来建模有点杀鸡用牛刀。线性趋势的拟合结果见下图。
 
 ```{r}
-#| label: fig-mgcv-fitted
-#| fig-cap: 时间序列回归拟合
+#| label: fig-mgcv-trend-fitted
+#| fig-cap: 线性趋势拟合
 #| fig-showtext: true
 #| fig-width: 5
 #| fig-height: 4
@@ -332,7 +332,28 @@ plot(y ~ t, air_passengers_df, type = "l")
 lines(x = air_passengers_df$t, y = mod$gam$fitted.values, col = "red")
 ```
 
-可以仿照前面 `lm()` 的介绍，引入三角函数来刻画周期性成分。
+可以仿照前面 `lm()` 的介绍，引入三角函数来刻画周期性成分。残差序列不仅限于自回归模型，还可以是一般的 ARMA 模型，比如下面将移动自回归模型的阶定为 p = 2, q = 1。
+
+```{r}
+mod2 <- gamm(
+  y ~ s(t, k = 15) + I(sin(t / 12 * 2 * pi)) + I(cos(t / 12 * 2 * pi)),
+  data = air_passengers_df, family = gaussian,
+  correlation = corARMA(form = ~ t, p = 2, q = 1), method = "REML"
+)
+summary(mod2$lme)
+```
+
+```{r}
+#| label: fig-mgcv-seasonal-fitted
+#| fig-cap: 趋势和季节性拟合
+#| fig-showtext: true
+#| fig-width: 5
+#| fig-height: 4
+#| par: true
+
+plot(y ~ t, air_passengers_df, type = "l")
+lines(x = air_passengers_df$t, y = mod2$gam$fitted.values, col = "red")
+```
 
 ### tensorflow 框架 {#sec-google-tensorflow}
 
