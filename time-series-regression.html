@@ -885,7 +885,7 @@ r_t &amp;= \mu + a_t, \quad a_t = \sigma_t \epsilon_t, \quad \epsilon_t \sim \ma
 #&gt; 
 #&gt; Mean and Variance Equation:
 #&gt;  data ~ 1 + garch(2, 0)
-#&gt; &lt;environment: 0x7ff4836e2df8&gt;
+#&gt; &lt;environment: 0x7f7f23f192a8&gt;
 #&gt;  [data = meituan_log_return]
 #&gt; 
 #&gt; Conditional Distribution:
@@ -912,7 +912,7 @@ r_t &amp;= \mu + a_t, \quad a_t = \sigma_t \epsilon_t, \quad \epsilon_t \sim \ma
 #&gt;  2459.91    normalized:  1.930856 
 #&gt; 
 #&gt; Description:
-#&gt;  Wed Dec 20 12:44:01 2023 by user:  
+#&gt;  Wed Dec 20 13:25:10 2023 by user:  
 #&gt; 
 #&gt; 
 #&gt; Standardised Residuals Tests:
@@ -961,7 +961,7 @@ r_t &amp;= \mu + a_t, \quad a_t = \sigma_t \epsilon_t, \quad \epsilon_t \sim \ma
 #&gt; 
 #&gt; Mean and Variance Equation:
 #&gt;  data ~ 1 + garch(1, 1)
-#&gt; &lt;environment: 0x7ff47f0f5820&gt;
+#&gt; &lt;environment: 0x7f7f1d3db008&gt;
 #&gt;  [data = meituan_log_return]
 #&gt; 
 #&gt; Conditional Distribution:
@@ -988,7 +988,7 @@ r_t &amp;= \mu + a_t, \quad a_t = \sigma_t \epsilon_t, \quad \epsilon_t \sim \ma
 #&gt;  2478.786    normalized:  1.945672 
 #&gt; 
 #&gt; Description:
-#&gt;  Wed Dec 20 12:44:01 2023 by user:  
+#&gt;  Wed Dec 20 13:25:10 2023 by user:  
 #&gt; 
 #&gt; 
 #&gt; Standardised Residuals Tests:
@@ -1046,6 +1046,20 @@ y = at + b + c \sin(\frac{t}{12} \times 2\pi) + d \cos(\frac{t}{12} \times 2\pi)
 <p>模型 1 已经很好地捕捉到趋势和周期信息，当添加小周期后，略有改善，继续添加更多的小周期，不再有明显改善。实际上，小周期对应的回归系数也将不再显著。所以，这类模型的优化空间见顶了，需要进一步观察和利用残差的规律，使用更加复杂的模型。</p>
 <section id="stan-框架-1" class="level3" data-number="39.2.1"><h3 data-number="39.2.1" class="anchored" data-anchor-id="stan-框架-1">
 <span class="header-section-number">39.2.1</span> Stan 框架</h3>
+<p>非线性趋势、多季节性（多个周期混合）、特殊节假日、突发热点事件、残差成分（平稳），能同时应对这五种情况的建模方法是贝叶斯可加模型和神经网络模型，比如基于 Stan 实现的 prophet 包和 tensorflow 框架。</p>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+提示
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>prophet 包是如何同时容纳和处理这些情况，是否可以简化到在 cmdstanr 包中实现，是否可以在 mgcv 和 INLA 中扩展实现。</p>
+</div>
+</div>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb18"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1"></a><span class="fu">library</span>(cmdstanr)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
@@ -1089,21 +1103,21 @@ y = at + b + c \sin(\frac{t}{12} \times 2\pi) + d \cos(\frac{t}{12} \times 2\pi)
 #&gt;    silent = silent, ", " inla.mode = inla.mode, safe = FALSE, debug = 
 #&gt;    debug, .parent.frame = .parent.frame)" ) 
 #&gt; Time used:
-#&gt;     Pre = 1.63, Running = 0.529, Post = 0.0418, Total = 2.2 
+#&gt;     Pre = 1.59, Running = 0.508, Post = 0.0389, Total = 2.14 
 #&gt; Fixed effects:
 #&gt;              mean    sd 0.025quant 0.5quant 0.975quant  mode kld
 #&gt; (Intercept) 5.159 0.252      4.666    5.158      5.657 5.158   0
 #&gt; year1950    0.050 0.134     -0.215    0.050      0.313 0.050   0
-#&gt; year1951    0.174 0.190     -0.201    0.174      0.546 0.174   0
-#&gt; year1952    0.262 0.233     -0.198    0.262      0.717 0.262   0
-#&gt; year1953    0.330 0.269     -0.201    0.331      0.857 0.331   0
+#&gt; year1951    0.174 0.190     -0.201    0.175      0.546 0.175   0
+#&gt; year1952    0.262 0.233     -0.197    0.262      0.717 0.262   0
+#&gt; year1953    0.331 0.269     -0.201    0.332      0.857 0.332   0
 #&gt; year1954    0.357 0.301     -0.236    0.358      0.945 0.358   0
-#&gt; year1955    0.442 0.329     -0.208    0.443      1.086 0.443   0
+#&gt; year1955    0.442 0.329     -0.208    0.443      1.087 0.443   0
 #&gt; year1956    0.510 0.356     -0.193    0.511      1.206 0.511   0
 #&gt; year1957    0.567 0.380     -0.184    0.568      1.311 0.568   0
 #&gt; year1958    0.576 0.403     -0.219    0.577      1.365 0.577   0
-#&gt; year1959    0.647 0.425     -0.191    0.648      1.478 0.648   0
-#&gt; year1960    0.683 0.445     -0.195    0.684      1.555 0.685   0
+#&gt; year1959    0.647 0.425     -0.190    0.648      1.478 0.648   0
+#&gt; year1960    0.684 0.445     -0.194    0.685      1.555 0.685   0
 #&gt; 
 #&gt; Random effects:
 #&gt;   Name     Model
@@ -1111,11 +1125,11 @@ y = at + b + c \sin(\frac{t}{12} \times 2\pi) + d \cos(\frac{t}{12} \times 2\pi)
 #&gt; 
 #&gt; Model hyperparameters:
 #&gt;                                           mean    sd 0.025quant 0.5quant
-#&gt; Precision for the Gaussian observations 101.38 18.14      69.78    99.99
-#&gt; Precision for ID                        155.14 40.70      92.68   149.32
+#&gt; Precision for the Gaussian observations 101.34 18.15      69.77    99.94
+#&gt; Precision for ID                        155.12 40.68      92.53   149.35
 #&gt;                                         0.975quant   mode
-#&gt; Precision for the Gaussian observations     140.94  97.59
-#&gt; Precision for ID                            251.69 137.50
+#&gt; Precision for the Gaussian observations     140.97  97.48
+#&gt; Precision for ID                            251.49 137.66
 #&gt; 
 #&gt; Marginal log-Likelihood:  6.61 
 #&gt;  is computed 
@@ -1153,7 +1167,7 @@ y = at + b + c \sin(\frac{t}{12} \times 2\pi) + d \cos(\frac{t}{12} \times 2\pi)
 #&gt;    silent = silent, ", " inla.mode = inla.mode, safe = FALSE, debug = 
 #&gt;    debug, .parent.frame = .parent.frame)" ) 
 #&gt; Time used:
-#&gt;     Pre = 1.66, Running = 0.555, Post = 0.0274, Total = 2.24 
+#&gt;     Pre = 1.58, Running = 0.634, Post = 0.0276, Total = 2.24 
 #&gt; Fixed effects:
 #&gt;              mean    sd 0.025quant 0.5quant 0.975quant  mode kld
 #&gt; (Intercept) 4.836 0.020      4.797    4.836      4.875 4.836   0
@@ -1162,7 +1176,7 @@ y = at + b + c \sin(\frac{t}{12} \times 2\pi) + d \cos(\frac{t}{12} \times 2\pi)
 #&gt; year1952    0.441 0.028      0.386    0.441      0.496 0.441   0
 #&gt; year1953    0.573 0.028      0.517    0.573      0.628 0.573   0
 #&gt; year1954    0.630 0.028      0.575    0.630      0.686 0.630   0
-#&gt; year1955    0.803 0.028      0.748    0.803      0.858 0.803   0
+#&gt; year1955    0.803 0.028      0.748    0.803      0.859 0.803   0
 #&gt; year1956    0.948 0.028      0.893    0.948      1.004 0.948   0
 #&gt; year1957    1.062 0.028      1.007    1.062      1.118 1.062   0
 #&gt; year1958    1.094 0.028      1.039    1.094      1.150 1.094   0
@@ -1175,11 +1189,11 @@ y = at + b + c \sin(\frac{t}{12} \times 2\pi) + d \cos(\frac{t}{12} \times 2\pi)
 #&gt; 
 #&gt; Model hyperparameters:
 #&gt;                                             mean       sd 0.025quant 0.5quant
-#&gt; Precision for the Gaussian observations   213.00    27.46     163.39   211.49
-#&gt; Precision for ID                        42088.66 27527.88   10159.24 35359.08
+#&gt; Precision for the Gaussian observations   213.02    27.47     163.43   211.49
+#&gt; Precision for ID                        42093.80 27548.99   10150.84 35356.53
 #&gt;                                         0.975quant     mode
-#&gt; Precision for the Gaussian observations     271.29   208.95
-#&gt; Precision for ID                         113515.67 24356.94
+#&gt; Precision for the Gaussian observations     271.39   208.87
+#&gt; Precision for ID                         113580.23 24344.11
 #&gt; 
 #&gt; Marginal log-Likelihood:  74.77 
 #&gt;  is computed 
@@ -1189,7 +1203,6 @@ y = at + b + c \sin(\frac{t}{12} \times 2\pi) + d \cos(\frac{t}{12} \times 2\pi)
 </div>
 </section></section><section id="一些非参数模型" class="level2" data-number="39.3"><h2 data-number="39.3" class="anchored" data-anchor-id="一些非参数模型">
 <span class="header-section-number">39.3</span> 一些非参数模型</h2>
-<p>非线性趋势、多季节性（多个周期混合）、特殊节假日、突发热点事件、残差成分（平稳），能同时应对这五种情况的建模方法是贝叶斯可加模型，基于 Stan 实现 prophet 包。</p>
 <section id="sec-gnu-mgcv" class="level3" data-number="39.3.1"><h3 data-number="39.3.1" class="anchored" data-anchor-id="sec-gnu-mgcv">
 <span class="header-section-number">39.3.1</span> mgcv 包</h3>
 <p><strong>mgcv</strong> 包 <span class="citation" data-cites="Wood2017">(<a href="references.html#ref-Wood2017" role="doc-biblioref">S. N. Wood 2017</a>)</span> 是 R 软件内置的推荐组件，由 Simon Wood 开发和维护，历经多年，成熟稳定。函数 <code>bam()</code> 相比于函数 <code>gam()</code> 的优势是可以处理大规模的时间序列数据。对于时间序列数据预测，数万和百万级观测值都可以 <span class="citation" data-cites="wood2015">(<a href="references.html#ref-wood2015" role="doc-biblioref">Simon N. Wood, Goude, 和 Shaw 2015</a>)</span>。</p>
@@ -1440,7 +1453,7 @@ y = at + b + c \sin(\frac{t}{12} \times 2\pi) + d \cos(\frac{t}{12} \times 2\pi)
 <span id="cb39-10"><a href="#cb39-10"></a><span class="co"># 将测试数据代入模型，计算损失函数和监控度量</span></span>
 <span id="cb39-11"><a href="#cb39-11"></a><span class="fu">evaluate</span>(mod_mlp, test_data[, <span class="fu">c</span>(<span class="st">"x1"</span>, <span class="st">"x2"</span>, <span class="st">"x3"</span>)], test_data[, <span class="st">"y"</span>])</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>#&gt; 2/2 - 0s - loss: 2517.1836 - mae: 40.8876 - 20ms/epoch - 10ms/step</code></pre>
+<pre><code>#&gt; 2/2 - 0s - loss: 2517.1836 - mae: 40.8876 - 17ms/epoch - 8ms/step</code></pre>
 </div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt;       loss        mae 
@@ -1449,11 +1462,11 @@ y = at + b + c \sin(\frac{t}{12} \times 2\pi) + d \cos(\frac{t}{12} \times 2\pi)
 <div class="sourceCode cell-code" id="cb42"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1"></a><span class="co"># 测试集上的预测</span></span>
 <span id="cb42-2"><a href="#cb42-2"></a>mlp_test_pred <span class="ot">&lt;-</span> <span class="fu">predict</span>(mod_mlp, test_data[, <span class="fu">c</span>(<span class="st">"x1"</span>, <span class="st">"x2"</span>, <span class="st">"x3"</span>)]) </span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>#&gt; 2/2 - 0s - 69ms/epoch - 35ms/step</code></pre>
+<pre><code>#&gt; 2/2 - 0s - 65ms/epoch - 33ms/step</code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb44"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1"></a>mlp_train_pred <span class="ot">&lt;-</span> <span class="fu">predict</span>(mod_mlp, train_data[, <span class="fu">c</span>(<span class="st">"x1"</span>, <span class="st">"x2"</span>, <span class="st">"x3"</span>)]) </span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>#&gt; 3/3 - 0s - 18ms/epoch - 6ms/step</code></pre>
+<pre><code>#&gt; 3/3 - 0s - 16ms/epoch - 5ms/step</code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb46"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1"></a><span class="fu">sqrt</span>(<span class="fu">mean</span>((test_data[, <span class="st">"y"</span>] <span class="sc">-</span> mlp_test_pred)<span class="sc">^</span><span class="dv">2</span>)) <span class="co"># 计算均方根误差</span></span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
