@@ -294,13 +294,13 @@ mod1 <- gam(y ~ s(year) + s(month, bs = "cr", k = 12),
 summary(mod1)
 ```
 
-年和月的趋势变化
+观察年和月的趋势变化，逐年增长趋势基本是线性的，略有波动，逐月变化趋势比较复杂，不过，可以明显看出在 7-9 月是高峰期，11 月和1-3月是低谷期。
 
 ```{r}
-#| label: fig-mgcv
+#| label: fig-mgcv-trend
 #| fig-cap: 年和月的趋势变化
 #| fig-showtext: true
-#| fig-width: 5
+#| fig-width: 7
 #| fig-height: 4
 #| par: true
 
@@ -308,7 +308,7 @@ layout(matrix(1:2, nrow = 1))
 plot(mod1, shade = TRUE)
 ```
 
-拟合效果
+将拟合效果绘制出来，见下图，整体上，捕捉到了趋势和周期，不过，存在欠拟合，年周期内波动幅度随时间有变化趋势，趋势和周期存在交互作用。
 
 ```{r}
 #| label: fig-mgcv-1
@@ -323,14 +323,14 @@ plot(AirPassengers)
 lines(air_passengers_ts, col = "red")
 ```
 
-从拟合结果来看，存在欠拟合，年周期内波动幅度随时间有变化趋势，趋势和周期存在交互作用
+整体上，乘客数逐年呈线性增长，每年不同月份呈现波动，淡季和旺季出行的流量有很大差异，近年来，这种差异的波动在扩大。为了刻画这种情况，考虑年度趋势和月度波动的交互作用。
 
 ```{r}
 mod2 <- gam(y ~ s(year, month), data = air_passengers_tbl, family = gaussian)
 summary(mod2)
 ```
 
-交互作用图
+可以看到，调整的 $R^2$ 明显增加，拟合效果更好，各年各月份的乘客数变化，见下图。
 
 ```{r}
 #| label: fig-mgcv-interaction
@@ -338,12 +338,11 @@ summary(mod2)
 #| fig-showtext: true
 #| fig-width: 5
 #| fig-height: 4
-#| par: true
 
 plot(mod2)
 ```
 
-趋势拟合
+上图是轮廓图，下面用透视图展示趋势拟合的效果。
 
 ```{r}
 #| label: fig-mgcv-persp
@@ -351,12 +350,13 @@ plot(mod2)
 #| fig-showtext: true
 #| fig-width: 5
 #| fig-height: 4
-#| par: true
 
-vis.gam(mod2, theta = -35, phi = 20, ticktype = "detailed", expand = .65)
+op <- par(mar = c(0, 1.5, 0, 0))
+vis.gam(mod2, theta = -35, phi = 20, ticktype = "detailed", expand = .65, zlab = "")
+on.exit(par(op), add = TRUE) 
 ```
 
-拟合趋势图
+最后，在原始数据的基础上，添加拟合数据，得到如下拟合趋势图，与前面的拟合图比较，可以看出效果提升很明显。
 
 ```{r}
 #| label: fig-mgcv-2
