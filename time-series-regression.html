@@ -885,7 +885,7 @@ r_t &amp;= \mu + a_t, \quad a_t = \sigma_t \epsilon_t, \quad \epsilon_t \sim \ma
 #&gt; 
 #&gt; Mean and Variance Equation:
 #&gt;  data ~ 1 + garch(2, 0)
-#&gt; &lt;environment: 0x7f7f23f192a8&gt;
+#&gt; &lt;environment: 0x7fbe3566dd68&gt;
 #&gt;  [data = meituan_log_return]
 #&gt; 
 #&gt; Conditional Distribution:
@@ -912,7 +912,7 @@ r_t &amp;= \mu + a_t, \quad a_t = \sigma_t \epsilon_t, \quad \epsilon_t \sim \ma
 #&gt;  2459.91    normalized:  1.930856 
 #&gt; 
 #&gt; Description:
-#&gt;  Wed Dec 20 13:25:10 2023 by user:  
+#&gt;  Thu Dec 21 06:38:01 2023 by user:  
 #&gt; 
 #&gt; 
 #&gt; Standardised Residuals Tests:
@@ -961,7 +961,7 @@ r_t &amp;= \mu + a_t, \quad a_t = \sigma_t \epsilon_t, \quad \epsilon_t \sim \ma
 #&gt; 
 #&gt; Mean and Variance Equation:
 #&gt;  data ~ 1 + garch(1, 1)
-#&gt; &lt;environment: 0x7f7f1d3db008&gt;
+#&gt; &lt;environment: 0x7fbe4e8ad898&gt;
 #&gt;  [data = meituan_log_return]
 #&gt; 
 #&gt; Conditional Distribution:
@@ -988,7 +988,7 @@ r_t &amp;= \mu + a_t, \quad a_t = \sigma_t \epsilon_t, \quad \epsilon_t \sim \ma
 #&gt;  2478.786    normalized:  1.945672 
 #&gt; 
 #&gt; Description:
-#&gt;  Wed Dec 20 13:25:10 2023 by user:  
+#&gt;  Thu Dec 21 06:38:01 2023 by user:  
 #&gt; 
 #&gt; 
 #&gt; Standardised Residuals Tests:
@@ -1057,7 +1057,7 @@ y = at + b + c \sin(\frac{t}{12} \times 2\pi) + d \cos(\frac{t}{12} \times 2\pi)
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p>prophet 包是如何同时容纳和处理这些情况，是否可以简化到在 cmdstanr 包中实现，是否可以在 mgcv 和 INLA 中扩展实现。</p>
+<p>prophet 包是如何同时处理这些情况，是否可以在 cmdstanr 包中实现，是否可以在 mgcv 和 INLA 中实现？</p>
 </div>
 </div>
 <div class="cell">
@@ -1065,110 +1065,103 @@ y = at + b + c \sin(\frac{t}{12} \times 2\pi) + d \cos(\frac{t}{12} \times 2\pi)
 </div>
 </section><section id="sec-kaust-inla" class="level3" data-number="39.2.2"><h3 data-number="39.2.2" class="anchored" data-anchor-id="sec-kaust-inla">
 <span class="header-section-number">39.2.2</span> INLA 框架</h3>
-<p>阿卜杜拉国王科技大学（King Abdullah University of Science and Technology 简称 KAUST）的 Håvard Rue 等开发了 INLA 框架 <span class="citation" data-cites="Rue2009">(<a href="references.html#ref-Rue2009" role="doc-biblioref">Rue, Martino, 和 Chopin 2009</a>)</span>。《贝叶斯推断与 INLA 》的第3章混合效应模型中随机游走部分 <span class="citation" data-cites="Virgilio2020">(<a href="references.html#ref-Virgilio2020" role="doc-biblioref">Gómez-Rubio 2020</a>)</span>，一个随机过程（如随机游走、AR(p) 过程）作为随机效应。AirPassengers 的方差在变大，取对数尺度后，方差基本保持不变，因此，下面基于对数尺度建模。首先考虑 RW1 随机游走模型，而后考虑季节性。</p>
+<p>阿卜杜拉国王科技大学（King Abdullah University of Science and Technology 简称 KAUST）的 Håvard Rue 等开发了 INLA 框架 <span class="citation" data-cites="Rue2009">(<a href="references.html#ref-Rue2009" role="doc-biblioref">Rue, Martino, 和 Chopin 2009</a>)</span>。《贝叶斯推断与 INLA 》的第3章混合效应模型中随机游走部分 <span class="citation" data-cites="Virgilio2020">(<a href="references.html#ref-Virgilio2020" role="doc-biblioref">Gómez-Rubio 2020</a>)</span>，一个随机过程（如随机游走、AR(p) 过程）作为随机效应。AirPassengers 的方差在变大，取对数尺度后，方差基本保持不变，一阶差分后基本保持平稳。</p>
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1"></a><span class="fu">library</span>(ggfortify)</span>
+<span id="cb19-2"><a href="#cb19-2"></a><span class="fu">autoplot</span>(<span class="fu">log</span>(AirPassengers)) <span class="sc">+</span></span>
+<span id="cb19-3"><a href="#cb19-3"></a>  <span class="fu">theme_classic</span>() <span class="sc">+</span></span>
+<span id="cb19-4"><a href="#cb19-4"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"年月"</span>, <span class="at">y =</span> <span class="st">"对数值"</span>)</span>
+<span id="cb19-5"><a href="#cb19-5"></a><span class="fu">autoplot</span>(<span class="fu">diff</span>(<span class="fu">log</span>(AirPassengers))) <span class="sc">+</span></span>
+<span id="cb19-6"><a href="#cb19-6"></a>  <span class="fu">theme_classic</span>() <span class="sc">+</span></span>
+<span id="cb19-7"><a href="#cb19-7"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"年月"</span>, <span class="at">y =</span> <span class="st">"差分对数值"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="fig-log-airpassengers" class="quarto-layout-panel">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-log-airpassengers-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="quarto-layout-row">
+<div class="cell-output-display quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-log-airpassengers" style="flex-basis: 50.0%;justify-content: flex-start;display: flex;">
+<div id="fig-log-airpassengers-1" class="quarto-figure quarto-figure-center anchored" width="480">
+<figure class="quarto-float quarto-subfloat-fig figure"><div aria-describedby="fig-log-airpassengers-1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="time-series-regression_files/figure-html/fig-log-airpassengers-1.png" class="img-fluid figure-img" data-ref-parent="fig-log-airpassengers" width="480">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-subfloat-caption quarto-subfloat-fig" id="fig-log-airpassengers-1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+(a) 对数尺度
+</figcaption></figure>
+</div>
+</div>
+<div class="cell-output-display quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-log-airpassengers" style="flex-basis: 50.0%;justify-content: flex-start;display: flex;">
+<div id="fig-log-airpassengers-2" class="quarto-figure quarto-figure-center anchored" width="480">
+<figure class="quarto-float quarto-subfloat-fig figure"><div aria-describedby="fig-log-airpassengers-2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="time-series-regression_files/figure-html/fig-log-airpassengers-2.png" class="img-fluid figure-img" data-ref-parent="fig-log-airpassengers" width="480">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-subfloat-caption quarto-subfloat-fig" id="fig-log-airpassengers-2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+(b) 一阶差分
+</figcaption></figure>
+</div>
+</div>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-log-airpassengers-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;39.6: AirPassengers 的时序图
+</figcaption></figure>
+</div>
+<p>因此，下面基于对数尺度建模。首先考虑 RW1 随机游走模型，而后考虑季节性。RW1 模型意味着取对数、一阶差分后序列平稳高斯过程，序列值服从高斯分布。下面设置似然函数的高斯先验 <span class="math inline">\(\mathcal{N}(1,0.2)\)</span> ，目的是防止过拟合。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1"></a><span class="fu">library</span>(INLA)</span>
-<span id="cb19-2"><a href="#cb19-2"></a>air_passengers_df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
-<span id="cb19-3"><a href="#cb19-3"></a>  <span class="at">y =</span> <span class="fu">as.vector</span>(AirPassengers),</span>
-<span id="cb19-4"><a href="#cb19-4"></a>  <span class="at">year =</span> <span class="fu">as.factor</span>(<span class="fu">rep</span>(<span class="dv">1949</span><span class="sc">:</span><span class="dv">1960</span>, <span class="at">each =</span> <span class="dv">12</span>)),</span>
-<span id="cb19-5"><a href="#cb19-5"></a>  <span class="at">month =</span> <span class="fu">rep</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">12</span>, <span class="at">times =</span> <span class="dv">12</span>),</span>
-<span id="cb19-6"><a href="#cb19-6"></a>  <span class="at">ID =</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(AirPassengers)</span>
-<span id="cb19-7"><a href="#cb19-7"></a>)</span>
-<span id="cb19-8"><a href="#cb19-8"></a></span>
-<span id="cb19-9"><a href="#cb19-9"></a>mod_inla_rw1 <span class="ot">&lt;-</span> <span class="fu">inla</span>(</span>
-<span id="cb19-10"><a href="#cb19-10"></a>  <span class="at">formula =</span> <span class="fu">log</span>(y) <span class="sc">~</span> year <span class="sc">+</span> <span class="fu">f</span>(ID, <span class="at">model =</span> <span class="st">"rw1"</span>),</span>
-<span id="cb19-11"><a href="#cb19-11"></a>  <span class="at">family =</span> <span class="st">"gaussian"</span>, <span class="at">data =</span> air_passengers_df,</span>
-<span id="cb19-12"><a href="#cb19-12"></a>  <span class="at">control.family =</span> <span class="fu">list</span>(<span class="at">hyper =</span> <span class="fu">list</span>(<span class="at">prec =</span> <span class="fu">list</span>(<span class="at">param =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="fl">0.2</span>)))),</span>
-<span id="cb19-13"><a href="#cb19-13"></a>  <span class="at">control.predictor =</span> <span class="fu">list</span>(<span class="at">compute =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb19-14"><a href="#cb19-14"></a>)</span>
-<span id="cb19-15"><a href="#cb19-15"></a></span>
-<span id="cb19-16"><a href="#cb19-16"></a><span class="fu">summary</span>(mod_inla_rw1)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1"></a><span class="fu">library</span>(INLA)</span>
+<span id="cb20-2"><a href="#cb20-2"></a><span class="fu">inla.setOption</span>(<span class="at">short.summary =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb20-3"><a href="#cb20-3"></a></span>
+<span id="cb20-4"><a href="#cb20-4"></a>air_passengers_df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb20-5"><a href="#cb20-5"></a>  <span class="at">y =</span> <span class="fu">as.vector</span>(AirPassengers),</span>
+<span id="cb20-6"><a href="#cb20-6"></a>  <span class="at">year =</span> <span class="fu">as.factor</span>(<span class="fu">rep</span>(<span class="dv">1949</span><span class="sc">:</span><span class="dv">1960</span>, <span class="at">each =</span> <span class="dv">12</span>)),</span>
+<span id="cb20-7"><a href="#cb20-7"></a>  <span class="at">month =</span> <span class="fu">as.factor</span>(<span class="fu">rep</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">12</span>, <span class="at">times =</span> <span class="dv">12</span>)),</span>
+<span id="cb20-8"><a href="#cb20-8"></a>  <span class="at">ID =</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(AirPassengers)</span>
+<span id="cb20-9"><a href="#cb20-9"></a>)</span>
+<span id="cb20-10"><a href="#cb20-10"></a></span>
+<span id="cb20-11"><a href="#cb20-11"></a>mod_inla_rw1 <span class="ot">&lt;-</span> <span class="fu">inla</span>(</span>
+<span id="cb20-12"><a href="#cb20-12"></a>  <span class="at">formula =</span> <span class="fu">log</span>(y) <span class="sc">~</span> year <span class="sc">+</span> <span class="fu">f</span>(ID, <span class="at">model =</span> <span class="st">"rw1"</span>),</span>
+<span id="cb20-13"><a href="#cb20-13"></a>  <span class="at">family =</span> <span class="st">"gaussian"</span>, <span class="at">data =</span> air_passengers_df,</span>
+<span id="cb20-14"><a href="#cb20-14"></a>  <span class="at">control.family =</span> <span class="fu">list</span>(<span class="at">hyper =</span> <span class="fu">list</span>(<span class="at">prec =</span> <span class="fu">list</span>(<span class="at">param =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="fl">0.2</span>)))),</span>
+<span id="cb20-15"><a href="#cb20-15"></a>  <span class="at">control.predictor =</span> <span class="fu">list</span>(<span class="at">compute =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb20-16"><a href="#cb20-16"></a>)</span>
+<span id="cb20-17"><a href="#cb20-17"></a></span>
+<span id="cb20-18"><a href="#cb20-18"></a><span class="fu">summary</span>(mod_inla_rw1)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>#&gt; 
-#&gt; Call:
-#&gt;    c("inla.core(formula = formula, family = family, contrasts = contrasts, 
-#&gt;    ", " data = data, quantiles = quantiles, E = E, offset = offset, ", " 
-#&gt;    scale = scale, weights = weights, Ntrials = Ntrials, strata = strata, 
-#&gt;    ", " lp.scale = lp.scale, link.covariates = link.covariates, verbose = 
-#&gt;    verbose, ", " lincomb = lincomb, selection = selection, control.compute 
-#&gt;    = control.compute, ", " control.predictor = control.predictor, 
-#&gt;    control.family = control.family, ", " control.inla = control.inla, 
-#&gt;    control.fixed = control.fixed, ", " control.mode = control.mode, 
-#&gt;    control.expert = control.expert, ", " control.hazard = control.hazard, 
-#&gt;    control.lincomb = control.lincomb, ", " control.update = 
-#&gt;    control.update, control.lp.scale = control.lp.scale, ", " 
-#&gt;    control.pardiso = control.pardiso, only.hyperparam = only.hyperparam, 
-#&gt;    ", " inla.call = inla.call, inla.arg = inla.arg, num.threads = 
-#&gt;    num.threads, ", " keep = keep, working.directory = working.directory, 
-#&gt;    silent = silent, ", " inla.mode = inla.mode, safe = FALSE, debug = 
-#&gt;    debug, .parent.frame = .parent.frame)" ) 
-#&gt; Time used:
-#&gt;     Pre = 1.59, Running = 0.508, Post = 0.0389, Total = 2.14 
-#&gt; Fixed effects:
+<pre><code>#&gt; Fixed effects:
 #&gt;              mean    sd 0.025quant 0.5quant 0.975quant  mode kld
 #&gt; (Intercept) 5.159 0.252      4.666    5.158      5.657 5.158   0
 #&gt; year1950    0.050 0.134     -0.215    0.050      0.313 0.050   0
-#&gt; year1951    0.174 0.190     -0.201    0.175      0.546 0.175   0
-#&gt; year1952    0.262 0.233     -0.197    0.262      0.717 0.262   0
-#&gt; year1953    0.331 0.269     -0.201    0.332      0.857 0.332   0
+#&gt; year1951    0.174 0.190     -0.201    0.174      0.546 0.174   0
+#&gt; year1952    0.262 0.233     -0.198    0.262      0.717 0.262   0
+#&gt; year1953    0.330 0.269     -0.201    0.331      0.857 0.331   0
 #&gt; year1954    0.357 0.301     -0.236    0.358      0.945 0.358   0
-#&gt; year1955    0.442 0.329     -0.208    0.443      1.087 0.443   0
+#&gt; year1955    0.442 0.329     -0.208    0.443      1.086 0.443   0
 #&gt; year1956    0.510 0.356     -0.193    0.511      1.206 0.511   0
-#&gt; year1957    0.567 0.380     -0.184    0.568      1.311 0.568   0
-#&gt; year1958    0.576 0.403     -0.219    0.577      1.365 0.577   0
-#&gt; year1959    0.647 0.425     -0.190    0.648      1.478 0.648   0
-#&gt; year1960    0.684 0.445     -0.194    0.685      1.555 0.685   0
-#&gt; 
-#&gt; Random effects:
-#&gt;   Name     Model
-#&gt;     ID RW1 model
+#&gt; year1957    0.567 0.381     -0.184    0.568      1.311 0.568   0
+#&gt; year1958    0.576 0.403     -0.220    0.577      1.365 0.577   0
+#&gt; year1959    0.647 0.425     -0.191    0.648      1.478 0.648   0
+#&gt; year1960    0.683 0.445     -0.195    0.684      1.555 0.684   0
 #&gt; 
 #&gt; Model hyperparameters:
 #&gt;                                           mean    sd 0.025quant 0.5quant
-#&gt; Precision for the Gaussian observations 101.34 18.15      69.77    99.94
-#&gt; Precision for ID                        155.12 40.68      92.53   149.35
+#&gt; Precision for the Gaussian observations 101.38 18.14      69.78    99.99
+#&gt; Precision for ID                        155.14 40.69      92.69   149.32
 #&gt;                                         0.975quant   mode
-#&gt; Precision for the Gaussian observations     140.97  97.48
-#&gt; Precision for ID                            251.49 137.66
+#&gt; Precision for the Gaussian observations     140.93  97.59
+#&gt; Precision for ID                            251.65 137.50
 #&gt; 
-#&gt; Marginal log-Likelihood:  6.61 
-#&gt;  is computed 
-#&gt; Posterior summaries for the linear predictor and the fitted values are computed
-#&gt; (Posterior marginals needs also 'control.compute=list(return.marginals.predictor=TRUE)')</code></pre>
+#&gt;  is computed</code></pre>
 </div>
 </div>
+<p>这里，将年份作为因子型变量，从输出结果可以看出，以1949年作为参照，回归系数的后验均值在逐年变大，这符合 AirPassengers 时序图呈现的趋势。</p>
 <p>存在周期性的波动规律，考虑季节性</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1"></a>mod_inla_sea <span class="ot">&lt;-</span> <span class="fu">inla</span>(</span>
-<span id="cb21-2"><a href="#cb21-2"></a>  <span class="at">formula =</span> <span class="fu">log</span>(y) <span class="sc">~</span> year <span class="sc">+</span> <span class="fu">f</span>(ID, <span class="at">model =</span> <span class="st">"seasonal"</span>, <span class="at">season.length =</span> <span class="dv">12</span>),</span>
-<span id="cb21-3"><a href="#cb21-3"></a>  <span class="at">family =</span> <span class="st">"gaussian"</span>, <span class="at">data =</span> air_passengers_df,</span>
-<span id="cb21-4"><a href="#cb21-4"></a>  <span class="at">control.family =</span> <span class="fu">list</span>(<span class="at">hyper =</span> <span class="fu">list</span>(<span class="at">prec =</span> <span class="fu">list</span>(<span class="at">param =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="fl">0.2</span>)))),</span>
-<span id="cb21-5"><a href="#cb21-5"></a>  <span class="at">control.predictor =</span> <span class="fu">list</span>(<span class="at">compute =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb21-6"><a href="#cb21-6"></a>)</span>
-<span id="cb21-7"><a href="#cb21-7"></a></span>
-<span id="cb21-8"><a href="#cb21-8"></a><span class="fu">summary</span>(mod_inla_sea)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1"></a>mod_inla_sea <span class="ot">&lt;-</span> <span class="fu">inla</span>(</span>
+<span id="cb22-2"><a href="#cb22-2"></a>  <span class="at">formula =</span> <span class="fu">log</span>(y) <span class="sc">~</span> year <span class="sc">+</span> <span class="fu">f</span>(ID, <span class="at">model =</span> <span class="st">"seasonal"</span>, <span class="at">season.length =</span> <span class="dv">12</span>),</span>
+<span id="cb22-3"><a href="#cb22-3"></a>  <span class="at">family =</span> <span class="st">"gaussian"</span>, <span class="at">data =</span> air_passengers_df,</span>
+<span id="cb22-4"><a href="#cb22-4"></a>  <span class="at">control.family =</span> <span class="fu">list</span>(<span class="at">hyper =</span> <span class="fu">list</span>(<span class="at">prec =</span> <span class="fu">list</span>(<span class="at">param =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="fl">0.2</span>)))),</span>
+<span id="cb22-5"><a href="#cb22-5"></a>  <span class="at">control.predictor =</span> <span class="fu">list</span>(<span class="at">compute =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb22-6"><a href="#cb22-6"></a>)</span>
+<span id="cb22-7"><a href="#cb22-7"></a></span>
+<span id="cb22-8"><a href="#cb22-8"></a><span class="fu">summary</span>(mod_inla_sea)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>#&gt; 
-#&gt; Call:
-#&gt;    c("inla.core(formula = formula, family = family, contrasts = contrasts, 
-#&gt;    ", " data = data, quantiles = quantiles, E = E, offset = offset, ", " 
-#&gt;    scale = scale, weights = weights, Ntrials = Ntrials, strata = strata, 
-#&gt;    ", " lp.scale = lp.scale, link.covariates = link.covariates, verbose = 
-#&gt;    verbose, ", " lincomb = lincomb, selection = selection, control.compute 
-#&gt;    = control.compute, ", " control.predictor = control.predictor, 
-#&gt;    control.family = control.family, ", " control.inla = control.inla, 
-#&gt;    control.fixed = control.fixed, ", " control.mode = control.mode, 
-#&gt;    control.expert = control.expert, ", " control.hazard = control.hazard, 
-#&gt;    control.lincomb = control.lincomb, ", " control.update = 
-#&gt;    control.update, control.lp.scale = control.lp.scale, ", " 
-#&gt;    control.pardiso = control.pardiso, only.hyperparam = only.hyperparam, 
-#&gt;    ", " inla.call = inla.call, inla.arg = inla.arg, num.threads = 
-#&gt;    num.threads, ", " keep = keep, working.directory = working.directory, 
-#&gt;    silent = silent, ", " inla.mode = inla.mode, safe = FALSE, debug = 
-#&gt;    debug, .parent.frame = .parent.frame)" ) 
-#&gt; Time used:
-#&gt;     Pre = 1.58, Running = 0.634, Post = 0.0276, Total = 2.24 
-#&gt; Fixed effects:
+<pre><code>#&gt; Fixed effects:
 #&gt;              mean    sd 0.025quant 0.5quant 0.975quant  mode kld
 #&gt; (Intercept) 4.836 0.020      4.797    4.836      4.875 4.836   0
 #&gt; year1950    0.095 0.028      0.039    0.095      0.150 0.095   0
@@ -1176,30 +1169,81 @@ y = at + b + c \sin(\frac{t}{12} \times 2\pi) + d \cos(\frac{t}{12} \times 2\pi)
 #&gt; year1952    0.441 0.028      0.386    0.441      0.496 0.441   0
 #&gt; year1953    0.573 0.028      0.517    0.573      0.628 0.573   0
 #&gt; year1954    0.630 0.028      0.575    0.630      0.686 0.630   0
-#&gt; year1955    0.803 0.028      0.748    0.803      0.859 0.803   0
+#&gt; year1955    0.803 0.028      0.748    0.803      0.858 0.803   0
 #&gt; year1956    0.948 0.028      0.893    0.948      1.004 0.948   0
 #&gt; year1957    1.062 0.028      1.007    1.062      1.118 1.062   0
 #&gt; year1958    1.094 0.028      1.039    1.094      1.150 1.094   0
 #&gt; year1959    1.212 0.028      1.157    1.212      1.268 1.212   0
 #&gt; year1960    1.318 0.028      1.263    1.318      1.373 1.318   0
 #&gt; 
-#&gt; Random effects:
-#&gt;   Name     Model
-#&gt;     ID Seasonal model
-#&gt; 
 #&gt; Model hyperparameters:
 #&gt;                                             mean       sd 0.025quant 0.5quant
-#&gt; Precision for the Gaussian observations   213.02    27.47     163.43   211.49
-#&gt; Precision for ID                        42093.80 27548.99   10150.84 35356.53
+#&gt; Precision for the Gaussian observations   213.00    27.46     163.36   211.49
+#&gt; Precision for ID                        42147.53 27734.67   10098.61 35340.62
 #&gt;                                         0.975quant     mode
-#&gt; Precision for the Gaussian observations     271.39   208.87
-#&gt; Precision for ID                         113580.23 24344.11
+#&gt; Precision for the Gaussian observations     271.27   208.97
+#&gt; Precision for ID                         114166.44 24250.36
 #&gt; 
-#&gt; Marginal log-Likelihood:  74.77 
-#&gt;  is computed 
-#&gt; Posterior summaries for the linear predictor and the fitted values are computed
-#&gt; (Posterior marginals needs also 'control.compute=list(return.marginals.predictor=TRUE)')</code></pre>
+#&gt;  is computed</code></pre>
 </div>
+</div>
+<p>最后，将两个模型的拟合结果展示出来，见下图，黑线表示原对数值，红线表示拟合值，灰色区域表示在置信水平 95% 下的置信区间。</p>
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1"></a>mod_inla_rw1_fitted <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb24-2"><a href="#cb24-2"></a>  <span class="at">ID =</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(AirPassengers),</span>
+<span id="cb24-3"><a href="#cb24-3"></a>  <span class="at">y =</span> <span class="fu">as.vector</span>(<span class="fu">log</span>(AirPassengers)),</span>
+<span id="cb24-4"><a href="#cb24-4"></a>  <span class="at">mean =</span> mod_inla_rw1<span class="sc">$</span>summary.fitted.values<span class="sc">$</span>mean,</span>
+<span id="cb24-5"><a href="#cb24-5"></a>  <span class="st">`</span><span class="at">0.025quant</span><span class="st">`</span> <span class="ot">=</span> mod_inla_rw1<span class="sc">$</span>summary.fitted.values<span class="sc">$</span><span class="st">`</span><span class="at">0.025quant</span><span class="st">`</span>,</span>
+<span id="cb24-6"><a href="#cb24-6"></a>  <span class="st">`</span><span class="at">0.975quant</span><span class="st">`</span> <span class="ot">=</span> mod_inla_rw1<span class="sc">$</span>summary.fitted.values<span class="sc">$</span><span class="st">`</span><span class="at">0.975quant</span><span class="st">`</span>,</span>
+<span id="cb24-7"><a href="#cb24-7"></a>  <span class="at">check.names =</span> <span class="cn">FALSE</span></span>
+<span id="cb24-8"><a href="#cb24-8"></a>)</span>
+<span id="cb24-9"><a href="#cb24-9"></a>mod_inla_sea_fitted <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb24-10"><a href="#cb24-10"></a>  <span class="at">ID =</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(AirPassengers),</span>
+<span id="cb24-11"><a href="#cb24-11"></a>  <span class="at">y =</span> <span class="fu">as.vector</span>(<span class="fu">log</span>(AirPassengers)),</span>
+<span id="cb24-12"><a href="#cb24-12"></a>  <span class="at">mean =</span> mod_inla_sea<span class="sc">$</span>summary.fitted.values<span class="sc">$</span>mean,</span>
+<span id="cb24-13"><a href="#cb24-13"></a>  <span class="st">`</span><span class="at">0.025quant</span><span class="st">`</span> <span class="ot">=</span> mod_inla_sea<span class="sc">$</span>summary.fitted.values<span class="sc">$</span><span class="st">`</span><span class="at">0.025quant</span><span class="st">`</span>,</span>
+<span id="cb24-14"><a href="#cb24-14"></a>  <span class="st">`</span><span class="at">0.975quant</span><span class="st">`</span> <span class="ot">=</span> mod_inla_sea<span class="sc">$</span>summary.fitted.values<span class="sc">$</span><span class="st">`</span><span class="at">0.975quant</span><span class="st">`</span>,</span>
+<span id="cb24-15"><a href="#cb24-15"></a>  <span class="at">check.names =</span> <span class="cn">FALSE</span></span>
+<span id="cb24-16"><a href="#cb24-16"></a>)</span>
+<span id="cb24-17"><a href="#cb24-17"></a><span class="fu">ggplot</span>(<span class="at">data =</span> mod_inla_rw1_fitted, <span class="fu">aes</span>(ID)) <span class="sc">+</span></span>
+<span id="cb24-18"><a href="#cb24-18"></a>  <span class="fu">geom_ribbon</span>(<span class="fu">aes</span>(<span class="at">ymin =</span> <span class="st">`</span><span class="at">0.025quant</span><span class="st">`</span>, <span class="at">ymax =</span> <span class="st">`</span><span class="at">0.975quant</span><span class="st">`</span>), <span class="at">fill =</span> <span class="st">"gray"</span>) <span class="sc">+</span></span>
+<span id="cb24-19"><a href="#cb24-19"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> y)) <span class="sc">+</span></span>
+<span id="cb24-20"><a href="#cb24-20"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> mean), <span class="at">color =</span> <span class="st">"red"</span>) <span class="sc">+</span></span>
+<span id="cb24-21"><a href="#cb24-21"></a>  <span class="fu">theme_classic</span>() <span class="sc">+</span></span>
+<span id="cb24-22"><a href="#cb24-22"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"序号"</span>, <span class="at">y =</span> <span class="st">"对数值"</span>)</span>
+<span id="cb24-23"><a href="#cb24-23"></a><span class="fu">ggplot</span>(<span class="at">data =</span> mod_inla_sea_fitted, <span class="fu">aes</span>(ID)) <span class="sc">+</span></span>
+<span id="cb24-24"><a href="#cb24-24"></a>  <span class="fu">geom_ribbon</span>(<span class="fu">aes</span>(<span class="at">ymin =</span> <span class="st">`</span><span class="at">0.025quant</span><span class="st">`</span>, <span class="at">ymax =</span> <span class="st">`</span><span class="at">0.975quant</span><span class="st">`</span>), <span class="at">fill =</span> <span class="st">"gray"</span>) <span class="sc">+</span></span>
+<span id="cb24-25"><a href="#cb24-25"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> y)) <span class="sc">+</span></span>
+<span id="cb24-26"><a href="#cb24-26"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> mean), <span class="at">color =</span> <span class="st">"red"</span>) <span class="sc">+</span></span>
+<span id="cb24-27"><a href="#cb24-27"></a>  <span class="fu">theme_classic</span>() <span class="sc">+</span></span>
+<span id="cb24-28"><a href="#cb24-28"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"序号"</span>, <span class="at">y =</span> <span class="st">"对数值"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="fig-fitted-airpassengers" class="quarto-layout-panel">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-fitted-airpassengers-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="quarto-layout-row">
+<div class="cell-output-display quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-fitted-airpassengers" style="flex-basis: 50.0%;justify-content: flex-start;display: flex;">
+<div id="fig-fitted-airpassengers-1" class="quarto-figure quarto-figure-center anchored" width="480">
+<figure class="quarto-float quarto-subfloat-fig figure"><div aria-describedby="fig-fitted-airpassengers-1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="time-series-regression_files/figure-html/fig-fitted-airpassengers-1.png" class="img-fluid figure-img" data-ref-parent="fig-fitted-airpassengers" width="480">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-subfloat-caption quarto-subfloat-fig" id="fig-fitted-airpassengers-1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+(a) 随机游走模型
+</figcaption></figure>
+</div>
+</div>
+<div class="cell-output-display quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-fitted-airpassengers" style="flex-basis: 50.0%;justify-content: flex-start;display: flex;">
+<div id="fig-fitted-airpassengers-2" class="quarto-figure quarto-figure-center anchored" width="480">
+<figure class="quarto-float quarto-subfloat-fig figure"><div aria-describedby="fig-fitted-airpassengers-2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="time-series-regression_files/figure-html/fig-fitted-airpassengers-2.png" class="img-fluid figure-img" data-ref-parent="fig-fitted-airpassengers" width="480">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-subfloat-caption quarto-subfloat-fig" id="fig-fitted-airpassengers-2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+(b) 季节效应模型
+</figcaption></figure>
+</div>
+</div>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-fitted-airpassengers-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;39.7: AirPassengers 的拟合图
+</figcaption></figure>
 </div>
 </section></section><section id="一些非参数模型" class="level2" data-number="39.3"><h2 data-number="39.3" class="anchored" data-anchor-id="一些非参数模型">
 <span class="header-section-number">39.3</span> 一些非参数模型</h2>
@@ -1207,15 +1251,15 @@ y = at + b + c \sin(\frac{t}{12} \times 2\pi) + d \cos(\frac{t}{12} \times 2\pi)
 <span class="header-section-number">39.3.1</span> mgcv 包</h3>
 <p><strong>mgcv</strong> 包 <span class="citation" data-cites="Wood2017">(<a href="references.html#ref-Wood2017" role="doc-biblioref">S. N. Wood 2017</a>)</span> 是 R 软件内置的推荐组件，由 Simon Wood 开发和维护，历经多年，成熟稳定。函数 <code>bam()</code> 相比于函数 <code>gam()</code> 的优势是可以处理大规模的时间序列数据。对于时间序列数据预测，数万和百万级观测值都可以 <span class="citation" data-cites="wood2015">(<a href="references.html#ref-wood2015" role="doc-biblioref">Simon N. Wood, Goude, 和 Shaw 2015</a>)</span>。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1"></a>air_passengers_tbl <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
-<span id="cb23-2"><a href="#cb23-2"></a>  <span class="at">y =</span> <span class="fu">as.vector</span>(AirPassengers),</span>
-<span id="cb23-3"><a href="#cb23-3"></a>  <span class="at">year =</span> <span class="fu">rep</span>(<span class="dv">1949</span><span class="sc">:</span><span class="dv">1960</span>, <span class="at">each =</span> <span class="dv">12</span>),</span>
-<span id="cb23-4"><a href="#cb23-4"></a>  <span class="at">month =</span> <span class="fu">rep</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">12</span>, <span class="at">times =</span> <span class="dv">12</span>)</span>
-<span id="cb23-5"><a href="#cb23-5"></a>)</span>
-<span id="cb23-6"><a href="#cb23-6"></a>mod1 <span class="ot">&lt;-</span> <span class="fu">gam</span>(y <span class="sc">~</span> <span class="fu">s</span>(year) <span class="sc">+</span> <span class="fu">s</span>(month, <span class="at">bs =</span> <span class="st">"cr"</span>, <span class="at">k =</span> <span class="dv">12</span>),</span>
-<span id="cb23-7"><a href="#cb23-7"></a>  <span class="at">data =</span> air_passengers_tbl, <span class="at">family =</span> gaussian</span>
-<span id="cb23-8"><a href="#cb23-8"></a>)</span>
-<span id="cb23-9"><a href="#cb23-9"></a><span class="fu">summary</span>(mod1)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1"></a>air_passengers_tbl <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb25-2"><a href="#cb25-2"></a>  <span class="at">y =</span> <span class="fu">as.vector</span>(AirPassengers),</span>
+<span id="cb25-3"><a href="#cb25-3"></a>  <span class="at">year =</span> <span class="fu">rep</span>(<span class="dv">1949</span><span class="sc">:</span><span class="dv">1960</span>, <span class="at">each =</span> <span class="dv">12</span>),</span>
+<span id="cb25-4"><a href="#cb25-4"></a>  <span class="at">month =</span> <span class="fu">rep</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">12</span>, <span class="at">times =</span> <span class="dv">12</span>)</span>
+<span id="cb25-5"><a href="#cb25-5"></a>)</span>
+<span id="cb25-6"><a href="#cb25-6"></a>mod1 <span class="ot">&lt;-</span> <span class="fu">gam</span>(y <span class="sc">~</span> <span class="fu">s</span>(year) <span class="sc">+</span> <span class="fu">s</span>(month, <span class="at">bs =</span> <span class="st">"cr"</span>, <span class="at">k =</span> <span class="dv">12</span>),</span>
+<span id="cb25-7"><a href="#cb25-7"></a>  <span class="at">data =</span> air_passengers_tbl, <span class="at">family =</span> gaussian</span>
+<span id="cb25-8"><a href="#cb25-8"></a>)</span>
+<span id="cb25-9"><a href="#cb25-9"></a><span class="fu">summary</span>(mod1)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; 
 #&gt; Family: gaussian 
@@ -1243,39 +1287,39 @@ y = at + b + c \sin(\frac{t}{12} \times 2\pi) + d \cos(\frac{t}{12} \times 2\pi)
 </div>
 <p>观察年和月的趋势变化，逐年增长趋势基本是线性的，略有波动，逐月变化趋势比较复杂，不过，可以明显看出在 7-9 月是高峰期，11 月和1-3月是低谷期。</p>
 <div class="cell" data-par="true">
-<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1"></a><span class="fu">layout</span>(<span class="fu">matrix</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>, <span class="at">nrow =</span> <span class="dv">1</span>))</span>
-<span id="cb25-2"><a href="#cb25-2"></a><span class="fu">plot</span>(mod1, <span class="at">shade =</span> <span class="cn">TRUE</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1"></a><span class="fu">layout</span>(<span class="fu">matrix</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>, <span class="at">nrow =</span> <span class="dv">1</span>))</span>
+<span id="cb27-2"><a href="#cb27-2"></a><span class="fu">plot</span>(mod1, <span class="at">shade =</span> <span class="cn">TRUE</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div id="fig-mgcv-trend" class="quarto-figure quarto-figure-center anchored" width="672">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-mgcv-trend-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <img src="time-series-regression_files/figure-html/fig-mgcv-trend-1.png" class="img-fluid figure-img" width="672">
 </div>
 <figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-mgcv-trend-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-图&nbsp;39.6: 年和月的趋势变化
+图&nbsp;39.8: 年和月的趋势变化
 </figcaption></figure>
 </div>
 </div>
 </div>
 <p>将拟合效果绘制出来，见下图，整体上，捕捉到了趋势和周期，不过，存在欠拟合，年周期内波动幅度随时间有变化趋势，趋势和周期存在交互作用。</p>
 <div class="cell" data-par="true">
-<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1"></a>air_passengers_ts <span class="ot">&lt;-</span> <span class="fu">ts</span>(mod1<span class="sc">$</span>fitted.values, <span class="at">start =</span> <span class="fu">c</span>(<span class="dv">1949</span>, <span class="dv">1</span>), <span class="at">frequency =</span> <span class="dv">12</span>)</span>
-<span id="cb26-2"><a href="#cb26-2"></a><span class="fu">plot</span>(AirPassengers)</span>
-<span id="cb26-3"><a href="#cb26-3"></a><span class="fu">lines</span>(air_passengers_ts, <span class="at">col =</span> <span class="st">"red"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1"></a>air_passengers_ts <span class="ot">&lt;-</span> <span class="fu">ts</span>(mod1<span class="sc">$</span>fitted.values, <span class="at">start =</span> <span class="fu">c</span>(<span class="dv">1949</span>, <span class="dv">1</span>), <span class="at">frequency =</span> <span class="dv">12</span>)</span>
+<span id="cb28-2"><a href="#cb28-2"></a><span class="fu">plot</span>(AirPassengers)</span>
+<span id="cb28-3"><a href="#cb28-3"></a><span class="fu">lines</span>(air_passengers_ts, <span class="at">col =</span> <span class="st">"red"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div id="fig-mgcv-1" class="quarto-figure quarto-figure-center anchored" width="480">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-mgcv-1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <img src="time-series-regression_files/figure-html/fig-mgcv-1-1.png" class="img-fluid figure-img" width="480">
 </div>
 <figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-mgcv-1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-图&nbsp;39.7: 趋势拟合效果
+图&nbsp;39.9: 趋势拟合效果
 </figcaption></figure>
 </div>
 </div>
 </div>
 <p>整体上，乘客数逐年呈线性增长，每年不同月份呈现波动，淡季和旺季出行的流量有很大差异，近年来，这种差异的波动在扩大。为了刻画这种情况，考虑年度趋势和月度波动的交互作用。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1"></a>mod2 <span class="ot">&lt;-</span> <span class="fu">gam</span>(y <span class="sc">~</span> <span class="fu">s</span>(year, month), <span class="at">data =</span> air_passengers_tbl, <span class="at">family =</span> gaussian)</span>
-<span id="cb27-2"><a href="#cb27-2"></a><span class="fu">summary</span>(mod2)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1"></a>mod2 <span class="ot">&lt;-</span> <span class="fu">gam</span>(y <span class="sc">~</span> <span class="fu">s</span>(year, month), <span class="at">data =</span> air_passengers_tbl, <span class="at">family =</span> gaussian)</span>
+<span id="cb29-2"><a href="#cb29-2"></a><span class="fu">summary</span>(mod2)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; 
 #&gt; Family: gaussian 
@@ -1302,48 +1346,48 @@ y = at + b + c \sin(\frac{t}{12} \times 2\pi) + d \cos(\frac{t}{12} \times 2\pi)
 </div>
 <p>可以看到，调整的 <span class="math inline">\(R^2\)</span> 明显增加，拟合效果更好，各年各月份的乘客数变化，见下图。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1"></a>op <span class="ot">&lt;-</span> <span class="fu">par</span>(<span class="at">mar =</span> <span class="fu">c</span>(<span class="dv">4</span>, <span class="dv">4</span>, <span class="dv">2</span>, <span class="dv">0</span>))</span>
-<span id="cb29-2"><a href="#cb29-2"></a><span class="fu">plot</span>(mod2)</span>
-<span id="cb29-3"><a href="#cb29-3"></a><span class="fu">on.exit</span>(<span class="fu">par</span>(op), <span class="at">add =</span> <span class="cn">TRUE</span>) </span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1"></a>op <span class="ot">&lt;-</span> <span class="fu">par</span>(<span class="at">mar =</span> <span class="fu">c</span>(<span class="dv">4</span>, <span class="dv">4</span>, <span class="dv">2</span>, <span class="dv">0</span>))</span>
+<span id="cb31-2"><a href="#cb31-2"></a><span class="fu">plot</span>(mod2)</span>
+<span id="cb31-3"><a href="#cb31-3"></a><span class="fu">on.exit</span>(<span class="fu">par</span>(op), <span class="at">add =</span> <span class="cn">TRUE</span>) </span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div id="fig-mgcv-interaction" class="quarto-figure quarto-figure-center anchored" width="480">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-mgcv-interaction-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <img src="time-series-regression_files/figure-html/fig-mgcv-interaction-1.png" class="img-fluid figure-img" width="480">
 </div>
 <figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-mgcv-interaction-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-图&nbsp;39.8: 交互作用
+图&nbsp;39.10: 交互作用
 </figcaption></figure>
 </div>
 </div>
 </div>
 <p>上图是轮廓图，下面用透视图展示趋势拟合的效果。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1"></a>op <span class="ot">&lt;-</span> <span class="fu">par</span>(<span class="at">mar =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="fl">1.5</span>, <span class="dv">0</span>, <span class="dv">0</span>))</span>
-<span id="cb30-2"><a href="#cb30-2"></a><span class="fu">vis.gam</span>(mod2, <span class="at">theta =</span> <span class="sc">-</span><span class="dv">35</span>, <span class="at">phi =</span> <span class="dv">20</span>, <span class="at">ticktype =</span> <span class="st">"detailed"</span>, <span class="at">expand =</span> .<span class="dv">65</span>, <span class="at">zlab =</span> <span class="st">""</span>)</span>
-<span id="cb30-3"><a href="#cb30-3"></a><span class="fu">on.exit</span>(<span class="fu">par</span>(op), <span class="at">add =</span> <span class="cn">TRUE</span>) </span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1"></a>op <span class="ot">&lt;-</span> <span class="fu">par</span>(<span class="at">mar =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="fl">1.5</span>, <span class="dv">0</span>, <span class="dv">0</span>))</span>
+<span id="cb32-2"><a href="#cb32-2"></a><span class="fu">vis.gam</span>(mod2, <span class="at">theta =</span> <span class="sc">-</span><span class="dv">35</span>, <span class="at">phi =</span> <span class="dv">20</span>, <span class="at">ticktype =</span> <span class="st">"detailed"</span>, <span class="at">expand =</span> .<span class="dv">65</span>, <span class="at">zlab =</span> <span class="st">""</span>)</span>
+<span id="cb32-3"><a href="#cb32-3"></a><span class="fu">on.exit</span>(<span class="fu">par</span>(op), <span class="at">add =</span> <span class="cn">TRUE</span>) </span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div id="fig-mgcv-persp" class="quarto-figure quarto-figure-center anchored" width="480">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-mgcv-persp-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <img src="time-series-regression_files/figure-html/fig-mgcv-persp-1.png" class="img-fluid figure-img" width="480">
 </div>
 <figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-mgcv-persp-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-图&nbsp;39.9: 趋势拟合效果
+图&nbsp;39.11: 趋势拟合效果
 </figcaption></figure>
 </div>
 </div>
 </div>
 <p>最后，在原始数据的基础上，添加拟合数据，得到如下拟合趋势图，与前面的拟合图比较，可以看出效果提升很明显。</p>
 <div class="cell" data-par="true">
-<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1"></a>air_passengers_ts <span class="ot">&lt;-</span> <span class="fu">ts</span>(mod2<span class="sc">$</span>fitted.values, <span class="at">start =</span> <span class="fu">c</span>(<span class="dv">1949</span>, <span class="dv">1</span>), <span class="at">frequency =</span> <span class="dv">12</span>)</span>
-<span id="cb31-2"><a href="#cb31-2"></a><span class="fu">plot</span>(AirPassengers)</span>
-<span id="cb31-3"><a href="#cb31-3"></a><span class="fu">lines</span>(air_passengers_ts, <span class="at">col =</span> <span class="st">"red"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1"></a>air_passengers_ts <span class="ot">&lt;-</span> <span class="fu">ts</span>(mod2<span class="sc">$</span>fitted.values, <span class="at">start =</span> <span class="fu">c</span>(<span class="dv">1949</span>, <span class="dv">1</span>), <span class="at">frequency =</span> <span class="dv">12</span>)</span>
+<span id="cb33-2"><a href="#cb33-2"></a><span class="fu">plot</span>(AirPassengers)</span>
+<span id="cb33-3"><a href="#cb33-3"></a><span class="fu">lines</span>(air_passengers_ts, <span class="at">col =</span> <span class="st">"red"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div id="fig-mgcv-2" class="quarto-figure quarto-figure-center anchored" width="480">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-mgcv-2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <img src="time-series-regression_files/figure-html/fig-mgcv-2-1.png" class="img-fluid figure-img" width="480">
 </div>
 <figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-mgcv-2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-图&nbsp;39.10: 趋势拟合效果
+图&nbsp;39.12: 趋势拟合效果
 </figcaption></figure>
 </div>
 </div>
@@ -1353,54 +1397,54 @@ y = at + b + c \sin(\frac{t}{12} \times 2\pi) + d \cos(\frac{t}{12} \times 2\pi)
 <p>前面介绍的模型都具有非常强的可解释性，比如各个参数对模型的作用。对于复杂的时间序列数据，比较适合用复杂的模型来拟合，看重模型的泛化能力，而不那么关注模型的机理。</p>
 <p>多层感知机是一种全连接层的前馈神经网络。<strong>nnet</strong> 包的函数 <code>nnet()</code> 实现了单隐藏层的简单前馈神经网络，可用于时间序列预测，也可用于分类数据的预测。作为对比的基础，下面先用 nnet 包训练和预测数据。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1"></a><span class="co"># 准备数据</span></span>
-<span id="cb32-2"><a href="#cb32-2"></a>air_passengers <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(<span class="fu">embed</span>(AirPassengers, <span class="dv">4</span>))</span>
-<span id="cb32-3"><a href="#cb32-3"></a><span class="fu">colnames</span>(air_passengers) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"y"</span>, <span class="st">"x3"</span>, <span class="st">"x2"</span>, <span class="st">"x1"</span>)</span>
-<span id="cb32-4"><a href="#cb32-4"></a>data_size <span class="ot">&lt;-</span> <span class="fu">nrow</span>(air_passengers)</span>
-<span id="cb32-5"><a href="#cb32-5"></a><span class="co"># 拆分数据集</span></span>
-<span id="cb32-6"><a href="#cb32-6"></a>train_size <span class="ot">&lt;-</span> <span class="fu">floor</span>(data_size <span class="sc">*</span> <span class="fl">0.67</span>)</span>
-<span id="cb32-7"><a href="#cb32-7"></a>train_data <span class="ot">&lt;-</span> air_passengers[<span class="dv">1</span><span class="sc">:</span>train_size, ]</span>
-<span id="cb32-8"><a href="#cb32-8"></a>test_data <span class="ot">&lt;-</span> air_passengers[train_size<span class="sc">:</span>data_size, ]</span>
-<span id="cb32-9"><a href="#cb32-9"></a></span>
-<span id="cb32-10"><a href="#cb32-10"></a><span class="co"># 随机数种子对结果的影响非常大 试试 set.seed(20232023) </span></span>
-<span id="cb32-11"><a href="#cb32-11"></a><span class="fu">set.seed</span>(<span class="dv">20222022</span>) </span>
-<span id="cb32-12"><a href="#cb32-12"></a><span class="co"># 单隐藏层 8 个神经元</span></span>
-<span id="cb32-13"><a href="#cb32-13"></a>mod_nnet <span class="ot">&lt;-</span> nnet<span class="sc">::</span><span class="fu">nnet</span>(</span>
-<span id="cb32-14"><a href="#cb32-14"></a>  y <span class="sc">~</span> x1 <span class="sc">+</span> x2 <span class="sc">+</span> x3,</span>
-<span id="cb32-15"><a href="#cb32-15"></a>  <span class="at">data =</span> air_passengers, <span class="co"># 数据集</span></span>
-<span id="cb32-16"><a href="#cb32-16"></a>  <span class="at">subset =</span> <span class="dv">1</span><span class="sc">:</span>train_size, <span class="co"># 训练数据的指标向量</span></span>
-<span id="cb32-17"><a href="#cb32-17"></a>  <span class="at">linout =</span> <span class="cn">TRUE</span>, <span class="at">size =</span> <span class="dv">4</span>, <span class="at">rang =</span> <span class="fl">0.1</span>,</span>
-<span id="cb32-18"><a href="#cb32-18"></a>  <span class="at">decay =</span> <span class="fl">5e-4</span>, <span class="at">maxit =</span> <span class="dv">400</span>, <span class="at">trace =</span> <span class="cn">FALSE</span></span>
-<span id="cb32-19"><a href="#cb32-19"></a>)</span>
-<span id="cb32-20"><a href="#cb32-20"></a><span class="co"># 预测</span></span>
-<span id="cb32-21"><a href="#cb32-21"></a>train_pred <span class="ot">&lt;-</span> <span class="fu">predict</span>(mod_nnet, <span class="at">newdata =</span> air_passengers[<span class="dv">1</span><span class="sc">:</span>train_size,], <span class="at">type =</span> <span class="st">"raw"</span>)</span>
-<span id="cb32-22"><a href="#cb32-22"></a><span class="co"># 训练集 RMSE</span></span>
-<span id="cb32-23"><a href="#cb32-23"></a><span class="fu">sqrt</span>(<span class="fu">mean</span>((air_passengers[<span class="dv">1</span><span class="sc">:</span>train_size, <span class="st">"y"</span>] <span class="sc">-</span> train_pred )<span class="sc">^</span><span class="dv">2</span>))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1"></a><span class="co"># 准备数据</span></span>
+<span id="cb34-2"><a href="#cb34-2"></a>air_passengers <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(<span class="fu">embed</span>(AirPassengers, <span class="dv">4</span>))</span>
+<span id="cb34-3"><a href="#cb34-3"></a><span class="fu">colnames</span>(air_passengers) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"y"</span>, <span class="st">"x3"</span>, <span class="st">"x2"</span>, <span class="st">"x1"</span>)</span>
+<span id="cb34-4"><a href="#cb34-4"></a>data_size <span class="ot">&lt;-</span> <span class="fu">nrow</span>(air_passengers)</span>
+<span id="cb34-5"><a href="#cb34-5"></a><span class="co"># 拆分数据集</span></span>
+<span id="cb34-6"><a href="#cb34-6"></a>train_size <span class="ot">&lt;-</span> <span class="fu">floor</span>(data_size <span class="sc">*</span> <span class="fl">0.67</span>)</span>
+<span id="cb34-7"><a href="#cb34-7"></a>train_data <span class="ot">&lt;-</span> air_passengers[<span class="dv">1</span><span class="sc">:</span>train_size, ]</span>
+<span id="cb34-8"><a href="#cb34-8"></a>test_data <span class="ot">&lt;-</span> air_passengers[train_size<span class="sc">:</span>data_size, ]</span>
+<span id="cb34-9"><a href="#cb34-9"></a></span>
+<span id="cb34-10"><a href="#cb34-10"></a><span class="co"># 随机数种子对结果的影响非常大 试试 set.seed(20232023) </span></span>
+<span id="cb34-11"><a href="#cb34-11"></a><span class="fu">set.seed</span>(<span class="dv">20222022</span>) </span>
+<span id="cb34-12"><a href="#cb34-12"></a><span class="co"># 单隐藏层 8 个神经元</span></span>
+<span id="cb34-13"><a href="#cb34-13"></a>mod_nnet <span class="ot">&lt;-</span> nnet<span class="sc">::</span><span class="fu">nnet</span>(</span>
+<span id="cb34-14"><a href="#cb34-14"></a>  y <span class="sc">~</span> x1 <span class="sc">+</span> x2 <span class="sc">+</span> x3,</span>
+<span id="cb34-15"><a href="#cb34-15"></a>  <span class="at">data =</span> air_passengers, <span class="co"># 数据集</span></span>
+<span id="cb34-16"><a href="#cb34-16"></a>  <span class="at">subset =</span> <span class="dv">1</span><span class="sc">:</span>train_size, <span class="co"># 训练数据的指标向量</span></span>
+<span id="cb34-17"><a href="#cb34-17"></a>  <span class="at">linout =</span> <span class="cn">TRUE</span>, <span class="at">size =</span> <span class="dv">4</span>, <span class="at">rang =</span> <span class="fl">0.1</span>,</span>
+<span id="cb34-18"><a href="#cb34-18"></a>  <span class="at">decay =</span> <span class="fl">5e-4</span>, <span class="at">maxit =</span> <span class="dv">400</span>, <span class="at">trace =</span> <span class="cn">FALSE</span></span>
+<span id="cb34-19"><a href="#cb34-19"></a>)</span>
+<span id="cb34-20"><a href="#cb34-20"></a><span class="co"># 预测</span></span>
+<span id="cb34-21"><a href="#cb34-21"></a>train_pred <span class="ot">&lt;-</span> <span class="fu">predict</span>(mod_nnet, <span class="at">newdata =</span> air_passengers[<span class="dv">1</span><span class="sc">:</span>train_size,], <span class="at">type =</span> <span class="st">"raw"</span>)</span>
+<span id="cb34-22"><a href="#cb34-22"></a><span class="co"># 训练集 RMSE</span></span>
+<span id="cb34-23"><a href="#cb34-23"></a><span class="fu">sqrt</span>(<span class="fu">mean</span>((air_passengers[<span class="dv">1</span><span class="sc">:</span>train_size, <span class="st">"y"</span>] <span class="sc">-</span> train_pred )<span class="sc">^</span><span class="dv">2</span>))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; [1] 21.59392</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1"></a><span class="co"># 预测</span></span>
-<span id="cb34-2"><a href="#cb34-2"></a>test_pred <span class="ot">&lt;-</span> <span class="fu">predict</span>(mod_nnet, <span class="at">newdata =</span> air_passengers[<span class="sc">-</span>(<span class="dv">1</span><span class="sc">:</span>train_size),], <span class="at">type =</span> <span class="st">"raw"</span>)</span>
-<span id="cb34-3"><a href="#cb34-3"></a><span class="co"># 测试集 RMSE</span></span>
-<span id="cb34-4"><a href="#cb34-4"></a><span class="fu">sqrt</span>(<span class="fu">mean</span>((air_passengers[<span class="sc">-</span>(<span class="dv">1</span><span class="sc">:</span>train_size), <span class="st">"y"</span>] <span class="sc">-</span> test_pred)<span class="sc">^</span><span class="dv">2</span>))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1"></a><span class="co"># 预测</span></span>
+<span id="cb36-2"><a href="#cb36-2"></a>test_pred <span class="ot">&lt;-</span> <span class="fu">predict</span>(mod_nnet, <span class="at">newdata =</span> air_passengers[<span class="sc">-</span>(<span class="dv">1</span><span class="sc">:</span>train_size),], <span class="at">type =</span> <span class="st">"raw"</span>)</span>
+<span id="cb36-3"><a href="#cb36-3"></a><span class="co"># 测试集 RMSE</span></span>
+<span id="cb36-4"><a href="#cb36-4"></a><span class="fu">sqrt</span>(<span class="fu">mean</span>((air_passengers[<span class="sc">-</span>(<span class="dv">1</span><span class="sc">:</span>train_size), <span class="st">"y"</span>] <span class="sc">-</span> test_pred)<span class="sc">^</span><span class="dv">2</span>))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; [1] 53.79107</code></pre>
 </div>
 </div>
 <p>下面将原观测序列，训练集和测试集上的预测序列放在一张图上展示。图中，红色曲线表示训练集上的预测结果，绿色曲线为测试集上预测结果。</p>
 <div class="cell" data-par="true">
-<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1"></a>train_pred_ts <span class="ot">&lt;-</span> <span class="fu">ts</span>(<span class="at">data =</span> train_pred, <span class="at">start =</span> <span class="fu">c</span>(<span class="dv">1949</span>, <span class="dv">3</span>), <span class="at">frequency =</span> <span class="dv">12</span>)</span>
-<span id="cb36-2"><a href="#cb36-2"></a>test_pred_ts <span class="ot">&lt;-</span> <span class="fu">ts</span>(<span class="at">data =</span> test_pred, <span class="at">start =</span> <span class="fu">c</span>(<span class="dv">1957</span>, <span class="dv">1</span>), <span class="at">frequency =</span> <span class="dv">12</span>)</span>
-<span id="cb36-3"><a href="#cb36-3"></a><span class="fu">plot</span>(AirPassengers)</span>
-<span id="cb36-4"><a href="#cb36-4"></a><span class="fu">lines</span>(train_pred_ts, <span class="at">col =</span> <span class="st">"red"</span>)</span>
-<span id="cb36-5"><a href="#cb36-5"></a><span class="fu">lines</span>(test_pred_ts, <span class="at">col =</span> <span class="st">"green"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1"></a>train_pred_ts <span class="ot">&lt;-</span> <span class="fu">ts</span>(<span class="at">data =</span> train_pred, <span class="at">start =</span> <span class="fu">c</span>(<span class="dv">1949</span>, <span class="dv">3</span>), <span class="at">frequency =</span> <span class="dv">12</span>)</span>
+<span id="cb38-2"><a href="#cb38-2"></a>test_pred_ts <span class="ot">&lt;-</span> <span class="fu">ts</span>(<span class="at">data =</span> test_pred, <span class="at">start =</span> <span class="fu">c</span>(<span class="dv">1957</span>, <span class="dv">1</span>), <span class="at">frequency =</span> <span class="dv">12</span>)</span>
+<span id="cb38-3"><a href="#cb38-3"></a><span class="fu">plot</span>(AirPassengers)</span>
+<span id="cb38-4"><a href="#cb38-4"></a><span class="fu">lines</span>(train_pred_ts, <span class="at">col =</span> <span class="st">"red"</span>)</span>
+<span id="cb38-5"><a href="#cb38-5"></a><span class="fu">lines</span>(test_pred_ts, <span class="at">col =</span> <span class="st">"green"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div id="fig-nnet" class="quarto-figure quarto-figure-center anchored" width="480">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-nnet-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <img src="time-series-regression_files/figure-html/fig-nnet-1.png" class="img-fluid figure-img" width="480">
 </div>
 <figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-nnet-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-图&nbsp;39.11: 单层感知机预测
+图&nbsp;39.13: 单层感知机预测
 </figcaption></figure>
 </div>
 </div>
@@ -1408,22 +1452,22 @@ y = at + b + c \sin(\frac{t}{12} \times 2\pi) + d \cos(\frac{t}{12} \times 2\pi)
 <p>由图可知，在测试集上，随着时间拉长，预测越来越不准。</p>
 <p>下面使用 tensorflow 包构造<strong>多层</strong>感知机训练数据和预测。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1"></a><span class="fu">library</span>(tensorflow)</span>
-<span id="cb37-2"><a href="#cb37-2"></a><span class="fu">library</span>(keras)</span>
-<span id="cb37-3"><a href="#cb37-3"></a><span class="fu">set_random_seed</span>(<span class="dv">20222022</span>)</span>
-<span id="cb37-4"><a href="#cb37-4"></a><span class="co"># 模型结构</span></span>
-<span id="cb37-5"><a href="#cb37-5"></a>mod_mlp <span class="ot">&lt;-</span> <span class="fu">keras_model_sequential</span>() <span class="sc">|&gt;</span> </span>
-<span id="cb37-6"><a href="#cb37-6"></a>  <span class="fu">layer_dense</span>(<span class="at">units =</span> <span class="dv">12</span>, <span class="at">activation =</span> <span class="st">"relu"</span>, <span class="at">input_shape =</span> <span class="fu">c</span>(<span class="dv">3</span>)) <span class="sc">|&gt;</span> </span>
-<span id="cb37-7"><a href="#cb37-7"></a>  <span class="fu">layer_dense</span>(<span class="at">units =</span> <span class="dv">8</span>, <span class="at">activation =</span> <span class="st">"relu"</span>) <span class="sc">|&gt;</span> </span>
-<span id="cb37-8"><a href="#cb37-8"></a>  <span class="fu">layer_dense</span>(<span class="at">units =</span> <span class="dv">1</span>)</span>
-<span id="cb37-9"><a href="#cb37-9"></a><span class="co"># 训练目标</span></span>
-<span id="cb37-10"><a href="#cb37-10"></a><span class="fu">compile</span>(mod_mlp,</span>
-<span id="cb37-11"><a href="#cb37-11"></a>  <span class="at">loss =</span> <span class="st">"mse"</span>, <span class="co"># 损失函数</span></span>
-<span id="cb37-12"><a href="#cb37-12"></a>  <span class="at">optimizer =</span> <span class="st">"adam"</span>, <span class="co"># 优化器</span></span>
-<span id="cb37-13"><a href="#cb37-13"></a>  <span class="at">metrics =</span> <span class="st">"mae"</span> <span class="co"># 监控度量</span></span>
-<span id="cb37-14"><a href="#cb37-14"></a>)</span>
-<span id="cb37-15"><a href="#cb37-15"></a><span class="co"># 模型概览</span></span>
-<span id="cb37-16"><a href="#cb37-16"></a><span class="fu">summary</span>(mod_mlp)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1"></a><span class="fu">library</span>(tensorflow)</span>
+<span id="cb39-2"><a href="#cb39-2"></a><span class="fu">library</span>(keras)</span>
+<span id="cb39-3"><a href="#cb39-3"></a><span class="fu">set_random_seed</span>(<span class="dv">20222022</span>)</span>
+<span id="cb39-4"><a href="#cb39-4"></a><span class="co"># 模型结构</span></span>
+<span id="cb39-5"><a href="#cb39-5"></a>mod_mlp <span class="ot">&lt;-</span> <span class="fu">keras_model_sequential</span>() <span class="sc">|&gt;</span> </span>
+<span id="cb39-6"><a href="#cb39-6"></a>  <span class="fu">layer_dense</span>(<span class="at">units =</span> <span class="dv">12</span>, <span class="at">activation =</span> <span class="st">"relu"</span>, <span class="at">input_shape =</span> <span class="fu">c</span>(<span class="dv">3</span>)) <span class="sc">|&gt;</span> </span>
+<span id="cb39-7"><a href="#cb39-7"></a>  <span class="fu">layer_dense</span>(<span class="at">units =</span> <span class="dv">8</span>, <span class="at">activation =</span> <span class="st">"relu"</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb39-8"><a href="#cb39-8"></a>  <span class="fu">layer_dense</span>(<span class="at">units =</span> <span class="dv">1</span>)</span>
+<span id="cb39-9"><a href="#cb39-9"></a><span class="co"># 训练目标</span></span>
+<span id="cb39-10"><a href="#cb39-10"></a><span class="fu">compile</span>(mod_mlp,</span>
+<span id="cb39-11"><a href="#cb39-11"></a>  <span class="at">loss =</span> <span class="st">"mse"</span>, <span class="co"># 损失函数</span></span>
+<span id="cb39-12"><a href="#cb39-12"></a>  <span class="at">optimizer =</span> <span class="st">"adam"</span>, <span class="co"># 优化器</span></span>
+<span id="cb39-13"><a href="#cb39-13"></a>  <span class="at">metrics =</span> <span class="st">"mae"</span> <span class="co"># 监控度量</span></span>
+<span id="cb39-14"><a href="#cb39-14"></a>)</span>
+<span id="cb39-15"><a href="#cb39-15"></a><span class="co"># 模型概览</span></span>
+<span id="cb39-16"><a href="#cb39-16"></a><span class="fu">summary</span>(mod_mlp)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; Model: "sequential"
 #&gt; ________________________________________________________________________________
@@ -1441,52 +1485,52 @@ y = at + b + c \sin(\frac{t}{12} \times 2\pi) + d \cos(\frac{t}{12} \times 2\pi)
 </div>
 <p>输入层为 3 个节点，中间两个隐藏层，第一层为 12 个节点，第二层为 8 个节点，全连接网络，最后输出为一层单节点，意味着单个输出。每一层都有节点和权重，参数总数为 161。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1"></a><span class="co"># 拟合模型</span></span>
-<span id="cb39-2"><a href="#cb39-2"></a><span class="fu">fit</span>(mod_mlp,</span>
-<span id="cb39-3"><a href="#cb39-3"></a>  <span class="at">x =</span> train_data[, <span class="fu">c</span>(<span class="st">"x1"</span>, <span class="st">"x2"</span>, <span class="st">"x3"</span>)],</span>
-<span id="cb39-4"><a href="#cb39-4"></a>  <span class="at">y =</span> train_data[, <span class="st">"y"</span>],</span>
-<span id="cb39-5"><a href="#cb39-5"></a>  <span class="at">epochs =</span> <span class="dv">200</span>,</span>
-<span id="cb39-6"><a href="#cb39-6"></a>  <span class="at">batch_size =</span> <span class="dv">10</span>, <span class="co"># 每次更新梯度所用的样本量</span></span>
-<span id="cb39-7"><a href="#cb39-7"></a>  <span class="at">validation_split =</span> <span class="fl">0.2</span>, <span class="co"># 从训练数据中拆分一部分用作验证集</span></span>
-<span id="cb39-8"><a href="#cb39-8"></a>  <span class="at">verbose =</span> <span class="dv">0</span> <span class="co"># 不显示训练进度</span></span>
-<span id="cb39-9"><a href="#cb39-9"></a>)</span>
-<span id="cb39-10"><a href="#cb39-10"></a><span class="co"># 将测试数据代入模型，计算损失函数和监控度量</span></span>
-<span id="cb39-11"><a href="#cb39-11"></a><span class="fu">evaluate</span>(mod_mlp, test_data[, <span class="fu">c</span>(<span class="st">"x1"</span>, <span class="st">"x2"</span>, <span class="st">"x3"</span>)], test_data[, <span class="st">"y"</span>])</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1"></a><span class="co"># 拟合模型</span></span>
+<span id="cb41-2"><a href="#cb41-2"></a><span class="fu">fit</span>(mod_mlp,</span>
+<span id="cb41-3"><a href="#cb41-3"></a>  <span class="at">x =</span> train_data[, <span class="fu">c</span>(<span class="st">"x1"</span>, <span class="st">"x2"</span>, <span class="st">"x3"</span>)],</span>
+<span id="cb41-4"><a href="#cb41-4"></a>  <span class="at">y =</span> train_data[, <span class="st">"y"</span>],</span>
+<span id="cb41-5"><a href="#cb41-5"></a>  <span class="at">epochs =</span> <span class="dv">200</span>,</span>
+<span id="cb41-6"><a href="#cb41-6"></a>  <span class="at">batch_size =</span> <span class="dv">10</span>, <span class="co"># 每次更新梯度所用的样本量</span></span>
+<span id="cb41-7"><a href="#cb41-7"></a>  <span class="at">validation_split =</span> <span class="fl">0.2</span>, <span class="co"># 从训练数据中拆分一部分用作验证集</span></span>
+<span id="cb41-8"><a href="#cb41-8"></a>  <span class="at">verbose =</span> <span class="dv">0</span> <span class="co"># 不显示训练进度</span></span>
+<span id="cb41-9"><a href="#cb41-9"></a>)</span>
+<span id="cb41-10"><a href="#cb41-10"></a><span class="co"># 将测试数据代入模型，计算损失函数和监控度量</span></span>
+<span id="cb41-11"><a href="#cb41-11"></a><span class="fu">evaluate</span>(mod_mlp, test_data[, <span class="fu">c</span>(<span class="st">"x1"</span>, <span class="st">"x2"</span>, <span class="st">"x3"</span>)], test_data[, <span class="st">"y"</span>])</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>#&gt; 2/2 - 0s - loss: 2517.1836 - mae: 40.8876 - 17ms/epoch - 8ms/step</code></pre>
+<pre><code>#&gt; 2/2 - 0s - loss: 2517.1836 - mae: 40.8876 - 17ms/epoch - 9ms/step</code></pre>
 </div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt;       loss        mae 
 #&gt; 2517.18359   40.88759</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1"></a><span class="co"># 测试集上的预测</span></span>
-<span id="cb42-2"><a href="#cb42-2"></a>mlp_test_pred <span class="ot">&lt;-</span> <span class="fu">predict</span>(mod_mlp, test_data[, <span class="fu">c</span>(<span class="st">"x1"</span>, <span class="st">"x2"</span>, <span class="st">"x3"</span>)]) </span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1"></a><span class="co"># 测试集上的预测</span></span>
+<span id="cb44-2"><a href="#cb44-2"></a>mlp_test_pred <span class="ot">&lt;-</span> <span class="fu">predict</span>(mod_mlp, test_data[, <span class="fu">c</span>(<span class="st">"x1"</span>, <span class="st">"x2"</span>, <span class="st">"x3"</span>)]) </span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>#&gt; 2/2 - 0s - 65ms/epoch - 33ms/step</code></pre>
+<pre><code>#&gt; 2/2 - 0s - 65ms/epoch - 32ms/step</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1"></a>mlp_train_pred <span class="ot">&lt;-</span> <span class="fu">predict</span>(mod_mlp, train_data[, <span class="fu">c</span>(<span class="st">"x1"</span>, <span class="st">"x2"</span>, <span class="st">"x3"</span>)]) </span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1"></a>mlp_train_pred <span class="ot">&lt;-</span> <span class="fu">predict</span>(mod_mlp, train_data[, <span class="fu">c</span>(<span class="st">"x1"</span>, <span class="st">"x2"</span>, <span class="st">"x3"</span>)]) </span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; 3/3 - 0s - 16ms/epoch - 5ms/step</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1"></a><span class="fu">sqrt</span>(<span class="fu">mean</span>((test_data[, <span class="st">"y"</span>] <span class="sc">-</span> mlp_test_pred)<span class="sc">^</span><span class="dv">2</span>)) <span class="co"># 计算均方根误差</span></span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb48"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1"></a><span class="fu">sqrt</span>(<span class="fu">mean</span>((test_data[, <span class="st">"y"</span>] <span class="sc">-</span> mlp_test_pred)<span class="sc">^</span><span class="dv">2</span>)) <span class="co"># 计算均方根误差</span></span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; [1] 50.17154</code></pre>
 </div>
 </div>
 <p>从 RMSE 来看，MLP（多层感知机）预测效果比单层感知机稍好些，可网络复杂度是增加很多的。</p>
 <div class="cell" data-par="true">
-<div class="sourceCode cell-code" id="cb48"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1"></a>mlp_train_pred_ts <span class="ot">&lt;-</span> <span class="fu">ts</span>(<span class="at">data =</span> mlp_train_pred, <span class="at">start =</span> <span class="fu">c</span>(<span class="dv">1949</span>, <span class="dv">3</span>), <span class="at">frequency =</span> <span class="dv">12</span>)</span>
-<span id="cb48-2"><a href="#cb48-2"></a>mlp_test_pred_ts <span class="ot">&lt;-</span> <span class="fu">ts</span>(<span class="at">data =</span> mlp_test_pred, <span class="at">start =</span> <span class="fu">c</span>(<span class="dv">1957</span>, <span class="dv">1</span>), <span class="at">frequency =</span> <span class="dv">12</span>)</span>
-<span id="cb48-3"><a href="#cb48-3"></a><span class="fu">plot</span>(AirPassengers)</span>
-<span id="cb48-4"><a href="#cb48-4"></a><span class="fu">lines</span>(mlp_train_pred_ts, <span class="at">col =</span> <span class="st">"red"</span>)</span>
-<span id="cb48-5"><a href="#cb48-5"></a><span class="fu">lines</span>(mlp_test_pred_ts, <span class="at">col =</span> <span class="st">"green"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb50"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb50-1"><a href="#cb50-1"></a>mlp_train_pred_ts <span class="ot">&lt;-</span> <span class="fu">ts</span>(<span class="at">data =</span> mlp_train_pred, <span class="at">start =</span> <span class="fu">c</span>(<span class="dv">1949</span>, <span class="dv">3</span>), <span class="at">frequency =</span> <span class="dv">12</span>)</span>
+<span id="cb50-2"><a href="#cb50-2"></a>mlp_test_pred_ts <span class="ot">&lt;-</span> <span class="fu">ts</span>(<span class="at">data =</span> mlp_test_pred, <span class="at">start =</span> <span class="fu">c</span>(<span class="dv">1957</span>, <span class="dv">1</span>), <span class="at">frequency =</span> <span class="dv">12</span>)</span>
+<span id="cb50-3"><a href="#cb50-3"></a><span class="fu">plot</span>(AirPassengers)</span>
+<span id="cb50-4"><a href="#cb50-4"></a><span class="fu">lines</span>(mlp_train_pred_ts, <span class="at">col =</span> <span class="st">"red"</span>)</span>
+<span id="cb50-5"><a href="#cb50-5"></a><span class="fu">lines</span>(mlp_test_pred_ts, <span class="at">col =</span> <span class="st">"green"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div id="fig-tensorflow-mlp" class="quarto-figure quarto-figure-center anchored" width="480">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-tensorflow-mlp-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <img src="time-series-regression_files/figure-html/fig-tensorflow-mlp-1.png" class="img-fluid figure-img" width="480">
 </div>
 <figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-tensorflow-mlp-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-图&nbsp;39.12: 多层感知机预测
+图&nbsp;39.14: 多层感知机预测
 </figcaption></figure>
 </div>
 </div>
@@ -1498,20 +1542,20 @@ y = at + b + c \sin(\frac{t}{12} \times 2\pi) + d \cos(\frac{t}{12} \times 2\pi)
 <li>
 <p>基于 R 软件内置的数据集 <code>sunspots</code> 和 <code>sunspot.month</code> 比较 INLA 和 <strong>mgcv</strong> 框架的预测效果。</p>
 <div class="cell">
-<details class="code-fold"><summary>代码</summary><div class="sourceCode cell-code" id="cb49"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1"></a>sunspots_tbl <span class="ot">&lt;-</span> broom<span class="sc">::</span><span class="fu">tidy</span>(sunspots)</span>
-<span id="cb49-2"><a href="#cb49-2"></a>sunspots_month_tbl <span class="ot">&lt;-</span> broom<span class="sc">::</span><span class="fu">tidy</span>(sunspot.month)</span>
-<span id="cb49-3"><a href="#cb49-3"></a><span class="fu">ggplot</span>() <span class="sc">+</span></span>
-<span id="cb49-4"><a href="#cb49-4"></a>  <span class="fu">geom_line</span>(<span class="at">data =</span> sunspots_month_tbl, <span class="fu">aes</span>(<span class="at">x =</span> index, <span class="at">y =</span> value), <span class="at">color =</span> <span class="st">"red"</span>) <span class="sc">+</span></span>
-<span id="cb49-5"><a href="#cb49-5"></a>  <span class="fu">geom_line</span>(<span class="at">data =</span> sunspots_tbl, <span class="fu">aes</span>(<span class="at">x =</span> index, <span class="at">y =</span> value)) <span class="sc">+</span></span>
-<span id="cb49-6"><a href="#cb49-6"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span></span>
-<span id="cb49-7"><a href="#cb49-7"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"年月"</span>, <span class="at">y =</span> <span class="st">"数量"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<details class="code-fold"><summary>代码</summary><div class="sourceCode cell-code" id="cb51"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb51-1"><a href="#cb51-1"></a>sunspots_tbl <span class="ot">&lt;-</span> broom<span class="sc">::</span><span class="fu">tidy</span>(sunspots)</span>
+<span id="cb51-2"><a href="#cb51-2"></a>sunspots_month_tbl <span class="ot">&lt;-</span> broom<span class="sc">::</span><span class="fu">tidy</span>(sunspot.month)</span>
+<span id="cb51-3"><a href="#cb51-3"></a><span class="fu">ggplot</span>() <span class="sc">+</span></span>
+<span id="cb51-4"><a href="#cb51-4"></a>  <span class="fu">geom_line</span>(<span class="at">data =</span> sunspots_month_tbl, <span class="fu">aes</span>(<span class="at">x =</span> index, <span class="at">y =</span> value), <span class="at">color =</span> <span class="st">"red"</span>) <span class="sc">+</span></span>
+<span id="cb51-5"><a href="#cb51-5"></a>  <span class="fu">geom_line</span>(<span class="at">data =</span> sunspots_tbl, <span class="fu">aes</span>(<span class="at">x =</span> index, <span class="at">y =</span> value)) <span class="sc">+</span></span>
+<span id="cb51-6"><a href="#cb51-6"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span></span>
+<span id="cb51-7"><a href="#cb51-7"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"年月"</span>, <span class="at">y =</span> <span class="st">"数量"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details><div class="cell-output-display">
 <div id="fig-sunspots" class="quarto-figure quarto-figure-center anchored" width="672">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-sunspots-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <img src="time-series-regression_files/figure-html/fig-sunspots-1.png" class="img-fluid figure-img" width="672">
 </div>
 <figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-sunspots-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-图&nbsp;39.13: 预测月粒度太阳黑子数量
+图&nbsp;39.15: 预测月粒度太阳黑子数量
 </figcaption></figure>
 </div>
 </div>
