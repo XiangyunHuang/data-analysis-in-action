@@ -45,7 +45,7 @@ autoplot(meituan[, "3690.HK.Adjusted"]) +
 对数收益率的计算公式如下：
 
 $$
-\mathrm{对数收益率} = \ln(\mathrm{今日收盘价} / \mathrm{上一收盘价} ) = \ln (1 + \mathrm{普通收益率})
+\text{对数收益率} = \ln(\text{今日收盘价} / \text{昨日收盘价} ) = \ln (1 + \text{普通收益率})
 $$
 
 下图给出股价对数收益率变化和股价对数收益率的分布，可以看出在不同时间段，收益率波动幅度是不同的，美团股价对数收益率的分布可以看作正态分布。
@@ -61,7 +61,7 @@ $$
 #| fig-height: 4
 #| layout-ncol: 2
 
-meituan_log_return <- log(1 + diff(meituan[, "3690.HK.Adjusted"]) /  meituan[, "3690.HK.Adjusted"])[-1,]
+meituan_log_return <- diff(log(meituan[, "3690.HK.Adjusted"]))[-1]
 autoplot(meituan_log_return) +
   theme_classic() +
   labs(x = "日期", y = "对数收益率")
@@ -94,7 +94,8 @@ Box.test(meituan_log_return, lag = 12, type = "Ljung")
 
 ```{r}
 # ARCH 效应的检验
-Box.test((meituan_log_return - mean(meituan_log_return))^2, lag = 12, type = "Ljung")
+Box.test((meituan_log_return - mean(meituan_log_return))^2, 
+         lag = 12, type = "Ljung")
 ```
 
 结果高度显著，说明有 ARCH 效应。
@@ -113,7 +114,7 @@ h_1        &\sim \textsf{normal}\left( \mu, \frac{\sigma}{\sqrt{1 - \phi^2}} \ri
 \end{aligned}
 $$
 
-其中， $y_t$ 表示在时间 $t$ 时股价的回报，$\epsilon_t$ 表示股价回报在时间 $t$ 时的白噪声扰/波动，$\delta_t$ 表示波动率在时间$t$ 时的波动。$h_t$ 表示对数波动率，带有参数 $\mu$ （对数波动率的均值），$\phi$ （对数波动率的趋势）。代表波动率的序列 $\{h_t\}$ 假定是平稳 $(|\phi| < 1)$ 的随机过程，$h_1$ 来自平稳的分布（此处为正态分布），$\epsilon_t$ 和 $\delta_t$ 是服从不相关的标准正态分布。
+其中， $y_t$ 表示在时间 $t$ 时股价的回报（对数收益率），$\epsilon_t$ 表示股价回报在时间 $t$ 时的白噪声扰/波动，$\delta_t$ 表示波动率在时间$t$ 时的波动。$h_t$ 表示对数波动率，带有参数 $\mu$ （对数波动率的均值），$\phi$ （对数波动率的趋势）。代表波动率的序列 $\{h_t\}$ 假定是平稳 $(|\phi| < 1)$ 的随机过程，$h_1$ 来自平稳的分布（此处为正态分布），$\epsilon_t$ 和 $\delta_t$ 是服从不相关的标准正态分布。
 
 Stan 代码如下
 
@@ -190,7 +191,10 @@ $$
 #| message: false
 
 library(fGarch)
-meituan_garch1 <- garchFit(~ 1 + garch(2, 0), data = meituan_log_return, trace = FALSE, cond.dist = "std")
+meituan_garch1 <- garchFit(
+  formula = ~ 1 + garch(2, 0),
+  data = meituan_log_return, trace = FALSE, cond.dist = "std"
+)
 summary(meituan_garch1)
 ```
 
@@ -214,7 +218,10 @@ r_t &= \mu + a_t, \quad a_t = \sigma_t \epsilon_t, \quad \epsilon_t \sim \mathca
 $$
 
 ```{r}
-meituan_garch2 <- garchFit(~ 1 + garch(1, 1), data = meituan_log_return, trace = FALSE, cond.dist = "std")
+meituan_garch2 <- garchFit(
+  formula = ~ 1 + garch(1, 1),
+  data = meituan_log_return, trace = FALSE, cond.dist = "std"
+)
 summary(meituan_garch2)
 ```
 
@@ -243,12 +250,10 @@ $$
 air_passengers_df <- data.frame(y = as.vector(AirPassengers), t = 1:144)
 fit_lm1 <- lm(y ~ t + sin(t / 12 * 2 * pi) + cos(t / 12 * 2 * pi), data = air_passengers_df)
 fit_lm2 <- update(fit_lm1, . ~ . +
-  sin(t / 12 * 2 * 2 * pi) + cos(t / 12 * 2 * 2 * pi),
-data = air_passengers_df
+  sin(t / 12 * 2 * 2 * pi) + cos(t / 12 * 2 * 2 * pi), data = air_passengers_df
 )
 fit_lm3 <- update(fit_lm2, . ~ . +
-  sin(t / 12 * 3 * 2 * pi) + cos(t / 12 * 3 * 2 * pi),
-data = air_passengers_df
+  sin(t / 12 * 3 * 2 * pi) + cos(t / 12 * 3 * 2 * pi), data = air_passengers_df
 )
 plot(y ~ t, air_passengers_df, type = "l")
 lines(x = air_passengers_df$t, y = fit_lm1$fitted.values, col = "red")
@@ -301,21 +306,18 @@ autoplot(diff(log(AirPassengers))) +
 
 library(INLA)
 inla.setOption(short.summary = TRUE)
-
 air_passengers_df <- data.frame(
   y = as.vector(AirPassengers),
   year = as.factor(rep(1949:1960, each = 12)),
   month = as.factor(rep(1:12, times = 12)),
   ID = 1:length(AirPassengers)
 )
-
 mod_inla_rw1 <- inla(
   formula = log(y) ~ year + f(ID, model = "rw1"),
   family = "gaussian", data = air_passengers_df,
   control.family = list(hyper = list(prec = list(param = c(1, 0.2)))),
   control.predictor = list(compute = TRUE)
 )
-
 summary(mod_inla_rw1)
 ```
 
@@ -330,11 +332,10 @@ mod_inla_sea <- inla(
   control.family = list(hyper = list(prec = list(param = c(1, 0.2)))),
   control.predictor = list(compute = TRUE)
 )
-
 summary(mod_inla_sea)
 ```
 
-最后，将两个模型的拟合结果展示出来，见下图，黑线表示原对数值，红线表示拟合值，灰色区域表示在置信水平 95% 下的置信区间。
+最后，将两个模型的拟合结果展示出来，见下图，黑线表示原对数值，红线表示拟合值，灰色区域表示在置信水平 95% 下的区间。区间更短说明季节性模型更好。
 
 ```{r}
 #| label: fig-fitted-airpassengers
