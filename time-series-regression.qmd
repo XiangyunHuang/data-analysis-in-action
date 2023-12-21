@@ -263,7 +263,7 @@ lines(x = air_passengers_df$t, y = fit_lm3$fitted.values, col = "orange")
 非线性趋势、多季节性（多个周期混合）、特殊节假日、突发热点事件、残差成分（平稳），能同时应对这五种情况的建模方法是贝叶斯可加模型和神经网络模型，比如基于 Stan 实现的 prophet 包和 tensorflow 框架。
 
 ::: callout-tip
-prophet 包是如何同时容纳和处理这些情况，是否可以简化到在 cmdstanr 包中实现，是否可以在 mgcv 和 INLA 中扩展实现。
+prophet 包是如何同时处理这些情况，是否可以在 cmdstanr 包中实现，是否可以在 mgcv 和 INLA 中实现？
 :::
 
 ```{r}
@@ -272,16 +272,40 @@ library(cmdstanr)
 
 ### INLA 框架 {#sec-kaust-inla}
 
-阿卜杜拉国王科技大学（King Abdullah University of Science and Technology 简称 KAUST）的 Håvard Rue 等开发了 INLA 框架 [@Rue2009]。《贝叶斯推断与 INLA 》的第3章混合效应模型中随机游走部分 [@Virgilio2020]，一个随机过程（如随机游走、AR(p) 过程）作为随机效应。AirPassengers 的方差在变大，取对数尺度后，方差基本保持不变，因此，下面基于对数尺度建模。首先考虑 RW1 随机游走模型，而后考虑季节性。
+阿卜杜拉国王科技大学（King Abdullah University of Science and Technology 简称 KAUST）的 Håvard Rue 等开发了 INLA 框架 [@Rue2009]。《贝叶斯推断与 INLA 》的第3章混合效应模型中随机游走部分 [@Virgilio2020]，一个随机过程（如随机游走、AR(p) 过程）作为随机效应。AirPassengers 的方差在变大，取对数尺度后，方差基本保持不变，一阶差分后基本保持平稳。
+
+```{r}
+#| label: fig-log-airpassengers
+#| fig-cap: AirPassengers 的时序图
+#| fig-subcap: 
+#| - 对数尺度
+#| - 一阶差分
+#| layout-ncol: 2
+#| fig-width: 5
+#| fig-height: 4
+#| fig-showtext: true
+
+library(ggfortify)
+autoplot(log(AirPassengers)) +
+  theme_classic() +
+  labs(x = "年月", y = "对数值")
+autoplot(diff(log(AirPassengers))) +
+  theme_classic() +
+  labs(x = "年月", y = "差分对数值")
+```
+
+因此，下面基于对数尺度建模。首先考虑 RW1 随机游走模型，而后考虑季节性。RW1 模型意味着取对数、一阶差分后序列平稳高斯过程，序列值服从高斯分布。下面设置似然函数的高斯先验 $\mathcal{N}(1,0.2)$ ，目的是防止过拟合。
 
 ```{r}
 #| message: false
 
 library(INLA)
+inla.setOption(short.summary = TRUE)
+
 air_passengers_df <- data.frame(
   y = as.vector(AirPassengers),
   year = as.factor(rep(1949:1960, each = 12)),
-  month = rep(1:12, times = 12),
+  month = as.factor(rep(1:12, times = 12)),
   ID = 1:length(AirPassengers)
 )
 
@@ -295,6 +319,8 @@ mod_inla_rw1 <- inla(
 summary(mod_inla_rw1)
 ```
 
+这里，将年份作为因子型变量，从输出结果可以看出，以1949年作为参照，回归系数的后验均值在逐年变大，这符合 AirPassengers 时序图呈现的趋势。
+
 存在周期性的波动规律，考虑季节性
 
 ```{r}
@@ -306,6 +332,49 @@ mod_inla_sea <- inla(
 )
 
 summary(mod_inla_sea)
+```
+
+最后，将两个模型的拟合结果展示出来，见下图，黑线表示原对数值，红线表示拟合值，灰色区域表示在置信水平 95% 下的置信区间。
+
+```{r}
+#| label: fig-fitted-airpassengers
+#| fig-cap: AirPassengers 的拟合图
+#| fig-subcap: 
+#| - 随机游走模型
+#| - 季节效应模型
+#| layout-ncol: 2
+#| fig-width: 5
+#| fig-height: 4
+#| fig-showtext: true
+
+mod_inla_rw1_fitted <- data.frame(
+  ID = 1:length(AirPassengers),
+  y = as.vector(log(AirPassengers)),
+  mean = mod_inla_rw1$summary.fitted.values$mean,
+  `0.025quant` = mod_inla_rw1$summary.fitted.values$`0.025quant`,
+  `0.975quant` = mod_inla_rw1$summary.fitted.values$`0.975quant`,
+  check.names = FALSE
+)
+mod_inla_sea_fitted <- data.frame(
+  ID = 1:length(AirPassengers),
+  y = as.vector(log(AirPassengers)),
+  mean = mod_inla_sea$summary.fitted.values$mean,
+  `0.025quant` = mod_inla_sea$summary.fitted.values$`0.025quant`,
+  `0.975quant` = mod_inla_sea$summary.fitted.values$`0.975quant`,
+  check.names = FALSE
+)
+ggplot(data = mod_inla_rw1_fitted, aes(ID)) +
+  geom_ribbon(aes(ymin = `0.025quant`, ymax = `0.975quant`), fill = "gray") +
+  geom_line(aes(y = y)) +
+  geom_line(aes(y = mean), color = "red") +
+  theme_classic() +
+  labs(x = "序号", y = "对数值")
+ggplot(data = mod_inla_sea_fitted, aes(ID)) +
+  geom_ribbon(aes(ymin = `0.025quant`, ymax = `0.975quant`), fill = "gray") +
+  geom_line(aes(y = y)) +
+  geom_line(aes(y = mean), color = "red") +
+  theme_classic() +
+  labs(x = "序号", y = "对数值")
 ```
 
 ## 一些非参数模型
