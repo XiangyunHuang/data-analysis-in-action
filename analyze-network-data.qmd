@@ -26,10 +26,7 @@ pdb <- readRDS(file = "data/cran-package-db-20221231.rds")
 ```{r}
 pdb <- subset(
   x = pdb, subset = !duplicated(Package),
-  select = c(
-    "Package", "Maintainer", "License",
-    "Title", "Date", "Published"
-  )
+  select = c("Package", "Maintainer", "License", "Title", "Date", "Published")
 )
 ```
 
@@ -66,18 +63,20 @@ aggregate(data = pdb, Package ~ published_year, FUN = length) |>
 截止 2022-12-31，CRAN 上 R 包的维护者有 10049 人，其中有多少人在 2022 年更新了自己的 R 包呢？有 4820 个维护者，占比 47.96%，也就是说 2022 年，有 4820 个开发者更新了 8112 个 R 包，人均更新 1.68 个 R 包，下 @fig-active-maintainer 按 R 包发布年份统计开发者数量。
 
 ```{r}
-#| label: fig-active-maintainer
-#| fig-cap: "CRAN 上的维护者活跃情况"
-#| fig-showtext: true
-#| fig-width: 5
-#| fig-height: 3.5
-
 # 清理维护者字段，同一个开发者可能有多个邮箱
 pdb$Maintainer2 <- sub(pattern = "<.*?>", replacement = "", x = pdb$Maintainer)
 pdb$Maintainer2 <- trimws(pdb$Maintainer2, which = "both", whitespace = "[ \t\r\n]")
 pdb$Maintainer2 <- tolower(pdb$Maintainer2)
 # 维护者总数
-# length(unique(pdb$Maintainer2))
+length(unique(pdb$Maintainer2))
+```
+
+```{r}
+#| label: fig-active-maintainer
+#| fig-cap: "CRAN 上的维护者活跃情况"
+#| fig-showtext: true
+#| fig-width: 5
+#| fig-height: 3.5
 
 aggregate(
   data = pdb, Maintainer2 ~ published_year,
@@ -118,9 +117,7 @@ pdb$Email_suffix <- sub(x = pdb$Email, pattern = ".*?@(.*?)>", replacement = "\\
 ```{r}
 pdb_pkg <- aggregate(
   data = pdb, Package ~ Email_suffix,
-  FUN = function(x) {
-    length(unique(x))
-  }
+  FUN = function(x) { length(unique(x)) }
 )
 
 head(pdb_pkg[order(pdb_pkg$Package, decreasing = TRUE), ], 20)
@@ -139,9 +136,7 @@ head(pdb_pkg[order(pdb_pkg$Package, decreasing = TRUE), ], 20)
 ```{r}
 pdb_org <- aggregate(
   data = pdb, Maintainer2 ~ Email_suffix,
-  FUN = function(x) {
-    length(unique(x))
-  }
+  FUN = function(x) { length(unique(x)) }
 )
 
 head(pdb_org[order(pdb_org$Maintainer2, decreasing = TRUE), ], 20)
@@ -241,6 +236,9 @@ knitr::kable(tail(tmp, floor(nrow(tmp) / 2)),
 Martin Maechler、Simon Urbanek、Kurt Hornik、Torsten Hothorn、Achim Zeileis 等真是高产呐！除了维护 R 语言核心代码，还开发维护了**20** 多个 R 包！以 Brian Ripley 为例，看看他都开发了哪些 R 包。
 
 ```{r}
+#| label: tbl-ripley
+#| tbl-cap: Brian Ripley 维护的 R 包
+
 subset(pdb,
   subset = grepl(
     x = Maintainer,
@@ -300,7 +298,7 @@ CRAN 和 RStudio 团队是 R 语言社区最为熟悉的，其它团队需借助
 
 ## R 语言社区的开发者
 
-最高产的开发者
+### 最高产的开发者
 
 ```{r}
 #| label: fig-top-maintainer
@@ -317,7 +315,7 @@ ggplot(data = pdb_ctb[pdb_ctb$Package >= 20, ]) +
   labs(x = "R 包数量", y = "开发者")
 ```
 
-开发 1 个 R 包的开发者有 7656 人，开发 2 个 R 包的开发者有 1678 人，第二名是第一名的五分之一，等
+开发 1 个 R 包的开发者有 7656 人，开发 2 个 R 包的开发者有 1678 人，第二名是第一名的五分之一，递减规律非常符合指数分布。
 
 ```{r}
 table(pdb_ctb$Package)
@@ -348,16 +346,189 @@ ggplot(data = pdb_ctb[pdb_ctb$Package <= 20, ], aes(x = Package)) +
   labs(x = "R 包数量", y = "开发者")
 ```
 
-最高产 Top 1% 的开发者 117 人（开发 R 包超过 10 个的开发者）贡献了 2060 / 18976扩展包 10.8%，高产的是有组织的，商业、开源、学校。
-
-最低产 Bottom 的开发者 7656 人（仅开发一个 R 包的开发者） 贡献了 7656 / 18976 扩展包 40.3 %，低产的人是主体。
+最高产 Top 1% 的开发者 117 人（开发 R 包超过 10 个的开发者）贡献了 2060 / 18976 = 10.8% 扩展包 ，高产的是有组织的，商业公司、开源组织、大学机构。
 
 ```{r}
+dim(pdb_ctb[pdb_ctb$Package > 10, ])
 sum(pdb_ctb[pdb_ctb$Package > 10, "Package"])
 ```
 
+最低产 Bottom 的开发者 7656 人（仅开发一个 R 包的开发者） 贡献了 7656 / 18976 扩展包 40.3 %，低产的人是主体。
+
+### 开发者之间贡献关系
+
+一个 R 包有一个唯一的维护者，可能有一个至多个贡献者，这样，维护者和贡献者之间就形成了有向关系，贡献者可能又是另一个 R 包的维护者，也可能不是。不仅有向而且可能存在环。在一个 R 包中，A 是 B 的贡献者，而在另一个 R 包中，B 是 A 的贡献者，A 和 B 之间可能通过多个 R 包存在多次互相贡献关系，这也表明 A 和 B 之间的关系密切。有向环的节点可能有 2 个以上。一个人可能同时属于多个环。
+
+维护者 A 接受来自多个开发者的贡献，接受次数（所有贡献者人数的累和，A 的每个 R 包的贡献者人数相加）视为 A 的入度。维护者 A 作为开发者给多个维护者贡献，贡献次数（作为开发者给其它 R 包做贡献的次数，向外参与贡献的 R 包数目）视为 A 的出度。注意，A 作为维护者，必然包含 A 作为开发者，忽略 A 到 A 的贡献，只考虑贡献/协作关系。
+
+```{r}
+pdb <- readRDS(file = "data/cran-package-db-20221231.rds")
+# 过滤重复和缺失的记录
+pdb <- subset(
+  x = pdb, subset = !duplicated(Package) & !is.na(`Authors@R`),
+  select = c("Package", "Maintainer", "Author", "Authors@R")
+)
+# 提取维护者的名字
+pdb$Maintainer <- extract_maintainer(pdb$Maintainer)
+```
+
+有些包的元数据中没有 Authors\@R 字段，有可能是没有贡献者，比如 mgcv 包、gam 包等，但也有可能是有贡献者，只是维护者没有填写这个字段，比如 Rcpp 包、RcppEigen 包等，因此将这些先过滤出来。总之，本文是以 `Authors@R` 字段作为贡献者的来源，共计 12503 个 R 包含有 `Authors@R` ，有 6000+ 个 R 包没有该字段，缺失约占 R 包总数的 1/3，在不那么考虑准确性的情况下，也可以使用。Author 字段是一段没有结构的文本，相比于 Author 字段，`Authors@R` 字段是以 R 语言中的 person 类型为存储结构的，比较规范，因此，提取贡献者的操作比较方便。作为示例，下面提取 Matrix 包的贡献者。
+
+```{r}
+tmp <- eval(parse(text = pdb[pdb$Package == "Matrix", "Authors@R"]))
+tmp <- unlist(lapply(tmp, function(x) format(x, include = c("given", "family"))))
+# 返回一个整洁的数据框
+tmp <- data.frame(Package = "Matrix", Maintainer = pdb[pdb$Package == "Matrix", "Maintainer"], Authors = tmp)
+# 去掉 Authors 是 Maintainer 的记录
+subset(tmp, subset = Maintainer != Authors)
+```
+
+数据框包含 R 包（Package 字段）、及其维护者（Maintainer 字段）和贡献者（Authors 字段）。将上述过程写成一个函数，接着，将所有 R 包的贡献者提取出来，形成一个大的数据框。
+
+```{r}
+extract_authors <- function(pkg) {
+  sub_pdb <- pdb[pdb$Package == pkg, ]
+  tmp <- eval(parse(text = sub_pdb[, "Authors@R"]))
+  tmp <- unlist(lapply(tmp, function(x) format(x, include = c("given", "family"))))
+  tmp <- data.frame(Package = pkg, Maintainer = sub_pdb[, "Maintainer"], Authors = tmp)
+  subset(tmp, subset = Maintainer != Authors)
+}
+extract_authors("Matrix")
+# lapply(c("Matrix", "gt"), extract_authors)
+# 抽取所有 R 包的贡献者，运行需要1-2分钟时间
+pdb_authors_list <- lapply(pdb[, "Package"], extract_authors)
+# 合并列表
+pdb_authors_dt <- data.table::rbindlist(pdb_authors_list)
+```
+
+最后整理出来的大数据框 **`pdb_authors_dt`** 含有近 26000 条记录，即边的规模大小。考虑到有些维护者和贡献者之间可能存在多次合作的情况，下面统计一下合作次数。
+
+```{r}
+# tmp <- aggregate(Package ~ Maintainer  + Authors, data = pdb_authors_dt, FUN = length)
+# tmp[tmp$Package >= 10, ]
+
+pdb_authors_dt[ ,.(cnt = length(Package)) , by = c("Maintainer", "Authors")][cnt >= 10, ][order(cnt, decreasing = T), ]
+```
+
+Authors 字段出现了不少组织的名字，这是因为有许多 R 包的维护者受雇于该组织，版权归属于该组织，组织不仅提供持续的资金，而且还提供其它帮助。以 **dplyr** 包为例，Hadley Wickham 受雇于 RStudio 公司，在 dplyr 包的元数据中，字段 `Authors@R` 中 RStudio 的角色是 cph 和 fnd ，即版权所有和资金支持。角色 cre 就是维护者，负责与 CRAN 团队的沟通。角色 aut 就是对 R 包有实质贡献的人。
+
+```{r}
+format(eval(parse(text = pdb[pdb$Package == "dplyr", "Authors@R"])),
+       include = c("given", "family", "role"))
+```
+
+此外，同属于一个组织的维护者之间常常合作紧密，从上面的结果可以看到，Gábor Csárdi 和 Jim Hester ，Lionel Henry 和 Hadley Wickham，Carson Sievert 和 Joe Cheng ，Jennifer Bryan 和 Hadley Wickham 等同属于 RStudio 公司，常常协作开发项目。
+
+```{r}
+pdb_authors_net <- pdb_authors_dt[, .(cnt = .N), by = c("Maintainer", "Authors")]
+```
+
+统计协作次数的分布，可以发现，绝大多数人之间只有一次。
+
+```{r}
+table(pdb_authors_net$cnt)
+```
+
+可视化网络的 R 包有 igraph 、ggraph 等，专业的软件有 Gephi 等。
+
+下面简化这个网络，仅考虑贡献者也是维护者的情况，就是说网络中所有节点即是维护者也是贡献者，这会过滤掉组织机构、大量没有在 CRAN 发过 R 包的贡献者。
+
+### 出度和入度的分布
+
+维护者的出度和入度的分布。
+
+```{r}
+#| label: fig-network-degree
+#| fig-cap: 网络的入度和出度的分布
+#| fig-showtext: true
+#| fig-width: 4
+#| fig-height: 3
+#| fig-subcap: 
+#| - 入度的分布
+#| - 出度的分布
+#| layout-ncol: 2
+
+# Maintainer 的入度
+pdb_authors_net_indegree <- pdb_authors_dt[Authors %in% Maintainer, ][, .(in_degree = length(Authors)), by = "Maintainer"]
+# Authors 的出度
+pdb_authors_net_outdegree <- pdb_authors_dt[Authors %in% Maintainer, ][, .(out_degree = length(Maintainer)), by = "Authors"]
+
+# Maintainer 的入度
+ggplot(pdb_authors_net_indegree, aes(x = in_degree)) +
+  geom_histogram(binwidth = 1) +
+  geom_freqpoly(binwidth = 1) +
+  theme_classic()
+# Authors 的出度
+ggplot(pdb_authors_net_outdegree, aes(x = out_degree)) +
+  geom_histogram(binwidth = 1) +
+  geom_freqpoly(binwidth = 1) +
+  theme_classic()
+```
+
+### 构造网络关系数据
+
+节点的大小以该维护者维护的 R 包数量来表示，边的大小以维护者之间协作次数来表示。
+
+```{r}
+# 边的数量
+pdb_authors_net_edge <- pdb_authors_dt[Authors %in% Maintainer, ][, .(edge_cnt = .N), by = c("Maintainer", "Authors")]
+# Maintainer 的 R 包数量
+pdb_authors_net_vertex <- pdb_authors_dt[Authors %in% Maintainer, ][, .(vertex_cnt = length(unique(Package))), by = "Maintainer"]
+# 合并数据
+pdb_authors_net2 <- merge(x = pdb_authors_net_edge, y = pdb_authors_net_vertex, by = "Maintainer", all.x = TRUE)
+pdb_authors_net2
+```
+
+这是一个有向图
+
+-   Maintainer 维护者 to
+-   Authors 贡献者 from
+-   `edge_cnt` 边的大小表示维护者 Maintainer 和贡献者 Authors 的协作次数
+-   `vertex_cnt` 顶点大小表示维护者 Maintainer 维护的 R 包数量
+
+下面考虑用 R 包可视化这个复杂的有向带权网络。`pdb_authors_net2` 是一个数据框，首先调用 igraph 包将其转化为网络类型 `igraph` 。如何使用 igraph 包表示图数据？如何使用 igraph 包绘制图？
+
+```{r}
+#| eval: false
+
+library(igraph)
+# 边数据
+# 顶点数据
+links <- data.frame()
+nodes <- data.frame()
+pdb_authors_gg <- graph_from_data_frame(d = links, vertices = nodes, directed = T)
+```
+
+### 贡献网络影响力分析
+
+出度、入度，中心度
+
 高产的人是很少的，贡献的 R 包占比是很小的，其影响力如何评估？低产的人是绝对的大多数，如何促进低产的人走向高产和扩展影响力？
 
-## R 语言社区的扩展包
+```{r}
+pdb_authors_g <- tidygraph::as_tbl_graph(pdb_authors_dt[Authors %in% Maintainer, c("Authors", "Maintainer")], directed = T) |> 
+ dplyr::mutate(Popularity = tidygraph::centrality_degree(mode = 'in')) |> 
+  dplyr::mutate(Popularity = log10(1 + Popularity))
+```
 
-R 包的影响力，被多少 R 包依赖，A 被 B 依赖，B 被 C 依赖，以此类推，A 被依赖的深度。
+### 可视化贡献关系网络
+
+最后，借助 ggraph 包绘制维护者之间的贡献网络，节点的大小代表维护者影响力的强弱。
+
+```{r}
+#| label: fig-cran-network
+#| fig-cap: 维护者之间的贡献网络
+#| fig-width: 6
+#| fig-height: 5
+#| fig-showtext: true
+
+library(ggraph)
+ggraph(pdb_authors_g, layout = "kk") +
+  geom_edge_fan(aes(alpha = after_stat(index)), show.legend = FALSE) +
+  geom_node_point(aes(size = Popularity), alpha = 0.5) +
+  theme_graph(base_family = "sans")
+```
+
+## 习题 {#sec-analysis-network-data-exercise}
+
+1.  分析 R 包的影响力。统计一个 R 包被多少 R 包依赖。A 被 B 依赖，B 被 C 依赖，以此类推，A 被依赖的深度。可视化依赖关系网络。
