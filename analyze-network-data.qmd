@@ -431,7 +431,7 @@ table(pdb_authors_net$cnt)
 
 可视化网络的 R 包有 igraph 、ggraph 等，专业的软件有 Gephi 等。
 
-下面简化这个网络，仅考虑贡献者也是维护者的情况，就是说网络中所有节点即是维护者也是贡献者，这会过滤掉组织机构、大量没有在 CRAN 发过 R 包的贡献者。
+下面简化这个网络，仅考虑贡献者也是维护者的情况，就是说网络中所有节点即是维护者也是贡献者，这会过滤掉组织机构、大量没有在 CRAN 发过 R 包的贡献者、从没给其它维护者做贡献的维护者。
 
 ### 出度和入度的分布
 
@@ -465,18 +465,17 @@ ggplot(pdb_authors_net_outdegree, aes(x = out_degree)) +
   theme_classic()
 ```
 
-### 构造网络关系数据
+### 可视化贡献关系网络
 
-节点的大小以该维护者维护的 R 包数量来表示，边的大小以维护者之间协作次数来表示。
+节点的大小以该维护者维护的 R 包数量来表示，边的大小以维护者之间协作次数来表示。为了方便可视化，仅保留协作次数大于 1 的边。
 
 ```{r}
-# 边的数量
-pdb_authors_net_edge <- pdb_authors_dt[Authors %in% Maintainer, ][, .(edge_cnt = .N), by = c("Maintainer", "Authors")]
-# Maintainer 的 R 包数量
-pdb_authors_net_vertex <- pdb_authors_dt[Authors %in% Maintainer, ][, .(vertex_cnt = length(unique(Package))), by = "Maintainer"]
-# 合并数据
-pdb_authors_net2 <- merge(x = pdb_authors_net_edge, y = pdb_authors_net_vertex, by = "Maintainer", all.x = TRUE)
-pdb_authors_net2
+# 边
+pdb_authors_net_edge <- pdb_authors_dt[Authors %in% Maintainer, ][, .(edge_cnt = .N), by = c("Authors", "Maintainer")][edge_cnt > 1,]
+pdb_authors_net_edge
+# 顶点
+pdb_authors_net_vertex <- pdb_authors_dt[, .(vertex_cnt = length(unique(Package))), by = "Maintainer"][Maintainer %in% c(pdb_authors_net_edge$Maintainer, pdb_authors_net_edge$Authors),]
+pdb_authors_net_vertex
 ```
 
 这是一个有向图
@@ -486,24 +485,30 @@ pdb_authors_net2
 -   `edge_cnt` 边的大小表示维护者 Maintainer 和贡献者 Authors 的协作次数
 -   `vertex_cnt` 顶点大小表示维护者 Maintainer 维护的 R 包数量
 
-下面考虑用 R 包可视化这个复杂的有向带权网络。`pdb_authors_net2` 是一个数据框，首先调用 igraph 包将其转化为网络类型 `igraph` 。如何使用 igraph 包表示图数据？如何使用 igraph 包绘制图？
+下面考虑用 R 包可视化这个复杂的有向带权网络。`pdb_authors_net_edge` 和 `pdb_authors_net_vertex` 都是数据框，首先调用 igraph 包将其转化为网络类型 `igraph` ，然后绘制网络图。
 
 ```{r}
-#| eval: false
+#| label: fig-network-igraph
+#| fig-cap: 开发者之间的贡献网络
+#| fig-width: 6
+#| fig-height: 5
+#| fig-showtext: true
 
+# 构造图
 library(igraph)
-# 边数据
-# 顶点数据
-links <- data.frame()
-nodes <- data.frame()
-pdb_authors_gg <- graph_from_data_frame(d = links, vertices = nodes, directed = T)
+pdb_authors_graph <- graph_from_data_frame(d = pdb_authors_net_edge, vertices = pdb_authors_net_vertex, directed = T)
+# 可视化
+plot(pdb_authors_graph,
+  edge.width = (E(pdb_authors_graph)$edge_cnt) / 2,
+  edge.arrow.size = .01,
+  edge.curved = .1,
+  layout = layout.kamada.kawai,
+  vertex.size = (V(pdb_authors_graph)$vertex_cnt) / 8,
+  vertex.label.cex = (V(pdb_authors_graph)$vertex_cnt) / 20
+)
 ```
 
-### 贡献网络影响力分析
-
-出度、入度，中心度
-
-高产的人是很少的，贡献的 R 包占比是很小的，其影响力如何评估？低产的人是绝对的大多数，如何促进低产的人走向高产和扩展影响力？
+中心度定义节点（维护者）的影响力。
 
 ```{r}
 pdb_authors_g <- tidygraph::as_tbl_graph(pdb_authors_dt[Authors %in% Maintainer, c("Authors", "Maintainer")], directed = T) |> 
@@ -511,13 +516,11 @@ pdb_authors_g <- tidygraph::as_tbl_graph(pdb_authors_dt[Authors %in% Maintainer,
   dplyr::mutate(Popularity = log10(1 + Popularity))
 ```
 
-### 可视化贡献关系网络
-
 最后，借助 ggraph 包绘制维护者之间的贡献网络，节点的大小代表维护者影响力的强弱。
 
 ```{r}
-#| label: fig-cran-network
-#| fig-cap: 维护者之间的贡献网络
+#| label: fig-network-ggraph
+#| fig-cap: 开发者影响力网络
 #| fig-width: 6
 #| fig-height: 5
 #| fig-showtext: true
