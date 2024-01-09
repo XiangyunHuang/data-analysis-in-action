@@ -598,9 +598,16 @@ MathJax ={
   
 
 
-</header><section id="sec-community-capacity" class="level2" data-number="23.1"><h2 data-number="23.1" class="anchored" data-anchor-id="sec-community-capacity">
+</header><p>网络数据分析又是另一个大话题，微信、微博、论坛、知乎、豆瓣、美团等等应用都或多或少自带了社交属性。人不能脱离社会存在，社交是人的一种本能，身处洪流之中，即是复杂社会网络中的一个节点。网络分析的内容有很多，比如社区探测、节点影响力分析等。</p>
+<p>网络图是表示节点之间关系的图，核心在于关系的刻画，用来表达网络关系的是稀疏矩阵，以及为处理这种矩阵而专门优化的矩阵计算库，如 <strong>Matrix</strong> 、<a href="https://github.com/rexyai/rsparse"><strong>rsparse</strong></a> 和 <strong>RcppEigen</strong> <span class="citation" data-cites="Bates2013">(<a href="references.html#ref-Bates2013" role="doc-biblioref">Bates 和 Eddelbuettel 2013</a>)</span>，PageRank 应该是大家最为熟悉的网络数据挖掘算法，图关系挖掘和计算的应用场景非常广泛，如社交推荐（社交 App）、风险控制（银行征信、企业查）、深度学习（图神经网络）、知识图谱（商户、商家、客户的实体关系网络）、区块链、物联网（IoT）、反洗钱（金融监管）、数据治理（数据血缘图谱）等。</p>
+<p>企业级的图存储和计算框架，比较有名（可能是最有名的），反正，笔者最先听说的是<a href="https://github.com/neo4j/neo4j">Neo4j</a> ，它有以 AGPL 协议发布的开源版本，还有商业版本。<a href="https://github.com/vesoft-inc/nebula">Nebula Graph</a> 分布式开源图数据库，高扩展性和高可用性，支持千亿节点、万亿条边、毫秒级查询，有<a href="https://github.com/vesoft-inc/nebula-docs-cn/">中文文档</a>，有企业应用案例，<a href="https://mp.weixin.qq.com/s/aYd5tqwogJYfkJXhVNuNpg">美团图数据库平台建设及业务实践</a>。阿里研发的 <a href="https://github.com/alibaba/GraphScope">GraphScope</a> 提供一站式大规模图计算系统，支持图神经网络计算。<a href="https://github.com/hugegraph/hugegraph">HugeGraph</a> 图数据库应用于<a href="https://zhuanlan.zhihu.com/p/114665466">金融反欺诈实践</a>。</p>
+<p>R 语言网络分析方面的著作有 Erick Kolaczyk 的书籍《Statistical Analysis of Network Data with R》<span class="citation" data-cites="Kolaczyk2020">(<a href="references.html#ref-Kolaczyk2020" role="doc-biblioref">Kolaczyk 和 Csárdi 2020</a>)</span>，网络可视化方面，推荐 Hadley Wickham 的著作《ggplot2: Elegant Graphics for Data Analysis》<span class="citation" data-cites="Hadley2016">(<a href="references.html#ref-Hadley2016" role="doc-biblioref">Wickham 2016</a>)</span>，Sam Tyner 等人的文章《Network Visualization with ggplot2》<span class="citation" data-cites="Tyner2017">(<a href="references.html#ref-Tyner2017" role="doc-biblioref">Tyner, Briatte, 和 Hofmann 2017</a>)</span> 也值得一看。</p>
+<p><a href="https://github.com/igraph/igraph">igraph</a> 是非常流行和核心的网络分析 C 语言库，它提供有多种语言的接口，其 R 语言接口 <a href="https://github.com/igraph/rigraph">igraph</a> 包也被很多其它做网络分析的 R 包所引用。开源的 <a href="https://github.com/gephi/gephi">Gephi</a> 软件适合处理中等规模的网络分析和可视化。大规模图计算可以用 Apache Spark 的 <a href="https://spark.apache.org/graphx/">GraphX</a>。R 语言这层，主要还是对应数据分析和数据产品，用于在内部咨询和商业分析。</p>
+<p>本文主要用到的工具有 <a href="https://github.com/igraph/igraph">igraph</a> 包，操作图数据和图计算的 <a href="https://github.com/thomasp85/tidygraph">tidygraph</a> 包，以及可视化图数据的 <a href="https://github.com/thomasp85/ggraph">ggraph</a> 包。此外，读者若有兴趣，可以用 <a href="https://github.com/datastorm-open/visNetwork">visNetwork</a> 包制作交互式网络图形，它是 JS 库 <a href="https://github.com/visjs/vis-network">vis-network</a> 的 R 语言接口。而 Richard Iannone 开发的 <a href="https://github.com/rich-iannone/DiagrammeR">DiagrammeR</a> 包可以制作静态的矢量网页图形。</p>
+<p>本文将分析 R 语言社区开发者之间的协作关系网络。首先基于 CRAN 上发布的 R 包元数据信息，了解 R 语言社区 R 包及其维护者的规模，以及根据元数据中的信息发掘社区中的组织，最后，统计开发者维护的 R 包数据，分析开发者在网络中的影响力，并将结果可视化。</p>
+<section id="sec-community-capacity" class="level2" data-number="23.1"><h2 data-number="23.1" class="anchored" data-anchor-id="sec-community-capacity">
 <span class="header-section-number">23.1</span> R 语言社区的规模</h2>
-<p>从 CRAN 上的 R 包及其开发者数量来看看目前 R 语言社区规模。</p>
+<p>从 CRAN 上的 R 包及其开发者数量来看目前 R 语言社区规模。</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a><span class="co"># 设置就近的 CRAN 镜像站点</span></span>
 <span id="cb1-2"><a href="#cb1-2"></a><span class="fu">Sys.setenv</span>(<span class="at">R_CRAN_WEB =</span> <span class="st">"https://mirrors.tuna.tsinghua.edu.cn/CRAN"</span>)</span>
@@ -1627,8 +1634,14 @@ MathJax ={
 
 
 <div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list" style="display: none">
+<div id="ref-Bates2013" class="csl-entry" role="listitem">
+Bates, Douglas, 和 Dirk Eddelbuettel. 2013. <span>《Fast and Elegant Numerical Linear Algebra Using the <span>RcppEigen</span> Package》</span>. <em>Journal of Statistical Software</em> 52 (5): 1–24. <a href="https://doi.org/10.18637/jss.v052.i05">https://doi.org/10.18637/jss.v052.i05</a>.
+</div>
 <div id="ref-DrWhy2023" class="csl-entry" role="listitem">
 Biecek, Przemyslaw. 2023. <em><span>DrWhy</span>: Explain, Explore and Debug Predictive Machine Learning Models</em>. <a href="https://github.com/ModelOriented/DrWhy">https://github.com/ModelOriented/DrWhy</a>.
+</div>
+<div id="ref-Kolaczyk2020" class="csl-entry" role="listitem">
+Kolaczyk, Eric D., 和 Gábor Csárdi. 2020. <em>Statistical Analysis of Network Data with <span>R</span></em>. 2nd 本. Springer, New York, NY. <a href="https://doi.org/10.1007/978-3-030-44129-6">https://doi.org/10.1007/978-3-030-44129-6</a>.
 </div>
 <div id="ref-Kuhn2020" class="csl-entry" role="listitem">
 Kuhn, Max, 和 Hadley Wickham. 2020. <em>Tidymodels: a collection of packages for modeling and machine learning using tidyverse principles.</em> <a href="https://www.tidymodels.org">https://www.tidymodels.org</a>.
@@ -1641,6 +1654,12 @@ Lüdecke, Daniel. 2019. <em><span>strengejacke</span>: Load Packages Associated 
 </div>
 <div id="ref-Makowski2022" class="csl-entry" role="listitem">
 Lüdecke, Daniel, Mattan S. Ben-Shachar, Indrajeet Patil, Brenton M. Wiernik, Etienne Bacher, Rémi Thériault, 和 Dominique Makowski. 2022. <span>《<span>easystats</span>: Framework for Easy Statistical Modeling, Visualization, and Reporting》</span>. <em>CRAN</em>. <a href="https://easystats.github.io/easystats/">https://easystats.github.io/easystats/</a>.
+</div>
+<div id="ref-Tyner2017" class="csl-entry" role="listitem">
+Tyner, Sam, François Briatte, 和 Heike Hofmann. 2017. <span>《Network Visualization with <span>ggplot2</span>》</span>. <em><span>The R Journal</span></em> 9 (1): 27–59. <a href="https://doi.org/10.32614/RJ-2017-023">https://doi.org/10.32614/RJ-2017-023</a>.
+</div>
+<div id="ref-Hadley2016" class="csl-entry" role="listitem">
+Wickham, Hadley. 2016. <em><span>ggplot2</span>: Elegant Graphics for Data Analysis</em>. Springer-Verlag New York. <a href="https://ggplot2.tidyverse.org">https://ggplot2.tidyverse.org</a>.
 </div>
 <div id="ref-Wickham2019" class="csl-entry" role="listitem">
 Wickham, Hadley, Mara Averick, Jennifer Bryan, Winston Chang, Lucy D’Agostino McGowan, Romain François, Garrett Grolemund, 等. 2019. <span>《Welcome to the <span>tidyverse</span>》</span>. <em>Journal of Open Source Software</em> 4 (43): 1686. <a href="https://doi.org/10.21105/joss.01686">https://doi.org/10.21105/joss.01686</a>.
