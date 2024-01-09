@@ -1,6 +1,6 @@
 # 网络分析 {#sec-analysis-network-data}
 
-## R 语言社区规模 {#sec-community-capacity}
+## R 语言社区的规模 {#sec-community-capacity}
 
 从 CRAN 上的 R 包及其开发者数量来看看目前 R 语言社区规模。
 
@@ -18,6 +18,7 @@ pdb <- tools::CRAN_package_db()
 #| label: cran-package-metadata
 #| echo: false
 
+source("_common.R")
 pdb <- readRDS(file = "data/cran-package-db-20221231.rds")
 ```
 
@@ -91,7 +92,9 @@ aggregate(
   labs(x = "年份", y = "开发者数量")
 ```
 
+::: callout-tip
 与 2023 年 12 月 31 日的数据比较。
+:::
 
 ## R 语言社区的组织
 
@@ -233,7 +236,7 @@ knitr::kable(tail(tmp, floor(nrow(tmp) / 2)),
 )
 ```
 
-Martin Maechler、Simon Urbanek、Kurt Hornik、Torsten Hothorn、Achim Zeileis 等真是高产呐！除了维护 R 语言核心代码，还开发维护了**20** 多个 R 包！以 Brian Ripley 为例，看看他都开发了哪些 R 包。
+Martin Maechler、Simon Urbanek、Kurt Hornik、Torsten Hothorn、Achim Zeileis 等真是高产呐！除了维护 R 语言核心代码，还开发维护了**20** 多个 R 包。以 Brian Ripley 为例，看看他都开发了哪些 R 包。
 
 ```{r}
 #| label: tbl-ripley
@@ -256,9 +259,7 @@ subset(pdb,
 
 震惊！有一半收录在 R 软件中，所以已经持续维护 **20** 多年了。
 
-::: sidebar
 根据邮箱后缀匹配抽取的 R 包及开发者，规则也许不能覆盖所有的情况，读者若有补充，欢迎 PR 给我。举个例子，Brian Ripley 的邮箱 [ripley\@stats.ox.ac.uk](mailto:ripley@stats.ox.ac.uk){.email} 就不是一路，需要单独添加。
-:::
 
 ```{r}
 #| label: tbl-rstudio-developers
@@ -355,9 +356,9 @@ sum(pdb_ctb[pdb_ctb$Package > 10, "Package"])
 
 最低产 Bottom 的开发者 7656 人（仅开发一个 R 包的开发者） 贡献了 7656 / 18976 扩展包 40.3 %，低产的人是主体。
 
-### 开发者之间贡献关系
+### 开发者协作关系
 
-一个 R 包有一个唯一的维护者，可能有一个至多个贡献者，这样，维护者和贡献者之间就形成了有向关系，贡献者可能又是另一个 R 包的维护者，也可能不是。不仅有向而且可能存在环。在一个 R 包中，A 是 B 的贡献者，而在另一个 R 包中，B 是 A 的贡献者，A 和 B 之间可能通过多个 R 包存在多次互相贡献关系，这也表明 A 和 B 之间的关系密切。有向环的节点可能有 2 个以上。一个人可能同时属于多个环。
+一个 R 包有一个唯一的维护者，可能有一个至多个贡献者，这样，维护者和贡献者之间就形成了有向关系，贡献者可能又是另一个 R 包的维护者，也可能不是。不仅有向而且可能存在环。在一个 R 包中，A 是 B 的贡献者，而在另一个 R 包中，B 是 A 的贡献者，A 和 B 之间可能通过多个 R 包存在多次互相协作关系，这也表明 A 和 B 之间的关系密切。有向环的节点可能有 2 个以上。一个人可能同时属于多个环。
 
 维护者 A 接受来自多个开发者的贡献，接受次数（所有贡献者人数的累和，A 的每个 R 包的贡献者人数相加）视为 A 的入度。维护者 A 作为开发者给多个维护者贡献，贡献次数（作为开发者给其它 R 包做贡献的次数，向外参与贡献的 R 包数目）视为 A 的出度。注意，A 作为维护者，必然包含 A 作为开发者，忽略 A 到 A 的贡献，只考虑贡献/协作关系。
 
@@ -429,17 +430,13 @@ pdb_authors_net <- pdb_authors_dt[, .(cnt = .N), by = c("Maintainer", "Authors")
 table(pdb_authors_net$cnt)
 ```
 
-可视化网络的 R 包有 igraph 、ggraph 等，专业的软件有 Gephi 等。
+### 节点出入度分布
 
-下面简化这个网络，仅考虑贡献者也是维护者的情况，就是说网络中所有节点即是维护者也是贡献者，这会过滤掉组织机构、大量没有在 CRAN 发过 R 包的贡献者、从没给其它维护者做贡献的维护者。
-
-### 出度和入度的分布
-
-维护者的出度和入度的分布。
+下面简化这个网络，仅考虑贡献者也是维护者的情况，就是说网络中所有节点既是维护者也是贡献者，这会过滤掉组织机构、大量没有在 CRAN 发过 R 包的贡献者、从没给其它维护者做贡献的维护者。简化后，网络节点的出度、入度的分布图如下。
 
 ```{r}
 #| label: fig-network-degree
-#| fig-cap: 网络的入度和出度的分布
+#| fig-cap: 节点的入度和出度的分布
 #| fig-showtext: true
 #| fig-width: 4
 #| fig-height: 3
@@ -453,21 +450,19 @@ pdb_authors_net_indegree <- pdb_authors_dt[Authors %in% Maintainer, ][, .(in_deg
 # Authors 的出度
 pdb_authors_net_outdegree <- pdb_authors_dt[Authors %in% Maintainer, ][, .(out_degree = length(Maintainer)), by = "Authors"]
 
-# Maintainer 的入度
 ggplot(pdb_authors_net_indegree, aes(x = in_degree)) +
   geom_histogram(binwidth = 1) +
   geom_freqpoly(binwidth = 1) +
   theme_classic()
-# Authors 的出度
 ggplot(pdb_authors_net_outdegree, aes(x = out_degree)) +
   geom_histogram(binwidth = 1) +
   geom_freqpoly(binwidth = 1) +
   theme_classic()
 ```
 
-### 可视化贡献关系网络
+### 可视化协作网络
 
-节点的大小以该维护者维护的 R 包数量来表示，边的大小以维护者之间协作次数来表示。为了方便可视化，仅保留协作次数大于 1 的边。
+节点的大小以维护者维护的 R 包数量来表示，边的大小以维护者之间协作次数来表示。为了美观起见，更为了突出重点，仅保留协作次数大于 1 的边。
 
 ```{r}
 # 边
@@ -485,45 +480,45 @@ pdb_authors_net_vertex
 -   `edge_cnt` 边的大小表示维护者 Maintainer 和贡献者 Authors 的协作次数
 -   `vertex_cnt` 顶点大小表示维护者 Maintainer 维护的 R 包数量
 
-下面考虑用 R 包可视化这个复杂的有向带权网络。`pdb_authors_net_edge` 和 `pdb_authors_net_vertex` 都是数据框，首先调用 igraph 包将其转化为网络类型 `igraph` ，然后绘制网络图。
+可视化网络的 R 包有 **igraph** 、**ggraph** 等，专业的软件有 Gephi 等。下面先考虑用 R 包可视化这个复杂的有向带权网络。`pdb_authors_net_edge` 和 `pdb_authors_net_vertex` 都是数据框，首先调用 igraph 包的函数 `graph_from_data_frame()` 将其转化为网络类型 `igraph` ，然后使用函数 `plot()` 绘制网络图。
 
 ```{r}
 #| label: fig-network-igraph
 #| fig-cap: 开发者之间的贡献网络
-#| fig-width: 6
-#| fig-height: 5
+#| fig-width: 7
+#| fig-height: 7
 #| fig-showtext: true
+#| message: false
 
 # 构造图
 library(igraph)
 pdb_authors_graph <- graph_from_data_frame(d = pdb_authors_net_edge, vertices = pdb_authors_net_vertex, directed = T)
 # 可视化
+op <- par(mar = rep(0, 4))
 plot(pdb_authors_graph,
   edge.width = (E(pdb_authors_graph)$edge_cnt) / 2,
   edge.arrow.size = .01,
   edge.curved = .1,
   layout = layout.kamada.kawai,
   vertex.size = (V(pdb_authors_graph)$vertex_cnt) / 8,
-  vertex.label.cex = (V(pdb_authors_graph)$vertex_cnt) / 20
+  vertex.label.cex = sqrt(V(pdb_authors_graph)$vertex_cnt) / 8
 )
+on.exit(par(op), add = TRUE)
 ```
 
-中心度定义节点（维护者）的影响力。
+协作关系弱的开发者占大部分，构成一个「月亮」的造型，其中，不乏维护多个 R 包的开发者，这些人要么单干，要么在专业小领域、小组织内协作。与之相对应的是协作关系较强的开发者，人数虽少，影响力却大，构成一个「太阳」的造型。协作得多往往意味着维护的 R 包也不少，甚至同属于一个组织，因此，高产的开发者、影响力大的组织聚集在一起，如 RStudio、rOpenSci 等。
 
-```{r}
-pdb_authors_g <- tidygraph::as_tbl_graph(pdb_authors_dt[Authors %in% Maintainer, c("Authors", "Maintainer")], directed = T) |> 
- dplyr::mutate(Popularity = tidygraph::centrality_degree(mode = 'in')) |> 
-  dplyr::mutate(Popularity = log10(1 + Popularity))
-```
-
-最后，借助 ggraph 包绘制维护者之间的贡献网络，节点的大小代表维护者影响力的强弱。
+下面使用 tidygraph 包构造图数据、计算节点中心度，dplyr 包操作数据。中心度代表节点（维护者）的影响力。最后，借助 ggraph 包绘制维护者之间的贡献网络，节点的大小代表维护者影响力的强弱。
 
 ```{r}
 #| label: fig-network-ggraph
 #| fig-cap: 开发者影响力网络
-#| fig-width: 6
-#| fig-height: 5
+#| fig-width: 7
+#| fig-height: 6
 #| fig-showtext: true
+
+pdb_authors_g <- tidygraph::as_tbl_graph(pdb_authors_net_edge, directed = T) |> 
+ dplyr::mutate(Popularity = tidygraph::centrality_degree(mode = 'in'))
 
 library(ggraph)
 ggraph(pdb_authors_g, layout = "kk") +
