@@ -1,11 +1,10 @@
 # 网络分析 {#sec-analysis-network-data}
 
-## R 语言社区规模 {#sec-community-capacity}
+## R 语言社区的规模 {#sec-community-capacity}
 
 从 CRAN 上的 R 包及其开发者数量来看看目前 R 语言社区规模。
 
 ```{r}
-#| label: cran-package-metadata
 #| eval: false
 #| echo: true
 
@@ -16,17 +15,20 @@ pdb <- tools::CRAN_package_db()
 ```
 
 ```{r}
+#| label: cran-package-metadata
 #| echo: false
 
+source("_common.R")
 pdb <- readRDS(file = "data/cran-package-db-20221231.rds")
 ```
 
 截止 2022-12-31 CRAN 上发布的 R 包有 18976 个，CRAN 进入年末维护期 2022-12-22 至 2023-01-05。
 
 ```{r}
-pdb <- subset(x = pdb, subset = !duplicated(Package), 
-              select = c("Package", "Maintainer", "License", 
-                         "Title", "Date", "Published"))
+pdb <- subset(
+  x = pdb, subset = !duplicated(Package),
+  select = c("Package", "Maintainer", "License", "Title", "Date", "Published")
+)
 ```
 
 距离上次更新的时间分布，有的包是一周内更新的，也有的是 10 多年未更新的。
@@ -51,7 +53,7 @@ pdb$published_year <- as.integer(format(as.Date(pdb$Published), "%Y"))
 #| fig-height: 3.5
 
 library(ggplot2)
-aggregate(data = pdb,Package ~ published_year, FUN = length) |> 
+aggregate(data = pdb, Package ~ published_year, FUN = length) |>
   ggplot(aes(x = published_year, y = Package)) +
   geom_col(fill = NA, color = "gray20") +
   theme_classic() +
@@ -62,18 +64,20 @@ aggregate(data = pdb,Package ~ published_year, FUN = length) |>
 截止 2022-12-31，CRAN 上 R 包的维护者有 10049 人，其中有多少人在 2022 年更新了自己的 R 包呢？有 4820 个维护者，占比 47.96%，也就是说 2022 年，有 4820 个开发者更新了 8112 个 R 包，人均更新 1.68 个 R 包，下 @fig-active-maintainer 按 R 包发布年份统计开发者数量。
 
 ```{r}
-#| label: fig-active-maintainer
-#| fig-cap: "CRAN 上的维护者活跃情况"
-#| fig-showtext: true
-#| fig-width: 5
-#| fig-height: 3.5
-
 # 清理维护者字段，同一个开发者可能有多个邮箱
 pdb$Maintainer2 <- sub(pattern = "<.*?>", replacement = "", x = pdb$Maintainer)
 pdb$Maintainer2 <- trimws(pdb$Maintainer2, which = "both", whitespace = "[ \t\r\n]")
 pdb$Maintainer2 <- tolower(pdb$Maintainer2)
 # 维护者总数
-# length(unique(pdb$Maintainer2))
+length(unique(pdb$Maintainer2))
+```
+
+```{r}
+#| label: fig-active-maintainer
+#| fig-cap: "CRAN 上的维护者活跃情况"
+#| fig-showtext: true
+#| fig-width: 5
+#| fig-height: 3.5
 
 aggregate(
   data = pdb, Maintainer2 ~ published_year,
@@ -87,3 +91,427 @@ aggregate(
   coord_cartesian(expand = F) +
   labs(x = "年份", y = "开发者数量")
 ```
+
+## R 语言社区的组织 {#sec-community-org}
+
+有的组织基本停止了开发，如 [Omegahat](https://github.com/omegahat)，有的被商业公司收购后，不再活跃了，如[Revolution Analytics](https://github.com/RevolutionAnalytics)。除了众所周知的 [tidyverse](https://github.com/tidyverse/tidyverse) [@Wickham2019] 和 [tidymodels](https://github.com/tidymodels/tidymodels) [@Kuhn2020]，还有很多数据分析、建模的工具箱，如 [mlr3verse](https://github.com/mlr-org/mlr3verse) [@Lang2023]、[easystats](https://github.com/easystats/easystats) [@Makowski2022]、[strengejacke](https://github.com/strengejacke/strengejacke) [@Daniel2019] 和 [DrWhy](https://github.com/ModelOriented/DrWhy) [@DrWhy2023]。它们作为解决方案大都属于一些组织，还有深藏功与名，有待笔者挖掘的。因不存在明显的规律，下面从开发者的邮箱出发，隶属企业、组织往往有统一的邮箱后缀。
+
+```{r}
+# 抽取邮件后缀
+str_extract <- function(text, pattern, ...) regmatches(text, regexpr(pattern, text, ...))
+# 移除 ORPHANED
+pdb <- subset(pdb, subset = Maintainer != "ORPHANED")
+# email
+pdb$Email <- str_extract(text = pdb$Maintainer, pattern = "<.*?>")
+# email_suffix
+pdb$Email_suffix <- sub(x = pdb$Email, pattern = ".*?@(.*?)>", replacement = "\\1")
+```
+
+按组织统计扩展包的数量（总的 R 包数量约 2 万），各个组织贡献的 R 包
+
+```{r}
+pdb_pkg <- aggregate(
+  data = pdb, Package ~ Email_suffix, FUN = function(x) { length(unique(x)) }
+)
+head(pdb_pkg[order(pdb_pkg$Package, decreasing = TRUE), ], 20)
+```
+
+不难看出，至少有如下几类：
+
+1.  邮件服务提供商。6968 个 R 包使用 gmail 邮箱作为联系维护者的方式，googlemail.com 也是谷歌提供的服务。hotmail.com 和 outlook.com 都是微软提供的邮箱服务，outlook.fr （法国）也是，除此之外，比较大的邮件服务提供商就是 163.com（网易）、 protonmail.com 和 yahoo.com （雅虎）等。
+2.  商业组织。208 个 R 包来自 RStudio 公司的员工，这些维护者使用 RStudio 公司提供的邮箱。
+3.  开源组织。R-project.org 和 r-project.org 都是 R 语言组织的联系方式，自不必多说，R 语言核心团队成员不仅维护 R 软件源码，还维护了很多 R 包。debian.org 是 Debian 组织的联系方式，都是开源组织（Open Source Org）。
+4.  大学学院机构。berkeley.edu 、umich.edu 等以 edu 结尾的北美（国）的大学，gmx.de、 posteo.de 等以 de 结尾的德国大学，ucl.ac.uk 等以 uk 结尾的英国的大学，auckland.ac.nz 等以 nz 结尾的新西兰的大学，uwaterloo.ca 等以 ca 结尾的加拿大的大学。
+
+按组织统计开发者的数量（总的开发者数量约 1 万），各个组织的 R 包开发者。
+
+```{r}
+pdb_org <- aggregate(
+  data = pdb, Maintainer2 ~ Email_suffix, FUN = function(x) { length(unique(x)) }
+)
+head(pdb_org[order(pdb_org$Maintainer2, decreasing = TRUE), ], 20)
+```
+
+可见，大部分开发者采用邮件服务提供商的邮件地址。3795 个开发者使用来自谷歌的 gmail.com、196 个开发者使用来自微软的 hotmail.com 和 outlook.com，57 个开发者使用来自网易的 163.com，51 个开发者使用来自雅虎的 yahoo.com，46 个开发者使用来自 Proton 的 protonmail.com。
+
+其一马太效应，往头部集中，其二，长尾分布，尾部占比接近甚至超过 50%。1666 个开发者来自以 edu 为后缀的邮箱。各个大学及其 R 包开发者数据如下：
+
+```{r}
+sum(pdb_org[grepl(pattern = "edu$", x = pdb_org$Email_suffix), "Maintainer2"])
+pdb_org_edu <- pdb_org[grepl(pattern = "edu$", x = pdb_org$Email_suffix), ]
+pdb_org_edu[order(pdb_org_edu$Maintainer2, decreasing = TRUE), ] |> head(20)
+```
+
+好吧，几乎全是美国各个 NB 大学的，比如华盛顿大学（ uw.edu）、密歇根大学（umich.edu）、加州伯克利大学（berkeley.edu）等等。顺便一说，欧美各个大学的网站，特别是统计院系很厉害的，已经帮大家收集得差不多了，有留学打算的读者自取，邮箱后缀就是学校/院官网。
+
+有些邮箱后缀带有院系，但是并没有向上合并到学校这一级，比如 `stanford.edu` 、`stat.stanford.edu` 和 `alumni.stanford.edu` 等没有合并统计，所以排名仅供参考。有的邮箱来自教育机构，但是不以 `edu` 结尾，实际使用 `edu` 邮箱的教育机构大部份位于美国，比如新西兰奥克兰大学 `auckland.ac.nz` 瑞士苏黎世联邦理工学院 `stat.math.ethz.ch`如果读者还知道其他一般规律的，或者提供大学邮箱列表或者有其它更好的办法，就可以把这个数字做得更加精准一些。只是改变这个结论恐怕很难。
+
+```{r}
+#| label: tbl-cran-developers
+#| tbl-cap: "CRAN 团队开发维护 R 包数量情况"
+#| tbl-subcap:
+#|   - "表"
+#|   - "续表"
+#| layout-ncol: 2
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
+#| comment: NA
+
+core_dev <- subset(pdb,
+  subset = grepl(
+    x = Maintainer,
+    pattern = paste0(c(
+      "(@[Rr]-project\\.org)",
+      "(ripley@stats.ox.ac.uk)", # Brian Ripley
+      "(p.murrell@auckland.ac.nz)", # Paul Murrell
+      "(paul@stat.auckland.ac.nz)", # Paul Murrell
+      "(maechler@stat.math.ethz.ch)", # Martin Maechler
+      "(mmaechler+Matrix@gmail.com)", # Martin Maechler
+      "(bates@stat.wisc.edu)", # Douglas Bates
+      "(pd.mes@cbs.dk)", # Peter Dalgaard
+      "(ligges@statistik.tu-dortmund.de)", # Uwe Ligges
+      "(tlumley@u.washington.edu)", # Thomas Lumley
+      "(t.lumley@auckland.ac.nz)", # Thomas Lumley
+      "(martyn.plummer@gmail.com)", # Martyn Plummer
+      "(luke-tierney@uiowa.edu)", # Luke Tierney
+      "(stefano.iacus@unimi.it)", # Stefano M. Iacus
+      "(murdoch.duncan@gmail.com)", # Duncan Murdoch
+      "(michafla@gene.com)" # Michael Lawrence
+    ), collapse = "|")
+  ),
+  select = c("Package", "Maintainer")
+) |>
+  transform(Maintainer = gsub(
+    x = Maintainer,
+    pattern = '(<([^<>]*)>)|(")',
+    replacement = ""
+  )) |>
+  transform(Maintainer = gsub(
+    x = Maintainer,
+    pattern = "(R-core)|(R Core Team)",
+    replacement = "CRAN Team"
+  )) |>
+  transform(Maintainer = gsub(
+    x = Maintainer,
+    pattern = "(S. M. Iacus)|(Stefano M.Iacus)|(Stefano Maria Iacus)",
+    replacement = "Stefano M. Iacus"
+  )) |>
+  transform(Maintainer = gsub(
+    x = Maintainer,
+    pattern = "(Toby Hocking)",
+    replacement = "Toby Dylan Hocking"
+  )) |>
+  transform(Maintainer = gsub(
+    x = Maintainer,
+    pattern = "(John M Chambers)",
+    replacement = "John Chambers"
+  ))
+
+tmp <- aggregate(data = core_dev, Package ~ Maintainer, FUN = function(x) length(unique(x)))
+tmp <- tmp[order(tmp$Package, decreasing = TRUE), ]
+
+knitr::kable(head(tmp, ceiling(nrow(tmp) / 2)),
+  col.names = c("团队成员", "R 包数量"), row.names = FALSE
+)
+knitr::kable(tail(tmp, floor(nrow(tmp) / 2)),
+  col.names = c("团队成员", "R 包数量"), row.names = FALSE
+)
+```
+
+Kurt Hornik、Simon Urbanek、Achim Zeileis 、Martin Maechler、Torsten Hothorn等真是高产呐！除了维护 R 语言核心代码，还开发维护了**20** 多个 R 包。以 Brian Ripley 为例，看看他都具体维护了哪些 R 包。
+
+```{r}
+#| label: tbl-ripley
+#| tbl-cap: Brian Ripley 维护的 R 包
+
+subset(pdb,
+  subset = grepl(
+    x = Maintainer,
+    pattern = "Brian Ripley"
+  ),
+  select = c("Package", "Title"), drop = TRUE
+) |>
+  unique(by = "Package") |>
+  transform(Title = gsub(
+    pattern = "(\\\n)",
+    replacement = " ", x = Title
+  )) |>
+  knitr::kable(row.names = FALSE)
+```
+
+震惊！有一半收录在 R 软件中，所以已经持续维护 **20** 多年了。
+
+根据邮箱后缀匹配抽取的 R 包及开发者，规则也许不能覆盖所有的情况，读者若有补充，欢迎 PR 给我。举个例子，Brian Ripley 的邮箱 [ripley\@stats.ox.ac.uk](mailto:ripley@stats.ox.ac.uk){.email} 就不是一路，需要单独添加。
+
+```{r}
+#| label: tbl-rstudio-developers
+#| tbl-cap: "RStudio 团队开发维护 R 包数量情况（部分）"
+#| tbl-subcap:
+#|   - "表"
+#|   - "续表"
+#| layout-ncol: 2
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
+
+extract_maintainer <- function(x) {
+  x <- gsub(pattern = "<.*?>", replacement = "", x = x)
+  x <- trimws(x, which = "both", whitespace = "[ \t\r\n]")
+  x
+}
+rstudio_db <- subset(pdb,
+  subset = grepl(x = Maintainer, pattern = "rstudio.com"),
+  select = c("Package", "Maintainer")
+) |>
+  transform(Maintainer = extract_maintainer(Maintainer))
+
+rstudio_db <- aggregate(data = rstudio_db, Package ~ Maintainer, FUN = function(x) length(unique(x)))
+rstudio_db <- rstudio_db[order(rstudio_db$Package, decreasing = TRUE), ]
+
+knitr::kable(head(rstudio_db, ceiling(nrow(rstudio_db) / 2)),
+  col.names = c("团队成员", "R 包数量"), row.names = FALSE
+)
+knitr::kable(tail(rstudio_db, floor(nrow(rstudio_db) / 2)),
+  col.names = c("团队成员", "R 包数量"), row.names = FALSE
+)
+```
+
+在开发维护的 R 包里，谢益辉所给的联系邮箱是 [xie\@yihui.name](mailto:xie@yihui.name){.email}，就不在上述之列，因此，表中所列仅是部分而已。
+
+CRAN 和 RStudio 团队是 R 语言社区最为熟悉的，其它团队需借助一些网络分析算法挖掘了。
+
+## R 语言社区的开发者 {#sec-community-developer}
+
+### 最高产的开发者 {#sec-top-developer}
+
+继续基于数据集 pdb ，将维护 R 包数量比较多的开发者统计出来。
+
+```{r}
+#| label: fig-top-maintainer
+#| fig-showtext: true
+#| fig-cap: 高产的 R 包开发者
+#| fig-width: 6
+#| fig-height: 5
+
+pdb_ctb <- aggregate(data = pdb, Package ~ Maintainer, FUN = length)
+
+ggplot(data = pdb_ctb[pdb_ctb$Package >= 20, ]) +
+  geom_col(aes(x = Package, y = reorder(Maintainer, Package)), width = .1) +
+  theme_classic() +
+  labs(x = "R 包数量", y = "开发者")
+```
+
+发现，开发 1 个 R 包的开发者有 7656 人，开发 2 个 R 包的开发者有 1678 人，第二名是第一名的五分之一，递减规律非常符合指数分布。
+
+```{r}
+table(pdb_ctb$Package)
+```
+
+过滤掉非常高产的开发者，可以发现变化规律服从幂律分布。
+
+```{r}
+#| label: fig-dist-maintainer
+#| fig-cap: 开发者数量的分布
+#| fig-subcap:
+#| - 直方图
+#| - 直方图（对数尺度）
+#| fig-width: 4
+#| fig-height: 3
+#| fig-showtext: true
+#| layout-ncol: 2
+
+ggplot(data = pdb_ctb, aes(x = Package)) +
+  geom_histogram(binwidth = 1) +
+  theme_classic() +
+  labs(x = "R 包数量", y = "开发者")
+
+ggplot(data = pdb_ctb[pdb_ctb$Package <= 20, ], aes(x = Package)) +
+  geom_histogram(binwidth = 1, fill = NA, color = "gray20") +
+  scale_y_log10() +
+  theme_classic() +
+  labs(x = "R 包数量", y = "开发者")
+```
+
+最高产 Top 1% 的开发者 117 人（开发 R 包超过 10 个的开发者）贡献了 2060 / 18976 = 10.8% 扩展包 ，高产的是有组织的，商业公司、开源组织、大学机构。
+
+```{r}
+dim(pdb_ctb[pdb_ctb$Package > 10, ])
+sum(pdb_ctb[pdb_ctb$Package > 10, "Package"])
+```
+
+最低产 Bottom 的开发者 7656 人（仅开发一个 R 包的开发者） 贡献了 7656 / 18976 扩展包 40.3 %，低产的人是主体。
+
+### 开发者协作关系 {#sec-coauthor-relation}
+
+一个 R 包有一个唯一的维护者，可能有一个至多个贡献者，这样，维护者和贡献者之间就形成了有向关系，贡献者可能又是另一个 R 包的维护者，也可能不是。不仅有向而且可能存在环。在一个 R 包中，A 是 B 的贡献者，而在另一个 R 包中，B 是 A 的贡献者，A 和 B 之间可能通过多个 R 包存在多次互相协作关系，这也表明 A 和 B 之间的关系密切。有向环的节点可能有 2 个以上。一个人可能同时属于多个环。
+
+维护者 A 接受来自多个开发者的贡献，接受次数（所有贡献者人数的累和，A 的每个 R 包的贡献者人数相加）视为 A 的入度。维护者 A 作为开发者给多个维护者贡献，贡献次数（作为开发者给其它 R 包做贡献的次数，向外参与贡献的 R 包数目）视为 A 的出度。注意，A 作为维护者，必然包含 A 作为开发者，忽略 A 到 A 的贡献，只考虑贡献/协作关系。
+
+```{r}
+pdb <- readRDS(file = "data/cran-package-db-20221231.rds")
+# 过滤重复和缺失的记录
+pdb <- subset(
+  x = pdb, subset = !duplicated(Package) & !is.na(`Authors@R`),
+  select = c("Package", "Maintainer", "Author", "Authors@R")
+)
+# 提取维护者的名字
+pdb$Maintainer <- extract_maintainer(pdb$Maintainer)
+```
+
+有些包的元数据中没有 Authors\@R 字段，有可能是没有贡献者，比如 mgcv 包、gam 包等，但也有可能是有贡献者，只是维护者没有填写这个字段，比如 Rcpp 包、RcppEigen 包等，因此将这些先过滤出来。总之，本文是以 `Authors@R` 字段作为贡献者的来源，共计 12503 个 R 包含有 `Authors@R` ，有 6000+ 个 R 包没有该字段，缺失约占 R 包总数的 1/3，在不那么考虑准确性的情况下，也可以使用。Author 字段是一段没有结构的文本，相比于 Author 字段，`Authors@R` 字段是以 R 语言中的 person 类型为存储结构的，比较规范，因此，提取贡献者的操作比较方便。作为示例，下面提取 Matrix 包的贡献者。
+
+```{r}
+tmp <- eval(parse(text = pdb[pdb$Package == "Matrix", "Authors@R"]))
+tmp <- unlist(lapply(tmp, function(x) format(x, include = c("given", "family"))))
+# 返回一个整洁的数据框
+tmp <- data.frame(Package = "Matrix", Maintainer = pdb[pdb$Package == "Matrix", "Maintainer"], Authors = tmp)
+# 去掉 Authors 是 Maintainer 的记录
+subset(tmp, subset = Maintainer != Authors)
+```
+
+数据框包含 R 包（Package 字段）、及其维护者（Maintainer 字段）和贡献者（Authors 字段）。将上述过程写成一个函数，接着，将所有 R 包的贡献者提取出来，形成一个大的数据框。
+
+```{r}
+extract_authors <- function(pkg) {
+  sub_pdb <- pdb[pdb$Package == pkg, ]
+  tmp <- eval(parse(text = sub_pdb[, "Authors@R"]))
+  tmp <- unlist(lapply(tmp, function(x) format(x, include = c("given", "family"))))
+  tmp <- data.frame(Package = pkg, Maintainer = sub_pdb[, "Maintainer"], Authors = tmp)
+  subset(tmp, subset = Maintainer != Authors)
+}
+extract_authors("Matrix")
+# lapply(c("Matrix", "gt"), extract_authors)
+# 抽取所有 R 包的贡献者，运行需要1-2分钟时间
+pdb_authors_list <- lapply(pdb[, "Package"], extract_authors)
+# 合并列表
+pdb_authors_dt <- data.table::rbindlist(pdb_authors_list)
+```
+
+最后整理出来的大数据框 **`pdb_authors_dt`** 含有近 26000 条记录，即边的规模大小。考虑到有些维护者和贡献者之间可能存在多次合作的情况，下面统计一下合作次数。
+
+```{r}
+# tmp <- aggregate(Package ~ Maintainer  + Authors, data = pdb_authors_dt, FUN = length)
+# tmp[tmp$Package >= 10, ]
+
+pdb_authors_dt[ ,.(cnt = length(Package)) , by = c("Maintainer", "Authors")][cnt >= 10, ][order(cnt, decreasing = T), ]
+```
+
+Authors 字段出现了不少组织的名字，这是因为有许多 R 包的维护者受雇于该组织，版权归属于该组织，组织不仅提供持续的资金，而且还提供其它帮助。以 **dplyr** 包为例，Hadley Wickham 受雇于 RStudio 公司，在 dplyr 包的元数据中，字段 `Authors@R` 中 RStudio 的角色是 cph 和 fnd ，即版权所有和资金支持。角色 cre 就是维护者，负责与 CRAN 团队的沟通。角色 aut 就是对 R 包有实质贡献的人。
+
+```{r}
+format(eval(parse(text = pdb[pdb$Package == "dplyr", "Authors@R"])),
+       include = c("given", "family", "role"))
+```
+
+此外，同属于一个组织的维护者之间常常合作紧密，从上面的结果可以看到，Gábor Csárdi 和 Jim Hester ，Lionel Henry 和 Hadley Wickham，Carson Sievert 和 Joe Cheng ，Jennifer Bryan 和 Hadley Wickham 等同属于 RStudio 公司，常常协作开发项目。
+
+```{r}
+pdb_authors_net <- pdb_authors_dt[, .(cnt = .N), by = c("Maintainer", "Authors")]
+```
+
+统计协作次数的分布，可以发现，绝大多数人之间只有一次。
+
+```{r}
+table(pdb_authors_net$cnt)
+```
+
+### 节点出入度分布 {#sec-network-degree}
+
+下面简化这个网络，仅考虑贡献者也是维护者的情况，就是说网络中所有节点既是维护者也是贡献者，这会过滤掉组织机构、大量没有在 CRAN 发过 R 包的贡献者、从没给其它维护者做贡献的维护者。简化后，网络节点的出度、入度的分布图如下。
+
+```{r}
+#| label: fig-network-degree
+#| fig-cap: 节点的入度和出度的分布
+#| fig-showtext: true
+#| fig-width: 4
+#| fig-height: 3
+#| fig-subcap: 
+#| - 入度的分布
+#| - 出度的分布
+#| layout-ncol: 2
+
+# Maintainer 的入度
+pdb_authors_net_indegree <- pdb_authors_dt[Authors %in% Maintainer, ][, .(in_degree = length(Authors)), by = "Maintainer"]
+# Authors 的出度
+pdb_authors_net_outdegree <- pdb_authors_dt[Authors %in% Maintainer, ][, .(out_degree = length(Maintainer)), by = "Authors"]
+
+ggplot(pdb_authors_net_indegree, aes(x = in_degree)) +
+  geom_histogram(binwidth = 1) +
+  geom_freqpoly(binwidth = 1) +
+  theme_classic()
+ggplot(pdb_authors_net_outdegree, aes(x = out_degree)) +
+  geom_histogram(binwidth = 1) +
+  geom_freqpoly(binwidth = 1) +
+  theme_classic()
+```
+
+### 可视化协作网络 {#sec-visual-coauthor-network}
+
+节点的大小以维护者维护的 R 包数量来表示，边的大小以维护者之间协作次数来表示。为了美观起见，更为了突出重点，仅保留协作次数大于 1 的边。
+
+```{r}
+# 边
+pdb_authors_net_edge <- pdb_authors_dt[Authors %in% Maintainer, ][, .(edge_cnt = .N), by = c("Authors", "Maintainer")][edge_cnt > 1,]
+pdb_authors_net_edge
+# 顶点
+pdb_authors_net_vertex <- pdb_authors_dt[, .(vertex_cnt = length(unique(Package))), by = "Maintainer"][Maintainer %in% c(pdb_authors_net_edge$Maintainer, pdb_authors_net_edge$Authors),]
+pdb_authors_net_vertex
+```
+
+这是一个有向图，其各个字段含义如下。
+
+-   Maintainer 维护者 to
+-   Authors 贡献者 from
+-   `edge_cnt` 边的大小表示维护者 Maintainer 和贡献者 Authors 的协作次数
+-   `vertex_cnt` 顶点大小表示维护者 Maintainer 维护的 R 包数量
+
+可视化网络的 R 包有 **igraph** 、**ggraph** 等，专业的软件有 Gephi 等。下面先考虑用 R 包可视化这个复杂的有向带权网络。`pdb_authors_net_edge` 和 `pdb_authors_net_vertex` 都是数据框，首先调用 igraph 包的函数 `graph_from_data_frame()` 将其转化为网络类型 `igraph` ，然后使用函数 `plot()` 绘制网络图。
+
+```{r}
+#| label: fig-network-igraph
+#| fig-cap: 开发者之间的贡献网络
+#| fig-width: 7
+#| fig-height: 7
+#| fig-showtext: true
+#| message: false
+
+# 构造图
+library(igraph)
+pdb_authors_graph <- graph_from_data_frame(d = pdb_authors_net_edge, vertices = pdb_authors_net_vertex, directed = T)
+# 可视化
+op <- par(mar = rep(0, 4))
+plot(pdb_authors_graph,
+  edge.width = (E(pdb_authors_graph)$edge_cnt) / 2,
+  edge.arrow.size = .01,
+  edge.curved = .1,
+  layout = layout.kamada.kawai,
+  vertex.size = (V(pdb_authors_graph)$vertex_cnt) / 8,
+  vertex.label.cex = sqrt(V(pdb_authors_graph)$vertex_cnt) / 8
+)
+on.exit(par(op), add = TRUE)
+```
+
+协作关系弱的开发者占大部分，构成一个「月亮」的造型，其中，不乏维护多个 R 包的开发者，这些人要么单干，要么在专业小领域、小组织内协作。与之相对应的是协作关系较强的开发者，人数虽少，影响力却大，构成一个「太阳」的造型。协作得多往往意味着维护的 R 包也不少，甚至同属于一个组织，因此，高产的开发者、影响力大的组织聚集在一起，如 R Core Team、RStudio、rOpenSci 等。
+
+下面使用 **tidygraph** 包构造图数据、计算节点中心度，**dplyr** 包操作数据。中心度代表节点（维护者）的影响力。最后，借助 **ggraph** 包绘制维护者之间的贡献网络，节点的大小代表维护者影响力的强弱。
+
+```{r}
+#| label: fig-network-ggraph
+#| fig-cap: 开发者影响力网络
+#| fig-width: 7
+#| fig-height: 6
+#| fig-showtext: true
+
+pdb_authors_g <- tidygraph::as_tbl_graph(pdb_authors_net_edge, directed = T) |> 
+ dplyr::mutate(Popularity = tidygraph::centrality_degree(mode = 'in'))
+
+library(ggraph)
+ggraph(pdb_authors_g, layout = "kk") +
+  geom_edge_fan(aes(alpha = after_stat(index)), show.legend = FALSE) +
+  geom_node_point(aes(size = Popularity), alpha = 0.5) +
+  theme_graph(base_family = "sans")
+```
+
+## 习题 {#sec-analysis-network-data-exercise}
+
+1.  分析 R 包的影响力，可视化依赖关系网络。类似协作关系的分析，可以统计一个 R 包被多少 R 包依赖。统计 R 包被依赖的深度。若 R 包 A 被 R 包 B 依赖，R 包 B 被 R 包 C 依赖，以此类推。
+2.  本文基于 2022 年 12 月 31 日的 R 包元数据进行分析，请与 2023 年 12 月 31 日的数据比较。
