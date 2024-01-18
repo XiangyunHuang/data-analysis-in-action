@@ -226,16 +226,18 @@ file_list1 <- lapply(file_list1, remove_number_english)
 采用 LDA（Latent Dirichlet Allocation）算法建模
 
 ```{r}
-#| message: false
 # Token 化
 it <- itoken(file_list1, ids = 1:1413, progressbar = FALSE)
 v <- create_vocabulary(it)
-v <- prune_vocabulary(v, term_count_min = 10, term_count_max = 200, doc_proportion_max = 0.2)
+# 去掉单个字
+v <- v[nchar(v$term) > 1,]
+# 去掉极高频词和极低频词
+v <- prune_vocabulary(v, term_count_min = 20, term_count_max = 1000, doc_proportion_max = 0.2)
 # 词向量化
 vectorizer <- vocab_vectorizer(v)
 dtm <- create_dtm(it, vectorizer, type = "dgTMatrix")
-# 5个主题
-lda_model <- LDA$new(n_topics = 5, doc_topic_prior = 0.1, topic_word_prior = 0.01)
+# 10 个主题
+lda_model <- LDA$new(n_topics = 10, doc_topic_prior = 0.1, topic_word_prior = 0.01)
 # 训练模型
 doc_topic_distr <- lda_model$fit_transform(
     x = dtm, n_iter = 1000, convergence_tol = 0.001, 
@@ -256,16 +258,10 @@ barplot(doc_topic_distr[1, ], xlab = "topic",
         names.arg = 1:ncol(doc_topic_distr))
 ```
 
-3 个主题各自的 Top 词
+10 个主题各自的 Top 词
 
 ```{r}
-lda_model$get_top_words(n = 3, topic_number = c(1L, 3L), lambda = 0.3)
-```
-
-5 个主题各自的 Top 词
-
-```{r}
-lda_model$get_top_words(n = 5, topic_number = c(1L, 5L), lambda = 0.3)
+lda_model$get_top_words(n = 10, topic_number = c(1L, 5L, 10L), lambda = 0.3)
 ```
 
 结果有点意思，说明益辉喜欢诗词歌赋、代码编程、回忆青春、做菜吃饭。
