@@ -1,12 +1,9 @@
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" lang="zh-Hans" xml:lang="zh-Hans"><head>
-
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <meta charset="utf-8">
 <meta name="generator" content="quarto-1.4.545">
-
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-
-
 <title>R 语言数据分析实战 - 24&nbsp; 文本分析</title>
 <style>
 code{white-space: pre-wrap;}
@@ -20,8 +17,61 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
-</style>
-
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+  margin-bottom: 0em;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
 
 <script src="site_libs/quarto-nav/quarto-nav.js"></script>
 <script src="site_libs/quarto-nav/headroom.min.js"></script>
@@ -42,8 +92,7 @@ ul.task-list li input[type="checkbox"] {
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
 <link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="site_libs/bootstrap/bootstrap-dark.min.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<script id="quarto-search-options" type="application/json">{
+<link href="site_libs/bootstrap/bootstrap-dark.min.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark"><script id="quarto-search-options" type="application/json">{
   "location": "sidebar",
   "copy-button": false,
   "collapse-after": 3,
@@ -69,17 +118,13 @@ ul.task-list li input[type="checkbox"] {
     "search-submit-button-title": "提交",
     "search-label": "搜索"
   }
-}</script>
-<script async="" src="https://www.googletagmanager.com/gtag/js?id=G-ZPWJBMKFL8"></script>
-
-<script type="text/javascript">
+}</script><script async="" src="https://www.googletagmanager.com/gtag/js?id=G-ZPWJBMKFL8"></script><script type="text/javascript">
 
 window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
 gtag('js', new Date());
 gtag('config', 'G-ZPWJBMKFL8', { 'anonymize_ip': true});
-</script>
-<script>
+</script><script>
 MathJax ={
   tex: {
     macros: {
@@ -88,16 +133,11 @@ MathJax ={
   }
 };
 </script>
-
-
 </head>
-
 <body class="nav-sidebar floating">
 
 <div id="quarto-search-results"></div>
-  <header id="quarto-header" class="headroom fixed-top">
-  <nav class="quarto-secondary-nav">
-    <div class="container-fluid d-flex">
+  <header id="quarto-header" class="headroom fixed-top"><nav class="quarto-secondary-nav"><div class="container-fluid d-flex">
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="切换侧边栏导航" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
@@ -108,13 +148,9 @@ MathJax ={
         <i class="bi bi-search"></i>
       </button>
     </div>
-  </nav>
-</header>
-<!-- content -->
-<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+  </nav></header><!-- content --><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
 <!-- sidebar -->
-  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
-    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto"><div class="pt-lg-2 mt-2 text-left sidebar-header">
     <div class="sidebar-title mb-0 py-0">
       <a href="./">R 语言数据分析实战</a> 
         <div class="sidebar-tools-main tools-wide">
@@ -131,7 +167,7 @@ MathJax ={
         </div>
     <div class="sidebar-menu-container"> 
     <ul class="list-unstyled mt-1">
-        <li class="sidebar-item">
+<li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">欢迎</span></a>
@@ -157,8 +193,8 @@ MathJax ={
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
       </div>
-      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
-          <li class="sidebar-item">
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./wrangling-objects.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">数据对象</span></span></a>
@@ -189,7 +225,7 @@ MathJax ={
   </div>
 </li>
       </ul>
-  </li>
+</li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
             <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true">
@@ -198,8 +234,8 @@ MathJax ={
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
       </div>
-      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
-          <li class="sidebar-item">
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./visualization-basic.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">ggplot2 入门</span></span></a>
@@ -242,7 +278,7 @@ MathJax ={
   </div>
 </li>
       </ul>
-  </li>
+</li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
             <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true">
@@ -251,8 +287,8 @@ MathJax ={
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
       </div>
-      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
-          <li class="sidebar-item">
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./interactive-graphics.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">交互图形</span></span></a>
@@ -289,7 +325,7 @@ MathJax ={
   </div>
 </li>
       </ul>
-  </li>
+</li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
             <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-expanded="true">
@@ -298,8 +334,8 @@ MathJax ={
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
       </div>
-      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
-          <li class="sidebar-item">
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./common-statistical-tests.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text"><span class="chapter-number">19</span>&nbsp; <span class="chapter-title">常见的统计检验</span></span></a>
@@ -324,7 +360,7 @@ MathJax ={
   </div>
 </li>
       </ul>
-  </li>
+</li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
             <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-expanded="true">
@@ -333,8 +369,8 @@ MathJax ={
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
       </div>
-      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
-          <li class="sidebar-item">
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./analyze-network-data.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">网络分析</span></span></a>
@@ -377,7 +413,7 @@ MathJax ={
   </div>
 </li>
       </ul>
-  </li>
+</li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
             <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" aria-expanded="true">
@@ -386,8 +422,8 @@ MathJax ={
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
       </div>
-      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
-          <li class="sidebar-item">
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./statistical-computation.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text"><span class="chapter-number">30</span>&nbsp; <span class="chapter-title">统计计算</span></span></a>
@@ -406,7 +442,7 @@ MathJax ={
   </div>
 </li>
       </ul>
-  </li>
+</li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
             <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" aria-expanded="true">
@@ -415,8 +451,8 @@ MathJax ={
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
       </div>
-      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">  
-          <li class="sidebar-item">
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./probabilistic-reasoning-framework.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text"><span class="chapter-number">33</span>&nbsp; <span class="chapter-title">概率推理框架</span></span></a>
@@ -459,7 +495,7 @@ MathJax ={
   </div>
 </li>
       </ul>
-  </li>
+</li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
             <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" aria-expanded="true">
@@ -468,8 +504,8 @@ MathJax ={
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
       </div>
-      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">  
-          <li class="sidebar-item">
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./classification-problems.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text"><span class="chapter-number">40</span>&nbsp; <span class="chapter-title">分类问题</span></span></a>
@@ -488,7 +524,7 @@ MathJax ={
   </div>
 </li>
       </ul>
-  </li>
+</li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./references.html" class="sidebar-item-text sidebar-link">
@@ -503,8 +539,8 @@ MathJax ={
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
       </div>
-      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">  
-          <li class="sidebar-item">
+      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">
+<li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./notations.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text"><span class="chapter-number">A</span>&nbsp; <span class="chapter-title">数学符号</span></span></a>
@@ -523,20 +559,39 @@ MathJax ={
   </div>
 </li>
       </ul>
-  </li>
+</li>
     </ul>
-    </div>
-</nav>
-<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+</div>
+</nav><div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
     <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
-        
+        <nav id="TOC" role="doc-toc" class="toc-active"><h2 id="toc-title">目录</h2>
+   
+  <ul>
+<li>
+<a href="#%E5%9F%BA%E6%9C%AC%E6%A6%82%E5%BF%B5" id="toc-基本概念" class="nav-link active" data-scroll-target="#%E5%9F%BA%E6%9C%AC%E6%A6%82%E5%BF%B5"><span class="header-section-number">24.1</span> 基本概念</a>
+  <ul class="collapse">
+<li><a href="#%E4%B8%AD%E6%96%87%E5%88%86%E8%AF%8D" id="toc-中文分词" class="nav-link" data-scroll-target="#%E4%B8%AD%E6%96%87%E5%88%86%E8%AF%8D"><span class="header-section-number">24.1.1</span> 中文分词</a></li>
+  <li><a href="#%E8%8B%B1%E6%96%87%E5%88%86%E8%AF%8D" id="toc-英文分词" class="nav-link" data-scroll-target="#%E8%8B%B1%E6%96%87%E5%88%86%E8%AF%8D"><span class="header-section-number">24.1.2</span> 英文分词</a></li>
+  <li><a href="#%E5%81%9C%E6%AD%A2%E8%AF%8D" id="toc-停止词" class="nav-link" data-scroll-target="#%E5%81%9C%E6%AD%A2%E8%AF%8D"><span class="header-section-number">24.1.3</span> 停止词</a></li>
+  <li><a href="#%E8%AF%8D%E9%A2%91%E7%BB%9F%E8%AE%A1" id="toc-词频统计" class="nav-link" data-scroll-target="#%E8%AF%8D%E9%A2%91%E7%BB%9F%E8%AE%A1"><span class="header-section-number">24.1.4</span> 词频统计</a></li>
+  <li><a href="#tf-idf" id="toc-tf-idf" class="nav-link" data-scroll-target="#tf-idf"><span class="header-section-number">24.1.5</span> TF-IDF</a></li>
+  </ul>
+</li>
+  <li>
+<a href="#%E7%9B%8A%E8%BE%89%E7%9A%84%E6%97%A5%E5%BF%97" id="toc-益辉的日志" class="nav-link" data-scroll-target="#%E7%9B%8A%E8%BE%89%E7%9A%84%E6%97%A5%E5%BF%97"><span class="header-section-number">24.2</span> 益辉的日志</a>
+  <ul class="collapse">
+<li><a href="#sec-cn-blog" id="toc-sec-cn-blog" class="nav-link" data-scroll-target="#sec-cn-blog"><span class="header-section-number">24.2.1</span> 整体概况</a></li>
+  <li><a href="#sec-text-clean" id="toc-sec-text-clean" class="nav-link" data-scroll-target="#sec-text-clean"><span class="header-section-number">24.2.2</span> 数据清洗</a></li>
+  <li><a href="#sec-topic-models" id="toc-sec-topic-models" class="nav-link" data-scroll-target="#sec-topic-models"><span class="header-section-number">24.2.3</span> 主题建模</a></li>
+  <li><a href="#sec-similarity" id="toc-sec-similarity" class="nav-link" data-scroll-target="#sec-similarity"><span class="header-section-number">24.2.4</span> 日志相似性</a></li>
+  </ul>
+</li>
+  <li><a href="#sec-analysis-text-data-exercises" id="toc-sec-analysis-text-data-exercises" class="nav-link" data-scroll-target="#sec-analysis-text-data-exercises"><span class="header-section-number">24.3</span> 习题</a></li>
+  </ul><div class="toc-actions"><ul><li><a href="https://github.com/XiangyunHuang/data-analysis-in-action/blob/main/analyze-text-data.qmd" class="toc-action"><i class="bi bi-github"></i>查看代码</a></li></ul></div></nav>
     </div>
 <!-- main -->
-<main class="content" id="quarto-document-content">
-
-<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./analyze-network-data.html">数据建模</a></li><li class="breadcrumb-item"><a href="./analyze-text-data.html"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">文本分析</span></a></li></ol></nav>
-<div class="quarto-title">
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./analyze-network-data.html">数据建模</a></li><li class="breadcrumb-item"><a href="./analyze-text-data.html"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">文本分析</span></a></li></ol></nav><div class="quarto-title">
 <h1 class="title"><span id="sec-analysis-text-data" class="quarto-section-identifier"><span class="chapter-number">24</span>&nbsp; <span class="chapter-title">文本分析</span></span></h1>
 </div>
 
@@ -551,14 +606,303 @@ MathJax ={
   
 
 
-</header>
+</header><p>R 语言任务视图中以自然语言处理（Natural Language Processing）涵盖文本分析（Text Analysis）的内容。</p>
+<p>本文有两个目的：其一分析谢益辉近 10 年日志，挖掘写作主题及其变化；其二挖掘湘云的日志主题，计算与益辉日志的风格相似度。</p>
+<p>从谢益辉公开的日志中，探索成功人士的经历，从中汲取一些经验、教训。最近才知道他有 300 多万字的日志，数字惊讶到我了，遂决定抽取最近 10 年的日志数据进行分析。中英文分开，首先处理、分析中文日志。文本操作和分析的内容有分词、词频、词云、主题建模、趋势变化、相似度度量等。日志分类，主题分类 人工和算法的分类结果比较，对作者来说，感兴趣的主题与写作的内容有直接的关系。</p>
+<p>R 语言社区中有两本文本分析相关的著作，分别是《Text Mining with R》<span class="citation" data-cites="Silge2017">(<a href="references.html#ref-Silge2017" role="doc-biblioref">Silge 和 Robinson 2017</a>)</span>和《Supervised Machine Learning for Text Analysis in R》<span class="citation" data-cites="Hvitfeldt2021">(<a href="references.html#ref-Hvitfeldt2021" role="doc-biblioref">Hvitfeldt 和 Silge 2021</a>)</span>。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a><span class="fu">library</span>(jiebaRD)</span>
+<span id="cb1-2"><a href="#cb1-2"></a><span class="fu">library</span>(jiebaR)</span>
+<span id="cb1-3"><a href="#cb1-3"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb1-4"><a href="#cb1-4"></a><span class="fu">library</span>(ggrepel)</span>
+<span id="cb1-5"><a href="#cb1-5"></a><span class="fu">library</span>(ggwordcloud)</span>
+<span id="cb1-6"><a href="#cb1-6"></a><span class="fu">library</span>(text2vec)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="基本概念" class="level2" data-number="24.1"><h2 data-number="24.1" class="anchored" data-anchor-id="基本概念">
+<span class="header-section-number">24.1</span> 基本概念</h2>
+<section id="中文分词" class="level3" data-number="24.1.1"><h3 data-number="24.1.1" class="anchored" data-anchor-id="中文分词">
+<span class="header-section-number">24.1.1</span> 中文分词</h3>
+<p>本文采用 <a href="https://github.com/qinwf/jiebaR/">jiebaR</a> 作为中文分词工具，相比于 <a href="https://github.com/lijian13/Rwordseg">Rwordseg</a> 包，不仅效果好，而且没有 rJava 包 (JAVA) 环境依赖。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1"></a><span class="fu">library</span>(jiebaRD)</span>
+<span id="cb2-2"><a href="#cb2-2"></a><span class="fu">library</span>(jiebaR)</span>
+<span id="cb2-3"><a href="#cb2-3"></a>jieba_seg <span class="ot">&lt;-</span> <span class="fu">worker</span>()</span>
+<span id="cb2-4"><a href="#cb2-4"></a><span class="fu">segment</span>(<span class="st">"齐白石对花鸟虫鱼都有研究呢"</span>, jieba_seg)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt; [1] "齐白石"   "对"       "花鸟虫鱼" "都"       "有"       "研究"     "呢"</code></pre>
+</div>
+</div>
+</section><section id="英文分词" class="level3" data-number="24.1.2"><h3 data-number="24.1.2" class="anchored" data-anchor-id="英文分词">
+<span class="header-section-number">24.1.2</span> 英文分词</h3>
+<p>英文环境下，词与词之间本身就是以空格分开的。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1"></a><span class="fu">segment</span>(<span class="st">"Hello world!"</span>, jieba_seg)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt; [1] "Hello" "world"</code></pre>
+</div>
+</div>
+</section><section id="停止词" class="level3" data-number="24.1.3"><h3 data-number="24.1.3" class="anchored" data-anchor-id="停止词">
+<span class="header-section-number">24.1.3</span> 停止词</h3>
+<p>数字、标点符号、空格不参与分词，会被抹掉。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1"></a><span class="fu">segment</span>(<span class="st">"国画大师齐白石对花鸟虫鱼都有研究呢！"</span>, jieba_seg)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt; [1] "国画"     "大师"     "齐白石"   "对"       "花鸟虫鱼" "都"       "有"      
+#&gt; [8] "研究"     "呢"</code></pre>
+</div>
+</div>
+<p>还可以添加停止词，将「花鸟虫鱼」作为停止词添加到停止词库中。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1"></a>jieba_seg <span class="ot">&lt;-</span> <span class="fu">worker</span>(<span class="at">stop_word =</span> <span class="st">"data/text/stop_word.txt"</span>)</span>
+<span id="cb8-2"><a href="#cb8-2"></a><span class="fu">segment</span>(<span class="st">"国画大师齐白石对花鸟虫鱼都有研究呢"</span>, jieba_seg)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt; [1] "国画"   "大师"   "齐白石" "对"     "都"     "有"     "研究"</code></pre>
+</div>
+</div>
+</section><section id="词频统计" class="level3" data-number="24.1.4"><h3 data-number="24.1.4" class="anchored" data-anchor-id="词频统计">
+<span class="header-section-number">24.1.4</span> 词频统计</h3>
+<p>输入字符串向量，计算每个字符串出现的次数。jiebaR 包的函数 <code>freq()</code> 可以统计词出现的频次。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1"></a><span class="fu">freq</span>(<span class="fu">c</span>(<span class="st">"a"</span>, <span class="st">"a"</span>, <span class="st">"c"</span>))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt;   char freq
+#&gt; 1    c    1
+#&gt; 2    a    2</code></pre>
+</div>
+</div>
+</section><section id="tf-idf" class="level3" data-number="24.1.5"><h3 data-number="24.1.5" class="anchored" data-anchor-id="tf-idf">
+<span class="header-section-number">24.1.5</span> TF-IDF</h3>
+<p>输入一个列表，列表中每个元素是字符串向量，每个字符串向量代表一个文档。jiebaR 包的函数 <code>get_idf()</code> 可以计算 <a href="https://en.wikipedia.org/wiki/Tf%E2%80%93idf">TF-IDF</a>（Document Frequency - Inverse Document Frequency） 值。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1"></a><span class="fu">get_idf</span>(<span class="fu">list</span>(<span class="fu">c</span>(<span class="st">"abc"</span>, <span class="st">"def"</span>), <span class="fu">c</span>(<span class="st">"abc"</span>, <span class="st">" "</span>)))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt;   name     count
+#&gt; 1  def 0.6931472
+#&gt; 2  abc 0.0000000</code></pre>
+</div>
+</div>
+</section></section><section id="益辉的日志" class="level2" data-number="24.2"><h2 data-number="24.2" class="anchored" data-anchor-id="益辉的日志">
+<span class="header-section-number">24.2</span> 益辉的日志</h2>
+<p>下载日志数据</p>
+<pre><code>git clone git@github.com:yihui/yihui.org.git</code></pre>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1"></a><span class="co"># 加载益辉的日志数据</span></span>
+<span id="cb15-2"><a href="#cb15-2"></a><span class="fu">load</span>(<span class="at">file =</span> <span class="st">"data/text/yihui.Rdata"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="sec-cn-blog" class="level3" data-number="24.2.1"><h3 data-number="24.2.1" class="anchored" data-anchor-id="sec-cn-blog">
+<span class="header-section-number">24.2.1</span> 整体概况</h3>
+<div class="cell">
+<details class="code-fold"><summary>代码</summary><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb16-2"><a href="#cb16-2"></a><span class="fu">library</span>(ggrepel)</span>
+<span id="cb16-3"><a href="#cb16-3"></a><span class="fu">ggplot</span>() <span class="sc">+</span></span>
+<span id="cb16-4"><a href="#cb16-4"></a>  <span class="fu">geom_label_repel</span>(</span>
+<span id="cb16-5"><a href="#cb16-5"></a>    <span class="at">data =</span> df2, <span class="fu">aes</span>(<span class="at">x =</span> year, <span class="at">y =</span> file_name, <span class="at">label =</span> event_wrap),</span>
+<span id="cb16-6"><a href="#cb16-6"></a>    <span class="at">max.overlaps =</span> <span class="dv">150</span>, <span class="at">segment.colour =</span> <span class="st">"gray"</span>, <span class="at">seed =</span> <span class="dv">2023</span></span>
+<span id="cb16-7"><a href="#cb16-7"></a>  ) <span class="sc">+</span></span>
+<span id="cb16-8"><a href="#cb16-8"></a>  <span class="fu">geom_point</span>(<span class="at">data =</span> df1, <span class="fu">aes</span>(<span class="at">x =</span> file_year, <span class="at">y =</span> file_name)) <span class="sc">+</span></span>
+<span id="cb16-9"><a href="#cb16-9"></a>  <span class="fu">geom_line</span>(<span class="at">data =</span> df1, <span class="fu">aes</span>(<span class="at">x =</span> file_year, <span class="at">y =</span> file_name)) <span class="sc">+</span></span>
+<span id="cb16-10"><a href="#cb16-10"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">n.breaks =</span> <span class="dv">15</span>) <span class="sc">+</span></span>
+<span id="cb16-11"><a href="#cb16-11"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span></span>
+<span id="cb16-12"><a href="#cb16-12"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"年份"</span>, <span class="at">y =</span> <span class="st">"篇数"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details><div class="cell-output-display">
+<div id="fig-yihui-cn" class="quarto-figure quarto-figure-center quarto-float anchored">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-yihui-cn-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="analyze-text-data_files/figure-html/fig-yihui-cn-1.png" class="img-fluid figure-img" width="864">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-yihui-cn-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;24.1: 益辉每年发布的日志数量
+</figcaption></figure>
+</div>
+</div>
+</div>
+<p>2006 年获得中国人民大学学士学位，2009 和 2013 年分别获得中国人民大学硕士和爱荷华州立大学博士学位，在校期间，日志数量持续增加，又陆续创立统计之都，举办中国 R 语言大会。在毕业那年需要完成毕业论文，因此，日志数量明显减少。2013 -2016 年，每年都有书籍出版，期间，有博士毕业、找工作、安家等重要事情，因此，日志数量持续处于低位。稳定后，2017-2018 年除了正常出两本书以外，写了大量的日志，迎来第二个高峰，2018 年，中英文日志数量超过 300 篇。2019-2020 年集中精力在写一本食谱。2021 年第一本中文书《现代统计图形》在10年后出版，这主要是 2007-2011 年的工作。2021-2023 年日志数量（2023年中文日志未发布）处于较低水平。</p>
+</section><section id="sec-text-clean" class="level3" data-number="24.2.2"><h3 data-number="24.2.2" class="anchored" data-anchor-id="sec-text-clean">
+<span class="header-section-number">24.2.2</span> 数据清洗</h3>
+<p>以 2001 年的一篇日志为例，展开数据清洗的过程。移除文章的 YAML 元数据，对于文本分析来说，主要是没啥信息含量。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1"></a>remove_yaml <span class="ot">&lt;-</span> <span class="cf">function</span>(x) {</span>
+<span id="cb17-2"><a href="#cb17-2"></a>  x[(<span class="fu">max</span>(<span class="fu">which</span>(x <span class="sc">==</span> <span class="st">"---"</span>)) <span class="sc">+</span> <span class="dv">1</span>)<span class="sc">:</span><span class="fu">length</span>(x)]</span>
+<span id="cb17-3"><a href="#cb17-3"></a>}</span>
+<span id="cb17-4"><a href="#cb17-4"></a>x <span class="ot">&lt;-</span> <span class="fu">remove_yaml</span>(x)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>移除「我」 「是」 「你」 「的」 「了」 「也」 等高频的人称、助词、虚词。这些词出现的规律对表现个人风格很重要，且看红楼梦关于后40回作者归属的研究，通过比较一些助词、虚词的出现规律，从而看出作者的习惯、文风。这种东西是在长期的潜移默化中形成的，对作者自己来说，都可能是无意识的。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1"></a><span class="fu">library</span>(jiebaR)</span>
+<span id="cb18-2"><a href="#cb18-2"></a>jieba_seg <span class="ot">&lt;-</span> <span class="fu">worker</span>(<span class="at">stop_word =</span> <span class="st">"data/text/stop_word.txt"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>添加新词，比如「歪贼」、「谢益辉」等，主要是人名、外号等实体。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1"></a>new_words <span class="ot">&lt;-</span> <span class="fu">readLines</span>(<span class="fu">file</span>(<span class="st">"data/text/new_word.txt"</span>))</span>
+<span id="cb19-2"><a href="#cb19-2"></a><span class="fu">new_user_word</span>(<span class="at">worker =</span> jieba_seg, <span class="at">words =</span> new_words)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt; [1] TRUE</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1"></a><span class="co"># 分词</span></span>
+<span id="cb21-2"><a href="#cb21-2"></a>x_seg <span class="ot">&lt;-</span> <span class="fu">segment</span>(x, jieba_seg)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>分词后，再移除数字和英文</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1"></a>remove_number_english <span class="ot">&lt;-</span> <span class="cf">function</span>(x) {</span>
+<span id="cb22-2"><a href="#cb22-2"></a>  x <span class="ot">&lt;-</span> x[<span class="sc">!</span><span class="fu">grepl</span>(<span class="st">"</span><span class="sc">\\</span><span class="st">d{1,}"</span>, x)]</span>
+<span id="cb22-3"><a href="#cb22-3"></a>  x[<span class="sc">!</span><span class="fu">grepl</span>(<span class="st">"[a-zA-Z]"</span>, x)]</span>
+<span id="cb22-4"><a href="#cb22-4"></a>}</span>
+<span id="cb22-5"><a href="#cb22-5"></a></span>
+<span id="cb22-6"><a href="#cb22-6"></a>xx <span class="ot">&lt;-</span> <span class="fu">remove_number_english</span>(<span class="at">x =</span> x_seg)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>词频统计</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1"></a>tmp <span class="ot">&lt;-</span> <span class="fu">freq</span>(<span class="at">x =</span> xx)</span>
+<span id="cb23-2"><a href="#cb23-2"></a>tmp <span class="ot">&lt;-</span> tmp[<span class="fu">order</span>(tmp<span class="sc">$</span>freq, <span class="at">decreasing =</span> T), ]</span>
+<span id="cb23-3"><a href="#cb23-3"></a><span class="fu">head</span>(tmp)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt;     char freq
+#&gt; 293 一个    7
+#&gt; 382   在    7
+#&gt; 473   这    6
+#&gt; 147   都    5
+#&gt; 179   有    5
+#&gt; 192   和    5</code></pre>
+</div>
+</div>
+<p><strong>ggwordcloud</strong> 包绘制词云图可视化词频统计的结果。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1"></a><span class="fu">library</span>(ggwordcloud)</span>
+<span id="cb25-2"><a href="#cb25-2"></a><span class="fu">head</span>(tmp, <span class="dv">150</span>) <span class="sc">|&gt;</span></span>
+<span id="cb25-3"><a href="#cb25-3"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">label =</span> char, <span class="at">size =</span> freq)) <span class="sc">+</span></span>
+<span id="cb25-4"><a href="#cb25-4"></a>  <span class="fu">geom_text_wordcloud</span>(<span class="at">seed =</span> <span class="dv">2022</span>, <span class="at">grid_size =</span> <span class="dv">8</span>, <span class="at">max_grid_size =</span> <span class="dv">24</span>) <span class="sc">+</span></span>
+<span id="cb25-5"><a href="#cb25-5"></a>  <span class="fu">scale_size_area</span>(<span class="at">max_size =</span> <span class="dv">10</span>) <span class="sc">+</span></span>
+<span id="cb25-6"><a href="#cb25-6"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-yihui-wordcloud" class="quarto-figure quarto-figure-center quarto-float anchored">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-yihui-wordcloud-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="analyze-text-data_files/figure-html/fig-yihui-wordcloud-1.png" class="img-fluid figure-img" width="576">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-yihui-wordcloud-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;24.2: 词云可视化词频结果
+</figcaption></figure>
+</div>
+</div>
+</div>
+<p>计算 TF-IDF 值</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1"></a><span class="co"># tmp = get_idf(x = list(xx))</span></span>
+<span id="cb26-2"><a href="#cb26-2"></a><span class="fu">get_idf</span>(<span class="at">x =</span> <span class="fu">list</span>(xx)) <span class="sc">|&gt;</span> <span class="fu">head</span>()</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt;     name count
+#&gt; 1   黄新     0
+#&gt; 2   邹瑜     0
+#&gt; 3   张恒     0
+#&gt; 4 蒋前程     0
+#&gt; 5   肖攀     0
+#&gt; 6 刘浩然     0</code></pre>
+</div>
+</div>
+</section><section id="sec-topic-models" class="level3" data-number="24.2.3"><h3 data-number="24.2.3" class="anchored" data-anchor-id="sec-topic-models">
+<span class="header-section-number">24.2.3</span> 主题建模</h3>
+<p>益辉的日志是没有分类和标签的，所以，先聚类，接着逐个分析每个类代表的实际含义。然后，将聚类的结果作为结果标签，再应用多分类回归模型，最后联合聚类、分类模型，从无监督转化到有监督模型。</p>
+<p>topicmodels <span class="citation" data-cites="topicmodels2011">(<a href="references.html#ref-topicmodels2011" role="doc-biblioref">Grün 和 Hornik 2011</a>)</span> 基于 tm <span class="citation" data-cites="tm2009">(<a href="references.html#ref-tm2009" role="doc-biblioref">Feinerer, Hornik, 和 Meyer 2008</a>)</span> Latent Dirichlet Allocation (LDA) 和 Correlated Topics Models (CTM) 文本主题建模，这一套工具比较适合英文文本分词、向量化和建模。</p>
+<p><a href="https://github.com/dselivanov/text2vec">text2vec</a> 包支持多个统计模型，如潜在狄利克雷分配等，可用于分类、回归、聚类等任务。更多详情见 <a href="https://text2vec.org" class="uri">https://text2vec.org</a>。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1"></a><span class="fu">library</span>(text2vec)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>首先将所有日志分词、向量化，构建文档-词矩阵 document-term matrix (DTM)</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1"></a><span class="co"># 移除链接</span></span>
+<span id="cb29-2"><a href="#cb29-2"></a>remove_links <span class="ot">&lt;-</span> <span class="cf">function</span>(x) {</span>
+<span id="cb29-3"><a href="#cb29-3"></a>  <span class="fu">gsub</span>(<span class="at">pattern =</span> <span class="st">"(&lt;http.*?&gt;)|(</span><span class="sc">\\</span><span class="st">(http.*?</span><span class="sc">\\</span><span class="st">))|(&lt;www.*?&gt;)|(</span><span class="sc">\\</span><span class="st">(www.*?&gt;</span><span class="sc">\\</span><span class="st">))"</span>, <span class="at">replacement =</span> <span class="st">""</span>, x)</span>
+<span id="cb29-4"><a href="#cb29-4"></a>}</span>
+<span id="cb29-5"><a href="#cb29-5"></a><span class="co"># 清理、分词、清理</span></span>
+<span id="cb29-6"><a href="#cb29-6"></a>file_list1 <span class="ot">&lt;-</span> <span class="fu">lapply</span>(file_list, remove_yaml)</span>
+<span id="cb29-7"><a href="#cb29-7"></a>file_list1 <span class="ot">&lt;-</span> <span class="fu">lapply</span>(file_list1, remove_links)</span>
+<span id="cb29-8"><a href="#cb29-8"></a>file_list1 <span class="ot">&lt;-</span> <span class="fu">lapply</span>(file_list1, segment, <span class="at">jiebar =</span> jieba_seg)</span>
+<span id="cb29-9"><a href="#cb29-9"></a>file_list1 <span class="ot">&lt;-</span> <span class="fu">lapply</span>(file_list1, remove_number_english)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>采用 LDA（Latent Dirichlet Allocation）算法建模</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1"></a><span class="co"># Token 化</span></span>
+<span id="cb30-2"><a href="#cb30-2"></a>it <span class="ot">&lt;-</span> <span class="fu">itoken</span>(file_list1, <span class="at">ids =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">1413</span>, <span class="at">progressbar =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb30-3"><a href="#cb30-3"></a>v <span class="ot">&lt;-</span> <span class="fu">create_vocabulary</span>(it)</span>
+<span id="cb30-4"><a href="#cb30-4"></a>v <span class="ot">&lt;-</span> <span class="fu">prune_vocabulary</span>(v, <span class="at">term_count_min =</span> <span class="dv">10</span>, <span class="at">term_count_max =</span> <span class="dv">200</span>, <span class="at">doc_proportion_max =</span> <span class="fl">0.2</span>)</span>
+<span id="cb30-5"><a href="#cb30-5"></a><span class="co"># 词向量化</span></span>
+<span id="cb30-6"><a href="#cb30-6"></a>vectorizer <span class="ot">&lt;-</span> <span class="fu">vocab_vectorizer</span>(v)</span>
+<span id="cb30-7"><a href="#cb30-7"></a>dtm <span class="ot">&lt;-</span> <span class="fu">create_dtm</span>(it, vectorizer, <span class="at">type =</span> <span class="st">"dgTMatrix"</span>)</span>
+<span id="cb30-8"><a href="#cb30-8"></a><span class="co"># 5个主题</span></span>
+<span id="cb30-9"><a href="#cb30-9"></a>lda_model <span class="ot">&lt;-</span> LDA<span class="sc">$</span><span class="fu">new</span>(<span class="at">n_topics =</span> <span class="dv">5</span>, <span class="at">doc_topic_prior =</span> <span class="fl">0.1</span>, <span class="at">topic_word_prior =</span> <span class="fl">0.01</span>)</span>
+<span id="cb30-10"><a href="#cb30-10"></a><span class="co"># 训练模型</span></span>
+<span id="cb30-11"><a href="#cb30-11"></a>doc_topic_distr <span class="ot">&lt;-</span> lda_model<span class="sc">$</span><span class="fu">fit_transform</span>(</span>
+<span id="cb30-12"><a href="#cb30-12"></a>    <span class="at">x =</span> dtm, <span class="at">n_iter =</span> <span class="dv">1000</span>, <span class="at">convergence_tol =</span> <span class="fl">0.001</span>, </span>
+<span id="cb30-13"><a href="#cb30-13"></a>    <span class="at">n_check_convergence =</span> <span class="dv">25</span>, <span class="at">progressbar =</span> <span class="cn">FALSE</span></span>
+<span id="cb30-14"><a href="#cb30-14"></a>  )</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt; INFO  [13:23:11.674] early stopping at 150 iteration
+#&gt; INFO  [13:23:12.305] early stopping at 50 iteration</code></pre>
+</div>
+</div>
+<div class="cell" data-par="true">
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1"></a><span class="fu">barplot</span>(doc_topic_distr[<span class="dv">1</span>, ], <span class="at">xlab =</span> <span class="st">"topic"</span>, </span>
+<span id="cb32-2"><a href="#cb32-2"></a>        <span class="at">ylab =</span> <span class="st">"proportion"</span>, <span class="at">ylim =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>), </span>
+<span id="cb32-3"><a href="#cb32-3"></a>        <span class="at">names.arg =</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">ncol</span>(doc_topic_distr))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="fig-topic-distr" class="quarto-figure quarto-figure-center quarto-float anchored">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-topic-distr-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="analyze-text-data_files/figure-html/fig-topic-distr-1.png" class="img-fluid figure-img" width="480">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-topic-distr-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;24.3: 主题分布
+</figcaption></figure>
+</div>
+</div>
+</div>
+<p>3 个主题各自的 Top 词</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1"></a>lda_model<span class="sc">$</span><span class="fu">get_top_words</span>(<span class="at">n =</span> <span class="dv">3</span>, <span class="at">topic_number =</span> <span class="fu">c</span>(<span class="dv">1</span>L, <span class="dv">3</span>L), <span class="at">lambda =</span> <span class="fl">0.3</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt;      [,1]   [,2]    
+#&gt; [1,] "域名" "小时候"
+#&gt; [2,] "功能" "吃饭"  
+#&gt; [3,] "图片" "一首"</code></pre>
+</div>
+</div>
+<p>5 个主题各自的 Top 词</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1"></a>lda_model<span class="sc">$</span><span class="fu">get_top_words</span>(<span class="at">n =</span> <span class="dv">5</span>, <span class="at">topic_number =</span> <span class="fu">c</span>(<span class="dv">1</span>L, <span class="dv">5</span>L), <span class="at">lambda =</span> <span class="fl">0.3</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt;      [,1]   [,2]  
+#&gt; [1,] "域名" "本书"
+#&gt; [2,] "功能" "成功"
+#&gt; [3,] "图片" "人们"
+#&gt; [4,] "图"   "公司"
+#&gt; [5,] "页面" "社会"</code></pre>
+</div>
+</div>
+<p>结果有点意思，说明益辉喜欢诗词歌赋、代码编程、回忆青春、做菜吃饭。</p>
+</section><section id="sec-similarity" class="level3" data-number="24.2.4"><h3 data-number="24.2.4" class="anchored" data-anchor-id="sec-similarity">
+<span class="header-section-number">24.2.4</span> 日志相似性</h3>
+<p>我与益辉日志的相似性度量 <a href="https://text2vec.org/similarity.html" class="uri">https://text2vec.org/similarity.html</a></p>
+</section></section><section id="sec-analysis-text-data-exercises" class="level2" data-number="24.3"><h2 data-number="24.3" class="anchored" data-anchor-id="sec-analysis-text-data-exercises">
+<span class="header-section-number">24.3</span> 习题</h2>
+<ol type="1">
+<li><p><strong>text2vec</strong> 包内置的电影评论数据集 <code>movie_review</code> 中 sentiment（表示正面或负面评价）列作为响应变量，构建二分类模型，对用户的一段评论分类。（提示：词向量化后，采用 <strong>glmnet</strong> 包做交叉验证调整参数、模型）</p></li>
+<li><p>根据 CRAN 上发布的 R 包元数据分析 R 包的描述字段，实现 R 包主题分类。</p></li>
+<li><p>接习题 2，根据任务视图对 R 包的标记，建立有监督的多分类模型，评估模型的分类效果，并对尚未标记的 R 包分类。（提示：一个 R 包可能同时属于多个任务视图，考虑使用 xgboost 包）</p></li>
+</ol>
 
 
-
-
-
-</main> <!-- /main -->
-<script id="quarto-html-after-body" type="application/javascript">
+<div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list" style="display: none">
+<div id="ref-tm2009" class="csl-entry" role="listitem">
+Feinerer, Ingo, Kurt Hornik, 和 David Meyer. 2008. <span>《Text Mining Infrastructure in <span>R</span>》</span>. <em>Journal of Statistical Software</em> 25 (5): 1–54. <a href="https://doi.org/10.18637/jss.v025.i05">https://doi.org/10.18637/jss.v025.i05</a>.
+</div>
+<div id="ref-topicmodels2011" class="csl-entry" role="listitem">
+Grün, Bettina, 和 Kurt Hornik. 2011. <span>《<span>topicmodels</span>: An <span>R</span> Package for Fitting Topic Models》</span>. <em>Journal of Statistical Software</em> 40 (13): 1–30. <a href="https://doi.org/10.18637/jss.v040.i13">https://doi.org/10.18637/jss.v040.i13</a>.
+</div>
+<div id="ref-Hvitfeldt2021" class="csl-entry" role="listitem">
+Hvitfeldt, Emil, 和 Julia Silge. 2021. <em>Supervised Machine Learning for Text Analysis in <span>R</span></em>. New York: Chapman; Hall/CRC. <a href="https://smltar.com/">https://smltar.com/</a>.
+</div>
+<div id="ref-Silge2017" class="csl-entry" role="listitem">
+Silge, Julia, 和 David Robinson. 2017. <em>Text Mining with <span>R</span></em>. New York: O’Reilly Media, Inc. <a href="https://www.tidytextmining.com/">https://www.tidytextmining.com/</a>.
+</div>
+</div>
+</section></main><!-- /main --><script id="quarto-html-after-body" type="application/javascript">
 window.document.addEventListener("DOMContentLoaded", function (event) {
   const toggleBodyColorMode = (bsSheetEl) => {
     const mode = bsSheetEl.getAttribute("data-mode");
@@ -1088,10 +1432,8 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
     }
   }
 });
-</script>
-<nav class="page-navigation">
-  <div class="nav-page nav-page-previous">
-      <a href="./analyze-network-data.html" class="pagination-link  aria-label=" &lt;span="">
+</script><nav class="page-navigation"><div class="nav-page nav-page-previous">
+      <a href="./analyze-network-data.html" class="pagination-link  aria-label=">
         <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">23</span>&nbsp; <span class="chapter-title">网络分析</span></span>
       </a>          
   </div>
@@ -1105,5 +1447,4 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 
 
 
-
-<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions"><ul><li><a href="https://github.com/XiangyunHuang/data-analysis-in-action/blob/main/analyze-text-data.qmd" class="toc-action"><i class="bi bi-github"></i>查看代码</a></li></ul></div></div></div></footer></body></html>
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/XiangyunHuang/data-analysis-in-action/blob/main/analyze-text-data.qmd" class="toc-action"><i class="bi bi-github"></i>查看代码</a></li></ul></div></div></div></footer></body></html>
