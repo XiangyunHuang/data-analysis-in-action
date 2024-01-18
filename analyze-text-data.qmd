@@ -1,12 +1,9 @@
 # 文本分析 {#sec-analysis-text-data}
 
 ```{r}
-library(jiebaRD)
-library(jiebaR)
-library(ggplot2)
-library(ggrepel)
-library(ggwordcloud)
-library(text2vec)
+#| echo: false
+
+source("_common.R")
 ```
 
 R 语言任务视图中以自然语言处理（Natural Language Processing）涵盖文本分析（Text Analysis）的内容。
@@ -16,6 +13,15 @@ R 语言任务视图中以自然语言处理（Natural Language Processing）涵
 从谢益辉公开的日志中，探索成功人士的经历，从中汲取一些经验、教训。最近才知道他有 300 多万字的日志，数字惊讶到我了，遂决定抽取最近 10 年的日志数据进行分析。中英文分开，首先处理、分析中文日志。文本操作和分析的内容有分词、词频、词云、主题建模、趋势变化、相似度度量等。日志分类，主题分类 人工和算法的分类结果比较，对作者来说，感兴趣的主题与写作的内容有直接的关系。
 
 R 语言社区中有两本文本分析相关的著作，分别是《Text Mining with R》[@Silge2017]和《Supervised Machine Learning for Text Analysis in R》[@Hvitfeldt2021]。
+
+```{r}
+library(jiebaRD)
+library(jiebaR)
+library(ggplot2)
+library(ggrepel)
+library(ggwordcloud)
+library(text2vec)
+```
 
 ## 基本概念
 
@@ -94,7 +100,7 @@ git clone git@github.com:yihui/yihui.org.git
 load(file = "data/text/yihui.Rdata")
 ```
 
-### 整体概况
+### 整体概况 {#sec-cn-blog}
 
 ```{r}
 #| label: fig-yihui-cn
@@ -121,7 +127,7 @@ ggplot() +
 
 2006 年获得中国人民大学学士学位，2009 和 2013 年分别获得中国人民大学硕士和爱荷华州立大学博士学位，在校期间，日志数量持续增加，又陆续创立统计之都，举办中国 R 语言大会。在毕业那年需要完成毕业论文，因此，日志数量明显减少。2013 -2016 年，每年都有书籍出版，期间，有博士毕业、找工作、安家等重要事情，因此，日志数量持续处于低位。稳定后，2017-2018 年除了正常出两本书以外，写了大量的日志，迎来第二个高峰，2018 年，中英文日志数量超过 300 篇。2019-2020 年集中精力在写一本食谱。2021 年第一本中文书《现代统计图形》在10年后出版，这主要是 2007-2011 年的工作。2021-2023 年日志数量（2023年中文日志未发布）处于较低水平。
 
-### 数据清洗
+### 数据清洗 {#sec-text-clean}
 
 以 2001 年的一篇日志为例，展开数据清洗的过程。移除文章的 YAML 元数据，对于文本分析来说，主要是没啥信息含量。
 
@@ -191,7 +197,7 @@ head(tmp, 150) |>
 get_idf(x = list(xx)) |> head()
 ```
 
-### 主题建模
+### 主题建模 {#sec-topic-models}
 
 益辉的日志是没有分类和标签的，所以，先聚类，接着逐个分析每个类代表的实际含义。然后，将聚类的结果作为结果标签，再应用多分类回归模型，最后联合聚类、分类模型，从无监督转化到有监督模型。
 
@@ -203,11 +209,7 @@ topicmodels [@topicmodels2011] 基于 tm [@tm2009] Latent Dirichlet Allocation (
 library(text2vec)
 ```
 
-首先将所有日志分词、向量化，构建 DTM 矩阵。
-
-<https://text2vec.org/topic_modeling.html#latent_semantic_analysis>
-
-创建文档-词矩阵 document-term matrix (DTM)
+首先将所有日志分词、向量化，构建文档-词矩阵 document-term matrix (DTM)
 
 ```{r}
 # 移除链接
@@ -219,27 +221,58 @@ file_list1 <- lapply(file_list, remove_yaml)
 file_list1 <- lapply(file_list1, remove_links)
 file_list1 <- lapply(file_list1, segment, jiebar = jieba_seg)
 file_list1 <- lapply(file_list1, remove_number_english)
-# 词向量
-word_vector <- function(x) {
-
-}
 ```
 
-#### LSA 算法 {#sec-latent-semantic-analysis}
+采用 LDA（Latent Dirichlet Allocation）算法建模
 
 ```{r}
+#| message: false
+# Token 化
+it <- itoken(file_list1, ids = 1:1413, progressbar = FALSE)
+v <- create_vocabulary(it)
+v <- prune_vocabulary(v, term_count_min = 10, term_count_max = 200, doc_proportion_max = 0.2)
+# 词向量化
+vectorizer <- vocab_vectorizer(v)
+dtm <- create_dtm(it, vectorizer, type = "dgTMatrix")
+# 5个主题
+lda_model <- LDA$new(n_topics = 5, doc_topic_prior = 0.1, topic_word_prior = 0.01)
+# 训练模型
+doc_topic_distr <- lda_model$fit_transform(
+    x = dtm, n_iter = 1000, convergence_tol = 0.001, 
+    n_check_convergence = 25, progressbar = FALSE
+  )
 ```
-
-#### LDA 算法 {#sec-latent-dirichlet-allocation}
 
 ```{r}
+#| label: fig-topic-distr
+#| fig-cap: 主题分布
+#| fig-width: 5
+#| fig-height: 4
+#| fig-showtext: true
+#| par: true
+
+barplot(doc_topic_distr[1, ], xlab = "topic", 
+        ylab = "proportion", ylim = c(0, 1), 
+        names.arg = 1:ncol(doc_topic_distr))
 ```
 
-## 日志相似性
+3 个主题各自的 Top 词
+
+```{r}
+lda_model$get_top_words(n = 3, topic_number = c(1L, 3L), lambda = 0.3)
+```
+
+5 个主题各自的 Top 词
+
+```{r}
+lda_model$get_top_words(n = 5, topic_number = c(1L, 5L), lambda = 0.3)
+```
+
+结果有点意思，说明益辉喜欢诗词歌赋、代码编程、回忆青春、做菜吃饭。
+
+### 日志相似性 {#sec-similarity}
 
 我与益辉日志的相似性度量 <https://text2vec.org/similarity.html>
-
-词共现矩阵 tcm （term co-occurrence matrix）GloVe Word Embeddings <https://text2vec.org/glove.html>
 
 ## 习题 {#sec-analysis-text-data-exercises}
 
