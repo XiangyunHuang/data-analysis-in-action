@@ -574,8 +574,9 @@ MathJax ={
 <li><a href="#%E4%B8%AD%E6%96%87%E5%88%86%E8%AF%8D" id="toc-中文分词" class="nav-link" data-scroll-target="#%E4%B8%AD%E6%96%87%E5%88%86%E8%AF%8D"><span class="header-section-number">24.1.1</span> 中文分词</a></li>
   <li><a href="#%E8%8B%B1%E6%96%87%E5%88%86%E8%AF%8D" id="toc-英文分词" class="nav-link" data-scroll-target="#%E8%8B%B1%E6%96%87%E5%88%86%E8%AF%8D"><span class="header-section-number">24.1.2</span> 英文分词</a></li>
   <li><a href="#%E5%81%9C%E6%AD%A2%E8%AF%8D" id="toc-停止词" class="nav-link" data-scroll-target="#%E5%81%9C%E6%AD%A2%E8%AF%8D"><span class="header-section-number">24.1.3</span> 停止词</a></li>
-  <li><a href="#%E8%AF%8D%E9%A2%91%E7%BB%9F%E8%AE%A1" id="toc-词频统计" class="nav-link" data-scroll-target="#%E8%AF%8D%E9%A2%91%E7%BB%9F%E8%AE%A1"><span class="header-section-number">24.1.4</span> 词频统计</a></li>
-  <li><a href="#tf-idf" id="toc-tf-idf" class="nav-link" data-scroll-target="#tf-idf"><span class="header-section-number">24.1.5</span> TF-IDF</a></li>
+  <li><a href="#token-%E5%8C%96" id="toc-token-化" class="nav-link" data-scroll-target="#token-%E5%8C%96"><span class="header-section-number">24.1.4</span> Token 化</a></li>
+  <li><a href="#%E8%AF%8D%E9%A2%91%E7%BB%9F%E8%AE%A1" id="toc-词频统计" class="nav-link" data-scroll-target="#%E8%AF%8D%E9%A2%91%E7%BB%9F%E8%AE%A1"><span class="header-section-number">24.1.5</span> 词频统计</a></li>
+  <li><a href="#tf-idf" id="toc-tf-idf" class="nav-link" data-scroll-target="#tf-idf"><span class="header-section-number">24.1.6</span> TF-IDF</a></li>
   </ul>
 </li>
   <li>
@@ -659,22 +660,44 @@ MathJax ={
 <pre><code>#&gt; [1] "国画"   "大师"   "齐白石" "对"     "都"     "有"     "研究"   "呢"</code></pre>
 </div>
 </div>
-</section><section id="词频统计" class="level3" data-number="24.1.4"><h3 data-number="24.1.4" class="anchored" data-anchor-id="词频统计">
-<span class="header-section-number">24.1.4</span> 词频统计</h3>
+</section><section id="token-化" class="level3" data-number="24.1.4"><h3 data-number="24.1.4" class="anchored" data-anchor-id="token-化">
+<span class="header-section-number">24.1.4</span> Token 化</h3>
+<p>中文环境没有英文的词干化（lemmatization）过程（比如 applied / applies -&gt; apply），只考虑分词、词性。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1"></a><span class="co"># 配置好 Python 环境 spacy pip install spacy</span></span>
+<span id="cb10-2"><a href="#cb10-2"></a><span class="fu">library</span>(spacyr)</span>
+<span id="cb10-3"><a href="#cb10-3"></a><span class="co"># 下载语言模型</span></span>
+<span id="cb10-4"><a href="#cb10-4"></a><span class="co"># spacy_download_langmodel("zh_core_web_sm")</span></span>
+<span id="cb10-5"><a href="#cb10-5"></a><span class="co"># 初始化语言模型</span></span>
+<span id="cb10-6"><a href="#cb10-6"></a><span class="fu">spacy_initialize</span>(<span class="at">model =</span> <span class="st">"zh_core_web_sm"</span>)</span>
+<span id="cb10-7"><a href="#cb10-7"></a><span class="co"># Token 化就是分词</span></span>
+<span id="cb10-8"><a href="#cb10-8"></a><span class="fu">spacy_tokenize</span>(<span class="st">"国画大师齐白石对花鸟虫鱼都有研究呢"</span>)</span>
+<span id="cb10-9"><a href="#cb10-9"></a><span class="co"># 示例</span></span>
+<span id="cb10-10"><a href="#cb10-10"></a>txt <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="at">d1 =</span> <span class="st">"国画大师齐白石对花鸟虫鱼都有研究呢"</span>,</span>
+<span id="cb10-11"><a href="#cb10-11"></a>         <span class="at">d2 =</span> <span class="st">"中国人民银行很行"</span>,</span>
+<span id="cb10-12"><a href="#cb10-12"></a>         <span class="at">d3 =</span> <span class="st">"张大千在研究国画"</span>)</span>
+<span id="cb10-13"><a href="#cb10-13"></a><span class="co"># 解析</span></span>
+<span id="cb10-14"><a href="#cb10-14"></a>parsed_txt <span class="ot">&lt;-</span> <span class="fu">spacy_parse</span>(txt)</span>
+<span id="cb10-15"><a href="#cb10-15"></a><span class="co"># 结果</span></span>
+<span id="cb10-16"><a href="#cb10-16"></a>parsed_txt</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>人名都是名词，如齐白石、张大千等，「研究」既可做动词，也可做名词，「都」和「很」是副词。「中国人民银行很行」的「行」应当是形容词，但被识别为动词。</p>
+</section><section id="词频统计" class="level3" data-number="24.1.5"><h3 data-number="24.1.5" class="anchored" data-anchor-id="词频统计">
+<span class="header-section-number">24.1.5</span> 词频统计</h3>
 <p>输入字符串向量，计算每个字符串出现的次数。jiebaR 包的函数 <code>freq()</code> 可以统计词出现的频次。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1"></a><span class="fu">freq</span>(<span class="fu">c</span>(<span class="st">"a"</span>, <span class="st">"a"</span>, <span class="st">"c"</span>))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1"></a><span class="fu">freq</span>(<span class="fu">c</span>(<span class="st">"a"</span>, <span class="st">"a"</span>, <span class="st">"c"</span>))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt;   char freq
 #&gt; 1    c    1
 #&gt; 2    a    2</code></pre>
 </div>
 </div>
-</section><section id="tf-idf" class="level3" data-number="24.1.5"><h3 data-number="24.1.5" class="anchored" data-anchor-id="tf-idf">
-<span class="header-section-number">24.1.5</span> TF-IDF</h3>
+</section><section id="tf-idf" class="level3" data-number="24.1.6"><h3 data-number="24.1.6" class="anchored" data-anchor-id="tf-idf">
+<span class="header-section-number">24.1.6</span> TF-IDF</h3>
 <p>输入一个列表，列表中每个元素是字符串向量，每个字符串向量代表一个文档。jiebaR 包的函数 <code>get_idf()</code> 可以计算 <a href="https://en.wikipedia.org/wiki/Tf%E2%80%93idf">TF-IDF</a>（Document Frequency - Inverse Document Frequency） 值。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1"></a><span class="fu">get_idf</span>(<span class="fu">list</span>(<span class="fu">c</span>(<span class="st">"abc"</span>, <span class="st">"def"</span>), <span class="fu">c</span>(<span class="st">"abc"</span>, <span class="st">" "</span>)))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1"></a><span class="fu">get_idf</span>(<span class="fu">list</span>(<span class="fu">c</span>(<span class="st">"abc"</span>, <span class="st">"def"</span>), <span class="fu">c</span>(<span class="st">"abc"</span>, <span class="st">" "</span>)))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt;   name     count
 #&gt; 1  def 0.6931472
@@ -686,24 +709,24 @@ MathJax ={
 <p>下载日志数据</p>
 <pre><code>git clone git@github.com:yihui/yihui.org.git</code></pre>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1"></a><span class="co"># 加载益辉的日志数据</span></span>
-<span id="cb15-2"><a href="#cb15-2"></a><span class="fu">load</span>(<span class="at">file =</span> <span class="st">"data/text/yihui.Rdata"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1"></a><span class="co"># 加载益辉的日志数据</span></span>
+<span id="cb16-2"><a href="#cb16-2"></a><span class="fu">load</span>(<span class="at">file =</span> <span class="st">"data/text/yihui.Rdata"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <section id="sec-cn-blog" class="level3" data-number="24.2.1"><h3 data-number="24.2.1" class="anchored" data-anchor-id="sec-cn-blog">
 <span class="header-section-number">24.2.1</span> 整体概况</h3>
 <div class="cell">
-<details class="code-fold"><summary>代码</summary><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1"></a><span class="fu">library</span>(ggplot2)</span>
-<span id="cb16-2"><a href="#cb16-2"></a><span class="fu">library</span>(ggrepel)</span>
-<span id="cb16-3"><a href="#cb16-3"></a><span class="fu">ggplot</span>() <span class="sc">+</span></span>
-<span id="cb16-4"><a href="#cb16-4"></a>  <span class="fu">geom_label_repel</span>(</span>
-<span id="cb16-5"><a href="#cb16-5"></a>    <span class="at">data =</span> df2, <span class="fu">aes</span>(<span class="at">x =</span> year, <span class="at">y =</span> file_name, <span class="at">label =</span> event_wrap),</span>
-<span id="cb16-6"><a href="#cb16-6"></a>    <span class="at">max.overlaps =</span> <span class="dv">150</span>, <span class="at">segment.colour =</span> <span class="st">"gray"</span>, <span class="at">seed =</span> <span class="dv">2023</span></span>
-<span id="cb16-7"><a href="#cb16-7"></a>  ) <span class="sc">+</span></span>
-<span id="cb16-8"><a href="#cb16-8"></a>  <span class="fu">geom_point</span>(<span class="at">data =</span> df1, <span class="fu">aes</span>(<span class="at">x =</span> file_year, <span class="at">y =</span> file_name)) <span class="sc">+</span></span>
-<span id="cb16-9"><a href="#cb16-9"></a>  <span class="fu">geom_line</span>(<span class="at">data =</span> df1, <span class="fu">aes</span>(<span class="at">x =</span> file_year, <span class="at">y =</span> file_name)) <span class="sc">+</span></span>
-<span id="cb16-10"><a href="#cb16-10"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">n.breaks =</span> <span class="dv">15</span>) <span class="sc">+</span></span>
-<span id="cb16-11"><a href="#cb16-11"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span></span>
-<span id="cb16-12"><a href="#cb16-12"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"年份"</span>, <span class="at">y =</span> <span class="st">"篇数"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<details class="code-fold"><summary>代码</summary><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb17-2"><a href="#cb17-2"></a><span class="fu">library</span>(ggrepel)</span>
+<span id="cb17-3"><a href="#cb17-3"></a><span class="fu">ggplot</span>() <span class="sc">+</span></span>
+<span id="cb17-4"><a href="#cb17-4"></a>  <span class="fu">geom_label_repel</span>(</span>
+<span id="cb17-5"><a href="#cb17-5"></a>    <span class="at">data =</span> df2, <span class="fu">aes</span>(<span class="at">x =</span> year, <span class="at">y =</span> file_name, <span class="at">label =</span> event_wrap),</span>
+<span id="cb17-6"><a href="#cb17-6"></a>    <span class="at">max.overlaps =</span> <span class="dv">150</span>, <span class="at">segment.colour =</span> <span class="st">"gray"</span>, <span class="at">seed =</span> <span class="dv">2023</span></span>
+<span id="cb17-7"><a href="#cb17-7"></a>  ) <span class="sc">+</span></span>
+<span id="cb17-8"><a href="#cb17-8"></a>  <span class="fu">geom_point</span>(<span class="at">data =</span> df1, <span class="fu">aes</span>(<span class="at">x =</span> file_year, <span class="at">y =</span> file_name)) <span class="sc">+</span></span>
+<span id="cb17-9"><a href="#cb17-9"></a>  <span class="fu">geom_line</span>(<span class="at">data =</span> df1, <span class="fu">aes</span>(<span class="at">x =</span> file_year, <span class="at">y =</span> file_name)) <span class="sc">+</span></span>
+<span id="cb17-10"><a href="#cb17-10"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">n.breaks =</span> <span class="dv">15</span>) <span class="sc">+</span></span>
+<span id="cb17-11"><a href="#cb17-11"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span></span>
+<span id="cb17-12"><a href="#cb17-12"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"年份"</span>, <span class="at">y =</span> <span class="st">"篇数"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details><div class="cell-output-display">
 <div id="fig-yihui-cn" class="quarto-figure quarto-figure-center quarto-float anchored">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-yihui-cn-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
@@ -720,58 +743,59 @@ MathJax ={
 <span class="header-section-number">24.2.2</span> 数据清洗</h3>
 <p>以 2001 年的一篇日志为例，展开数据清洗的过程。移除文章的 YAML 元数据，对于文本分析来说，主要是没啥信息含量。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1"></a>remove_yaml <span class="ot">&lt;-</span> <span class="cf">function</span>(x) {</span>
-<span id="cb17-2"><a href="#cb17-2"></a>  x[(<span class="fu">max</span>(<span class="fu">which</span>(x <span class="sc">==</span> <span class="st">"---"</span>)) <span class="sc">+</span> <span class="dv">1</span>)<span class="sc">:</span><span class="fu">length</span>(x)]</span>
-<span id="cb17-3"><a href="#cb17-3"></a>}</span>
-<span id="cb17-4"><a href="#cb17-4"></a>x <span class="ot">&lt;-</span> <span class="fu">remove_yaml</span>(x)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1"></a>remove_yaml <span class="ot">&lt;-</span> <span class="cf">function</span>(x) {</span>
+<span id="cb18-2"><a href="#cb18-2"></a>  x[(<span class="fu">max</span>(<span class="fu">which</span>(x <span class="sc">==</span> <span class="st">"---"</span>)) <span class="sc">+</span> <span class="dv">1</span>)<span class="sc">:</span><span class="fu">length</span>(x)]</span>
+<span id="cb18-3"><a href="#cb18-3"></a>}</span>
+<span id="cb18-4"><a href="#cb18-4"></a>x <span class="ot">&lt;-</span> <span class="fu">remove_yaml</span>(x)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>移除「我」 「是」 「你」 「的」 「了」 「也」 等高频的人称、助词、虚词。这些词出现的规律对表现个人风格很重要，且看红楼梦关于后40回作者归属的研究，通过比较一些助词、虚词的出现规律，从而看出作者的习惯、文风。这种东西是在长期的潜移默化中形成的，对作者自己来说，都可能是无意识的。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1"></a><span class="fu">library</span>(jiebaR)</span>
-<span id="cb18-2"><a href="#cb18-2"></a>jieba_seg <span class="ot">&lt;-</span> <span class="fu">worker</span>(<span class="at">stop_word =</span> <span class="st">"data/text/stop_word.txt"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1"></a><span class="fu">library</span>(jiebaR)</span>
+<span id="cb19-2"><a href="#cb19-2"></a><span class="co"># jieba_seg &lt;- worker(stop_word = "data/text/stop_word.txt")</span></span>
+<span id="cb19-3"><a href="#cb19-3"></a>jieba_seg <span class="ot">&lt;-</span> <span class="fu">worker</span>(<span class="at">stop_word =</span> <span class="st">"data/text/cn_stopwords.txt"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>添加新词，比如「歪贼」、「谢益辉」等，主要是人名、外号等实体。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1"></a>new_words <span class="ot">&lt;-</span> <span class="fu">readLines</span>(<span class="fu">file</span>(<span class="st">"data/text/new_word.txt"</span>))</span>
-<span id="cb19-2"><a href="#cb19-2"></a><span class="fu">new_user_word</span>(<span class="at">worker =</span> jieba_seg, <span class="at">words =</span> new_words)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1"></a>new_words <span class="ot">&lt;-</span> <span class="fu">readLines</span>(<span class="fu">file</span>(<span class="st">"data/text/new_word.txt"</span>))</span>
+<span id="cb20-2"><a href="#cb20-2"></a><span class="fu">new_user_word</span>(<span class="at">worker =</span> jieba_seg, <span class="at">words =</span> new_words)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; [1] TRUE</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1"></a><span class="co"># 分词</span></span>
-<span id="cb21-2"><a href="#cb21-2"></a>x_seg <span class="ot">&lt;-</span> <span class="fu">segment</span>(x, jieba_seg)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1"></a><span class="co"># 分词</span></span>
+<span id="cb22-2"><a href="#cb22-2"></a>x_seg <span class="ot">&lt;-</span> <span class="fu">segment</span>(x, jieba_seg)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>分词后，再移除数字和英文</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1"></a>remove_number_english <span class="ot">&lt;-</span> <span class="cf">function</span>(x) {</span>
-<span id="cb22-2"><a href="#cb22-2"></a>  x <span class="ot">&lt;-</span> x[<span class="sc">!</span><span class="fu">grepl</span>(<span class="st">"</span><span class="sc">\\</span><span class="st">d{1,}"</span>, x)]</span>
-<span id="cb22-3"><a href="#cb22-3"></a>  x[<span class="sc">!</span><span class="fu">grepl</span>(<span class="st">"[a-zA-Z]"</span>, x)]</span>
-<span id="cb22-4"><a href="#cb22-4"></a>}</span>
-<span id="cb22-5"><a href="#cb22-5"></a></span>
-<span id="cb22-6"><a href="#cb22-6"></a>xx <span class="ot">&lt;-</span> <span class="fu">remove_number_english</span>(<span class="at">x =</span> x_seg)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1"></a>remove_number_english <span class="ot">&lt;-</span> <span class="cf">function</span>(x) {</span>
+<span id="cb23-2"><a href="#cb23-2"></a>  x <span class="ot">&lt;-</span> x[<span class="sc">!</span><span class="fu">grepl</span>(<span class="st">"</span><span class="sc">\\</span><span class="st">d{1,}"</span>, x)]</span>
+<span id="cb23-3"><a href="#cb23-3"></a>  x[<span class="sc">!</span><span class="fu">grepl</span>(<span class="st">"[a-zA-Z]"</span>, x)]</span>
+<span id="cb23-4"><a href="#cb23-4"></a>}</span>
+<span id="cb23-5"><a href="#cb23-5"></a></span>
+<span id="cb23-6"><a href="#cb23-6"></a>xx <span class="ot">&lt;-</span> <span class="fu">remove_number_english</span>(<span class="at">x =</span> x_seg)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>词频统计</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1"></a>tmp <span class="ot">&lt;-</span> <span class="fu">freq</span>(<span class="at">x =</span> xx)</span>
-<span id="cb23-2"><a href="#cb23-2"></a>tmp <span class="ot">&lt;-</span> tmp[<span class="fu">order</span>(tmp<span class="sc">$</span>freq, <span class="at">decreasing =</span> T), ]</span>
-<span id="cb23-3"><a href="#cb23-3"></a><span class="fu">head</span>(tmp)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1"></a>tmp <span class="ot">&lt;-</span> <span class="fu">freq</span>(<span class="at">x =</span> xx)</span>
+<span id="cb24-2"><a href="#cb24-2"></a>tmp <span class="ot">&lt;-</span> tmp[<span class="fu">order</span>(tmp<span class="sc">$</span>freq, <span class="at">decreasing =</span> T), ]</span>
+<span id="cb24-3"><a href="#cb24-3"></a><span class="fu">head</span>(tmp)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>#&gt;     char freq
-#&gt; 489   的   41
-#&gt; 177   了   37
-#&gt; 501   是   16
-#&gt; 115   我   12
-#&gt; 302   他    9
-#&gt; 297 一个    7</code></pre>
+<pre><code>#&gt;       char freq
+#&gt; 285   一个    7
+#&gt; 397   同学    5
+#&gt; 178   一篇    4
+#&gt; 356   没有    4
+#&gt; 67    鼻音    3
+#&gt; 106 田春雨    3</code></pre>
 </div>
 </div>
 <p><strong>ggwordcloud</strong> 包绘制词云图可视化词频统计的结果。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1"></a><span class="fu">library</span>(ggwordcloud)</span>
-<span id="cb25-2"><a href="#cb25-2"></a><span class="fu">head</span>(tmp, <span class="dv">150</span>) <span class="sc">|&gt;</span></span>
-<span id="cb25-3"><a href="#cb25-3"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">label =</span> char, <span class="at">size =</span> freq)) <span class="sc">+</span></span>
-<span id="cb25-4"><a href="#cb25-4"></a>  <span class="fu">geom_text_wordcloud</span>(<span class="at">seed =</span> <span class="dv">2022</span>, <span class="at">grid_size =</span> <span class="dv">8</span>, <span class="at">max_grid_size =</span> <span class="dv">24</span>) <span class="sc">+</span></span>
-<span id="cb25-5"><a href="#cb25-5"></a>  <span class="fu">scale_size_area</span>(<span class="at">max_size =</span> <span class="dv">10</span>) <span class="sc">+</span></span>
-<span id="cb25-6"><a href="#cb25-6"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1"></a><span class="fu">library</span>(ggwordcloud)</span>
+<span id="cb26-2"><a href="#cb26-2"></a><span class="fu">head</span>(tmp, <span class="dv">150</span>) <span class="sc">|&gt;</span></span>
+<span id="cb26-3"><a href="#cb26-3"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">label =</span> char, <span class="at">size =</span> freq)) <span class="sc">+</span></span>
+<span id="cb26-4"><a href="#cb26-4"></a>  <span class="fu">geom_text_wordcloud</span>(<span class="at">seed =</span> <span class="dv">2022</span>, <span class="at">grid_size =</span> <span class="dv">8</span>, <span class="at">max_grid_size =</span> <span class="dv">24</span>) <span class="sc">+</span></span>
+<span id="cb26-5"><a href="#cb26-5"></a>  <span class="fu">scale_size_area</span>(<span class="at">max_size =</span> <span class="dv">10</span>) <span class="sc">+</span></span>
+<span id="cb26-6"><a href="#cb26-6"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div id="fig-yihui-wordcloud" class="quarto-figure quarto-figure-center quarto-float anchored">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-yihui-wordcloud-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
@@ -785,8 +809,8 @@ MathJax ={
 </div>
 <p>计算 TF-IDF 值</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1"></a><span class="co"># tmp = get_idf(x = list(xx))</span></span>
-<span id="cb26-2"><a href="#cb26-2"></a><span class="fu">get_idf</span>(<span class="at">x =</span> <span class="fu">list</span>(xx)) <span class="sc">|&gt;</span> <span class="fu">head</span>()</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1"></a><span class="co"># tmp = get_idf(x = list(xx))</span></span>
+<span id="cb27-2"><a href="#cb27-2"></a><span class="fu">get_idf</span>(<span class="at">x =</span> <span class="fu">list</span>(xx)) <span class="sc">|&gt;</span> <span class="fu">head</span>()</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt;     name count
 #&gt; 1   黄新     0
@@ -803,48 +827,56 @@ MathJax ={
 <p>topicmodels <span class="citation" data-cites="topicmodels2011">(<a href="references.html#ref-topicmodels2011" role="doc-biblioref">Grün 和 Hornik 2011</a>)</span> 基于 tm <span class="citation" data-cites="tm2009">(<a href="references.html#ref-tm2009" role="doc-biblioref">Feinerer, Hornik, 和 Meyer 2008</a>)</span> Latent Dirichlet Allocation (LDA) 和 Correlated Topics Models (CTM) 文本主题建模，这一套工具比较适合英文文本分词、向量化和建模。</p>
 <p><a href="https://github.com/dselivanov/text2vec">text2vec</a> 包支持多个统计模型，如潜在狄利克雷分配等，可用于分类、回归、聚类等任务。更多详情见 <a href="https://text2vec.org" class="uri">https://text2vec.org</a>。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1"></a><span class="fu">library</span>(text2vec)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1"></a><span class="fu">library</span>(text2vec)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>首先将所有日志分词、向量化，构建文档-词矩阵 document-term matrix (DTM)</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1"></a><span class="co"># 移除链接</span></span>
-<span id="cb29-2"><a href="#cb29-2"></a>remove_links <span class="ot">&lt;-</span> <span class="cf">function</span>(x) {</span>
-<span id="cb29-3"><a href="#cb29-3"></a>  <span class="fu">gsub</span>(<span class="at">pattern =</span> <span class="st">"(&lt;http.*?&gt;)|(</span><span class="sc">\\</span><span class="st">(http.*?</span><span class="sc">\\</span><span class="st">))|(&lt;www.*?&gt;)|(</span><span class="sc">\\</span><span class="st">(www.*?&gt;</span><span class="sc">\\</span><span class="st">))"</span>, <span class="at">replacement =</span> <span class="st">""</span>, x)</span>
-<span id="cb29-4"><a href="#cb29-4"></a>}</span>
-<span id="cb29-5"><a href="#cb29-5"></a><span class="co"># 清理、分词、清理</span></span>
-<span id="cb29-6"><a href="#cb29-6"></a>file_list1 <span class="ot">&lt;-</span> <span class="fu">lapply</span>(file_list, remove_yaml)</span>
-<span id="cb29-7"><a href="#cb29-7"></a>file_list1 <span class="ot">&lt;-</span> <span class="fu">lapply</span>(file_list1, remove_links)</span>
-<span id="cb29-8"><a href="#cb29-8"></a>file_list1 <span class="ot">&lt;-</span> <span class="fu">lapply</span>(file_list1, segment, <span class="at">jiebar =</span> jieba_seg)</span>
-<span id="cb29-9"><a href="#cb29-9"></a>file_list1 <span class="ot">&lt;-</span> <span class="fu">lapply</span>(file_list1, remove_number_english)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1"></a><span class="co"># 移除链接</span></span>
+<span id="cb30-2"><a href="#cb30-2"></a>remove_links <span class="ot">&lt;-</span> <span class="cf">function</span>(x) {</span>
+<span id="cb30-3"><a href="#cb30-3"></a>  <span class="fu">gsub</span>(<span class="at">pattern =</span> <span class="st">"(&lt;http.*?&gt;)|(</span><span class="sc">\\</span><span class="st">(http.*?</span><span class="sc">\\</span><span class="st">))|(&lt;www.*?&gt;)|(</span><span class="sc">\\</span><span class="st">(www.*?&gt;</span><span class="sc">\\</span><span class="st">))"</span>, <span class="at">replacement =</span> <span class="st">""</span>, x)</span>
+<span id="cb30-4"><a href="#cb30-4"></a>}</span>
+<span id="cb30-5"><a href="#cb30-5"></a><span class="co"># 清理、分词、清理</span></span>
+<span id="cb30-6"><a href="#cb30-6"></a>file_list1 <span class="ot">&lt;-</span> <span class="fu">lapply</span>(file_list, remove_yaml)</span>
+<span id="cb30-7"><a href="#cb30-7"></a>file_list1 <span class="ot">&lt;-</span> <span class="fu">lapply</span>(file_list1, remove_links)</span>
+<span id="cb30-8"><a href="#cb30-8"></a>file_list1 <span class="ot">&lt;-</span> <span class="fu">lapply</span>(file_list1, segment, <span class="at">jiebar =</span> jieba_seg)</span>
+<span id="cb30-9"><a href="#cb30-9"></a>file_list1 <span class="ot">&lt;-</span> <span class="fu">lapply</span>(file_list1, remove_number_english)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>去掉没啥实际意义的词</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1"></a><span class="co"># Token 化</span></span>
+<span id="cb31-2"><a href="#cb31-2"></a>it <span class="ot">&lt;-</span> <span class="fu">itoken</span>(file_list1, <span class="at">ids =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">1413</span>, <span class="at">progressbar =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb31-3"><a href="#cb31-3"></a>v <span class="ot">&lt;-</span> <span class="fu">create_vocabulary</span>(it)</span>
+<span id="cb31-4"><a href="#cb31-4"></a><span class="co"># # 去掉单个字 减少 3K</span></span>
+<span id="cb31-5"><a href="#cb31-5"></a>v <span class="ot">&lt;-</span> v[<span class="fu">nchar</span>(v<span class="sc">$</span>term) <span class="sc">&gt;</span> <span class="dv">1</span>,]</span>
+<span id="cb31-6"><a href="#cb31-6"></a><span class="co"># # 词频大于 1 减少 2W</span></span>
+<span id="cb31-7"><a href="#cb31-7"></a><span class="co"># v &lt;- v[v$term_count &gt; 1,]</span></span>
+<span id="cb31-8"><a href="#cb31-8"></a><span class="co"># # doc_count &gt; 1 减少 2K</span></span>
+<span id="cb31-9"><a href="#cb31-9"></a><span class="co"># v &lt;- v[v$doc_count &gt; 1,]</span></span>
+<span id="cb31-10"><a href="#cb31-10"></a><span class="co"># 去掉极高频词和极低频词 减少 1.4W</span></span>
+<span id="cb31-11"><a href="#cb31-11"></a>v <span class="ot">&lt;-</span> <span class="fu">prune_vocabulary</span>(v, <span class="at">term_count_min =</span> <span class="dv">10</span>, <span class="at">doc_proportion_max =</span> <span class="fl">0.2</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>采用 LDA（Latent Dirichlet Allocation）算法建模</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1"></a><span class="co"># Token 化</span></span>
-<span id="cb30-2"><a href="#cb30-2"></a>it <span class="ot">&lt;-</span> <span class="fu">itoken</span>(file_list1, <span class="at">ids =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">1413</span>, <span class="at">progressbar =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb30-3"><a href="#cb30-3"></a>v <span class="ot">&lt;-</span> <span class="fu">create_vocabulary</span>(it)</span>
-<span id="cb30-4"><a href="#cb30-4"></a><span class="co"># 去掉单个字</span></span>
-<span id="cb30-5"><a href="#cb30-5"></a>v <span class="ot">&lt;-</span> v[<span class="fu">nchar</span>(v<span class="sc">$</span>term) <span class="sc">&gt;</span> <span class="dv">1</span>,]</span>
-<span id="cb30-6"><a href="#cb30-6"></a><span class="co"># 去掉极高频词和极低频词</span></span>
-<span id="cb30-7"><a href="#cb30-7"></a>v <span class="ot">&lt;-</span> <span class="fu">prune_vocabulary</span>(v, <span class="at">term_count_min =</span> <span class="dv">20</span>, <span class="at">term_count_max =</span> <span class="dv">1000</span>, <span class="at">doc_proportion_max =</span> <span class="fl">0.2</span>)</span>
-<span id="cb30-8"><a href="#cb30-8"></a><span class="co"># 词向量化</span></span>
-<span id="cb30-9"><a href="#cb30-9"></a>vectorizer <span class="ot">&lt;-</span> <span class="fu">vocab_vectorizer</span>(v)</span>
-<span id="cb30-10"><a href="#cb30-10"></a>dtm <span class="ot">&lt;-</span> <span class="fu">create_dtm</span>(it, vectorizer, <span class="at">type =</span> <span class="st">"dgTMatrix"</span>)</span>
-<span id="cb30-11"><a href="#cb30-11"></a><span class="co"># 10 个主题</span></span>
-<span id="cb30-12"><a href="#cb30-12"></a>lda_model <span class="ot">&lt;-</span> LDA<span class="sc">$</span><span class="fu">new</span>(<span class="at">n_topics =</span> <span class="dv">10</span>, <span class="at">doc_topic_prior =</span> <span class="fl">0.1</span>, <span class="at">topic_word_prior =</span> <span class="fl">0.01</span>)</span>
-<span id="cb30-13"><a href="#cb30-13"></a><span class="co"># 训练模型</span></span>
-<span id="cb30-14"><a href="#cb30-14"></a>doc_topic_distr <span class="ot">&lt;-</span> lda_model<span class="sc">$</span><span class="fu">fit_transform</span>(</span>
-<span id="cb30-15"><a href="#cb30-15"></a>    <span class="at">x =</span> dtm, <span class="at">n_iter =</span> <span class="dv">1000</span>, <span class="at">convergence_tol =</span> <span class="fl">0.001</span>, </span>
-<span id="cb30-16"><a href="#cb30-16"></a>    <span class="at">n_check_convergence =</span> <span class="dv">25</span>, <span class="at">progressbar =</span> <span class="cn">FALSE</span></span>
-<span id="cb30-17"><a href="#cb30-17"></a>  )</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1"></a><span class="co"># 词向量化</span></span>
+<span id="cb32-2"><a href="#cb32-2"></a>vectorizer <span class="ot">&lt;-</span> <span class="fu">vocab_vectorizer</span>(v)</span>
+<span id="cb32-3"><a href="#cb32-3"></a>dtm <span class="ot">&lt;-</span> <span class="fu">create_dtm</span>(it, vectorizer, <span class="at">type =</span> <span class="st">"dgTMatrix"</span>)</span>
+<span id="cb32-4"><a href="#cb32-4"></a><span class="co">#  10 个主题</span></span>
+<span id="cb32-5"><a href="#cb32-5"></a>lda_model <span class="ot">&lt;-</span> LDA<span class="sc">$</span><span class="fu">new</span>(<span class="at">n_topics =</span> <span class="dv">10</span>, <span class="at">doc_topic_prior =</span> <span class="fl">0.1</span>, <span class="at">topic_word_prior =</span> <span class="fl">0.01</span>)</span>
+<span id="cb32-6"><a href="#cb32-6"></a><span class="co"># 训练模型</span></span>
+<span id="cb32-7"><a href="#cb32-7"></a>doc_topic_distr <span class="ot">&lt;-</span> lda_model<span class="sc">$</span><span class="fu">fit_transform</span>(</span>
+<span id="cb32-8"><a href="#cb32-8"></a>    <span class="at">x =</span> dtm, <span class="at">n_iter =</span> <span class="dv">1000</span>, <span class="at">convergence_tol =</span> <span class="fl">0.001</span>, </span>
+<span id="cb32-9"><a href="#cb32-9"></a>    <span class="at">n_check_convergence =</span> <span class="dv">25</span>, <span class="at">progressbar =</span> <span class="cn">FALSE</span></span>
+<span id="cb32-10"><a href="#cb32-10"></a>  )</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>#&gt; INFO  [16:36:23.722] early stopping at 225 iteration
-#&gt; INFO  [16:36:24.250] early stopping at 50 iteration</code></pre>
+<pre><code>#&gt; INFO  [05:33:19.171] early stopping at 175 iteration
+#&gt; INFO  [05:33:20.085] early stopping at 75 iteration</code></pre>
 </div>
 </div>
 <div class="cell" data-par="true">
-<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1"></a><span class="fu">barplot</span>(doc_topic_distr[<span class="dv">1</span>, ], <span class="at">xlab =</span> <span class="st">"topic"</span>, </span>
-<span id="cb32-2"><a href="#cb32-2"></a>        <span class="at">ylab =</span> <span class="st">"proportion"</span>, <span class="at">ylim =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>), </span>
-<span id="cb32-3"><a href="#cb32-3"></a>        <span class="at">names.arg =</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">ncol</span>(doc_topic_distr))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1"></a><span class="fu">barplot</span>(</span>
+<span id="cb34-2"><a href="#cb34-2"></a>  doc_topic_distr[<span class="dv">1</span>, ], <span class="at">xlab =</span> <span class="st">"topic"</span>, <span class="at">ylab =</span> <span class="st">"proportion"</span>, </span>
+<span id="cb34-3"><a href="#cb34-3"></a>  <span class="at">ylim =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>), <span class="at">names.arg =</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">ncol</span>(doc_topic_distr)</span>
+<span id="cb34-4"><a href="#cb34-4"></a>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div id="fig-topic-distr" class="quarto-figure quarto-figure-center quarto-float anchored">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-topic-distr-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
@@ -856,24 +888,39 @@ MathJax ={
 </div>
 </div>
 </div>
-<p>10 个主题各自的 Top 词</p>
+<p>将 10 个主题的 Top 12 词分别打印出来。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1"></a>lda_model<span class="sc">$</span><span class="fu">get_top_words</span>(<span class="at">n =</span> <span class="dv">10</span>, <span class="at">topic_number =</span> <span class="fu">c</span>(<span class="dv">1</span>L, <span class="dv">5</span>L, <span class="dv">10</span>L), <span class="at">lambda =</span> <span class="fl">0.3</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1"></a>lda_model<span class="sc">$</span><span class="fu">get_top_words</span>(<span class="at">n =</span> <span class="dv">12</span>, <span class="at">topic_number =</span> <span class="dv">1</span>L<span class="sc">:</span><span class="dv">10</span>L, <span class="at">lambda =</span> <span class="fl">0.3</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>#&gt;       [,1]     [,2]     [,3]  
-#&gt;  [1,] "文档"   "包子"   "吱吱"
-#&gt;  [2,] "文件"   "黄瓜"   "教育"
-#&gt;  [3,] "域名"   "叶子"   "能够"
-#&gt;  [4,] "网站"   "辣椒"   "人类"
-#&gt;  [5,] "功能"   "冰箱"   "能力"
-#&gt;  [6,] "服务器" "一会儿" "作者"
-#&gt;  [7,] "字体"   "糯米"   "社会"
-#&gt;  [8,] "图片"   "腊肉"   "媒体"
-#&gt;  [9,] "网页"   "面条"   "许多"
-#&gt; [10,] "生成"   "机场"   "行为"</code></pre>
+<pre><code>#&gt;       [,1]   [,2]   [,3]     [,4]     [,5]     [,6]   [,7]     [,8]     [,9]  
+#&gt;  [1,] "存在" "人生" "网站"   "统计"   "记得"   "吱吱" "小时候" "工作"   "代码"
+#&gt;  [2,] "帮助" "生活" "域名"   "数据"   "老师"   "一看" "歌词"   "项目"   "文档"
+#&gt;  [3,] "事件" "读书" "服务器" "模型"   "同学"   "居然" "一首"   "编辑"   "文件"
+#&gt;  [4,] "是否" "力量" "注册"   "变量"   "学校"   "小子" "阿姨"   "免费"   "功能"
+#&gt;  [5,] "一种" "文字" "博客"   "计算"   "一次"   "满意" "好吃"   "社区"   "字体"
+#&gt;  [6,] "正确" "自然" "服务"   "图形"   "英语"   "整理" "照片"   "文章"   "用户"
+#&gt;  [7,] "媒体" "一句" "系统"   "分布"   "高中"   "中间" "渴望"   "意味着" "生成"
+#&gt;  [8,] "能力" "一生" "广告"   "统计学" "第一次" "一遍" "听到"   "精力"   "图片"
+#&gt;  [9,] "答案" "娱乐" "访问"   "方法"   "北京"   "一天" "我家"   "最大"   "元素"
+#&gt; [10,] "现实" "作品" "搜索"   "矩阵"   "小学"   "打开" "地上"   "想法"   "编译"
+#&gt; [11,] "翻译" "风格" "网址"   "回归"   "美帝"   "飞机" "黄瓜"   "写作"   "安装"
+#&gt; [12,] "新闻" "文中" "网络"   "数学"   "回家"   "全都" "记忆"   "显著"   "函数"
+#&gt;       [,10] 
+#&gt;  [1,] "社会"
+#&gt;  [2,] "观点"
+#&gt;  [3,] "教育"
+#&gt;  [4,] "时代"
+#&gt;  [5,] "人类"
+#&gt;  [6,] "文化"
+#&gt;  [7,] "成功"
+#&gt;  [8,] "认为"
+#&gt;  [9,] "价值"
+#&gt; [10,] "创造"
+#&gt; [11,] "美国"
+#&gt; [12,] "本书"</code></pre>
 </div>
 </div>
-<p>结果有点意思，说明益辉喜欢诗词歌赋、代码编程、回忆青春、做菜吃饭。</p>
+<p>结果有点意思，说明益辉喜欢统计图形（主题4）、代码编程（主题 9）、倒腾网站（主题 3）、回忆青春（主题 5）、读书写作（主题2、8、10），但是诗词歌赋、做菜吃饭，不是很明显。</p>
 </section><section id="sec-similarity" class="level3" data-number="24.2.4"><h3 data-number="24.2.4" class="anchored" data-anchor-id="sec-similarity">
 <span class="header-section-number">24.2.4</span> 日志相似性</h3>
 <p>我与益辉日志的相似性度量 <a href="https://text2vec.org/similarity.html" class="uri">https://text2vec.org/similarity.html</a></p>
