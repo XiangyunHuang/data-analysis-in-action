@@ -71,6 +71,32 @@ jieba_seg <- worker(stop_word = "data/text/stop_word.txt")
 segment("国画大师齐白石对花鸟虫鱼都有研究呢", jieba_seg)
 ```
 
+### Token 化
+
+中文环境没有英文的词干化（lemmatization）过程（比如 applied / applies -\> apply），只考虑分词、词性。
+
+```{r}
+#| eval: false
+# 配置好 Python 环境 spacy pip install spacy
+library(spacyr)
+# 下载语言模型
+# spacy_download_langmodel("zh_core_web_sm")
+# 初始化语言模型
+spacy_initialize(model = "zh_core_web_sm")
+# Token 化就是分词
+spacy_tokenize("国画大师齐白石对花鸟虫鱼都有研究呢")
+# 示例
+txt <- c(d1 = "国画大师齐白石对花鸟虫鱼都有研究呢",
+         d2 = "中国人民银行很行",
+         d3 = "张大千在研究国画")
+# 解析
+parsed_txt <- spacy_parse(txt)
+# 结果
+parsed_txt
+```
+
+人名都是名词，如齐白石、张大千等，「研究」既可做动词，也可做名词，「都」和「很」是副词。「中国人民银行很行」的「行」应当是形容词，但被识别为动词。
+
 ### 词频统计
 
 输入字符串向量，计算每个字符串出现的次数。jiebaR 包的函数 `freq()` 可以统计词出现的频次。
@@ -142,7 +168,8 @@ x <- remove_yaml(x)
 
 ```{r}
 library(jiebaR)
-jieba_seg <- worker(stop_word = "data/text/stop_word.txt")
+# jieba_seg <- worker(stop_word = "data/text/stop_word.txt")
+jieba_seg <- worker(stop_word = "data/text/cn_stopwords.txt")
 ```
 
 添加新词，比如「歪贼」、「谢益辉」等，主要是人名、外号等实体。
@@ -223,20 +250,29 @@ file_list1 <- lapply(file_list1, segment, jiebar = jieba_seg)
 file_list1 <- lapply(file_list1, remove_number_english)
 ```
 
-采用 LDA（Latent Dirichlet Allocation）算法建模
+去掉没啥实际意义的词
 
 ```{r}
 # Token 化
 it <- itoken(file_list1, ids = 1:1413, progressbar = FALSE)
 v <- create_vocabulary(it)
-# 去掉单个字
+# # 去掉单个字 减少 3K
 v <- v[nchar(v$term) > 1,]
-# 去掉极高频词和极低频词
-v <- prune_vocabulary(v, term_count_min = 20, term_count_max = 1000, doc_proportion_max = 0.2)
+# # 词频大于 1 减少 2W
+# v <- v[v$term_count > 1,]
+# # doc_count > 1 减少 2K
+# v <- v[v$doc_count > 1,]
+# 去掉极高频词和极低频词 减少 1.4W
+v <- prune_vocabulary(v, term_count_min = 10, doc_proportion_max = 0.2)
+```
+
+采用 LDA（Latent Dirichlet Allocation）算法建模
+
+```{r}
 # 词向量化
 vectorizer <- vocab_vectorizer(v)
 dtm <- create_dtm(it, vectorizer, type = "dgTMatrix")
-# 10 个主题
+#  10 个主题
 lda_model <- LDA$new(n_topics = 10, doc_topic_prior = 0.1, topic_word_prior = 0.01)
 # 训练模型
 doc_topic_distr <- lda_model$fit_transform(
@@ -253,18 +289,19 @@ doc_topic_distr <- lda_model$fit_transform(
 #| fig-showtext: true
 #| par: true
 
-barplot(doc_topic_distr[1, ], xlab = "topic", 
-        ylab = "proportion", ylim = c(0, 1), 
-        names.arg = 1:ncol(doc_topic_distr))
+barplot(
+  doc_topic_distr[1, ], xlab = "topic", ylab = "proportion", 
+  ylim = c(0, 1), names.arg = 1:ncol(doc_topic_distr)
+)
 ```
 
-10 个主题各自的 Top 词
+将 10 个主题的 Top 12 词分别打印出来。
 
 ```{r}
-lda_model$get_top_words(n = 10, topic_number = c(1L, 5L, 10L), lambda = 0.3)
+lda_model$get_top_words(n = 12, topic_number = 1L:10L, lambda = 0.3)
 ```
 
-结果有点意思，说明益辉喜欢诗词歌赋、代码编程、回忆青春、做菜吃饭。
+结果有点意思，说明益辉喜欢统计图形（主题4）、代码编程（主题 9）、倒腾网站（主题 3）、回忆青春（主题 5）、读书写作（主题2、8、10），但是诗词歌赋、做菜吃饭，不是很明显。
 
 ### 日志相似性 {#sec-similarity}
 
