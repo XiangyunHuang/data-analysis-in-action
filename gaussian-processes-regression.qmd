@@ -4,7 +4,6 @@
 #| echo: false
 
 Sys.setenv(CMDSTANR_NO_VER_CHECK = TRUE)
-if(!dir.exists(paths = "data-raw/")) dir.create(path = "data-raw/")
 ```
 
 ::: hidden
@@ -69,7 +68,6 @@ simu_multi_normal <- mod_multi_normal$sample(
   show_messages = FALSE, # 不显示迭代的中间过程
   refresh = 0,        # 不显示采样的进度
   fixed_param = TRUE, # 固定参数
-  output_dir = "data-raw/",
   seed = 20232023     # 设置随机数种子，不要使用 set.seed() 函数
 )
 ```
@@ -97,15 +95,13 @@ library(ggplot2)
 library(bayesplot)
 mcmc_trace(simu_multi_normal$draws(c("yhat[1,1]", "yhat[1,2]")),
   facet_args = list(
-    labeller = ggplot2::label_parsed,
-    strip.position = "top", ncol = 1
+    labeller = ggplot2::label_parsed, strip.position = "top", ncol = 1
   )
 ) + theme_bw(base_size = 12)
 
 mcmc_dens(simu_multi_normal$draws(c("yhat[1,1]", "yhat[1,2]")),
   facet_args = list(
-    labeller = ggplot2::label_parsed,
-    strip.position = "top", ncol = 1
+    labeller = ggplot2::label_parsed, strip.position = "top", ncol = 1
   )
 ) + theme_bw(base_size = 12)
 ```
@@ -252,7 +248,6 @@ fit_multi_normal <- mod_multi_normal_chol$sample(
   threads_per_chain = 1,  # 每条链设置一个线程
   show_messages = FALSE,  # 不显示迭代的中间过程
   refresh = 0,            # 不显示采样的进度
-  output_dir = "data-raw/",
   seed = 20232023     # 设置随机数种子
 )
 ```
@@ -330,7 +325,6 @@ fit_multi_normal_gp <- mod_gaussian_process_simu$sample(
   threads_per_chain = 1,  # 每条链设置一个线程
   show_messages = FALSE,  # 不显示迭代的中间过程
   refresh = 0,            # 不显示采样的进度
-  output_dir = "data-raw/",
   seed = 20232023         # 设置随机数种子
 )
 ```
@@ -417,8 +411,7 @@ set.seed(20232023)
 # 给每条链设置不同的参数初始值
 inits_gaussian_process <- lapply(1:nchains, function(i) {
   list(
-    sigma = runif(1),
-    phi = runif(1)
+    sigma = runif(1), phi = runif(1)
   )
 })
 
@@ -439,7 +432,6 @@ fit_gaussian_process <- mod_gaussian_process$sample(
   threads_per_chain = 2, # 每条链设置一个线程
   show_messages = FALSE, # 不显示迭代的中间过程
   refresh = 0,           # 不显示采样的进度
-  output_dir = "data-raw/",
   seed = 20232023        # 设置随机数种子，不要使用 set.seed() 函数
 )
 # 诊断
@@ -503,10 +495,8 @@ set.seed(20232023)
 nchains <- 2 # 2 条迭代链
 inits_data_poisson <- lapply(1:nchains, function(i) {
   list(
-    beta = rnorm(1),
-    sigma = runif(1),
-    phi = runif(1),
-    lambda = rnorm(157)
+    beta = rnorm(1), sigma = runif(1),
+    phi = runif(1), lambda = rnorm(157)
   )
 })
 ```
@@ -601,7 +591,6 @@ fit_rongelap_poisson <- mod_rongelap_poisson$sample(
   threads_per_chain = 2, # 每条链设置一个线程
   show_messages = FALSE, # 不显示迭代的中间过程
   refresh = 0,           # 不显示采样的进度
-  output_dir = "data-raw/",
   seed = 20232023
 )
 # 诊断
@@ -622,11 +611,11 @@ fit_rongelap_poisson$summary(
 #| fig-showtext: true
 
 # 参数的迭代轨迹
-mcmc_trace(fit_rongelap_poisson$draws(c("sigma", "phi")),
-           facet_args = list(
-             labeller = ggplot2::label_parsed,
-             strip.position = "top", ncol = 1
-           )
+mcmc_trace(
+  fit_rongelap_poisson$draws(c("sigma", "phi")),
+  facet_args = list(
+    labeller = ggplot2::label_parsed, strip.position = "top", ncol = 1
+  )
 ) + theme_bw(base_size = 12)
 ```
 
@@ -636,11 +625,11 @@ mcmc_trace(fit_rongelap_poisson$draws(c("sigma", "phi")),
 #| fig-showtext: true
 
 # 参数的后验分布
-mcmc_dens(fit_rongelap_poisson$draws(c("sigma", "phi")),
-          facet_args = list(
-            labeller = ggplot2::label_parsed,
-            strip.position = "top", ncol = 1
-          )
+mcmc_dens(
+  fit_rongelap_poisson$draws(c("sigma", "phi")),
+  facet_args = list(
+    labeller = ggplot2::label_parsed, strip.position = "top", ncol = 1
+  )
 ) + theme_bw(base_size = 12)
 ```
 
@@ -674,10 +663,8 @@ nchains <- 2
 # 给每条链设置不同的参数初始值
 inits_data_poisson_pred <- lapply(1:nchains, function(i) {
   list(
-    beta = rnorm(1),
-    sigma = runif(1),
-    phi = runif(1),
-    lambda = rnorm(157)
+    beta = rnorm(1), sigma = runif(1),
+    phi = runif(1), lambda = rnorm(157)
   )
 })
 # 编译模型
@@ -696,7 +683,6 @@ fit_rongelap_poisson_pred <- mod_rongelap_poisson_pred$sample(
   threads_per_chain = 2,    # 每条链设置一个线程
   show_messages = FALSE,    # 不显示迭代的中间过程
   refresh = 0,              # 不显示采样的进度
-  output_dir = "data-raw/",
   seed = 20232023           # 设置随机数种子，不要使用 set.seed() 函数
 )
 # 诊断信息
@@ -777,7 +763,8 @@ ggplot(data = rongelap_sf)+
   theme_bw() +
   labs(x = "横坐标（米）", y = "纵坐标（米）", colour = "辐射强度") +
   theme(
-    legend.position = c(0.75, 0.1),
+    legend.position = "inside", 
+    legend.position.inside = c(0.75, 0.1),
     legend.direction = "horizontal",
     legend.background = element_blank()
   )
@@ -850,7 +837,8 @@ p3 <- ggplot() +
   theme_bw() +
   labs(x = "横坐标（米）", y = "纵坐标（米）", fill = "辐射强度") +
   theme(
-    legend.position = c(0.75, 0.1),
+    legend.position = "inside", 
+    legend.position.inside = c(0.75, 0.1),
     legend.direction = "horizontal",
     legend.background = element_blank()
   )
@@ -990,10 +978,8 @@ Stan 总有些优势吧！
     # 给每条链设置不同的参数初始值
     inits_data_gaussian <- lapply(1:nchains, function(i) {
       list(
-        beta = rnorm(1),
-        sigma = runif(1),
-        phi = runif(1),
-        tau = runif(1)
+        beta = rnorm(1), sigma = runif(1),
+        phi = runif(1), tau = runif(1)
       )
     })
 
@@ -1023,7 +1009,6 @@ Stan 总有些优势吧！
       threads_per_chain = 1,    # 每条链设置一个线程
       show_messages = FALSE,    # 不显示迭代的中间过程
       refresh = 0,              # 不显示采样的进度
-      output_dir = "data-raw/",
       seed = 20232023           # 设置随机数种子，不要使用 set.seed() 函数
     )
 
@@ -1055,8 +1040,7 @@ Stan 总有些优势吧！
     # 主体内容
     p3 <- ggplot() +
       geom_stars(
-        data = rongelap_stars, na.action = na.omit,
-        aes(fill = ypred)
+        data = rongelap_stars, aes(fill = ypred), na.action = na.omit
       ) +
       # 海岸线
       geom_sf(
@@ -1082,7 +1066,8 @@ Stan 总有些优势吧！
       theme_bw() +
       labs(x = "横坐标（米）", y = "纵坐标（米）", fill = "辐射强度") +
       theme(
-        legend.position = c(0.75, 0.1),
+        legend.position = "inside",
+        legend.position.inside = c(0.75, 0.1),
         legend.direction = "horizontal",
         legend.background = element_blank()
       )

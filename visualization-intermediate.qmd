@@ -162,14 +162,12 @@ trunk_year_tmp <- data.frame(
 ggplot() +
   geom_rect(
     data = trunk_year_tmp,
-    aes(
-      xmin = xmin, ymin = ymin,
-      xmax = xmax, ymax = ymax, fill = fill
-    ), show.legend = FALSE
+    aes(xmin = xmin, ymin = ymin, xmax = xmax, ymax = ymax, fill = fill
+), 
+    show.legend = FALSE
   ) +
   geom_point(
-    data = trunk_year,
-    aes(x = year, y = revision), size = 0.75
+    data = trunk_year, aes(x = year, y = revision), size = 0.75
   ) +
   scale_fill_brewer(palette = "Set2") +
   theme_classic() +
@@ -246,6 +244,8 @@ ggplot(data = trunk_year, aes(x = year, y = revision)) +
   theme(panel.grid.major.y = element_line(colour = "gray90")) +
   labs(x = "年份", y = "提交量")
 ```
+
+`method = "loess"` 意味着调用了一种非参数的回归方法，即局部估计散点平滑 （locally estimated scatterplot smoothing），另一个与之类似的回归方法是局部加权散点平滑 （locally weighted scatterplot smoothing），简称 lowess 。1991 年 [Jerome Friedman](https://statweb.stanford.edu/~jhf/) 提出多元适应性回归样条（**M**ultivariate **A**daptive **R**egression **S**plines），R 语言社区对应功能的扩展包是 **earth** 。
 
 除了 `method = "loess"`，函数 `geom_smooth()` 支持的统计方法还有很多，比如非线性回归拟合 `nls()`
 
@@ -563,10 +563,8 @@ month.abb <- c(
 )
 # 按年、星期、第几周聚合统计提交量数据
 svn_trunk_year <- aggregate(
-  revision ~ year + wday + week,
-  FUN = length,
-  data = svn_trunk_log, 
-  subset = year %in% 2018:2022
+  revision ~ year + wday + week, FUN = length,
+  data = svn_trunk_log, subset = year %in% 2018:2022
 )
 # 第几周转为整型数据
 # 周几转为因子型数据
@@ -589,9 +587,7 @@ ggplot(data = svn_trunk_year, aes(
   geom_tile(color = "white", linewidth = 0.5) +
   scale_fill_brewer(palette = "Greens") +
   scale_x_continuous(
-    expand = c(0, 0),
-    breaks = seq(1, 52, length = 12),
-    labels = month.abb
+    expand = c(0, 0), breaks = seq(1, 52, length = 12), labels = month.abb
   ) +
   facet_wrap(~year, ncol = 1) +
   theme_minimal() +
@@ -637,8 +633,7 @@ rversion$month <- format(rversion$date, "%m")
 aggregate(data = rversion, version ~ year + month, length) |>
   ggplot(aes(x = month, y = year)) +
   geom_label(aes(label = version, fill = version),
-    show.legend = F, color = "white"
-  ) +
+    show.legend = F, color = "white") +
   scale_fill_viridis_c(option = "D", begin = 0.2, end = 0.8) +
   theme_classic() +
   theme(panel.grid.major.y = element_line(colour = "gray95")) +
@@ -726,12 +721,10 @@ ggplot(data = sub_rversion_df) +
     size = 3, show.legend = FALSE
   ) +
   geom_text(
-    data = month_dat,
-    aes(x = date, y = 0, label = month), vjust = 1.5
+    data = month_dat, aes(x = date, y = 0, label = month), vjust = 1.5
   ) +
   geom_text(
-    data = year_dat,
-    aes(x = date, y = 0, label = year), vjust = -0.5
+    data = year_dat, aes(x = date, y = 0, label = year), vjust = -0.5
   ) +
   theme_void()
 ```
@@ -854,8 +847,6 @@ ggplot(data = china_age_sex, aes(x = `性别比（女=100）`, y = `年龄`, col
 
 ### 词云图 {#sec-wordcloud}
 
-词云图帮助我们从众多的因素中展现出影响力比较大的主题。目前，R 语言社区官方发布的 R 包超过 18000 个，这些 R 包都是干什么的呢？热门的方向是什么呢？根据 R 包的标题内容分词，统计词频就可以帮助我们初步了解一些信息。根据各位开发者提交的代码量制作。
-
 [**ggwordcloud**](https://github.com/lepennec/ggwordcloud) 包提供词云图层 `geom_text_wordcloud()` 根据代码提交的说明制作词云图。
 
 ```{r}
@@ -867,12 +858,10 @@ ggplot(data = china_age_sex, aes(x = `性别比（女=100）`, y = `年龄`, col
 #| fig-dpi: 96
 
 library(ggwordcloud)
-
 aggregate(data = svn_trunk_log, revision ~ author, FUN = length) |> 
   ggplot(aes(label = author, size = revision)) +
-  geom_text_wordcloud(seed = 2022, grid_size = 1, max_grid_size = 24) +
-  scale_size_area(max_size = 20) +
-  theme_minimal()
+  geom_text_wordcloud(seed = 2022, grid_size = 10, max_grid_size = 24) +
+  scale_size_area(max_size = 20)
 ```
 
 词云图也可以是条形图或柱形图的一种替代，词云图不用担心数目多少，而条形图不适合太多的分类情形。
@@ -1127,10 +1116,7 @@ dat <- aggregate(data = svn_trunk_log, revision ~ author, FUN = length) |>
   aggregate(revision ~ author, FUN = sum)
 dat <- dat[order(-dat$revision), ]
 
-ggplot(data = dat, aes(
-  x = reorder(author, revision, decreasing = T),
-  y = revision
-)) +
+ggplot(data = dat, aes(x = reorder(author, revision, decreasing = T), y = revision)) +
   geom_col(width = 0.75) +
   geom_line(aes(y = cumsum(revision), group = 1)) +
   geom_point(aes(y = cumsum(revision))) +
@@ -1153,10 +1139,7 @@ ggplot(data = dat, aes(
 
 library(ggmosaic)
 ggplot(data = as.data.frame(UCBAdmissions)) +
-  geom_mosaic(aes(
-    x = product(Dept, Gender),
-    weight = Freq, fill = Admit
-  )) +
+  geom_mosaic(aes(x = product(Dept, Gender), weight = Freq, fill = Admit)) +
   theme_minimal()
 ```
 
@@ -1209,10 +1192,7 @@ knitr::kable(head(G20), col.names = c(
 #| fig-height: 6
 #| fig-showtext: true
 
-ggplot(G20, aes(
-  area = gdp_mil_usd, fill = region,
-  label = country, subgroup = region
-)) +
+ggplot(G20, aes(area = gdp_mil_usd, fill = region, label = country, subgroup = region)) +
   geom_treemap() +
   geom_treemap_text(grow = T, reflow = T, colour = "black") +
   facet_wrap(~hemisphere) +
@@ -1383,9 +1363,7 @@ gglikert(df)
       geom_tile(color = "white", linewidth = 0.5) +
       scale_fill_distiller(palette = "Greens", direction = 1) +
       scale_x_continuous(
-        expand = c(0, 0),
-        breaks = seq(1, 52, length = 12),
-        labels = month.abb
+        expand = c(0, 0), breaks = seq(1, 52, length = 12), labels = month.abb
       ) +
       facet_wrap(~year, ncol = 1) +
       theme_minimal() +

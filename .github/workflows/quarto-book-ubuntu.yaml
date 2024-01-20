@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-22.04
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
-      CMDSTAN_VERSION: "2.33.1"
+      CMDSTAN_VERSION: "2.34.0"
       RETICULATE_PYTHON_ENV: /opt/.virtualenvs/r-tensorflow
     steps:
       - uses: actions/checkout@v4
@@ -19,7 +19,7 @@ jobs:
       - name: Install Quarto
         uses: quarto-dev/quarto-actions/setup@v2
         with:
-          version: 1.4.527
+          version: 1.4.545
 
       - uses: r-lib/actions/setup-r@v2
         with:
@@ -42,6 +42,8 @@ jobs:
           virtualenv -p /usr/bin/python3 $RETICULATE_PYTHON_ENV
           source $RETICULATE_PYTHON_ENV/bin/activate
           pip3 install -r docker/requirements.txt
+          python -m spacy download en_core_web_sm
+          python -m spacy download zh_core_web_sm
           deactivate
 
       - name: Setup CmdStan
@@ -71,6 +73,8 @@ jobs:
       - name: Reinstall R packages from source
         run: |
           install.packages(c("Matrix", "MatrixModels", "rjags", "lme4", "TMB", "glmmTMB"), repos = "https://cran.r-project.org/", type = "source")
+          if(!require('remotes')) install.packages('remotes')
+          remotes::install_github("tidyverse/ggplot2", ref = remotes::github_pull("5592"))
         shell: Rscript {0}
         
       - name: Setup magick

@@ -1,1 +1,311 @@
 # 文本分析 {#sec-analysis-text-data}
+
+```{r}
+#| echo: false
+
+source("_common.R")
+```
+
+R 语言任务视图中以自然语言处理（Natural Language Processing）涵盖文本分析（Text Analysis）的内容。R 语言社区中有两本文本分析相关的著作，分别是《Text Mining with R》[@Silge2017]和《Supervised Machine Learning for Text Analysis in R》[@Hvitfeldt2021]。
+
+本文有两个目的：其一分析谢益辉 10 多年日志，挖掘写作主题及其变化；其二挖掘湘云的日志主题，计算与益辉日志的风格相似度。事实上，益辉在个人主页中是明确说了自己的兴趣范围的，本文借用文本挖掘中的主题建模方法，不过是一点实证，熟悉文本建模的操作过程。
+
+从谢益辉公开的日志中，探索成功人士的经历，从中汲取一些经验、教训。最近才知道他有 300 多万字的日志，数字惊讶到我了，遂决定抽取最近 10 年的日志数据进行分析。中英文分开，首先处理、分析中文日志。文本操作和分析的内容有分词、词频、词云、主题建模、相似度度量等。对作者来说，感兴趣的主题与写作的内容有直接的关系。益辉的日志都是没有分类标签的，主题挖掘可以洞察作者的兴趣。
+
+```{r}
+library(jiebaRD)  # 词库
+library(jiebaR)   # 分词
+library(ggplot2)  # 绘图
+library(ggrepel)
+library(ggwordcloud) # 词云
+library(text2vec)    # LDA 算法
+```
+
+## 基本概念
+
+### 中文分词
+
+本文采用 [jiebaR](https://github.com/qinwf/jiebaR/) 作为中文分词工具，相比于 [Rwordseg](https://github.com/lijian13/Rwordseg) 包，不仅效果好，而且没有 rJava 包 (JAVA) 环境依赖。
+
+```{r}
+library(jiebaRD)
+library(jiebaR)
+jieba_seg <- worker()
+segment("齐白石对花鸟虫鱼都有研究呢", jieba_seg)
+```
+
+```{r}
+#| eval: false
+#| echo: false
+# Rwordseg 已经被 CRAN 移除了，安装 Rwordseg 包需要从 Github 安装
+# remotes::install_github("lijian13/Rwordseg")
+# 需要准备分词工具 https://github.com/NLPchina/ansj_seg
+library(Rwordseg)
+# 安装词典
+installDict(dictpath = "/Users/xiangyun/Downloads/default.dic", dictname = "ansj")
+segmentCN("齐白石对花鸟虫鱼都有研究呢")
+```
+
+### 英文分词
+
+英文环境下，词与词之间本身就是以空格分开的。
+
+```{r}
+segment("Hello world!", jieba_seg)
+```
+
+### 停止词
+
+数字、标点符号、空格不参与分词，会被抹掉。
+
+```{r}
+segment("国画大师齐白石对花鸟虫鱼都有研究呢！", jieba_seg)
+```
+
+还可以添加停止词，将「花鸟虫鱼」作为停止词添加到停止词库中。
+
+```{r}
+jieba_seg <- worker(stop_word = "data/text/stop_word.txt")
+segment("国画大师齐白石对花鸟虫鱼都有研究呢", jieba_seg)
+```
+
+### 分词与词性 {#sec-spacyr}
+
+中文环境没有英文的词干化（lemmatization）过程（比如 applied / applies -\> apply），只考虑分词、词性。[spacyr](https://github.com/quanteda/spacyr/) 包通过 reticulate 包调用 Python 社区的自然语言处理模块 [spacy](https://spacy.io) ，支持多种语言的分词、词性识别等。配置好 Python 环境，下载中文环境下的语言模型。
+
+```{r}
+library(spacyr)
+# 下载语言模型
+# spacy_download_langmodel("zh_core_web_sm")
+# 初始化语言模型
+spacy_initialize(model = "zh_core_web_sm")
+# Token 化是分词
+spacy_tokenize("国画大师齐白石对花鸟虫鱼都有研究呢")
+# 示例
+txt <- c(d1 = "国画大师齐白石对花鸟虫鱼都有研究呢",
+         d2 = "中国人民银行很行",
+         d3 = "张大千在研究国画")
+# 解析
+parsed_txt <- spacy_parse(txt)
+# 结果
+parsed_txt
+```
+
+人名都是名词，如齐白石、张大千等，「研究」既可做动词，也可做名词，「都」和「很」是副词。「中国人民银行很行」的「行」应当是形容词，但被识别为动词。
+
+### 词频统计
+
+输入字符串向量，计算每个字符串出现的次数。jiebaR 包的函数 `freq()` 可以统计词出现的频次。
+
+```{r}
+freq(c("a", "a", "c"))
+```
+
+### TF-IDF
+
+输入一个列表，列表中每个元素是字符串向量，每个字符串向量代表一个文档。jiebaR 包的函数 `get_idf()` 可以计算 [TF-IDF](https://en.wikipedia.org/wiki/Tf%E2%80%93idf)（Document Frequency - Inverse Document Frequency） 值。
+
+```{r}
+get_idf(list(c("abc", "def"), c("abc", " ")))
+```
+
+## 益辉的日志
+
+下载益辉的日志数据
+
+```         
+git clone git@github.com:yihui/yihui.org.git
+```
+
+经过整理后，打包成 Rdata 数据供 R 软件使用。
+
+```{r}
+# 加载益辉的日志数据
+load(file = "data/text/yihui.Rdata")
+```
+
+### 整体概况 {#sec-cn-blog}
+
+```{r}
+#| label: fig-yihui-cn
+#| fig-cap: 益辉每年发布的日志数量
+#| fig-showtext: true
+#| fig-width: 9
+#| fig-height: 7
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
+
+library(ggplot2)
+library(ggrepel)
+ggplot() +
+  geom_label_repel(
+    data = df2, aes(x = year, y = file_name, label = event_wrap),
+    max.overlaps = 150, segment.colour = "gray", seed = 2023
+  ) +
+  geom_point(data = df1, aes(x = file_year, y = file_name)) +
+  geom_line(data = df1, aes(x = file_year, y = file_name)) +
+  scale_x_continuous(n.breaks = 15) +
+  theme_bw() +
+  labs(x = "年份", y = "篇数")
+```
+
+2006 年获得中国人民大学学士学位，2009 和 2013 年分别获得中国人民大学硕士和爱荷华州立大学博士学位，在校期间，日志数量持续增加，又陆续创立统计之都，举办中国 R 语言大会。在毕业那年需要完成毕业论文，因此，日志数量明显减少。2013 -2016 年，每年都有书籍出版，期间，有博士毕业、找工作、安家等重要事情，因此，日志数量持续处于低位。稳定后，2017-2018 年除了正常出两本书以外，写了大量的日志，迎来第二个高峰，2018 年，中英文日志数量超过 300 篇。2019-2020 年集中精力在写一本食谱。2021 年第一本中文书《现代统计图形》在10年后出版，这主要是 2007-2011 年的工作。2021-2023 年日志数量（2023年中文日志未发布）处于较低水平。
+
+### 数据清洗 {#sec-text-clean}
+
+以 2001 年的一篇日志为例，展开数据清洗的过程。移除文章的 YAML 元数据，对于文本分析来说，主要是没啥信息含量。
+
+```{r}
+remove_yaml <- function(x) {
+  x[(max(which(x == "---")) + 1):length(x)]
+}
+x <- remove_yaml(x)
+```
+
+移除「我」 「是」 「你」 「的」 「了」 「也」 等高频的人称、助词、虚词。这些词出现的规律对表现个人风格很重要，且看红楼梦关于后40回作者归属的研究，通过比较一些助词、虚词的出现规律，从而看出作者的习惯、文风。这种东西是在长期的潜移默化中形成的，对作者自己来说，都可能是无意识的。
+
+```{r}
+library(jiebaR)
+# jieba_seg <- worker(stop_word = "data/text/stop_word.txt")
+jieba_seg <- worker(stop_word = "data/text/cn_stopwords.txt")
+```
+
+添加新词，比如「歪贼」、「谢益辉」等，主要是人名、外号等实体。
+
+```{r}
+new_words <- readLines(file("data/text/new_word.txt"))
+new_user_word(worker = jieba_seg, words = new_words)
+# 分词
+x_seg <- segment(x, jieba_seg)
+```
+
+分词后，再移除数字和英文
+
+```{r}
+remove_number_english <- function(x) {
+  x <- x[!grepl("\\d{1,}", x)]
+  x[!grepl("[a-zA-Z]", x)]
+}
+xx <- remove_number_english(x = x_seg)
+```
+
+词频统计
+
+```{r}
+tmp <- freq(x = xx)
+tmp <- tmp[order(tmp$freq, decreasing = T), ]
+head(tmp)
+```
+
+**ggwordcloud** 包绘制词云图可视化词频统计的结果。
+
+```{r}
+#| label: fig-yihui-wordcloud
+#| fig-cap: 词云可视化词频结果
+#| fig-showtext: true
+#| fig-width: 6
+#| fig-height: 5
+
+library(ggwordcloud)
+head(tmp, 150) |>
+  ggplot(aes(label = char, size = freq)) +
+  geom_text_wordcloud(seed = 2022, grid_size = 8, max_grid_size = 24) +
+  scale_size_area(max_size = 10)
+```
+
+计算 TF-IDF 值
+
+```{r}
+# tmp = get_idf(x = list(xx))
+get_idf(x = list(xx)) |> head()
+```
+
+### 主题建模 {#sec-topic-models}
+
+益辉的日志是没有分类和标签的，所以，先聚类，接着逐个分析每个类代表的实际含义。然后，将聚类的结果作为结果标签，再应用多分类回归模型，最后联合聚类、分类模型，从无监督转化到有监督模型。
+
+topicmodels [@topicmodels2011] 基于 tm [@tm2009] Latent Dirichlet Allocation (LDA) 和 Correlated Topics Models (CTM) 文本主题建模，这一套工具比较适合英文文本分词、向量化和建模。
+
+[text2vec](https://github.com/dselivanov/text2vec) 包支持多个统计模型，如潜在狄利克雷分配等，可用于分类、回归、聚类等任务。更多详情见 <https://text2vec.org>。
+
+```{r}
+library(text2vec)
+```
+
+首先将所有日志分词、向量化，构建文档-词矩阵 document-term matrix (DTM)
+
+```{r}
+# 移除链接
+remove_links <- function(x) {
+  gsub(pattern = "(<http.*?>)|(\\(http.*?\\))|(<www.*?>)|(\\(www.*?>\\))", replacement = "", x)
+}
+# 清理、分词、清理
+file_list1 <- lapply(file_list, remove_yaml)
+file_list1 <- lapply(file_list1, remove_links)
+file_list1 <- lapply(file_list1, segment, jiebar = jieba_seg)
+file_list1 <- lapply(file_list1, remove_number_english)
+```
+
+去掉没啥实际意义的词（比如单个字），极高频词和极低频词。
+
+```{r}
+# Token 化
+it <- itoken(file_list1, ids = 1:length(file_list1), progressbar = FALSE)
+v <- create_vocabulary(it)
+# 去掉单个字 减少 3K
+v <- v[nchar(v$term) > 1,]
+# 去掉极高频词和极低频词 减少 1.4W
+v <- prune_vocabulary(v, term_count_min = 10, doc_proportion_max = 0.2)
+```
+
+采用 LDA（Latent Dirichlet Allocation）算法建模
+
+```{r}
+# 词向量化
+vectorizer <- vocab_vectorizer(v)
+# 文档-词矩阵 DTM
+dtm <- create_dtm(it, vectorizer, type = "dgTMatrix")
+#  10 个主题
+lda_model <- LDA$new(n_topics = 10, doc_topic_prior = 0.1, topic_word_prior = 0.01)
+# 训练模型
+doc_topic_distr <- lda_model$fit_transform(
+    x = dtm, n_iter = 1000, convergence_tol = 0.001, 
+    n_check_convergence = 25, progressbar = FALSE
+  )
+```
+
+下图展示主题的分布，各个主题及其所占比例。
+
+```{r}
+#| label: fig-topic-distr
+#| fig-cap: 主题分布
+#| fig-width: 5
+#| fig-height: 4
+#| fig-showtext: true
+#| par: true
+
+barplot(
+  doc_topic_distr[1, ], xlab = "主题", ylab = "比例", 
+  ylim = c(0, 1), names.arg = 1:ncol(doc_topic_distr)
+)
+```
+
+将 10 个主题的 Top 12 词分别打印出来。
+
+```{r}
+lda_model$get_top_words(n = 12, topic_number = 2L:10L, lambda = 0.3)
+```
+
+结果有点意思，说明益辉喜欢统计图形（主题 4）、代码编程（主题 9）、倒腾网站（主题 3）、回忆青春（主题 5）、读书写作（主题 2、8、10），但是诗词歌赋、做菜吃饭，不是很明显。
+
+### 日志相似性 {#sec-similarity}
+
+我与益辉日志的相似性度量 <https://text2vec.org/similarity.html>
+
+## 习题 {#sec-analysis-text-data-exercises}
+
+1.  **text2vec** 包内置的电影评论数据集 `movie_review` 中 sentiment（表示正面或负面评价）列作为响应变量，构建二分类模型，对用户的一段评论分类。（提示：词向量化后，采用 **glmnet** 包做交叉验证调整参数、模型）
+
+2.  根据 CRAN 上发布的 R 包元数据分析 R 包的描述字段，实现 R 包主题分类。
+
+3.  接习题 2，根据任务视图对 R 包的标记，建立有监督的多分类模型，评估模型的分类效果，并对尚未标记的 R 包分类。（提示：一个 R 包可能同时属于多个任务视图，考虑使用 xgboost 包）
