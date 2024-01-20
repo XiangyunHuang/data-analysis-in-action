@@ -236,6 +236,8 @@ Kurt Hornik、Simon Urbanek、Achim Zeileis 、Martin Maechler、Torsten Hothorn
 ```{r}
 #| label: tbl-ripley
 #| tbl-cap: Brian Ripley 维护的 R 包
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
 
 subset(pdb,
   subset = grepl(
@@ -306,7 +308,6 @@ CRAN 和 RStudio 团队是 R 语言社区最为熟悉的，其它团队需借助
 #| fig-height: 6
 
 pdb_ctb <- aggregate(data = pdb, Package ~ Maintainer, FUN = length)
-
 ggplot(data = pdb_ctb[pdb_ctb$Package >= 20, ]) +
   geom_col(aes(x = Package, y = reorder(Maintainer, Package)), width = .1) +
   theme_classic() +
@@ -486,6 +487,8 @@ pdb_authors_net_vertex
 #| fig-height: 6
 #| fig-showtext: true
 #| message: false
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
 
 # 构造图
 library(igraph)
@@ -505,6 +508,34 @@ on.exit(par(op), add = TRUE)
 
 协作关系弱的开发者占大部分，构成一个「月亮」的造型，其中，不乏维护多个 R 包的开发者，这些人要么单干，要么在专业小领域、小组织内协作。与之相对应的是协作关系较强的开发者，人数虽少，影响力却大，构成一个「太阳」的造型。协作得多往往意味着维护的 R 包也不少，甚至同属于一个组织，因此，高产的开发者、影响力大的组织聚集在一起，如 R Core Team、RStudio、rOpenSci 等。
 
+```{r}
+eb <- cluster_edge_betweenness(pdb_authors_graph)
+eb
+```
+
+igraph 包提供多种社区探测的算法，上面简单使用函数 `cluster_edge_betweenness()` 来探测，结果显示有 181 个社区。结合前面的 @fig-network-igraph ，知道有很多小圈圈，这些放一边，重点关注那些大的圈圈，见下图。
+
+```{r}
+#| label: fig-network-cluster
+#| fig-cap: 探测协作关系网络中的社区
+#| fig-width: 6
+#| fig-height: 6
+#| fig-showtext: true
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
+
+op <- par(mar = rep(0, 4))
+plot(eb, pdb_authors_graph,
+  edge.width = (E(pdb_authors_graph)$edge_cnt) / 2,
+  edge.arrow.size = .01,
+  edge.curved = .1,
+  layout = layout.kamada.kawai,
+  vertex.size = (V(pdb_authors_graph)$vertex_cnt) / 8,
+  vertex.label.cex = sqrt(V(pdb_authors_graph)$vertex_cnt) / 8
+)
+on.exit(par(op), add = TRUE)
+```
+
 下面使用 **tidygraph** 包构造图数据、计算节点中心度，**dplyr** 包操作数据。中心度代表节点（维护者）的影响力（或者重要性）。最后，借助 **ggraph** 包绘制维护者之间的贡献网络，节点的大小代表维护者影响力的强弱。
 
 ```{r}
@@ -514,6 +545,8 @@ on.exit(par(op), add = TRUE)
 #| fig-height: 6
 #| fig-showtext: true
 #| message: false
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
 
 pdb_authors_g <- tidygraph::as_tbl_graph(pdb_authors_net_edge, directed = T) |> 
  dplyr::mutate(Popularity = tidygraph::centrality_degree(mode = 'in'))
