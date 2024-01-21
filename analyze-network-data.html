@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="zh-Hans" xml:lang="zh-Hans"><head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.4.545">
+<meta name="generator" content="quarto-1.4.547">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 <title>R 语言数据分析实战 - 23&nbsp; 网络分析</title>
 <style>
@@ -602,7 +602,7 @@ MathJax ={
 </header><p>网络数据分析又是另一个大话题，微信、微博、论坛、知乎、豆瓣、美团等等应用都或多或少自带了社交属性。人不能脱离社会存在，社交是人的一种本能，身处洪流之中，即是复杂社会网络中的一个节点。网络分析的内容有很多，比如社区探测、节点影响力分析等。</p>
 <p>网络图是表示节点之间关系的图，核心在于关系的刻画，用来表达网络关系的是稀疏矩阵，以及为处理这种矩阵而专门优化的矩阵计算库，如 <strong>Matrix</strong> 、<a href="https://github.com/rexyai/rsparse"><strong>rsparse</strong></a> 和 <strong>RcppEigen</strong> <span class="citation" data-cites="Bates2013">(<a href="references.html#ref-Bates2013" role="doc-biblioref">Bates 和 Eddelbuettel 2013</a>)</span>，PageRank 应该是大家最为熟悉的网络数据挖掘算法，图关系挖掘和计算的应用场景非常广泛，如社交推荐（社交 App）、风险控制（银行征信、企业查）、深度学习（图神经网络）、知识图谱（商户、商家、客户的实体关系网络）、区块链、物联网（IoT）、反洗钱（金融监管）、数据治理（数据血缘图谱）等。</p>
 <p>本文将分析 R 语言社区开发者之间的协作关系网络。首先基于 CRAN 上发布的 R 包元数据信息，了解 R 语言社区 R 包及其维护者的规模，以及根据元数据中的信息发掘社区中的组织，最后，统计开发者维护的 R 包数据，分析开发者在网络中的影响力，并将结果可视化。</p>
-<p>本文主要用到的工具有 <a href="https://github.com/igraph/igraph">igraph</a> 包，操作图数据和图计算的 <a href="https://github.com/thomasp85/tidygraph">tidygraph</a> 包，以及可视化图数据的 <a href="https://github.com/thomasp85/ggraph">ggraph</a> 包。此外，读者若有兴趣，可以用 <a href="https://github.com/datastorm-open/visNetwork">visNetwork</a> 包制作交互式网络图形，它是 JS 库 <a href="https://github.com/visjs/vis-network">vis-network</a> 的 R 语言接口。而 Richard Iannone 开发的 <a href="https://github.com/rich-iannone/DiagrammeR">DiagrammeR</a> 包可以制作静态的矢量网页图形。</p>
+<p>本文主要用到的工具有 <a href="https://github.com/igraph/igraph">igraph</a> 包，操作图数据和图计算的 <a href="https://github.com/thomasp85/tidygraph">tidygraph</a> 包，以及可视化图数据的 <a href="https://github.com/thomasp85/ggraph">ggraph</a> 包。</p>
 <section id="sec-community-capacity" class="level2" data-number="23.1"><h2 data-number="23.1" class="anchored" data-anchor-id="sec-community-capacity">
 <span class="header-section-number">23.1</span> R 语言社区的规模</h2>
 <p>从 CRAN 上的 R 包及其开发者数量来看目前 R 语言社区规模。</p>
@@ -684,7 +684,7 @@ MathJax ={
 </div>
 </section><section id="sec-community-org" class="level2" data-number="23.2"><h2 data-number="23.2" class="anchored" data-anchor-id="sec-community-org">
 <span class="header-section-number">23.2</span> R 语言社区的组织</h2>
-<p>有的组织基本停止了开发，如 <a href="https://github.com/omegahat">Omegahat</a>，有的被商业公司收购后，不再活跃了，如<a href="https://github.com/RevolutionAnalytics">Revolution Analytics</a>。除了众所周知的 <a href="https://github.com/tidyverse/tidyverse">tidyverse</a> <span class="citation" data-cites="Wickham2019">(<a href="references.html#ref-Wickham2019" role="doc-biblioref">Wickham 等 2019</a>)</span> 和 <a href="https://github.com/tidymodels/tidymodels">tidymodels</a> <span class="citation" data-cites="Kuhn2020">(<a href="references.html#ref-Kuhn2020" role="doc-biblioref">Kuhn 和 Wickham 2020</a>)</span>，还有很多数据分析、建模的工具箱，如 <a href="https://github.com/mlr-org/mlr3verse">mlr3verse</a> <span class="citation" data-cites="Lang2023">(<a href="references.html#ref-Lang2023" role="doc-biblioref">Lang 和 Schratz 2023</a>)</span>、<a href="https://github.com/easystats/easystats">easystats</a> <span class="citation" data-cites="Makowski2022">(<a href="references.html#ref-Makowski2022" role="doc-biblioref">Lüdecke 等 2022</a>)</span>、<a href="https://github.com/strengejacke/strengejacke">strengejacke</a> <span class="citation" data-cites="Daniel2019">(<a href="references.html#ref-Daniel2019" role="doc-biblioref">Lüdecke 2019</a>)</span> 和 <a href="https://github.com/ModelOriented/DrWhy">DrWhy</a> <span class="citation" data-cites="DrWhy2023">(<a href="references.html#ref-DrWhy2023" role="doc-biblioref">Biecek 2023</a>)</span>。它们作为解决方案大都属于一些组织，还有深藏功与名，有待笔者挖掘的。因不存在明显的规律，下面从开发者的邮箱出发，隶属企业、组织往往有统一的邮箱后缀。</p>
+<p>有的组织基本停止了开发，如 <a href="https://github.com/omegahat">Omegahat</a>，有的被商业公司收购后，不再活跃了，如 <a href="https://github.com/RevolutionAnalytics">Revolution Analytics</a>。除了众所周知的 <a href="https://github.com/tidyverse/tidyverse">tidyverse</a> <span class="citation" data-cites="Wickham2019">(<a href="references.html#ref-Wickham2019" role="doc-biblioref">Wickham 等 2019</a>)</span> 和 <a href="https://github.com/tidymodels/tidymodels">tidymodels</a> <span class="citation" data-cites="Kuhn2020">(<a href="references.html#ref-Kuhn2020" role="doc-biblioref">Kuhn 和 Wickham 2020</a>)</span>，还有很多数据分析、建模的工具箱，如 <a href="https://github.com/mlr-org/mlr3verse">mlr3verse</a> <span class="citation" data-cites="Lang2023">(<a href="references.html#ref-Lang2023" role="doc-biblioref">Lang 和 Schratz 2023</a>)</span>、<a href="https://github.com/easystats/easystats">easystats</a> <span class="citation" data-cites="Makowski2022">(<a href="references.html#ref-Makowski2022" role="doc-biblioref">Lüdecke 等 2022</a>)</span>、<a href="https://github.com/strengejacke/strengejacke">strengejacke</a> <span class="citation" data-cites="Daniel2019">(<a href="references.html#ref-Daniel2019" role="doc-biblioref">Lüdecke 2019</a>)</span> 和 <a href="https://github.com/ModelOriented/DrWhy">DrWhy</a> <span class="citation" data-cites="DrWhy2023">(<a href="references.html#ref-DrWhy2023" role="doc-biblioref">Biecek 2023</a>)</span>。它们作为解决方案大都属于一些组织，还有深藏功与名，有待笔者挖掘的。因不存在明显的规律，下面从开发者的邮箱出发，隶属企业、组织往往有统一的邮箱后缀。</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb9"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1"></a><span class="co"># 抽取邮件后缀</span></span>
 <span id="cb9-2"><a href="#cb9-2"></a>str_extract <span class="ot">&lt;-</span> <span class="cf">function</span>(text, pattern, ...) <span class="fu">regmatches</span>(text, <span class="fu">regexpr</span>(pattern, text, ...))</span>
@@ -695,7 +695,7 @@ MathJax ={
 <span id="cb9-7"><a href="#cb9-7"></a><span class="co"># email_suffix</span></span>
 <span id="cb9-8"><a href="#cb9-8"></a>pdb<span class="sc">$</span>Email_suffix <span class="ot">&lt;-</span> <span class="fu">sub</span>(<span class="at">x =</span> pdb<span class="sc">$</span>Email, <span class="at">pattern =</span> <span class="st">".*?@(.*?)&gt;"</span>, <span class="at">replacement =</span> <span class="st">"</span><span class="sc">\\</span><span class="st">1"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>按组织统计扩展包的数量（总的 R 包数量约 2 万），各个组织贡献的 R 包</p>
+<p>按组织统计扩展包的数量（总的 R 包数量约 2 万），即各个组织开发的 R 包。</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb10"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1"></a>pdb_pkg <span class="ot">&lt;-</span> <span class="fu">aggregate</span>(</span>
 <span id="cb10-2"><a href="#cb10-2"></a>  <span class="at">data =</span> pdb, Package <span class="sc">~</span> Email_suffix, <span class="at">FUN =</span> <span class="cf">function</span>(x) { <span class="fu">length</span>(<span class="fu">unique</span>(x)) }</span>
@@ -732,7 +732,7 @@ MathJax ={
 <li>开源组织。R-project.org 和 r-project.org 都是 R 语言组织的联系方式，自不必多说，R 语言核心团队成员不仅维护 R 软件源码，还维护了很多 R 包。debian.org 是 Debian 组织的联系方式，都是开源组织（Open Source Org）。</li>
 <li>大学学院机构。berkeley.edu 、umich.edu 等以 edu 结尾的北美（国）的大学，gmx.de、 posteo.de 等以 de 结尾的德国大学，ucl.ac.uk 等以 uk 结尾的英国的大学，auckland.ac.nz 等以 nz 结尾的新西兰的大学，uwaterloo.ca 等以 ca 结尾的加拿大的大学。</li>
 </ol>
-<p>按组织统计开发者的数量（总的开发者数量约 1 万），各个组织的 R 包开发者。</p>
+<p>按组织统计开发者的数量（总的开发者数量约 1 万），即各个组织的 R 包开发者。</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb12"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1"></a>pdb_org <span class="ot">&lt;-</span> <span class="fu">aggregate</span>(</span>
 <span id="cb12-2"><a href="#cb12-2"></a>  <span class="at">data =</span> pdb, Maintainer2 <span class="sc">~</span> Email_suffix, <span class="at">FUN =</span> <span class="cf">function</span>(x) { <span class="fu">length</span>(<span class="fu">unique</span>(x)) }</span>
@@ -763,7 +763,7 @@ MathJax ={
 </div>
 </div>
 <p>可见，大部分开发者采用邮件服务提供商的邮件地址。3795 个开发者使用来自谷歌的 gmail.com、196 个开发者使用来自微软的 hotmail.com 和 outlook.com，57 个开发者使用来自网易的 163.com，51 个开发者使用来自雅虎的 yahoo.com，46 个开发者使用来自 Proton 的 protonmail.com。</p>
-<p>其一马太效应，往头部集中，其二，长尾分布，尾部占比接近甚至超过 50%。1666 个开发者来自以 edu 为后缀的邮箱。各个大学及其 R 包开发者数据如下：</p>
+<p>无论从开发者数量还是 R 包数量的角度看，都有两个显著特点。其一马太效应，往头部集中，其二，长尾分布，尾部占比接近甚至超过 50%。1666 个开发者来自以 edu 为后缀的邮箱。各个大学及其 R 包开发者数据如下：</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb14"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1"></a><span class="fu">sum</span>(pdb_org[<span class="fu">grepl</span>(<span class="at">pattern =</span> <span class="st">"edu$"</span>, <span class="at">x =</span> pdb_org<span class="sc">$</span>Email_suffix), <span class="st">"Maintainer2"</span>])</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
@@ -796,12 +796,13 @@ MathJax ={
 </div>
 </div>
 <p>好吧，几乎全是美国各个 NB 大学的，比如华盛顿大学（ uw.edu）、密歇根大学（umich.edu）、加州伯克利大学（berkeley.edu）等等。顺便一说，欧美各个大学的网站，特别是统计院系很厉害的，已经帮大家收集得差不多了，有留学打算的读者自取，邮箱后缀就是学校/院官网。</p>
-<p>有些邮箱后缀带有院系，但是并没有向上合并到学校这一级，比如 <code>stanford.edu</code> 、<code>stat.stanford.edu</code> 和 <code>alumni.stanford.edu</code> 等没有合并统计，所以排名仅供参考。有的邮箱来自教育机构，但是不以 <code>edu</code> 结尾，实际使用 <code>edu</code> 邮箱的教育机构大部份位于美国，比如新西兰奥克兰大学 <code>auckland.ac.nz</code> 瑞士苏黎世联邦理工学院 <code>stat.math.ethz.ch</code>如果读者还知道其他一般规律的，或者提供大学邮箱列表或者有其它更好的办法，就可以把这个数字做得更加精准一些。只是改变这个结论恐怕很难。</p>
+<p>有些邮箱后缀带有院系，但是并没有向上合并到学校这一级，比如 <code>stanford.edu</code> 、<code>stat.stanford.edu</code> 和 <code>alumni.stanford.edu</code> 等没有合并统计，所以学校排名仅供参考。有的邮箱来自教育机构，但是不以 <code>edu</code> 结尾，实际上，使用 <code>edu</code> 邮箱的教育机构大部份位于美国。美国以外的教育机构，比如新西兰奥克兰大学 <code>auckland.ac.nz</code> 、瑞士苏黎世联邦理工学院 <code>stat.math.ethz.ch</code> 等。如果读者还知道其他一般规律的，或者提供大学邮箱列表或者有其它更好的办法，就可以把这个排序数字做得更加精准一些。</p>
+<p>下面根据邮箱后缀匹配抽取 CRAN 团队及开发的 R 包，规则也许不能覆盖所有的情况，读者若有补充，欢迎 PR 给我。举个例子，Brian Ripley 的邮箱 <a href="mailto:ripley@stats.ox.ac.uk" class="email">ripley@stats.ox.ac.uk</a> 就不是一路，需要单独添加。</p>
 <details class="code-fold"><summary>代码</summary><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1"></a>core_dev <span class="ot">&lt;-</span> <span class="fu">subset</span>(pdb,</span>
 <span id="cb18-2"><a href="#cb18-2"></a>  <span class="at">subset =</span> <span class="fu">grepl</span>(</span>
 <span id="cb18-3"><a href="#cb18-3"></a>    <span class="at">x =</span> Maintainer,</span>
 <span id="cb18-4"><a href="#cb18-4"></a>    <span class="at">pattern =</span> <span class="fu">paste0</span>(<span class="fu">c</span>(</span>
-<span id="cb18-5"><a href="#cb18-5"></a>      <span class="st">"(@[Rr]-project</span><span class="sc">\\</span><span class="st">.org)"</span>,</span>
+<span id="cb18-5"><a href="#cb18-5"></a>      <span class="st">"(@[Rr]-project</span><span class="sc">\\</span><span class="st">.org)"</span>, <span class="co"># 官方邮箱</span></span>
 <span id="cb18-6"><a href="#cb18-6"></a>      <span class="st">"(ripley@stats.ox.ac.uk)"</span>, <span class="co"># Brian Ripley</span></span>
 <span id="cb18-7"><a href="#cb18-7"></a>      <span class="st">"(p.murrell@auckland.ac.nz)"</span>, <span class="co"># Paul Murrell</span></span>
 <span id="cb18-8"><a href="#cb18-8"></a>      <span class="st">"(paul@stat.auckland.ac.nz)"</span>, <span class="co"># Paul Murrell</span></span>
@@ -1084,15 +1085,14 @@ MathJax ={
 </figure>
 </div>
 </div>
-<p>震惊！有一半收录在 R 软件中，所以已经持续维护 <strong>20</strong> 多年了。</p>
-<p>根据邮箱后缀匹配抽取的 R 包及开发者，规则也许不能覆盖所有的情况，读者若有补充，欢迎 PR 给我。举个例子，Brian Ripley 的邮箱 <a href="mailto:ripley@stats.ox.ac.uk" class="email">ripley@stats.ox.ac.uk</a> 就不是一路，需要单独添加。</p>
+<p>震惊！有一半收录在 R 软件中，所以已经持续维护 <strong>20</strong> 多年了。下面继续根据邮箱后缀将 RStudio 团队的情况统计出来，结果见下表。</p>
 <details class="code-fold"><summary>代码</summary><div class="sourceCode cell-code" id="cb21"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1"></a>extract_maintainer <span class="ot">&lt;-</span> <span class="cf">function</span>(x) {</span>
 <span id="cb21-2"><a href="#cb21-2"></a>  x <span class="ot">&lt;-</span> <span class="fu">gsub</span>(<span class="at">pattern =</span> <span class="st">"&lt;.*?&gt;"</span>, <span class="at">replacement =</span> <span class="st">""</span>, <span class="at">x =</span> x)</span>
 <span id="cb21-3"><a href="#cb21-3"></a>  x <span class="ot">&lt;-</span> <span class="fu">trimws</span>(x, <span class="at">which =</span> <span class="st">"both"</span>, <span class="at">whitespace =</span> <span class="st">"[ </span><span class="sc">\t\r\n</span><span class="st">]"</span>)</span>
 <span id="cb21-4"><a href="#cb21-4"></a>  x</span>
 <span id="cb21-5"><a href="#cb21-5"></a>}</span>
 <span id="cb21-6"><a href="#cb21-6"></a>rstudio_db <span class="ot">&lt;-</span> <span class="fu">subset</span>(pdb,</span>
-<span id="cb21-7"><a href="#cb21-7"></a>  <span class="at">subset =</span> <span class="fu">grepl</span>(<span class="at">x =</span> Maintainer, <span class="at">pattern =</span> <span class="st">"rstudio.com"</span>),</span>
+<span id="cb21-7"><a href="#cb21-7"></a>  <span class="at">subset =</span> <span class="fu">grepl</span>(<span class="at">x =</span> Maintainer, <span class="at">pattern =</span> <span class="st">"(posit.co)|(rstudio.com)|(yihui.name)"</span>),</span>
 <span id="cb21-8"><a href="#cb21-8"></a>  <span class="at">select =</span> <span class="fu">c</span>(<span class="st">"Package"</span>, <span class="st">"Maintainer"</span>)</span>
 <span id="cb21-9"><a href="#cb21-9"></a>) <span class="sc">|&gt;</span></span>
 <span id="cb21-10"><a href="#cb21-10"></a>  <span class="fu">transform</span>(<span class="at">Maintainer =</span> <span class="fu">extract_maintainer</span>(Maintainer))</span>
@@ -1124,61 +1124,65 @@ MathJax ={
 <tbody>
 <tr class="odd">
 <td style="text-align: left;">Hadley Wickham</td>
-<td style="text-align: right;">47</td>
+<td style="text-align: right;">48</td>
 </tr>
 <tr class="even">
+<td style="text-align: left;">Yihui Xie</td>
+<td style="text-align: right;">22</td>
+</tr>
+<tr class="odd">
 <td style="text-align: left;">Max Kuhn</td>
 <td style="text-align: right;">18</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td style="text-align: left;">Lionel Henry</td>
 <td style="text-align: right;">15</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td style="text-align: left;">Winston Chang</td>
 <td style="text-align: right;">15</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td style="text-align: left;">Daniel Falbel</td>
 <td style="text-align: right;">13</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td style="text-align: left;">Jennifer Bryan</td>
 <td style="text-align: right;">13</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td style="text-align: left;">Davis Vaughan</td>
 <td style="text-align: right;">11</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td style="text-align: left;">Carson Sievert</td>
 <td style="text-align: right;">10</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td style="text-align: left;">Tomasz Kalinowski</td>
 <td style="text-align: right;">8</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td style="text-align: left;">Barret Schloerke</td>
 <td style="text-align: right;">6</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td style="text-align: left;">Thomas Lin Pedersen</td>
 <td style="text-align: right;">6</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Hannah Frick</td>
+<td style="text-align: right;">5</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">Christophe Dervieux</td>
 <td style="text-align: right;">4</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">Hannah Frick</td>
-<td style="text-align: right;">4</td>
-</tr>
-<tr class="even">
 <td style="text-align: left;">Joe Cheng</td>
 <td style="text-align: right;">4</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td style="text-align: left;">Julia Silge</td>
 <td style="text-align: right;">4</td>
 </tr>
@@ -1269,8 +1273,8 @@ MathJax ={
 </div>
 </figure>
 </div>
-<p>在开发维护的 R 包里，谢益辉所给的联系邮箱是 <a href="mailto:xie@yihui.name" class="email">xie@yihui.name</a>，就不在上述之列，因此，表中所列仅是部分而已。</p>
 <p>CRAN 和 RStudio 团队是 R 语言社区最为熟悉的，其它团队需借助一些网络分析算法挖掘了。</p>
+<div style="page-break-after: always;"></div>
 </section><section id="sec-community-developer" class="level2" data-number="23.3"><h2 data-number="23.3" class="anchored" data-anchor-id="sec-community-developer">
 <span class="header-section-number">23.3</span> R 语言社区的开发者</h2>
 <section id="sec-top-developer" class="level3" data-number="23.3.1"><h3 data-number="23.3.1" class="anchored" data-anchor-id="sec-top-developer">
@@ -1346,7 +1350,7 @@ MathJax ={
 图&nbsp;23.4: 开发者数量的分布
 </figcaption></figure>
 </div>
-<p>最高产 Top 1% 的开发者 117 人（开发 R 包超过 10 个的开发者）贡献了 2060 / 18976 = 10.8% 扩展包 ，高产的是有组织的，商业公司、开源组织、大学机构。</p>
+<p>最高产 Top 1% 的开发者 117 人（开发 R 包超过 10 个的开发者）贡献了 2060 / 18976 = 10.8% 扩展包 ，高产的是商业公司、开源组织、大学机构。</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb27"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1"></a><span class="fu">dim</span>(pdb_ctb[pdb_ctb<span class="sc">$</span>Package <span class="sc">&gt;</span> <span class="dv">10</span>, ])</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
@@ -1360,7 +1364,7 @@ MathJax ={
 <p>最低产 Bottom 的开发者 7656 人（仅开发一个 R 包的开发者） 贡献了 7656 / 18976 扩展包 40.3 %，低产的人是主体。</p>
 </section><section id="sec-coauthor-relation" class="level3" data-number="23.3.2"><h3 data-number="23.3.2" class="anchored" data-anchor-id="sec-coauthor-relation">
 <span class="header-section-number">23.3.2</span> 开发者协作关系</h3>
-<p>一个 R 包有一个唯一的维护者，可能有一个至多个贡献者，这样，维护者和贡献者之间就形成了有向关系，贡献者可能又是另一个 R 包的维护者，也可能不是。不仅有向而且可能存在环。在一个 R 包中，A 是 B 的贡献者，而在另一个 R 包中，B 是 A 的贡献者，A 和 B 之间可能通过多个 R 包存在多次互相协作关系，这也表明 A 和 B 之间的关系密切。有向环的节点可能有 2 个以上。一个人可能同时属于多个环。</p>
+<p>如果一个开发者维护了一个 R 包，就成为维护者。一个 R 包有唯一的一个维护者，可能有一个至多个贡献者，这样，维护者和贡献者之间就形成了有向关系，贡献者可能又是另一个 R 包的维护者，也可能不是。不仅有向而且可能存在环。在一个 R 包中，A 是 B 的贡献者，而在另一个 R 包中，B 是 A 的贡献者，A 和 B 之间可能通过多个 R 包存在多次互相协作关系，这也表明 A 和 B 之间的关系密切。有向环的节点可能有 2 个以上，一个人可能同时属于多个环。</p>
 <p>维护者 A 接受来自多个开发者的贡献，接受次数（所有贡献者人数的累和，A 的每个 R 包的贡献者人数相加）视为 A 的入度。维护者 A 作为开发者给多个维护者贡献，贡献次数（作为开发者给其它 R 包做贡献的次数，向外参与贡献的 R 包数目）视为 A 的出度。注意，A 作为维护者，必然包含 A 作为开发者，忽略 A 到 A 的贡献，只考虑贡献/协作关系。</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb31"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1"></a>pdb <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="at">file =</span> <span class="st">"data/cran-package-db-20221231.rds"</span>)</span>
@@ -1616,7 +1620,7 @@ MathJax ={
 #&gt;   + ... omitted several groups/vertices</code></pre>
 </div>
 </div>
-<p>igraph 包提供多种社区探测的算法，上面简单使用函数 <code>cluster_edge_betweenness()</code> 来探测，结果显示有 181 个社区。结合前面的 <a href="#fig-network-igraph" class="quarto-xref">图&nbsp;<span>23.6</span></a> ，知道有很多小圈圈，这些放一边，重点关注那些大的圈圈，见下图。</p>
+<p><strong>igraph</strong> 包提供多种社区探测的算法，上面简单使用函数 <code>cluster_edge_betweenness()</code> 来探测，结果显示有 181 个社区。结合前面的 <a href="#fig-network-igraph" class="quarto-xref">图&nbsp;<span>23.6</span></a> ，知道有很多小圈圈，这些放一边，重点关注那些大的圈圈，见下图。</p>
 <div class="cell">
 <details class="code-fold"><summary>代码</summary><div class="sourceCode cell-code" id="cb52"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb52-1"><a href="#cb52-1"></a>op <span class="ot">&lt;-</span> <span class="fu">par</span>(<span class="at">mar =</span> <span class="fu">rep</span>(<span class="dv">0</span>, <span class="dv">4</span>))</span>
 <span id="cb52-2"><a href="#cb52-2"></a><span class="fu">plot</span>(eb, pdb_authors_graph,</span>
@@ -1639,7 +1643,7 @@ MathJax ={
 </div>
 </div>
 </div>
-<p>下面使用 <strong>tidygraph</strong> 包构造图数据、计算节点中心度，<strong>dplyr</strong> 包操作数据。中心度代表节点（维护者）的影响力（或者重要性）。最后，借助 <strong>ggraph</strong> 包绘制维护者之间的贡献网络，节点的大小代表维护者影响力的强弱。</p>
+<p>下面使用 <strong>tidygraph</strong> 包构造图数据、计算节点中心度，<strong>dplyr</strong> 包操作数据。中心度代表节点（开发者）的影响力（或者重要性）。最后，借助 <strong>ggraph</strong> 包绘制维护者之间的贡献网络，节点的大小代表维护者影响力的强弱。</p>
 <div class="cell">
 <details class="code-fold"><summary>代码</summary><div class="sourceCode cell-code" id="cb53"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb53-1"><a href="#cb53-1"></a>pdb_authors_g <span class="ot">&lt;-</span> tidygraph<span class="sc">::</span><span class="fu">as_tbl_graph</span>(pdb_authors_net_edge, <span class="at">directed =</span> T) <span class="sc">|&gt;</span> </span>
 <span id="cb53-2"><a href="#cb53-2"></a> dplyr<span class="sc">::</span><span class="fu">mutate</span>(<span class="at">Popularity =</span> tidygraph<span class="sc">::</span><span class="fu">centrality_degree</span>(<span class="at">mode =</span> <span class="st">'in'</span>))</span>
@@ -1667,7 +1671,7 @@ MathJax ={
 <p>前面两个网络图基于同一份数据、同样的网络布局算法，得到非常类似的结果。</p>
 </section></section><section id="扩展阅读" class="level2" data-number="23.4"><h2 data-number="23.4" class="anchored" data-anchor-id="扩展阅读">
 <span class="header-section-number">23.4</span> 扩展阅读</h2>
-<p>R 语言网络分析方面的著作有 Erick Kolaczyk 的书籍《Statistical Analysis of Network Data with R》<span class="citation" data-cites="Kolaczyk2020">(<a href="references.html#ref-Kolaczyk2020" role="doc-biblioref">Kolaczyk 和 Csárdi 2020</a>)</span>，网络可视化方面，推荐 Hadley Wickham 的著作《ggplot2: Elegant Graphics for Data Analysis》<span class="citation" data-cites="Hadley2024">(<a href="references.html#ref-Hadley2024" role="doc-biblioref">Wickham, Navarro, 和 Pedersen 2024</a>)</span> 的第七章，Sam Tyner 等人的文章《Network Visualization with ggplot2》<span class="citation" data-cites="Tyner2017">(<a href="references.html#ref-Tyner2017" role="doc-biblioref">Tyner, Briatte, 和 Hofmann 2017</a>)</span> 也值得一看。</p>
+<p>R 语言网络分析方面的著作有 Erick Kolaczyk 的书籍《Statistical Analysis of Network Data with R》<span class="citation" data-cites="Kolaczyk2020">(<a href="references.html#ref-Kolaczyk2020" role="doc-biblioref">Kolaczyk 和 Csárdi 2020</a>)</span>，网络可视化方面，推荐 Hadley Wickham 的著作《ggplot2: Elegant Graphics for Data Analysis》<span class="citation" data-cites="Hadley2024">(<a href="references.html#ref-Hadley2024" role="doc-biblioref">Wickham, Navarro, 和 Pedersen 2024</a>)</span> 的第七章，Sam Tyner 等人的文章《Network Visualization with ggplot2》<span class="citation" data-cites="Tyner2017">(<a href="references.html#ref-Tyner2017" role="doc-biblioref">Tyner, Briatte, 和 Hofmann 2017</a>)</span> 也值得一看。此外，读者若有兴趣，可以用 <a href="https://github.com/datastorm-open/visNetwork">visNetwork</a> 包制作交互式网络图形，它是 JS 库 <a href="https://github.com/visjs/vis-network">vis-network</a> 的 R 语言接口。而 Richard Iannone 开发的 <a href="https://github.com/rich-iannone/DiagrammeR">DiagrammeR</a> 包可以制作静态的矢量网页图形。</p>
 <p>可视化网络的 R 包有 <strong>igraph</strong> 、<strong>ggraph</strong> 等，专业的软件有 Gephi 等。<a href="https://github.com/igraph/igraph">igraph</a> 是非常流行和核心的网络分析 C 语言库，它提供有多种语言的接口，其 R 语言接口 <a href="https://github.com/igraph/rigraph">igraph</a> 包也被很多其它做网络分析的 R 包所引用。开源的 <a href="https://github.com/gephi/gephi">Gephi</a> 软件适合处理中等规模的网络分析和可视化。大规模图计算可以用 Apache Spark 的 <a href="https://spark.apache.org/graphx/">GraphX</a>。R 语言这层，主要还是对应数据分析和数据产品，用于在内部咨询和商业分析。</p>
 <p>企业级的图存储和计算框架，比较有名（可能是最有名的），反正，笔者最先听说的是<a href="https://github.com/neo4j/neo4j">Neo4j</a> ，它有以 AGPL 协议发布的开源版本，还有商业版本。<a href="https://github.com/vesoft-inc/nebula">Nebula Graph</a> 分布式开源图数据库，高扩展性和高可用性，支持千亿节点、万亿条边、毫秒级查询，有<a href="https://github.com/vesoft-inc/nebula-docs-cn/">中文文档</a>，有企业应用案例，<a href="https://mp.weixin.qq.com/s/aYd5tqwogJYfkJXhVNuNpg">美团图数据库平台建设及业务实践</a>。阿里研发的 <a href="https://github.com/alibaba/GraphScope">GraphScope</a> 提供一站式大规模图计算系统，支持图神经网络计算。<a href="https://github.com/hugegraph/hugegraph">HugeGraph</a> 图数据库应用于<a href="https://zhuanlan.zhihu.com/p/114665466">金融反欺诈实践</a>。</p>
 </section><section id="sec-analysis-network-data-exercise" class="level2" data-number="23.5"><h2 data-number="23.5" class="anchored" data-anchor-id="sec-analysis-network-data-exercise">
@@ -2240,7 +2244,8 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
     }
   }
 });
-</script><nav class="page-navigation"><div class="nav-page nav-page-previous">
+</script><script src="https://giscus.app/client.js" data-repo="XiangyunHuang/data-analysis-in-action" data-repo-id="R_kgDOGTNtPQ" data-category="General" data-category-id="DIC_kwDOGTNtPc4CQjXN" data-mapping="title" data-reactions-enabled="1" data-emit-metadata="0" data-input-position="top" data-theme="light" data-lang="en" crossorigin="anonymous" async="">
+</script><input type="hidden" id="giscus-base-theme" value="light"><input type="hidden" id="giscus-alt-theme" value="dark"><nav class="page-navigation"><div class="nav-page nav-page-previous">
       <a href="./power-analysis.html" class="pagination-link  aria-label=">
         <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">22</span>&nbsp; <span class="chapter-title">统计检验的功效</span></span>
       </a>          
