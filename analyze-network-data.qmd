@@ -8,9 +8,9 @@ source("_common.R")
 
 网络数据分析又是另一个大话题，微信、微博、论坛、知乎、豆瓣、美团等等应用都或多或少自带了社交属性。人不能脱离社会存在，社交是人的一种本能，身处洪流之中，即是复杂社会网络中的一个节点。网络分析的内容有很多，比如社区探测、节点影响力分析等。
 
-网络图是表示节点之间关系的图，核心在于关系的刻画，用来表达网络关系的是稀疏矩阵，以及为处理这种矩阵而专门优化的矩阵计算库，如 **Matrix** 、[**rsparse**](https://github.com/rexyai/rsparse) 和 **RcppEigen** [@Bates2013]，PageRank 应该是大家最为熟悉的网络数据挖掘算法，图关系挖掘和计算的应用场景非常广泛，如社交推荐（社交 App）、风险控制（银行征信、企业查）、深度学习（图神经网络）、知识图谱（商户、商家、客户的实体关系网络）、区块链、物联网（IoT）、反洗钱（金融监管）、数据治理（数据血缘图谱）等。
+网络图是表示节点之间关系的图，核心在于关系的刻画，用来表达网络关系的是稀疏矩阵，以及为处理这种矩阵而专门优化的矩阵计算库，如 **Matrix** 、[**rsparse**](https://github.com/rexyai/rsparse) 和 **RcppEigen** 包[@Bates2013]等。PageRank 应该是大家最为熟悉的网络数据挖掘算法，图关系挖掘和计算的应用场景非常广泛，如社交推荐（社交 App）、风险控制（银行征信、企业查）、深度学习（图神经网络）、知识图谱（商户、商家、客户的实体关系网络）、区块链、物联网（IoT）、反洗钱（金融监管）、数据治理（数据血缘图谱）等。
 
-本文将分析 R 语言社区开发者之间的协作关系网络。首先基于 CRAN 上发布的 R 包元数据信息，了解 R 语言社区 R 包及其维护者的规模，以及根据元数据中的信息发掘社区中的组织，最后，统计开发者维护的 R 包数据，分析开发者在网络中的影响力，并将结果可视化。
+本文将分析 R 语言社区开发者之间的协作关系网络。首先基于 CRAN （The Comprehensive R Archive Network）上发布的 R 包元数据信息，了解 R 语言社区 R 包及其维护者的规模，以及根据元数据中的信息发掘社区中的组织，最后，统计开发者维护的 R 包数据，分析开发者在网络中的影响力，并将结果可视化。
 
 本文主要用到的工具有 [igraph](https://github.com/igraph/igraph) 包，操作图数据和图计算的 [tidygraph](https://github.com/thomasp85/tidygraph) 包，以及可视化图数据的 [ggraph](https://github.com/thomasp85/ggraph) 包。
 
@@ -35,12 +35,12 @@ pdb <- tools::CRAN_package_db()
 pdb <- readRDS(file = "data/cran-package-db-20221231.rds")
 ```
 
-截止 2022-12-31 CRAN 上发布的 R 包有 18976 个，CRAN 进入年末维护期 2022-12-22 至 2023-01-05。
+截止 2022 年 12 月 31 日， CRAN 上发布的 R 包有 18976 个，CRAN 进入年末维护期 2022-12-22 至 2023-01-05。
 
 ```{r}
 pdb <- subset(
   x = pdb, subset = !duplicated(Package),
-  select = c("Package", "Maintainer", "License", "Title", "Date", "Published")
+  select = c("Package", "Maintainer", "Authors@R", "Date", "Published")
 )
 ```
 
@@ -361,11 +361,10 @@ sum(pdb_ctb[pdb_ctb$Package > 10, "Package"])
 维护者 A 接受来自多个开发者的贡献，接受次数（所有贡献者人数的累和，A 的每个 R 包的贡献者人数相加）视为 A 的入度。维护者 A 作为开发者给多个维护者贡献，贡献次数（作为开发者给其它 R 包做贡献的次数，向外参与贡献的 R 包数目）视为 A 的出度。注意，A 作为维护者，必然包含 A 作为开发者，忽略 A 到 A 的贡献，只考虑贡献/协作关系。
 
 ```{r}
-pdb <- readRDS(file = "data/cran-package-db-20221231.rds")
 # 过滤重复和缺失的记录
 pdb <- subset(
   x = pdb, subset = !duplicated(Package) & !is.na(`Authors@R`),
-  select = c("Package", "Maintainer", "Author", "Authors@R")
+  select = c("Package", "Maintainer", "Authors@R")
 )
 # 提取维护者的名字
 pdb$Maintainer <- extract_maintainer(pdb$Maintainer)
@@ -403,9 +402,6 @@ pdb_authors_dt <- data.table::rbindlist(pdb_authors_list)
 最后整理出来的大数据框 **`pdb_authors_dt`** 含有近 26000 条记录，即边的规模大小。考虑到有些维护者和贡献者之间可能存在多次合作的情况，下面统计一下合作次数。
 
 ```{r}
-# tmp <- aggregate(Package ~ Maintainer  + Authors, data = pdb_authors_dt, FUN = length)
-# tmp[tmp$Package >= 10, ]
-
 pdb_authors_dt[ ,.(cnt = length(Package)) , by = c("Maintainer", "Authors")][cnt >= 10, ][order(cnt, decreasing = T), ]
 ```
 
@@ -465,10 +461,10 @@ ggplot(pdb_authors_net_outdegree, aes(x = out_degree)) +
 ```{r}
 # 边
 pdb_authors_net_edge <- pdb_authors_dt[Authors %in% Maintainer, ][, .(edge_cnt = .N), by = c("Authors", "Maintainer")][edge_cnt > 1,]
-pdb_authors_net_edge
+pdb_authors_net_edge[order(edge_cnt, decreasing = TRUE),]
 # 顶点
 pdb_authors_net_vertex <- pdb_authors_dt[, .(vertex_cnt = length(unique(Package))), by = "Maintainer"][Maintainer %in% c(pdb_authors_net_edge$Maintainer, pdb_authors_net_edge$Authors),]
-pdb_authors_net_vertex
+pdb_authors_net_vertex[order(vertex_cnt, decreasing = TRUE),]
 ```
 
 这是一个有向图，其各个字段含义如下。
@@ -492,7 +488,7 @@ pdb_authors_net_vertex
 
 # 构造图
 library(igraph)
-pdb_authors_graph <- graph_from_data_frame(d = pdb_authors_net_edge, vertices = pdb_authors_net_vertex, directed = T)
+pdb_authors_graph <- graph_from_data_frame(d = pdb_authors_net_edge, vertices = pdb_authors_net_vertex, directed = TRUE)
 # 可视化
 op <- par(mar = rep(0, 4))
 plot(pdb_authors_graph,
@@ -526,7 +522,7 @@ eb
 
 op <- par(mar = rep(0, 4))
 plot(eb, pdb_authors_graph,
-  edge.width = (E(pdb_authors_graph)$edge_cnt) / 2,
+  edge.width = (E(pdb_authors_graph)$edge_cnt) / 4,
   edge.arrow.size = .01,
   edge.curved = .1,
   layout = layout.kamada.kawai,
