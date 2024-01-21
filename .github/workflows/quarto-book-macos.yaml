@@ -78,6 +78,7 @@ jobs:
           install.packages(c("Matrix", "MatrixModels", "rjags", "lme4", "TMB", "glmmTMB"), repos = "https://cran.r-project.org/", type = "source")
           if(!require('remotes')) install.packages('remotes')
           remotes::install_github("tidyverse/ggplot2", ref = remotes::github_pull("5592"))
+          remotes::install_github('thomasp85/ggraph')
         shell: Rscript {0}
 
       - name: Render Book
@@ -99,6 +100,15 @@ jobs:
           branch: gh-pages
           folder: _book
           clean: true
+
+      - name: Deploy book to bookdown.org
+        if: github.event_name == 'push'
+        env:
+          CONNECT_API_KEY: ${{ secrets.RSC_BOOKDOWN_TOKEN }}
+          CONTENT_ID: ${{ secrets.RSC_BOOKDOWN_APP_ID }}
+        run: |
+          Rscript '_deploy.R'
+        shell: bash
 
       - name: Upload book folder for debug
         if: failure()
