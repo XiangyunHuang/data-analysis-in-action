@@ -1555,10 +1555,6 @@ window.Quarto = {
 <span id="cb24-3"><a href="#cb24-3"></a>  <span class="fu">geom_node_point</span>(<span class="fu">aes</span>(<span class="at">size =</span> Popularity)) <span class="sc">+</span></span>
 <span id="cb24-4"><a href="#cb24-4"></a>  <span class="fu">facet_edges</span>(<span class="sc">~</span>year) <span class="sc">+</span></span>
 <span id="cb24-5"><a href="#cb24-5"></a>  <span class="fu">theme_graph</span>(<span class="at">base_family =</span> <span class="st">"sans"</span>, <span class="at">foreground =</span> <span class="st">"steelblue"</span>, <span class="at">fg_text_colour =</span> <span class="st">"white"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stderr">
-<pre><code>#&gt; Warning: Using the `size` aesthetic in this geom was deprecated in ggplot2 3.4.0.
-#&gt; ℹ Please use `linewidth` in the `default_aes` field and elsewhere instead.</code></pre>
-</div>
 <div class="cell-output-display">
 <div id="fig-school-graph" class="quarto-figure quarto-figure-center quarto-float anchored">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-school-graph-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
@@ -1629,24 +1625,24 @@ I_x(a,b) &amp;= \frac{B_x(a,b)}{B(a,b)}, \quad B(a,b) = B_1(a,b)
 \]</span></p>
 <p>考虑二项总体的参数 <span class="math inline">\(p=0.7\)</span>，重复模拟 50 次，每次模拟获得的比例 <span class="math inline">\(\hat{p}\)</span> 及其置信区间，如 <a href="#fig-clopper-pearson-ci" class="quarto-xref">图&nbsp;<span>8.19</span></a> 所示，置信区间覆盖真值的情况用不同颜色表示，覆盖用 <code>TRUE</code> 表示，没有覆盖用 <code>FALSE</code> 表示</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1"></a><span class="fu">library</span>(ggplot2)</span>
-<span id="cb26-2"><a href="#cb26-2"></a><span class="co"># Clopper and Pearson (1934)</span></span>
-<span id="cb26-3"><a href="#cb26-3"></a><span class="co"># 与 binom.test() 计算结果一致</span></span>
-<span id="cb26-4"><a href="#cb26-4"></a>clopper_pearson <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">p =</span> <span class="fl">0.1</span>, <span class="at">n =</span> <span class="dv">10</span>, <span class="at">nsim =</span> <span class="dv">100</span>) {</span>
-<span id="cb26-5"><a href="#cb26-5"></a>  <span class="fu">set.seed</span>(<span class="dv">2022</span>)</span>
-<span id="cb26-6"><a href="#cb26-6"></a>  nd <span class="ot">&lt;-</span> <span class="fu">rbinom</span>(nsim, <span class="at">prob =</span> p, <span class="at">size =</span> n)</span>
-<span id="cb26-7"><a href="#cb26-7"></a>  ll <span class="ot">&lt;-</span> <span class="fu">qbeta</span>(<span class="at">p =</span> <span class="fl">0.05</span> <span class="sc">/</span> <span class="dv">2</span>, <span class="at">shape1 =</span> nd, <span class="at">shape2 =</span> n <span class="sc">-</span> nd <span class="sc">+</span> <span class="dv">1</span>)</span>
-<span id="cb26-8"><a href="#cb26-8"></a>  ul <span class="ot">&lt;-</span> <span class="fu">qbeta</span>(<span class="at">p =</span> <span class="dv">1</span> <span class="sc">-</span> <span class="fl">0.05</span> <span class="sc">/</span> <span class="dv">2</span>, <span class="at">shape1 =</span> nd <span class="sc">+</span> <span class="dv">1</span>, <span class="at">shape2 =</span> n <span class="sc">-</span> nd)</span>
-<span id="cb26-9"><a href="#cb26-9"></a>  <span class="fu">data.frame</span>(<span class="at">nd =</span> nd, <span class="at">ll =</span> ll, <span class="at">ul =</span> ul, <span class="at">cover =</span> ul <span class="sc">&gt;</span> p <span class="sc">&amp;</span> ll <span class="sc">&lt;</span> p)</span>
-<span id="cb26-10"><a href="#cb26-10"></a>}</span>
-<span id="cb26-11"><a href="#cb26-11"></a><span class="co"># 二项分布的参数 p = 0.7</span></span>
-<span id="cb26-12"><a href="#cb26-12"></a>dat <span class="ot">&lt;-</span> <span class="fu">clopper_pearson</span>(<span class="at">p =</span> <span class="fl">0.7</span>, <span class="at">n =</span> <span class="dv">10</span>, <span class="at">nsim =</span> <span class="dv">50</span>)</span>
-<span id="cb26-13"><a href="#cb26-13"></a><span class="co"># 二项分布的参数的置信区间覆盖真值的情况</span></span>
-<span id="cb26-14"><a href="#cb26-14"></a><span class="fu">ggplot</span>(<span class="at">data =</span> dat, <span class="fu">aes</span>(<span class="at">x =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">50</span>, <span class="at">y =</span> nd <span class="sc">/</span> <span class="dv">10</span>, <span class="at">colour =</span> cover)) <span class="sc">+</span></span>
-<span id="cb26-15"><a href="#cb26-15"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="fl">0.7</span>, <span class="at">lty =</span> <span class="dv">2</span>, <span class="at">linewidth =</span> <span class="fl">1.2</span>, <span class="at">color =</span> <span class="st">"gray"</span>) <span class="sc">+</span></span>
-<span id="cb26-16"><a href="#cb26-16"></a>  <span class="fu">geom_pointrange</span>(<span class="fu">aes</span>(<span class="at">ymin =</span> ll, <span class="at">ymax =</span> ul)) <span class="sc">+</span></span>
-<span id="cb26-17"><a href="#cb26-17"></a>  <span class="fu">theme_classic</span>() <span class="sc">+</span></span>
-<span id="cb26-18"><a href="#cb26-18"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"第几次模拟"</span>, <span class="at">y =</span> <span class="st">"置信区间上下限"</span>, <span class="at">color =</span> <span class="st">"覆盖"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb25-2"><a href="#cb25-2"></a><span class="co"># Clopper and Pearson (1934)</span></span>
+<span id="cb25-3"><a href="#cb25-3"></a><span class="co"># 与 binom.test() 计算结果一致</span></span>
+<span id="cb25-4"><a href="#cb25-4"></a>clopper_pearson <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">p =</span> <span class="fl">0.1</span>, <span class="at">n =</span> <span class="dv">10</span>, <span class="at">nsim =</span> <span class="dv">100</span>) {</span>
+<span id="cb25-5"><a href="#cb25-5"></a>  <span class="fu">set.seed</span>(<span class="dv">2022</span>)</span>
+<span id="cb25-6"><a href="#cb25-6"></a>  nd <span class="ot">&lt;-</span> <span class="fu">rbinom</span>(nsim, <span class="at">prob =</span> p, <span class="at">size =</span> n)</span>
+<span id="cb25-7"><a href="#cb25-7"></a>  ll <span class="ot">&lt;-</span> <span class="fu">qbeta</span>(<span class="at">p =</span> <span class="fl">0.05</span> <span class="sc">/</span> <span class="dv">2</span>, <span class="at">shape1 =</span> nd, <span class="at">shape2 =</span> n <span class="sc">-</span> nd <span class="sc">+</span> <span class="dv">1</span>)</span>
+<span id="cb25-8"><a href="#cb25-8"></a>  ul <span class="ot">&lt;-</span> <span class="fu">qbeta</span>(<span class="at">p =</span> <span class="dv">1</span> <span class="sc">-</span> <span class="fl">0.05</span> <span class="sc">/</span> <span class="dv">2</span>, <span class="at">shape1 =</span> nd <span class="sc">+</span> <span class="dv">1</span>, <span class="at">shape2 =</span> n <span class="sc">-</span> nd)</span>
+<span id="cb25-9"><a href="#cb25-9"></a>  <span class="fu">data.frame</span>(<span class="at">nd =</span> nd, <span class="at">ll =</span> ll, <span class="at">ul =</span> ul, <span class="at">cover =</span> ul <span class="sc">&gt;</span> p <span class="sc">&amp;</span> ll <span class="sc">&lt;</span> p)</span>
+<span id="cb25-10"><a href="#cb25-10"></a>}</span>
+<span id="cb25-11"><a href="#cb25-11"></a><span class="co"># 二项分布的参数 p = 0.7</span></span>
+<span id="cb25-12"><a href="#cb25-12"></a>dat <span class="ot">&lt;-</span> <span class="fu">clopper_pearson</span>(<span class="at">p =</span> <span class="fl">0.7</span>, <span class="at">n =</span> <span class="dv">10</span>, <span class="at">nsim =</span> <span class="dv">50</span>)</span>
+<span id="cb25-13"><a href="#cb25-13"></a><span class="co"># 二项分布的参数的置信区间覆盖真值的情况</span></span>
+<span id="cb25-14"><a href="#cb25-14"></a><span class="fu">ggplot</span>(<span class="at">data =</span> dat, <span class="fu">aes</span>(<span class="at">x =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">50</span>, <span class="at">y =</span> nd <span class="sc">/</span> <span class="dv">10</span>, <span class="at">colour =</span> cover)) <span class="sc">+</span></span>
+<span id="cb25-15"><a href="#cb25-15"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="fl">0.7</span>, <span class="at">lty =</span> <span class="dv">2</span>, <span class="at">linewidth =</span> <span class="fl">1.2</span>, <span class="at">color =</span> <span class="st">"gray"</span>) <span class="sc">+</span></span>
+<span id="cb25-16"><a href="#cb25-16"></a>  <span class="fu">geom_pointrange</span>(<span class="fu">aes</span>(<span class="at">ymin =</span> ll, <span class="at">ymax =</span> ul)) <span class="sc">+</span></span>
+<span id="cb25-17"><a href="#cb25-17"></a>  <span class="fu">theme_classic</span>() <span class="sc">+</span></span>
+<span id="cb25-18"><a href="#cb25-18"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"第几次模拟"</span>, <span class="at">y =</span> <span class="st">"置信区间上下限"</span>, <span class="at">color =</span> <span class="st">"覆盖"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div id="fig-clopper-pearson-ci" class="quarto-figure quarto-figure-center quarto-float anchored">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-clopper-pearson-ci-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
@@ -1663,25 +1659,25 @@ I_x(a,b) &amp;= \frac{B_x(a,b)}{B(a,b)}, \quad B(a,b) = B_1(a,b)
 <p>假设检验的目的是做决策，决策是有风险的，是可能发生错误的，为了控制犯第一类错误的可能性，我们用 P 值描述检验统计假设的不确定性，用功效描述检验方法的优劣。对同一个统计假设，同一组数据，不同的检验方法有不同的 P 值，本质是检验方法的功效不同。</p>
 <p><a href="https://github.com/s6juncheng/ggpval"><strong>ggpval</strong></a> 在图上添加检验的 P 值结果，<a href="https://github.com/const-ae/ggsignif"><strong>ggsignif</strong></a> <span class="citation" data-cites="ggsignif2021">(<a href="references.html#ref-ggsignif2021" role="doc-biblioref">Constantin 和 Patil 2021</a>)</span> 在图上添加显著性注释。<a href="https://github.com/IndrajeetPatil/ggstatsplot"><strong>ggstatsplot</strong></a> <span class="citation" data-cites="Indrajeet2021">(<a href="references.html#ref-Indrajeet2021" role="doc-biblioref">Patil 2021</a>)</span> 可视化统计检验、模型的结果，描述功效变化。<a href="https://github.com/kassambara/ggpubr"><strong>ggpubr</strong></a> 制作出版级统计图形，两样本均值的比较。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1"></a><span class="fu">with</span>(</span>
-<span id="cb27-2"><a href="#cb27-2"></a>  <span class="fu">aggregate</span>(</span>
-<span id="cb27-3"><a href="#cb27-3"></a>    <span class="at">data =</span> PlantGrowth, weight <span class="sc">~</span> group,</span>
-<span id="cb27-4"><a href="#cb27-4"></a>    <span class="at">FUN =</span> <span class="cf">function</span>(x) <span class="fu">c</span>(<span class="at">dist_mean =</span> <span class="fu">mean</span>(x), <span class="at">dist_sd =</span> <span class="fu">sd</span>(x))</span>
-<span id="cb27-5"><a href="#cb27-5"></a>  ),</span>
-<span id="cb27-6"><a href="#cb27-6"></a>  <span class="fu">cbind.data.frame</span>(weight, group)</span>
-<span id="cb27-7"><a href="#cb27-7"></a>) <span class="sc">|&gt;</span></span>
-<span id="cb27-8"><a href="#cb27-8"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> group, <span class="at">y =</span> dist_mean)) <span class="sc">+</span></span>
-<span id="cb27-9"><a href="#cb27-9"></a>  <span class="fu">geom_col</span>(</span>
-<span id="cb27-10"><a href="#cb27-10"></a>    <span class="at">position =</span> <span class="fu">position_dodge</span>(<span class="fl">0.4</span>), <span class="at">width =</span> <span class="fl">0.4</span>, <span class="at">fill =</span> <span class="st">"gray"</span></span>
-<span id="cb27-11"><a href="#cb27-11"></a>  ) <span class="sc">+</span></span>
-<span id="cb27-12"><a href="#cb27-12"></a>  <span class="fu">geom_errorbar</span>(<span class="fu">aes</span>(</span>
-<span id="cb27-13"><a href="#cb27-13"></a>    <span class="at">ymin =</span> dist_mean <span class="sc">-</span> dist_sd,</span>
-<span id="cb27-14"><a href="#cb27-14"></a>    <span class="at">ymax =</span> dist_mean <span class="sc">+</span> dist_sd</span>
-<span id="cb27-15"><a href="#cb27-15"></a>  ),</span>
-<span id="cb27-16"><a href="#cb27-16"></a>  <span class="at">position =</span> <span class="fu">position_dodge</span>(<span class="fl">0.4</span>), <span class="at">width =</span> <span class="fl">0.2</span></span>
-<span id="cb27-17"><a href="#cb27-17"></a>  ) <span class="sc">+</span></span>
-<span id="cb27-18"><a href="#cb27-18"></a>  <span class="fu">theme_classic</span>() <span class="sc">+</span></span>
-<span id="cb27-19"><a href="#cb27-19"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"组别"</span>, <span class="at">y =</span> <span class="st">"植物干重"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1"></a><span class="fu">with</span>(</span>
+<span id="cb26-2"><a href="#cb26-2"></a>  <span class="fu">aggregate</span>(</span>
+<span id="cb26-3"><a href="#cb26-3"></a>    <span class="at">data =</span> PlantGrowth, weight <span class="sc">~</span> group,</span>
+<span id="cb26-4"><a href="#cb26-4"></a>    <span class="at">FUN =</span> <span class="cf">function</span>(x) <span class="fu">c</span>(<span class="at">dist_mean =</span> <span class="fu">mean</span>(x), <span class="at">dist_sd =</span> <span class="fu">sd</span>(x))</span>
+<span id="cb26-5"><a href="#cb26-5"></a>  ),</span>
+<span id="cb26-6"><a href="#cb26-6"></a>  <span class="fu">cbind.data.frame</span>(weight, group)</span>
+<span id="cb26-7"><a href="#cb26-7"></a>) <span class="sc">|&gt;</span></span>
+<span id="cb26-8"><a href="#cb26-8"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> group, <span class="at">y =</span> dist_mean)) <span class="sc">+</span></span>
+<span id="cb26-9"><a href="#cb26-9"></a>  <span class="fu">geom_col</span>(</span>
+<span id="cb26-10"><a href="#cb26-10"></a>    <span class="at">position =</span> <span class="fu">position_dodge</span>(<span class="fl">0.4</span>), <span class="at">width =</span> <span class="fl">0.4</span>, <span class="at">fill =</span> <span class="st">"gray"</span></span>
+<span id="cb26-11"><a href="#cb26-11"></a>  ) <span class="sc">+</span></span>
+<span id="cb26-12"><a href="#cb26-12"></a>  <span class="fu">geom_errorbar</span>(<span class="fu">aes</span>(</span>
+<span id="cb26-13"><a href="#cb26-13"></a>    <span class="at">ymin =</span> dist_mean <span class="sc">-</span> dist_sd,</span>
+<span id="cb26-14"><a href="#cb26-14"></a>    <span class="at">ymax =</span> dist_mean <span class="sc">+</span> dist_sd</span>
+<span id="cb26-15"><a href="#cb26-15"></a>  ),</span>
+<span id="cb26-16"><a href="#cb26-16"></a>  <span class="at">position =</span> <span class="fu">position_dodge</span>(<span class="fl">0.4</span>), <span class="at">width =</span> <span class="fl">0.2</span></span>
+<span id="cb26-17"><a href="#cb26-17"></a>  ) <span class="sc">+</span></span>
+<span id="cb26-18"><a href="#cb26-18"></a>  <span class="fu">theme_classic</span>() <span class="sc">+</span></span>
+<span id="cb26-19"><a href="#cb26-19"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"组别"</span>, <span class="at">y =</span> <span class="st">"植物干重"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div id="fig-plant-growth" class="quarto-figure quarto-figure-center quarto-float anchored">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-plant-growth-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
@@ -1708,7 +1704,7 @@ I_x(a,b) &amp;= \frac{B_x(a,b)}{B(a,b)}, \quad B(a,b) = B_1(a,b)
 </div>
 <p>单因素方差分析 <code><a href="https://rdrr.io/r/stats/oneway.test.html">oneway.test()</a></code> 检验各组的方差是否相等。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1"></a><span class="fu">oneway.test</span>(<span class="at">data =</span> PlantGrowth, weight <span class="sc">~</span> group)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1"></a><span class="fu">oneway.test</span>(<span class="at">data =</span> PlantGrowth, weight <span class="sc">~</span> group)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; 
 #&gt;  One-way analysis of means (not assuming equal variances)
@@ -1719,15 +1715,15 @@ I_x(a,b) &amp;= \frac{B_x(a,b)}{B(a,b)}, \quad B(a,b) = B_1(a,b)
 </div>
 <p>结果显示方差不全部相等，因此，采用函数 <code>t.test(var.equal = FALSE)</code> 来检验数据。<a href="#fig-signif" class="quarto-xref">图&nbsp;<span>8.21</span></a> 展示假设检验的结果，分别标记了 ctrl 与 trt1、trt1 与 trt2 两组 t 检验的结果。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1"></a><span class="fu">library</span>(ggsignif)</span>
-<span id="cb30-2"><a href="#cb30-2"></a><span class="fu">ggplot</span>(<span class="at">data =</span> PlantGrowth, <span class="fu">aes</span>(<span class="at">x =</span> group, <span class="at">y =</span> weight)) <span class="sc">+</span></span>
-<span id="cb30-3"><a href="#cb30-3"></a>  <span class="fu">geom_boxplot</span>(<span class="at">width =</span> <span class="fl">0.25</span>) <span class="sc">+</span></span>
-<span id="cb30-4"><a href="#cb30-4"></a>  <span class="fu">geom_jitter</span>(<span class="at">width =</span> <span class="fl">0.15</span>) <span class="sc">+</span></span>
-<span id="cb30-5"><a href="#cb30-5"></a>  <span class="fu">geom_signif</span>(<span class="at">comparisons =</span> <span class="fu">list</span>(<span class="fu">c</span>(<span class="st">"ctrl"</span>, <span class="st">"trt1"</span>), <span class="fu">c</span>(<span class="st">"trt1"</span>, <span class="st">"trt2"</span>)), </span>
-<span id="cb30-6"><a href="#cb30-6"></a>              <span class="at">map_signif_level =</span> <span class="cf">function</span>(p) <span class="fu">sprintf</span>(<span class="st">"p = %.2g"</span>, p), </span>
-<span id="cb30-7"><a href="#cb30-7"></a>              <span class="at">textsize =</span> <span class="dv">6</span>, <span class="at">test =</span> <span class="st">"t.test"</span>) <span class="sc">+</span></span>
-<span id="cb30-8"><a href="#cb30-8"></a>  <span class="fu">theme_classic</span>() <span class="sc">+</span></span>
-<span id="cb30-9"><a href="#cb30-9"></a>  <span class="fu">coord_cartesian</span>(<span class="at">clip =</span> <span class="st">"off"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1"></a><span class="fu">library</span>(ggsignif)</span>
+<span id="cb29-2"><a href="#cb29-2"></a><span class="fu">ggplot</span>(<span class="at">data =</span> PlantGrowth, <span class="fu">aes</span>(<span class="at">x =</span> group, <span class="at">y =</span> weight)) <span class="sc">+</span></span>
+<span id="cb29-3"><a href="#cb29-3"></a>  <span class="fu">geom_boxplot</span>(<span class="at">width =</span> <span class="fl">0.25</span>) <span class="sc">+</span></span>
+<span id="cb29-4"><a href="#cb29-4"></a>  <span class="fu">geom_jitter</span>(<span class="at">width =</span> <span class="fl">0.15</span>) <span class="sc">+</span></span>
+<span id="cb29-5"><a href="#cb29-5"></a>  <span class="fu">geom_signif</span>(<span class="at">comparisons =</span> <span class="fu">list</span>(<span class="fu">c</span>(<span class="st">"ctrl"</span>, <span class="st">"trt1"</span>), <span class="fu">c</span>(<span class="st">"trt1"</span>, <span class="st">"trt2"</span>)), </span>
+<span id="cb29-6"><a href="#cb29-6"></a>              <span class="at">map_signif_level =</span> <span class="cf">function</span>(p) <span class="fu">sprintf</span>(<span class="st">"p = %.2g"</span>, p), </span>
+<span id="cb29-7"><a href="#cb29-7"></a>              <span class="at">textsize =</span> <span class="dv">6</span>, <span class="at">test =</span> <span class="st">"t.test"</span>) <span class="sc">+</span></span>
+<span id="cb29-8"><a href="#cb29-8"></a>  <span class="fu">theme_classic</span>() <span class="sc">+</span></span>
+<span id="cb29-9"><a href="#cb29-9"></a>  <span class="fu">coord_cartesian</span>(<span class="at">clip =</span> <span class="st">"off"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div id="fig-signif" class="quarto-figure quarto-figure-center quarto-float anchored">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-signif-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
@@ -1741,7 +1737,7 @@ I_x(a,b) &amp;= \frac{B_x(a,b)}{B(a,b)}, \quad B(a,b) = B_1(a,b)
 </div>
 <p>为了了解其中的原理，下面分别使用函数 <code><a href="https://rdrr.io/r/stats/t.test.html">t.test()</a></code> 检验数据，结果给出的 P 值与上 <a href="#fig-signif" class="quarto-xref">图&nbsp;<span>8.21</span></a> 完全一样。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1"></a><span class="fu">t.test</span>(<span class="at">data =</span> PlantGrowth, weight <span class="sc">~</span> group, <span class="at">subset =</span> group <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"ctrl"</span>, <span class="st">"trt1"</span>))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1"></a><span class="fu">t.test</span>(<span class="at">data =</span> PlantGrowth, weight <span class="sc">~</span> group, <span class="at">subset =</span> group <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"ctrl"</span>, <span class="st">"trt1"</span>))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; 
 #&gt;  Welch Two Sample t-test
@@ -1755,7 +1751,7 @@ I_x(a,b) &amp;= \frac{B_x(a,b)}{B(a,b)}, \quad B(a,b) = B_1(a,b)
 #&gt; mean in group ctrl mean in group trt1 
 #&gt;              5.032              4.661</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1"></a><span class="fu">t.test</span>(<span class="at">data =</span> PlantGrowth, weight <span class="sc">~</span> group, <span class="at">subset =</span> group <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"trt1"</span>, <span class="st">"trt2"</span>))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1"></a><span class="fu">t.test</span>(<span class="at">data =</span> PlantGrowth, weight <span class="sc">~</span> group, <span class="at">subset =</span> group <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"trt1"</span>, <span class="st">"trt2"</span>))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; 
 #&gt;  Welch Two Sample t-test
@@ -1774,30 +1770,30 @@ I_x(a,b) &amp;= \frac{B_x(a,b)}{B(a,b)}, \quad B(a,b) = B_1(a,b)
 <span class="header-section-number">8.3.3</span> 模型预测</h3>
 <p>描述模型预测的不确定性，预测的方差、预测区间。线性回归来说，回归线及置信带。代码提交量的趋势拟合</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1"></a>svn_trunk_log <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="at">file =</span> <span class="st">"data/svn-trunk-log-2022.rds"</span>)</span>
-<span id="cb35-2"><a href="#cb35-2"></a>svn_trunk_log<span class="sc">$</span>year <span class="ot">&lt;-</span> <span class="fu">as.integer</span>(<span class="fu">format</span>(svn_trunk_log<span class="sc">$</span>stamp, <span class="st">"%Y"</span>))</span>
-<span id="cb35-3"><a href="#cb35-3"></a>trunk_year <span class="ot">&lt;-</span> <span class="fu">aggregate</span>(<span class="at">data =</span> svn_trunk_log, revision <span class="sc">~</span> year, <span class="at">FUN =</span> length)</span>
-<span id="cb35-4"><a href="#cb35-4"></a><span class="fu">ggplot</span>(<span class="at">data =</span> trunk_year, <span class="fu">aes</span>(<span class="at">x =</span> year, <span class="at">y =</span> revision)) <span class="sc">+</span></span>
-<span id="cb35-5"><a href="#cb35-5"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span></span>
-<span id="cb35-6"><a href="#cb35-6"></a>  <span class="fu">geom_smooth</span>(<span class="fu">aes</span>(<span class="at">color =</span> <span class="st">"LOESS"</span>, <span class="at">fill =</span> <span class="st">"LOESS"</span>),</span>
-<span id="cb35-7"><a href="#cb35-7"></a>    <span class="at">method =</span> <span class="st">"loess"</span>, <span class="at">formula =</span> <span class="st">"y~x"</span>,</span>
-<span id="cb35-8"><a href="#cb35-8"></a>    <span class="at">method.args =</span> <span class="fu">list</span>(</span>
-<span id="cb35-9"><a href="#cb35-9"></a>      <span class="at">span =</span> <span class="fl">0.75</span>, <span class="at">degree =</span> <span class="dv">2</span>, <span class="at">family =</span> <span class="st">"symmetric"</span>,</span>
-<span id="cb35-10"><a href="#cb35-10"></a>      <span class="at">control =</span> <span class="fu">loess.control</span>(<span class="at">surface =</span> <span class="st">"direct"</span>, <span class="at">iterations =</span> <span class="dv">4</span>)</span>
-<span id="cb35-11"><a href="#cb35-11"></a>    ), <span class="at">data =</span> <span class="fu">subset</span>(trunk_year, year <span class="sc">!=</span> <span class="fu">c</span>(<span class="dv">1997</span>, <span class="dv">2022</span>))</span>
-<span id="cb35-12"><a href="#cb35-12"></a>  ) <span class="sc">+</span></span>
-<span id="cb35-13"><a href="#cb35-13"></a>  <span class="fu">geom_smooth</span>(<span class="fu">aes</span>(<span class="at">color =</span> <span class="st">"GAM"</span>, <span class="at">fill =</span> <span class="st">"GAM"</span>),</span>
-<span id="cb35-14"><a href="#cb35-14"></a>    <span class="at">formula =</span> y <span class="sc">~</span> <span class="fu">s</span>(x, <span class="at">k =</span> <span class="dv">12</span>), <span class="at">method =</span> <span class="st">"gam"</span>, <span class="at">se =</span> <span class="cn">TRUE</span>,</span>
-<span id="cb35-15"><a href="#cb35-15"></a>    <span class="at">data =</span> <span class="fu">subset</span>(trunk_year, year <span class="sc">!=</span> <span class="fu">c</span>(<span class="dv">1997</span>, <span class="dv">2022</span>))</span>
-<span id="cb35-16"><a href="#cb35-16"></a>  ) <span class="sc">+</span></span>
-<span id="cb35-17"><a href="#cb35-17"></a>  <span class="fu">geom_smooth</span>(<span class="fu">aes</span>(<span class="at">color =</span> <span class="st">"Cubic Spline"</span>, <span class="at">fill =</span> <span class="st">"Cubic Spline"</span>),</span>
-<span id="cb35-18"><a href="#cb35-18"></a>                <span class="at">method =</span> <span class="st">"lm"</span>, <span class="at">formula =</span> y <span class="sc">~</span> splines<span class="sc">::</span><span class="fu">bs</span>(x, <span class="dv">3</span>), <span class="at">se =</span> T,</span>
-<span id="cb35-19"><a href="#cb35-19"></a>              <span class="at">data =</span> <span class="fu">subset</span>(trunk_year, year <span class="sc">!=</span> <span class="fu">c</span>(<span class="dv">1997</span>, <span class="dv">2022</span>))) <span class="sc">+</span></span>
-<span id="cb35-20"><a href="#cb35-20"></a>  <span class="fu">scale_color_brewer</span>(<span class="at">name =</span> <span class="st">"模型"</span>, <span class="at">palette =</span> <span class="st">"Set1"</span>) <span class="sc">+</span></span>
-<span id="cb35-21"><a href="#cb35-21"></a>  <span class="fu">scale_fill_brewer</span>(<span class="at">name =</span> <span class="st">"模型"</span>, <span class="at">palette =</span> <span class="st">"Set1"</span>) <span class="sc">+</span></span>
-<span id="cb35-22"><a href="#cb35-22"></a>  <span class="fu">theme_classic</span>() <span class="sc">+</span></span>
-<span id="cb35-23"><a href="#cb35-23"></a>  <span class="fu">theme</span>(<span class="at">panel.grid.major.y =</span> <span class="fu">element_line</span>(<span class="at">colour =</span> <span class="st">"gray90"</span>)) <span class="sc">+</span></span>
-<span id="cb35-24"><a href="#cb35-24"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"年份"</span>, <span class="at">y =</span> <span class="st">"提交量"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1"></a>svn_trunk_log <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="at">file =</span> <span class="st">"data/svn-trunk-log-2022.rds"</span>)</span>
+<span id="cb34-2"><a href="#cb34-2"></a>svn_trunk_log<span class="sc">$</span>year <span class="ot">&lt;-</span> <span class="fu">as.integer</span>(<span class="fu">format</span>(svn_trunk_log<span class="sc">$</span>stamp, <span class="st">"%Y"</span>))</span>
+<span id="cb34-3"><a href="#cb34-3"></a>trunk_year <span class="ot">&lt;-</span> <span class="fu">aggregate</span>(<span class="at">data =</span> svn_trunk_log, revision <span class="sc">~</span> year, <span class="at">FUN =</span> length)</span>
+<span id="cb34-4"><a href="#cb34-4"></a><span class="fu">ggplot</span>(<span class="at">data =</span> trunk_year, <span class="fu">aes</span>(<span class="at">x =</span> year, <span class="at">y =</span> revision)) <span class="sc">+</span></span>
+<span id="cb34-5"><a href="#cb34-5"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span></span>
+<span id="cb34-6"><a href="#cb34-6"></a>  <span class="fu">geom_smooth</span>(<span class="fu">aes</span>(<span class="at">color =</span> <span class="st">"LOESS"</span>, <span class="at">fill =</span> <span class="st">"LOESS"</span>),</span>
+<span id="cb34-7"><a href="#cb34-7"></a>    <span class="at">method =</span> <span class="st">"loess"</span>, <span class="at">formula =</span> <span class="st">"y~x"</span>,</span>
+<span id="cb34-8"><a href="#cb34-8"></a>    <span class="at">method.args =</span> <span class="fu">list</span>(</span>
+<span id="cb34-9"><a href="#cb34-9"></a>      <span class="at">span =</span> <span class="fl">0.75</span>, <span class="at">degree =</span> <span class="dv">2</span>, <span class="at">family =</span> <span class="st">"symmetric"</span>,</span>
+<span id="cb34-10"><a href="#cb34-10"></a>      <span class="at">control =</span> <span class="fu">loess.control</span>(<span class="at">surface =</span> <span class="st">"direct"</span>, <span class="at">iterations =</span> <span class="dv">4</span>)</span>
+<span id="cb34-11"><a href="#cb34-11"></a>    ), <span class="at">data =</span> <span class="fu">subset</span>(trunk_year, year <span class="sc">!=</span> <span class="fu">c</span>(<span class="dv">1997</span>, <span class="dv">2022</span>))</span>
+<span id="cb34-12"><a href="#cb34-12"></a>  ) <span class="sc">+</span></span>
+<span id="cb34-13"><a href="#cb34-13"></a>  <span class="fu">geom_smooth</span>(<span class="fu">aes</span>(<span class="at">color =</span> <span class="st">"GAM"</span>, <span class="at">fill =</span> <span class="st">"GAM"</span>),</span>
+<span id="cb34-14"><a href="#cb34-14"></a>    <span class="at">formula =</span> y <span class="sc">~</span> <span class="fu">s</span>(x, <span class="at">k =</span> <span class="dv">12</span>), <span class="at">method =</span> <span class="st">"gam"</span>, <span class="at">se =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb34-15"><a href="#cb34-15"></a>    <span class="at">data =</span> <span class="fu">subset</span>(trunk_year, year <span class="sc">!=</span> <span class="fu">c</span>(<span class="dv">1997</span>, <span class="dv">2022</span>))</span>
+<span id="cb34-16"><a href="#cb34-16"></a>  ) <span class="sc">+</span></span>
+<span id="cb34-17"><a href="#cb34-17"></a>  <span class="fu">geom_smooth</span>(<span class="fu">aes</span>(<span class="at">color =</span> <span class="st">"Cubic Spline"</span>, <span class="at">fill =</span> <span class="st">"Cubic Spline"</span>),</span>
+<span id="cb34-18"><a href="#cb34-18"></a>                <span class="at">method =</span> <span class="st">"lm"</span>, <span class="at">formula =</span> y <span class="sc">~</span> splines<span class="sc">::</span><span class="fu">bs</span>(x, <span class="dv">3</span>), <span class="at">se =</span> T,</span>
+<span id="cb34-19"><a href="#cb34-19"></a>              <span class="at">data =</span> <span class="fu">subset</span>(trunk_year, year <span class="sc">!=</span> <span class="fu">c</span>(<span class="dv">1997</span>, <span class="dv">2022</span>))) <span class="sc">+</span></span>
+<span id="cb34-20"><a href="#cb34-20"></a>  <span class="fu">scale_color_brewer</span>(<span class="at">name =</span> <span class="st">"模型"</span>, <span class="at">palette =</span> <span class="st">"Set1"</span>) <span class="sc">+</span></span>
+<span id="cb34-21"><a href="#cb34-21"></a>  <span class="fu">scale_fill_brewer</span>(<span class="at">name =</span> <span class="st">"模型"</span>, <span class="at">palette =</span> <span class="st">"Set1"</span>) <span class="sc">+</span></span>
+<span id="cb34-22"><a href="#cb34-22"></a>  <span class="fu">theme_classic</span>() <span class="sc">+</span></span>
+<span id="cb34-23"><a href="#cb34-23"></a>  <span class="fu">theme</span>(<span class="at">panel.grid.major.y =</span> <span class="fu">element_line</span>(<span class="at">colour =</span> <span class="st">"gray90"</span>)) <span class="sc">+</span></span>
+<span id="cb34-24"><a href="#cb34-24"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"年份"</span>, <span class="at">y =</span> <span class="st">"提交量"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div id="fig-smooth" class="quarto-figure quarto-figure-center quarto-float anchored">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-smooth-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
@@ -1817,18 +1813,18 @@ I_x(a,b) &amp;= \frac{B_x(a,b)}{B(a,b)}, \quad B(a,b) = B_1(a,b)
 </blockquote>
 <p>描述模型的敏感性，数据中存在的离群值，变量之间的多重共线性等。引入 Cook 距离、杠杆值、VIF 等来诊断模型。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1"></a><span class="co"># 准备数据</span></span>
-<span id="cb36-2"><a href="#cb36-2"></a>state_x77 <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(state.x77,</span>
-<span id="cb36-3"><a href="#cb36-3"></a>  <span class="at">state_name =</span> <span class="fu">rownames</span>(state.x77),</span>
-<span id="cb36-4"><a href="#cb36-4"></a>  <span class="at">state_region =</span> state.region,</span>
-<span id="cb36-5"><a href="#cb36-5"></a>  <span class="at">state_abb =</span> state.abb,</span>
-<span id="cb36-6"><a href="#cb36-6"></a>  <span class="at">check.names =</span> <span class="cn">FALSE</span></span>
-<span id="cb36-7"><a href="#cb36-7"></a>)</span>
-<span id="cb36-8"><a href="#cb36-8"></a><span class="co"># 线性模型拟合</span></span>
-<span id="cb36-9"><a href="#cb36-9"></a>fit <span class="ot">&lt;-</span> <span class="fu">lm</span>(<span class="st">`</span><span class="at">Life Exp</span><span class="st">`</span> <span class="sc">~</span> Income <span class="sc">+</span> Murder, <span class="at">data =</span> state_x77)</span>
-<span id="cb36-10"><a href="#cb36-10"></a><span class="co"># 模型诊断图</span></span>
-<span id="cb36-11"><a href="#cb36-11"></a><span class="fu">library</span>(ggfortify)</span>
-<span id="cb36-12"><a href="#cb36-12"></a><span class="fu">autoplot</span>(fit, <span class="at">which =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">6</span>, <span class="at">label.size =</span> <span class="dv">3</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1"></a><span class="co"># 准备数据</span></span>
+<span id="cb35-2"><a href="#cb35-2"></a>state_x77 <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(state.x77,</span>
+<span id="cb35-3"><a href="#cb35-3"></a>  <span class="at">state_name =</span> <span class="fu">rownames</span>(state.x77),</span>
+<span id="cb35-4"><a href="#cb35-4"></a>  <span class="at">state_region =</span> state.region,</span>
+<span id="cb35-5"><a href="#cb35-5"></a>  <span class="at">state_abb =</span> state.abb,</span>
+<span id="cb35-6"><a href="#cb35-6"></a>  <span class="at">check.names =</span> <span class="cn">FALSE</span></span>
+<span id="cb35-7"><a href="#cb35-7"></a>)</span>
+<span id="cb35-8"><a href="#cb35-8"></a><span class="co"># 线性模型拟合</span></span>
+<span id="cb35-9"><a href="#cb35-9"></a>fit <span class="ot">&lt;-</span> <span class="fu">lm</span>(<span class="st">`</span><span class="at">Life Exp</span><span class="st">`</span> <span class="sc">~</span> Income <span class="sc">+</span> Murder, <span class="at">data =</span> state_x77)</span>
+<span id="cb35-10"><a href="#cb35-10"></a><span class="co"># 模型诊断图</span></span>
+<span id="cb35-11"><a href="#cb35-11"></a><span class="fu">library</span>(ggfortify)</span>
+<span id="cb35-12"><a href="#cb35-12"></a><span class="fu">autoplot</span>(fit, <span class="at">which =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">6</span>, <span class="at">label.size =</span> <span class="dv">3</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div id="fig-lm-diagnostics" class="quarto-figure quarto-figure-center quarto-float anchored">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-lm-diagnostics-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
@@ -1849,11 +1845,11 @@ I_x(a,b) &amp;= \frac{B_x(a,b)}{B(a,b)}, \quad B(a,b) = B_1(a,b)
 \tag{8.2}\]</span></span></p>
 <p>在 R 语言中，可以用函数 <code><a href="https://rdrr.io/r/stats/lm.html">lm()</a></code> 拟合上述模型，</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">lm</span>(<span class="st">`</span><span class="at">Life Exp</span><span class="st">`</span> <span class="sc">~</span> Income <span class="sc">+</span> Murder, <span class="at">data =</span> state_x77)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">lm</span>(<span class="st">`</span><span class="at">Life Exp</span><span class="st">`</span> <span class="sc">~</span> Income <span class="sc">+</span> Murder, <span class="at">data =</span> state_x77)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>模型拟合结果输出如下：</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1"></a><span class="fu">summary</span>(fit)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1"></a><span class="fu">summary</span>(fit)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; 
 #&gt; Call:
@@ -1878,13 +1874,13 @@ I_x(a,b) &amp;= \frac{B_x(a,b)}{B(a,b)}, \quad B(a,b) = B_1(a,b)
 </div>
 <p><a href="https://github.com/strengejacke/ggeffects"><strong>ggeffects</strong></a> 描述单个自变量的作用，人均收入对预期寿命的边际效应</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1"></a><span class="fu">library</span>(ggeffects)</span>
-<span id="cb40-2"><a href="#cb40-2"></a>income_pred <span class="ot">&lt;-</span> <span class="fu">ggpredict</span>(fit, <span class="at">terms =</span> <span class="st">"Income"</span>)</span>
-<span id="cb40-3"><a href="#cb40-3"></a><span class="fu">ggplot</span>(income_pred, <span class="fu">aes</span>(x, predicted)) <span class="sc">+</span></span>
-<span id="cb40-4"><a href="#cb40-4"></a>  <span class="fu">geom_line</span>() <span class="sc">+</span></span>
-<span id="cb40-5"><a href="#cb40-5"></a>  <span class="fu">geom_ribbon</span>(<span class="fu">aes</span>(<span class="at">ymin =</span> conf.low, <span class="at">ymax =</span> conf.high), <span class="at">alpha =</span> <span class="fl">0.1</span>) <span class="sc">+</span></span>
-<span id="cb40-6"><a href="#cb40-6"></a>  <span class="fu">theme_classic</span>() <span class="sc">+</span></span>
-<span id="cb40-7"><a href="#cb40-7"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"人均收入"</span>, <span class="at">y =</span> <span class="st">"预期寿命"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1"></a><span class="fu">library</span>(ggeffects)</span>
+<span id="cb39-2"><a href="#cb39-2"></a>income_pred <span class="ot">&lt;-</span> <span class="fu">ggpredict</span>(fit, <span class="at">terms =</span> <span class="st">"Income"</span>)</span>
+<span id="cb39-3"><a href="#cb39-3"></a><span class="fu">ggplot</span>(income_pred, <span class="fu">aes</span>(x, predicted)) <span class="sc">+</span></span>
+<span id="cb39-4"><a href="#cb39-4"></a>  <span class="fu">geom_line</span>() <span class="sc">+</span></span>
+<span id="cb39-5"><a href="#cb39-5"></a>  <span class="fu">geom_ribbon</span>(<span class="fu">aes</span>(<span class="at">ymin =</span> conf.low, <span class="at">ymax =</span> conf.high), <span class="at">alpha =</span> <span class="fl">0.1</span>) <span class="sc">+</span></span>
+<span id="cb39-6"><a href="#cb39-6"></a>  <span class="fu">theme_classic</span>() <span class="sc">+</span></span>
+<span id="cb39-7"><a href="#cb39-7"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"人均收入"</span>, <span class="at">y =</span> <span class="st">"预期寿命"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div id="fig-marginal-effects" class="quarto-figure quarto-figure-center quarto-float anchored">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-marginal-effects-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
