@@ -12,6 +12,7 @@ jobs:
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       CMDSTAN_VERSION: "2.34.0"
+      PANDOC_VERSION: "3.1.11"
       RETICULATE_PYTHON_ENV: /opt/.virtualenvs/r-tensorflow
     steps:
       - uses: actions/checkout@v4
@@ -28,6 +29,11 @@ jobs:
           extra-repositories: 'https://mc-stan.org/r-packages https://inla.r-inla-download.org/R/stable https://grantmcdermott.r-universe.dev'
 
       - uses: r-lib/actions/setup-r-dependencies@v2
+
+      - name: Install Pandoc
+        uses: r-lib/actions/setup-pandoc@v2
+        with:
+          pandoc-version: ${{ env.PANDOC_VERSION }}
 
       - name: Install TinyTeX
         uses: r-lib/actions/setup-tinytex@v2
@@ -74,7 +80,6 @@ jobs:
         run: |
           install.packages(c("Matrix", "MatrixModels", "rjags", "lme4", "TMB", "glmmTMB"), repos = "https://cran.r-project.org/", type = "source")
           if(!require('remotes')) install.packages('remotes')
-          remotes::install_github('thomasp85/ggraph')
           remotes::install_github("tidyverse/ggplot2", ref = remotes::github_pull("5592"))
         shell: Rscript {0}
         
