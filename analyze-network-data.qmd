@@ -78,9 +78,13 @@ aggregate(data = pdb, Package ~ published_year, FUN = length) |>
 
 ```{r}
 # 清理维护者字段，同一个开发者可能有多个邮箱
-pdb$Maintainer2 <- sub(pattern = "<.*?>", replacement = "", x = pdb$Maintainer)
-pdb$Maintainer2 <- trimws(pdb$Maintainer2, which = "both", whitespace = "[ \t\r\n]")
-pdb$Maintainer2 <- tolower(pdb$Maintainer2)
+extract_maintainer <- function(x) {
+  x <- gsub(pattern = "<.*?>", replacement = "", x = x)
+  x <- trimws(x, which = "both", whitespace = "[ \t\r\n]")
+  x
+}
+# 极少量的维护者名字大小写不一样
+pdb$Maintainer2 <- tolower(extract_maintainer(pdb$Maintainer))
 # 维护者总数
 length(unique(pdb$Maintainer2))
 ```
@@ -110,14 +114,15 @@ aggregate(
 有的组织基本停止了开发，如 [Omegahat](https://github.com/omegahat)，有的被商业公司收购后，不再活跃了，如 [Revolution Analytics](https://github.com/RevolutionAnalytics)。除了众所周知的 [tidyverse](https://github.com/tidyverse/tidyverse) [@Wickham2019] 和 [tidymodels](https://github.com/tidymodels/tidymodels) [@Kuhn2020]，还有很多数据分析、建模的工具箱，如 [mlr3verse](https://github.com/mlr-org/mlr3verse) [@Lang2023]、[easystats](https://github.com/easystats/easystats) [@Makowski2022]、[strengejacke](https://github.com/strengejacke/strengejacke) [@Daniel2019] 和 [DrWhy](https://github.com/ModelOriented/DrWhy) [@DrWhy2023]。它们作为解决方案大都属于一些组织，还有深藏功与名，有待笔者挖掘的。因不存在明显的规律，下面从开发者的邮箱出发，隶属企业、组织往往有统一的邮箱后缀。
 
 ```{r}
-# 抽取邮件后缀
 str_extract <- function(text, pattern, ...) regmatches(text, regexpr(pattern, text, ...))
 # 移除 ORPHANED
 pdb <- subset(pdb, subset = Maintainer != "ORPHANED")
-# email
-pdb$Email <- str_extract(text = pdb$Maintainer, pattern = "<.*?>")
-# email_suffix
-pdb$Email_suffix <- sub(x = pdb$Email, pattern = ".*?@(.*?)>", replacement = "\\1")
+# 抽取邮件后缀
+extract_email_suffix <- function(x) {
+  x <- str_extract(text = x, pattern = "<.*?>")
+  sub(x = x, pattern = ".*?@(.*?)>", replacement = "\\1")
+}
+pdb$Email_suffix <- extract_email_suffix(pdb$Maintainer)
 ```
 
 按组织统计扩展包的数量（总的 R 包数量约 2 万），即各个组织开发的 R 包。
@@ -268,11 +273,6 @@ subset(pdb,
 #| code-fold: true
 #| echo: !expr knitr::is_html_output()
 
-extract_maintainer <- function(x) {
-  x <- gsub(pattern = "<.*?>", replacement = "", x = x)
-  x <- trimws(x, which = "both", whitespace = "[ \t\r\n]")
-  x
-}
 rstudio_db <- subset(pdb,
   subset = grepl(x = Maintainer, pattern = "(posit.co)|(rstudio.com)|(yihui.name)"),
   select = c("Package", "Maintainer")
@@ -307,9 +307,9 @@ CRAN 和 RStudio 团队是 R 语言社区最为熟悉的，其它团队需借助
 #| fig-width: 6
 #| fig-height: 6
 
-pdb_ctb <- aggregate(data = pdb, Package ~ Maintainer, FUN = length)
+pdb_ctb <- aggregate(data = pdb, Package ~ Maintainer2, FUN = length)
 ggplot(data = pdb_ctb[pdb_ctb$Package >= 20, ]) +
-  geom_col(aes(x = Package, y = reorder(Maintainer, Package)), width = .1) +
+  geom_col(aes(x = Package, y = reorder(Maintainer2, Package)), width = .1) +
   theme_classic() +
   labs(x = "R 包数量", y = "开发者")
 ```
