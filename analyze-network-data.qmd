@@ -56,7 +56,7 @@ pdb$date_diff <- as.integer(as.Date("2022-12-31") - as.Date(pdb$Published))
 pdb$published_year <- as.integer(format(as.Date(pdb$Published), "%Y"))
 ```
 
-然后按年统计更新的 R 包数量，如 @fig-updated-package 所示，过去 1 年内更新的 R 包有 8112 个（包含新出现的 R 包），占总数 8112 / 18976 = 42.75%，过去 2 年内更新的 R 包有 11553 个，占总数 11553 / 18976 = 60.88%，这个占比越高说明社区开发者越活跃。还可以换个说法，以 2020 年为例，总数 18976 个 R 包当中有 2470 个 R 包的更新日期停留在 2020 年，占比 2470 / 18976 = 13.02%。
+然后按年统计更新的 R 包数量，如 @fig-updated-package 所示，以 2020 年为例，总数 18976 个 R 包当中有 2470 个 R 包的更新日期停留在 2020 年，占比 2470 / 18976 = 13.02%。过去 1 年内更新的 R 包有 8112 个（包含新出现的 R 包），占总数 8112 / 18976 = 42.75%，过去 2 年内更新的 R 包有 11553 个，占总数 11553 / 18976 = 60.88%，这个占比越高说明社区开发者越活跃。
 
 ```{r}
 #| label: fig-updated-package
@@ -150,7 +150,7 @@ pdb_org <- aggregate(
 head(pdb_org[order(pdb_org$Maintainer2, decreasing = TRUE), ], 20)
 ```
 
-可见，大部分开发者采用邮件服务提供商的邮件地址。3795 个开发者使用来自谷歌的 gmail.com、196 个开发者使用来自微软的 hotmail.com 和 outlook.com，57 个开发者使用来自网易的 163.com，51 个开发者使用来自雅虎的 yahoo.com，46 个开发者使用来自 Proton 的 protonmail.com。
+可见，大部分开发者采用邮件服务提供商的邮件地址。3795 个开发者使用来自谷歌的 gmail.com、196 个开发者使用来自微软的 hotmail.com 或 outlook.com，57 个开发者使用来自网易的 163.com，51 个开发者使用来自雅虎的 yahoo.com，46 个开发者使用来自 Proton 的 protonmail.com。
 
 无论从开发者数量还是 R 包数量的角度看，都有两个显著特点。其一马太效应，往头部集中，其二，长尾分布，尾部占比接近甚至超过 50%。1666 个开发者来自以 edu 为后缀的邮箱。各个大学及其 R 包开发者数据如下：
 
@@ -337,7 +337,6 @@ ggplot(data = pdb_ctb, aes(x = Package)) +
   geom_histogram(binwidth = 1) +
   theme_classic() +
   labs(x = "R 包数量", y = "开发者")
-
 ggplot(data = pdb_ctb[pdb_ctb$Package <= 20, ], aes(x = Package)) +
   geom_histogram(binwidth = 1, fill = NA, color = "gray20") +
   scale_y_log10() +
@@ -412,13 +411,23 @@ format(eval(parse(text = pdb[pdb$Package == "dplyr", "Authors@R"])),
        include = c("given", "family", "role"))
 ```
 
-此外，同属于一个组织的维护者之间常常合作紧密，从上面的结果可以看到，Gábor Csárdi 和 Jim Hester ，Lionel Henry 和 Hadley Wickham，Carson Sievert 和 Joe Cheng ，Jennifer Bryan 和 Hadley Wickham 等同属于 RStudio 公司，常常协作开发项目。
+此外，同属于一个组织的维护者之间常常合作紧密，从上面的结果可以看到，Gábor Csárdi 和 Jim Hester ，Lionel Henry 和 Hadley Wickham，Carson Sievert 和 Joe Cheng ，Jennifer Bryan 和 Hadley Wickham 等同属于 RStudio 公司，常常协作开发项目。对 RStudio、CRAN Team 和 rOpenSci 不再赘述，下面对排名靠前的其它组织略作说明。
+
+1.  [Windsor.ai](https://windsor.ai/) 提供一系列可以连接各大营销平台，获取营销效果数据 R 包。
+2.  [BNOSAC](https://github.com/bnosac) 提供一系列计算机视觉、图像识别、自然语言处理方面的 R 包，比如 [word2vec](https://github.com/bnosac/word2vec) 包、[doc2vec](https://github.com/bnosac/doc2vec) 包等。
+3.  Microsoft 提供一系列连接和操作 [Azure 云](https://azure.microsoft.com/zh-cn)套件的 R 包，比如 [AzureR](https://github.com/Azure/AzureR) 包。
+4.  [Wouter Saelens](https://dynverse.org/) 提供一系列单细胞轨迹推理（**single-cell trajectory inference**）相关的 R 包，形成一个 [**dynverse**](https://github.com/dynverse) **家族。**
+5.  [Poisson Consulting](https://github.com/poissonconsulting) 提供一系列用于计算生物学和统计生态学的 R 包和相关研究论文。
+6.  [Amazon.com, Inc.](https://aws.amazon.com/cn/) 提供一系列用于存储、管理、操作等 Amazon 云服务的 R 包，形成一个 [paws](https://github.com/paws-r/paws) 套件。
+7.  Eli Lilly and Company 可能是 [rOpenSci](https://github.com/ropensci) 的一员，赞助了旗下的 [targets](https://github.com/ropensci/targets) 和 [jagstargets](https://github.com/ropensci/jagstargets) 等 R 包。
+
+最后，统计协作次数的分布，网络中边的权重的分布。
 
 ```{r}
 pdb_authors_net <- pdb_authors_dt[, .(cnt = .N), by = c("Maintainer", "Authors")]
 ```
 
-统计协作次数的分布，可以发现，绝大多数人之间只有一次。
+可以发现，绝大多数人之间协作只有一次。
 
 ```{r}
 table(pdb_authors_net$cnt)
@@ -509,7 +518,31 @@ eb <- cluster_edge_betweenness(pdb_authors_graph)
 eb
 ```
 
-**igraph** 包提供多种社区探测的算法，上面简单使用函数 `cluster_edge_betweenness()` 来探测，结果显示有 181 个社区。结合前面的 @fig-network-igraph ，知道有很多小圈圈，这些放一边，重点关注那些大的圈圈，见下图。
+**igraph** 包提供多种社区探测的算法，上面简单使用函数 `cluster_edge_betweenness()` 来探测，结果显示有 181 个社区。社区 1 包含的成员如下：
+
+```{r}
+eb$names[eb$membership == 1]
+```
+
+社区 3、14、21、34、46、52、75 的成员是比较多的。其中，社区 3 是以 RStudio 为核心的大社区，社区 14 是以 CRAN 为核心的大社区。
+
+```{r}
+# RStudio 为核心的大社区
+eb$names[eb$membership == 3]
+# CRAN 为核心的大社区
+eb$names[eb$membership == 14]
+```
+
+同时，在 RStudio 这个大社区下，有一些与之紧密相关的小社区，比如 Rob Hyndman 等人的时间序列社区、Roger Bivand 等人的空间统计社区。
+
+```{r}
+# 时间序列 Rob Hyndman
+eb$names[eb$membership == 52]
+# 空间统计 Roger Bivand
+eb$names[eb$membership == 75]
+```
+
+结合前面的 @fig-network-igraph ，知道有很多小圈圈，这些放一边，重点关注那些大的圈圈，见下图。
 
 ```{r}
 #| label: fig-network-cluster
@@ -554,7 +587,25 @@ ggraph(pdb_authors_g, layout = "kk") +
   theme_graph(base_family = "sans")
 ```
 
-前面两个网络图基于同一份数据、同样的网络布局算法，得到非常类似的结果。
+前面两个网络图基于同一份数据、同样的网络布局算法，得到非常类似的结果。静态图上的标签相互重叠，影响细节的观察和探索，比如连接 CRAN 和 RStudio 两大阵营的通道。下面使用 visNetwork 包绘制交互式网络图，这样可以在图上使用鼠标放大、拖拽。可以发现在 CRAN 社区的 Achim Zeileis 和 RStudio 社区的 Max Kuhn 之间是由 Andri Signorell 牵线搭桥。
+
+```{r}
+#| label: fig-network-visnetwork
+#| fig-cap: 开发者的影响力网络（visNetwork）
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
+
+library(visNetwork)
+# 将 igraph 对象转为 visNetwork 包可用的数据
+dat <- toVisNetworkData(pdb_authors_graph)
+nodes_df <- dat$nodes
+nodes_df$value <- nodes_df$vertex_cnt
+edges_df <- dat$edges
+edges_df$value <- edges_df$edge_cnt
+# 输入节点和边的数据
+visNetwork(nodes = nodes_df, edges = edges_df, height = "500px") |> 
+  visIgraphLayout(randomSeed = 20232023, layout = "layout.kamada.kawai")
+```
 
 ## 扩展阅读
 
@@ -566,5 +617,5 @@ R 语言网络分析方面的著作有 Erick Kolaczyk 的书籍《Statistical An
 
 ## 习题 {#sec-analysis-network-data-exercise}
 
-1.  类似开发者协作关系的分析，可以统计 R 包被多少 R 包依赖，依赖数量的分布。统计 R 包被依赖的深度（若 R 包 A 被 R 包 B 依赖，R 包 B 被 R 包 C 依赖，以此类推）。进而，分析 R 包的影响力，可视化依赖关系网络。
+1.  类似开发者协作关系的分析，可以统计 R 包被多少 R 包依赖，依赖数量的分布。统计 R 包被依赖的深度（若 R 包 A 被 R 包 B 依赖，R 包 B 被 R 包 C 依赖，以此类推）。进而，构建、分析、可视化依赖关系网络，分析 R 包的影响力。
 2.  本文基于 2022 年 12 月 31 日的 R 包元数据进行分析，请与 2023 年 12 月 31 日的数据比较。
