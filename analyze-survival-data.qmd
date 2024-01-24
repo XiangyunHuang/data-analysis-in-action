@@ -12,7 +12,6 @@
 library(survival)  # survfit
 library(ggplot2)
 library(ggfortify) # autoplot
-library(ggsurvfit) # survfit2 and ggsurvfit
 library(glmnet)    # Cox Models
 library(VGAM)      # R >= 4.4.0
 library(INLA)
@@ -96,41 +95,6 @@ autoplot(aml_survival, data = aml) +
 ```{r}
 aml_surv_reg <- survreg(Surv(time, status) ~ x, data = aml, dist = "weibull")
 summary(aml_surv_reg)
-```
-
-下面 ggsurvfit 包再次拟合模型，并展示模型结果。
-
-### ggsurvfit
-
-```{r}
-library(ggsurvfit)
-```
-
-拟合模型需要函数 `survfit2()`
-
-```{r}
-aml_ggsurvfit <- survfit2(Surv(time, status) ~ x, data = aml)
-```
-
-模型输出
-
-```{r}
-aml_ggsurvfit
-```
-
-```{r}
-#| label: fig-proportional-hazards-regression
-#| fig-cap: 比例风险回归
-#| fig-width: 7
-#| fig-height: 5
-#| fig-showtext: true
-
-ggsurvfit(aml_ggsurvfit, linewidth = 1) +
-  add_confidence_interval() +
-  add_risktable() +
-  add_quantile(y_value = 0.6, color = "gray50", linewidth = 0.75) +
-  scale_y_continuous(label = scales::percent_format()) +
-  labs(y = "生存百分比", title = "从手术到随机化的复发时间") 
 ```
 
 ### glmnet
