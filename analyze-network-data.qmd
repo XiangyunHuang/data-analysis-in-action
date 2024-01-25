@@ -70,7 +70,7 @@ aggregate(data = pdb, Package ~ published_year, FUN = length) |>
   labs(x = "年份", y = "R 包数量")
 ```
 
-截止 2022-12-31，CRAN 上 R 包的维护者有 10049 人，其中有多少人在 2022 年更新了自己的 R 包呢？有 4820 个维护者，占比 47.96%，也就是说 2022 年，有 4820 个开发者更新了 8112 个 R 包，人均更新 1.68 个 R 包，下 @fig-active-maintainer 按 R 包发布年份统计开发者数量。
+截止 2022-12-31，CRAN 上 R 包的维护者有 10067 人，其中有多少人在 2022 年更新了自己的 R 包呢？有 4820 个维护者，占比 47.96%，也就是说 2022 年，有 4820 个开发者更新了 8112 个 R 包，人均更新 1.68 个 R 包，下 @fig-active-maintainer 按 R 包发布年份统计开发者数量。
 
 ```{r}
 # 清理维护者字段，同一个开发者可能有多个邮箱
@@ -78,8 +78,8 @@ extract_maintainer <- function(x) {
   x <- gsub(pattern = "<.*?>", replacement = "", x = x)
   trimws(x, which = "both", whitespace = "[ \t\r\n]")
 }
-# 极少量的维护者名字大小写不一样
-pdb$Maintainer2 <- tolower(extract_maintainer(pdb$Maintainer))
+# 只有 18 个维护者名字有大小写差别
+pdb$Maintainer2 <- extract_maintainer(pdb$Maintainer)
 # 维护者总数
 length(unique(pdb$Maintainer2))
 ```
@@ -106,7 +106,7 @@ aggregate(
 
 ## R 语言社区的组织 {#sec-community-org}
 
-有的组织基本停止了开发，如 [Omegahat](https://github.com/omegahat)，有的被商业公司收购后，不再活跃了，如 [Revolution Analytics](https://github.com/RevolutionAnalytics)。除了众所周知的 [tidyverse](https://github.com/tidyverse/tidyverse) [@Wickham2019] 和 [tidymodels](https://github.com/tidymodels/tidymodels) [@Kuhn2020]，还有很多数据分析、建模的工具箱，如 [mlr3verse](https://github.com/mlr-org/mlr3verse) [@Lang2023]、[easystats](https://github.com/easystats/easystats) [@Makowski2022]、[strengejacke](https://github.com/strengejacke/strengejacke) [@Daniel2019] 和 [DrWhy](https://github.com/ModelOriented/DrWhy) [@DrWhy2023]。它们作为解决方案大都属于一些组织，还有深藏功与名，有待笔者挖掘的。因不存在明显的规律，下面从开发者的邮箱出发，隶属企业、组织往往有统一的邮箱后缀。
+除了 RStudio 公司出品的 [tidyverse](https://github.com/tidyverse/tidyverse) [@Wickham2019] 和 [tidymodels](https://github.com/tidymodels/tidymodels) [@Kuhn2020]，还有一些数据分析、建模的工具箱，如 [mlr3verse](https://github.com/mlr-org/mlr3verse) [@Lang2023]、[easystats](https://github.com/easystats/easystats) [@Makowski2022]、[strengejacke](https://github.com/strengejacke/strengejacke) [@Daniel2019] 和 [DrWhy](https://github.com/ModelOriented/DrWhy) [@DrWhy2023]。也有的组织基本停止了开发，如 [Omegahat](https://github.com/omegahat)。还有的被商业公司收购后，不再活跃了，如 [Revolution Analytics](https://github.com/RevolutionAnalytics)。它们作为解决方案大都属于一些组织，还有深藏功与名，有待笔者挖掘的。因不存在明显的规律，下面从开发者的邮箱出发，隶属企业、组织往往有统一的邮箱后缀。
 
 ```{r}
 str_extract <- function(text, pattern, ...) regmatches(text, regexpr(pattern, text, ...))
@@ -145,7 +145,7 @@ pdb_org <- aggregate(
 head(pdb_org[order(pdb_org$Maintainer2, decreasing = TRUE), ], 20)
 ```
 
-可见，大部分开发者采用邮件服务提供商的邮件地址。3795 个开发者使用来自谷歌的 gmail.com、196 个开发者使用来自微软的 hotmail.com 或 outlook.com，57 个开发者使用来自网易的 163.com，51 个开发者使用来自雅虎的 yahoo.com，46 个开发者使用来自 Proton 的 protonmail.com。
+可见，大部分开发者采用邮件服务提供商的邮件地址。3800 个开发者使用来自谷歌的 gmail.com、197 个开发者使用来自微软的 hotmail.com 或 outlook.com，57 个开发者使用来自网易的 163.com，51 个开发者使用来自雅虎的 yahoo.com，46 个开发者使用来自 Proton 的 protonmail.com。
 
 无论从开发者数量还是 R 包数量的角度看，都有两个显著特点。其一马太效应，往头部集中，其二，长尾分布，尾部占比接近甚至超过 50%。1666 个开发者来自以 edu 为后缀的邮箱。各个大学及其 R 包开发者数据如下：
 
@@ -159,7 +159,7 @@ pdb_org_edu[order(pdb_org_edu$Maintainer2, decreasing = TRUE), ] |> head(20)
 
 有些邮箱后缀带有院系，但是并没有向上合并到学校这一级，比如 `stanford.edu` 、`stat.stanford.edu` 和 `alumni.stanford.edu` 等没有合并统计，所以学校排名仅供参考。有的邮箱来自教育机构，但是不以 `edu` 结尾，实际上，使用 `edu` 邮箱的教育机构大部份位于美国。美国以外的教育机构，比如新西兰奥克兰大学 `auckland.ac.nz` 、瑞士苏黎世联邦理工学院 `stat.math.ethz.ch` 等。如果读者还知道其他一般规律的，或者提供大学邮箱列表或者有其它更好的办法，就可以把这个排序数字做得更加精准一些。
 
-下面根据邮箱后缀匹配抽取 CRAN 团队及开发的 R 包，规则也许不能覆盖所有的情况，读者若有补充，欢迎 PR 给我。举个例子，Brian Ripley 的邮箱 [ripley\@stats.ox.ac.uk](mailto:ripley@stats.ox.ac.uk){.email} 就不是一路，需要单独添加。
+下面根据邮箱后缀匹配抽取 CRAN 团队及开发的 R 包，规则也许不能覆盖所有的情况，比如署名 CRAN Team 的维护者代表的是 CRAN 团队，XML 和 RCurl 包就由他们维护。再比如，Brian Ripley 的邮箱 [ripley\@stats.ox.ac.uk](mailto:ripley@stats.ox.ac.uk){.email} 就不是 CRAN 官网域名。读者若有补充，欢迎 PR 给我。
 
 ```{r}
 #| label: tbl-cran-developers
@@ -172,7 +172,7 @@ pdb_org_edu[order(pdb_org_edu$Maintainer2, decreasing = TRUE), ] |> head(20)
 #| echo: !expr knitr::is_html_output()
 #| comment: NA
 
-core_dev <- subset(pdb,
+cran_dev <- subset(pdb,
   subset = grepl(
     x = Maintainer,
     pattern = paste0(c(
@@ -222,13 +222,13 @@ core_dev <- subset(pdb,
     replacement = "John Chambers"
   ))
 
-tmp <- aggregate(data = core_dev, Package ~ Maintainer, FUN = function(x) length(unique(x)))
-tmp <- tmp[order(tmp$Package, decreasing = TRUE), ]
+cran_dev <- aggregate(data = cran_dev, Package ~ Maintainer, FUN = function(x) length(unique(x)))
+cran_dev <- cran_dev[order(cran_dev$Package, decreasing = TRUE), ]
 
-knitr::kable(head(tmp, ceiling(nrow(tmp) / 2)),
+knitr::kable(head(cran_dev, ceiling(nrow(cran_dev) / 2)),
   col.names = c("团队成员", "R 包数量"), row.names = FALSE
 )
-knitr::kable(tail(tmp, floor(nrow(tmp) / 2)),
+knitr::kable(tail(cran_dev, floor(nrow(cran_dev) / 2)),
   col.names = c("团队成员", "R 包数量"), row.names = FALSE
 )
 ```
@@ -268,19 +268,19 @@ subset(pdb,
 #| code-fold: true
 #| echo: !expr knitr::is_html_output()
 
-rstudio_db <- subset(pdb,
+rstudio_dev <- subset(pdb,
   subset = grepl(x = Maintainer, pattern = "(posit.co)|(rstudio.com)|(yihui.name)"),
   select = c("Package", "Maintainer")
 ) |>
   transform(Maintainer = extract_maintainer(Maintainer))
 
-rstudio_db <- aggregate(data = rstudio_db, Package ~ Maintainer, FUN = function(x) length(unique(x)))
-rstudio_db <- rstudio_db[order(rstudio_db$Package, decreasing = TRUE), ]
+rstudio_dev <- aggregate(data = rstudio_dev, Package ~ Maintainer, FUN = function(x) length(unique(x)))
+rstudio_dev <- rstudio_dev[order(rstudio_dev$Package, decreasing = TRUE), ]
 
-knitr::kable(head(rstudio_db, ceiling(nrow(rstudio_db) / 2)),
+knitr::kable(head(rstudio_dev, ceiling(nrow(rstudio_dev) / 2)),
   col.names = c("团队成员", "R 包数量"), row.names = FALSE
 )
-knitr::kable(tail(rstudio_db, floor(nrow(rstudio_db) / 2)),
+knitr::kable(tail(rstudio_dev, floor(nrow(rstudio_dev) / 2)),
   col.names = c("团队成员", "R 包数量"), row.names = FALSE
 )
 ```
@@ -311,7 +311,7 @@ ggplot(data = pdb_ctb[pdb_ctb$Package >= 20, ]) +
   labs(x = "R 包数量", y = "开发者")
 ```
 
-发现，开发 1 个 R 包的开发者有 7656 人，开发 2 个 R 包的开发者有 1678 人，第二名是第一名的五分之一，递减规律非常符合指数分布。
+发现，开发 1 个 R 包的开发者有 6732 人，开发 2 个 R 包的开发者有 1685 人，第二名是第一名的五分之一，递减规律非常符合指数分布。
 
 ```{r}
 table(pdb_ctb$Package)
@@ -341,14 +341,14 @@ ggplot(data = pdb_ctb[pdb_ctb$Package <= 20, ], aes(x = Package)) +
   labs(x = "R 包数量", y = "开发者")
 ```
 
-最高产 Top 1% 的开发者 117 人（开发 R 包超过 10 个的开发者）贡献了 2060 / 18976 = 10.8% 扩展包 ，高产的是商业公司、开源组织、大学机构。
+最高产 Top 1% 的开发者 131 人（开发 R 包超过 10 个的开发者）贡献了 2329 / 18976 = 12.3% 的扩展包 ，高产的是商业公司、开源组织、大学机构。
 
 ```{r}
 dim(pdb_ctb[pdb_ctb$Package > 10, ])
 sum(pdb_ctb[pdb_ctb$Package > 10, "Package"])
 ```
 
-最低产 Bottom 的开发者 7656 人（仅开发一个 R 包的开发者） 贡献了 7656 / 18976 扩展包 40.3 %，低产的人是主体。
+最低产 Bottom 的开发者 6732 人（仅开发一个 R 包的开发者）占总开发者的比例 6732 / 10067 = 66.87%， 贡献了 6732 / 18976 = 35.5 % 的扩展包 ，低产的人是主体。
 
 ### 开发者协作关系 {#sec-coauthor-relation}
 
@@ -422,13 +422,10 @@ format(eval(parse(text = pdb[pdb$Package == "dplyr", "Authors@R"])),
 
 ```{r}
 pdb_authors_net <- pdb_authors_dt[, .(cnt = .N), by = c("Maintainer", "Authors")]
+table(pdb_authors_net$cnt)
 ```
 
 可以发现，绝大多数人之间协作只有一次。
-
-```{r}
-table(pdb_authors_net$cnt)
-```
 
 ### 节点出入度分布 {#sec-network-degree}
 
@@ -599,7 +596,7 @@ nodes_df$value <- nodes_df$vertex_cnt
 edges_df <- dat$edges
 edges_df$value <- edges_df$edge_cnt
 # 输入节点和边的数据
-visNetwork(nodes = nodes_df, edges = edges_df, height = "650px") |> 
+visNetwork(nodes = nodes_df, edges = edges_df, height = "600px") |> 
   visIgraphLayout(randomSeed = 20232023, layout = "layout.kamada.kawai")
 ```
 
