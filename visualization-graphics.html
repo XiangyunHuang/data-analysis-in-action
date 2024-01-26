@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="zh-Hans" xml:lang="zh-Hans"><head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.4.547">
+<meta name="generator" content="quarto-1.4.549">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 <title>R 语言数据分析实战 - 10&nbsp; graphics 入门</title>
 <style>
@@ -1343,54 +1343,57 @@ f(x,y) =
 <div class="cell">
 <details class="code-fold"><summary>代码</summary><div class="sourceCode cell-code" id="cb31"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb31-1"><a href="#cb31-1"></a><span class="im">from</span> matplotlib <span class="im">import</span> cm</span>
 <span id="cb31-2"><a href="#cb31-2"></a><span class="im">from</span> matplotlib.colors <span class="im">import</span> LightSource</span>
-<span id="cb31-3"><a href="#cb31-3"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
-<span id="cb31-4"><a href="#cb31-4"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
-<span id="cb31-5"><a href="#cb31-5"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
-<span id="cb31-6"><a href="#cb31-6"></a></span>
-<span id="cb31-7"><a href="#cb31-7"></a><span class="co"># 设置 PGF 后端渲染图形</span></span>
-<span id="cb31-8"><a href="#cb31-8"></a><span class="im">import</span> matplotlib <span class="im">as</span> mpl</span>
-<span id="cb31-9"><a href="#cb31-9"></a>mpl.use(<span class="st">"pgf"</span>)</span>
-<span id="cb31-10"><a href="#cb31-10"></a><span class="co"># XeLaTeX 编译图形</span></span>
-<span id="cb31-11"><a href="#cb31-11"></a>plt.rcParams.update({</span>
-<span id="cb31-12"><a href="#cb31-12"></a>    <span class="st">"text.usetex"</span>: <span class="va">True</span>,</span>
-<span id="cb31-13"><a href="#cb31-13"></a>    <span class="st">"pgf.texsystem"</span>: <span class="st">"xelatex"</span>,</span>
-<span id="cb31-14"><a href="#cb31-14"></a>    <span class="st">"pgf.rcfonts"</span>: <span class="va">False</span>,    <span class="co"># don't setup fonts from rc parameters</span></span>
-<span id="cb31-15"><a href="#cb31-15"></a>    <span class="st">"pgf.preamble"</span>: <span class="st">"</span><span class="ch">\n</span><span class="st">"</span>.join([</span>
-<span id="cb31-16"><a href="#cb31-16"></a>            <span class="vs">r"\usepackage[fontset=fandol,UTF8]</span><span class="sc">{ctex}</span><span class="vs">"</span>,</span>
-<span id="cb31-17"><a href="#cb31-17"></a>        ]),</span>
-<span id="cb31-18"><a href="#cb31-18"></a>})</span>
-<span id="cb31-19"><a href="#cb31-19"></a><span class="co"># 读取数据</span></span>
-<span id="cb31-20"><a href="#cb31-20"></a>volcano <span class="op">=</span> pd.read_csv(<span class="st">"data/volcano.csv"</span>, header<span class="op">=</span><span class="va">None</span>)</span>
-<span id="cb31-21"><a href="#cb31-21"></a><span class="co"># DataFrame 转 Array</span></span>
-<span id="cb31-22"><a href="#cb31-22"></a>z <span class="op">=</span> volcano.to_numpy()</span>
-<span id="cb31-23"><a href="#cb31-23"></a><span class="co"># 数据行、列数</span></span>
-<span id="cb31-24"><a href="#cb31-24"></a>nrows, ncols <span class="op">=</span> z.shape</span>
-<span id="cb31-25"><a href="#cb31-25"></a><span class="co"># 线性序列</span></span>
-<span id="cb31-26"><a href="#cb31-26"></a>x <span class="op">=</span> np.linspace(<span class="dv">1</span>, <span class="dv">87</span>, ncols)</span>
-<span id="cb31-27"><a href="#cb31-27"></a>y <span class="op">=</span> np.linspace(<span class="dv">1</span>, <span class="dv">61</span>, nrows)</span>
-<span id="cb31-28"><a href="#cb31-28"></a><span class="co"># 类似 R 语言函数 expand.grid()</span></span>
-<span id="cb31-29"><a href="#cb31-29"></a>xv, yv <span class="op">=</span> np.meshgrid(x, y)</span>
-<span id="cb31-30"><a href="#cb31-30"></a><span class="co"># 设置主题</span></span>
-<span id="cb31-31"><a href="#cb31-31"></a>fig, ax <span class="op">=</span> plt.subplots(subplot_kw<span class="op">=</span><span class="bu">dict</span>(projection<span class="op">=</span><span class="st">"3d"</span>))</span>
-<span id="cb31-32"><a href="#cb31-32"></a><span class="co"># 观察视角</span></span>
-<span id="cb31-33"><a href="#cb31-33"></a>ax.view_init(azim<span class="op">=</span><span class="dv">30</span>, elev<span class="op">=</span><span class="dv">30</span>)</span>
-<span id="cb31-34"><a href="#cb31-34"></a><span class="co"># 设置坐标轴标签</span></span>
-<span id="cb31-35"><a href="#cb31-35"></a>ax.set_xlabel(<span class="vs">r"南北方向"</span>, rotation<span class="op">=</span><span class="dv">45</span>)</span>
-<span id="cb31-36"><a href="#cb31-36"></a>ax.set_ylabel(<span class="vs">r"东西方向"</span>, rotation<span class="op">=-</span><span class="dv">15</span>)</span>
-<span id="cb31-37"><a href="#cb31-37"></a>ax.set_zlabel(<span class="vs">r"高度"</span>, rotation<span class="op">=</span><span class="dv">90</span>)</span>
-<span id="cb31-38"><a href="#cb31-38"></a><span class="co"># 去掉多余的边空</span></span>
-<span id="cb31-39"><a href="#cb31-39"></a>fig.set_tight_layout(<span class="va">True</span>)</span>
-<span id="cb31-40"><a href="#cb31-40"></a><span class="co"># 光源照射的角度</span></span>
-<span id="cb31-41"><a href="#cb31-41"></a>ls <span class="op">=</span> LightSource(<span class="dv">270</span>, <span class="dv">45</span>)</span>
-<span id="cb31-42"><a href="#cb31-42"></a><span class="co"># 自定义调色板</span></span>
-<span id="cb31-43"><a href="#cb31-43"></a>rgb <span class="op">=</span> ls.shade(z, cmap<span class="op">=</span>cm.viridis, vert_exag<span class="op">=</span><span class="fl">0.1</span>, blend_mode<span class="op">=</span><span class="st">"soft"</span>)</span>
-<span id="cb31-44"><a href="#cb31-44"></a><span class="co"># 三维透视图</span></span>
-<span id="cb31-45"><a href="#cb31-45"></a>surf <span class="op">=</span> ax.plot_surface(</span>
-<span id="cb31-46"><a href="#cb31-46"></a>    xv, yv, z, rstride<span class="op">=</span><span class="dv">1</span>, cstride<span class="op">=</span><span class="dv">1</span>, facecolors<span class="op">=</span>rgb,</span>
-<span id="cb31-47"><a href="#cb31-47"></a>    linewidth<span class="op">=</span><span class="dv">0</span>, antialiased<span class="op">=</span><span class="va">False</span>, shade<span class="op">=</span><span class="va">False</span></span>
-<span id="cb31-48"><a href="#cb31-48"></a>)</span>
-<span id="cb31-49"><a href="#cb31-49"></a><span class="co"># 渲染</span></span>
-<span id="cb31-50"><a href="#cb31-50"></a>plt.show()</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb31-3"><a href="#cb31-3"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details><div class="cell-output cell-output-stdout">
+<pre><code>#&gt; Matplotlib is building the font cache; this may take a moment.</code></pre>
+</div>
+<details class="code-fold"><summary>代码</summary><div class="sourceCode cell-code" id="cb33"><pre class="sourceCode numberSource python number-lines code-with-copy"><code class="sourceCode python"><span id="cb33-1"><a href="#cb33-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb33-2"><a href="#cb33-2"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb33-3"><a href="#cb33-3"></a></span>
+<span id="cb33-4"><a href="#cb33-4"></a><span class="co"># 设置 PGF 后端渲染图形</span></span>
+<span id="cb33-5"><a href="#cb33-5"></a><span class="im">import</span> matplotlib <span class="im">as</span> mpl</span>
+<span id="cb33-6"><a href="#cb33-6"></a>mpl.use(<span class="st">"pgf"</span>)</span>
+<span id="cb33-7"><a href="#cb33-7"></a><span class="co"># XeLaTeX 编译图形</span></span>
+<span id="cb33-8"><a href="#cb33-8"></a>plt.rcParams.update({</span>
+<span id="cb33-9"><a href="#cb33-9"></a>    <span class="st">"text.usetex"</span>: <span class="va">True</span>,</span>
+<span id="cb33-10"><a href="#cb33-10"></a>    <span class="st">"pgf.texsystem"</span>: <span class="st">"xelatex"</span>,</span>
+<span id="cb33-11"><a href="#cb33-11"></a>    <span class="st">"pgf.rcfonts"</span>: <span class="va">False</span>,    <span class="co"># don't setup fonts from rc parameters</span></span>
+<span id="cb33-12"><a href="#cb33-12"></a>    <span class="st">"pgf.preamble"</span>: <span class="st">"</span><span class="ch">\n</span><span class="st">"</span>.join([</span>
+<span id="cb33-13"><a href="#cb33-13"></a>            <span class="vs">r"\usepackage[fontset=fandol,UTF8]</span><span class="sc">{ctex}</span><span class="vs">"</span>,</span>
+<span id="cb33-14"><a href="#cb33-14"></a>        ]),</span>
+<span id="cb33-15"><a href="#cb33-15"></a>})</span>
+<span id="cb33-16"><a href="#cb33-16"></a><span class="co"># 读取数据</span></span>
+<span id="cb33-17"><a href="#cb33-17"></a>volcano <span class="op">=</span> pd.read_csv(<span class="st">"data/volcano.csv"</span>, header<span class="op">=</span><span class="va">None</span>)</span>
+<span id="cb33-18"><a href="#cb33-18"></a><span class="co"># DataFrame 转 Array</span></span>
+<span id="cb33-19"><a href="#cb33-19"></a>z <span class="op">=</span> volcano.to_numpy()</span>
+<span id="cb33-20"><a href="#cb33-20"></a><span class="co"># 数据行、列数</span></span>
+<span id="cb33-21"><a href="#cb33-21"></a>nrows, ncols <span class="op">=</span> z.shape</span>
+<span id="cb33-22"><a href="#cb33-22"></a><span class="co"># 线性序列</span></span>
+<span id="cb33-23"><a href="#cb33-23"></a>x <span class="op">=</span> np.linspace(<span class="dv">1</span>, <span class="dv">87</span>, ncols)</span>
+<span id="cb33-24"><a href="#cb33-24"></a>y <span class="op">=</span> np.linspace(<span class="dv">1</span>, <span class="dv">61</span>, nrows)</span>
+<span id="cb33-25"><a href="#cb33-25"></a><span class="co"># 类似 R 语言函数 expand.grid()</span></span>
+<span id="cb33-26"><a href="#cb33-26"></a>xv, yv <span class="op">=</span> np.meshgrid(x, y)</span>
+<span id="cb33-27"><a href="#cb33-27"></a><span class="co"># 设置主题</span></span>
+<span id="cb33-28"><a href="#cb33-28"></a>fig, ax <span class="op">=</span> plt.subplots(subplot_kw<span class="op">=</span><span class="bu">dict</span>(projection<span class="op">=</span><span class="st">"3d"</span>))</span>
+<span id="cb33-29"><a href="#cb33-29"></a><span class="co"># 观察视角</span></span>
+<span id="cb33-30"><a href="#cb33-30"></a>ax.view_init(azim<span class="op">=</span><span class="dv">30</span>, elev<span class="op">=</span><span class="dv">30</span>)</span>
+<span id="cb33-31"><a href="#cb33-31"></a><span class="co"># 设置坐标轴标签</span></span>
+<span id="cb33-32"><a href="#cb33-32"></a>ax.set_xlabel(<span class="vs">r"南北方向"</span>, rotation<span class="op">=</span><span class="dv">45</span>)</span>
+<span id="cb33-33"><a href="#cb33-33"></a>ax.set_ylabel(<span class="vs">r"东西方向"</span>, rotation<span class="op">=-</span><span class="dv">15</span>)</span>
+<span id="cb33-34"><a href="#cb33-34"></a>ax.set_zlabel(<span class="vs">r"高度"</span>, rotation<span class="op">=</span><span class="dv">90</span>)</span>
+<span id="cb33-35"><a href="#cb33-35"></a><span class="co"># 去掉多余的边空</span></span>
+<span id="cb33-36"><a href="#cb33-36"></a>fig.set_tight_layout(<span class="va">True</span>)</span>
+<span id="cb33-37"><a href="#cb33-37"></a><span class="co"># 光源照射的角度</span></span>
+<span id="cb33-38"><a href="#cb33-38"></a>ls <span class="op">=</span> LightSource(<span class="dv">270</span>, <span class="dv">45</span>)</span>
+<span id="cb33-39"><a href="#cb33-39"></a><span class="co"># 自定义调色板</span></span>
+<span id="cb33-40"><a href="#cb33-40"></a>rgb <span class="op">=</span> ls.shade(z, cmap<span class="op">=</span>cm.viridis, vert_exag<span class="op">=</span><span class="fl">0.1</span>, blend_mode<span class="op">=</span><span class="st">"soft"</span>)</span>
+<span id="cb33-41"><a href="#cb33-41"></a><span class="co"># 三维透视图</span></span>
+<span id="cb33-42"><a href="#cb33-42"></a>surf <span class="op">=</span> ax.plot_surface(</span>
+<span id="cb33-43"><a href="#cb33-43"></a>    xv, yv, z, rstride<span class="op">=</span><span class="dv">1</span>, cstride<span class="op">=</span><span class="dv">1</span>, facecolors<span class="op">=</span>rgb,</span>
+<span id="cb33-44"><a href="#cb33-44"></a>    linewidth<span class="op">=</span><span class="dv">0</span>, antialiased<span class="op">=</span><span class="va">False</span>, shade<span class="op">=</span><span class="va">False</span></span>
+<span id="cb33-45"><a href="#cb33-45"></a>)</span>
+<span id="cb33-46"><a href="#cb33-46"></a><span class="co"># 渲染</span></span>
+<span id="cb33-47"><a href="#cb33-47"></a>plt.show()</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details><div class="cell-output-display">
 <div id="fig-volcano-plt" class="quarto-figure quarto-figure-center quarto-float anchored">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-volcano-plt-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
