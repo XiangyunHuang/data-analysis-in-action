@@ -134,7 +134,7 @@ head(pdb_pkg[order(pdb_pkg$Package, decreasing = TRUE), ], 20)
 1.  邮件服务提供商。6968 个 R 包使用 gmail 邮箱作为联系维护者的方式，googlemail.com 也是谷歌提供的服务。hotmail.com 和 outlook.com 都是微软提供的邮箱服务，outlook.fr （法国）也是，除此之外，比较大的邮件服务提供商就是 163.com（网易）、 protonmail.com 和 yahoo.com （雅虎）等。
 2.  商业组织。208 个 R 包来自 RStudio 公司的员工，这些维护者使用 RStudio 公司提供的邮箱。
 3.  开源组织。R-project.org 和 r-project.org 都是 R 语言组织的联系方式，自不必多说，R 语言核心团队成员不仅维护 R 软件源码，还维护了很多 R 包。debian.org 是 Debian 组织的联系方式，都是开源组织（Open Source Org）。
-4.  大学学院机构。berkeley.edu 、umich.edu 等以 edu 结尾的北美（国）的大学，gmx.de、 posteo.de 等以 de 结尾的德国大学，ucl.ac.uk 等以 uk 结尾的英国的大学，auckland.ac.nz 等以 nz 结尾的新西兰的大学，uwaterloo.ca 等以 ca 结尾的加拿大的大学。
+4.  教育机构。berkeley.edu 、umich.edu 等以 edu 结尾的北美（国）的大学，gmx.de、 posteo.de 等以 de 结尾的德国大学，ucl.ac.uk 等以 uk 结尾的英国的大学，auckland.ac.nz 等以 nz 结尾的新西兰的大学，uwaterloo.ca 等以 ca 结尾的加拿大的大学。
 
 按组织统计开发者的数量（总的开发者数量约 1 万），即各个组织的 R 包开发者。
 
@@ -147,7 +147,11 @@ head(pdb_org[order(pdb_org$Maintainer2, decreasing = TRUE), ], 20)
 
 可见，大部分开发者采用邮件服务提供商的邮件地址。3800 个开发者使用来自谷歌的 gmail.com、197 个开发者使用来自微软的 hotmail.com 或 outlook.com，57 个开发者使用来自网易的 163.com，51 个开发者使用来自雅虎的 yahoo.com，46 个开发者使用来自 Proton 的 protonmail.com。
 
-无论从开发者数量还是 R 包数量的角度看，都有两个显著特点。其一马太效应，往头部集中，其二，长尾分布，尾部占比接近甚至超过 50%。1666 个开发者来自以 edu 为后缀的邮箱。各个大学及其 R 包开发者数据如下：
+无论从开发者数量还是 R 包数量的角度看，都有两个显著特点。其一马太效应，往头部集中，其二，长尾分布，尾部占比接近甚至超过 50%。
+
+### 美国、英国和加拿大 {#sec-edu-uk-ca}
+
+1666 个开发者来自以 edu 为后缀的邮箱。各个组织（主要是大学）及其 R 包开发者数据如下：
 
 ```{r}
 sum(pdb_org[grepl(pattern = "edu$", x = pdb_org$Email_suffix), "Maintainer2"])
@@ -155,11 +159,29 @@ pdb_org_edu <- pdb_org[grepl(pattern = "edu$", x = pdb_org$Email_suffix), ]
 pdb_org_edu[order(pdb_org_edu$Maintainer2, decreasing = TRUE), ] |> head(20)
 ```
 
-好吧，几乎全是美国各个 NB 大学的，比如华盛顿大学（ uw.edu）、密歇根大学（umich.edu）、加州伯克利大学（berkeley.edu）等等。顺便一说，欧美各个大学的网站，特别是统计院系很厉害的，已经帮大家收集得差不多了，有留学打算的读者自取，邮箱后缀就是学校/院官网。
+好吧，几乎全是美国各个 NB 大学的，比如华盛顿大学（ uw.edu）、密歇根大学（umich.edu）、加州伯克利大学（berkeley.edu）等等。顺便一说，美国各个大学的网站，特别是统计院系很厉害的，已经帮大家收集得差不多了，有留学打算的读者自取，邮箱后缀就是学校/院官网。
 
-有些邮箱后缀带有院系，但是并没有向上合并到学校这一级，比如 `stanford.edu` 、`stat.stanford.edu` 和 `alumni.stanford.edu` 等没有合并统计，所以学校排名仅供参考。有的邮箱来自教育机构，但是不以 `edu` 结尾，实际上，使用 `edu` 邮箱的教育机构大部份位于美国。美国以外的教育机构，比如新西兰奥克兰大学 `auckland.ac.nz` 、瑞士苏黎世联邦理工学院 `stat.math.ethz.ch` 等。如果读者还知道其他一般规律的，或者提供大学邮箱列表或者有其它更好的办法，就可以把这个排序数字做得更加精准一些。
+有些邮箱后缀带有院系，但是并没有向上合并到学校这一级，比如 `stanford.edu` 、`stat.stanford.edu` 和 `alumni.stanford.edu` 等没有合并统计。实际上，使用 `edu` 邮箱的教育机构大部份位于美国。有的邮箱来自教育机构，但是不以 `edu` 结尾，比如新西兰奥克兰大学 `auckland.ac.nz` 、瑞士苏黎世联邦理工学院 `stat.math.ethz.ch` 等美国以外的教育机构。下面分别查看英国和加拿大的情况。
 
-下面根据邮箱后缀匹配抽取 CRAN 团队及开发的 R 包，规则也许不能覆盖所有的情况，比如署名 CRAN Team 的维护者代表的是 CRAN 团队，XML 和 RCurl 包就由他们维护。再比如，Brian Ripley 的邮箱 [ripley\@stats.ox.ac.uk](mailto:ripley@stats.ox.ac.uk){.email} 就不是 CRAN 官网域名。读者若有补充，欢迎 PR 给我。
+350 个开发者来自以 uk 为后缀的邮箱。各个组织（主要是大学）及其 R 包开发者数据如下：
+
+```{r}
+sum(pdb_org[grepl(pattern = "uk$", x = pdb_org$Email_suffix), "Maintainer2"])
+pdb_org_uk <- pdb_org[grepl(pattern = "uk$", x = pdb_org$Email_suffix), ]
+pdb_org_uk[order(pdb_org_uk$Maintainer2, decreasing = TRUE), ] |> head(20)
+```
+
+258 个开发者来自以 ca 为后缀的邮箱。各个组织（主要是大学）及其 R 包开发者数据如下：
+
+```{r}
+sum(pdb_org[grepl(pattern = "ca$", x = pdb_org$Email_suffix), "Maintainer2"])
+pdb_org_ca <- pdb_org[grepl(pattern = "ca$", x = pdb_org$Email_suffix), ]
+pdb_org_ca[order(pdb_org_ca$Maintainer2, decreasing = TRUE), ] |> head(10)
+```
+
+### CRAN 和 RStudio {#sec-cran-rstudio}
+
+下面根据邮箱后缀匹配抽取 CRAN 团队及开发的 R 包，规则也许不能覆盖所有的情况，比如署名 CRAN Team 的维护者代表的是 CRAN 团队，**XML** 和 **RCurl** 包就由他们维护。再比如，Brian Ripley 的邮箱 [ripley\@stats.ox.ac.uk](mailto:ripley@stats.ox.ac.uk){.email} 就不是 CRAN 官网域名。读者若有补充，欢迎 PR 给我。
 
 ```{r}
 #| label: tbl-cran-developers
@@ -233,7 +255,7 @@ knitr::kable(tail(cran_dev, floor(nrow(cran_dev) / 2)),
 )
 ```
 
-Kurt Hornik、Simon Urbanek、Achim Zeileis 、Martin Maechler、Torsten Hothorn等真是高产呐！除了维护 R 语言核心代码，还开发维护了**20** 多个 R 包。以 Brian Ripley 为例，看看他都具体维护了哪些 R 包。
+Kurt Hornik、Simon Urbanek、Achim Zeileis 等真是高产呐！除了维护 R 语言核心代码，还开发维护了那么多 R 包。以 Brian Ripley 为例，看看他都具体维护了哪些 R 包。
 
 ```{r}
 #| label: tbl-ripley
@@ -242,17 +264,11 @@ Kurt Hornik、Simon Urbanek、Achim Zeileis 、Martin Maechler、Torsten Hothorn
 #| echo: !expr knitr::is_html_output()
 
 subset(pdb,
-  subset = grepl(
-    x = Maintainer,
-    pattern = "Brian Ripley"
-  ),
+  subset = grepl(x = Maintainer, pattern = "Brian Ripley"),
   select = c("Package", "Title"), drop = TRUE
 ) |>
   unique(by = "Package") |>
-  transform(Title = gsub(
-    pattern = "(\\\n)",
-    replacement = " ", x = Title
-  )) |>
+  transform(Title = gsub(pattern = "(\\\n)", replacement = " ", x = Title)) |>
   knitr::kable(row.names = FALSE)
 ```
 
@@ -311,7 +327,45 @@ ggplot(data = pdb_ctb[pdb_ctb$Package >= 20, ]) +
   labs(x = "R 包数量", y = "开发者")
 ```
 
-发现，开发 1 个 R 包的开发者有 6732 人，开发 2 个 R 包的开发者有 1685 人，第二名是第一名的五分之一，递减规律非常符合指数分布。
+这些开发者的主页和主要的 R 社区贡献如下：
+
+1.  [Dirk Eddelbuettel](https://dirk.eddelbuettel.com/) 维护了 Rcpp、 RcppEigen 等流行的 R 包，通过 Rcpp 包将很多优秀的 C++ 库引入 R 语言社区。
+2.  [Stéphane Laurent](https://github.com/stla/) 维护了很多与 shiny 、htmlwidgets 相关的 R 包，比如 rAmCharts4 包。
+3.  [Gábor Csárdi](https://github.com/gaborcsardi/) 维护了 igraph 包以及大量帮助 R 包开发的基础设施，RStudio 雇员。
+4.  [Hadley Wickham](https://github.com/hadley/) 维护了 ggplot2、dplyr、devtools 等流行的 R 包，RStudio 雇员。
+5.  [Jeroen Ooms](https://github.com/jeroen/) 维护了 magick、 curl 以及大量帮助 R 包开发的基础设施。
+6.  [Scott Chamberlain](https://scottchamberlain.info/) 维护了很多与 HTTP/Web 相关的 R 包，rOpenSci 联合创始人。
+7.  [Robin K. S. Hankin](https://github.com/RobinHankin/) 维护了很多与贝叶斯、多元统计相关的 R 包。
+8.  [Henrik Bengtsson](https://github.com/HenrikBengtsson/) 维护了 future 和 parallelly 等流行的 R 包，在并行计算方面有很多贡献。
+9.  Jan Wijffels 维护了很多与自然语言处理、图像识别相关的 R 包，比如 udpipe 、BTM 和 word2vec 等包，[Bnosac](https://bnosac.be/) 团队成员。
+10. Kurt Hornik 参与维护 R 软件代码并许多与自然语言处理相关的 R 包，CRAN 核心团队成员。
+11. Martin Maechler 维护了 Matrix 包，CRAN 核心团队成员。
+12. [Max Kuhn](https://github.com/topepo) 维护了 tidymodels 等包，RStudio 雇员。
+13. [Bob Rudis](https://rud.is/) 维护了一些与 ggplot2 相关的 R 包，如 ggalt、hrbrthemes 和 statebins 等。
+14. Kartikeya Bolar 维护了很多统计与 shiny 结合的 R 包，比如方差分析、逻辑回归、列联表、聚类分析等。
+15. [Kirill Müller](https://github.com/krlmlr/) 维护了 DBI 等大量与数据库连接的 R 包。
+16. Shannon T. Holloway 维护了许多与生存分析相关的 R 包。
+17. [Simon Urbanek](https://github.com/s-u/) 维护了 rJava、Rserve 等流行的 R 包，CRAN 核心团队成员，负责维护 R 软件中与 MacOS 平台相关的部分。
+18. [Achim Zeileis](https://github.com/zeileis/) 维护了 colorspace 等流行的 R 包，CRAN 核心团队成员。
+19. Muhammad Yaseen 维护了多个与 Multiple Indicator Cluster Survey 相关的 R 包。
+20. Pablo Sanchez 维护了多个与市场营销平台连接的 R 语言接口，Windsor.ai 组织成员。
+21. [Thomas Lin Pedersen](https://github.com/thomasp85/) 维护了 patchwork、 gganimate 和 ggraph 等流行的 R 包，RStudio 雇员。
+22. Torsten Hothorn 在统计检验方面贡献了不少内容，比如 coin 和 multcomp 等包，CRAN 核心团队成员。
+23. [Richard Cotton](https://github.com/richierocks/) 维护了 assertive 和 rebus 系列 R 包，代码可读性检查。
+24. Florian Schwendinger 维护了大量运筹优化方面的 R 包，扩展了 [ROI](https://gitlab.com/roigrp/solver) 包的能力。
+25. [Guangchuang Yu](https://github.com/GuangchuangYu/) 维护了 ggtree 和 ggimage 等 R 包，在生物信息和可视化领域有不少贡献。
+26. [Winston Chang](https://github.com/wch/) 维护了 shiny 等流行的 R 包，RStudio 雇员。
+27. [John Muschelli](https://github.com/muschellij2/) 维护了多个关于神经图像的 R 包。
+28. Kevin R. Coombes 维护了多个关于生物信息的 R 包，如 [oompaBase](https://oompa.r-forge.r-project.org/) 和 oompaData 等。
+29. [Yihui Xie](https://yihui.org/) 维护了 knitr 、rmarkdown 等流行的 R 包，RStudio 雇员。
+30. Carl Boettiger 维护了多个接口包，比如 rfishbase 等，rOpenSci 团队成员。
+31. [Michael D. Sumner](https://github.com/mdsumner/) 维护了多个空间统计相关的 R 包。
+32. [Emil Hvitfeldt](https://github.com/EmilHvitfeldt/) 维护了多个统计学习相关的 R 包，如 fastTextR 包等，RStudio 雇员。
+33. [Georgi N. Boshnakov](https://www.rmetrics.org/) 维护了多个金融时间序列相关的 R 包，如 fGarch、timeDate 和 timeSeries 等包。
+34. [Hana Sevcikova](https://github.com/hanase/) 维护了多个与贝叶斯人口统计相关的 R 包。
+35. Joe Thorley 维护了多个与贝叶斯 MCMC 相关的 R 包，Poisson Consulting 雇员。
+
+统计开发者数量随维护 R 包数量的分布，发现，开发 1 个 R 包的开发者有 6732 人，开发 2 个 R 包的开发者有 1685 人，第二名是第一名的五分之一，递减规律非常符合指数分布。
 
 ```{r}
 table(pdb_ctb$Package)
@@ -411,9 +465,9 @@ format(eval(parse(text = pdb[pdb$Package == "dplyr", "Authors@R"])),
 此外，同属于一个组织的维护者之间常常合作紧密，从上面的结果可以看到，Gábor Csárdi 和 Jim Hester ，Lionel Henry 和 Hadley Wickham，Carson Sievert 和 Joe Cheng ，Jennifer Bryan 和 Hadley Wickham 等同属于 RStudio 公司，常常协作开发项目。对 RStudio、CRAN Team 和 rOpenSci 不再赘述，下面对排名靠前的其它组织略作说明。
 
 1.  [Windsor.ai](https://windsor.ai/) 提供一系列可以连接各大营销平台，获取营销效果数据 R 包。
-2.  [BNOSAC](https://github.com/bnosac) 提供一系列计算机视觉、图像识别、自然语言处理方面的 R 包，比如 [word2vec](https://github.com/bnosac/word2vec) 包、[doc2vec](https://github.com/bnosac/doc2vec) 包等。
+2.  [BNOSAC](https://github.com/bnosac) 提供一系列计算机视觉、图像识别、自然语言处理方面的 R 包，比如 [udpipe](https://github.com/bnosac/udpipe)、[word2vec](https://github.com/bnosac/word2vec)、[doc2vec](https://github.com/bnosac/doc2vec) 等包。
 3.  Microsoft 提供一系列连接和操作 [Azure 云](https://azure.microsoft.com/zh-cn)套件的 R 包，比如 [AzureR](https://github.com/Azure/AzureR) 包。
-4.  [Wouter Saelens](https://dynverse.org/) 提供一系列单细胞轨迹推理（**single-cell trajectory inference**）相关的 R 包，形成一个 [**dynverse**](https://github.com/dynverse) **家族。**
+4.  [Wouter Saelens](https://dynverse.org/) 提供一系列单细胞轨迹推理（single-cell trajectory inference）相关的 R 包，形成一个 [**dynverse**](https://github.com/dynverse) 家族**。**
 5.  [Poisson Consulting](https://github.com/poissonconsulting) 提供一系列用于计算生物学和统计生态学的 R 包和相关研究论文。
 6.  [Amazon.com, Inc.](https://aws.amazon.com/cn/) 提供一系列用于存储、管理、操作等 Amazon 云服务的 R 包，形成一个 [paws](https://github.com/paws-r/paws) 套件。
 7.  Eli Lilly and Company 可能是 [rOpenSci](https://github.com/ropensci) 的一员，赞助了旗下的 [targets](https://github.com/ropensci/targets) 和 [jagstargets](https://github.com/ropensci/jagstargets) 等 R 包。
@@ -580,7 +634,7 @@ ggraph(pdb_authors_g, layout = "kk") +
   theme_graph(base_family = "sans")
 ```
 
-前面两个网络图基于同一份数据、同样的网络布局算法，得到非常类似的结果。静态图上的标签相互重叠，影响细节的观察和探索，比如连接 CRAN 和 RStudio 两大阵营的通道。下面使用 **visNetwork** 包绘制交互式网络图，这样可以在图上使用鼠标放大、拖拽。可以发现在 CRAN 社区的 Achim Zeileis 和 RStudio 社区的 Max Kuhn 之间是由 Andri Signorell 牵线搭桥。
+前面两个网络图基于同一份数据、同样的网络布局算法，得到非常类似的结果。静态图上的标签相互重叠，影响细节的观察和探索，比如连接 CRAN 和 RStudio 两大阵营的通道。下面使用 [visNetwork](https://github.com/datastorm-open/visNetwork) 包制作交互式网络图形，它是 JS 库 [vis-network](https://github.com/visjs/vis-network) 的 R 语言接口， 使用 **visNetwork** 包绘制交互式网络图后，可以在图上使用鼠标放大、拖拽。可以发现在 CRAN 社区的 Achim Zeileis 和 RStudio 社区的 Max Kuhn 之间是由 Andri Signorell 牵线搭桥。此外，读者若有兴趣，可以使用 Richard Iannone 开发的 [DiagrammeR](https://github.com/rich-iannone/DiagrammeR) 包制作静态的矢量网页图形。
 
 ```{r}
 #| label: fig-network-visnetwork
@@ -602,11 +656,11 @@ visNetwork(nodes = nodes_df, edges = edges_df, height = "600px") |>
 
 ## 扩展阅读
 
-R 语言网络分析方面的著作有 Erick Kolaczyk 的书籍《Statistical Analysis of Network Data with R》[@Kolaczyk2020]，网络可视化方面，推荐 Hadley Wickham 的著作《ggplot2: Elegant Graphics for Data Analysis》[@Hadley2024] 的第七章，Sam Tyner 等人的文章《Network Visualization with ggplot2》[@Tyner2017] 也值得一看。此外，读者若有兴趣，可以用 [visNetwork](https://github.com/datastorm-open/visNetwork) 包制作交互式网络图形，它是 JS 库 [vis-network](https://github.com/visjs/vis-network) 的 R 语言接口。而 Richard Iannone 开发的 [DiagrammeR](https://github.com/rich-iannone/DiagrammeR) 包可以制作静态的矢量网页图形。
+R 语言网络分析方面的著作有 Erick Kolaczyk 的书籍《Statistical Analysis of Network Data with R》[@Kolaczyk2020]，网络可视化方面，推荐 Hadley Wickham 的著作《ggplot2: Elegant Graphics for Data Analysis》[@Hadley2024] 的第七章，Sam Tyner 等人的文章《Network Visualization with ggplot2》[@Tyner2017] 也值得一看。
 
-可视化网络的 R 包有 **igraph** 、**ggraph** 等，专业的软件有 Gephi 等。[igraph](https://github.com/igraph/igraph) 是非常流行和核心的网络分析 C 语言库，它提供有多种语言的接口，其 R 语言接口 [igraph](https://github.com/igraph/rigraph) 包也被很多其它做网络分析的 R 包所引用。开源的 [Gephi](https://github.com/gephi/gephi) 软件适合处理中等规模的网络分析和可视化。大规模图计算可以用 Apache Spark 的 [GraphX](https://spark.apache.org/graphx/)。R 语言这层，主要还是对应数据分析和数据产品，用于在内部咨询和商业分析。
+在网络数据分析方面， [igraph](https://github.com/igraph/igraph) 是非常流行的分析框架 ，它是由 C 语言写成的，非常高效。同时，它提供多种语言的接口，其 R 语言接口 [igraph](https://github.com/igraph/rigraph) 包在 R 语言社区也是网络数据分析的事实标准，被很多其它做网络分析的 R 包所引用。开源的 [Gephi](https://github.com/gephi/gephi) 软件适合处理中等规模的网络分析和可视化。大规模图计算可以用 Apache Spark 的 [GraphX](https://spark.apache.org/graphx/)。R 语言这层，主要还是对应数据分析和数据产品，用在内部咨询和商业分析上。
 
-企业级的图存储和计算框架，比较有名（可能是最有名的）的是 [Neo4j](https://github.com/neo4j/neo4j) ，它有以 AGPL 协议发布的开源版本，还有商业版本。[Nebula Graph](https://github.com/vesoft-inc/nebula) 分布式开源图数据库，高扩展性和高可用性，支持千亿节点、万亿条边、毫秒级查询，有[中文文档](https://github.com/vesoft-inc/nebula-docs-cn/)，有企业应用案例，[美团图数据库平台建设及业务实践](https://mp.weixin.qq.com/s/aYd5tqwogJYfkJXhVNuNpg)。阿里研发的 [GraphScope](https://github.com/alibaba/GraphScope) 提供一站式大规模图计算系统，支持图神经网络计算。[HugeGraph](https://github.com/hugegraph/hugegraph) 图数据库应用于[金融反欺诈实践](https://zhuanlan.zhihu.com/p/114665466)。
+企业级的图存储和计算框架，比较有名的是 [Neo4j](https://github.com/neo4j/neo4j) ，它有开源版本和商业版本。[Nebula Graph](https://github.com/vesoft-inc/nebula) 开源分布式图数据库，具有高扩展性和高可用性，支持千亿节点、万亿条边、毫秒级查询，有[中文文档](https://github.com/vesoft-inc/nebula-docs-cn/)，有企业应用案例（[美团图数据库平台建设及业务实践](https://mp.weixin.qq.com/s/aYd5tqwogJYfkJXhVNuNpg)）。阿里研发的 [GraphScope](https://github.com/alibaba/GraphScope) 提供一站式大规模图计算系统，支持图神经网络计算。
 
 ## 习题 {#sec-analysis-network-data-exercise}
 
