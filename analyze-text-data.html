@@ -609,7 +609,7 @@ MathJax ={
 
 </header><p>R 语言任务视图中以自然语言处理（Natural Language Processing）涵盖文本分析（Text Analysis）的内容。R 语言社区中有两本文本分析相关的著作，分别是《Text Mining with R》<span class="citation" data-cites="Silge2017">(<a href="references.html#ref-Silge2017" role="doc-biblioref">Silge 和 Robinson 2017</a>)</span>和《Supervised Machine Learning for Text Analysis in R》<span class="citation" data-cites="Hvitfeldt2021">(<a href="references.html#ref-Hvitfeldt2021" role="doc-biblioref">Hvitfeldt 和 Silge 2021</a>)</span>。</p>
 <p>本文有两个目的：其一分析谢益辉 10 多年日志，挖掘写作主题及其变化；其二挖掘湘云的日志主题，计算与益辉日志的风格相似度。事实上，益辉在个人主页中是明确说了自己的兴趣范围的，本文借用文本挖掘中的主题建模方法，不过是一点实证，熟悉文本建模的操作过程。</p>
-<p>从谢益辉公开的日志中，探索成功人士的经历，从中汲取一些经验、教训。最近才知道他有 300 多万字的日志，数字惊讶到我了，遂决定抽取最近 10 年的日志数据进行分析。中英文分开，首先处理、分析中文日志。文本操作和分析的内容有分词、词频、词云、主题建模、相似度度量等。对作者来说，感兴趣的主题与写作的内容有直接的关系。益辉的日志都是没有分类标签的，主题挖掘可以洞察作者的兴趣。</p>
+<p>从谢益辉公开的日志中，探索成功人士的经历，从中汲取一些经验、教训。最近才知道他有 300 多万字的日志，数字惊讶到我了，遂决定抽取最近 10 年的日志数据进行分析。中英文分开，首先处理、分析中文日志。文本操作、分析的内容有数据清理、文本分词、词频统计、词云展示、词向量化、主题建模、相似度度量等。对作者来说，感兴趣的主题与写作的内容有直接的关系。益辉的日志都是没有分类标签的，主题挖掘可以洞察作者的兴趣。</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a><span class="fu">library</span>(jiebaRD)  <span class="co"># 词库</span></span>
 <span id="cb1-2"><a href="#cb1-2"></a><span class="fu">library</span>(jiebaR)   <span class="co"># 分词</span></span>
@@ -859,9 +859,8 @@ MathJax ={
 </section><section id="sec-topic-models" class="level3" data-number="24.2.3"><h3 data-number="24.2.3" class="anchored" data-anchor-id="sec-topic-models">
 <span class="header-section-number">24.2.3</span> 主题建模</h3>
 <p>益辉的日志是没有分类和标签的，所以，先聚类，接着逐个分析每个类代表的实际含义。然后，将聚类的结果作为结果标签，再应用多分类回归模型，最后联合聚类、分类模型，从无监督转化到有监督模型。</p>
-<p>topicmodels <span class="citation" data-cites="topicmodels2011">(<a href="references.html#ref-topicmodels2011" role="doc-biblioref">Grün 和 Hornik 2011</a>)</span> 基于 tm <span class="citation" data-cites="tm2009">(<a href="references.html#ref-tm2009" role="doc-biblioref">Feinerer, Hornik, 和 Meyer 2008</a>)</span> Latent Dirichlet Allocation (LDA) 和 Correlated Topics Models (CTM) 文本主题建模，这一套工具比较适合英文文本分词、向量化和建模。</p>
-<p><a href="https://github.com/dselivanov/text2vec">text2vec</a> 包支持多个统计模型，如潜在狄利克雷分配等，可用于分类、回归、聚类等任务。更多详情见 <a href="https://text2vec.org" class="uri">https://text2vec.org</a>。</p>
-<p>接下来使用 <a href="https://www.cs.columbia.edu/~blei/">David M. Blei</a> 等提出 LDA 算法做主题建模，详情见 LDA 算法<a href="https://www.jmlr.org/papers/volume3/blei03a/blei03a.pdf">原始论文</a></p>
+<p>topicmodels <span class="citation" data-cites="topicmodels2011">(<a href="references.html#ref-topicmodels2011" role="doc-biblioref">Grün 和 Hornik 2011</a>)</span> 基于 tm <span class="citation" data-cites="tm2009">(<a href="references.html#ref-tm2009" role="doc-biblioref">Feinerer, Hornik, 和 Meyer 2008</a>)</span> 支持潜在狄利克雷分配（Latent Dirichlet Allocation，简称 LDA） 和 Correlated Topics Models (CTM) 文本主题建模，这一套工具比较适合英文文本分词、向量化和建模。<a href="https://github.com/dselivanov/text2vec">text2vec</a> 包支持多个统计模型，如LDA 、LSA 、GloVe 等，文本向量化后，结合统计学习模型，可用于分类、回归、聚类等任务，更多详情见 <a href="https://text2vec.org" class="uri">https://text2vec.org</a>。</p>
+<p>接下来使用 <a href="https://www.cs.columbia.edu/~blei/">David M. Blei</a> 等提出 LDA 算法做主题建模，详情见 LDA 算法<a href="https://www.jmlr.org/papers/volume3/blei03a/blei03a.pdf">原始论文</a>。</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb36"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1"></a><span class="fu">library</span>(text2vec)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
@@ -894,15 +893,15 @@ MathJax ={
 <span id="cb39-3"><a href="#cb39-3"></a><span class="co"># 文档-词矩阵 DTM</span></span>
 <span id="cb39-4"><a href="#cb39-4"></a>dtm <span class="ot">&lt;-</span> <span class="fu">create_dtm</span>(it, vectorizer, <span class="at">type =</span> <span class="st">"dgTMatrix"</span>)</span>
 <span id="cb39-5"><a href="#cb39-5"></a><span class="co">#  10 个主题</span></span>
-<span id="cb39-6"><a href="#cb39-6"></a>lda_model <span class="ot">&lt;-</span> LDA<span class="sc">$</span><span class="fu">new</span>(<span class="at">n_topics =</span> <span class="dv">10</span>, <span class="at">doc_topic_prior =</span> <span class="fl">0.1</span>, <span class="at">topic_word_prior =</span> <span class="fl">0.01</span>)</span>
+<span id="cb39-6"><a href="#cb39-6"></a>lda_model <span class="ot">&lt;-</span> LDA<span class="sc">$</span><span class="fu">new</span>(<span class="at">n_topics =</span> <span class="dv">9</span>, <span class="at">doc_topic_prior =</span> <span class="fl">0.1</span>, <span class="at">topic_word_prior =</span> <span class="fl">0.01</span>)</span>
 <span id="cb39-7"><a href="#cb39-7"></a><span class="co"># 训练模型</span></span>
 <span id="cb39-8"><a href="#cb39-8"></a>doc_topic_distr <span class="ot">&lt;-</span> lda_model<span class="sc">$</span><span class="fu">fit_transform</span>(</span>
 <span id="cb39-9"><a href="#cb39-9"></a>    <span class="at">x =</span> dtm, <span class="at">n_iter =</span> <span class="dv">1000</span>, <span class="at">convergence_tol =</span> <span class="fl">0.001</span>, </span>
 <span id="cb39-10"><a href="#cb39-10"></a>    <span class="at">n_check_convergence =</span> <span class="dv">25</span>, <span class="at">progressbar =</span> <span class="cn">FALSE</span></span>
 <span id="cb39-11"><a href="#cb39-11"></a>  )</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>#&gt; INFO  [08:41:01.303] early stopping at 175 iteration
-#&gt; INFO  [08:41:02.198] early stopping at 75 iteration</code></pre>
+<pre><code>#&gt; INFO  [05:15:04.884] early stopping at 175 iteration
+#&gt; INFO  [05:15:05.511] early stopping at 50 iteration</code></pre>
 </div>
 </div>
 <p>下图展示主题的分布，各个主题及其所占比例。</p>
@@ -922,29 +921,42 @@ MathJax ={
 </div>
 </div>
 </div>
-<p>将 10 个主题的 Top 12 词分别打印出来。</p>
+<p>将 9 个主题的 Top 12 词分别打印出来。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1"></a>lda_model<span class="sc">$</span><span class="fu">get_top_words</span>(<span class="at">n =</span> <span class="dv">12</span>, <span class="at">topic_number =</span> <span class="dv">2</span>L<span class="sc">:</span><span class="dv">10</span>L, <span class="at">lambda =</span> <span class="fl">0.3</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1"></a>lda_model<span class="sc">$</span><span class="fu">get_top_words</span>(<span class="at">n =</span> <span class="dv">12</span>, <span class="at">topic_number =</span> <span class="dv">1</span>L<span class="sc">:</span><span class="dv">9</span>L, <span class="at">lambda =</span> <span class="fl">0.3</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>#&gt;       [,1]   [,2]     [,3]     [,4]     [,5]   [,6]     [,7]     [,8]   [,9]  
-#&gt;  [1,] "人生" "网站"   "统计"   "记得"   "吱吱" "小时候" "工作"   "代码" "社会"
-#&gt;  [2,] "生活" "域名"   "数据"   "老师"   "一看" "歌词"   "项目"   "文档" "观点"
-#&gt;  [3,] "读书" "服务器" "模型"   "同学"   "居然" "一首"   "编辑"   "文件" "教育"
-#&gt;  [4,] "力量" "注册"   "变量"   "学校"   "小子" "阿姨"   "免费"   "功能" "时代"
-#&gt;  [5,] "文字" "博客"   "计算"   "一次"   "满意" "好吃"   "社区"   "字体" "人类"
-#&gt;  [6,] "自然" "服务"   "图形"   "英语"   "整理" "照片"   "文章"   "用户" "文化"
-#&gt;  [7,] "一句" "系统"   "分布"   "高中"   "中间" "渴望"   "意味着" "生成" "成功"
-#&gt;  [8,] "一生" "广告"   "统计学" "第一次" "一遍" "听到"   "精力"   "图片" "认为"
-#&gt;  [9,] "娱乐" "访问"   "方法"   "北京"   "一天" "我家"   "最大"   "元素" "价值"
-#&gt; [10,] "作品" "搜索"   "矩阵"   "小学"   "打开" "地上"   "想法"   "编译" "创造"
-#&gt; [11,] "风格" "网址"   "回归"   "美帝"   "飞机" "黄瓜"   "写作"   "安装" "美国"
-#&gt; [12,] "文中" "网络"   "数学"   "回家"   "全都" "记忆"   "显著"   "函数" "本书"</code></pre>
+<pre><code>#&gt;       [,1]   [,2]   [,3]   [,4]     [,5]   [,6]   [,7]   [,8]   [,9]    
+#&gt;  [1,] "例子" "一首" "社会" "统计"   "代码" "记得" "吱吱" "时代" "网站"  
+#&gt;  [2,] "翻译" "歌词" "观点" "会议"   "函数" "不知" "照片" "意义" "数据"  
+#&gt;  [3,] "字符" "手机" "痛苦" "模型"   "文档" "同学" "好吃" "媒体" "图形"  
+#&gt;  [4,] "特征" "这首" "教育" "论文"   "文件" "阿姨" "我家" "文化" "域名"  
+#&gt;  [5,] "作品" "首歌" "人类" "老师"   "变量" "居然" "家里" "现实" "软件"  
+#&gt;  [6,] "中文" "遗憾" "追求" "分布"   "字体" "看见" "味道" "社交" "服务器"
+#&gt;  [7,] "排版" "艺术" "思考" "小子"   "元素" "学校" "厨房" "社区" "邮件"  
+#&gt;  [8,] "意思" "小说" "强烈" "统计学" "语法" "路上" "在家" "眼中" "提供"  
+#&gt;  [9,] "风格" "生活" "成功" "参加"   "编译" "听说" "黄瓜" "避免" "编辑"  
+#&gt; [10,] "主题" "诗词" "接受" "报告"   "图片" "印象" "包子" "造成" "系统"  
+#&gt; [11,] "伟大" "鸡蛋" "工作" "检验"   "参数" "当时" "叶子" "事实" "浏览器"
+#&gt; [12,] "表示" "人间" "努力" "学生"   "生成" "名字" "辣椒" "政治" "注册"</code></pre>
 </div>
 </div>
-<p>结果有点意思，说明益辉喜欢统计图形（主题 4）、代码编程（主题 9）、倒腾网站（主题 3）、回忆青春（主题 5）、读书写作（主题 2、8、10），但是诗词歌赋、做菜吃饭，不是很明显。</p>
+<p>结果有点意思，说明益辉喜欢读书写作（主题 1、3、8），但是诗词歌赋（主题 2）、统计图形（主题 4）、代码编程（主题 5）、回忆青春（主题 6）、做菜吃饭（7）、倒腾网站（主题 9）。</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+注释
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>提示：参考论文 <span class="citation" data-cites="Zhang2023">(<a href="references.html#ref-Zhang2023" role="doc-biblioref">Zhang, Li, 和 Zhang 2023</a>)</span> 根据 perplexities 做交叉验证选择最合适的主题数量。</p>
+</div>
+</div>
 </section><section id="sec-similarity" class="level3" data-number="24.2.4"><h3 data-number="24.2.4" class="anchored" data-anchor-id="sec-similarity">
 <span class="header-section-number">24.2.4</span> 日志相似性</h3>
-<p>我与益辉日志的相似性度量 <a href="https://text2vec.org/similarity.html" class="uri">https://text2vec.org/similarity.html</a></p>
+<p>我与益辉日志的<a href="https://text2vec.org/similarity.html">相似性度量</a></p>
 </section></section><section id="sec-analysis-text-data-exercises" class="level2" data-number="24.3"><h2 data-number="24.3" class="anchored" data-anchor-id="sec-analysis-text-data-exercises">
 <span class="header-section-number">24.3</span> 习题</h2>
 <ol type="1">
@@ -966,6 +978,9 @@ Hvitfeldt, Emil, 和 Julia Silge. 2021. <em>Supervised Machine Learning for Text
 </div>
 <div id="ref-Silge2017" class="csl-entry" role="listitem">
 Silge, Julia, 和 David Robinson. 2017. <em>Text Mining with <span>R</span></em>. New York: O’Reilly Media, Inc. <a href="https://www.tidytextmining.com/">https://www.tidytextmining.com/</a>.
+</div>
+<div id="ref-Zhang2023" class="csl-entry" role="listitem">
+Zhang, Lijin, Xueyang Li, 和 Zhiyong Zhang. 2023. <span>《Variety and Mainstays of the R Developer Community》</span>. <em>The R Journal</em> 15: 5–25. <a href="https://doi.org/10.32614/RJ-2023-060">https://doi.org/10.32614/RJ-2023-060</a>.
 </div>
 </div>
 </section></main><!-- /main --><script id="quarto-html-after-body" type="application/javascript">
