@@ -10,7 +10,7 @@ R 语言任务视图中以自然语言处理（Natural Language Processing）涵
 
 本文有两个目的：其一分析谢益辉 10 多年日志，挖掘写作主题及其变化；其二挖掘湘云的日志主题，计算与益辉日志的风格相似度。事实上，益辉在个人主页中是明确说了自己的兴趣范围的，本文借用文本挖掘中的主题建模方法，不过是一点实证，熟悉文本建模的操作过程。
 
-从谢益辉公开的日志中，探索成功人士的经历，从中汲取一些经验、教训。最近才知道他有 300 多万字的日志，数字惊讶到我了，遂决定抽取最近 10 年的日志数据进行分析。中英文分开，首先处理、分析中文日志。文本操作和分析的内容有分词、词频、词云、主题建模、相似度度量等。对作者来说，感兴趣的主题与写作的内容有直接的关系。益辉的日志都是没有分类标签的，主题挖掘可以洞察作者的兴趣。
+从谢益辉公开的日志中，探索成功人士的经历，从中汲取一些经验、教训。最近才知道他有 300 多万字的日志，数字惊讶到我了，遂决定抽取最近 10 年的日志数据进行分析。中英文分开，首先处理、分析中文日志。文本操作、分析的内容有数据清理、文本分词、词频统计、词云展示、词向量化、主题建模、相似度度量等。对作者来说，感兴趣的主题与写作的内容有直接的关系。益辉的日志都是没有分类标签的，主题挖掘可以洞察作者的兴趣。
 
 ```{r}
 library(jiebaRD)  # 词库
@@ -228,11 +228,9 @@ get_idf(x = list(xx)) |> head()
 
 益辉的日志是没有分类和标签的，所以，先聚类，接着逐个分析每个类代表的实际含义。然后，将聚类的结果作为结果标签，再应用多分类回归模型，最后联合聚类、分类模型，从无监督转化到有监督模型。
 
-topicmodels [@topicmodels2011] 基于 tm [@tm2009] Latent Dirichlet Allocation (LDA) 和 Correlated Topics Models (CTM) 文本主题建模，这一套工具比较适合英文文本分词、向量化和建模。
+topicmodels [@topicmodels2011] 基于 tm [@tm2009] 支持潜在狄利克雷分配（Latent Dirichlet Allocation，简称 LDA） 和 Correlated Topics Models (CTM) 文本主题建模，这一套工具比较适合英文文本分词、向量化和建模。[text2vec](https://github.com/dselivanov/text2vec) 包支持多个统计模型，如LDA 、LSA 、GloVe 等，文本向量化后，结合统计学习模型，可用于分类、回归、聚类等任务，更多详情见 <https://text2vec.org>。
 
-[text2vec](https://github.com/dselivanov/text2vec) 包支持多个统计模型，如潜在狄利克雷分配等，可用于分类、回归、聚类等任务。更多详情见 <https://text2vec.org>。
-
-接下来使用 [David M. Blei](https://www.cs.columbia.edu/~blei/) 等提出 LDA 算法做主题建模，详情见 LDA 算法[原始论文](https://www.jmlr.org/papers/volume3/blei03a/blei03a.pdf)
+接下来使用 [David M. Blei](https://www.cs.columbia.edu/~blei/) 等提出 LDA 算法做主题建模，详情见 LDA 算法[原始论文](https://www.jmlr.org/papers/volume3/blei03a/blei03a.pdf)。
 
 ```{r}
 library(text2vec)
@@ -272,7 +270,7 @@ vectorizer <- vocab_vectorizer(v)
 # 文档-词矩阵 DTM
 dtm <- create_dtm(it, vectorizer, type = "dgTMatrix")
 #  10 个主题
-lda_model <- LDA$new(n_topics = 10, doc_topic_prior = 0.1, topic_word_prior = 0.01)
+lda_model <- LDA$new(n_topics = 9, doc_topic_prior = 0.1, topic_word_prior = 0.01)
 # 训练模型
 doc_topic_distr <- lda_model$fit_transform(
     x = dtm, n_iter = 1000, convergence_tol = 0.001, 
@@ -296,17 +294,21 @@ barplot(
 )
 ```
 
-将 10 个主题的 Top 12 词分别打印出来。
+将 9 个主题的 Top 12 词分别打印出来。
 
 ```{r}
-lda_model$get_top_words(n = 12, topic_number = 2L:10L, lambda = 0.3)
+lda_model$get_top_words(n = 12, topic_number = 1L:9L, lambda = 0.3)
 ```
 
-结果有点意思，说明益辉喜欢统计图形（主题 4）、代码编程（主题 9）、倒腾网站（主题 3）、回忆青春（主题 5）、读书写作（主题 2、8、10），但是诗词歌赋、做菜吃饭，不是很明显。
+结果有点意思，说明益辉喜欢读书写作（主题 1、3、8），但是诗词歌赋（主题 2）、统计图形（主题 4）、代码编程（主题 5）、回忆青春（主题 6）、做菜吃饭（7）、倒腾网站（主题 9）。
+
+::: callout-note
+提示：参考论文 [@Zhang2023] 根据 perplexities 做交叉验证选择最合适的主题数量。
+:::
 
 ### 日志相似性 {#sec-similarity}
 
-我与益辉日志的相似性度量 <https://text2vec.org/similarity.html>
+我与益辉日志的[相似性度量](https://text2vec.org/similarity.html)
 
 ## 习题 {#sec-analysis-text-data-exercises}
 
