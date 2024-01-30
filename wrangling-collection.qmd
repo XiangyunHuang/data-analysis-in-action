@@ -58,6 +58,7 @@ pdb <- subset(
 # 掐头去尾
 pdb$repo <- sub(x =  pdb$BugReports, pattern = "(http|https)://(www\\.){0,1}github\\.com/", replacement = "")
 pdb$repo <- sub(x = pdb$repo, pattern = "/{1,}(issues|blob).*", replacement = "")
+pdb$repo <- sub(x = pdb$repo, pattern = "/{1,}(discussions|wiki)", replacement = "")
 pdb$repo <- sub(x = pdb$repo, pattern = "/$", replacement = "")
 ```
 
@@ -131,7 +132,7 @@ req <- xfun::retry(GET, url = url, config = gtoken, .times = 5, .pause = 5)
 
 ```{r}
 #| eval: false
-# 准备数据存储
+# 准备存储数据
 gh_repo_db <- data.frame(
   repo = pdb$repo, stargazers_count = rep(-1, length(pdb$repo)),
   subscribers_count = rep(-1, length(pdb$repo)),
@@ -143,8 +144,25 @@ while (any(gh_repo_db$stargazers_count == -1)) {
   for (repo in tmp$repo) {
     gh_repo_db[gh_repo_db$repo == repo, ] <- github_stats(repo = repo)
   }
+  if(repo == tmp$repo[length(tmp$repo)]) break
 }
 ```
+
+最后，将收集整理好的数据保存到磁盘上，下面按点赞数量给 R 包排序，篇幅所限，仅展示前 20。
+
+```{r}
+gh_repo_db <- readRDS(file = "data/gh-repo-db-2023.rds")
+gh_repo_db <- gh_repo_db[!duplicated(gh_repo_db$repo),]
+gh_repo_db <- gh_repo_db[order(gh_repo_db$stargazers_count, decreasing = T),] 
+head(gh_repo_db, 20)
+```
+
+将发布在 Github 上的受欢迎的 R 包列出来了，方便读者选用，也看到一些有意思的结果。
+
+1.  机器学习相关的 R 包靠在最前面，实际上，它们（占十之七八）多是对应软件的 R 语言接口，点赞的数目应当算上其它语言接口的贡献。
+2.  在机器学习之后，依次是数据可视化（ggplot2、shiny、plotly.R、patchwork）、数据操作（dplyr、data.table、feather）和可重复性计算（bookdown、rmarkdown、knitr）、R 包开发（devtools）和生物信息（seurat）。
+
+最后，简要说明数据的情况：以上观察结果是基于 CRAN 在 2023-12-31 发布的 R 包元数据，8475 个 R 包在 Github 托管源代码，这些 R 包的点赞、关注和转发数据是在 2024-01-30 爬取的。其中，共有 29 个 R 包不按规矩填写、改名字、换地方、甚至删库了，这些 R 包是可忽略的。当然，也存在一些 R 包并未托管在 Github 上，但质量不错，比如 glmnet 包、colorspace 包、fGarch 包等，应当是少量的。
 
 ### 中国地震台网 {#sec-earthquake-cenc}
 
