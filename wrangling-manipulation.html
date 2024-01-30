@@ -621,10 +621,11 @@ MathJax ={
 <span id="cb3-2"><a href="#cb3-2"></a>iris_dt <span class="ot">&lt;-</span> <span class="fu">as.data.table</span>(iris)</span>
 <span id="cb3-3"><a href="#cb3-3"></a>iris_dt[ ,.(<span class="at">cnt =</span> <span class="fu">length</span>(Sepal.Length)) , by <span class="ot">=</span> <span class="st">"Species"</span>]</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>      Species cnt
-1:     setosa  50
-2: versicolor  50
-3:  virginica  50</code></pre>
+<pre><code>      Species   cnt
+       &lt;fctr&gt; &lt;int&gt;
+1:     setosa    50
+2: versicolor    50
+3:  virginica    50</code></pre>
 </div>
 </div>
 </section><section id="sec-dplyr" class="level3" data-number="4.1.3"><h3 data-number="4.1.3" class="anchored" data-anchor-id="sec-dplyr">
@@ -902,6 +903,7 @@ virginica     3.906836   0.9015345</code></pre>
 <div class="sourceCode cell-code" id="cb44"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1"></a>iris_dt[Species <span class="sc">==</span> <span class="st">"setosa"</span> <span class="sc">&amp;</span> Sepal.Length <span class="sc">&gt;</span> <span class="fl">5.5</span>, <span class="fu">c</span>(<span class="st">"Sepal.Length"</span>, <span class="st">"Sepal.Width"</span>)]</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>   Sepal.Length Sepal.Width
+          &lt;num&gt;       &lt;num&gt;
 1:          5.8         4.0
 2:          5.7         4.4
 3:          5.7         3.8</code></pre>
@@ -931,6 +933,7 @@ virginica     3.906836   0.9015345</code></pre>
 <div class="sourceCode cell-code" id="cb48"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1"></a>iris_dt[<span class="fu">order</span>(Sepal.Length, <span class="at">decreasing =</span> <span class="cn">FALSE</span>)[<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>], ]</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>   Sepal.Length Sepal.Width Petal.Length Petal.Width Species Species_N
+          &lt;num&gt;       &lt;num&gt;        &lt;num&gt;       &lt;num&gt;  &lt;fctr&gt;     &lt;int&gt;
 1:          4.3         3.0          1.1         0.1  setosa         1
 2:          4.4         2.9          1.4         0.2  setosa         1
 3:          4.4         3.0          1.3         0.2  setosa         1</code></pre>
@@ -943,6 +946,7 @@ virginica     3.906836   0.9015345</code></pre>
 <div class="sourceCode cell-code" id="cb50"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb50-1"><a href="#cb50-1"></a>iris_dt[, .(<span class="at">mean =</span> <span class="fu">mean</span>(Sepal.Length)), by <span class="ot">=</span> <span class="st">"Species"</span>]</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>      Species  mean
+       &lt;fctr&gt; &lt;num&gt;
 1:     setosa 5.006
 2: versicolor 5.936
 3:  virginica 6.588</code></pre>
@@ -957,34 +961,42 @@ virginica     3.906836   0.9015345</code></pre>
 <span id="cb52-3"><a href="#cb52-3"></a><span class="co"># LEFT JOIN</span></span>
 <span id="cb52-4"><a href="#cb52-4"></a><span class="fu">merge</span>(<span class="at">x =</span> dt1, <span class="at">y =</span> dt2, <span class="at">by.x =</span> <span class="st">"a2"</span>, <span class="at">by.y =</span> <span class="st">"b2"</span>, <span class="at">all.x =</span> <span class="cn">TRUE</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>   a2 a1 b1
-1:  A  1  2
-2:  B  2  3
-3:  C  3 NA</code></pre>
+<pre><code>Key: &lt;a2&gt;
+       a2    a1    b1
+   &lt;char&gt; &lt;num&gt; &lt;num&gt;
+1:      A     1     2
+2:      B     2     3
+3:      C     3    NA</code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb54"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb54-1"><a href="#cb54-1"></a><span class="co"># RIGHT JOIN</span></span>
 <span id="cb54-2"><a href="#cb54-2"></a><span class="fu">merge</span>(<span class="at">x =</span> dt1, <span class="at">y =</span> dt2, <span class="at">by.x =</span> <span class="st">"a2"</span>, <span class="at">by.y =</span> <span class="st">"b2"</span>, <span class="at">all.y =</span> <span class="cn">TRUE</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>   a2 a1 b1
-1:  A  1  2
-2:  B  2  3
-3:  D NA  4</code></pre>
+<pre><code>Key: &lt;a2&gt;
+       a2    a1    b1
+   &lt;char&gt; &lt;num&gt; &lt;num&gt;
+1:      A     1     2
+2:      B     2     3
+3:      D    NA     4</code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb56"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb56-1"><a href="#cb56-1"></a><span class="co"># INNER JOIN</span></span>
 <span id="cb56-2"><a href="#cb56-2"></a><span class="fu">merge</span>(<span class="at">x =</span> dt1, <span class="at">y =</span> dt2, <span class="at">by.x =</span> <span class="st">"a2"</span>, <span class="at">by.y =</span> <span class="st">"b2"</span>, <span class="at">all =</span> <span class="cn">FALSE</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>   a2 a1 b1
-1:  A  1  2
-2:  B  2  3</code></pre>
+<pre><code>Key: &lt;a2&gt;
+       a2    a1    b1
+   &lt;char&gt; &lt;num&gt; &lt;num&gt;
+1:      A     1     2
+2:      B     2     3</code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb58"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb58-1"><a href="#cb58-1"></a><span class="co"># FULL JOIN</span></span>
 <span id="cb58-2"><a href="#cb58-2"></a><span class="fu">merge</span>(<span class="at">x =</span> dt1, <span class="at">y =</span> dt2, <span class="at">by.x =</span> <span class="st">"a2"</span>, <span class="at">by.y =</span> <span class="st">"b2"</span>, <span class="at">all =</span> <span class="cn">TRUE</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>   a2 a1 b1
-1:  A  1  2
-2:  B  2  3
-3:  C  3 NA
-4:  D NA  4</code></pre>
+<pre><code>Key: &lt;a2&gt;
+       a2    a1    b1
+   &lt;char&gt; &lt;num&gt; &lt;num&gt;
+1:      A     1     2
+2:      B     2     3
+3:      C     3    NA
+4:      D    NA     4</code></pre>
 </div>
 </div>
 </section><section id="sec-dt-reshape" class="level3" data-number="4.3.6"><h3 data-number="4.3.6" class="anchored" data-anchor-id="sec-dt-reshape">
@@ -1000,10 +1012,12 @@ virginica     3.906836   0.9015345</code></pre>
 <span id="cb60-7"><a href="#cb60-7"></a><span class="co"># 长转宽</span></span>
 <span id="cb60-8"><a href="#cb60-8"></a><span class="fu">dcast</span>(dt3, id <span class="sc">~</span> group, <span class="at">value.var =</span> <span class="st">"extra"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>   id    A    B
-1:  1  0.7 -1.2
-2:  2 -1.6 -0.1
-3:  3 -0.2  3.4</code></pre>
+<pre><code>Key: &lt;id&gt;
+      id     A     B
+   &lt;num&gt; &lt;num&gt; &lt;num&gt;
+1:     1   0.7  -1.2
+2:     2  -1.6  -0.1
+3:     3  -0.2   3.4</code></pre>
 </div>
 </div>
 <p>类似 Base R，也用 <strong>data.table</strong> 来实现 iris 分组线性回归</p>
@@ -1011,6 +1025,7 @@ virginica     3.906836   0.9015345</code></pre>
 <div class="sourceCode cell-code" id="cb62"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb62-1"><a href="#cb62-1"></a>iris_dt[, <span class="fu">as.list</span>(<span class="fu">coef</span>(<span class="fu">lm</span>(Sepal.Length <span class="sc">~</span> Sepal.Width))), by <span class="ot">=</span> <span class="st">"Species"</span>]</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>      Species (Intercept) Sepal.Width
+       &lt;fctr&gt;       &lt;num&gt;       &lt;num&gt;
 1:     setosa    2.639001   0.6904897
 2: versicolor    3.539735   0.8650777
 3:  virginica    3.906836   0.9015345</code></pre>

@@ -646,7 +646,8 @@ MathJax ={
 <span id="cb1-7"><a href="#cb1-7"></a><span class="co"># 掐头去尾</span></span>
 <span id="cb1-8"><a href="#cb1-8"></a>pdb<span class="sc">$</span>repo <span class="ot">&lt;-</span> <span class="fu">sub</span>(<span class="at">x =</span>  pdb<span class="sc">$</span>BugReports, <span class="at">pattern =</span> <span class="st">"(http|https)://(www</span><span class="sc">\\</span><span class="st">.){0,1}github</span><span class="sc">\\</span><span class="st">.com/"</span>, <span class="at">replacement =</span> <span class="st">""</span>)</span>
 <span id="cb1-9"><a href="#cb1-9"></a>pdb<span class="sc">$</span>repo <span class="ot">&lt;-</span> <span class="fu">sub</span>(<span class="at">x =</span> pdb<span class="sc">$</span>repo, <span class="at">pattern =</span> <span class="st">"/{1,}(issues|blob).*"</span>, <span class="at">replacement =</span> <span class="st">""</span>)</span>
-<span id="cb1-10"><a href="#cb1-10"></a>pdb<span class="sc">$</span>repo <span class="ot">&lt;-</span> <span class="fu">sub</span>(<span class="at">x =</span> pdb<span class="sc">$</span>repo, <span class="at">pattern =</span> <span class="st">"/$"</span>, <span class="at">replacement =</span> <span class="st">""</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb1-10"><a href="#cb1-10"></a>pdb<span class="sc">$</span>repo <span class="ot">&lt;-</span> <span class="fu">sub</span>(<span class="at">x =</span> pdb<span class="sc">$</span>repo, <span class="at">pattern =</span> <span class="st">"/{1,}(discussions|wiki)"</span>, <span class="at">replacement =</span> <span class="st">""</span>)</span>
+<span id="cb1-11"><a href="#cb1-11"></a>pdb<span class="sc">$</span>repo <span class="ot">&lt;-</span> <span class="fu">sub</span>(<span class="at">x =</span> pdb<span class="sc">$</span>repo, <span class="at">pattern =</span> <span class="st">"/$"</span>, <span class="at">replacement =</span> <span class="st">""</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>获取某代码仓库信息的 Github API 是 <a href="https://api.github.com/repos" class="uri">https://api.github.com/repos</a> ，为了批量地访问 API ，收集想要的数据，将数据请求、结果整理的过程打包成一个函数。</p>
 <div class="cell">
@@ -705,7 +706,7 @@ MathJax ={
 </div>
 <p>此外，请求难免出现意外，按照上面的方式，一旦报错，数据都将丢失。因此，要预先准备存储空间，每获取一条数据就存进去，如果报错了，就打个标记。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1"></a><span class="co"># 准备数据存储</span></span>
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1"></a><span class="co"># 准备存储数据</span></span>
 <span id="cb8-2"><a href="#cb8-2"></a>gh_repo_db <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
 <span id="cb8-3"><a href="#cb8-3"></a>  <span class="at">repo =</span> pdb<span class="sc">$</span>repo, <span class="at">stargazers_count =</span> <span class="fu">rep</span>(<span class="sc">-</span><span class="dv">1</span>, <span class="fu">length</span>(pdb<span class="sc">$</span>repo)),</span>
 <span id="cb8-4"><a href="#cb8-4"></a>  <span class="at">subscribers_count =</span> <span class="fu">rep</span>(<span class="sc">-</span><span class="dv">1</span>, <span class="fu">length</span>(pdb<span class="sc">$</span>repo)),</span>
@@ -717,8 +718,45 @@ MathJax ={
 <span id="cb8-10"><a href="#cb8-10"></a>  <span class="cf">for</span> (repo <span class="cf">in</span> tmp<span class="sc">$</span>repo) {</span>
 <span id="cb8-11"><a href="#cb8-11"></a>    gh_repo_db[gh_repo_db<span class="sc">$</span>repo <span class="sc">==</span> repo, ] <span class="ot">&lt;-</span> <span class="fu">github_stats</span>(<span class="at">repo =</span> repo)</span>
 <span id="cb8-12"><a href="#cb8-12"></a>  }</span>
-<span id="cb8-13"><a href="#cb8-13"></a>}</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb8-13"><a href="#cb8-13"></a>  <span class="cf">if</span>(repo <span class="sc">==</span> tmp<span class="sc">$</span>repo[<span class="fu">length</span>(tmp<span class="sc">$</span>repo)]) <span class="cf">break</span></span>
+<span id="cb8-14"><a href="#cb8-14"></a>}</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+<p>最后，将收集整理好的数据保存到磁盘上，下面按点赞数量给 R 包排序，篇幅所限，仅展示前 20。</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1"></a>gh_repo_db <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="at">file =</span> <span class="st">"data/gh-repo-db-2023.rds"</span>)</span>
+<span id="cb9-2"><a href="#cb9-2"></a>gh_repo_db <span class="ot">&lt;-</span> gh_repo_db[<span class="sc">!</span><span class="fu">duplicated</span>(gh_repo_db<span class="sc">$</span>repo),]</span>
+<span id="cb9-3"><a href="#cb9-3"></a>gh_repo_db <span class="ot">&lt;-</span> gh_repo_db[<span class="fu">order</span>(gh_repo_db<span class="sc">$</span>stargazers_count, <span class="at">decreasing =</span> T),] </span>
+<span id="cb9-4"><a href="#cb9-4"></a><span class="fu">head</span>(gh_repo_db, <span class="dv">20</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                      repo stargazers_count subscribers_count forks_count
+8434          dmlc/xgboost            25266               909        8707
+5553      facebook/prophet            17415               425        4474
+4307         mlflow/mlflow            16365               292        3793
+3807    Microsoft/LightGBM            15821               437        3798
+265           apache/arrow            13080               356        3220
+3080           h2oai/h2o-3             6624               384        2016
+2790     tidyverse/ggplot2             6210               308        2028
+3430 interpretml/interpret             5894               141         706
+6921         rstudio/shiny             5180               339        1818
+4317         mlpack/mlpack             4668               185        1577
+1754       tidyverse/dplyr             4612               246        2131
+640       rstudio/bookdown             3565               122        1263
+1430 Rdatatable/data.table             3437               170         977
+6316     rstudio/rmarkdown             2758               146         977
+2269          wesm/feather             2708                97         174
+5324       plotly/plotly.R             2467               117         628
+5084   thomasp85/patchwork             2344                49         159
+1389        r-lib/devtools             2340               120         760
+3658           yihui/knitr             2326               115         877
+6868      satijalab/seurat             2034                75         867</code></pre>
+</div>
+</div>
+<p>将发布在 Github 上的受欢迎的 R 包列出来了，方便读者选用，也看到一些有意思的结果。</p>
+<ol type="1">
+<li>机器学习相关的 R 包靠在最前面，实际上，它们（占十之七八）多是对应软件的 R 语言接口，点赞的数目应当算上其它语言接口的贡献。</li>
+<li>在机器学习之后，依次是数据可视化（ggplot2、shiny、plotly.R、patchwork）、数据操作（dplyr、data.table、feather）和可重复性计算（bookdown、rmarkdown、knitr）、R 包开发（devtools）和生物信息（seurat）。</li>
+</ol>
+<p>最后，简要说明数据的情况：以上观察结果是基于 CRAN 在 2023-12-31 发布的 R 包元数据，8475 个 R 包在 Github 托管源代码，这些 R 包的点赞、关注和转发数据是在 2024-01-30 爬取的。其中，共有 29 个 R 包不按规矩填写、改名字、换地方、甚至删库了，这些 R 包是可忽略的。当然，也存在一些 R 包并未托管在 Github 上，但质量不错，比如 glmnet 包、colorspace 包、fGarch 包等，应当是少量的。</p>
 </section><section id="sec-earthquake-cenc" class="level3" data-number="2.4.2"><h3 data-number="2.4.2" class="anchored" data-anchor-id="sec-earthquake-cenc">
 <span class="header-section-number">2.4.2</span> 中国地震台网</h3>
 <p><a href="https://news.ceic.ac.cn/">中国地震台网</a> 可以想象后台有一个数据库，在页面的小窗口中输入查询条件，转化为某种 SQL 语句，传递给数据库管理系统，执行查询语句，返回查询结果，即数据。</p>
