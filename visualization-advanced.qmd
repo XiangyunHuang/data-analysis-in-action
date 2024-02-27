@@ -30,6 +30,7 @@ knitr::kable(head(province_sex_ratio))
 #| fig-cap: 箱线图的几种绘制形式
 #| fig-subcap: 
 #| - ggplot2 包
+#| - ggplot2 包（高亮离群值）
 #| - lvplot 包
 #| - Base R 包
 #| fig-width: 4.5
@@ -42,12 +43,13 @@ library(ggplot2)
 ggplot(data = province_sex_ratio, aes(x = `区域`, y = `性别比（女=100）`)) +
   geom_boxplot() +
   theme_classic()
-
+ggplot(data = province_sex_ratio, aes(x = `区域`, y = `性别比（女=100）`)) +
+  geom_boxplot(outlier.colour = "red") +
+  theme_classic()
 library(lvplot)
 ggplot(data = province_sex_ratio, aes(x = `区域`, y = `性别比（女=100）`)) +
   geom_lv() +
   theme_classic()
-
 boxplot(`性别比（女=100）` ~ `区域` , data = province_sex_ratio)
 ```
 
@@ -60,6 +62,7 @@ boxplot(`性别比（女=100）` ~ `区域` , data = province_sex_ratio)
 #| fig-cap: "提琴图"
 #| fig-subcap: 
 #| - 函数 `geom_violin()`
+#| - 函数 `geom_violin()` 标记分位点
 #| - vioplot 包
 #| - beanplot 包
 #| fig-width: 4.5
@@ -69,17 +72,16 @@ boxplot(`性别比（女=100）` ~ `区域` , data = province_sex_ratio)
 #| layout-ncol: 2
 
 ggplot(data = province_sex_ratio, aes(x = `区域`, y = `性别比（女=100）`)) +
+  geom_violin(fill = "lightgray") +
+  theme_classic()
+ggplot(data = province_sex_ratio, aes(x = `区域`, y = `性别比（女=100）`)) +
   geom_violin(fill = "lightgray", draw_quantiles = c(0.25, 0.5, 0.75)) +
   theme_classic()
-
 vioplot::vioplot(`性别比（女=100）` ~ `区域`,
-  data = province_sex_ratio, col = "lightgray"
-)
-
+  data = province_sex_ratio, col = "lightgray")
 beanplot::beanplot(`性别比（女=100）` ~ `区域`,
   data = province_sex_ratio, col = "lightgray", log = "",
-  xlab = "区域", ylab = "性别比（女=100）"
-)
+  xlab = "区域", ylab = "性别比（女=100）")
 ```
 
 **beanplot** 包的名字是根据图形的外观取的，bean 即是豌豆，rug 用须线表示数据。
@@ -101,11 +103,13 @@ ggplot2 包绘制直方图的函数是 `geom_histogram()` ，而与之相关的�
 
 ggplot(data = province_sex_ratio, aes(x = `性别比（女=100）`, fill = `区域`)) +
   geom_histogram(binwidth = 5, color = "white", position = "stack") +
+  scale_fill_grey() +
   theme_classic() +
-  theme(legend.position = "inside", legend.position.inside = c(0.9, 0.8))
-
+  theme(legend.position = "inside", legend.position.inside = c(0.9, 0.8)) +
+  labs(y = "频数")
 ggplot(data = province_sex_ratio, aes(x = `性别比（女=100）`, color = `区域`)) +
-  geom_freqpoly(binwidth = 5, stat = "bin") +
+  geom_freqpoly(binwidth = 5, stat = "bin", position = "stack") +
+  scale_color_grey() +
   theme_classic() +
   theme(legend.position = "inside", legend.position.inside = c(0.9, 0.8))
 ```
@@ -122,7 +126,8 @@ ggplot2 包绘制密度图的函数是 `geom_density()`， @fig-density 展示�
 #| fig-showtext: true
 
 ggplot(data = province_sex_ratio, aes(x = `性别比（女=100）`)) +
-  geom_density(aes(fill = `区域`), alpha = 0.5) +
+  geom_density(aes(fill = `区域`), alpha = 0.75) +
+  scale_fill_grey() +
   theme_classic()
 ```
 
@@ -147,10 +152,12 @@ Stacked density plots: if you want to create a stacked density plot, you probabl
 
 ggplot(data = province_sex_ratio, aes(x = `性别比（女=100）`, y = after_stat(density))) +
   geom_density(aes(fill = `区域`), position = "stack", alpha = 0.5) +
+  scale_fill_grey() +
   theme_classic() +
   theme(legend.position = "inside", legend.position.inside = c(0.9, 0.8))
 ggplot(data = province_sex_ratio, aes(x = `性别比（女=100）`, y = after_stat(density * n))) +
   geom_density(aes(fill = `区域`), position = "stack", alpha = 0.5) +
+  scale_fill_grey() +
   theme_classic() +
   theme(legend.position = "inside", legend.position.inside = c(0.9, 0.8))
 ```
@@ -170,15 +177,19 @@ ggplot(data = province_sex_ratio, aes(x = `性别比（女=100）`, y = after_st
 
 ggplot(diamonds, aes(x = carat, y = after_stat(density), fill = cut)) +
   geom_density(position = "stack") +
+  scale_fill_grey() +
   theme_classic() +
-  theme(legend.position = "inside", legend.position.inside = c(0.8, 0.8))
+  theme(legend.position = "inside", legend.position.inside = c(0.8, 0.7)) +
+  labs(x = "克拉", y = "频数", fill = "切工")
 ggplot(diamonds, aes(x = carat, y = after_stat(density * n), fill = cut)) +
   geom_density(position = "stack") +
+  scale_fill_grey() +
   scale_y_continuous(
     breaks = c(25000, 50000, 75000), 
     labels = c("25K", "50K", "75K")) +
   theme_classic() +
-  theme(legend.position = "inside", legend.position.inside = c(0.8, 0.8))
+  theme(legend.position = "inside", legend.position.inside = c(0.8, 0.7)) +
+  labs(x = "克拉", y = "频数", fill = "切工")
 ```
 
 #### 联合密度图 {#sec-density-2d-joint}
@@ -197,18 +208,13 @@ p1 <- ggplot(data = state_x77, aes(x = Income, y = `Life Exp`)) +
   geom_density_2d(
     aes(color = after_stat(level), alpha = after_stat(level)), show.legend = F
   ) +
-  scale_color_viridis_c(option = "inferno") +
+  scale_color_distiller(palette = "Greys") +
   labs(
     x = "人均收入（美元）", y = "预期寿命（年）",
     title = "1977 年各州预期寿命与人均收入的关系",
     caption = "数据源：美国人口调查局"
   ) +
-  theme_classic() +
-  theme(
-    panel.grid = element_line(colour = "gray92"),
-    panel.grid.major = element_line(linewidth = rel(1.0)),
-    panel.grid.minor = element_line(linewidth = rel(0.5))
-  )
+  theme_classic()
 p1
 ```
 
@@ -672,12 +678,8 @@ with(
   geom_col(
     position = position_dodge(0.4), width = 0.4, fill = "gray"
   ) +
-  geom_errorbar(aes(
-    ymin = dist_mean - dist_sd,
-    ymax = dist_mean + dist_sd
-  ),
-  position = position_dodge(0.4), width = 0.2
-  ) +
+  geom_errorbar(aes(ymin = dist_mean - dist_sd, ymax = dist_mean + dist_sd),
+    position = position_dodge(0.4), width = 0.2) +
   theme_classic() +
   labs(x = "组别", y = "植物干重")
 ```
@@ -733,22 +735,18 @@ t.test(data = PlantGrowth, weight ~ group, subset = group %in% c("trt1", "trt2")
 svn_trunk_log <- readRDS(file = "data/svn-trunk-log-2022.rds")
 svn_trunk_log$year <- as.integer(format(svn_trunk_log$stamp, "%Y"))
 trunk_year <- aggregate(data = svn_trunk_log, revision ~ year, FUN = length)
-ggplot(data = trunk_year, aes(x = year, y = revision)) +
+ggplot(data = trunk_year[trunk_year$year != 1997,], aes(x = year, y = revision)) +
   geom_point() +
   geom_smooth(aes(color = "LOESS", fill = "LOESS"),
     method = "loess", formula = "y~x",
     method.args = list(
       span = 0.75, degree = 2, family = "symmetric",
       control = loess.control(surface = "direct", iterations = 4)
-    ), data = subset(trunk_year, year != c(1997, 2022))
-  ) +
+    )) +
   geom_smooth(aes(color = "GAM", fill = "GAM"),
-    formula = y ~ s(x, k = 12), method = "gam", se = TRUE,
-    data = subset(trunk_year, year != c(1997, 2022))
-  ) +
+    formula = y ~ s(x, k = 12), method = "gam", se = TRUE) +
   geom_smooth(aes(color = "Cubic Spline", fill = "Cubic Spline"),
-                method = "lm", formula = y ~ splines::bs(x, 3), se = T,
-              data = subset(trunk_year, year != c(1997, 2022))) +
+                method = "lm", formula = y ~ splines::bs(x, 3), se = T) +
   scale_color_brewer(name = "模型", palette = "Set1") +
   scale_fill_brewer(name = "模型", palette = "Set1") +
   theme_classic() +
@@ -774,10 +772,8 @@ ggplot(data = trunk_year, aes(x = year, y = revision)) +
 
 # 准备数据
 state_x77 <- data.frame(state.x77,
-  state_name = rownames(state.x77),
-  state_region = state.region,
-  state_abb = state.abb,
-  check.names = FALSE
+  state_name = rownames(state.x77), state_region = state.region,
+  state_abb = state.abb, check.names = FALSE
 )
 # 线性模型拟合
 fit <- lm(`Life Exp` ~ Income + Murder, data = state_x77)
