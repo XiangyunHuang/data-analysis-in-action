@@ -624,7 +624,7 @@ I_x(a,b) &= \frac{B_x(a,b)}{B(a,b)}, \quad B(a,b) = B_1(a,b)
 \end{aligned}
 $$
 
-考虑二项总体的参数 $p=0.7$，重复模拟 50 次，每次模拟获得的比例 $\hat{p}$ 及其置信区间，如 @fig-clopper-pearson-ci 所示，置信区间覆盖真值的情况用不同颜色表示，覆盖用 `TRUE` 表示，没有覆盖用 `FALSE` 表示
+考虑二项总体的参数 $p=0.7$，重复模拟 50 次，每次模拟获得的比例 $\hat{p}$ 及其置信区间，区间估计方法来自 [@Clopper1934] ，函数 `binom.test()` 也是采用此方法，二者计算结果相同。如 @fig-clopper-pearson-ci 所示，置信区间覆盖真值的情况用不同颜色表示，覆盖用灰色表示，没有覆盖用黑色表示。
 
 ```{r}
 #| label: fig-clopper-pearson-ci
@@ -633,9 +633,6 @@ $$
 #| fig-height: 4
 #| fig-showtext: true
 
-library(ggplot2)
-# Clopper and Pearson (1934)
-# 与 binom.test() 计算结果一致
 clopper_pearson <- function(p = 0.1, n = 10, nsim = 100) {
   set.seed(2022)
   nd <- rbinom(nsim, prob = p, size = n)
@@ -649,9 +646,12 @@ dat <- clopper_pearson(p = 0.7, n = 10, nsim = 50)
 ggplot(data = dat, aes(x = 1:50, y = nd / 10, colour = cover)) +
   geom_hline(yintercept = 0.7, lty = 2, linewidth = 1.2, color = "gray") +
   geom_pointrange(aes(ymin = ll, ymax = ul)) +
+  scale_color_grey(labels = c(`TRUE` = "是", `FALSE` = "否")) +
   theme_classic() +
-  labs(x = "第几次模拟", y = "置信区间上下限", color = "覆盖")
+  labs(x = "n", y = "p", color = "覆盖")
 ```
+
+图中，横坐标表示模拟次数 $n$ ，纵坐标表示对应的成功概率 $p$ ，线段端点表示置信区间上下限。
 
 ### 假设检验 {#sec-hypothesis-tests}
 
