@@ -11,7 +11,6 @@ jobs:
     runs-on: macos-14
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
-      CMDSTAN_VERSION: "2.34.1"
       PANDOC_VERSION: "3.1.11"
       RETICULATE_PYTHON_ENV: /opt/.virtualenvs/r-tensorflow
     steps:
@@ -26,7 +25,7 @@ jobs:
         with:
           use-public-rspm: true
           r-version: '4.3.2'
-          extra-repositories: 'https://mc-stan.org/r-packages https://inla.r-inla-download.org/R/stable https://grantmcdermott.r-universe.dev'
+          extra-repositories: 'https://grantmcdermott.r-universe.dev'
 
       - uses: r-lib/actions/setup-r-dependencies@v2
 
@@ -40,15 +39,6 @@ jobs:
         env:
           # install full prebuilt version
           TINYTEX_INSTALLER: TinyTeX
-
-      - name: Setup CmdStan
-        run: |
-          curl -fLo cmdstan-${CMDSTAN_VERSION}.tar.gz https://github.com/stan-dev/cmdstan/releases/download/v${CMDSTAN_VERSION}/cmdstan-${CMDSTAN_VERSION}.tar.gz
-          sudo mkdir -p /opt/cmdstan/
-          sudo chown -R $(whoami):staff /opt/cmdstan/
-          tar -xzf cmdstan-${CMDSTAN_VERSION}.tar.gz -C /opt/cmdstan/
-          make build -C /opt/cmdstan/cmdstan-${CMDSTAN_VERSION}
-          rm cmdstan-${CMDSTAN_VERSION}.tar.gz
 
       - name: Install Fonts From System
         run: |
@@ -93,7 +83,6 @@ jobs:
         env:
           RETICULATE_PYTHON_ENV: /opt/.virtualenvs/r-tensorflow
           RETICULATE_PYTHON: /opt/.virtualenvs/r-tensorflow/bin/python
-          CMDSTAN: /opt/cmdstan/cmdstan-${{ env.CMDSTAN_VERSION }}
 
       - name: Deploy book to bookdown.org
         if: github.event_name == 'push'
