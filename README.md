@@ -4,14 +4,6 @@
 
 本仓库作为《R 语言数据分析实战》书稿源码的托管地址。目前内容较多的章节有
 
--   数据探索
-    -   ggplot2 入门
-    -   基础图形
-    -   统计图形
-    -   lattice 入门
-    -   graphics 入门
-    -   TikZ 入门
-    -   探索实践
 -   数据交流
     -   交互图形
     -   交互表格
@@ -107,35 +99,30 @@ Running under: macOS Sonoma 14.3.1, RStudio 2023.12.1.402
 Locale: en_US.UTF-8 / en_US.UTF-8 / en_US.UTF-8 / C / en_US.UTF-8 / en_US.UTF-8
 
 Package version:
-  BB_2019.10.1              beanplot_1.3.1            broom_1.0.5              
-  car_3.1.2                 coin_1.4.3                data.table_1.15.2        
-  datasauRus_0.1.8          dbplyr_2.4.0              downlit_0.4.3            
-  dplyr_1.1.4               DT_0.32                   dunn.test_1.3.5          
-  dygraphs_1.1.1.6          e1071_1.7.14              ECOSolveR_0.5.5          
-  GA_3.2.4                  ggalluvial_0.12.5         gganimate_1.0.9          
-  ggbeeswarm_0.7.2          ggbump_0.1.99999          ggdensity_1.0.0          
-  ggeffects_1.5.0           ggExtra_0.10.1            ggforce_0.4.2            
-  ggfortify_0.4.16          ggmosaic_0.3.3            ggnewscale_0.4.10        
-  ggplot2_3.5.0             ggraph_2.2.0              ggrepel_0.9.5            
-  ggridges_0.5.6            ggsignif_0.6.4            ggstats_0.5.1            
-  ggstream_0.1.0            ggthemes_5.1.0            ggTimeSeries_1.0.2       
-  ggVennDiagram_1.5.2       ggwordcloud_0.6.1         gifski_1.12.0.2          
-  gt_0.10.1                 hexbin_1.28.3             HistData_0.9.1           
-  jiebaR_0.11               kernlab_0.9.32            knitr_1.45               
-  latticeExtra_0.6.30       lvplot_0.2.1              magick_2.8.3             
-  maps_3.4.2                misc3d_0.9.1              nloptr_2.0.3             
-  nomnoml_0.3.0             patchwork_1.2.0           pdftools_3.4.0           
-  plot3D_1.4.1              plotly_4.10.4             pROC_1.18.5              
-  purrr_1.0.2               pwr_1.3.0                 quadprog_1.5.8           
-  quantmod_0.4.26           ragg_1.2.7                ROI_1.0.1                
-  ROI.plugin.ecos_1.0.2     ROI.plugin.glpk_1.0.0     ROI.plugin.nloptr_1.0.1  
-  ROI.plugin.quadprog_1.0.1 ROI.plugin.scs_1.1.2      rootSolve_1.8.2.4        
-  RSQLite_2.3.5             scs_3.2.4                 showtext_0.9.7           
-  spacyr_1.3.0              text2vec_0.6.4            tidygraph_1.3.1          
-  tikzDevice_0.12.6         tinyplot_0.0.5.9000       titanic_0.1.0            
+  BB_2019.10.1              broom_1.0.5               car_3.1.2                
+  coin_1.4.3                data.table_1.15.2         datasauRus_0.1.8         
+  dbplyr_2.4.0              downlit_0.4.3             dplyr_1.1.4              
+  DT_0.32                   dunn.test_1.3.5           dygraphs_1.1.1.6         
+  e1071_1.7.14              ECOSolveR_0.5.5           GA_3.2.4                 
+  ggalluvial_0.12.5         gganimate_1.0.9           ggfortify_0.4.16         
+  ggplot2_3.5.0             ggraph_2.2.1              ggrepel_0.9.5            
+  ggridges_0.5.6            ggwordcloud_0.6.1         gifski_1.12.0.2          
+  glmnet_4.1.8              gt_0.10.1                 hexbin_1.28.3            
+  HistData_0.9.1            jiebaR_0.11               kernlab_0.9.32           
+  knitr_1.45                latticeExtra_0.6.30       lvplot_0.2.1             
+  magick_2.8.3              maps_3.4.2                misc3d_0.9.1             
+  nloptr_2.0.3              nomnoml_0.3.0             patchwork_1.2.0          
+  pdftools_3.4.0            plot3D_1.4.1              plotly_4.10.4            
+  pROC_1.18.5               purrr_1.0.2               pwr_1.3.0                
+  quadprog_1.5.8            quantmod_0.4.26           ragg_1.2.7               
+  ROI_1.0.1                 ROI.plugin.ecos_1.0.2     ROI.plugin.glpk_1.0.0    
+  ROI.plugin.nloptr_1.0.1   ROI.plugin.quadprog_1.0.1 ROI.plugin.scs_1.1.2     
+  rootSolve_1.8.2.4         RSQLite_2.3.5             scs_3.2.4                
+  showtext_0.9.7            spacyr_1.3.0              text2vec_0.6.4           
+  tidygraph_1.3.1           tikzDevice_0.12.6         titanic_0.1.0            
   treemapify_2.5.6          TSP_1.2.4                 vcd_1.4.12               
-  vioplot_0.4.0             visNetwork_2.1.2          webshot2_0.1.1           
-  xml2_1.3.6                xts_0.13.2  
+  visNetwork_2.1.2          webshot2_0.1.1            xml2_1.3.6               
+  xts_0.13.2
 ```
 
 </details>
