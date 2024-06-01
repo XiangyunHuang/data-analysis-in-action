@@ -1944,7 +1944,7 @@ y_{ij} = \mu + \epsilon_{ij}, i = 1,2,3
 </figcaption><div aria-describedby="tbl-paired-test-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <table class="table">
 <colgroup>
-<col style="width: 12%">
+<col style="width: 18%">
 <col style="width: 72%">
 </colgroup>
 <thead><tr class="header">
@@ -1968,12 +1968,14 @@ y_{ij} = \mu + \epsilon_{ij}, i = 1,2,3
 <span class="header-section-number">12.4.1</span> 配对 t 检验</h3>
 <p>做两个组的配对 t 检验，函数 <code><a href="https://rdrr.io/r/stats/t.test.html">t.test()</a></code> 的参数 <code>paired</code> 设置为 <code>TRUE</code> ，两个组的样本当作配对样本处理。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb111"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb111-1"><a href="#cb111-1"></a><span class="fu">t.test</span>(extra <span class="sc">~</span> group, <span class="at">data =</span> sleep, <span class="at">paired =</span> <span class="cn">TRUE</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb111"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb111-1"><a href="#cb111-1"></a>sleep2 <span class="ot">&lt;-</span> <span class="fu">reshape</span>(sleep, <span class="at">direction =</span> <span class="st">"wide"</span>,</span>
+<span id="cb111-2"><a href="#cb111-2"></a>                  <span class="at">idvar =</span> <span class="st">"ID"</span>, <span class="at">timevar =</span> <span class="st">"group"</span>)</span>
+<span id="cb111-3"><a href="#cb111-3"></a><span class="fu">t.test</span>(<span class="fu">Pair</span>(extra<span class="fl">.1</span>, extra<span class="fl">.2</span>) <span class="sc">~</span> <span class="dv">1</span>, <span class="at">data =</span> sleep2)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; 
 #&gt;  Paired t-test
 #&gt; 
-#&gt; data:  extra by group
+#&gt; data:  Pair(extra.1, extra.2)
 #&gt; t = -4.0621, df = 9, p-value = 0.002833
 #&gt; alternative hypothesis: true mean difference is not equal to 0
 #&gt; 95 percent confidence interval:
@@ -1982,10 +1984,12 @@ y_{ij} = \mu + \epsilon_{ij}, i = 1,2,3
 #&gt; mean difference 
 #&gt;           -1.58</code></pre>
 </div>
+<div class="sourceCode cell-code" id="cb113"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb113-1"><a href="#cb113-1"></a><span class="co"># R &lt; 4.4.0</span></span>
+<span id="cb113-2"><a href="#cb113-2"></a><span class="co"># t.test(extra ~ group, data = sleep, paired = TRUE)</span></span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>做多个组的两两配对 t 检验，函数 <code><a href="https://rdrr.io/r/stats/pairwise.t.test.html">pairwise.t.test()</a></code> 的参数 <code>paired</code> 设置为 <code>TRUE</code> ，当仅做两个组的配对 t 检验时，检验结果与前面的等价。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb113"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb113-1"><a href="#cb113-1"></a><span class="fu">with</span>(sleep, <span class="fu">pairwise.t.test</span>(<span class="at">x =</span> extra, <span class="at">g =</span> group, <span class="at">paired =</span> <span class="cn">TRUE</span>))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb114"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb114-1"><a href="#cb114-1"></a><span class="fu">with</span>(sleep, <span class="fu">pairwise.t.test</span>(<span class="at">x =</span> extra, <span class="at">g =</span> group, <span class="at">paired =</span> <span class="cn">TRUE</span>))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; 
 #&gt;  Pairwise comparisons using paired t tests 
@@ -2011,9 +2015,9 @@ y_{ij} = \mu + \epsilon_{ij}, i = 1,2,3
 <div class="callout-body-container callout-body">
 <p>两个组的配对 t 检验还与变截距的线性混合效应模型等价。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb115"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb115-1"><a href="#cb115-1"></a><span class="fu">library</span>(nlme)</span>
-<span id="cb115-2"><a href="#cb115-2"></a>m <span class="ot">&lt;-</span> <span class="fu">lme</span>(<span class="at">fixed =</span> extra <span class="sc">~</span> group, <span class="at">random =</span> <span class="sc">~</span> <span class="dv">1</span> <span class="sc">|</span> ID, <span class="at">data =</span> sleep)</span>
-<span id="cb115-3"><a href="#cb115-3"></a><span class="fu">summary</span>(m)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb116"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb116-1"><a href="#cb116-1"></a><span class="fu">library</span>(nlme)</span>
+<span id="cb116-2"><a href="#cb116-2"></a>m <span class="ot">&lt;-</span> <span class="fu">lme</span>(<span class="at">fixed =</span> extra <span class="sc">~</span> group, <span class="at">random =</span> <span class="sc">~</span> <span class="dv">1</span> <span class="sc">|</span> ID, <span class="at">data =</span> sleep)</span>
+<span id="cb116-3"><a href="#cb116-3"></a><span class="fu">summary</span>(m)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; Linear mixed-effects model fit by REML
 #&gt;   Data: sleep 
@@ -2043,7 +2047,7 @@ y_{ij} = \mu + \epsilon_{ij}, i = 1,2,3
 </div>
 <p>输出结果中，固定效应部分 <code>group2</code> 意味着相对于第 1 组，第 2 组的增加值，其为 1.58，对应的 t 统计量的值为 4.062127， P 值为 0.0028。调用 <strong>nlme</strong> 包的函数 <code>intervals()</code> 计算固定效应部分 95% 的置信区间。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb117"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb117-1"><a href="#cb117-1"></a><span class="fu">intervals</span>(m, <span class="at">which =</span> <span class="st">"fixed"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb118"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb118-1"><a href="#cb118-1"></a><span class="fu">intervals</span>(m, <span class="at">which =</span> <span class="st">"fixed"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; Approximate 95% confidence intervals
 #&gt; 
@@ -2060,26 +2064,27 @@ y_{ij} = \mu + \epsilon_{ij}, i = 1,2,3
 <span class="header-section-number">12.4.2</span> 配对 Wilcoxon 检验</h3>
 <p>Wilcoxon 检验函数 <code><a href="https://rdrr.io/r/stats/wilcox.test.html">wilcox.test()</a></code> 设置 <code>paired = TRUE</code> 可以做配对检验，但是仅限于两个组。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb119"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb119-1"><a href="#cb119-1"></a><span class="co"># 不支持</span></span>
-<span id="cb119-2"><a href="#cb119-2"></a><span class="co"># wilcox.test(weight ~ group, data = PlantGrowth, paired = TRUE)</span></span>
-<span id="cb119-3"><a href="#cb119-3"></a><span class="co"># 支持</span></span>
-<span id="cb119-4"><a href="#cb119-4"></a><span class="fu">wilcox.test</span>(extra <span class="sc">~</span> group, <span class="at">data =</span> sleep, <span class="at">paired =</span> <span class="cn">TRUE</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb120"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb120-1"><a href="#cb120-1"></a><span class="co"># 不支持三组及以上</span></span>
+<span id="cb120-2"><a href="#cb120-2"></a><span class="co"># wilcox.test(weight ~ group, data = PlantGrowth, paired = TRUE)</span></span>
+<span id="cb120-3"><a href="#cb120-3"></a><span class="fu">wilcox.test</span>(<span class="fu">Pair</span>(extra<span class="fl">.1</span>, extra<span class="fl">.2</span>) <span class="sc">~</span> <span class="dv">1</span>, <span class="at">data =</span> sleep2)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
-<pre><code>#&gt; Warning in wilcox.test.default(x = DATA[[1L]], y = DATA[[2L]], ...): cannot
-#&gt; compute exact p-value with ties</code></pre>
+<pre><code>#&gt; Warning in wilcox.test.default(x = respVar[, 1L], y = respVar[, 2L], paired =
+#&gt; TRUE, : cannot compute exact p-value with ties</code></pre>
 </div>
 <div class="cell-output cell-output-stderr">
-<pre><code>#&gt; Warning in wilcox.test.default(x = DATA[[1L]], y = DATA[[2L]], ...): cannot
-#&gt; compute exact p-value with zeroes</code></pre>
+<pre><code>#&gt; Warning in wilcox.test.default(x = respVar[, 1L], y = respVar[, 2L], paired =
+#&gt; TRUE, : cannot compute exact p-value with zeroes</code></pre>
 </div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; 
 #&gt;  Wilcoxon signed rank test with continuity correction
 #&gt; 
-#&gt; data:  extra by group
+#&gt; data:  Pair(extra.1, extra.2)
 #&gt; V = 0, p-value = 0.009091
 #&gt; alternative hypothesis: true location shift is not equal to 0</code></pre>
 </div>
+<div class="sourceCode cell-code" id="cb124"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb124-1"><a href="#cb124-1"></a><span class="co"># R &lt; 4.4.0</span></span>
+<span id="cb124-2"><a href="#cb124-2"></a><span class="co"># wilcox.test(extra ~ group, data = sleep, paired = TRUE)</span></span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section></section><section id="sec-multiple-comparisons" class="level2" data-number="12.5"><h2 data-number="12.5" class="anchored" data-anchor-id="sec-multiple-comparisons">
 <span class="header-section-number">12.5</span> 多重假设检验</h2>
@@ -2090,7 +2095,7 @@ y_{ij} = \mu + \epsilon_{ij}, i = 1,2,3
 </figcaption><div aria-describedby="tbl-pairwise-test-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <table class="table">
 <colgroup>
-<col style="width: 12%">
+<col style="width: 18%">
 <col style="width: 66%">
 </colgroup>
 <thead><tr class="header">
@@ -2116,8 +2121,8 @@ y_{ij} = \mu + \epsilon_{ij}, i = 1,2,3
 <span class="header-section-number">12.5.1</span> 多重 t 检验</h3>
 <p>数据集 sleep 仅有两个组，数据集 PlantGrowth 包含三个组，下面以数据集 PlantGrowth 为例，介绍做多个组同时进行两两比较的 t 检验。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb123"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb123-1"><a href="#cb123-1"></a><span class="co"># 样本成对的情况</span></span>
-<span id="cb123-2"><a href="#cb123-2"></a><span class="fu">with</span>(PlantGrowth, <span class="fu">pairwise.t.test</span>(<span class="at">x =</span> weight, <span class="at">g =</span> group, <span class="at">paired =</span> <span class="cn">TRUE</span>))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb125"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb125-1"><a href="#cb125-1"></a><span class="co"># 样本成对的情况</span></span>
+<span id="cb125-2"><a href="#cb125-2"></a><span class="fu">with</span>(PlantGrowth, <span class="fu">pairwise.t.test</span>(<span class="at">x =</span> weight, <span class="at">g =</span> group, <span class="at">paired =</span> <span class="cn">TRUE</span>))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; 
 #&gt;  Pairwise comparisons using paired t tests 
@@ -2133,8 +2138,8 @@ y_{ij} = \mu + \epsilon_{ij}, i = 1,2,3
 </div>
 <p>函数 <code><a href="https://rdrr.io/r/stats/pairwise.t.test.html">pairwise.t.test()</a></code> 以 P 值给出两两配对比较的结果，trt1 和 ctrl 配对比较，P 值为 0.346，trt2 和 ctrl 配对比较，P 值为 0.220，以此类推。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb125"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb125-1"><a href="#cb125-1"></a><span class="co"># 样本非成对的情况</span></span>
-<span id="cb125-2"><a href="#cb125-2"></a><span class="fu">with</span>(PlantGrowth, <span class="fu">pairwise.t.test</span>(<span class="at">x =</span> weight, <span class="at">g =</span> group))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb127"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb127-1"><a href="#cb127-1"></a><span class="co"># 样本非成对的情况</span></span>
+<span id="cb127-2"><a href="#cb127-2"></a><span class="fu">with</span>(PlantGrowth, <span class="fu">pairwise.t.test</span>(<span class="at">x =</span> weight, <span class="at">g =</span> group))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; 
 #&gt;  Pairwise comparisons using t tests with pooled SD 
@@ -2152,9 +2157,9 @@ y_{ij} = \mu + \epsilon_{ij}, i = 1,2,3
 <span class="header-section-number">12.5.2</span> 多重比例检验</h3>
 <p>对于离散数据，做两两比例检验，采用函数 <code><a href="https://rdrr.io/r/stats/pairwise.prop.test.html">pairwise.prop.test()</a></code> ，如下示例含有 4 个组。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb127"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb127-1"><a href="#cb127-1"></a>smokers <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">83</span>, <span class="dv">90</span>, <span class="dv">129</span>, <span class="dv">70</span>)</span>
-<span id="cb127-2"><a href="#cb127-2"></a>patients <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">86</span>, <span class="dv">93</span>, <span class="dv">136</span>, <span class="dv">82</span>)</span>
-<span id="cb127-3"><a href="#cb127-3"></a><span class="fu">pairwise.prop.test</span>(smokers, patients)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb129"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb129-1"><a href="#cb129-1"></a>smokers <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">83</span>, <span class="dv">90</span>, <span class="dv">129</span>, <span class="dv">70</span>)</span>
+<span id="cb129-2"><a href="#cb129-2"></a>patients <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">86</span>, <span class="dv">93</span>, <span class="dv">136</span>, <span class="dv">82</span>)</span>
+<span id="cb129-3"><a href="#cb129-3"></a><span class="fu">pairwise.prop.test</span>(smokers, patients)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>#&gt; Warning in prop.test(x[c(i, j)], n[c(i, j)], ...): Chi-squared approximation
 #&gt; may be incorrect
@@ -2182,7 +2187,7 @@ y_{ij} = \mu + \epsilon_{ij}, i = 1,2,3
 <p>Wilcoxon 检验的是两个总体的均值是否相等。</p>
 <p>函数 <code><a href="https://rdrr.io/r/stats/pairwise.wilcox.test.html">pairwise.wilcox.test()</a></code> 做两个及以上组的两两比较检验。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb130"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb130-1"><a href="#cb130-1"></a><span class="fu">with</span>(PlantGrowth, <span class="fu">pairwise.wilcox.test</span>(<span class="at">x =</span> weight, <span class="at">g =</span> group))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb132"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb132-1"><a href="#cb132-1"></a><span class="fu">with</span>(PlantGrowth, <span class="fu">pairwise.wilcox.test</span>(<span class="at">x =</span> weight, <span class="at">g =</span> group))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>#&gt; Warning in wilcox.test.default(xi, xj, paired = paired, ...): cannot compute
 #&gt; exact p-value with ties</code></pre>
@@ -2204,8 +2209,8 @@ y_{ij} = \mu + \epsilon_{ij}, i = 1,2,3
 <span class="header-section-number">12.5.4</span> Dunn 检验</h3>
 <p><strong>dunn.test</strong> 包提供函数 <code>dunn.test()</code> 实现 Dunn 检验，将 Kruskal-Wallis 秩和检验用于两两比较。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb133"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb133-1"><a href="#cb133-1"></a><span class="fu">library</span>(dunn.test)</span>
-<span id="cb133-2"><a href="#cb133-2"></a><span class="fu">with</span>(PlantGrowth, <span class="fu">dunn.test</span>(<span class="at">x =</span> weight, <span class="at">g =</span> group, <span class="at">method =</span> <span class="st">"holm"</span>, <span class="at">altp =</span> <span class="cn">TRUE</span>))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb135"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb135-1"><a href="#cb135-1"></a><span class="fu">library</span>(dunn.test)</span>
+<span id="cb135-2"><a href="#cb135-2"></a><span class="fu">with</span>(PlantGrowth, <span class="fu">dunn.test</span>(<span class="at">x =</span> weight, <span class="at">g =</span> group, <span class="at">method =</span> <span class="st">"holm"</span>, <span class="at">altp =</span> <span class="cn">TRUE</span>))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt;   Kruskal-Wallis rank sum test
 #&gt; 
@@ -2241,9 +2246,9 @@ y_{ij} = \mu + \epsilon_{ij}, i = 1,2,3
 <p>检验：拒绝原假设和接受原假设的风险，数据本身和理论的正态分布的距离，抛开 P 值</p>
 <p>Shapiro 和 Wilk 提出的 W 检验 <span class="citation" data-cites="shapiro1965">(<a href="references.html#ref-shapiro1965" role="doc-biblioref">Shapiro 和 Wilk 1965</a>)</span> ，对应的 R 函数为 <code><a href="https://rdrr.io/r/stats/shapiro.test.html">shapiro.test()</a></code></p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb135"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb135-1"><a href="#cb135-1"></a><span class="fu">set.seed</span>(<span class="dv">20232023</span>)</span>
-<span id="cb135-2"><a href="#cb135-2"></a>x <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="dv">100</span>, <span class="at">mean =</span> <span class="dv">5</span>, <span class="at">sd =</span> <span class="dv">3</span>)</span>
-<span id="cb135-3"><a href="#cb135-3"></a><span class="fu">shapiro.test</span>(x)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb137"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb137-1"><a href="#cb137-1"></a><span class="fu">set.seed</span>(<span class="dv">20232023</span>)</span>
+<span id="cb137-2"><a href="#cb137-2"></a>x <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="dv">100</span>, <span class="at">mean =</span> <span class="dv">5</span>, <span class="at">sd =</span> <span class="dv">3</span>)</span>
+<span id="cb137-3"><a href="#cb137-3"></a><span class="fu">shapiro.test</span>(x)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; 
 #&gt;  Shapiro-Wilk normality test
@@ -2284,8 +2289,8 @@ T_{EP} = 1 + \frac{n}{\sqrt{3}} + \frac{2}{n}\sum_{i=2}^{n}\sum_{j=1}^{i-1}\exp\
 </blockquote>
 <p>Kolmogorov-Smirnov 检验：单样本或两样本的同分布检验 <code><a href="https://rdrr.io/r/stats/ks.test.html">ks.test()</a></code></p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb137"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb137-1"><a href="#cb137-1"></a><span class="co"># 数据 x 与正态分布比较</span></span>
-<span id="cb137-2"><a href="#cb137-2"></a><span class="fu">ks.test</span>(x, <span class="at">y =</span> <span class="st">"pnorm"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb139"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb139-1"><a href="#cb139-1"></a><span class="co"># 数据 x 与正态分布比较</span></span>
+<span id="cb139-2"><a href="#cb139-2"></a><span class="fu">ks.test</span>(x, <span class="at">y =</span> <span class="st">"pnorm"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; 
 #&gt;  Asymptotic one-sample Kolmogorov-Smirnov test
@@ -2299,8 +2304,8 @@ T_{EP} = 1 + \frac{n}{\sqrt{3}} + \frac{2}{n}\sum_{i=2}^{n}\sum_{j=1}^{i-1}\exp\
 <span class="header-section-number">12.6.3</span> 相关性检验</h3>
 <p>样本的相关性检验 <code><a href="https://rdrr.io/r/stats/cor.test.html">cor.test()</a></code>：Pearson’s 相关系数检验，Kendall’s <span class="math inline">\(\tau\)</span> 检验或者 Spearman’s <span class="math inline">\(\rho\)</span> 检验。基于美国高等法院律师对州法官的评级数据集 USJudgeRatings 介绍各项评分之间的相关性。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb139"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb139-1"><a href="#cb139-1"></a><span class="co"># cor.test(method = "pearson")  # lm(y ~ 1 + x)</span></span>
-<span id="cb139-2"><a href="#cb139-2"></a><span class="fu">cor.test</span>(<span class="sc">~</span> CONT <span class="sc">+</span> INTG, <span class="at">data =</span> USJudgeRatings)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb141"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb141-1"><a href="#cb141-1"></a><span class="co"># cor.test(method = "pearson")  # lm(y ~ 1 + x)</span></span>
+<span id="cb141-2"><a href="#cb141-2"></a><span class="fu">cor.test</span>(<span class="sc">~</span> CONT <span class="sc">+</span> INTG, <span class="at">data =</span> USJudgeRatings)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; 
 #&gt;  Pearson's product-moment correlation
@@ -2317,8 +2322,8 @@ T_{EP} = 1 + \frac{n}{\sqrt{3}} + \frac{2}{n}\sum_{i=2}^{n}\sum_{j=1}^{i-1}\exp\
 </div>
 <p>其中，变量 CONT 表示律师与法官的联系次数，INTG 表示司法公正。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb141"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb141-1"><a href="#cb141-1"></a><span class="co"># cor.test(method = "kendall")</span></span>
-<span id="cb141-2"><a href="#cb141-2"></a><span class="co"># cor.test(method = "spearman") # lm(rank(y) ~ 1 + rank(x))</span></span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb143"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb143-1"><a href="#cb143-1"></a><span class="co"># cor.test(method = "kendall")</span></span>
+<span id="cb143-2"><a href="#cb143-2"></a><span class="co"># cor.test(method = "spearman") # lm(rank(y) ~ 1 + rank(x))</span></span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section><section id="sec-Box-test" class="level3" data-number="12.6.4"><h3 data-number="12.6.4" class="anchored" data-anchor-id="sec-Box-test">
 <span class="header-section-number">12.6.4</span> 独立性检验</h3>
@@ -2327,7 +2332,7 @@ T_{EP} = 1 + \frac{n}{\sqrt{3}} + \frac{2}{n}\sum_{i=2}^{n}\sum_{j=1}^{i-1}\exp\
 <span class="header-section-number">12.6.5</span> 平稳性检验</h3>
 <p>时间序列单位根检验，检验时间序列平稳性 Phillips-Perron 的单位根检验 <code><a href="https://rdrr.io/r/stats/pp.test.html">PP.test()</a></code></p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb142"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb142-1"><a href="#cb142-1"></a><span class="fu">PP.test</span>(x, <span class="at">lshort =</span> <span class="cn">TRUE</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb144"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb144-1"><a href="#cb144-1"></a><span class="fu">PP.test</span>(x, <span class="at">lshort =</span> <span class="cn">TRUE</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section></section><section id="sec-multivariate-hypothesis-testing" class="level2" data-number="12.7"><h2 data-number="12.7" class="anchored" data-anchor-id="sec-multivariate-hypothesis-testing">
 <span class="header-section-number">12.7</span> 多元分布情形</h2>
@@ -2351,14 +2356,14 @@ f(X) = \frac{1}{2^{\frac{mp}{2}}|\Sigma|^{\frac{m}{2}}\Gamma_{p}(\frac{m}{2})}|X
 \]</span></p>
 <p>R 语言内置了一个模拟数生成器，可以直接模拟出服从 Wishart 分布 <span class="math inline">\(W_p(\Sigma, m)\)</span> 的样本，<span class="math inline">\(m = \mathrm{df}, \Sigma = \mathrm{Sigma}\)</span>。 R 语言命令如下：</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb143"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb143-1"><a href="#cb143-1"></a><span class="fu">rWishart</span>(n, df, Sigma)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb145"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb145-1"><a href="#cb145-1"></a><span class="fu">rWishart</span>(n, df, Sigma)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>其中，整型参数 <code>n</code> 指定样本量，数值参数 <code>df</code> 指定自由度，正定的 <span class="math inline">\(p \times p\)</span> 矩阵 <code>Sigma</code> 指定 Wishart 分布的矩阵参数。<code><a href="https://rdrr.io/r/stats/rWishart.html">rWishart()</a></code> 返回一个 <span class="math inline">\(p\times p \times n\)</span> 数组 <span class="math inline">\(R\)</span>，其中 <span class="math inline">\(R[,,i]\)</span> 是正定矩阵，是服从 Wishart 分布 <span class="math inline">\(W_p(\Sigma, m)\)</span> 的一个样本点，其中 <span class="math inline">\(m = \mathrm{df}, \Sigma = \mathrm{Sigma}\)</span>。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb144"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb144-1"><a href="#cb144-1"></a><span class="fu">set.seed</span>(<span class="dv">2022</span>)</span>
-<span id="cb144-2"><a href="#cb144-2"></a><span class="co"># 构造 n 个随机矩阵</span></span>
-<span id="cb144-3"><a href="#cb144-3"></a>S <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="fl">1.2</span>, <span class="fl">0.9</span>, <span class="fl">0.9</span>, <span class="fl">1.2</span>), <span class="at">nrow =</span> <span class="dv">2</span>, <span class="at">ncol =</span> <span class="dv">2</span>)</span>
-<span id="cb144-4"><a href="#cb144-4"></a><span class="fu">rWishart</span>(<span class="at">n =</span> <span class="dv">3</span>, <span class="at">df =</span> <span class="dv">2</span>, <span class="at">Sigma =</span> S)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb146"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb146-1"><a href="#cb146-1"></a><span class="fu">set.seed</span>(<span class="dv">2022</span>)</span>
+<span id="cb146-2"><a href="#cb146-2"></a><span class="co"># 构造 n 个随机矩阵</span></span>
+<span id="cb146-3"><a href="#cb146-3"></a>S <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="fl">1.2</span>, <span class="fl">0.9</span>, <span class="fl">0.9</span>, <span class="fl">1.2</span>), <span class="at">nrow =</span> <span class="dv">2</span>, <span class="at">ncol =</span> <span class="dv">2</span>)</span>
+<span id="cb146-4"><a href="#cb146-4"></a><span class="fu">rWishart</span>(<span class="at">n =</span> <span class="dv">3</span>, <span class="at">df =</span> <span class="dv">2</span>, <span class="at">Sigma =</span> S)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; , , 1
 #&gt; 
@@ -2385,17 +2390,17 @@ f(X) = \frac{1}{2^{\frac{mp}{2}}|\Sigma|^{\frac{m}{2}}\Gamma_{p}(\frac{m}{2})}|X
 \]</span></p>
 <p>若 <span class="math inline">\(p = 1\)</span>，即 <span class="math inline">\(\Sigma\)</span> 是一个标量 <span class="math inline">\(\sigma^2\)</span>，Wishart 分布退化为自由度为 <span class="math inline">\(\mathrm{df}\)</span> 的卡方分布 <span class="math inline">\(\chi^2\)</span>，即 <span class="math inline">\(W_1(\sigma^2, m) = \sigma^2\chi_{m}^2\)</span>。下面计算随机矩阵 <span class="math inline">\(M\)</span> 的期望。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb146"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb146-1"><a href="#cb146-1"></a><span class="fu">set.seed</span>(<span class="dv">2022</span>)</span>
-<span id="cb146-2"><a href="#cb146-2"></a>Wish <span class="ot">&lt;-</span> <span class="fu">rWishart</span>(<span class="at">n =</span> <span class="dv">3000</span>, <span class="at">df =</span> <span class="dv">2</span>, <span class="at">Sigma =</span> S)</span>
-<span id="cb146-3"><a href="#cb146-3"></a><span class="co"># 计算随机矩阵 M 的期望</span></span>
-<span id="cb146-4"><a href="#cb146-4"></a><span class="fu">apply</span>(Wish, <span class="at">MARGIN =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>, <span class="at">FUN =</span> mean)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb148"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb148-1"><a href="#cb148-1"></a><span class="fu">set.seed</span>(<span class="dv">2022</span>)</span>
+<span id="cb148-2"><a href="#cb148-2"></a>Wish <span class="ot">&lt;-</span> <span class="fu">rWishart</span>(<span class="at">n =</span> <span class="dv">3000</span>, <span class="at">df =</span> <span class="dv">2</span>, <span class="at">Sigma =</span> S)</span>
+<span id="cb148-3"><a href="#cb148-3"></a><span class="co"># 计算随机矩阵 M 的期望</span></span>
+<span id="cb148-4"><a href="#cb148-4"></a><span class="fu">apply</span>(Wish, <span class="at">MARGIN =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>, <span class="at">FUN =</span> mean)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt;          [,1]     [,2]
 #&gt; [1,] 2.375915 1.792558
 #&gt; [2,] 1.792558 2.430074</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb148"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb148-1"><a href="#cb148-1"></a><span class="co"># 随机矩阵 M 的期望理论值</span></span>
-<span id="cb148-2"><a href="#cb148-2"></a><span class="dv">2</span> <span class="sc">*</span> S</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb150"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb150-1"><a href="#cb150-1"></a><span class="co"># 随机矩阵 M 的期望理论值</span></span>
+<span id="cb150-2"><a href="#cb150-2"></a><span class="dv">2</span> <span class="sc">*</span> S</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt;      [,1] [,2]
 #&gt; [1,]  2.4  1.8
@@ -2404,15 +2409,15 @@ f(X) = \frac{1}{2^{\frac{mp}{2}}|\Sigma|^{\frac{m}{2}}\Gamma_{p}(\frac{m}{2})}|X
 </div>
 <p>接着计算随机矩阵 <span class="math inline">\(M\)</span> 的方差。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb150"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb150-1"><a href="#cb150-1"></a><span class="co"># 样本方差</span></span>
-<span id="cb150-2"><a href="#cb150-2"></a><span class="fu">apply</span>(Wish, <span class="at">MARGIN =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>, var)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb152"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb152-1"><a href="#cb152-1"></a><span class="co"># 样本方差</span></span>
+<span id="cb152-2"><a href="#cb152-2"></a><span class="fu">apply</span>(Wish, <span class="at">MARGIN =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>, var)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt;          [,1]     [,2]
 #&gt; [1,] 5.668746 4.472606
 #&gt; [2,] 4.472606 5.729270</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb152"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb152-1"><a href="#cb152-1"></a><span class="co"># 理论方差</span></span>
-<span id="cb152-2"><a href="#cb152-2"></a><span class="dv">2</span><span class="sc">*</span>(S<span class="sc">^</span><span class="dv">2</span> <span class="sc">+</span> <span class="fu">tcrossprod</span>(<span class="fu">diag</span>(S)))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb154"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb154-1"><a href="#cb154-1"></a><span class="co"># 理论方差</span></span>
+<span id="cb154-2"><a href="#cb154-2"></a><span class="dv">2</span><span class="sc">*</span>(S<span class="sc">^</span><span class="dv">2</span> <span class="sc">+</span> <span class="fu">tcrossprod</span>(<span class="fu">diag</span>(S)))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt;      [,1] [,2]
 #&gt; [1,] 5.76 4.50
@@ -2809,11 +2814,11 @@ f(X) = \frac{1}{2^{\frac{mp}{2}}|\Sigma|^{\frac{m}{2}}\Gamma_{p}(\frac{m}{2})}|X
 <span class="header-section-number">12.8.2.1</span> 单因素一元方差分析</h4>
 <p>函数 <code><a href="https://rdrr.io/r/stats/aov.html">aov()</a></code> 可以做单、双因素一元方差分析</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb154"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb154-1"><a href="#cb154-1"></a>fit_aov <span class="ot">&lt;-</span> <span class="fu">aov</span>(weight <span class="sc">~</span> group, <span class="at">data =</span> PlantGrowth)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb156"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb156-1"><a href="#cb156-1"></a>fit_aov <span class="ot">&lt;-</span> <span class="fu">aov</span>(weight <span class="sc">~</span> group, <span class="at">data =</span> PlantGrowth)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>两两比较，多重比较</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb155"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb155-1"><a href="#cb155-1"></a><span class="fu">TukeyHSD</span>(fit_aov)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb157"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb157-1"><a href="#cb157-1"></a><span class="fu">TukeyHSD</span>(fit_aov)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt;   Tukey multiple comparisons of means
 #&gt;     95% family-wise confidence level
@@ -2829,42 +2834,42 @@ f(X) = \frac{1}{2^{\frac{mp}{2}}|\Sigma|^{\frac{m}{2}}\Gamma_{p}(\frac{m}{2})}|X
 </div>
 <p>自己实现方差分析</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb157"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb157-1"><a href="#cb157-1"></a><span class="co"># 自由度</span></span>
-<span id="cb157-2"><a href="#cb157-2"></a>df1 <span class="ot">&lt;-</span> <span class="dv">2</span></span>
-<span id="cb157-3"><a href="#cb157-3"></a>df2 <span class="ot">&lt;-</span> <span class="dv">27</span></span>
-<span id="cb157-4"><a href="#cb157-4"></a><span class="co"># 每组样本量</span></span>
-<span id="cb157-5"><a href="#cb157-5"></a>group.size <span class="ot">&lt;-</span> <span class="dv">10</span></span>
-<span id="cb157-6"><a href="#cb157-6"></a><span class="co"># 组间方差</span></span>
-<span id="cb157-7"><a href="#cb157-7"></a>sq.between <span class="ot">&lt;-</span> <span class="fu">sum</span>(<span class="fu">tapply</span>(</span>
-<span id="cb157-8"><a href="#cb157-8"></a>  PlantGrowth<span class="sc">$</span>weight, PlantGrowth<span class="sc">$</span>group,</span>
-<span id="cb157-9"><a href="#cb157-9"></a>  <span class="cf">function</span>(x) (<span class="fu">mean</span>(x) <span class="sc">-</span> <span class="fu">mean</span>(PlantGrowth<span class="sc">$</span>weight))<span class="sc">^</span><span class="dv">2</span></span>
-<span id="cb157-10"><a href="#cb157-10"></a>)) <span class="sc">*</span> group.size</span>
-<span id="cb157-11"><a href="#cb157-11"></a></span>
-<span id="cb157-12"><a href="#cb157-12"></a>mean.sq.between <span class="ot">&lt;-</span> sq.between <span class="sc">/</span> df1</span>
-<span id="cb157-13"><a href="#cb157-13"></a></span>
-<span id="cb157-14"><a href="#cb157-14"></a><span class="co"># 组内方差</span></span>
-<span id="cb157-15"><a href="#cb157-15"></a>sq.within <span class="ot">&lt;-</span> <span class="fu">sum</span>(<span class="fu">tapply</span>(</span>
-<span id="cb157-16"><a href="#cb157-16"></a>  PlantGrowth<span class="sc">$</span>weight, PlantGrowth<span class="sc">$</span>group,</span>
-<span id="cb157-17"><a href="#cb157-17"></a>  <span class="cf">function</span>(x) <span class="fu">sum</span>((x <span class="sc">-</span> <span class="fu">mean</span>(x))<span class="sc">^</span><span class="dv">2</span>)</span>
-<span id="cb157-18"><a href="#cb157-18"></a>))</span>
-<span id="cb157-19"><a href="#cb157-19"></a></span>
-<span id="cb157-20"><a href="#cb157-20"></a>mean.sq.within <span class="ot">&lt;-</span> sq.within <span class="sc">/</span> df2</span>
-<span id="cb157-21"><a href="#cb157-21"></a><span class="co"># F 统计量</span></span>
-<span id="cb157-22"><a href="#cb157-22"></a>f.value <span class="ot">&lt;-</span> mean.sq.between <span class="sc">/</span> mean.sq.within</span>
-<span id="cb157-23"><a href="#cb157-23"></a>f.value</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb159"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb159-1"><a href="#cb159-1"></a><span class="co"># 自由度</span></span>
+<span id="cb159-2"><a href="#cb159-2"></a>df1 <span class="ot">&lt;-</span> <span class="dv">2</span></span>
+<span id="cb159-3"><a href="#cb159-3"></a>df2 <span class="ot">&lt;-</span> <span class="dv">27</span></span>
+<span id="cb159-4"><a href="#cb159-4"></a><span class="co"># 每组样本量</span></span>
+<span id="cb159-5"><a href="#cb159-5"></a>group.size <span class="ot">&lt;-</span> <span class="dv">10</span></span>
+<span id="cb159-6"><a href="#cb159-6"></a><span class="co"># 组间方差</span></span>
+<span id="cb159-7"><a href="#cb159-7"></a>sq.between <span class="ot">&lt;-</span> <span class="fu">sum</span>(<span class="fu">tapply</span>(</span>
+<span id="cb159-8"><a href="#cb159-8"></a>  PlantGrowth<span class="sc">$</span>weight, PlantGrowth<span class="sc">$</span>group,</span>
+<span id="cb159-9"><a href="#cb159-9"></a>  <span class="cf">function</span>(x) (<span class="fu">mean</span>(x) <span class="sc">-</span> <span class="fu">mean</span>(PlantGrowth<span class="sc">$</span>weight))<span class="sc">^</span><span class="dv">2</span></span>
+<span id="cb159-10"><a href="#cb159-10"></a>)) <span class="sc">*</span> group.size</span>
+<span id="cb159-11"><a href="#cb159-11"></a></span>
+<span id="cb159-12"><a href="#cb159-12"></a>mean.sq.between <span class="ot">&lt;-</span> sq.between <span class="sc">/</span> df1</span>
+<span id="cb159-13"><a href="#cb159-13"></a></span>
+<span id="cb159-14"><a href="#cb159-14"></a><span class="co"># 组内方差</span></span>
+<span id="cb159-15"><a href="#cb159-15"></a>sq.within <span class="ot">&lt;-</span> <span class="fu">sum</span>(<span class="fu">tapply</span>(</span>
+<span id="cb159-16"><a href="#cb159-16"></a>  PlantGrowth<span class="sc">$</span>weight, PlantGrowth<span class="sc">$</span>group,</span>
+<span id="cb159-17"><a href="#cb159-17"></a>  <span class="cf">function</span>(x) <span class="fu">sum</span>((x <span class="sc">-</span> <span class="fu">mean</span>(x))<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb159-18"><a href="#cb159-18"></a>))</span>
+<span id="cb159-19"><a href="#cb159-19"></a></span>
+<span id="cb159-20"><a href="#cb159-20"></a>mean.sq.within <span class="ot">&lt;-</span> sq.within <span class="sc">/</span> df2</span>
+<span id="cb159-21"><a href="#cb159-21"></a><span class="co"># F 统计量</span></span>
+<span id="cb159-22"><a href="#cb159-22"></a>f.value <span class="ot">&lt;-</span> mean.sq.between <span class="sc">/</span> mean.sq.within</span>
+<span id="cb159-23"><a href="#cb159-23"></a>f.value</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; [1] 4.846088</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb159"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb159-1"><a href="#cb159-1"></a><span class="co"># P 值</span></span>
-<span id="cb159-2"><a href="#cb159-2"></a>p.value <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> <span class="fu">pf</span>(f.value, df1, df2)</span>
-<span id="cb159-3"><a href="#cb159-3"></a>p.value</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb161"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb161-1"><a href="#cb161-1"></a><span class="co"># P 值</span></span>
+<span id="cb161-2"><a href="#cb161-2"></a>p.value <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> <span class="fu">pf</span>(f.value, df1, df2)</span>
+<span id="cb161-3"><a href="#cb161-3"></a>p.value</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; [1] 0.01590996</code></pre>
 </div>
 </div>
 <p>从假设检验角度看单因素方差分析，方差分析其实是在比较多个组的均值是否有显著差异。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb161"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb161-1"><a href="#cb161-1"></a><span class="fu">oneway.test</span>(weight <span class="sc">~</span> group, <span class="at">data =</span> PlantGrowth, <span class="at">var.equal =</span> <span class="cn">TRUE</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb163"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb163-1"><a href="#cb163-1"></a><span class="fu">oneway.test</span>(weight <span class="sc">~</span> group, <span class="at">data =</span> PlantGrowth, <span class="at">var.equal =</span> <span class="cn">TRUE</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; 
 #&gt;  One-way analysis of means
@@ -2875,8 +2880,8 @@ f(X) = \frac{1}{2^{\frac{mp}{2}}|\Sigma|^{\frac{m}{2}}\Gamma_{p}(\frac{m}{2})}|X
 </div>
 <p>方差分析还可以纳入线性模型的框架内</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb163"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb163-1"><a href="#cb163-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">lm</span>(weight <span class="sc">~</span> group, <span class="at">data =</span> PlantGrowth)</span>
-<span id="cb163-2"><a href="#cb163-2"></a><span class="fu">summary</span>(fit)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb165"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb165-1"><a href="#cb165-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">lm</span>(weight <span class="sc">~</span> group, <span class="at">data =</span> PlantGrowth)</span>
+<span id="cb165-2"><a href="#cb165-2"></a><span class="fu">summary</span>(fit)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; 
 #&gt; Call:
@@ -2898,7 +2903,7 @@ f(X) = \frac{1}{2^{\frac{mp}{2}}|\Sigma|^{\frac{m}{2}}\Gamma_{p}(\frac{m}{2})}|X
 #&gt; Multiple R-squared:  0.2641, Adjusted R-squared:  0.2096 
 #&gt; F-statistic: 4.846 on 2 and 27 DF,  p-value: 0.01591</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb165"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb165-1"><a href="#cb165-1"></a><span class="fu">anova</span>(fit)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb167"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb167-1"><a href="#cb167-1"></a><span class="fu">anova</span>(fit)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; Analysis of Variance Table
 #&gt; 
@@ -2914,7 +2919,7 @@ f(X) = \frac{1}{2^{\frac{mp}{2}}|\Sigma|^{\frac{m}{2}}\Gamma_{p}(\frac{m}{2})}|X
 </section><section id="双因素一元方差分析" class="level4" data-number="12.8.2.2"><h4 data-number="12.8.2.2" class="anchored" data-anchor-id="双因素一元方差分析">
 <span class="header-section-number">12.8.2.2</span> 双因素一元方差分析</h4>
 <div class="cell" data-par="true">
-<div class="sourceCode cell-code" id="cb167"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb167-1"><a href="#cb167-1"></a><span class="fu">with</span>(ToothGrowth, <span class="fu">interaction.plot</span>(supp, dose, len))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb169"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb169-1"><a href="#cb169-1"></a><span class="fu">with</span>(ToothGrowth, <span class="fu">interaction.plot</span>(supp, dose, len))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div id="fig-ToothGrowth-interaction-plot" class="quarto-figure quarto-figure-center quarto-float anchored">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-ToothGrowth-interaction-plot-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
@@ -2928,8 +2933,8 @@ f(X) = \frac{1}{2^{\frac{mp}{2}}|\Sigma|^{\frac{m}{2}}\Gamma_{p}(\frac{m}{2})}|X
 </div>
 <p>如果 <code>dose = 2</code>， 则 <code>len</code> 与提供的方式 <code>supp</code> 没有关系。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb168"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb168-1"><a href="#cb168-1"></a>fit_aov <span class="ot">&lt;-</span> <span class="fu">aov</span>(len <span class="sc">~</span> supp <span class="sc">*</span> dose, <span class="at">data =</span> ToothGrowth)</span>
-<span id="cb168-2"><a href="#cb168-2"></a>fit_aov</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb170"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb170-1"><a href="#cb170-1"></a>fit_aov <span class="ot">&lt;-</span> <span class="fu">aov</span>(len <span class="sc">~</span> supp <span class="sc">*</span> dose, <span class="at">data =</span> ToothGrowth)</span>
+<span id="cb170-2"><a href="#cb170-2"></a>fit_aov</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; Call:
 #&gt;    aov(formula = len ~ supp * dose, data = ToothGrowth)
@@ -2947,12 +2952,12 @@ f(X) = \frac{1}{2^{\frac{mp}{2}}|\Sigma|^{\frac{m}{2}}\Gamma_{p}(\frac{m}{2})}|X
 <span class="header-section-number">12.8.2.3</span> 单因素多元方差分析</h4>
 <p><code>PlantGrowth</code> 属于一元方差分析，观测变量只有植物干重一个变量。如果推广到多个变量，就是多元方差分析 multivariate analysis of variance 。不同种类的鸢尾花的萼片长度的分布有所不同。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb170"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb170-1"><a href="#cb170-1"></a><span class="fu">library</span>(ggplot2)</span>
-<span id="cb170-2"><a href="#cb170-2"></a><span class="fu">library</span>(ggridges)</span>
-<span id="cb170-3"><a href="#cb170-3"></a><span class="fu">ggplot</span>(<span class="at">data =</span> iris, <span class="fu">aes</span>(<span class="at">x =</span> Sepal.Length, <span class="at">y =</span> Species, <span class="at">fill =</span> Species)) <span class="sc">+</span></span>
-<span id="cb170-4"><a href="#cb170-4"></a>  <span class="fu">scale_fill_brewer</span>(<span class="at">palette =</span> <span class="st">"Greys"</span>) <span class="sc">+</span></span>
-<span id="cb170-5"><a href="#cb170-5"></a>  <span class="fu">geom_density_ridges</span>(<span class="at">bandwidth =</span> <span class="fl">0.2</span>) <span class="sc">+</span></span>
-<span id="cb170-6"><a href="#cb170-6"></a>  <span class="fu">theme_ridges</span>(<span class="at">font_size =</span> <span class="dv">12</span>, <span class="at">font_family =</span> <span class="st">"sans"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb172"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb172-1"><a href="#cb172-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb172-2"><a href="#cb172-2"></a><span class="fu">library</span>(ggridges)</span>
+<span id="cb172-3"><a href="#cb172-3"></a><span class="fu">ggplot</span>(<span class="at">data =</span> iris, <span class="fu">aes</span>(<span class="at">x =</span> Sepal.Length, <span class="at">y =</span> Species, <span class="at">fill =</span> Species)) <span class="sc">+</span></span>
+<span id="cb172-4"><a href="#cb172-4"></a>  <span class="fu">scale_fill_brewer</span>(<span class="at">palette =</span> <span class="st">"Greys"</span>) <span class="sc">+</span></span>
+<span id="cb172-5"><a href="#cb172-5"></a>  <span class="fu">geom_density_ridges</span>(<span class="at">bandwidth =</span> <span class="fl">0.2</span>) <span class="sc">+</span></span>
+<span id="cb172-6"><a href="#cb172-6"></a>  <span class="fu">theme_ridges</span>(<span class="at">font_size =</span> <span class="dv">12</span>, <span class="at">font_family =</span> <span class="st">"sans"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div id="fig-iris-ridgeline" class="quarto-figure quarto-figure-center quarto-float anchored">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-iris-ridgeline-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
@@ -2965,8 +2970,8 @@ f(X) = \frac{1}{2^{\frac{mp}{2}}|\Sigma|^{\frac{m}{2}}\Gamma_{p}(\frac{m}{2})}|X
 </div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb171"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb171-1"><a href="#cb171-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">manova</span>(<span class="fu">cbind</span>(Sepal.Length, Sepal.Width, Petal.Length, Petal.Width) <span class="sc">~</span> Species, <span class="at">data =</span> iris)</span>
-<span id="cb171-2"><a href="#cb171-2"></a><span class="fu">summary</span>(fit, <span class="at">test =</span> <span class="st">"Wilks"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb173"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb173-1"><a href="#cb173-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">manova</span>(<span class="fu">cbind</span>(Sepal.Length, Sepal.Width, Petal.Length, Petal.Width) <span class="sc">~</span> Species, <span class="at">data =</span> iris)</span>
+<span id="cb173-2"><a href="#cb173-2"></a><span class="fu">summary</span>(fit, <span class="at">test =</span> <span class="st">"Wilks"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt;            Df    Wilks approx F num Df den Df    Pr(&gt;F)    
 #&gt; Species     2 0.023439   199.15      8    288 &lt; 2.2e-16 ***
@@ -2978,14 +2983,14 @@ f(X) = \frac{1}{2^{\frac{mp}{2}}|\Sigma|^{\frac{m}{2}}\Gamma_{p}(\frac{m}{2})}|X
 <p>P 值小于 0.0.5，说明 iris 数据集三个组的均值向量有显著差异。关于均值向量的检验方法，请看 <code><a href="https://rdrr.io/r/stats/summary.manova.html">?summary.manova</a></code> 。</p>
 <p>按 Species 分组统计各个变量的样本均值、样本方差</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb173"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb173-1"><a href="#cb173-1"></a><span class="fu">aggregate</span>(<span class="at">data =</span> iris, <span class="fu">cbind</span>(Sepal.Length, Sepal.Width, Petal.Length, Petal.Width) <span class="sc">~</span> Species, mean)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb175"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb175-1"><a href="#cb175-1"></a><span class="fu">aggregate</span>(<span class="at">data =</span> iris, <span class="fu">cbind</span>(Sepal.Length, Sepal.Width, Petal.Length, Petal.Width) <span class="sc">~</span> Species, mean)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt;      Species Sepal.Length Sepal.Width Petal.Length Petal.Width
 #&gt; 1     setosa        5.006       3.428        1.462       0.246
 #&gt; 2 versicolor        5.936       2.770        4.260       1.326
 #&gt; 3  virginica        6.588       2.974        5.552       2.026</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb175"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb175-1"><a href="#cb175-1"></a><span class="fu">aggregate</span>(<span class="at">data =</span> iris, <span class="fu">cbind</span>(Sepal.Length, Sepal.Width, Petal.Length, Petal.Width) <span class="sc">~</span> Species, var)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb177"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb177-1"><a href="#cb177-1"></a><span class="fu">aggregate</span>(<span class="at">data =</span> iris, <span class="fu">cbind</span>(Sepal.Length, Sepal.Width, Petal.Length, Petal.Width) <span class="sc">~</span> Species, var)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt;      Species Sepal.Length Sepal.Width Petal.Length Petal.Width
 #&gt; 1     setosa    0.1242490  0.14368980   0.03015918  0.01110612
@@ -2998,8 +3003,8 @@ f(X) = \frac{1}{2^{\frac{mp}{2}}|\Sigma|^{\frac{m}{2}}\Gamma_{p}(\frac{m}{2})}|X
 <p>区间估计的意义是解决点估计可靠性问题，它用置信系数解决了对估计结果的信心问题，弥补了点估计的不足。置信系数是最大的置信水平。</p>
 <p>Base R 提供的 <code><a href="https://rdrr.io/r/stats/binom.test.html">binom.test()</a></code> 函数可以精确计算置信区间，即所谓的 Clopper-Pearson 区间，而 <code><a href="https://rdrr.io/r/stats/prop.test.html">prop.test()</a></code> 函数可近似计算置信区间，即所谓的 Wilson 区间。以单样本的比例检验为例。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb177"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb177-1"><a href="#cb177-1"></a><span class="co"># 近似区间估计</span></span>
-<span id="cb177-2"><a href="#cb177-2"></a><span class="fu">prop.test</span>(<span class="at">x =</span> <span class="dv">2</span>, <span class="at">n =</span> <span class="dv">10</span>, <span class="at">p =</span> <span class="fl">0.95</span>, <span class="at">conf.level =</span> <span class="fl">0.95</span>, <span class="at">correct =</span> <span class="cn">TRUE</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb179"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb179-1"><a href="#cb179-1"></a><span class="co"># 近似区间估计</span></span>
+<span id="cb179-2"><a href="#cb179-2"></a><span class="fu">prop.test</span>(<span class="at">x =</span> <span class="dv">2</span>, <span class="at">n =</span> <span class="dv">10</span>, <span class="at">p =</span> <span class="fl">0.95</span>, <span class="at">conf.level =</span> <span class="fl">0.95</span>, <span class="at">correct =</span> <span class="cn">TRUE</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>#&gt; Warning in prop.test(x = 2, n = 10, p = 0.95, conf.level = 0.95, correct =
 #&gt; TRUE): Chi-squared approximation may be incorrect</code></pre>
@@ -3017,8 +3022,8 @@ f(X) = \frac{1}{2^{\frac{mp}{2}}|\Sigma|^{\frac{m}{2}}\Gamma_{p}(\frac{m}{2})}|X
 #&gt;   p 
 #&gt; 0.2</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb180"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb180-1"><a href="#cb180-1"></a><span class="co"># 精确区间估计</span></span>
-<span id="cb180-2"><a href="#cb180-2"></a><span class="fu">binom.test</span>(<span class="at">x =</span> <span class="dv">2</span>, <span class="at">n =</span> <span class="dv">10</span>, <span class="at">p =</span> <span class="fl">0.95</span>, <span class="at">conf.level =</span> <span class="fl">0.95</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb182"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb182-1"><a href="#cb182-1"></a><span class="co"># 精确区间估计</span></span>
+<span id="cb182-2"><a href="#cb182-2"></a><span class="fu">binom.test</span>(<span class="at">x =</span> <span class="dv">2</span>, <span class="at">n =</span> <span class="dv">10</span>, <span class="at">p =</span> <span class="fl">0.95</span>, <span class="at">conf.level =</span> <span class="fl">0.95</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; 
 #&gt;  Exact binomial test
@@ -3041,9 +3046,9 @@ f(X) = \frac{1}{2^{\frac{mp}{2}}|\Sigma|^{\frac{m}{2}}\Gamma_{p}(\frac{m}{2})}|X
 <span class="header-section-number">12.8.4.1</span> Wilcoxon 符号秩检验</h4>
 <p>与 <code><a href="https://rdrr.io/r/stats/wilcox.test.html">wilcox.test()</a></code> 等价的线性模型</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb182"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb182-1"><a href="#cb182-1"></a>signed_rank <span class="ot">&lt;-</span> <span class="cf">function</span>(x) <span class="fu">sign</span>(x) <span class="sc">*</span> <span class="fu">rank</span>(<span class="fu">abs</span>(x))</span>
-<span id="cb182-2"><a href="#cb182-2"></a>fit <span class="ot">&lt;-</span> <span class="fu">lm</span>(<span class="fu">signed_rank</span>(extra) <span class="sc">~</span> group, <span class="at">data =</span> sleep)</span>
-<span id="cb182-3"><a href="#cb182-3"></a><span class="fu">summary</span>(fit)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb184"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb184-1"><a href="#cb184-1"></a>signed_rank <span class="ot">&lt;-</span> <span class="cf">function</span>(x) <span class="fu">sign</span>(x) <span class="sc">*</span> <span class="fu">rank</span>(<span class="fu">abs</span>(x))</span>
+<span id="cb184-2"><a href="#cb184-2"></a>fit <span class="ot">&lt;-</span> <span class="fu">lm</span>(<span class="fu">signed_rank</span>(extra) <span class="sc">~</span> group, <span class="at">data =</span> sleep)</span>
+<span id="cb184-3"><a href="#cb184-3"></a><span class="fu">summary</span>(fit)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; 
 #&gt; Call:
@@ -3069,8 +3074,8 @@ f(X) = \frac{1}{2^{\frac{mp}{2}}|\Sigma|^{\frac{m}{2}}\Gamma_{p}(\frac{m}{2})}|X
 <span class="header-section-number">12.8.4.2</span> Kruskal-Wallis 秩和检验</h4>
 <p>与 <code><a href="https://rdrr.io/r/stats/kruskal.test.html">kruskal.test()</a></code> 等价的线性模型表示。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb184"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb184-1"><a href="#cb184-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">lm</span>(<span class="fu">rank</span>(extra) <span class="sc">~</span> group, <span class="at">data =</span> sleep)</span>
-<span id="cb184-2"><a href="#cb184-2"></a><span class="fu">summary</span>(fit)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb186"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb186-1"><a href="#cb186-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">lm</span>(<span class="fu">rank</span>(extra) <span class="sc">~</span> group, <span class="at">data =</span> sleep)</span>
+<span id="cb186-2"><a href="#cb186-2"></a><span class="fu">summary</span>(fit)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; 
 #&gt; Call:
@@ -3108,10 +3113,10 @@ f(X) = \frac{1}{2^{\frac{mp}{2}}|\Sigma|^{\frac{m}{2}}\Gamma_{p}(\frac{m}{2})}|X
 <li>
 <p>根据数据集 chickwts 分析不同喂食方式对小鸡体重的影响。（单因素方差分析）</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb186"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb186-1"><a href="#cb186-1"></a><span class="fu">ggplot</span>(<span class="at">data =</span> chickwts, <span class="fu">aes</span>(<span class="at">x =</span> feed, <span class="at">y =</span> weight)) <span class="sc">+</span></span>
-<span id="cb186-2"><a href="#cb186-2"></a>  <span class="fu">geom_boxplot</span>() <span class="sc">+</span></span>
-<span id="cb186-3"><a href="#cb186-3"></a>  <span class="fu">geom_jitter</span>() <span class="sc">+</span></span>
-<span id="cb186-4"><a href="#cb186-4"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb188"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb188-1"><a href="#cb188-1"></a><span class="fu">ggplot</span>(<span class="at">data =</span> chickwts, <span class="fu">aes</span>(<span class="at">x =</span> feed, <span class="at">y =</span> weight)) <span class="sc">+</span></span>
+<span id="cb188-2"><a href="#cb188-2"></a>  <span class="fu">geom_boxplot</span>() <span class="sc">+</span></span>
+<span id="cb188-3"><a href="#cb188-3"></a>  <span class="fu">geom_jitter</span>() <span class="sc">+</span></span>
+<span id="cb188-4"><a href="#cb188-4"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div id="fig-chickwts-i" class="quarto-figure quarto-figure-center quarto-float anchored">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-chickwts-i-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
@@ -3127,11 +3132,11 @@ f(X) = \frac{1}{2^{\frac{mp}{2}}|\Sigma|^{\frac{m}{2}}\Gamma_{p}(\frac{m}{2})}|X
 <li>
 <p>根据数据集 ChickWeight 分析 4 种喂食方式对小鸡体重有影响，每个小鸡本身对喂食方式的接受、吸收程度不一样、它们本身的素质不一样（个体差异），要考察喂食的方式的影响，应该剔除掉个体差异，才是喂食方式的真正影响。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb187"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb187-1"><a href="#cb187-1"></a><span class="fu">ggplot</span>(<span class="at">data =</span> ChickWeight, <span class="fu">aes</span>(<span class="at">x =</span> Time, <span class="at">y =</span> weight, <span class="at">group =</span> Chick, <span class="at">color =</span> Diet)) <span class="sc">+</span></span>
-<span id="cb187-2"><a href="#cb187-2"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span></span>
-<span id="cb187-3"><a href="#cb187-3"></a>  <span class="fu">geom_line</span>() <span class="sc">+</span></span>
-<span id="cb187-4"><a href="#cb187-4"></a>  <span class="fu">facet_wrap</span>(<span class="sc">~</span>Diet) <span class="sc">+</span></span>
-<span id="cb187-5"><a href="#cb187-5"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb189"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb189-1"><a href="#cb189-1"></a><span class="fu">ggplot</span>(<span class="at">data =</span> ChickWeight, <span class="fu">aes</span>(<span class="at">x =</span> Time, <span class="at">y =</span> weight, <span class="at">group =</span> Chick, <span class="at">color =</span> Diet)) <span class="sc">+</span></span>
+<span id="cb189-2"><a href="#cb189-2"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span></span>
+<span id="cb189-3"><a href="#cb189-3"></a>  <span class="fu">geom_line</span>() <span class="sc">+</span></span>
+<span id="cb189-4"><a href="#cb189-4"></a>  <span class="fu">facet_wrap</span>(<span class="sc">~</span>Diet) <span class="sc">+</span></span>
+<span id="cb189-5"><a href="#cb189-5"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div id="fig-chickwts-ii" class="quarto-figure quarto-figure-center quarto-float anchored">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-chickwts-ii-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
