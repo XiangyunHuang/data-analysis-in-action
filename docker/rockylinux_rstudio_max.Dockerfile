@@ -18,32 +18,33 @@ RUN dnf -y update  \
   && dnf -y config-manager --set-enabled crb \
   && dnf install -y epel-release \
   && dnf -y update \
-  && dnf install -y initscripts which sudo bzip2 passwd firewalld \
-    glibc-langpack-en \
+  && dnf install -y initscripts which sudo xz bzip2 passwd firewalld \
+    glibc-langpack-en wget \
   && groupadd staff \
   && useradd -g staff -d /home/${USER} -u 10001 ${USER} \
   && echo ${USER}:${PASSWORD} | chpasswd \
   && echo "%staff ALL=(ALL) ALL" >> /etc/sudoers \
   && dnf install -y pkgconf-pkg-config \
-    bzip2-devel \
-    flexiblas-devel \
-    gcc-c++ \
-    gcc-gfortran \
-    libX11-devel \
-    libicu-devel \
-    libtirpc-devel \
     make \
     diffutils \
-    pcre2-devel \
+    autoconf \
+    gcc-c++ \
+    gcc-gfortran \
+    texinfo \
     pkgconfig \
     redhat-rpm-config \
+    libX11-devel \
+    bzip2-devel \
+    flexiblas-devel \
+    libicu-devel \
+    libtirpc-devel \
+    pcre2-devel \
     tcl-devel \
     tk-devel \
     tre-devel \
     xz-devel \
     zlib-devel \
     readline-devel \
-    autoconf \
     libXmu-devel \
     libXt-devel \
     java-11-openjdk-devel \
@@ -53,10 +54,9 @@ RUN dnf -y update  \
     libtiff-devel  \
     pango-devel \
     libtool \
-    texinfo \
     perl-File-Find
 
-# Setup Quarto, Pandoc, TinyTeX, R Library and RStudio
+# Setup Quarto, Pandoc
 RUN export QUARTO_LINK=https://github.com/quarto-dev/quarto-cli/releases/download \
   && curl -fLo quarto.tar.gz ${QUARTO_LINK}/v${QUARTO_VERSION}/quarto-${QUARTO_VERSION}-linux-amd64.tar.gz \
   && mkdir -p /opt/quarto/ \
@@ -65,16 +65,18 @@ RUN export QUARTO_LINK=https://github.com/quarto-dev/quarto-cli/releases/downloa
   && tar -xzf quarto.tar.gz -C /opt/quarto/ \
   && ln -s /opt/quarto/quarto-${QUARTO_VERSION}/bin/quarto /usr/local/bin/quarto \
   && ln -s /opt/quarto/quarto-${QUARTO_VERSION}/bin/tools/x86_64/pandoc /usr/local/bin/pandoc \
-  && rm -f quarto.tar.gz \
-  && quarto install tinytex --quiet \
-  && mv /root/.TinyTeX/ /opt/TinyTeX \
-  && /opt/TinyTeX/bin/*/tlmgr option sys_bin /usr/local/bin \
-  && /opt/TinyTeX/bin/*/tlmgr path add \
-  && chown -R ${USER}:staff /opt/TinyTeX \
-  && chmod -R g+wx /opt/TinyTeX
+  && rm -f quarto.tar.gz
 
+# Install TinyTeX
+RUN wget -qO- "https://yihui.org/tinytex/install-bin-unix.sh" | sh && \
+    /root/.TinyTeX/bin/*/tlmgr path remove && \
+    mv /root/.TinyTeX/ /opt/TinyTeX && \
+    /opt/TinyTeX/bin/*/tlmgr option sys_bin /usr/local/bin && \
+    /opt/TinyTeX/bin/*/tlmgr path add
+
+# Setup R 
 COPY texlive.txt texlive.txt
-RUN dnf install -y blas-devel lapack-devel  openblas-devel \
+RUN dnf install -y blas-devel lapack-devel openblas-devel \
   && export CRAN_REPO=https://cran.r-project.org \
   && curl -fLo R-${R_VERSION}.tar.gz ${CRAN_REPO}/src/base/R-${R_MAJOR}/R-${R_VERSION}.tar.gz \
   && tar -xzf R-${R_VERSION}.tar.gz && cd R-${R_VERSION} \
@@ -117,12 +119,11 @@ RUN dnf install -y lapack-devel blas-devel \
   && chmod -R g+wx /opt/cmdstan/ \
   && rm cmdstan-${CMDSTAN_VERSION}.tar.gz
 
-
 # Setup fonts, chromium and cargo for gganimate, gifski and mermaid
 RUN dnf install -y chromium \
   && dnf clean all
 
-RUN dnf install -y xz cargo rust ghostscript \
+RUN dnf install -y cargo rust ghostscript \
     google-noto-cjk-fonts-common \
     google-noto-sans-cjk-ttc-fonts \
     google-noto-serif-cjk-ttc-fonts \
@@ -146,18 +147,17 @@ RUN export RSTUDIO_LINK=https://download2.rstudio.org/server/rhel9/x86_64 \
   && rm -f requirements.txt \
   && dnf clean all
 
-# Setup Extra R Packages
-COPY DESCRIPTION DESCRIPTION
-COPY install_r_packages.R install_r_packages.R
-RUN export GITHUB_PAT=${GITHUB_PAT} \
-  && export DOWNLOAD_STATIC_LIBV8=1 \
-  && dnf install -y cmake \
-  && Rscript install_r_packages.R \
-  && chown -R ${USER}:staff /opt/R-${R_VERSION}/lib64/R/site-library \
-  && chmod -R g+wx /opt/R-${R_VERSION}/lib64/R/site-library \
-  && rm -f install_r_packages.R DESCRIPTION \
-  && dnf clean all
-
+# # Setup Extra R Packages
+# COPY DESCRIPTION DESCRIPTION
+# COPY install_r_packages.R install_r_packages.R
+# RUN export GITHUB_PAT=${GITHUB_PAT} \
+#   && export DOWNLOAD_STATIC_LIBV8=1 \
+#   && dnf install -y cmake \
+#   && Rscript install_r_packages.R \
+#   && chown -R ${USER}:staff /opt/R-${R_VERSION}/lib64/R/site-library \
+#   && chmod -R g+wx /opt/R-${R_VERSION}/lib64/R/site-library \
+#   && rm -f install_r_packages.R DESCRIPTION \
+#   && dnf clean all
 
 # Setup Locale and Timezone
 ENV LANG=en_US.UTF-8
