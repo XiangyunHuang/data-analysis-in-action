@@ -1,4 +1,4 @@
-## [![Book build status](https://github.com/XiangyunHuang/data-analysis-in-action/workflows/Book-Fedora/badge.svg?event=push)](https://github.com/XiangyunHuang/data-analysis-in-action/actions?workflow=Book-Fedora)
+## [![Book build status](https://github.com/XiangyunHuang/data-analysis-in-action/workflows/Book-MacOS/badge.svg?event=push)](https://github.com/XiangyunHuang/data-analysis-in-action/actions?workflow=Book-Fedora)
 
 # R 语言数据分析实战
 
@@ -36,4 +36,3 @@
     -   优化问题（TSP 问题、投资组合问题等）
 -   附录
     -   Git 和 Github
-
