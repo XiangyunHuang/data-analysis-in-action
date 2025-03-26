@@ -1,4 +1,4 @@
-## [![Book build status](https://github.com/XiangyunHuang/data-analysis-in-action/workflows/Book-MacOS/badge.svg?event=push)](https://github.com/XiangyunHuang/data-analysis-in-action/actions?workflow=Book-Fedora)
+## [![Book build status](https://github.com/XiangyunHuang/data-analysis-in-action/workflows/Book-MacOS/badge.svg?event=push)](https://github.com/XiangyunHuang/data-analysis-in-action/actions?workflow=Book-MacOS)
 
 # R 语言数据分析实战
 
