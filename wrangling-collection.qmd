@@ -1,6 +1,6 @@
 # 数据获取 {#sec-data-collection}
 
-数据获取包含两层意思，其一是数据收集，其二是数据搜集。数据收集，往往意味着自己做实验设计，执行实验，回收数据，掌握第一手资料。而数据搜集，往往意味着自己从各个地方搜罗数据，再清洗整理校验，得到可靠的二手或三手数据。从前，统计学家下到试验田，在不同NPK（氮肥、磷肥和钾肥）配比的情况下，收集小麦的产量数据，以确定最佳配比。如今，许多互联网公司都有自己的 App，通过 App 收集大量用户及其行为数据，再以一定的数据模型加工整理成可用的二维表格。此外，许多政府和非政府的组织机构网站也发布大量的数据，比如各个国家的国家统计局和地方统计局，世界银行，国际货币基金组织等。这其中，有的以图片形式发布，有的以二维表格形式发布，有的以数据 API 服务形式发布，比起散落在各个公告中要好多了。
+数据获取包含两层意思，其一是数据收集，其二是数据搜集。数据收集，往往意味着自己做实验设计，执行实验，回收数据，掌握第一手资料。而数据搜集，往往意味着自己从各个地方搜罗数据，再清洗整理校验，得到可靠的二手或三手数据。从前，统计学家下到试验田，在不同NPK（氮肥、磷肥和钾肥）配比的情况下，收集小麦的产量数据，以确定最佳配比。如今，许多互联网公司都有自己的 App，不断调整产品的结构、排列和色彩，通过 App 收集用户及其行为数据，再以一定的数据模型加工整理成可用的二维表格，分析数据后确定最佳的用户体验。此外，许多政府和非政府的组织机构网站也发布大量的数据，比如各个国家的国家统计局和地方统计局，世界银行，国际货币基金组织等。这其中，有的以图片形式发布，有的以二维表格形式发布，有的以数据 API 服务形式发布，比起散落在各个公告中要好多了。
 
 数据收集的方式有线下发放问卷、从网络爬取、网络调查问卷、线下市场调查、走访、有奖征集、埋点等。在真实的数据分析中，有时候需要借助 SQL 或浏览器开发者工具，从不同的数据源获取数据，清洗整理，再将数据导入 R 环境。
 
@@ -14,17 +14,26 @@
 
 ### xlsx 文件 {#sec-xlsx}
 
-[**readxl**](https://github.com/tidyverse/readxl) 读 xls 和 xlsx 文件，[**writexl**](https://github.com/ropensci/writexl) 写 xlsx。
+[**readxl**](https://github.com/tidyverse/readxl) 读 xls 和 xlsx 文件，[**writexl**](https://github.com/ropensci/writexl) 写 xlsx，[openxlsx](https://github.com/ycphs/openxlsx) 读/写 xlsx 文件。
 
-[openxlsx](https://github.com/ycphs/openxlsx) 读/写 xlsx 文件
+```{r}
+library(readxl)
+cumcm2011A <- read_xls(
+  path = "data/cumcm2011A附件_数据.xls",
+  col_names = TRUE, sheet = "附件1", range = "A3:E322"
+)
+head(cumcm2011A)
+```
+
+xls 文件 `cumcm2011A附件_数据.xls` 有多个工作表，不同的工作表有不同的数据，不同的数据占据表格的不同的位置。这可以通过函数 `read_xls()` 的参数 `sheet` 和 `range` 来指定工作表的名称和数据在工作表中的位置，参数 `col_names` 指定数据是否含有表头。
 
 ### arrow 文件 {#sec-arrow}
 
-Apache Arrow 的 R 语言接口 [arrow](https://github.com/apache/arrow/tree/master/r) 超出内存的大规模数据操作。比如在时空数据处理场景，数据文件往往比较大，需要在远程服务器上处理超出本地计算机内存的数据，[geoarrow](https://github.com/paleolimbot/geoarrow)包和[sfarrow](https://github.com/wcjochem/sfarrow/)包都是应对此类需求。
+Apache Arrow 的 R 语言接口 [arrow](https://github.com/apache/arrow/tree/master/r) 超出内存的大规模数据操作。比如在时空数据处理场景，数据文件往往比较大，需要在远程服务器上处理超出本地计算机内存的数据，[geoarrow](https://github.com/paleolimbot/geoarrow) 包和 [sfarrow](https://github.com/wcjochem/sfarrow/) 包都是应对此类需求。
 
 ## 从数据库中导入 {#sec-database}
 
-从各类数据库导入数据，比如 RSQLite 等
+从各类数据库导入数据，比如 RSQLite 等。
 
 ### RSQLite
 
@@ -162,7 +171,7 @@ head(gh_repo_db, 20)
 1.  机器学习相关的 R 包靠在最前面，实际上，它们（占十之七八）多是对应软件的 R 语言接口，点赞的数目应当算上其它语言接口的贡献。
 2.  在机器学习之后，依次是数据可视化（ggplot2、shiny、plotly.R、patchwork）、数据操作（dplyr、data.table、feather）和可重复性计算（bookdown、rmarkdown、knitr）、R 包开发（devtools）和生物信息（seurat）。
 
-最后，简要说明数据的情况：以上观察结果是基于 CRAN 在 2023-12-31 发布的 R 包元数据，8475 个 R 包在 Github 托管源代码，这些 R 包的点赞、关注和转发数据是在 2024-01-30 爬取的。其中，共有 29 个 R 包不按规矩填写、改名字、换地方、甚至删库了，这些 R 包是可忽略的。当然，也存在一些 R 包并未托管在 Github 上，但质量不错，比如 glmnet 包、colorspace 包、fGarch 包等，应当是少量的。
+最后，简要说明数据的情况：以上观察结果是基于 CRAN 在 2023-12-31 发布的 R 包元数据，8475 个 R 包在 Github 托管源代码，这些 R 包的点赞、关注和转发数据是在 2024-01-30 爬取的。其中，共有 29 个 R 包不按规矩填写、改名字、换地方、甚至删库了，这些 R 包是可忽略的。当然，也存在一些 R 包并未托管在 Github 上，但质量不错，比如 [glmnet](https://glmnet.stanford.edu) 包、[colorspace](https://colorspace.R-Forge.R-project.org/) 包、[fGarch](https://www.rmetrics.org/) 包、[bnlearn](https://www.bnlearn.com/) 包等，应当是少量的。
 
 ### 中国地震台网 {#sec-earthquake-cenc}
 
@@ -182,4 +191,4 @@ head(gh_repo_db, 20)
 
 [世界银行](https://www.shihang.org/zh/home)和[国际货币基金组织](https://www.imf.org/zh/Home)
 
-[**wbstats**](https://github.com/nset-ornl/wbstats) 包封装世界银行提供的数据接口 REST API
+[**wbstats**](https://github.com/nset-ornl/wbstats) 包 和 [WDI](https://github.com/vincentarelbundock/WDI/) 包封装世界银行提供的数据接口 REST API
