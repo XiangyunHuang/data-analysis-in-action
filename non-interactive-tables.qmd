@@ -1,0 +1,94 @@
+# 非交互表格 {#sec-non-interactive-tables}
+
+静态表格拆分到 HTML 文档、LaTeX 文档和 Office 文档的表格制作部分。
+
+[**gt**](https://github.com/rstudio/gt) 包类似 **ggplot2** 的设计哲学，打造制作表格的语法。
+
+## 快速入门
+
+首先用 **gt** 包制作一个非常简单的 @tbl-gt-basic 。
+
+```{r}
+#| label: tbl-gt-basic
+#| tbl-cap: 鸢尾花数据集（部分）
+
+library(gt)
+gt(head(iris))
+```
+
+## 基础功能
+
+然后添加表格的标题和副标题，套上 `md()` 函数后，标题和副标题支持 Markdown 语法，告别 HTML 的制表方式吧！其它表格元素，如脚注支持和表格的列指标关联。
+
+```{r}
+#| label: tbl-gt-iris
+#| tbl-cap: 鸢尾花数据集
+
+library(data.table)
+library(gt)
+iris_dt <- as.data.table(iris)[, head(.SD, 2), by = .(Species)]
+iris_dt |> 
+  gt() |> 
+  tab_header(
+    title = md("**鸢尾花**数据集"),
+    subtitle = "R 内置数据集"
+  ) |> 
+  data_color(
+    columns = "Sepal.Length",
+    fn = scales::col_numeric(palette = terrain.colors(5, rev = T), domain = NULL)
+  ) |> 
+  data_color(
+    columns = "Species",
+    fn = scales::col_factor(palette = hcl.colors(3), domain = NULL)
+  ) |> 
+  tab_footnote(
+    footnote = md("据说数据集最早收集自 Fisher's or Anderson's"),
+    locations = cells_column_labels(columns = "Sepal.Length")
+  ) |> 
+  tab_footnote(
+    footnote = "鸢尾花的类别",
+    locations = cells_column_labels(
+      columns = "Species"
+    )
+  )
+```
+
+::: callout-note
+**gt** 包的函数 `data_color()` 有局限。@tbl-gt-iris 的配色在 DOCX 和 HTML 输出格式中是正常的，但在 PDF 输出格式中无效。
+:::
+
+## 扩展功能
+
+### 输出格式
+
+### 数学公式
+
+### 添加水印
+
+## 其它 R 包
+
+[gtExtras](https://github.com/jthomasmock/gtExtras) 包扩展 **gt** 包的能力。[**gtsummary**](https://github.com/ddsjoberg/gtsummary) 包 [@gtsummary2021] 针对统计模型的输出结果进行整理、汇总成表格。
+
+### kableExtra 包 {#sec-kable-extra}
+
+相比于 **reactable** 和 **DT**， kableExtra 不依赖于 JavaScript 库，更加轻量。
+
+```{r}
+#| label: tbl-kable-iris
+#| tbl-cap: iris 数据集（部分）
+
+library(knitr)
+library(kableExtra)
+options(kableExtra.html.bsTable = T)
+
+iris_dt |>
+  kable(booktabs = TRUE, escape = FALSE, align = "c",
+        col.names = gsub("[.]", " ", names(iris_dt))) |>
+  kable_styling(
+    bootstrap_options = c("striped", "condensed"),
+    latex_options = "basic", full_width = FALSE
+  ) |> 
+  column_spec(2, bold = TRUE, color = spec_color(iris_dt$Sepal.Length, end = 0.9)) |> 
+  column_spec(1, bold = TRUE, color = "white", background = spec_color(as.integer(iris_dt$Species), end = 0.9))
+```
+
