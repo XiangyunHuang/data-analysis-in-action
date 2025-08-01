@@ -18,10 +18,10 @@ gt(head(iris))
 
 ## 基础功能
 
-然后添加表格的标题和副标题，套上 `md()` 函数后，标题和副标题支持 Markdown 语法，告别 HTML 的制表方式吧！其它表格元素，如脚注支持和表格的列指标关联。
+然后添加表格的标题和副标题，套上 `md()` 函数后，标题和副标题支持 Markdown 语法，告别 HTML 的制表方式吧！
 
 ```{r}
-#| label: tbl-gt-iris
+#| label: tbl-gt-iris-color
 #| tbl-cap: 鸢尾花数据集
 
 library(data.table)
@@ -36,10 +36,27 @@ iris_dt |>
   data_color(
     columns = "Sepal.Length",
     fn = scales::col_numeric(palette = terrain.colors(5, rev = T), domain = NULL)
+  )
+```
+
+其它表格元素，如脚注，支持和表格的列指标关联。下表添加脚注。
+
+```{r}
+#| label: tbl-gt-iris-footnote
+#| tbl-cap: 鸢尾花数据集
+
+iris_dt |> 
+  gt() |> 
+  tab_header(
+    title = md("**鸢尾花**数据集"),
+    subtitle = "R 内置数据集"
   ) |> 
   data_color(
-    columns = "Species",
-    fn = scales::col_factor(palette = hcl.colors(3), domain = NULL)
+    columns = "Sepal.Length",
+    method = "numeric", palette = "viridis", reverse = TRUE
+  ) |> 
+  data_color(
+    columns = "Species", palette = "Set1"
   ) |> 
   tab_footnote(
     footnote = md("据说数据集最早收集自 Fisher's or Anderson's"),
@@ -54,7 +71,7 @@ iris_dt |>
 ```
 
 ::: callout-note
-**gt** 包的函数 `data_color()` 有局限。@tbl-gt-iris 的配色在 DOCX 和 HTML 输出格式中是正常的，但在 PDF 输出格式中无效。
+**gt** 包的函数 `data_color()` 有局限。@tbl-gt-iris-color 的配色在 DOCX 和 HTML 输出格式中是正常的，但在 PDF 输出格式中无效。
 :::
 
 ## 扩展功能
@@ -67,7 +84,57 @@ iris_dt |>
 
 ## 其它 R 包
 
-[gtExtras](https://github.com/jthomasmock/gtExtras) 包扩展 **gt** 包的能力。[**gtsummary**](https://github.com/ddsjoberg/gtsummary) 包 [@gtsummary2021] 针对统计模型的输出结果进行整理、汇总成表格。
+### gtExtra 包 
+
+[gtExtras](https://github.com/jthomasmock/gtExtras) 包扩展 **gt** 包的能力，提供一些高级操作需要的函数，比如根据某一列的数值绘制条形图，这可以用一个函数 `gt_plt_bar()` 搞定。
+
+```{r}
+#| label: tbl-gtExtras-iris
+#| tbl-cap: 鸢尾花数据集
+
+library(gtExtras)
+
+iris_dt |>
+  gt() |>
+  gt_plt_bar(column = Sepal.Length, keep_column = TRUE)
+```
+
+### gtsummary 包
+
+[**gtsummary**](https://github.com/ddsjoberg/gtsummary) 包 [@gtsummary2021] 也是扩展 gt 包的能力，除了简单的数据汇总（类似基础函数 `summary()`），尤其可以根据统计模型的输出结果进行整理、汇总成表格。
+
+```{r}
+#| label: tbl-gtsummary-summary
+#| tbl-cap: 鸢尾花数据集
+
+library(gtsummary)
+iris |> 
+  tbl_summary(include = c(Sepal.Length, Sepal.Width, Petal.Length),
+              by = Species)
+```
+
+```{r}
+#| label: tbl-gtsummary-regression
+#| tbl-cap: 鸢尾花数据集
+
+iris_lm <- lm(Sepal.Length ~. , data = iris[,-5])
+iris_lm |> tbl_regression()
+```
+
+### tinytable 包
+
+顾名思义，tinytable 包是一个依赖极简的 R 包。
+
+```{r}
+#| label: tbl-tt-iris
+#| tbl-cap: iris 数据集
+
+library(tinytable)
+tt(iris_dt,
+  theme = "striped",
+  caption = "鸢尾花数据集"
+)
+```
 
 ### kableExtra 包 {#sec-kable-extra}
 
@@ -91,4 +158,3 @@ iris_dt |>
   column_spec(2, bold = TRUE, color = spec_color(iris_dt$Sepal.Length, end = 0.9)) |> 
   column_spec(1, bold = TRUE, color = "white", background = spec_color(as.integer(iris_dt$Species), end = 0.9))
 ```
-
