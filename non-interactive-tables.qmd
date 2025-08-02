@@ -162,9 +162,54 @@ iris_dt |>
 
 ### 输出格式
 
+类似 ggplot2 包的函数 `ggsave()`，gt 包也有导出表格的函数 `gtsave()` ，下面将本章开头制作的简单表格保存为 PNG 格式图片。它还支持导出 HTML 、TeX 和 DOCX 等常见格式。
+
+```{r}
+#| eval: false
+
+gt(head(iris)) |> 
+  gtsave(filename = "screenshots/iris.png", expand = 10)
+```
+
 ### 数学公式
 
+有时候表格中含有数学公式，可根据 Markdown 语法表达。
+
+```{r}
+#| label: tbl-gt-fmt-markdown
+#| tbl-cap: 插入数学公式
+
+# 示例数据
+df <- tibble::tribble(
+  ~名称, ~公式,
+  "欧拉公式", "$e^{i \\pi} + 1 = 0$",
+  "勾股定理", "$$a^2 + b^2 = c^2$$"
+)
+
+df |> 
+  gt() |> 
+  tab_header(
+    title = md("$y=X\\beta+\\epsilon$")
+  ) |> 
+  fmt_markdown(columns = "公式")
+```
+
 ### 添加水印
+
+gt 包提供函数 `local_image()` 加载本地图片，可再用函数 `html()` 将图片数据渲染出来。
+
+```{r}
+#| label: tbl-gt-image
+#| tbl-cap: 插入图片
+
+iris_dt |> 
+  gt() |> 
+  tab_header(
+    title = md("**鸢尾花**数据集"),
+    subtitle = html(local_image(filename = "images/Rlogo.png", height = 30)
+  ))
+
+```
 
 ## 其它 R 包
 
@@ -173,12 +218,25 @@ iris_dt |>
 [gtExtras](https://github.com/jthomasmock/gtExtras) 包扩展 **gt** 包的能力，提供一些高级操作需要的函数，比如根据某一列的数值绘制条形图，这可以用一个函数 `gt_plt_bar()` 搞定。
 
 ```{r}
-#| label: tbl-gtExtras-iris
-#| tbl-cap: 鸢尾花数据集
-#| eval: !expr knitr::is_html_output()
+#| label: fig-gtExtras-iris
+#| fig-cap: gtExtras 包
+#| echo: false
+
+if (!file.exists("screenshots/iris.png")) {
+  library(gtExtras)
+  iris_dt |>
+    gt() |>
+    gt_plt_bar(column = Sepal.Length, keep_column = TRUE) |>
+    gtsave(filename = "screenshots/iris.png", expand = 10)
+}
+
+knitr::include_graphics(path = "screenshots/iris.png")
+```
+
+```{r}
+#| eval: false
 
 library(gtExtras)
-
 iris_dt |>
   gt() |>
   gt_plt_bar(column = Sepal.Length, keep_column = TRUE)
