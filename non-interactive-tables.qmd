@@ -37,6 +37,57 @@ iris_dt |>
   )
 ```
 
+### 重命名列
+
+表格作为数据分类汇总和展示的工具，有时候原始数据的列名含义不够明确，需要重新命名。
+
+```{r}
+#| label: tbl-gt-cols-label
+#| tbl-cap: 鸢尾花数据集
+
+iris_dt |> 
+  gt() |> 
+  cols_label(
+    Species = "种类",
+    Sepal.Length = "花萼长度",
+    Sepal.Width = "花萼宽度",
+    Petal.Length = "花瓣长度",
+    Petal.Width = "花瓣宽度"
+  )
+```
+
+### 行列分组
+
+行列分组的目的是让数据看起来更加清晰。让不同类型的行列分组，在数据上可以去重，在展示上表格看起来更加清爽。下表先按 Species 列进行行分组，再将剩余4列按花萼与花瓣分成两组。为了展示上的美观，在 Species 列前添加了行编号，调整表格宽度。
+
+```{r}
+#| label: tbl-gt-tab-spanner
+#| tbl-cap: 鸢尾花数据集
+
+iris_dt |> 
+  dplyr::mutate(row_id = dplyr::row_number(), .before = Species) |> 
+  dplyr::group_by(Species) |> 
+  gt(rowname_col = "row_id") |> 
+  cols_label(
+    Species = "种类",
+    Sepal.Length = "长度",
+    Sepal.Width = "宽度",
+    Petal.Length = "长度",
+    Petal.Width = "宽度"
+  ) |> 
+  tab_spanner(
+    label = "花萼",
+    columns = starts_with("Sepal")
+  ) |>
+  tab_spanner(
+    label = "花瓣",
+    columns = starts_with("Petal")
+  ) |> 
+  tab_options(
+    table.width = pct(100)
+  )
+```
+
 ### 填充颜色
 
 在表格中填充颜色是为了突出和对比。gt 包提供函数 `data_color()` 来给表格上色，这个函数根据一组数据向量（表格中的某列）生成一组颜色值。下表根据列 Sepal.Length 的值和 viridis 调色板填充颜色。函数 `data_color()` 的参数 palette 可以接受来自 **viridis 和 RColorBrewer 包的调色板的名称，如 "viridis"，也可以接受来自 paletteer 包的调色板，此时，指定调色板需要带所属的 R 包名，如** `palette = "ggsci::red_material"` 表示使用 ggsci 包的 `red_material` 调色板**。**
@@ -72,7 +123,7 @@ iris_dt |>
   ) |> 
   data_color(
     columns = "Sepal.Length",
-    fn = scales::col_numeric(palette = hcl.colors(5, rev = T), domain = NULL)
+    fn = scales::col_numeric(palette = "viridis", reverse = T, domain = NULL)
   )
 ```
 
