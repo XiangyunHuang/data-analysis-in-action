@@ -18,10 +18,12 @@ gt(head(iris))
 
 ## 基础功能
 
+### 添加标题
+
 然后添加表格的标题和副标题，套上 `md()` 函数后，标题和副标题支持 Markdown 语法，告别 HTML 的制表方式吧！
 
 ```{r}
-#| label: tbl-gt-iris-color
+#| label: tbl-gt-header
 #| tbl-cap: 鸢尾花数据集
 
 library(data.table)
@@ -32,14 +34,51 @@ iris_dt |>
   tab_header(
     title = md("**鸢尾花**数据集"),
     subtitle = "R 内置数据集"
-  ) |> 
-  data_color(
-    columns = "Sepal.Length",
-    fn = scales::col_numeric(palette = terrain.colors(5, rev = T), domain = NULL)
   )
 ```
 
-其它表格元素，如脚注，支持和表格的列指标关联。下表添加脚注。
+### 填充颜色
+
+在表格中填充颜色是为了突出和对比。gt 包提供函数 `data_color()` 来给表格上色，这个函数根据一组数据向量（表格中的某列）生成一组颜色值。下表根据列 Sepal.Length 的值和 viridis 调色板填充颜色。函数 `data_color()` 的参数 palette 可以接受来自 **viridis 和 RColorBrewer 包的调色板的名称，如 "viridis"，也可以接受来自 paletteer 包的调色板，此时，指定调色板需要带所属的 R 包名，如** `palette = "ggsci::red_material"` 表示使用 ggsci 包的 `red_material` 调色板**。**
+
+```{r}
+#| label: tbl-gt-color
+#| tbl-cap: 鸢尾花数据集
+
+iris_dt |> 
+  gt() |> 
+  tab_header(
+    title = md("**鸢尾花**数据集"),
+    subtitle = "R 内置数据集"
+  ) |> 
+  data_color(
+    columns = "Sepal.Length",
+    palette = "viridis",
+    reverse = TRUE
+  )
+```
+
+除了使用现成的 R 包中的调色板，还可以使用自定义调色板。函数 `data_color()` 的参数 fn 可以传递自定义的颜色生成函数，颜色映射函数 `scales::col_numeric()` 可以将数值转化为颜色向量。
+
+```{r}
+#| label: tbl-gt-viridis
+#| tbl-cap: 鸢尾花数据集
+
+iris_dt |> 
+  gt() |> 
+  tab_header(
+    title = md("**鸢尾花**数据集"),
+    subtitle = "R 内置数据集"
+  ) |> 
+  data_color(
+    columns = "Sepal.Length",
+    fn = scales::col_numeric(palette = hcl.colors(5, rev = T), domain = NULL)
+  )
+```
+
+### 添加脚注
+
+类似添加表格标题和副标题，也可以添加脚注，且与表格的列指标关联。下表添加了两个脚注，一个与数据集中的 Sepal.Length 列关联，说明本数据集的来源，另一个脚注与列 Species 关联，说明其含义。
 
 ```{r}
 #| label: tbl-gt-iris-footnote
@@ -64,15 +103,9 @@ iris_dt |>
   ) |> 
   tab_footnote(
     footnote = "鸢尾花的类别",
-    locations = cells_column_labels(
-      columns = "Species"
-    )
+    locations = cells_column_labels(columns = "Species")
   )
 ```
-
-::: callout-note
-**gt** 包的函数 `data_color()` 有局限。@tbl-gt-iris-color 的配色在 DOCX 和 HTML 输出格式中是正常的，但在 PDF 输出格式中无效。
-:::
 
 ## 扩展功能
 
