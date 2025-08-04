@@ -100,50 +100,36 @@ xfun::session_info(packages = tmp[tmp$type == "Imports","package"], dependencies
 ```
 
 ``` markdown
-R version 4.3.1 (2023-06-16)
-Platform: x86_64-apple-darwin20 (64-bit)
-Running under: macOS Ventura 13.5.2, RStudio 2023.6.2.561
-
+R version 4.5.1 (2025-06-13)
+Platform: aarch64-apple-darwin20
+Running under: macOS Sequoia 15.5, RStudio 2025.5.1.513
 
 Locale: en_US.UTF-8 / en_US.UTF-8 / en_US.UTF-8 / C / en_US.UTF-8 / en_US.UTF-8
 
-time zone: Asia/Shanghai
-tzcode source: internal
-
 Package version:
-  abess_0.4.7               bayesplot_1.10.0          BB_2019.10-1             
-  beanplot_1.3.1            broom_1.0.5               car_3.1-2                
-  cmdstanr_0.6.1            coin_1.4-2                data.table_1.14.8        
-  datasauRus_0.1.6          dbplyr_2.3.3              downlit_0.4.3            
-  dplyr_1.1.3               DT_0.29                   dunn.test_1.3.5          
-  dygraphs_1.1.1.6          e1071_1.7-13              ECOSolveR_0.5.5          
-  expm_0.999-7              fastmatrix_0.5            fmesher_0.1.2            
-  GA_3.2.3                  geodata_0.5-8             ggalluvial_0.12.5        
-  gganimate_1.0.8           ggbeeswarm_0.7.2          ggbump_0.1.99999         
-  ggdensity_1.0.0           ggeffects_1.3.1           ggExtra_0.10.1           
-  ggforce_0.4.1             ggfortify_0.4.16          ggmosaic_0.3.3           
-  ggnewscale_0.4.9          ggplot2_3.4.3             ggraph_2.1.0             
-  ggrepel_0.9.3             ggridges_0.5.4            ggsignif_0.6.4           
-  ggstats_0.4.0             ggTimeSeries_1.0.2        ggVennDiagram_1.2.3      
-  ggwordcloud_0.5.0         gifski_1.12.0-2           GLMMadaptive_0.9-0       
-  glmnet_4.1-8              gt_0.9.0                  hexbin_1.28.3            
-  HistData_0.9-1            INLA_23.08.26             kernlab_0.9-32           
-  knitr_1.44                lars_1.3                  latticeExtra_0.6-30      
-  lme4_1.1-34               loo_2.6.0                 lvplot_0.2.1             
-  magick_2.7.5              maps_3.4.1                misc3d_0.9-1             
-  ncvreg_3.14.1             nloptr_2.0.3              pals_1.8                 
-  patchwork_1.1.3           pdftools_3.3.3            plot2_0.0.3.9010         
-  plot3D_1.4                plotly_4.10.2             pls_2.8-2                
-  pROC_1.18.4               purrr_1.0.2               pwr_1.3-0                
-  quadprog_1.5-8            quantmod_0.4.25           ragg_1.2.5               
-  randomForest_4.7-1.1      reticulate_1.32.0         ROI_1.0-1                
-  ROI.plugin.ecos_1.0-2     ROI.plugin.glpk_1.0-0     ROI.plugin.nloptr_1.0-1  
-  ROI.plugin.quadprog_1.0-1 ROI.plugin.scs_1.1-2      rootSolve_1.8.2.3        
-  rpart.plot_3.1.1          RSQLite_2.3.1             scs_3.2.4                
-  sf_1.0-14                 showtext_0.9-6            spaMM_4.4.0              
-  splancs_2.01-44           stars_0.6-4               tidycensus_1.4.4         
-  tidygraph_1.2.3           tikzDevice_0.12.5         titanic_0.1.0            
-  treemapify_2.5.5          TSP_1.2-4                 vcd_1.4-11               
-  vioplot_0.4.0             webshot2_0.1.1            xgboost_1.7.5.1          
-  xml2_1.3.5                xts_0.13.1
+  BB_2019.10.1              broom_1.0.9               car_3.1.3                
+  coin_1.4.3                data.table_1.17.8         datasauRus_0.1.9         
+  dbplyr_2.5.0              downlit_0.4.4             dplyr_1.1.4              
+  DT_0.33                   dunn.test_1.3.6           dygraphs_1.1.1.6         
+  e1071_1.7.16              ECOSolveR_0.5.5           GA_3.2.4                 
+  ggalluvial_0.12.5         gganimate_1.0.10          ggfortify_0.4.19         
+  ggplot2_3.5.2.9002        ggraph_2.2.1              ggrepel_0.9.6            
+  ggridges_0.5.6            ggstats_0.10.0            ggwordcloud_0.6.2        
+  gifski_1.32.0.2           glmnet_4.1.10             gt_1.0.0                 
+  hexbin_1.28.5             HistData_0.9.3            kernlab_0.9.33           
+  knitr_1.50                latticeExtra_0.6.30       lvplot_0.2.1             
+  magick_2.8.7              maps_3.4.3                misc3d_0.9.1             
+  nloptr_2.2.1              nomnoml_0.3.0             patchwork_1.3.1          
+  pdftools_3.5.0            plot3D_1.4.2              plotly_4.11.0            
+  pROC_1.19.0.1             purrr_1.1.0               pwr_1.3.0                
+  quadprog_1.5.8            quanteda_4.3.1            quantmod_0.4.28          
+  ragg_1.4.0                readxl_1.4.5              ROI_1.0.1                
+  ROI.plugin.ecos_1.0.2     ROI.plugin.glpk_1.0.0     ROI.plugin.nloptr_1.0.1  
+  ROI.plugin.quadprog_1.0.1 ROI.plugin.scs_1.1.2      rootSolve_1.8.2.4        
+  RSQLite_2.4.2             scs_3.2.7                 shiny_1.11.1             
+  showtext_0.9.7            spacyr_1.3.0              text2vec_0.6.4           
+  tidygraph_1.3.1           tikzDevice_0.12.6         titanic_0.1.0            
+  treemapify_2.5.6          TSP_1.2.5                 vcd_1.4.13               
+  visNetwork_2.1.2          webshot2_0.1.2            xml2_1.3.8               
+  xts_0.14.1        
 ```

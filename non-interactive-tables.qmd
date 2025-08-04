@@ -1,0 +1,330 @@
+# 非交互表格 {#sec-non-interactive-tables}
+
+一些需要打印或出版的场景需要制作非交互的表格。R 语言社区也有不少 R 包可以制作所需表格，其中 [**gt**](https://github.com/rstudio/gt) 包非常值得介绍，它可以制作非常复杂的表格样式，表格定制能力很强，gt 包的设计遵循 **ggplot2** 的设计哲学，打造制作表格的语法。
+
+## 快速入门
+
+在前面的章节，我们已经遇到用 knitr 包的 `kable()` 函数制作的表格。
+
+```{r}
+#| label: tbl-knitr-basic
+#| tbl-cap: 鸢尾花数据集（部分）
+
+library(knitr)
+kable(head(iris))
+```
+
+首先用 **gt** 包制作一个非常简单的 @tbl-gt-basic 。
+
+```{r}
+#| label: tbl-gt-basic
+#| tbl-cap: 鸢尾花数据集（部分）
+
+library(gt)
+gt(head(iris))
+```
+
+## 基础功能
+
+### 添加标题
+
+然后添加表格的标题和副标题，套上 `md()` 函数后，标题和副标题支持 Markdown 语法，告别 HTML 的制表方式吧！
+
+```{r}
+#| label: tbl-gt-header
+#| tbl-cap: 鸢尾花数据集
+
+library(data.table)
+library(gt)
+iris_dt <- as.data.table(iris)[, head(.SD, 2), by = .(Species)]
+iris_dt |> 
+  gt() |> 
+  tab_header(
+    title = md("**鸢尾花**数据集"),
+    subtitle = "R 内置数据集"
+  )
+```
+
+### 重命名列
+
+表格作为数据分类汇总和展示的工具，有时候原始数据的列名含义不够明确，需要重新命名。
+
+```{r}
+#| label: tbl-gt-cols-label
+#| tbl-cap: 鸢尾花数据集
+
+iris_dt |> 
+  gt() |> 
+  cols_label(
+    Species = "种类",
+    Sepal.Length = "花萼长度",
+    Sepal.Width = "花萼宽度",
+    Petal.Length = "花瓣长度",
+    Petal.Width = "花瓣宽度"
+  )
+```
+
+### 行列分组
+
+行列分组的目的是让数据看起来更加清晰。让不同类型的行列分组，在数据上可以去重，在展示上表格看起来更加清爽。下表先按 Species 列进行行分组，再将剩余4列按花萼与花瓣分成两组。为了展示上的美观，在 Species 列前添加了行编号，调整表格宽度使之占页面宽度的 60%。
+
+```{r}
+#| label: tbl-gt-tab-spanner
+#| tbl-cap: 鸢尾花数据集
+
+iris_dt |> 
+  dplyr::mutate(row_id = dplyr::row_number(), .before = Species) |> 
+  dplyr::group_by(Species) |> 
+  gt(rowname_col = "row_id") |> 
+  cols_label(
+    Species = "种类",
+    Sepal.Length = "长度",
+    Sepal.Width = "宽度",
+    Petal.Length = "长度",
+    Petal.Width = "宽度"
+  ) |> 
+  tab_spanner(
+    label = "花萼",
+    columns = starts_with("Sepal")
+  ) |>
+  tab_spanner(
+    label = "花瓣",
+    columns = starts_with("Petal")
+  ) |> 
+  tab_options(
+    table.width = pct(60)
+  )
+```
+
+### 填充颜色
+
+在表格中填充颜色是为了突出和对比。gt 包提供函数 `data_color()` 来给表格上色，这个函数根据一组数据向量（表格中的某列）生成一组颜色值。下表根据列 Sepal.Length 的值和 viridis 调色板填充颜色。函数 `data_color()` 的参数 palette 可以接受来自 **viridis 和 RColorBrewer 包的调色板的名称，如 "viridis"，也可以接受来自 paletteer 包的调色板，此时，指定调色板需要带所属的 R 包名，如** `palette = "ggsci::red_material"` 表示使用 ggsci 包的 `red_material` 调色板**。**
+
+```{r}
+#| label: tbl-gt-color
+#| tbl-cap: 鸢尾花数据集
+
+iris_dt |> 
+  gt() |> 
+  tab_header(
+    title = md("**鸢尾花**数据集"),
+    subtitle = "R 内置数据集"
+  ) |> 
+  data_color(
+    columns = "Sepal.Length",
+    palette = "viridis",
+    reverse = TRUE
+  )
+```
+
+除了使用现成的 R 包中的调色板，还可以使用自定义调色板。函数 `data_color()` 的参数 fn 可以传递自定义的颜色生成函数，颜色映射函数 `scales::col_numeric()` 可以将数值转化为颜色向量。
+
+```{r}
+#| label: tbl-gt-viridis
+#| tbl-cap: 鸢尾花数据集
+
+iris_dt |> 
+  gt() |> 
+  tab_header(
+    title = md("**鸢尾花**数据集"),
+    subtitle = "R 内置数据集"
+  ) |> 
+  data_color(
+    columns = "Sepal.Length",
+    fn = scales::col_numeric(palette = "viridis", reverse = T, domain = NULL)
+  )
+```
+
+### 添加脚注
+
+类似添加表格标题和副标题，也可以添加脚注，且与表格的列指标关联。下表添加了两个脚注，一个与数据集中的 Sepal.Length 列关联，说明本数据集的来源，另一个脚注与列 Species 关联，说明其含义。
+
+```{r}
+#| label: tbl-gt-iris-footnote
+#| tbl-cap: 鸢尾花数据集
+
+iris_dt |> 
+  gt() |> 
+  tab_header(
+    title = md("**鸢尾花**数据集"),
+    subtitle = "R 内置数据集"
+  ) |> 
+  data_color(
+    columns = "Sepal.Length",
+    method = "numeric", palette = "viridis", reverse = TRUE
+  ) |> 
+  data_color(
+    columns = "Species", palette = "Set1"
+  ) |> 
+  tab_footnote(
+    footnote = md("据说数据集最早收集自 Fisher's or Anderson's"),
+    locations = cells_column_labels(columns = "Sepal.Length")
+  ) |> 
+  tab_footnote(
+    footnote = "鸢尾花的类别",
+    locations = cells_column_labels(columns = "Species")
+  )
+```
+
+## 扩展功能
+
+### 输出格式
+
+类似 ggplot2 包的函数 `ggsave()`，gt 包也有导出表格的函数 `gtsave()` ，下面将本章开头制作的简单表格保存为 PNG 格式图片。它还支持导出 HTML 、TeX 和 DOCX 等常见格式。
+
+```{r}
+#| eval: false
+
+gt(head(iris)) |> 
+  gtsave(filename = "screenshots/iris.png", expand = 10)
+```
+
+### 渲染公式
+
+若表格中含有数学公式，支持 Markdown 语法。
+
+```{r}
+#| label: tbl-gt-fmt-markdown
+#| tbl-cap: 插入数学公式
+
+# 示例数据
+df <- tibble::tribble(
+  ~名称, ~公式,
+  "欧拉公式", "$e^{i \\pi} + 1 = 0$",
+  "勾股定理", "$a^2 + b^2 = c^2$"
+)
+
+df |> 
+  gt() |> 
+  tab_header(
+    title = md("$y=X\\beta+\\epsilon$")
+  ) |> 
+  fmt_markdown(columns = "公式")
+```
+
+### 添加水印
+
+gt 包提供函数 `local_image()` 加载本地图片，可再用函数 `html()` 将图片数据渲染出来。
+
+```{r}
+#| eval: false
+
+iris_dt |> 
+  gt() |> 
+  tab_header(
+    title = md("**鸢尾花**数据集"),
+    subtitle = html(local_image(filename = "images/Rlogo.png", height = 30)
+  ))
+```
+
+```{r}
+#| label: fig-gt-image
+#| fig-cap: 添加水印
+#| echo: false
+#| message: false
+
+if (!file.exists("screenshots/iris-logo.png")) {
+iris_dt |> 
+  gt() |> 
+  tab_header(
+    title = md("**鸢尾花**数据集"),
+    subtitle = html(local_image(filename = "images/Rlogo.png", height = 30)
+  )) |> 
+    gtsave(filename = "screenshots/iris-logo.png", expand = 10)
+}
+
+knitr::include_graphics(path = "screenshots/iris-logo.png")
+```
+
+## 其它 R 包
+
+### gtExtras 包
+
+[gtExtras](https://github.com/jthomasmock/gtExtras) 包扩展 **gt** 包的能力，提供一些高级操作需要的函数，比如根据某一列的数值绘制条形图，这可以用一个函数 `gt_plt_bar()` 搞定。略有不足的是它仅支持 HTML 输出。如果需要 PNG 格式，调用函数 `gtsave()` 导出。
+
+```{r}
+#| eval: false
+
+library(gtExtras)
+iris_dt |>
+  gt() |>
+  gt_plt_bar(column = Sepal.Length, keep_column = TRUE)
+```
+
+```{r}
+#| label: fig-gtExtras-iris
+#| fig-cap: gtExtras 包
+#| echo: false
+#| message: false
+
+if (!file.exists("screenshots/iris.png")) {
+  library(gtExtras)
+  iris_dt |>
+    gt() |>
+    gt_plt_bar(column = Sepal.Length, keep_column = TRUE) |>
+    gtsave(filename = "screenshots/iris.png", expand = 10)
+}
+
+knitr::include_graphics(path = "screenshots/iris.png")
+```
+
+### gtsummary 包
+
+[**gtsummary**](https://github.com/ddsjoberg/gtsummary) 包 [@gtsummary2021] 也是扩展 gt 包的能力，除了简单的数据汇总（类似基础函数 `summary()`），尤其可以根据统计模型的输出结果进行整理、汇总成表格。
+
+```{r}
+#| label: tbl-gtsummary-summary
+#| tbl-cap: 按鸢尾花类别汇总
+
+library(gtsummary)
+iris |> 
+  tbl_summary(include = c(Sepal.Length, Sepal.Width, Petal.Length), by = Species)
+```
+
+```{r}
+#| label: tbl-gtsummary-regression
+#| tbl-cap: 线性回归
+
+iris_lm <- lm(Sepal.Length ~. , data = iris[, -5])
+iris_lm |> tbl_regression()
+```
+
+除了 **gt** 包及其衍生包以外，另有两个制作表格的 R 包值得一提，分别是 **tinytable** 包和 **kableExtra** 包。
+
+### tinytable 包
+
+顾名思义，[tinytable](https://github.com/vincentarelbundock/tinytable/) 包是一个依赖极简的 R 包，这是一个最新出现的 R 包，与 [tinyplot](https://github.com/grantmcdermott/tinyplot) 包的设计同出于极简哲学。
+
+```{r}
+#| label: tbl-tt-iris
+#| tbl-cap: iris 数据集（部分）
+
+library(tinytable)
+tt(iris_dt, theme = "grid") |> 
+  style_tt(i = 1:2, j = 1, color = "white", background = "#4B0055") |> 
+  style_tt(i = 3:4, j = 1, color = "white", background = "#009B95") |> 
+  style_tt(i = 5:6, j = 1, color = "white", background = "#FDE333")
+```
+
+### kableExtra 包 {#sec-kable-extra}
+
+[kableExtra](https://github.com/haozhu233/kableExtra) 包主要是扩展了 **knitr** 包 `kable()` 函数的功能，相比于 **gt** 包，依赖更少，所以更加轻量。
+
+```{r}
+#| label: tbl-kable-iris
+#| tbl-cap: iris 数据集（部分）
+
+library(knitr)
+library(kableExtra)
+options(kableExtra.html.bsTable = T)
+
+iris_dt |>
+  kable(booktabs = TRUE, escape = FALSE, align = "c",
+        col.names = gsub("[.]", " ", names(iris_dt))) |>
+  kable_styling(
+    bootstrap_options = c("striped", "condensed"),
+    latex_options = "basic", full_width = FALSE
+  ) |> 
+  column_spec(1, color = "white", background = spec_color(as.integer(iris_dt$Species))) |> 
+  column_spec(2, color = spec_color(iris_dt$Sepal.Length))
+```
