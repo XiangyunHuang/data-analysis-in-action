@@ -1,4 +1,4 @@
-## [![Book build status](https://github.com/XiangyunHuang/data-analysis-in-action/workflows/Book-MacOS/badge.svg?event=push)](https://github.com/XiangyunHuang/data-analysis-in-action/actions?workflow=Book-MacOS)
+## [![Book build status](https://github.com/XiangyunHuang/data-analysis-in-action/workflows/Book-MacOS/badge.svg)](https://github.com/XiangyunHuang/data-analysis-in-action/actions?workflow=Book-MacOS)
 
 # R 语言数据分析实战
 
@@ -17,6 +17,7 @@
 -   数据交流
     -   交互图形
     -   交互表格
+    -   非交互表格
     -   交互应用
     -   HTML 文档
     -   PDF 文档
