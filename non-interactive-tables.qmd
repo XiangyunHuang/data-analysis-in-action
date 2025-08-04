@@ -1,10 +1,18 @@
 # 非交互表格 {#sec-non-interactive-tables}
 
-静态表格拆分到 HTML 文档、LaTeX 文档和 Office 文档的表格制作部分。
-
-[**gt**](https://github.com/rstudio/gt) 包类似 **ggplot2** 的设计哲学，打造制作表格的语法。
+一些需要打印或出版的场景需要制作非交互的表格。R 语言社区也有不少 R 包可以制作所需表格，其中 **[gt](https://github.com/rstudio/gt)** 包非常值得介绍，它可以制作非常复杂的表格样式，表格定制能力很强，gt 包的设计遵循 **ggplot2** 的设计哲学，打造制作表格的语法。
 
 ## 快速入门
+
+在前面的章节，我们已经遇到用 knitr 包的 `kable()` 函数制作的表格。
+
+```{r}
+#| label: tbl-knitr-basic
+#| tbl-cap: 鸢尾花数据集（部分）
+
+library(knitr)
+kable(head(iris))
+```
 
 首先用 **gt** 包制作一个非常简单的 @tbl-gt-basic 。
 
@@ -235,6 +243,15 @@ iris_dt |>
 [gtExtras](https://github.com/jthomasmock/gtExtras) 包扩展 **gt** 包的能力，提供一些高级操作需要的函数，比如根据某一列的数值绘制条形图，这可以用一个函数 `gt_plt_bar()` 搞定。
 
 ```{r}
+#| eval: false
+
+library(gtExtras)
+iris_dt |>
+  gt() |>
+  gt_plt_bar(column = Sepal.Length, keep_column = TRUE)
+```
+
+```{r}
 #| label: fig-gtExtras-iris
 #| fig-cap: gtExtras 包
 #| echo: false
@@ -251,47 +268,42 @@ if (!file.exists("screenshots/iris.png")) {
 knitr::include_graphics(path = "screenshots/iris.png")
 ```
 
-```{r}
-#| eval: false
-
-library(gtExtras)
-iris_dt |>
-  gt() |>
-  gt_plt_bar(column = Sepal.Length, keep_column = TRUE)
-```
-
 ### gtsummary 包
 
 [**gtsummary**](https://github.com/ddsjoberg/gtsummary) 包 [@gtsummary2021] 也是扩展 gt 包的能力，除了简单的数据汇总（类似基础函数 `summary()`），尤其可以根据统计模型的输出结果进行整理、汇总成表格。
 
 ```{r}
 #| label: tbl-gtsummary-summary
-#| tbl-cap: 鸢尾花数据集
+#| tbl-cap: 按鸢尾花类别汇总
 
 library(gtsummary)
 iris |> 
-  tbl_summary(include = c(Sepal.Length, Sepal.Width, Petal.Length),
-              by = Species)
+  tbl_summary(include = c(Sepal.Length, Sepal.Width, Petal.Length), by = Species)
 ```
 
 ```{r}
 #| label: tbl-gtsummary-regression
-#| tbl-cap: 鸢尾花数据集
+#| tbl-cap: 线性回归
 
-iris_lm <- lm(Sepal.Length ~. , data = iris[,-5])
+iris_lm <- lm(Sepal.Length ~. , data = iris[, -5])
 iris_lm |> tbl_regression()
 ```
 
+除了 gt 包及其衍生包以外，另有两个制作表格的 R 包值得一提，分别是 tinytable 包和 kableExtra 包。
+
 ### tinytable 包
 
-顾名思义，tinytable 包是一个依赖极简的 R 包。
+顾名思义，[tinytable](https://github.com/vincentarelbundock/tinytable/) 包是一个依赖极简的 R 包，这是一个最新出现的 R 包，与 [tinyplot](https://github.com/grantmcdermott/tinyplot) 包的设计同出于极简哲学。
 
 ```{r}
 #| label: tbl-tt-iris
 #| tbl-cap: iris 数据集（部分）
 
 library(tinytable)
-tt(iris_dt, theme = "striped")
+tt(iris_dt, theme = "grid") |> 
+  style_tt(i = 1:2, j = 1, color = "white", background = "#4B0055") |> 
+  style_tt(i = 3:4, j = 1, color = "white", background = "#009B95") |> 
+  style_tt(i = 5:6, j = 1, color = "white", background = "#FDE333")
 ```
 
 ### kableExtra 包 {#sec-kable-extra}
@@ -313,6 +325,6 @@ iris_dt |>
     bootstrap_options = c("striped", "condensed"),
     latex_options = "basic", full_width = FALSE
   ) |> 
-  column_spec(2, bold = TRUE, color = spec_color(iris_dt$Sepal.Length, end = 0.9)) |> 
-  column_spec(1, bold = TRUE, color = "white", background = spec_color(as.integer(iris_dt$Species), end = 0.9))
+  column_spec(1, color = "white", background = spec_color(as.integer(iris_dt$Species), end = 0.9)) |> 
+  column_spec(2, color = spec_color(iris_dt$Sepal.Length, end = 0.9))
 ```
