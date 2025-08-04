@@ -1,6 +1,6 @@
 # 非交互表格 {#sec-non-interactive-tables}
 
-一些需要打印或出版的场景需要制作非交互的表格。R 语言社区也有不少 R 包可以制作所需表格，其中 **[gt](https://github.com/rstudio/gt)** 包非常值得介绍，它可以制作非常复杂的表格样式，表格定制能力很强，gt 包的设计遵循 **ggplot2** 的设计哲学，打造制作表格的语法。
+一些需要打印或出版的场景需要制作非交互的表格。R 语言社区也有不少 R 包可以制作所需表格，其中 [**gt**](https://github.com/rstudio/gt) 包非常值得介绍，它可以制作非常复杂的表格样式，表格定制能力很强，gt 包的设计遵循 **ggplot2** 的设计哲学，打造制作表格的语法。
 
 ## 快速入门
 
@@ -179,9 +179,9 @@ gt(head(iris)) |>
   gtsave(filename = "screenshots/iris.png", expand = 10)
 ```
 
-### 数学公式
+### 渲染公式
 
-有时候表格中含有数学公式，可根据 Markdown 语法表达。
+若表格中含有数学公式，支持 Markdown 语法。
 
 ```{r}
 #| label: tbl-gt-fmt-markdown
@@ -207,6 +207,17 @@ df |>
 gt 包提供函数 `local_image()` 加载本地图片，可再用函数 `html()` 将图片数据渲染出来。
 
 ```{r}
+#| eval: false
+
+iris_dt |> 
+  gt() |> 
+  tab_header(
+    title = md("**鸢尾花**数据集"),
+    subtitle = html(local_image(filename = "images/Rlogo.png", height = 30)
+  ))
+```
+
+```{r}
 #| label: fig-gt-image
 #| fig-cap: 添加水印
 #| echo: false
@@ -225,22 +236,11 @@ iris_dt |>
 knitr::include_graphics(path = "screenshots/iris-logo.png")
 ```
 
-```{r}
-#| eval: false
-
-iris_dt |> 
-  gt() |> 
-  tab_header(
-    title = md("**鸢尾花**数据集"),
-    subtitle = html(local_image(filename = "images/Rlogo.png", height = 30)
-  ))
-```
-
 ## 其它 R 包
 
 ### gtExtras 包
 
-[gtExtras](https://github.com/jthomasmock/gtExtras) 包扩展 **gt** 包的能力，提供一些高级操作需要的函数，比如根据某一列的数值绘制条形图，这可以用一个函数 `gt_plt_bar()` 搞定。
+[gtExtras](https://github.com/jthomasmock/gtExtras) 包扩展 **gt** 包的能力，提供一些高级操作需要的函数，比如根据某一列的数值绘制条形图，这可以用一个函数 `gt_plt_bar()` 搞定。略有不足的是它仅支持 HTML 输出。如果需要 PNG 格式，调用函数 `gtsave()` 导出。
 
 ```{r}
 #| eval: false
@@ -289,7 +289,7 @@ iris_lm <- lm(Sepal.Length ~. , data = iris[, -5])
 iris_lm |> tbl_regression()
 ```
 
-除了 gt 包及其衍生包以外，另有两个制作表格的 R 包值得一提，分别是 tinytable 包和 kableExtra 包。
+除了 **gt** 包及其衍生包以外，另有两个制作表格的 R 包值得一提，分别是 **tinytable** 包和 **kableExtra** 包。
 
 ### tinytable 包
 
@@ -308,7 +308,7 @@ tt(iris_dt, theme = "grid") |>
 
 ### kableExtra 包 {#sec-kable-extra}
 
-相比于 **reactable** 和 **DT**， kableExtra 不依赖于 JavaScript 库，更加轻量。
+[kableExtra](https://github.com/haozhu233/kableExtra) 包主要是扩展了 **knitr** 包 `kable()` 函数的功能，相比于 **gt** 包，依赖更少，所以更加轻量。
 
 ```{r}
 #| label: tbl-kable-iris
@@ -325,6 +325,6 @@ iris_dt |>
     bootstrap_options = c("striped", "condensed"),
     latex_options = "basic", full_width = FALSE
   ) |> 
-  column_spec(1, color = "white", background = spec_color(as.integer(iris_dt$Species), end = 0.9)) |> 
-  column_spec(2, color = spec_color(iris_dt$Sepal.Length, end = 0.9))
+  column_spec(1, color = "white", background = spec_color(as.integer(iris_dt$Species))) |> 
+  column_spec(2, color = spec_color(iris_dt$Sepal.Length))
 ```
