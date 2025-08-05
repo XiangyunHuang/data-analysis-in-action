@@ -43,17 +43,6 @@ jobs:
         env:
           # install full prebuilt version
           TINYTEX_INSTALLER: TinyTeX
-          
-      - name: Setup Python
-        run: |
-          pip3 install virtualenv
-          mkdir -p /opt/.virtualenvs/r-tensorflow
-          virtualenv -p /usr/bin/python3 $RETICULATE_PYTHON_ENV
-          source $RETICULATE_PYTHON_ENV/bin/activate
-          pip3 install -r docker/requirements.txt
-          python -m spacy download en_core_web_sm
-          python -m spacy download zh_core_web_sm
-          deactivate
 
       - name: Install Fonts From System
         run: |
@@ -71,7 +60,6 @@ jobs:
           tikzDevice::tikzTest("$\\sin(x^2/2 - y^2/4 + 3) \\cos(2 x + 1 - \\exp(y))$")
         shell: Rscript {0}
         
-        
       - name: Setup magick
         run: |
           sudo sed -i_bak \
@@ -80,13 +68,9 @@ jobs:
 
       - name: Render Book
         run: |
-          source $RETICULATE_PYTHON_ENV/bin/activate
           quarto check
           quarto render --to html
         shell: bash
-        env:
-          RETICULATE_PYTHON_ENV: /opt/.virtualenvs/r-tensorflow
-          RETICULATE_PYTHON: /opt/.virtualenvs/r-tensorflow/bin/python
 
       - name: Deploy to Github Pages
         uses: JamesIves/github-pages-deploy-action@v4

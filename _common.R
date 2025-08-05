@@ -94,7 +94,3 @@ to_png <- function(fig_path) {
   )
   return(png_path)
 }
-
-# 设置 Python
-Sys.setenv(RETICULATE_PYTHON = "/opt/.virtualenvs/r-tensorflow/bin/python")
-Sys.setenv(RETICULATE_PYTHON_ENV = "/opt/.virtualenvs/r-tensorflow")
