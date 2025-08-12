@@ -1,0 +1,125 @@
+# 空间数据分析 {#analyze-spatial-data}
+
+```{r}
+library(nlme)
+library(ggplot2)
+library(gstat)
+library(sf)
+library(abind)
+library(stars)
+```
+
+```{r}
+#| label: tbl-rongelap-nuclear-data
+#| tbl-cap: "朗格拉普岛核辐射检测数据及海岸线坐标数据"
+#| tbl-subcap:
+#|   - "核辐射检测数据"
+#|   - "海岸线坐标数据"
+#| layout-ncol: 2
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
+
+# 加载数据
+rongelap <- readRDS(file = "data/rongelap.rds")
+rongelap_coastline <- readRDS(file = "data/rongelap_coastline.rds")
+
+library(knitr)
+knitr::kable(head(rongelap, 6),
+  col.names = c("横坐标", "纵坐标", "数目", "时间")
+)
+knitr::kable(head(rongelap_coastline, 6),
+  col.names = c("横坐标", "纵坐标")
+)
+```
+
+```{r}
+library(nlme)
+# 无块金效应
+fit_rongelap_gls <- nlme::gls(
+  model = log(counts / time) ~ 1, data = rongelap,
+  correlation = nlme::corExp(form = ~ cX + cY, nugget = F)
+)
+summary(fit_rongelap_gls)
+
+# 块金效应
+fit_rongelap_gls2 <- nlme::gls(
+  model = log(counts / time) ~ 1, data = rongelap,
+  correlation = nlme::corExp(form = ~ cX + cY, nugget = T)
+)
+summary(fit_rongelap_gls2)
+```
+
+以 nlme 为参照，提供 gstat 的等价实现，目的是搞明白 gstat 的内部实现原理。为什么这么做？nlme 的方式具有一般性，容易推广到到空间广义线性混合效应模型。
+
+根据 nlme 结果，可以自己写代码实现简单克里金插值预测
+
+多元正态分布的边际分布、条件分布
+
+采用 REML 方法拟合模型，gstat 包的 REML 方法，要求超参数是已知的，具体算法过程见 gstat 包
+
+```{r}
+library(sf)
+library(abind)
+library(stars)
+# 准备数据
+rongelap_sf <- st_as_sf(rongelap, coords = c("cX", "cY"), dim = "XY")
+rongelap_coastline_sf <- st_as_sf(rongelap_coastline, coords = c("cX", "cY"), dim = "XY")
+rongelap_coastline_sfp <- st_cast(st_combine(st_geometry(rongelap_coastline_sf)), "POLYGON")
+# 网格化
+rongelap_grid_stars <- st_bbox(rongelap_coastline_sfp) |>
+  st_as_stars(dx = 32, dy = 16) |>
+  st_crop(rongelap_coastline_sfp)
+rongelap_grid_stars
+```
+
+```{r}
+# 变差
+library(gstat)
+fit_rongelap_gstat <- fit.variogram.reml(log(counts / time) ~ 1,
+  locations = ~ cX + cY, data = rongelap,
+  model = vgm(psill = 1, model = "Exp", range = 169.7472, nugget = 1)
+)
+fit_rongelap_gstat
+
+# 预测
+fit_krige_pred <- krige(
+  formula = log(counts / time) ~ 1, 
+  locations = rongelap_sf,
+  newdata = rongelap_grid_stars, 
+  model = fit_rongelap_gstat
+)
+fit_krige_pred
+```
+
+```{r}
+#| label: fig-kriging-prediction-gstat
+#| fig-cap: 克里金插值预测
+#| fig-showtext: true
+#| fig-width: 6
+#| fig-height: 3.5
+
+library(ggplot2)
+
+ggplot() + 
+  geom_stars(data = fit_krige_pred, aes(fill = exp(var1.pred)), 
+             na.action = na.omit) + 
+  scale_fill_distiller(palette = "Spectral") +
+  theme_bw() +
+  labs(x = "横坐标", y = "纵坐标", fill = "预测值")
+```
+
+```{r}
+#| label: fig-kriging-variance-gstat
+#| fig-cap: 克里金插值预测方差
+#| fig-showtext: true
+#| fig-width: 6
+#| fig-height: 3.5
+
+ggplot() + 
+  geom_stars(data = fit_krige_pred, aes(fill = var1.var), 
+             na.action = na.omit) + 
+  scale_fill_distiller(palette = "Spectral") +
+  theme_bw() +
+  labs(x = "横坐标", y = "纵坐标", fill = "预测方差")
+```
+
