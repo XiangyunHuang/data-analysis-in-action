@@ -2,15 +2,34 @@
 
 从非结构的、半结构的数据中抽取有用的信息，常常需要一番数据清洗操作，最重要的工具之一是正则表达式。R 语言内置一系列函数，组成一套工具，详见 `?regex` 。
 
+以 CRAN 上 R 包的元数据作为本章数据清洗的对象。数据清洗主要用于文本分析，元数据中挑选 Package 、Maintainer、Title 、Description 和 Authors\@R 等 5个字段。
+
+```{r}
+pdb <- readRDS(file = "data/cran-package-db-20241231.rds")
+pdb <- subset(
+  x = pdb, subset = !duplicated(Package),
+  select = c("Package", "Maintainer", "Title", "Description", "Authors@R")
+)
+```
 
 ## 正则表达式 {#sec-regexp}
 
+简单起见，考虑 Rcpp 包的几个字段
+
+```{r}
+pdb[pdb$Package == "Rcpp","Description"] 
+
+```
 
 ### 量词 {#sec-quantifiers}
 
+字段 Description 中有多个换行符 `\n` 、多对括号，查找和替换
+
+```{r}
+grep(pattern = "\n", x = pdb[pdb$Package == "Rcpp", "Description"], fixed = TRUE)
+```
 
 ### 级联 {#sec-concatenated}
-
 
 ### 断言 {#sec-assertions}
 
@@ -18,28 +37,55 @@
 
 ### 反向引用 {#sec-back-reference}
 
-
 ### 命名捕捉 {#sec-named-capture}
-
-
 
 ## 字符串操作 {#sec-string-operations}
 
-
-
-
 ### 查找 {#sec-matching}
 
-`grep()` / `grepl()` 返回是否匹配的结果
+`grep()` 和 `grepl()` 是一对字符串匹配函数，返回是否匹配到字符串的结果，前者返回值是整数向量，后者是逻辑向量。
+
+```{r}
+grep(pattern = "\n", x = pdb[pdb$Package == "Rcpp", "Description"], fixed = TRUE)
+# 如果匹配上，则返回原字符串
+grep(pattern = "\n", x = pdb[pdb$Package == "Rcpp", "Description"], value = T, fixed = TRUE)
+# 等同于 grep(..., value = T)
+grepv(pattern = "\n", x = pdb[pdb$Package == "Rcpp", "Description"], fixed = TRUE)
+# 如果匹配上，则返回逻辑向量
+grepl(pattern = "\n", x = pdb[pdb$Package == "Rcpp", "Description"], fixed = TRUE)
+```
 
 ### 替换 {#sec-replacement}
 
-`sub()` / `gsub()` 替换一次和多次
+`sub()` 和 `gsub()` 是一对替换字符串的函数，前者匹配和替换一次，而后者可以全部替换。
 
+```{r}
+sub(pattern = "\n", x = pdb[pdb$Package == "Rcpp", "Description"], replacement = "", fixed = TRUE)
+# 换行符
+gsub(pattern = "\n", x = pdb[pdb$Package == "Rcpp", "Description"], replacement = "", fixed = TRUE)
+# 单引号
+gsub(pattern = "'", x = pdb[pdb$Package == "Rcpp", "Description"], replacement = "", fixed = TRUE)
+# 双引号
+gsub(pattern = '\"', x = pdb[pdb$Package == "Rcpp", "Description"], replacement = "", fixed = TRUE)
+```
 
 ### 提取 {#sec-extract}
 
-`regexpr()` / `gregexpr()`
+前面的 `sub()` 和 `gsub()` 是一对关于字符串替换的函数，`regexpr()` 和 `gregexpr()` 是另一对字符串提取函数，函数 `regexpr()` 前加字幕 g 的含义与之相同，均表示全局操作的意思。
 
-`regexec()` / `gregexec()`
+```{r}
+x = gsub(pattern = "\n", x = pdb[pdb$Package == "Rcpp", "Description"], replacement = "", fixed = TRUE)
+x = gsub(pattern = '\"', x = x, replacement = "", fixed = TRUE)
+# 提取 URL 链接
+str_extract <- function(text, pattern, ...) regmatches(text, regexpr(pattern, text, ...))
+str_extract(text = x, pattern = "(<.*?>)", perl = T)
+# 提取括号内容
+str_extract(text = x, pattern = "(\\(.*?\\))", perl = T)
+```
 
+描述字段中含有多个括号包裹 doi 链接，都提取出来
+
+```{r}
+str_extract_g <- function(text, pattern, ...) regmatches(text, gregexpr(pattern, text, ...))
+str_extract_g(text = x, pattern = "(\\(.*?\\))", perl = T)
+```
