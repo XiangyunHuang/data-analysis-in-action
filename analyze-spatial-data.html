@@ -834,25 +834,29 @@ Degrees of freedom: 157 total; 156 residual</code></pre>
 <p><span class="math display">\[
 \log\big(Y(x)\big) = T(x) = \beta + S(x) + \epsilon
 \]</span></p>
-<p>其中 <span class="math inline">\(Y(x)\)</span> 表示位置 <span class="math inline">\(x\)</span> 处观测到的辐射强度，辐射强度是随空间位置变化的随机变量， <span class="math inline">\(T(x)\)</span> 记为辐射强度的对数，<span class="math inline">\(\beta\)</span> 是截距项。空间随机效应 <span class="math inline">\(S(x)\)</span> 假定是一个零均值平稳的高斯随机过程，空间随机效应 <span class="math inline">\(S(x)\)</span> 与随机误差 <span class="math inline">\(\epsilon\)</span> 是相互独立的，随机误差服从零均值方差为 <span class="math inline">\(\tau^2\)</span> 的正态分布。则随机过程 <span class="math inline">\(T(x)\)</span> 条件期望 <span class="math inline">\(\mathsf{E}[T(x)|S(x)] = \beta + S(x)\)</span> 和条件方差 <span class="math inline">\(\mathsf{Var}[T(x)|S(x)] = \tau^2\)</span> ，它的自协方差函数如下：</p>
+<p>其中 <span class="math inline">\(Y(x)\)</span> 表示位置 <span class="math inline">\(x\)</span> 处观测到的辐射强度，辐射强度是随空间位置变化的随机变量， <span class="math inline">\(T(x)\)</span> 记为辐射强度的对数，<span class="math inline">\(\beta\)</span> 是截距项。空间随机效应 <span class="math inline">\(S(x)\)</span> 假定是一个零均值平稳的高斯随机过程，空间随机效应 <span class="math inline">\(S(x)\)</span> 与随机误差 <span class="math inline">\(\epsilon\)</span> 是相互独立的，随机误差服从零均值方差为 <span class="math inline">\(\tau^2\)</span> 的正态分布。则空间随机过程 <span class="math inline">\(T(x)\)</span> 条件期望 <span class="math inline">\(\mathsf{E}[T(x)|S(x)] = \beta + S(x)\)</span> 和条件方差 <span class="math inline">\(\mathsf{Var}[T(x)|S(x)] = \tau^2\)</span> ，它的自协方差函数如下：</p>
 <p><span class="math display">\[
 \mathsf{Cov}\big(T(x_i), T(x_j)\big) = \sigma^2 \exp\big(- \frac{\|x_i - x_j \|_2}{\phi}\big) + \tau^2I_{\{i=j\}}.
 \]</span></p>
-<p>它的自相关函数 <span class="math inline">\(\rho(u_{ij})\)</span> 如下：</p>
+<p>它的自相关函数（Correlation function） <span class="math inline">\(\rho(u_{ij})\)</span> 如下：</p>
 <p><span class="math display">\[
-\rho(u_{ij}) = \frac{\mathsf{Cov}\big(T(x_i), T(x_j)\big)}{\sqrt{\mathsf{Var}(T(x_i))\mathsf{Var}(T(x_j))}}= \frac{1}{\sigma^2 + \tau^2}\big(\sigma^2\exp(-u_{ij}/\phi) + \tau^2I_{\{i=j\}}\big).
+\rho(u_{ij}) = \mathsf{Corr}\big\{T(x_i),T(x_j)\big\} = \frac{\mathsf{Cov}\big(T(x_i), T(x_j)\big)}{\sqrt{\mathsf{Var}(T(x_i))\mathsf{Var}(T(x_j))}}= \frac{1}{\sigma^2 + \tau^2}\big(\sigma^2\exp(-u_{ij}/\phi) + \tau^2I_{\{i=j\}}\big).
 \]</span></p>
-<p>其中，<span class="math inline">\(u_{ij}\)</span> 表示位置 <span class="math inline">\(x_i\)</span> 与位置 <span class="math inline">\(x_j\)</span> 的欧氏距离 <span class="math inline">\(\|x_i - x_j \|_2\)</span> ，关于随机过程 <span class="math inline">\(T(x)\)</span> 的半变差函数 <span class="math inline">\(V_{T}(u_{ij})\)</span> 如下：</p>
+<p>其中，<span class="math inline">\(u_{ij}\)</span> 表示位置 <span class="math inline">\(x_i\)</span> 与位置 <span class="math inline">\(x_j\)</span> 的欧氏距离 <span class="math inline">\(\|x_i - x_j \|_2\)</span> ，关于空间随机过程 <span class="math inline">\(T(x)\)</span> 的半变差函数 <span class="math inline">\(V_{T}(u_{ij})\)</span> 如下：</p>
 <p><span class="math display">\[
-V_{T}(u_{ij}) = \frac{1}{2}\mathsf{Var}\{T(x_i)-T(x_j)\} = \frac{1}{2}\mathsf{E}\{[T(x_i)-T(x_j)]^2\} = \tau^2 + \sigma^2(1-\rho(u_{ij}))
+V_{T}(u_{ij}) = \frac{1}{2}\mathsf{Var}\{T(x_i)-T(x_j)\} = \frac{1}{2}\mathsf{E}\{[T(x_i)-T(x_j)]^2\} = \tau^2I_{\{i=j\}} + \sigma^2(1-\rho(u_{ij}))
 \]</span></p>
 <p>在 <strong>nlme</strong> 包的记号之下，带块金效应的指数型自相关结构如下：</p>
 <p><span class="math display">\[
 \begin{aligned}
-\hat{\rho}(u_{ij}; \phi, \delta ) = \delta + (1 - \delta) (1 - \exp(- u_{ij}/\phi)) = 1 - (1-\delta)\exp(- u_{ij}/\phi)
+\hat{\rho}(u_{ij}; \phi, \delta ) = \delta + (1 - \delta) (1 - \exp(- u_{ij}/\phi)) = 1 - (1-\delta)\exp(- u_{ij}/\phi),
 \end{aligned}
 \]</span></p>
-<p>其中，记 <span class="math inline">\(\delta = \frac{\tau^2}{\tau^2 + \sigma^2}\)</span> ，这个重参数化的目的是为了计算方便，提高模型参数 <span class="math inline">\(\tau^2\)</span> 和 <span class="math inline">\(\sigma^2\)</span> 的可识别性，它是噪声与总方差的比值，或者说作用等同于信噪比。为了说明自相关函数 <code>corExp()</code> 及各个参数的作用，设置 <span class="math inline">\(\phi = 1,\delta=0.2\)</span> ，示例如下：</p>
+<p>其中，记 <span class="math inline">\(\delta = \frac{\tau^2}{\tau^2 + \sigma^2}\)</span> ，值得注意，此处的自相关结构并不等同于前面的自相关函数，它与半变差函数的关系如下：</p>
+<p><span class="math display">\[
+V_T(u_{ij}) = (\sigma^2 + \tau^2)\hat{\rho}(u_{ij}; \phi, \delta ),
+\]</span></p>
+<p>这个重参数化的目的是软件实现上的方便，单独估计模型参数 <span class="math inline">\(\tau^2\)</span> 和 <span class="math inline">\(\sigma^2\)</span> 存在可识别问题，转而估计其比值则大大改善可识别性问题，它是噪声与总方差的比值，或者说作用等同于信噪比。为了说明自相关函数 <code>corExp()</code> 及各个参数的作用，设置 <span class="math inline">\(\phi = 1,\delta=0.2\)</span> ，示例如下：</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb8"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1"></a>spatDat <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">x =</span> (<span class="dv">0</span><span class="sc">:</span><span class="dv">4</span>)<span class="sc">/</span><span class="dv">4</span>, <span class="at">y =</span> (<span class="dv">0</span><span class="sc">:</span><span class="dv">4</span>)<span class="sc">/</span><span class="dv">4</span>)</span>
 <span id="cb8-2"><a href="#cb8-2"></a>cs3Exp <span class="ot">&lt;-</span> <span class="fu">corExp</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="fl">0.2</span>), <span class="at">form =</span> <span class="sc">~</span> x <span class="sc">+</span> y, <span class="at">nugget =</span> <span class="cn">TRUE</span>)</span>
