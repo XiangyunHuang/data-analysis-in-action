@@ -32,6 +32,10 @@ knitr::kable(head(rongelap_coastline, 6),
 )
 ```
 
+## 模型拟合
+
+下面采用 **nlme** 包的 `gls(`) 函数拟合模型，该函数使用广义最小二乘方法估计模型的参数。
+
 ```{r}
 library(nlme)
 # 无块金效应
@@ -49,13 +53,9 @@ fit_rongelap_gls2 <- nlme::gls(
 summary(fit_rongelap_gls2)
 ```
 
-以 nlme 为参照，提供 gstat 的等价实现，目的是搞明白 gstat 的内部实现原理。为什么这么做？nlme 的方式具有一般性，容易推广到到空间广义线性混合效应模型。
+## 空间操作
 
-根据 nlme 结果，可以自己写代码实现简单克里金插值预测
-
-多元正态分布的边际分布、条件分布
-
-采用 REML 方法拟合模型，gstat 包的 REML 方法，要求超参数是已知的，具体算法过程见 gstat 包
+将 data.frame （data frame 二维表格）类型数据转为 sf （simple feature 空间几何数据）类型的数据，通过对研究岛屿的网格化，获得预测位置。
 
 ```{r}
 library(sf)
@@ -71,6 +71,10 @@ rongelap_grid_stars <- st_bbox(rongelap_coastline_sfp) |>
   st_crop(rongelap_coastline_sfp)
 rongelap_grid_stars
 ```
+
+## 插值预测
+
+下面采用 gstat 包的 krige 函数，该函数实现了 Kriging 克里金插值预测方法，该预测方法只适用于研究区域内，而不能外推到研究区域外。
 
 ```{r}
 # 变差
@@ -91,9 +95,11 @@ fit_krige_pred <- krige(
 fit_krige_pred
 ```
 
+展示克里金插值方法预测整个岛屿核辐射强度
+
 ```{r}
 #| label: fig-kriging-prediction-gstat
-#| fig-cap: 克里金插值预测
+#| fig-cap: 核辐射强度的预测值
 #| fig-showtext: true
 #| fig-width: 6
 #| fig-height: 3.5
@@ -107,6 +113,8 @@ ggplot() +
   theme_bw() +
   labs(x = "横坐标", y = "纵坐标", fill = "预测值")
 ```
+
+克里金插值方法的预测方差
 
 ```{r}
 #| label: fig-kriging-variance-gstat
@@ -122,4 +130,3 @@ ggplot() +
   theme_bw() +
   labs(x = "横坐标", y = "纵坐标", fill = "预测方差")
 ```
-
