@@ -832,35 +832,32 @@ Degrees of freedom: 157 total; 156 residual</code></pre>
 </div>
 <p>以上代码表示的模型结构如下：</p>
 <p><span class="math display">\[
-\log\big(Y(x)\big) = \beta + S(x) + \epsilon
+\log\big(Y(x)\big) = T(x) = \beta + S(x) + \epsilon
 \]</span></p>
-<p>其中 <span class="math inline">\(Y(x)\)</span> 表示位置 <span class="math inline">\(x\)</span> 处观测到的辐射强度，<span class="math inline">\(\beta\)</span> 是截距项，空间随机效应 <span class="math inline">\(S(x)\)</span> 与随机误差 <span class="math inline">\(\epsilon\)</span> 是相互独立的。条件期望 <span class="math inline">\(\mathsf{E}[Y(x)|S(x)] = \beta + S(x)\)</span> 和方差 <span class="math inline">\(\mathsf{Var}[Y(x)|S(x)] = \tau^2\)</span> ，空间随机效应假定是一个零均值平稳的高斯随机过程，它的自协方差函数如下：</p>
+<p>其中 <span class="math inline">\(Y(x)\)</span> 表示位置 <span class="math inline">\(x\)</span> 处观测到的辐射强度，辐射强度是随空间位置变化的随机变量， <span class="math inline">\(T(x)\)</span> 记为辐射强度的对数，<span class="math inline">\(\beta\)</span> 是截距项。空间随机效应 <span class="math inline">\(S(x)\)</span> 假定是一个零均值平稳的高斯随机过程，空间随机效应 <span class="math inline">\(S(x)\)</span> 与随机误差 <span class="math inline">\(\epsilon\)</span> 是相互独立的，随机误差服从零均值方差为 <span class="math inline">\(\tau^2\)</span> 的正态分布。则随机过程 <span class="math inline">\(T(x)\)</span> 条件期望 <span class="math inline">\(\mathsf{E}[T(x)|S(x)] = \beta + S(x)\)</span> 和条件方差 <span class="math inline">\(\mathsf{Var}[T(x)|S(x)] = \tau^2\)</span> ，它的自协方差函数如下：</p>
 <p><span class="math display">\[
-\mathsf{Cov}(S(x_i), S(x_j)) = \sigma^2 \exp\big(- \frac{\|x_i - x_j \|_2}{\phi}\big) + \tau^2
+\mathsf{Cov}\big(T(x_i), T(x_j)\big) = \sigma^2 \exp\big(- \frac{\|x_i - x_j \|_2}{\phi}\big) + \tau^2I_{\{i=j\}}.
 \]</span></p>
-<p>在 <strong>nlme</strong> 包的记号之下，带块金效应的指数型相关结构如下</p>
+<p>它的自相关函数 <span class="math inline">\(\rho(u_{ij})\)</span> 如下：</p>
+<p><span class="math display">\[
+\rho(u_{ij}) = \frac{\mathsf{Cov}\big(T(x_i), T(x_j)\big)}{\sqrt{\mathsf{Var}(T(x_i))\mathsf{Var}(T(x_j))}}= \frac{1}{\sigma^2 + \tau^2}\big(\sigma^2\exp(-u_{ij}/\phi) + \tau^2I_{\{i=j\}}\big).
+\]</span></p>
+<p>其中，<span class="math inline">\(u_{ij}\)</span> 表示位置 <span class="math inline">\(x_i\)</span> 与位置 <span class="math inline">\(x_j\)</span> 的欧氏距离 <span class="math inline">\(\|x_i - x_j \|_2\)</span> ，关于随机过程 <span class="math inline">\(T(x)\)</span> 的半变差函数 <span class="math inline">\(V_{T}(u_{ij})\)</span> 如下：</p>
+<p><span class="math display">\[
+V_{T}(u_{ij}) = \frac{1}{2}\mathsf{Var}\{T(x_i)-T(x_j)\} = \frac{1}{2}\mathsf{E}\{[T(x_i)-T(x_j)]^2\} = \tau^2 + \sigma^2(1-\rho(u_{ij}))
+\]</span></p>
+<p>在 <strong>nlme</strong> 包的记号之下，带块金效应的指数型自相关结构如下：</p>
 <p><span class="math display">\[
 \begin{aligned}
-\rho(u; \phi, \delta ) = \delta + (1 - \delta) (1 - \exp(u/\phi))
+\hat{\rho}(u_{ij}; \phi, \delta ) = \delta + (1 - \delta) (1 - \exp(- u_{ij}/\phi)) = 1 - (1-\delta)\exp(- u_{ij}/\phi)
 \end{aligned}
 \]</span></p>
-<p>其中，<span class="math inline">\(u\)</span> 表示位置 <span class="math inline">\(x_i\)</span> 与位置 <span class="math inline">\(x_j\)</span> 的欧氏距离 <span class="math inline">\(\|x_i - x_j \|_2\)</span> ， <span class="math inline">\(\delta = \frac{\tau^2}{\tau^2 + \sigma^2}\)</span> 这个重参数化的目的是为了计算方便，提高模型参数的可识别性，它是噪声与总方差的比值，或者说作用等同于信噪比。各个参数的估计值小数点后四舍五入保留三位有效数字。</p>
-<ul>
-<li>(Intercept) 截距对应于 <span class="math inline">\(\beta\)</span> 是 1.813</li>
-<li>range 对应于 <span class="math inline">\(\phi\)</span> 是 169.747</li>
-<li>噪声占总方差的比值 <span class="math inline">\(\delta = \frac{\tau^2}{\sigma^2 + \tau^2} = 0.109\)</span>
-</li>
-<li>Residual standard error 残差标准差为 0.574，则其平方对应于 <span class="math inline">\(\sigma^2 + \tau^2 = 0.573967^2=0.329\)</span>
-</li>
-<li>nugget 对应于块金效应 <span class="math inline">\(0.1092495 * 0.573967^2 = 0.0360\)</span>
-</li>
-</ul>
+<p>其中，记 <span class="math inline">\(\delta = \frac{\tau^2}{\tau^2 + \sigma^2}\)</span> ，这个重参数化的目的是为了计算方便，提高模型参数 <span class="math inline">\(\tau^2\)</span> 和 <span class="math inline">\(\sigma^2\)</span> 的可识别性，它是噪声与总方差的比值，或者说作用等同于信噪比。为了说明自相关函数 <code>corExp()</code> 及各个参数的作用，设置 <span class="math inline">\(\phi = 1,\delta=0.2\)</span> ，示例如下：</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb8"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1"></a>spatDat <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">x =</span> (<span class="dv">0</span><span class="sc">:</span><span class="dv">4</span>)<span class="sc">/</span><span class="dv">4</span>, <span class="at">y =</span> (<span class="dv">0</span><span class="sc">:</span><span class="dv">4</span>)<span class="sc">/</span><span class="dv">4</span>)</span>
-<span id="cb8-2"><a href="#cb8-2"></a><span class="co"># 等价于 diag(0.2, 5) + (1 - 0.2) * exp(-as.matrix(dist(spatDat)))</span></span>
-<span id="cb8-3"><a href="#cb8-3"></a>cs3Exp <span class="ot">&lt;-</span> <span class="fu">corExp</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="fl">0.2</span>), <span class="at">form =</span> <span class="sc">~</span> x <span class="sc">+</span> y, <span class="at">nugget =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb8-4"><a href="#cb8-4"></a>cs3Exp <span class="ot">&lt;-</span> <span class="fu">Initialize</span>(cs3Exp, spatDat)</span>
-<span id="cb8-5"><a href="#cb8-5"></a><span class="fu">corMatrix</span>(cs3Exp)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb8-2"><a href="#cb8-2"></a>cs3Exp <span class="ot">&lt;-</span> <span class="fu">corExp</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="fl">0.2</span>), <span class="at">form =</span> <span class="sc">~</span> x <span class="sc">+</span> y, <span class="at">nugget =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb8-3"><a href="#cb8-3"></a>cs3Exp <span class="ot">&lt;-</span> <span class="fu">Initialize</span>(cs3Exp, spatDat)</span>
+<span id="cb8-4"><a href="#cb8-4"></a><span class="fu">corMatrix</span>(cs3Exp)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>          [,1]      [,2]      [,3]      [,4]      [,5]
 [1,] 1.0000000 0.5617508 0.3944550 0.2769817 0.1944934
@@ -870,22 +867,44 @@ Degrees of freedom: 157 total; 156 residual</code></pre>
 [5,] 0.1944934 0.2769817 0.3944550 0.5617508 1.0000000</code></pre>
 </div>
 </div>
-</section><section id="空间操作" class="level2" data-number="18.2"><h2 data-number="18.2" class="anchored" data-anchor-id="空间操作">
+<p>根据上面带块金效应的指数型自相关函数的数学公式，结果与上面是一样的，自编代码如下：</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1"></a><span class="fu">diag</span>(<span class="fl">0.2</span>, <span class="dv">5</span>) <span class="sc">+</span> (<span class="dv">1</span> <span class="sc">-</span> <span class="fl">0.2</span>) <span class="sc">*</span> <span class="fu">exp</span>(<span class="sc">-</span><span class="fu">as.matrix</span>(<span class="fu">dist</span>(spatDat)))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>          1         2         3         4         5
+1 1.0000000 0.5617508 0.3944550 0.2769817 0.1944934
+2 0.5617508 1.0000000 0.5617508 0.3944550 0.2769817
+3 0.3944550 0.5617508 1.0000000 0.5617508 0.3944550
+4 0.2769817 0.3944550 0.5617508 1.0000000 0.5617508
+5 0.1944934 0.2769817 0.3944550 0.5617508 1.0000000</code></pre>
+</div>
+</div>
+<p>各个参数的估计值小数点后四舍五入保留三位有效数字。</p>
+<ul>
+<li>(Intercept) 截距对应于 <span class="math inline">\(\beta\)</span> 是 1.813</li>
+<li>range 对应于 <span class="math inline">\(\phi\)</span> 是 169.747</li>
+<li>噪声占总方差的比值 <span class="math inline">\(\delta = \frac{\tau^2}{\sigma^2 + \tau^2} = 0.109\)</span>
+</li>
+<li>Residual standard error 残差标准差为 0.574，则其平方对应于 <span class="math inline">\(\sigma^2 + \tau^2 = 0.573967^2=0.329\)</span>
+</li>
+<li>nugget 对应于块金效应 <span class="math inline">\(0.1092495 * 0.573967^2 = 0.0360\)</span>
+</li>
+</ul></section><section id="空间操作" class="level2" data-number="18.2"><h2 data-number="18.2" class="anchored" data-anchor-id="空间操作">
 <span class="header-section-number">18.2</span> 空间操作</h2>
 <p>将 <code>data.frame</code> （data frame 二维表格）类型数据转为 <code>sf</code> （simple feature 空间几何数据）类型的数据，通过对研究岛屿的网格化，获得预测位置。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1"></a><span class="fu">library</span>(sf)</span>
-<span id="cb10-2"><a href="#cb10-2"></a><span class="fu">library</span>(abind)</span>
-<span id="cb10-3"><a href="#cb10-3"></a><span class="fu">library</span>(stars)</span>
-<span id="cb10-4"><a href="#cb10-4"></a><span class="co"># 准备数据</span></span>
-<span id="cb10-5"><a href="#cb10-5"></a>rongelap_sf <span class="ot">&lt;-</span> <span class="fu">st_as_sf</span>(rongelap, <span class="at">coords =</span> <span class="fu">c</span>(<span class="st">"cX"</span>, <span class="st">"cY"</span>), <span class="at">dim =</span> <span class="st">"XY"</span>)</span>
-<span id="cb10-6"><a href="#cb10-6"></a>rongelap_coastline_sf <span class="ot">&lt;-</span> <span class="fu">st_as_sf</span>(rongelap_coastline, <span class="at">coords =</span> <span class="fu">c</span>(<span class="st">"cX"</span>, <span class="st">"cY"</span>), <span class="at">dim =</span> <span class="st">"XY"</span>)</span>
-<span id="cb10-7"><a href="#cb10-7"></a>rongelap_coastline_sfp <span class="ot">&lt;-</span> <span class="fu">st_cast</span>(<span class="fu">st_combine</span>(<span class="fu">st_geometry</span>(rongelap_coastline_sf)), <span class="st">"POLYGON"</span>)</span>
-<span id="cb10-8"><a href="#cb10-8"></a><span class="co"># 网格化</span></span>
-<span id="cb10-9"><a href="#cb10-9"></a>rongelap_grid_stars <span class="ot">&lt;-</span> <span class="fu">st_bbox</span>(rongelap_coastline_sfp) <span class="sc">|&gt;</span></span>
-<span id="cb10-10"><a href="#cb10-10"></a>  <span class="fu">st_as_stars</span>(<span class="at">dx =</span> <span class="dv">32</span>, <span class="at">dy =</span> <span class="dv">16</span>) <span class="sc">|&gt;</span></span>
-<span id="cb10-11"><a href="#cb10-11"></a>  <span class="fu">st_crop</span>(rongelap_coastline_sfp)</span>
-<span id="cb10-12"><a href="#cb10-12"></a>rongelap_grid_stars</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1"></a><span class="fu">library</span>(sf)</span>
+<span id="cb12-2"><a href="#cb12-2"></a><span class="fu">library</span>(abind)</span>
+<span id="cb12-3"><a href="#cb12-3"></a><span class="fu">library</span>(stars)</span>
+<span id="cb12-4"><a href="#cb12-4"></a><span class="co"># 准备数据</span></span>
+<span id="cb12-5"><a href="#cb12-5"></a>rongelap_sf <span class="ot">&lt;-</span> <span class="fu">st_as_sf</span>(rongelap, <span class="at">coords =</span> <span class="fu">c</span>(<span class="st">"cX"</span>, <span class="st">"cY"</span>), <span class="at">dim =</span> <span class="st">"XY"</span>)</span>
+<span id="cb12-6"><a href="#cb12-6"></a>rongelap_coastline_sf <span class="ot">&lt;-</span> <span class="fu">st_as_sf</span>(rongelap_coastline, <span class="at">coords =</span> <span class="fu">c</span>(<span class="st">"cX"</span>, <span class="st">"cY"</span>), <span class="at">dim =</span> <span class="st">"XY"</span>)</span>
+<span id="cb12-7"><a href="#cb12-7"></a>rongelap_coastline_sfp <span class="ot">&lt;-</span> <span class="fu">st_cast</span>(<span class="fu">st_combine</span>(<span class="fu">st_geometry</span>(rongelap_coastline_sf)), <span class="st">"POLYGON"</span>)</span>
+<span id="cb12-8"><a href="#cb12-8"></a><span class="co"># 网格化</span></span>
+<span id="cb12-9"><a href="#cb12-9"></a>rongelap_grid_stars <span class="ot">&lt;-</span> <span class="fu">st_bbox</span>(rongelap_coastline_sfp) <span class="sc">|&gt;</span></span>
+<span id="cb12-10"><a href="#cb12-10"></a>  <span class="fu">st_as_stars</span>(<span class="at">dx =</span> <span class="dv">32</span>, <span class="at">dy =</span> <span class="dv">16</span>) <span class="sc">|&gt;</span></span>
+<span id="cb12-11"><a href="#cb12-11"></a>  <span class="fu">st_crop</span>(rongelap_coastline_sfp)</span>
+<span id="cb12-12"><a href="#cb12-12"></a>rongelap_grid_stars</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>stars object with 2 dimensions and 1 attribute
 attribute(s):
@@ -908,13 +927,13 @@ y    1 231  103.5   -16 [y]</code></pre>
 <li><p><code>model</code> 这个参数传递函数 <code>vgm()</code> 返回的对象，指定空间相关性的结构，如刻画空间相关性的核函数，是否含有块金效应。函数 <code>vgm()</code> 有几个重要的参数，<code>psill</code> 代表空间效应的方差 <span class="math inline">\(\sigma^2\)</span> ，<code>model</code> 代表空间效应的核函数，<code>range</code> 代表范围参数，是一个固定值，来自前面函数 <code>gls()</code> 的估计结果，<code>nugget</code> 代表块金效应。</p></li>
 </ul>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1"></a><span class="co"># 变差结构中的各参数</span></span>
-<span id="cb12-2"><a href="#cb12-2"></a><span class="fu">library</span>(gstat)</span>
-<span id="cb12-3"><a href="#cb12-3"></a>fit_rongelap_gstat <span class="ot">&lt;-</span> <span class="fu">fit.variogram.reml</span>(<span class="at">formula =</span> <span class="fu">log</span>(counts <span class="sc">/</span> time) <span class="sc">~</span> <span class="dv">1</span>,</span>
-<span id="cb12-4"><a href="#cb12-4"></a>  <span class="at">locations =</span> <span class="sc">~</span> cX <span class="sc">+</span> cY, <span class="at">data =</span> rongelap,</span>
-<span id="cb12-5"><a href="#cb12-5"></a>  <span class="at">model =</span> <span class="fu">vgm</span>(<span class="at">psill =</span> <span class="dv">1</span>, <span class="at">model =</span> <span class="st">"Exp"</span>, <span class="at">range =</span> <span class="fl">169.7472</span>, <span class="at">nugget =</span> <span class="dv">1</span>)</span>
-<span id="cb12-6"><a href="#cb12-6"></a>)</span>
-<span id="cb12-7"><a href="#cb12-7"></a>fit_rongelap_gstat</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1"></a><span class="co"># 变差结构中的各参数</span></span>
+<span id="cb14-2"><a href="#cb14-2"></a><span class="fu">library</span>(gstat)</span>
+<span id="cb14-3"><a href="#cb14-3"></a>fit_rongelap_gstat <span class="ot">&lt;-</span> <span class="fu">fit.variogram.reml</span>(<span class="at">formula =</span> <span class="fu">log</span>(counts <span class="sc">/</span> time) <span class="sc">~</span> <span class="dv">1</span>,</span>
+<span id="cb14-4"><a href="#cb14-4"></a>  <span class="at">locations =</span> <span class="sc">~</span> cX <span class="sc">+</span> cY, <span class="at">data =</span> rongelap,</span>
+<span id="cb14-5"><a href="#cb14-5"></a>  <span class="at">model =</span> <span class="fu">vgm</span>(<span class="at">psill =</span> <span class="dv">1</span>, <span class="at">model =</span> <span class="st">"Exp"</span>, <span class="at">range =</span> <span class="fl">169.7472</span>, <span class="at">nugget =</span> <span class="dv">1</span>)</span>
+<span id="cb14-6"><a href="#cb14-6"></a>)</span>
+<span id="cb14-7"><a href="#cb14-7"></a>fit_rongelap_gstat</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>  model      psill    range
 1   Nug 0.02958585   0.0000
@@ -923,17 +942,17 @@ y    1 231  103.5   -16 [y]</code></pre>
 </div>
 <p>输出结果中第一行是块金效应 <span class="math inline">\(\tau^2 = 0.0296\)</span> ，第二行是指数型空间相关性结构中的方差参数 <span class="math inline">\(\sigma^2=0.325\)</span> 和范围参数，这个结果与 <strong>nlme</strong> 包的函数 <code>gls()</code> 的输出结果是差不多的。在这里使用 gstat 包，那么，预测部分可以直接使用克里金插值预测函数 <code>krige()</code> ，而 nlme 包对这种情况是不提供预测方法的。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1"></a><span class="co"># 预测</span></span>
-<span id="cb14-2"><a href="#cb14-2"></a>fit_krige_pred <span class="ot">&lt;-</span> <span class="fu">krige</span>(</span>
-<span id="cb14-3"><a href="#cb14-3"></a>  <span class="at">formula =</span> <span class="fu">log</span>(counts <span class="sc">/</span> time) <span class="sc">~</span> <span class="dv">1</span>, </span>
-<span id="cb14-4"><a href="#cb14-4"></a>  <span class="at">locations =</span> rongelap_sf,</span>
-<span id="cb14-5"><a href="#cb14-5"></a>  <span class="at">newdata =</span> rongelap_grid_stars, </span>
-<span id="cb14-6"><a href="#cb14-6"></a>  <span class="at">model =</span> fit_rongelap_gstat</span>
-<span id="cb14-7"><a href="#cb14-7"></a>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1"></a><span class="co"># 预测</span></span>
+<span id="cb16-2"><a href="#cb16-2"></a>fit_krige_pred <span class="ot">&lt;-</span> <span class="fu">krige</span>(</span>
+<span id="cb16-3"><a href="#cb16-3"></a>  <span class="at">formula =</span> <span class="fu">log</span>(counts <span class="sc">/</span> time) <span class="sc">~</span> <span class="dv">1</span>, </span>
+<span id="cb16-4"><a href="#cb16-4"></a>  <span class="at">locations =</span> rongelap_sf,</span>
+<span id="cb16-5"><a href="#cb16-5"></a>  <span class="at">newdata =</span> rongelap_grid_stars, </span>
+<span id="cb16-6"><a href="#cb16-6"></a>  <span class="at">model =</span> fit_rongelap_gstat</span>
+<span id="cb16-7"><a href="#cb16-7"></a>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[using ordinary kriging]</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1"></a>fit_krige_pred</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1"></a>fit_krige_pred</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>stars object with 2 dimensions and 2 attributes
 attribute(s):
@@ -947,20 +966,20 @@ y    1 231  103.5   -16 [y]</code></pre>
 </div>
 </div>
 <p>展示克里金插值方法预测整个岛屿核辐射强度。克里金插值方法的预测方差，从图中可以观测到四个密集的采样区，预测方差相对于周围区域会小很多（这是正常的，采样点越多预测误差越小越准确），小范围内展示的预测误差接近于系统的测量误差（块金效应）或者说是噪声。相对较远的位置之间的预测误差主要包含空间随机效应对应的方差或者说是信号，也是建模考虑的主要对象之一。</p>
-<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1"></a><span class="fu">library</span>(ggplot2)</span>
-<span id="cb18-2"><a href="#cb18-2"></a><span class="fu">ggplot</span>() <span class="sc">+</span> </span>
-<span id="cb18-3"><a href="#cb18-3"></a>  <span class="fu">geom_stars</span>(<span class="at">data =</span> fit_krige_pred, <span class="fu">aes</span>(<span class="at">fill =</span> <span class="fu">exp</span>(var1.pred)), </span>
-<span id="cb18-4"><a href="#cb18-4"></a>             <span class="at">na.action =</span> na.omit) <span class="sc">+</span> </span>
-<span id="cb18-5"><a href="#cb18-5"></a>  <span class="fu">scale_fill_distiller</span>(<span class="at">palette =</span> <span class="st">"Spectral"</span>) <span class="sc">+</span></span>
-<span id="cb18-6"><a href="#cb18-6"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span></span>
-<span id="cb18-7"><a href="#cb18-7"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"横坐标"</span>, <span class="at">y =</span> <span class="st">"纵坐标"</span>, <span class="at">fill =</span> <span class="st">"预测值"</span>)</span>
-<span id="cb18-8"><a href="#cb18-8"></a></span>
-<span id="cb18-9"><a href="#cb18-9"></a><span class="fu">ggplot</span>() <span class="sc">+</span> </span>
-<span id="cb18-10"><a href="#cb18-10"></a>  <span class="fu">geom_stars</span>(<span class="at">data =</span> fit_krige_pred, <span class="fu">aes</span>(<span class="at">fill =</span> var1.var), </span>
-<span id="cb18-11"><a href="#cb18-11"></a>             <span class="at">na.action =</span> na.omit) <span class="sc">+</span> </span>
-<span id="cb18-12"><a href="#cb18-12"></a>  <span class="fu">scale_fill_distiller</span>(<span class="at">palette =</span> <span class="st">"Spectral"</span>) <span class="sc">+</span></span>
-<span id="cb18-13"><a href="#cb18-13"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span></span>
-<span id="cb18-14"><a href="#cb18-14"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"横坐标"</span>, <span class="at">y =</span> <span class="st">"纵坐标"</span>, <span class="at">fill =</span> <span class="st">"预测方差"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb20-2"><a href="#cb20-2"></a><span class="fu">ggplot</span>() <span class="sc">+</span> </span>
+<span id="cb20-3"><a href="#cb20-3"></a>  <span class="fu">geom_stars</span>(<span class="at">data =</span> fit_krige_pred, <span class="fu">aes</span>(<span class="at">fill =</span> <span class="fu">exp</span>(var1.pred)), </span>
+<span id="cb20-4"><a href="#cb20-4"></a>             <span class="at">na.action =</span> na.omit) <span class="sc">+</span> </span>
+<span id="cb20-5"><a href="#cb20-5"></a>  <span class="fu">scale_fill_distiller</span>(<span class="at">palette =</span> <span class="st">"Spectral"</span>) <span class="sc">+</span></span>
+<span id="cb20-6"><a href="#cb20-6"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span></span>
+<span id="cb20-7"><a href="#cb20-7"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"横坐标"</span>, <span class="at">y =</span> <span class="st">"纵坐标"</span>, <span class="at">fill =</span> <span class="st">"预测值"</span>)</span>
+<span id="cb20-8"><a href="#cb20-8"></a></span>
+<span id="cb20-9"><a href="#cb20-9"></a><span class="fu">ggplot</span>() <span class="sc">+</span> </span>
+<span id="cb20-10"><a href="#cb20-10"></a>  <span class="fu">geom_stars</span>(<span class="at">data =</span> fit_krige_pred, <span class="fu">aes</span>(<span class="at">fill =</span> var1.var), </span>
+<span id="cb20-11"><a href="#cb20-11"></a>             <span class="at">na.action =</span> na.omit) <span class="sc">+</span> </span>
+<span id="cb20-12"><a href="#cb20-12"></a>  <span class="fu">scale_fill_distiller</span>(<span class="at">palette =</span> <span class="st">"Spectral"</span>) <span class="sc">+</span></span>
+<span id="cb20-13"><a href="#cb20-13"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span></span>
+<span id="cb20-14"><a href="#cb20-14"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"横坐标"</span>, <span class="at">y =</span> <span class="st">"纵坐标"</span>, <span class="at">fill =</span> <span class="st">"预测方差"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div id="fig-kriging-prediction" class="quarto-layout-panel">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-kriging-prediction-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="quarto-layout-row">
