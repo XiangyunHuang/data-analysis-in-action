@@ -152,7 +152,11 @@ $$
 它的自相关函数（Correlation function） $\rho(u_{ij})$ 如下：
 
 $$
-\rho(u_{ij}) = \mathsf{Corr}\big\{T(x_i),T(x_j)\big\} = \frac{\mathsf{Cov}\big(T(x_i), T(x_j)\big)}{\sqrt{\mathsf{Var}(T(x_i))\mathsf{Var}(T(x_j))}}= \frac{1}{\sigma^2 + \tau^2}\big(\sigma^2\exp(-u_{ij}/\phi) + \tau^2I_{\{i=j\}}\big).
+\begin{aligned}
+\rho(u_{ij}) & = \mathsf{Corr}\big\{T(x_i),T(x_j)\big\} \\ 
+&= \frac{\mathsf{Cov}\big(T(x_i), T(x_j)\big)}{\sqrt{\mathsf{Var}(T(x_i))\mathsf{Var}(T(x_j))}} \\ 
+&= \frac{1}{\sigma^2 + \tau^2}\big(\sigma^2\exp(-u_{ij}/\phi) + \tau^2I_{\{i=j\}}\big).
+\end{aligned}
 $$
 
 其中，$u_{ij}$ 表示位置 $x_i$ 与位置 $x_j$ 的欧氏距离 $\|x_i - x_j \|_2$ ，关于空间随机过程 $T(x)$ 的半变差函数 $V_{T}(u_{ij})$ 如下：
@@ -165,14 +169,14 @@ $$
 
 $$
 \begin{aligned}
-\hat{\rho}(u_{ij}; \phi, \delta ) = \delta + (1 - \delta) (1 - \exp(- u_{ij}/\phi)) = 1 - (1-\delta)\exp(- u_{ij}/\phi),
+\hat{\rho}(u_{ij}; \phi, \delta ) = \delta + (1 - \delta) (1 - \exp(- u_{ij}/\phi)).
 \end{aligned}
 $$
 
 其中，记 $\delta = \frac{\tau^2}{\tau^2 + \sigma^2}$ ，值得注意，此处的自相关结构并不等同于前面的自相关函数，它与半变差函数的关系如下：
 
 $$
-V_T(u_{ij}) = (\sigma^2 + \tau^2)\hat{\rho}(u_{ij}; \phi, \delta ),
+\hat{\rho}(u_{ij}; \phi, \delta ) = V_T(u_{ij}) / (\sigma^2 + \tau^2).
 $$
 
 这个重参数化的目的是软件实现上的方便，单独估计模型参数 $\tau^2$ 和 $\sigma^2$ 存在可识别问题，转而估计其比值则大大改善可识别性问题，它是噪声与总方差的比值，或者说作用等同于信噪比。为了说明自相关函数 `corExp()` 及各个参数的作用，设置 $\phi = 1,\delta=0.2$ ，示例如下：
@@ -266,6 +270,8 @@ fit_krige_pred
 #| fig-showtext: true
 #| fig-width: 6
 #| fig-height: 3.5
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
 
 library(ggplot2)
 ggplot() + 
@@ -282,3 +288,4 @@ ggplot() +
   theme_bw() +
   labs(x = "横坐标", y = "纵坐标", fill = "预测方差")
 ```
+
