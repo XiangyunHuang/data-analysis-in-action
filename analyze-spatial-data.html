@@ -830,13 +830,21 @@ Residual standard error: 0.573967
 Degrees of freedom: 157 total; 156 residual</code></pre>
 </div>
 </div>
+<p>以上代码表示的模型结构如下：</p>
+<p><span class="math display">\[
+\log\big(Y(x)\big) = \beta + S(x) + \epsilon
+\]</span></p>
+<p>其中 <span class="math inline">\(Y(x)\)</span> 表示位置 <span class="math inline">\(x\)</span> 处观测到的辐射强度，<span class="math inline">\(\beta\)</span> 是截距项，空间随机效应 <span class="math inline">\(S(x)\)</span> 与随机误差 <span class="math inline">\(\epsilon\)</span> 是相互独立的。条件期望 <span class="math inline">\(\mathsf{E}[Y(x)|S(x)] = \beta + S(x)\)</span> 和方差 <span class="math inline">\(\mathsf{Var}[Y(x)|S(x)] = \tau^2\)</span> ，空间随机效应假定是一个零均值平稳的高斯随机过程，它的自协方差函数如下：</p>
+<p><span class="math display">\[
+\mathsf{Cov}(S(x_i), S(x_j)) = \sigma^2 \exp\big(- \frac{\|x_i - x_j \|_2}{\phi}\big) + \tau^2
+\]</span></p>
 <p>在 <strong>nlme</strong> 包的记号之下，带块金效应的指数型相关结构如下</p>
 <p><span class="math display">\[
 \begin{aligned}
 \rho(u; \phi, \delta ) = \delta + (1 - \delta) (1 - \exp(u/\phi))
 \end{aligned}
 \]</span></p>
-<p>其中， <span class="math inline">\(\delta = \frac{\tau^2}{\tau^2 + \sigma^2}\)</span> 这个重参数化的目的是为了计算方便，提高模型参数的可识别性，它是噪声与总方差的比值，或者说作用等同于信噪比。各个参数的估计值小数点后四舍五入保留三位有效数字。</p>
+<p>其中，<span class="math inline">\(u\)</span> 表示位置 <span class="math inline">\(x_i\)</span> 与位置 <span class="math inline">\(x_j\)</span> 的欧氏距离 <span class="math inline">\(\|x_i - x_j \|_2\)</span> ， <span class="math inline">\(\delta = \frac{\tau^2}{\tau^2 + \sigma^2}\)</span> 这个重参数化的目的是为了计算方便，提高模型参数的可识别性，它是噪声与总方差的比值，或者说作用等同于信噪比。各个参数的估计值小数点后四舍五入保留三位有效数字。</p>
 <ul>
 <li>(Intercept) 截距对应于 <span class="math inline">\(\beta\)</span> 是 1.813</li>
 <li>range 对应于 <span class="math inline">\(\phi\)</span> 是 169.747</li>
@@ -897,10 +905,10 @@ y    1 231  103.5   -16 [y]</code></pre>
 <li><p><code>formula</code> 这个参数与常见函数 <code><a href="https://rdrr.io/r/stats/lm.html">lm()</a></code> 中的同名参数含义一样，以公式语法表示统计模型。</p></li>
 <li><p><code>locations</code> 这个参数指定数据框中的横纵坐标列，也是使用公式语法。</p></li>
 <li><p><code>data</code> 这个参数传递数据，数据中的每个列可以被 <code>formula</code> 和 <code>locations</code> 使用。</p></li>
-<li><p>model 这个参数传递函数 <code>vgm()</code> 返回的对象，指定空间相关性的结构，如刻画空间相关性的核函数，是否含有块金效应。函数 <code>vgm()</code> 有几个重要的参数，psill 代表空间效应的方差，model 代表空间效应的核函数，range 代表范围参数，固定值，来自前面函数 <code>gls()</code> 的估计结果，nugget 代表块金效应。</p></li>
+<li><p><code>model</code> 这个参数传递函数 <code>vgm()</code> 返回的对象，指定空间相关性的结构，如刻画空间相关性的核函数，是否含有块金效应。函数 <code>vgm()</code> 有几个重要的参数，<code>psill</code> 代表空间效应的方差 <span class="math inline">\(\sigma^2\)</span> ，<code>model</code> 代表空间效应的核函数，<code>range</code> 代表范围参数，是一个固定值，来自前面函数 <code>gls()</code> 的估计结果，<code>nugget</code> 代表块金效应。</p></li>
 </ul>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1"></a><span class="co"># 变差</span></span>
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1"></a><span class="co"># 变差结构中的各参数</span></span>
 <span id="cb12-2"><a href="#cb12-2"></a><span class="fu">library</span>(gstat)</span>
 <span id="cb12-3"><a href="#cb12-3"></a>fit_rongelap_gstat <span class="ot">&lt;-</span> <span class="fu">fit.variogram.reml</span>(<span class="at">formula =</span> <span class="fu">log</span>(counts <span class="sc">/</span> time) <span class="sc">~</span> <span class="dv">1</span>,</span>
 <span id="cb12-4"><a href="#cb12-4"></a>  <span class="at">locations =</span> <span class="sc">~</span> cX <span class="sc">+</span> cY, <span class="at">data =</span> rongelap,</span>
@@ -913,6 +921,7 @@ y    1 231  103.5   -16 [y]</code></pre>
 2   Exp 0.32486107 169.7472</code></pre>
 </div>
 </div>
+<p>输出结果中第一行是块金效应 <span class="math inline">\(\tau^2 = 0.0296\)</span> ，第二行是指数型空间相关性结构中的方差参数 <span class="math inline">\(\sigma^2=0.325\)</span> 和范围参数，这个结果与 <strong>nlme</strong> 包的函数 <code>gls()</code> 的输出结果是差不多的。在这里使用 gstat 包，那么，预测部分可以直接使用克里金插值预测函数 <code>krige()</code> ，而 nlme 包对这种情况是不提供预测方法的。</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb14"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1"></a><span class="co"># 预测</span></span>
 <span id="cb14-2"><a href="#cb14-2"></a>fit_krige_pred <span class="ot">&lt;-</span> <span class="fu">krige</span>(</span>
