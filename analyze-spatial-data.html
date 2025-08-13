@@ -578,14 +578,14 @@ MathJax ={
 
 </header><p>本章开始介绍空间数据的分析过程，首先在 R 语言控制台加载如下几个 R 包。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a><span class="fu">library</span>(nlme)</span>
-<span id="cb1-2"><a href="#cb1-2"></a><span class="fu">library</span>(scatterplot3d)</span>
-<span id="cb1-3"><a href="#cb1-3"></a><span class="fu">library</span>(ggplot2)</span>
-<span id="cb1-4"><a href="#cb1-4"></a><span class="fu">library</span>(gstat)</span>
-<span id="cb1-5"><a href="#cb1-5"></a><span class="fu">library</span>(sf)</span>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a><span class="fu">library</span>(nlme)          <span class="co"># GLS 广义最小二乘拟合</span></span>
+<span id="cb1-2"><a href="#cb1-2"></a><span class="fu">library</span>(scatterplot3d) <span class="co"># 绘制三维散点透视图</span></span>
+<span id="cb1-3"><a href="#cb1-3"></a><span class="fu">library</span>(ggplot2)      <span class="co"># 绘制平面图</span></span>
+<span id="cb1-4"><a href="#cb1-4"></a><span class="fu">library</span>(gstat)        <span class="co"># 克里金插值预测</span></span>
+<span id="cb1-5"><a href="#cb1-5"></a><span class="fu">library</span>(sf)           <span class="co"># 空间数据操作</span></span>
 <span id="cb1-6"><a href="#cb1-6"></a><span class="do">## Linking to GEOS 3.12.1, GDAL 3.8.4, PROJ 9.4.0; sf_use_s2() is TRUE</span></span>
 <span id="cb1-7"><a href="#cb1-7"></a><span class="fu">library</span>(abind)</span>
-<span id="cb1-8"><a href="#cb1-8"></a><span class="fu">library</span>(stars)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb1-8"><a href="#cb1-8"></a><span class="fu">library</span>(stars)        <span class="co"># 空间网格数据操作</span></span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>接着加载本章所用的两个数据，分别是朗格拉普岛核辐射检测数据和海岸线坐标数据，后续将根据这两份数据预测全岛的核辐射分布情况。</p>
 <div class="cell">
@@ -711,7 +711,7 @@ MathJax ={
 <span id="cb4-3"><a href="#cb4-3"></a>  <span class="at">main =</span> <span class="st">"朗格拉普岛核辐射检测站点及其海岸线"</span>,</span>
 <span id="cb4-4"><a href="#cb4-4"></a>  <span class="at">xlab =</span> <span class="st">"横坐标（米）"</span>, <span class="at">ylab =</span> <span class="st">"纵坐标（米）"</span></span>
 <span id="cb4-5"><a href="#cb4-5"></a>)</span>
-<span id="cb4-6"><a href="#cb4-6"></a><span class="fu">points</span>(rongelap)</span>
+<span id="cb4-6"><a href="#cb4-6"></a><span class="fu">points</span>(rongelap, <span class="at">pch =</span> <span class="dv">16</span>, <span class="at">cex =</span> <span class="fl">0.5</span>)</span>
 <span id="cb4-7"><a href="#cb4-7"></a><span class="fu">points</span>(rongelap_coastline, <span class="at">pch =</span> <span class="dv">16</span>, <span class="at">cex =</span> <span class="fl">0.3</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details><div class="cell-output-display">
 <div id="fig-rongelap-location" class="quarto-float quarto-figure quarto-figure-center anchored">
@@ -725,6 +725,7 @@ MathJax ={
 </div>
 </div>
 <p>这个数据集内容比较简单，写作上也容易一些。作为空间数据分析方法的介绍已然足够，它具有空间数据的一般性，包含横纵坐标，研究目标及区域。</p>
+<p>朗格拉普岛上各采样点的辐射强度见下图，这是一个三维散点透视图，是采用 <strong>scatterplot3d</strong> 包绘制的，相比于上图，多了辐射强度数据。图中每个线段一端表示采样点的位置，另一端表示辐射强度值，线段越长代表辐射强度越高。</p>
 <div class="cell">
 <details class="code-fold"><summary>代码</summary><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1"></a><span class="co"># 可选的替代三维图形</span></span>
 <span id="cb5-2"><a href="#cb5-2"></a><span class="fu">library</span>(scatterplot3d)</span>
