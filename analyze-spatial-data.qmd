@@ -1,6 +1,10 @@
 # 空间数据分析 {#analyze-spatial-data}
 
+本章开始介绍空间数据的分析过程，首先在 R 语言控制台加载如下几个 R 包。
+
 ```{r}
+#| collapse: true
+
 library(nlme)
 library(ggplot2)
 library(gstat)
@@ -8,6 +12,15 @@ library(sf)
 library(abind)
 library(stars)
 ```
+
+接着加载本章所用的两个数据，分别是朗格拉普岛核辐射检测数据和海岸线坐标数据，后续将根据这两份数据预测全岛的核辐射分布情况。
+
+```{r}
+rongelap <- readRDS(file = "data/rongelap.rds")
+rongelap_coastline <- readRDS(file = "data/rongelap_coastline.rds")
+```
+
+这两个数据集的部分内容见下表，这些数据的采集点和朗格拉普岛的海岸线见下图。
 
 ```{r}
 #| label: tbl-rongelap-nuclear-data
@@ -19,10 +32,6 @@ library(stars)
 #| code-fold: true
 #| echo: !expr knitr::is_html_output()
 
-# 加载数据
-rongelap <- readRDS(file = "data/rongelap.rds")
-rongelap_coastline <- readRDS(file = "data/rongelap_coastline.rds")
-
 library(knitr)
 knitr::kable(head(rongelap, 6),
   col.names = c("横坐标", "纵坐标", "数目", "时间")
@@ -31,6 +40,25 @@ knitr::kable(head(rongelap_coastline, 6),
   col.names = c("横坐标", "纵坐标")
 )
 ```
+
+```{r}
+#| label: fig-rongelap-location
+#| fig-cap: "朗格拉普岛核辐射检测站点及其海岸线"
+#| fig-showtext: true
+#| fig-width: 6
+#| fig-height: 4
+#| code-fold: true
+
+plot(c(-6250, 0), c(-3600, 100),
+  type = "n", panel.first = grid(),
+  main = "朗格拉普岛核辐射检测站点及其海岸线",
+  xlab = "横坐标（米）", ylab = "纵坐标（米）"
+)
+points(rongelap)
+points(rongelap_coastline, pch = 16, cex = 0.3)
+```
+
+这个数据集内容比较简单，写作上也容易一些。作为空间数据分析方法的介绍已然足够，它具有空间数据的一般性，包含横纵坐标，研究目标及区域。
 
 ## 模型拟合
 
@@ -55,7 +83,7 @@ summary(fit_rongelap_gls2)
 
 ## 空间操作
 
-将 data.frame （data frame 二维表格）类型数据转为 sf （simple feature 空间几何数据）类型的数据，通过对研究岛屿的网格化，获得预测位置。
+将 `data.frame` （data frame 二维表格）类型数据转为 `sf` （simple feature 空间几何数据）类型的数据，通过对研究岛屿的网格化，获得预测位置。
 
 ```{r}
 library(sf)
@@ -74,7 +102,7 @@ rongelap_grid_stars
 
 ## 插值预测
 
-下面采用 gstat 包的 krige 函数，该函数实现了 Kriging 克里金插值预测方法，该预测方法只适用于研究区域内，而不能外推到研究区域外。
+下面采用 **gstat** 包的 `krige()` 函数，该函数实现了 Kriging 克里金插值预测方法，该预测方法只适用于研究区域内，而不能外推到研究区域外。先拟合模型的参数 `fit.variogram.reml()` ，Kriging 预测值依赖于模型的参数值。
 
 ```{r}
 # 变差
@@ -84,7 +112,6 @@ fit_rongelap_gstat <- fit.variogram.reml(log(counts / time) ~ 1,
   model = vgm(psill = 1, model = "Exp", range = 169.7472, nugget = 1)
 )
 fit_rongelap_gstat
-
 # 预测
 fit_krige_pred <- krige(
   formula = log(counts / time) ~ 1, 
@@ -95,33 +122,26 @@ fit_krige_pred <- krige(
 fit_krige_pred
 ```
 
-展示克里金插值方法预测整个岛屿核辐射强度
+展示克里金插值方法预测整个岛屿核辐射强度。克里金插值方法的预测方差，从图中可以观测到四个密集的采样区，预测方差相对于周围区域会小很多（这是正常的，采样点越多预测误差越小越准确），小范围内展示的预测误差接近于系统的测量误差（块金效应）或者说是噪声。相对较远的位置之间的预测误差主要包含空间随机效应对应的方差或者说是信号，也是建模考虑的主要对象之一。
 
 ```{r}
-#| label: fig-kriging-prediction-gstat
-#| fig-cap: 核辐射强度的预测值
+#| label: fig-kriging-prediction
+#| fig-cap: 核辐射强度的预测值及预测方差
+#| fig-subcap: 
+#| - 核辐射强度的预测值
+#| - 核辐射强度的预测方差
+#| layout-ncol: 1
 #| fig-showtext: true
 #| fig-width: 6
 #| fig-height: 3.5
 
 library(ggplot2)
-
 ggplot() + 
   geom_stars(data = fit_krige_pred, aes(fill = exp(var1.pred)), 
              na.action = na.omit) + 
   scale_fill_distiller(palette = "Spectral") +
   theme_bw() +
   labs(x = "横坐标", y = "纵坐标", fill = "预测值")
-```
-
-克里金插值方法的预测方差
-
-```{r}
-#| label: fig-kriging-variance-gstat
-#| fig-cap: 克里金插值预测方差
-#| fig-showtext: true
-#| fig-width: 6
-#| fig-height: 3.5
 
 ggplot() + 
   geom_stars(data = fit_krige_pred, aes(fill = var1.var), 
