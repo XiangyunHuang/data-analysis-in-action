@@ -140,38 +140,57 @@ summary(fit_rongelap_gls)
 以上代码表示的模型结构如下：
 
 $$
-\log\big(Y(x)\big) = \beta + S(x) + \epsilon
+\log\big(Y(x)\big) = T(x) = \beta + S(x) + \epsilon
 $$
 
-其中 $Y(x)$ 表示位置 $x$ 处观测到的辐射强度，$\beta$ 是截距项，空间随机效应 $S(x)$ 与随机误差 $\epsilon$ 是相互独立的。条件期望 $\mathsf{E}[Y(x)|S(x)] = \beta + S(x)$ 和方差 $\mathsf{Var}[Y(x)|S(x)] = \tau^2$ ，空间随机效应假定是一个零均值平稳的高斯随机过程，它的自协方差函数如下：
+其中 $Y(x)$ 表示位置 $x$ 处观测到的辐射强度，辐射强度是随空间位置变化的随机变量， $T(x)$ 记为辐射强度的对数，$\beta$ 是截距项。空间随机效应 $S(x)$ 假定是一个零均值平稳的高斯随机过程，空间随机效应 $S(x)$ 与随机误差 $\epsilon$ 是相互独立的，随机误差服从零均值方差为 $\tau^2$ 的正态分布。则随机过程 $T(x)$ 条件期望 $\mathsf{E}[T(x)|S(x)] = \beta + S(x)$ 和条件方差 $\mathsf{Var}[T(x)|S(x)] = \tau^2$ ，它的自协方差函数如下：
 
 $$
-\mathsf{Cov}(S(x_i), S(x_j)) = \sigma^2 \exp\big(- \frac{\|x_i - x_j \|_2}{\phi}\big) + \tau^2
+\mathsf{Cov}\big(T(x_i), T(x_j)\big) = \sigma^2 \exp\big(- \frac{\|x_i - x_j \|_2}{\phi}\big) + \tau^2I_{\{i=j\}}.
 $$
 
-在 **nlme** 包的记号之下，带块金效应的指数型相关结构如下
+它的自相关函数 $\rho(u_{ij})$ 如下：
+
+$$
+\rho(u_{ij}) = \frac{\mathsf{Cov}\big(T(x_i), T(x_j)\big)}{\sqrt{\mathsf{Var}(T(x_i))\mathsf{Var}(T(x_j))}}= \frac{1}{\sigma^2 + \tau^2}\big(\sigma^2\exp(-u_{ij}/\phi) + \tau^2I_{\{i=j\}}\big).
+$$
+
+其中，$u_{ij}$ 表示位置 $x_i$ 与位置 $x_j$ 的欧氏距离 $\|x_i - x_j \|_2$ ，关于随机过程 $T(x)$ 的半变差函数 $V_{T}(u_{ij})$ 如下：
+
+$$
+V_{T}(u_{ij}) = \frac{1}{2}\mathsf{Var}\{T(x_i)-T(x_j)\} = \frac{1}{2}\mathsf{E}\{[T(x_i)-T(x_j)]^2\} = \tau^2 + \sigma^2(1-\rho(u_{ij}))
+$$
+
+在 **nlme** 包的记号之下，带块金效应的指数型自相关结构如下：
 
 $$
 \begin{aligned}
-\rho(u; \phi, \delta ) = \delta + (1 - \delta) (1 - \exp(u/\phi))
+\hat{\rho}(u_{ij}; \phi, \delta ) = \delta + (1 - \delta) (1 - \exp(- u_{ij}/\phi)) = 1 - (1-\delta)\exp(- u_{ij}/\phi)
 \end{aligned}
 $$
 
-其中，$u$ 表示位置 $x_i$ 与位置 $x_j$ 的欧氏距离 $\|x_i - x_j \|_2$ ， $\delta = \frac{\tau^2}{\tau^2 + \sigma^2}$ 这个重参数化的目的是为了计算方便，提高模型参数的可识别性，它是噪声与总方差的比值，或者说作用等同于信噪比。各个参数的估计值小数点后四舍五入保留三位有效数字。
+其中，记 $\delta = \frac{\tau^2}{\tau^2 + \sigma^2}$ ，这个重参数化的目的是为了计算方便，提高模型参数 $\tau^2$ 和 $\sigma^2$ 的可识别性，它是噪声与总方差的比值，或者说作用等同于信噪比。为了说明自相关函数 `corExp()` 及各个参数的作用，设置 $\phi = 1,\delta=0.2$ ，示例如下：
+
+```{r}
+spatDat <- data.frame(x = (0:4)/4, y = (0:4)/4)
+cs3Exp <- corExp(c(1, 0.2), form = ~ x + y, nugget = TRUE)
+cs3Exp <- Initialize(cs3Exp, spatDat)
+corMatrix(cs3Exp)
+```
+
+根据上面带块金效应的指数型自相关函数的数学公式，结果与上面是一样的，自编代码如下：
+
+```{r}
+diag(0.2, 5) + (1 - 0.2) * exp(-as.matrix(dist(spatDat)))
+```
+
+各个参数的估计值小数点后四舍五入保留三位有效数字。
 
 -   (Intercept) 截距对应于 $\beta$ 是 1.813
 -   range 对应于 $\phi$ 是 169.747
 -   噪声占总方差的比值 $\delta = \frac{\tau^2}{\sigma^2 + \tau^2} = 0.109$
 -   Residual standard error 残差标准差为 0.574，则其平方对应于 $\sigma^2 + \tau^2 = 0.573967^2=0.329$
 -   nugget 对应于块金效应 $0.1092495 * 0.573967^2 = 0.0360$
-
-```{r}
-spatDat <- data.frame(x = (0:4)/4, y = (0:4)/4)
-# 等价于 diag(0.2, 5) + (1 - 0.2) * exp(-as.matrix(dist(spatDat)))
-cs3Exp <- corExp(c(1, 0.2), form = ~ x + y, nugget = TRUE)
-cs3Exp <- Initialize(cs3Exp, spatDat)
-corMatrix(cs3Exp)
-```
 
 ## 空间操作
 
