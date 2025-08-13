@@ -840,7 +840,11 @@ Degrees of freedom: 157 total; 156 residual</code></pre>
 \]</span></p>
 <p>它的自相关函数（Correlation function） <span class="math inline">\(\rho(u_{ij})\)</span> 如下：</p>
 <p><span class="math display">\[
-\rho(u_{ij}) = \mathsf{Corr}\big\{T(x_i),T(x_j)\big\} = \frac{\mathsf{Cov}\big(T(x_i), T(x_j)\big)}{\sqrt{\mathsf{Var}(T(x_i))\mathsf{Var}(T(x_j))}}= \frac{1}{\sigma^2 + \tau^2}\big(\sigma^2\exp(-u_{ij}/\phi) + \tau^2I_{\{i=j\}}\big).
+\begin{aligned}
+\rho(u_{ij}) &amp; = \mathsf{Corr}\big\{T(x_i),T(x_j)\big\} \\
+&amp;= \frac{\mathsf{Cov}\big(T(x_i), T(x_j)\big)}{\sqrt{\mathsf{Var}(T(x_i))\mathsf{Var}(T(x_j))}} \\
+&amp;= \frac{1}{\sigma^2 + \tau^2}\big(\sigma^2\exp(-u_{ij}/\phi) + \tau^2I_{\{i=j\}}\big).
+\end{aligned}
 \]</span></p>
 <p>其中，<span class="math inline">\(u_{ij}\)</span> 表示位置 <span class="math inline">\(x_i\)</span> 与位置 <span class="math inline">\(x_j\)</span> 的欧氏距离 <span class="math inline">\(\|x_i - x_j \|_2\)</span> ，关于空间随机过程 <span class="math inline">\(T(x)\)</span> 的半变差函数 <span class="math inline">\(V_{T}(u_{ij})\)</span> 如下：</p>
 <p><span class="math display">\[
@@ -849,12 +853,12 @@ V_{T}(u_{ij}) = \frac{1}{2}\mathsf{Var}\{T(x_i)-T(x_j)\} = \frac{1}{2}\mathsf{E}
 <p>在 <strong>nlme</strong> 包的记号之下，带块金效应的指数型自相关结构如下：</p>
 <p><span class="math display">\[
 \begin{aligned}
-\hat{\rho}(u_{ij}; \phi, \delta ) = \delta + (1 - \delta) (1 - \exp(- u_{ij}/\phi)) = 1 - (1-\delta)\exp(- u_{ij}/\phi),
+\hat{\rho}(u_{ij}; \phi, \delta ) = \delta + (1 - \delta) (1 - \exp(- u_{ij}/\phi)).
 \end{aligned}
 \]</span></p>
 <p>其中，记 <span class="math inline">\(\delta = \frac{\tau^2}{\tau^2 + \sigma^2}\)</span> ，值得注意，此处的自相关结构并不等同于前面的自相关函数，它与半变差函数的关系如下：</p>
 <p><span class="math display">\[
-V_T(u_{ij}) = (\sigma^2 + \tau^2)\hat{\rho}(u_{ij}; \phi, \delta ),
+\hat{\rho}(u_{ij}; \phi, \delta ) = V_T(u_{ij}) / (\sigma^2 + \tau^2).
 \]</span></p>
 <p>这个重参数化的目的是软件实现上的方便，单独估计模型参数 <span class="math inline">\(\tau^2\)</span> 和 <span class="math inline">\(\sigma^2\)</span> 存在可识别问题，转而估计其比值则大大改善可识别性问题，它是噪声与总方差的比值，或者说作用等同于信噪比。为了说明自相关函数 <code>corExp()</code> 及各个参数的作用，设置 <span class="math inline">\(\phi = 1,\delta=0.2\)</span> ，示例如下：</p>
 <div class="cell">
@@ -970,7 +974,7 @@ y    1 231  103.5   -16 [y]</code></pre>
 </div>
 </div>
 <p>展示克里金插值方法预测整个岛屿核辐射强度。克里金插值方法的预测方差，从图中可以观测到四个密集的采样区，预测方差相对于周围区域会小很多（这是正常的，采样点越多预测误差越小越准确），小范围内展示的预测误差接近于系统的测量误差（块金效应）或者说是噪声。相对较远的位置之间的预测误差主要包含空间随机效应对应的方差或者说是信号，也是建模考虑的主要对象之一。</p>
-<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1"></a><span class="fu">library</span>(ggplot2)</span>
+<details class="code-fold"><summary>代码</summary><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1"></a><span class="fu">library</span>(ggplot2)</span>
 <span id="cb20-2"><a href="#cb20-2"></a><span class="fu">ggplot</span>() <span class="sc">+</span> </span>
 <span id="cb20-3"><a href="#cb20-3"></a>  <span class="fu">geom_stars</span>(<span class="at">data =</span> fit_krige_pred, <span class="fu">aes</span>(<span class="at">fill =</span> <span class="fu">exp</span>(var1.pred)), </span>
 <span id="cb20-4"><a href="#cb20-4"></a>             <span class="at">na.action =</span> na.omit) <span class="sc">+</span> </span>
@@ -984,7 +988,7 @@ y    1 231  103.5   -16 [y]</code></pre>
 <span id="cb20-12"><a href="#cb20-12"></a>  <span class="fu">scale_fill_distiller</span>(<span class="at">palette =</span> <span class="st">"Spectral"</span>) <span class="sc">+</span></span>
 <span id="cb20-13"><a href="#cb20-13"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span></span>
 <span id="cb20-14"><a href="#cb20-14"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"横坐标"</span>, <span class="at">y =</span> <span class="st">"纵坐标"</span>, <span class="at">fill =</span> <span class="st">"预测方差"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div id="fig-kriging-prediction" class="quarto-layout-panel">
+</details><div id="fig-kriging-prediction" class="quarto-layout-panel">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-kriging-prediction-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="quarto-layout-row">
 <div class="cell-output-display quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-kriging-prediction" style="flex-basis: 100.0%;justify-content: flex-start;">
