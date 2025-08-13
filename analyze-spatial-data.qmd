@@ -125,23 +125,40 @@ text(xy[1], xy[2], "\n纵坐标（米）", srt = 50, pos = 2)
 
 ## 模型拟合
 
-下面采用 **nlme** 包的 `gls(`) 函数拟合模型，该函数使用广义最小二乘方法估计模型的参数。
+下面采用 **nlme** 包的 `gls(`) 函数拟合模型，该函数使用广义最小二乘拟合模型，模型参数的估计方法采用了限制极大似然估计。
 
 ```{r}
 library(nlme)
 # 无块金效应
 fit_rongelap_gls <- nlme::gls(
   model = log(counts / time) ~ 1, data = rongelap,
-  correlation = nlme::corExp(form = ~ cX + cY, nugget = F)
-)
-summary(fit_rongelap_gls)
-
-# 块金效应
-fit_rongelap_gls2 <- nlme::gls(
-  model = log(counts / time) ~ 1, data = rongelap,
   correlation = nlme::corExp(form = ~ cX + cY, nugget = T)
 )
-summary(fit_rongelap_gls2)
+summary(fit_rongelap_gls)
+```
+
+在 **nlme** 包的记号之下，带块金效应的指数型相关结构如下
+
+$$
+\begin{aligned}
+\rho(u; \phi, \delta ) = \delta + (1 - \delta) (1 - \exp(u/\phi))
+\end{aligned}
+$$
+
+其中， $\delta = \frac{\tau^2}{\tau^2 + \sigma^2}$ 这个重参数化的目的是为了计算方便，提高模型参数的可识别性，它是噪声与总方差的比值，或者说作用等同于信噪比。各个参数的估计值小数点后四舍五入保留三位有效数字。
+
+-   (Intercept) 截距对应于 $\beta$ 是 1.813
+-   range 对应于 $\phi$ 是 169.747
+-   噪声占总方差的比值 $\delta = \frac{\tau^2}{\sigma^2 + \tau^2} = 0.109$
+-   Residual standard error 残差标准差为 0.574，则其平方对应于 $\sigma^2 + \tau^2 = 0.573967^2=0.329$
+-   nugget 对应于块金效应 $0.1092495 * 0.573967^2 = 0.0360$
+
+```{r}
+spatDat <- data.frame(x = (0:4)/4, y = (0:4)/4)
+# 等价于 diag(0.2, 5) + (1 - 0.2) * exp(-as.matrix(dist(spatDat)))
+cs3Exp <- corExp(c(1, 0.2), form = ~ x + y, nugget = TRUE)
+cs3Exp <- Initialize(cs3Exp, spatDat)
+corMatrix(cs3Exp)
 ```
 
 ## 空间操作
@@ -167,14 +184,27 @@ rongelap_grid_stars
 
 下面采用 **gstat** 包的 `krige()` 函数，该函数实现了 Kriging 克里金插值预测方法，该预测方法只适用于研究区域内，而不能外推到研究区域外。先拟合模型的参数 `fit.variogram.reml()` ，Kriging 预测值依赖于模型的参数值。
 
+在函数 `fit.variogram.reml()` 中，有四个参数值得说明一下。
+
+-   `formula` 这个参数与常见函数 `lm()` 中的同名参数含义一样，以公式语法表示统计模型。
+
+-   `locations` 这个参数指定数据框中的横纵坐标列，也是使用公式语法。
+
+-   `data` 这个参数传递数据，数据中的每个列可以被 `formula` 和 `locations` 使用。
+
+-   model 这个参数传递函数 `vgm()` 返回的对象，指定空间相关性的结构，如刻画空间相关性的核函数，是否含有块金效应。函数 `vgm()` 有几个重要的参数，psill 代表空间效应的方差，model 代表空间效应的核函数，range 代表范围参数，固定值，来自前面函数 `gls()` 的估计结果，nugget 代表块金效应。
+
 ```{r}
 # 变差
 library(gstat)
-fit_rongelap_gstat <- fit.variogram.reml(log(counts / time) ~ 1,
+fit_rongelap_gstat <- fit.variogram.reml(formula = log(counts / time) ~ 1,
   locations = ~ cX + cY, data = rongelap,
   model = vgm(psill = 1, model = "Exp", range = 169.7472, nugget = 1)
 )
 fit_rongelap_gstat
+```
+
+```{r}
 # 预测
 fit_krige_pred <- krige(
   formula = log(counts / time) ~ 1, 
