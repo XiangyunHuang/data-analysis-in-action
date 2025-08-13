@@ -116,6 +116,31 @@ MathJax ={
     }
   }
 };
+</script><script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script><script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script><script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
 </script>
 </head>
 <body class="nav-sidebar floating quarto-light"><script id="quarto-html-before-body" type="application/javascript">
@@ -771,45 +796,15 @@ MathJax ={
 </div>
 <section id="模型拟合" class="level2" data-number="18.1"><h2 data-number="18.1" class="anchored" data-anchor-id="模型拟合">
 <span class="header-section-number">18.1</span> 模型拟合</h2>
-<p>下面采用 <strong>nlme</strong> 包的 <code>gls(</code>) 函数拟合模型，该函数使用广义最小二乘方法估计模型的参数。</p>
+<p>下面采用 <strong>nlme</strong> 包的 <code>gls(</code>) 函数拟合模型，该函数使用广义最小二乘拟合模型，模型参数的估计方法采用了限制极大似然估计。</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb6"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1"></a><span class="fu">library</span>(nlme)</span>
 <span id="cb6-2"><a href="#cb6-2"></a><span class="co"># 无块金效应</span></span>
 <span id="cb6-3"><a href="#cb6-3"></a>fit_rongelap_gls <span class="ot">&lt;-</span> nlme<span class="sc">::</span><span class="fu">gls</span>(</span>
 <span id="cb6-4"><a href="#cb6-4"></a>  <span class="at">model =</span> <span class="fu">log</span>(counts <span class="sc">/</span> time) <span class="sc">~</span> <span class="dv">1</span>, <span class="at">data =</span> rongelap,</span>
-<span id="cb6-5"><a href="#cb6-5"></a>  <span class="at">correlation =</span> nlme<span class="sc">::</span><span class="fu">corExp</span>(<span class="at">form =</span> <span class="sc">~</span> cX <span class="sc">+</span> cY, <span class="at">nugget =</span> F)</span>
+<span id="cb6-5"><a href="#cb6-5"></a>  <span class="at">correlation =</span> nlme<span class="sc">::</span><span class="fu">corExp</span>(<span class="at">form =</span> <span class="sc">~</span> cX <span class="sc">+</span> cY, <span class="at">nugget =</span> T)</span>
 <span id="cb6-6"><a href="#cb6-6"></a>)</span>
 <span id="cb6-7"><a href="#cb6-7"></a><span class="fu">summary</span>(fit_rongelap_gls)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>Generalized least squares fit by REML
-  Model: log(counts/time) ~ 1 
-  Data: rongelap 
-       AIC      BIC    logLik
-  184.1435 193.2931 -89.07175
-
-Correlation Structure: Exponential spatial correlation
- Formula: ~cX + cY 
- Parameter estimate(s):
-   range 
-110.8182 
-
-Coefficients:
-               Value  Std.Error  t-value p-value
-(Intercept) 1.825773 0.09022588 20.23558       0
-
-Standardized residuals:
-        Min          Q1         Med          Q3         Max 
--5.70292424 -0.09324181  0.32986677  0.72976841  1.57864501 
-
-Residual standard error: 0.5632316 
-Degrees of freedom: 157 total; 156 residual</code></pre>
-</div>
-<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1"></a><span class="co"># 块金效应</span></span>
-<span id="cb8-2"><a href="#cb8-2"></a>fit_rongelap_gls2 <span class="ot">&lt;-</span> nlme<span class="sc">::</span><span class="fu">gls</span>(</span>
-<span id="cb8-3"><a href="#cb8-3"></a>  <span class="at">model =</span> <span class="fu">log</span>(counts <span class="sc">/</span> time) <span class="sc">~</span> <span class="dv">1</span>, <span class="at">data =</span> rongelap,</span>
-<span id="cb8-4"><a href="#cb8-4"></a>  <span class="at">correlation =</span> nlme<span class="sc">::</span><span class="fu">corExp</span>(<span class="at">form =</span> <span class="sc">~</span> cX <span class="sc">+</span> cY, <span class="at">nugget =</span> T)</span>
-<span id="cb8-5"><a href="#cb8-5"></a>)</span>
-<span id="cb8-6"><a href="#cb8-6"></a><span class="fu">summary</span>(fit_rongelap_gls2)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Generalized least squares fit by REML
   Model: log(counts/time) ~ 1 
@@ -833,6 +828,38 @@ Standardized residuals:
 
 Residual standard error: 0.573967 
 Degrees of freedom: 157 total; 156 residual</code></pre>
+</div>
+</div>
+<p>在 <strong>nlme</strong> 包的记号之下，带块金效应的指数型相关结构如下</p>
+<p><span class="math display">\[
+\begin{aligned}
+\rho(u; \phi, \delta ) = \delta + (1 - \delta) (1 - \exp(u/\phi))
+\end{aligned}
+\]</span></p>
+<p>其中， <span class="math inline">\(\delta = \frac{\tau^2}{\tau^2 + \sigma^2}\)</span> 这个重参数化的目的是为了计算方便，提高模型参数的可识别性，它是噪声与总方差的比值，或者说作用等同于信噪比。各个参数的估计值小数点后四舍五入保留三位有效数字。</p>
+<ul>
+<li>(Intercept) 截距对应于 <span class="math inline">\(\beta\)</span> 是 1.813</li>
+<li>range 对应于 <span class="math inline">\(\phi\)</span> 是 169.747</li>
+<li>噪声占总方差的比值 <span class="math inline">\(\delta = \frac{\tau^2}{\sigma^2 + \tau^2} = 0.109\)</span>
+</li>
+<li>Residual standard error 残差标准差为 0.574，则其平方对应于 <span class="math inline">\(\sigma^2 + \tau^2 = 0.573967^2=0.329\)</span>
+</li>
+<li>nugget 对应于块金效应 <span class="math inline">\(0.1092495 * 0.573967^2 = 0.0360\)</span>
+</li>
+</ul>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1"></a>spatDat <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">x =</span> (<span class="dv">0</span><span class="sc">:</span><span class="dv">4</span>)<span class="sc">/</span><span class="dv">4</span>, <span class="at">y =</span> (<span class="dv">0</span><span class="sc">:</span><span class="dv">4</span>)<span class="sc">/</span><span class="dv">4</span>)</span>
+<span id="cb8-2"><a href="#cb8-2"></a><span class="co"># 等价于 diag(0.2, 5) + (1 - 0.2) * exp(-as.matrix(dist(spatDat)))</span></span>
+<span id="cb8-3"><a href="#cb8-3"></a>cs3Exp <span class="ot">&lt;-</span> <span class="fu">corExp</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="fl">0.2</span>), <span class="at">form =</span> <span class="sc">~</span> x <span class="sc">+</span> y, <span class="at">nugget =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb8-4"><a href="#cb8-4"></a>cs3Exp <span class="ot">&lt;-</span> <span class="fu">Initialize</span>(cs3Exp, spatDat)</span>
+<span id="cb8-5"><a href="#cb8-5"></a><span class="fu">corMatrix</span>(cs3Exp)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>          [,1]      [,2]      [,3]      [,4]      [,5]
+[1,] 1.0000000 0.5617508 0.3944550 0.2769817 0.1944934
+[2,] 0.5617508 1.0000000 0.5617508 0.3944550 0.2769817
+[3,] 0.3944550 0.5617508 1.0000000 0.5617508 0.3944550
+[4,] 0.2769817 0.3944550 0.5617508 1.0000000 0.5617508
+[5,] 0.1944934 0.2769817 0.3944550 0.5617508 1.0000000</code></pre>
 </div>
 </div>
 </section><section id="空间操作" class="level2" data-number="18.2"><h2 data-number="18.2" class="anchored" data-anchor-id="空间操作">
@@ -865,10 +892,17 @@ y    1 231  103.5   -16 [y]</code></pre>
 </section><section id="插值预测" class="level2" data-number="18.3"><h2 data-number="18.3" class="anchored" data-anchor-id="插值预测">
 <span class="header-section-number">18.3</span> 插值预测</h2>
 <p>下面采用 <strong>gstat</strong> 包的 <code>krige()</code> 函数，该函数实现了 Kriging 克里金插值预测方法，该预测方法只适用于研究区域内，而不能外推到研究区域外。先拟合模型的参数 <code>fit.variogram.reml()</code> ，Kriging 预测值依赖于模型的参数值。</p>
+<p>在函数 <code>fit.variogram.reml()</code> 中，有四个参数值得说明一下。</p>
+<ul>
+<li><p><code>formula</code> 这个参数与常见函数 <code><a href="https://rdrr.io/r/stats/lm.html">lm()</a></code> 中的同名参数含义一样，以公式语法表示统计模型。</p></li>
+<li><p><code>locations</code> 这个参数指定数据框中的横纵坐标列，也是使用公式语法。</p></li>
+<li><p><code>data</code> 这个参数传递数据，数据中的每个列可以被 <code>formula</code> 和 <code>locations</code> 使用。</p></li>
+<li><p>model 这个参数传递函数 <code>vgm()</code> 返回的对象，指定空间相关性的结构，如刻画空间相关性的核函数，是否含有块金效应。函数 <code>vgm()</code> 有几个重要的参数，psill 代表空间效应的方差，model 代表空间效应的核函数，range 代表范围参数，固定值，来自前面函数 <code>gls()</code> 的估计结果，nugget 代表块金效应。</p></li>
+</ul>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb12"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1"></a><span class="co"># 变差</span></span>
 <span id="cb12-2"><a href="#cb12-2"></a><span class="fu">library</span>(gstat)</span>
-<span id="cb12-3"><a href="#cb12-3"></a>fit_rongelap_gstat <span class="ot">&lt;-</span> <span class="fu">fit.variogram.reml</span>(<span class="fu">log</span>(counts <span class="sc">/</span> time) <span class="sc">~</span> <span class="dv">1</span>,</span>
+<span id="cb12-3"><a href="#cb12-3"></a>fit_rongelap_gstat <span class="ot">&lt;-</span> <span class="fu">fit.variogram.reml</span>(<span class="at">formula =</span> <span class="fu">log</span>(counts <span class="sc">/</span> time) <span class="sc">~</span> <span class="dv">1</span>,</span>
 <span id="cb12-4"><a href="#cb12-4"></a>  <span class="at">locations =</span> <span class="sc">~</span> cX <span class="sc">+</span> cY, <span class="at">data =</span> rongelap,</span>
 <span id="cb12-5"><a href="#cb12-5"></a>  <span class="at">model =</span> <span class="fu">vgm</span>(<span class="at">psill =</span> <span class="dv">1</span>, <span class="at">model =</span> <span class="st">"Exp"</span>, <span class="at">range =</span> <span class="fl">169.7472</span>, <span class="at">nugget =</span> <span class="dv">1</span>)</span>
 <span id="cb12-6"><a href="#cb12-6"></a>)</span>
@@ -878,6 +912,8 @@ y    1 231  103.5   -16 [y]</code></pre>
 1   Nug 0.02958585   0.0000
 2   Exp 0.32486107 169.7472</code></pre>
 </div>
+</div>
+<div class="cell">
 <div class="sourceCode cell-code" id="cb14"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1"></a><span class="co"># 预测</span></span>
 <span id="cb14-2"><a href="#cb14-2"></a>fit_krige_pred <span class="ot">&lt;-</span> <span class="fu">krige</span>(</span>
 <span id="cb14-3"><a href="#cb14-3"></a>  <span class="at">formula =</span> <span class="fu">log</span>(counts <span class="sc">/</span> time) <span class="sc">~</span> <span class="dv">1</span>, </span>
