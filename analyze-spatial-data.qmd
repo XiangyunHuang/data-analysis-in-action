@@ -6,6 +6,7 @@
 #| collapse: true
 
 library(nlme)
+library(scatterplot3d)
 library(ggplot2)
 library(gstat)
 library(sf)
@@ -46,7 +47,7 @@ knitr::kable(head(rongelap_coastline, 6),
 #| fig-cap: "朗格拉普岛核辐射检测站点及其海岸线"
 #| fig-showtext: true
 #| fig-width: 6
-#| fig-height: 4
+#| fig-height: 5
 #| code-fold: true
 
 plot(c(-6250, 0), c(-3600, 100),
@@ -59,6 +60,66 @@ points(rongelap_coastline, pch = 16, cex = 0.3)
 ```
 
 这个数据集内容比较简单，写作上也容易一些。作为空间数据分析方法的介绍已然足够，它具有空间数据的一般性，包含横纵坐标，研究目标及区域。
+
+```{r}
+#| echo: false
+
+crop_png <- function(fig_path) {
+  magick::image_write(
+    magick::image_crop(
+      magick::image_read(fig_path),
+      geometry = "0x0+0+200"
+    ),
+    format = "png", path = fig_path,
+    density = 300, quality = 100
+  )
+  return(fig_path)
+}
+```
+
+```{r}
+#| label: fig-rongelap-concentration
+#| fig-cap: "朗格拉普岛上各采样点的辐射强度"
+#| fig-showtext: true
+#| fig-width: 6
+#| fig-height: 4.5
+#| code-fold: true
+#| fig-process: !expr crop_png
+#| dev: "png"
+#| echo: !expr knitr::is_html_output()
+
+# 可选的替代三维图形
+library(scatterplot3d)
+# 将连续型数据向量转化为颜色向量
+colorize_numeric <- function(x) {
+  scales::col_numeric(palette = "Greys", domain = range(x))(x)
+}
+# 添加颜色
+rongelap_df <- within(rongelap, {
+  color <- colorize_numeric(counts / time)
+})
+
+plt <- with(rongelap_df, {
+  scatterplot3d(
+    x = cX, y = cY, z = counts / time,
+    xlab = "横坐标（米）", ylab = "", 
+    zlab = "辐射强度", color = color,
+    mar = c(3, 3, 0, 1), cex.symbols = 0.75,
+    col.grid = "grey90", lwd = 0.5, grid = TRUE,
+    type = "h", angle = 45, pch = 16, box = FALSE
+  )
+})
+plt$points3d(
+  x = rongelap_coastline$cX,
+  y = rongelap_coastline$cY,
+  z = rep(0, nrow(rongelap_coastline)),
+  pch = 16, cex = 0.25
+)
+## 三维空间坐标转二维平面坐标
+xy <- unlist(plt$xyz.convert(2200, -1500, 0))
+## 添加 y 轴标签
+text(xy[1], xy[2], "\n纵坐标（米）", srt = 50, pos = 2)
+```
 
 ## 模型拟合
 
