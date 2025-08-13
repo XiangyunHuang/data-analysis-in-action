@@ -551,8 +551,14 @@ MathJax ={
 </div>
 </nav><div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
-    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
-        
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active"><h2 id="toc-title">目录</h2>
+   
+  <ul>
+<li><a href="#%E6%A8%A1%E5%9E%8B%E6%8B%9F%E5%90%88" id="toc-模型拟合" class="nav-link active" data-scroll-target="#%E6%A8%A1%E5%9E%8B%E6%8B%9F%E5%90%88"><span class="header-section-number">18.1</span> 模型拟合</a></li>
+  <li><a href="#%E7%A9%BA%E9%97%B4%E6%93%8D%E4%BD%9C" id="toc-空间操作" class="nav-link" data-scroll-target="#%E7%A9%BA%E9%97%B4%E6%93%8D%E4%BD%9C"><span class="header-section-number">18.2</span> 空间操作</a></li>
+  <li><a href="#%E6%8F%92%E5%80%BC%E9%A2%84%E6%B5%8B" id="toc-插值预测" class="nav-link" data-scroll-target="#%E6%8F%92%E5%80%BC%E9%A2%84%E6%B5%8B"><span class="header-section-number">18.3</span> 插值预测</a></li>
+  </ul><div class="toc-actions"><ul><li><a href="https://github.com/XiangyunHuang/data-analysis-in-action/blob/main/analyze-spatial-data.qmd" class="toc-action"><i class="bi bi-github"></i>查看代码</a></li></ul></div></nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./analyze-network-data.html">数据建模</a></li><li class="breadcrumb-item"><a href="./analyze-spatial-data.html"><span class="chapter-number">18</span>&nbsp; <span class="chapter-title">空间数据分析</span></a></li></ol></nav><div class="quarto-title">
@@ -697,6 +703,9 @@ MathJax ={
 </div>
 </figure>
 </div>
+<section id="模型拟合" class="level2" data-number="18.1"><h2 data-number="18.1" class="anchored" data-anchor-id="模型拟合">
+<span class="header-section-number">18.1</span> 模型拟合</h2>
+<p>下面采用 <strong>nlme</strong> 包的 <code>gls(</code>) 函数拟合模型，该函数使用广义最小二乘方法估计模型的参数。</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb5"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1"></a><span class="fu">library</span>(nlme)</span>
 <span id="cb5-2"><a href="#cb5-2"></a><span class="co"># 无块金效应</span></span>
@@ -760,10 +769,9 @@ Residual standard error: 0.573967
 Degrees of freedom: 157 total; 156 residual</code></pre>
 </div>
 </div>
-<p>以 nlme 为参照，提供 gstat 的等价实现，目的是搞明白 gstat 的内部实现原理。为什么这么做？nlme 的方式具有一般性，容易推广到到空间广义线性混合效应模型。</p>
-<p>根据 nlme 结果，可以自己写代码实现简单克里金插值预测</p>
-<p>多元正态分布的边际分布、条件分布</p>
-<p>采用 REML 方法拟合模型，gstat 包的 REML 方法，要求超参数是已知的，具体算法过程见 gstat 包</p>
+</section><section id="空间操作" class="level2" data-number="18.2"><h2 data-number="18.2" class="anchored" data-anchor-id="空间操作">
+<span class="header-section-number">18.2</span> 空间操作</h2>
+<p>将 data.frame （data frame 二维表格）类型数据转为 sf （simple feature 空间几何数据）类型的数据，通过对研究岛屿的网格化，获得预测位置。</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb9"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1"></a><span class="fu">library</span>(sf)</span>
 <span id="cb9-2"><a href="#cb9-2"></a><span class="fu">library</span>(abind)</span>
@@ -788,6 +796,9 @@ x    1 198  -6299    32 [x]
 y    1 231  103.5   -16 [y]</code></pre>
 </div>
 </div>
+</section><section id="插值预测" class="level2" data-number="18.3"><h2 data-number="18.3" class="anchored" data-anchor-id="插值预测">
+<span class="header-section-number">18.3</span> 插值预测</h2>
+<p>下面采用 gstat 包的 krige 函数，该函数实现了 Kriging 克里金插值预测方法，该预测方法只适用于研究区域内，而不能外推到研究区域外。</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb11"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1"></a><span class="co"># 变差</span></span>
 <span id="cb11-2"><a href="#cb11-2"></a><span class="fu">library</span>(gstat)</span>
@@ -824,6 +835,7 @@ x    1 198  -6299    32 [x]
 y    1 231  103.5   -16 [y]</code></pre>
 </div>
 </div>
+<p>展示克里金插值方法预测整个岛屿核辐射强度</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb17"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1"></a><span class="fu">library</span>(ggplot2)</span>
 <span id="cb17-2"><a href="#cb17-2"></a></span>
@@ -839,11 +851,12 @@ y    1 231  103.5   -16 [y]</code></pre>
 <img src="analyze-spatial-data_files/figure-html/fig-kriging-prediction-gstat-1.png" class="img-fluid figure-img" width="576">
 </div>
 <figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-kriging-prediction-gstat-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-图&nbsp;18.1: 克里金插值预测
+图&nbsp;18.1: 核辐射强度的预测值
 </figcaption></figure>
 </div>
 </div>
 </div>
+<p>克里金插值方法的预测方差</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb18"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1"></a><span class="fu">ggplot</span>() <span class="sc">+</span> </span>
 <span id="cb18-2"><a href="#cb18-2"></a>  <span class="fu">geom_stars</span>(<span class="at">data =</span> fit_krige_pred, <span class="fu">aes</span>(<span class="at">fill =</span> var1.var), </span>
@@ -864,8 +877,7 @@ y    1 231  103.5   -16 [y]</code></pre>
 </div>
 
 
-
-</main><!-- /main --><script id="quarto-html-after-body" type="application/javascript">
+</section></main><!-- /main --><script id="quarto-html-after-body" type="application/javascript">
   window.document.addEventListener("DOMContentLoaded", function (event) {
     // Ensure there is a toggle, if there isn't float one in the top right
     if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
@@ -1291,4 +1303,4 @@ y    1 231  103.5   -16 [y]</code></pre>
 
 
 
-<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions"><ul><li><a href="https://github.com/XiangyunHuang/data-analysis-in-action/blob/main/analyze-spatial-data.qmd" class="toc-action"><i class="bi bi-github"></i>查看代码</a></li></ul></div></div></div></footer></body></html>
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/XiangyunHuang/data-analysis-in-action/blob/main/analyze-spatial-data.qmd" class="toc-action"><i class="bi bi-github"></i>查看代码</a></li></ul></div></div></div></footer></body></html>
