@@ -137,6 +137,18 @@ fit_rongelap_gls <- nlme::gls(
 summary(fit_rongelap_gls)
 ```
 
+以上代码表示的模型结构如下：
+
+$$
+\log\big(Y(x)\big) = \beta + S(x) + \epsilon
+$$
+
+其中 $Y(x)$ 表示位置 $x$ 处观测到的辐射强度，$\beta$ 是截距项，空间随机效应 $S(x)$ 与随机误差 $\epsilon$ 是相互独立的。条件期望 $\mathsf{E}[Y(x)|S(x)] = \beta + S(x)$ 和方差 $\mathsf{Var}[Y(x)|S(x)] = \tau^2$ ，空间随机效应假定是一个零均值平稳的高斯随机过程，它的自协方差函数如下：
+
+$$
+\mathsf{Cov}(S(x_i), S(x_j)) = \sigma^2 \exp\big(- \frac{\|x_i - x_j \|_2}{\phi}\big) + \tau^2
+$$
+
 在 **nlme** 包的记号之下，带块金效应的指数型相关结构如下
 
 $$
@@ -145,7 +157,7 @@ $$
 \end{aligned}
 $$
 
-其中， $\delta = \frac{\tau^2}{\tau^2 + \sigma^2}$ 这个重参数化的目的是为了计算方便，提高模型参数的可识别性，它是噪声与总方差的比值，或者说作用等同于信噪比。各个参数的估计值小数点后四舍五入保留三位有效数字。
+其中，$u$ 表示位置 $x_i$ 与位置 $x_j$ 的欧氏距离 $\|x_i - x_j \|_2$ ， $\delta = \frac{\tau^2}{\tau^2 + \sigma^2}$ 这个重参数化的目的是为了计算方便，提高模型参数的可识别性，它是噪声与总方差的比值，或者说作用等同于信噪比。各个参数的估计值小数点后四舍五入保留三位有效数字。
 
 -   (Intercept) 截距对应于 $\beta$ 是 1.813
 -   range 对应于 $\phi$ 是 169.747
@@ -192,10 +204,10 @@ rongelap_grid_stars
 
 -   `data` 这个参数传递数据，数据中的每个列可以被 `formula` 和 `locations` 使用。
 
--   model 这个参数传递函数 `vgm()` 返回的对象，指定空间相关性的结构，如刻画空间相关性的核函数，是否含有块金效应。函数 `vgm()` 有几个重要的参数，psill 代表空间效应的方差，model 代表空间效应的核函数，range 代表范围参数，固定值，来自前面函数 `gls()` 的估计结果，nugget 代表块金效应。
+-   `model` 这个参数传递函数 `vgm()` 返回的对象，指定空间相关性的结构，如刻画空间相关性的核函数，是否含有块金效应。函数 `vgm()` 有几个重要的参数，`psill` 代表空间效应的方差 $\sigma^2$ ，`model` 代表空间效应的核函数，`range` 代表范围参数，是一个固定值，来自前面函数 `gls()` 的估计结果，`nugget` 代表块金效应。
 
 ```{r}
-# 变差
+# 变差结构中的各参数
 library(gstat)
 fit_rongelap_gstat <- fit.variogram.reml(formula = log(counts / time) ~ 1,
   locations = ~ cX + cY, data = rongelap,
@@ -203,6 +215,8 @@ fit_rongelap_gstat <- fit.variogram.reml(formula = log(counts / time) ~ 1,
 )
 fit_rongelap_gstat
 ```
+
+输出结果中第一行是块金效应 $\tau^2 = 0.0296$ ，第二行是指数型空间相关性结构中的参数 $\sigma^2=0.325$ ，这个结果与 **nlme** 包的函数 `gls()` 的输出结果是差不多的。在这里使用 gstat 包，那么，预测部分可以直接使用克里金插值预测函数 `krige()` ，而 nlme 包对这种情况是不提供预测方法的。
 
 ```{r}
 # 预测
