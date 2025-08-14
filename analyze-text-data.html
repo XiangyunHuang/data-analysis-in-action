@@ -575,8 +575,12 @@ MathJax ={
         <nav id="TOC" role="doc-toc" class="toc-active"><h2 id="toc-title">目录</h2>
    
   <ul>
-<li><a href="#sec-frequency-analysis" id="toc-sec-frequency-analysis" class="nav-link active" data-scroll-target="#sec-frequency-analysis"><span class="header-section-number">19.1</span> 高频词、短语</a></li>
-  <li><a href="#sec-analysis-text-data-exercises" id="toc-sec-analysis-text-data-exercises" class="nav-link" data-scroll-target="#sec-analysis-text-data-exercises"><span class="header-section-number">19.2</span> 习题</a></li>
+<li><a href="#sec-data-cleaning-stemming" id="toc-sec-data-cleaning-stemming" class="nav-link active" data-scroll-target="#sec-data-cleaning-stemming"><span class="header-section-number">19.1</span> 数据清理和准备</a></li>
+  <li><a href="#sec-frequency-analysis" id="toc-sec-frequency-analysis" class="nav-link" data-scroll-target="#sec-frequency-analysis"><span class="header-section-number">19.2</span> 高频词、短语</a></li>
+  <li><a href="#sec-co-occurrence-network" id="toc-sec-co-occurrence-network" class="nav-link" data-scroll-target="#sec-co-occurrence-network"><span class="header-section-number">19.3</span> 特征共现网络</a></li>
+  <li><a href="#sec-topic-modeling" id="toc-sec-topic-modeling" class="nav-link" data-scroll-target="#sec-topic-modeling"><span class="header-section-number">19.4</span> 文本主题探索</a></li>
+  <li><a href="#sec-text-similarity" id="toc-sec-text-similarity" class="nav-link" data-scroll-target="#sec-text-similarity"><span class="header-section-number">19.5</span> 文本相似性</a></li>
+  <li><a href="#sec-analysis-text-data-exercises" id="toc-sec-analysis-text-data-exercises" class="nav-link" data-scroll-target="#sec-analysis-text-data-exercises"><span class="header-section-number">19.6</span> 习题</a></li>
   </ul><div class="toc-actions"><ul><li><a href="https://github.com/XiangyunHuang/data-analysis-in-action/blob/main/analyze-text-data.qmd" class="toc-action"><i class="bi bi-github"></i>查看代码</a></li></ul></div></nav>
     </div>
 <!-- main -->
@@ -601,7 +605,7 @@ MathJax ={
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a><span class="fu">library</span>(quanteda)  <span class="co"># 词库 分词</span></span>
 <span id="cb1-2"><a href="#cb1-2"></a><span class="fu">library</span>(quanteda.textplots)</span>
 <span id="cb1-3"><a href="#cb1-3"></a><span class="fu">library</span>(quanteda.textstats)</span>
-<span id="cb1-4"><a href="#cb1-4"></a><span class="fu">library</span>(tidytext)</span>
+<span id="cb1-4"><a href="#cb1-4"></a><span class="fu">library</span>(quanteda.textmodels) <span class="co"># LSA</span></span>
 <span id="cb1-5"><a href="#cb1-5"></a><span class="fu">library</span>(ggplot2)     <span class="co"># 绘图</span></span>
 <span id="cb1-6"><a href="#cb1-6"></a><span class="fu">library</span>(ggrepel)</span>
 <span id="cb1-7"><a href="#cb1-7"></a><span class="fu">library</span>(text2vec)    <span class="co"># LDA 算法</span></span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -633,119 +637,73 @@ MathJax ={
 #&gt; 6                                          Readable String Abbreviation</code></pre>
 </div>
 </div>
+<section id="sec-data-cleaning-stemming" class="level2" data-number="19.1"><h2 data-number="19.1" class="anchored" data-anchor-id="sec-data-cleaning-stemming">
+<span class="header-section-number">19.1</span> 数据清理和准备</h2>
+<ul>
+<li>去掉换行符 <code>\n</code> 和单引号 <code>'</code> 等，</li>
+<li>名词和动词还原，如 models / modeling 还原为 model， methods 还原为 method 等等。</li>
+</ul>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1"></a><span class="co"># Token 化之后操作</span></span>
+<span id="cb5-2"><a href="#cb5-2"></a><span class="co"># 安装 tidytext 包</span></span>
+<span id="cb5-3"><a href="#cb5-3"></a>SnowballC<span class="sc">::</span><span class="fu">wordStem</span>(<span class="at">words =</span> <span class="fu">c</span>(<span class="st">"methods"</span>, <span class="st">"models"</span>))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt; [1] "method" "model"</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1"></a>tokenizers<span class="sc">::</span><span class="fu">tokenize_word_stems</span>(<span class="at">x =</span> <span class="fu">c</span>(<span class="st">"methods"</span>, <span class="st">"models"</span>))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt; [[1]]
+#&gt; [1] "method"
+#&gt; 
+#&gt; [[2]]
+#&gt; [1] "model"</code></pre>
+</div>
+</div>
 <p>接下来，要把该数据集整理成文本分析工具可以使用的数据类型 – 制作语料。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1"></a>pdb_doc <span class="ot">&lt;-</span> <span class="fu">corpus</span>(pdb, <span class="at">docid_field =</span> <span class="st">"Package"</span>, <span class="at">text_field =</span> <span class="st">"Title"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1"></a>pdb_doc <span class="ot">&lt;-</span> <span class="fu">corpus</span>(pdb, <span class="at">docid_field =</span> <span class="st">"Package"</span>, <span class="at">text_field =</span> <span class="st">"Title"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<section id="sec-frequency-analysis" class="level2" data-number="19.1"><h2 data-number="19.1" class="anchored" data-anchor-id="sec-frequency-analysis">
-<span class="header-section-number">19.1</span> 高频词、短语</h2>
+</section><section id="sec-frequency-analysis" class="level2" data-number="19.2"><h2 data-number="19.2" class="anchored" data-anchor-id="sec-frequency-analysis">
+<span class="header-section-number">19.2</span> 高频词、短语</h2>
 <p>发现一些高频出现的词语或短语，通过这些高频词，这暗示一些信息。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1"></a><span class="fu">library</span>(quanteda.textplots)</span>
-<span id="cb6-2"><a href="#cb6-2"></a>word1 <span class="ot">&lt;-</span> pdb_doc <span class="sc">|&gt;</span> </span>
-<span id="cb6-3"><a href="#cb6-3"></a>    <span class="fu">tokens</span>(<span class="at">remove_punct =</span> <span class="cn">TRUE</span>, <span class="at">remove_symbols =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span></span>
-<span id="cb6-4"><a href="#cb6-4"></a>    <span class="fu">tokens_remove</span>(<span class="fu">stopwords</span>(<span class="st">"en"</span>)) <span class="sc">|&gt;</span> </span>
-<span id="cb6-5"><a href="#cb6-5"></a>    <span class="fu">dfm</span>() <span class="sc">|&gt;</span></span>
-<span id="cb6-6"><a href="#cb6-6"></a>    <span class="fu">dfm_trim</span>(<span class="at">min_termfreq =</span> <span class="dv">100</span>, <span class="at">verbose =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb6-7"><a href="#cb6-7"></a><span class="co"># 高频词</span></span>
-<span id="cb6-8"><a href="#cb6-8"></a><span class="fu">colSums</span>(word1)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1"></a><span class="fu">library</span>(quanteda.textplots)</span>
+<span id="cb10-2"><a href="#cb10-2"></a>word1 <span class="ot">&lt;-</span> pdb_doc <span class="sc">|&gt;</span> </span>
+<span id="cb10-3"><a href="#cb10-3"></a>    <span class="fu">tokens</span>(<span class="at">remove_punct =</span> <span class="cn">TRUE</span>, <span class="at">remove_symbols =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span></span>
+<span id="cb10-4"><a href="#cb10-4"></a>    <span class="fu">tokens_remove</span>(<span class="fu">stopwords</span>(<span class="st">"en"</span>)) <span class="sc">|&gt;</span> </span>
+<span id="cb10-5"><a href="#cb10-5"></a>    <span class="fu">dfm</span>() <span class="sc">|&gt;</span></span>
+<span id="cb10-6"><a href="#cb10-6"></a>    <span class="fu">dfm_trim</span>(<span class="at">min_termfreq =</span> <span class="dv">100</span>, <span class="at">termfreq_type =</span> <span class="st">"count"</span>, <span class="at">verbose =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb10-7"><a href="#cb10-7"></a><span class="co"># 高频词</span></span>
+<span id="cb10-8"><a href="#cb10-8"></a><span class="fu">colSums</span>(word1) <span class="sc">|&gt;</span> </span>
+<span id="cb10-9"><a href="#cb10-9"></a>  <span class="fu">sort</span>(<span class="at">decreasing =</span> T) <span class="sc">|&gt;</span> </span>
+<span id="cb10-10"><a href="#cb10-10"></a>  <span class="fu">head</span>(<span class="dv">50</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>#&gt;       estimation     multivariate          studies            based 
-#&gt;              819              401              155              415 
-#&gt;       statistics             data            tools         bayesian 
-#&gt;              282             3704              705              686 
-#&gt;      computation         analysis   implementation     optimization 
-#&gt;              102             2188              158              157 
-#&gt;              via           random           linear         analyses 
-#&gt;              270              260              467              137 
-#&gt;         measures             test             fast        selection 
-#&gt;              133              333              248              330 
-#&gt;         adaptive        graphical             easy    visualization 
-#&gt;              123              131              103              217 
-#&gt;        inference      statistical            power      association 
-#&gt;              408              386              139              125 
-#&gt;          dynamic           models            model       simulation 
-#&gt;              161             1655              943              211 
-#&gt;        framework       regression        modelling         additive 
-#&gt;              158              903              205              110 
-#&gt;         networks       population        detection          quality 
-#&gt;              226              135              213              110 
-#&gt;          spatial                c            files         variable 
-#&gt;              333              101              269              210 
-#&gt;    nonparametric            using                r        interface 
-#&gt;              136             1069             1368              534 
-#&gt;           system         survival             time          testing 
-#&gt;              152              234              533              240 
-#&gt; high-dimensional           causal             gene            point 
-#&gt;              126              132              132              108 
-#&gt;           series            plots           access         research 
-#&gt;              387              221              216              102 
-#&gt;              api      correlation        functions       processing 
-#&gt;              510              139              811              133 
-#&gt;          missing       imputation       prediction             tool 
-#&gt;              122              113              208              145 
-#&gt;       evaluation         sampling           method         clinical 
-#&gt;              116              138              230              141 
-#&gt;           trials           design           sparse          control 
-#&gt;              129              193              168              128 
-#&gt;       collection          optimal        algorithm         multiple 
-#&gt;              118              164              283              345 
-#&gt;          fitting       estimating           robust    distributions 
-#&gt;              142              130              253              252 
-#&gt;           matrix          package   classification         generate 
-#&gt;              199              369              174              108 
-#&gt;         estimate            shiny        utilities         gaussian 
-#&gt;              147              317              145              155 
-#&gt;          process            index       generation           tables 
-#&gt;              165              106              110              157 
-#&gt;             read             plot             risk          effects 
-#&gt;              138              176              126              198 
-#&gt;           create       stochastic           effect         discrete 
-#&gt;              257              108              116              100 
-#&gt;       algorithms          genetic             code          designs 
-#&gt;              155              110              143              170 
-#&gt;          mixture      generalized            tests           markov 
-#&gt;              165              351              351              122 
-#&gt;      information      experiments         learning         database 
-#&gt;              158              115              287              154 
-#&gt;        calculate          ggplot2              fit              two 
-#&gt;              132              189              123              103 
-#&gt;          methods             maps             sets       clustering 
-#&gt;              513              114              153              311 
-#&gt;           curves      probability         download          library 
-#&gt;              101              121              110              174 
-#&gt;           client          density              use        efficient 
-#&gt;              166              126              104              111 
-#&gt;       confidence      interactive         distance     distribution 
-#&gt;              120              174              100              319 
-#&gt;           sample         function       functional          objects 
-#&gt;              159              146              172              115 
-#&gt;             tree          wrapper        variables            trees 
-#&gt;              102              152              137              125 
-#&gt;         matrices          species         datasets         graphics 
-#&gt;              110              105              235              103 
-#&gt;     hierarchical         modeling           survey         flexible 
-#&gt;              140              344              101              114 
-#&gt;       likelihood           format         packages         response 
-#&gt;              157              103              130              151 
-#&gt;           kernel          network         quantile             text 
-#&gt;              106              282              104              168 
-#&gt;             size           binary              set    meta-analysis 
-#&gt;              137              152              101              114 
-#&gt;              web           factor           simple         weighted 
-#&gt;              128              110              145              122 
-#&gt;             tidy         approach       structural          machine 
-#&gt;              113              100              121              142 
-#&gt;            mixed     longitudinal           latent           forest 
-#&gt;              197              112              120              101 
-#&gt;           number 
-#&gt;              105</code></pre>
+<pre><code>#&gt;          data      analysis        models             r         using 
+#&gt;          3704          2188          1655          1368          1069 
+#&gt;         model    regression    estimation     functions         tools 
+#&gt;           943           903           819           811           705 
+#&gt;      bayesian     interface          time       methods           api 
+#&gt;           686           534           533           513           510 
+#&gt;        linear         based     inference  multivariate        series 
+#&gt;           467           415           408           401           387 
+#&gt;   statistical       package   generalized         tests      multiple 
+#&gt;           386           369           351           351           345 
+#&gt;      modeling          test       spatial     selection  distribution 
+#&gt;           344           333           333           330           319 
+#&gt;         shiny    clustering      learning     algorithm    statistics 
+#&gt;           317           311           287           283           282 
+#&gt;       network           via         files        random        create 
+#&gt;           282           270           269           260           257 
+#&gt;        robust distributions          fast       testing      datasets 
+#&gt;           253           252           248           240           235 
+#&gt;      survival        method      networks         plots visualization 
+#&gt;           234           230           226           221           217</code></pre>
 </div>
 </div>
 <div class="cell">
-<details class="code-fold"><summary>代码</summary><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1"></a><span class="co"># 词云</span></span>
-<span id="cb8-2"><a href="#cb8-2"></a><span class="fu">set.seed</span>(<span class="dv">20252025</span>)</span>
-<span id="cb8-3"><a href="#cb8-3"></a><span class="fu">textplot_wordcloud</span>(word1, <span class="at">min_size =</span> <span class="dv">1</span>, <span class="at">max_size =</span> <span class="dv">5</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<details class="code-fold"><summary>代码</summary><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1"></a><span class="co"># 词云</span></span>
+<span id="cb12-2"><a href="#cb12-2"></a><span class="fu">set.seed</span>(<span class="dv">20252025</span>)</span>
+<span id="cb12-3"><a href="#cb12-3"></a><span class="fu">textplot_wordcloud</span>(word1, <span class="at">min_size =</span> <span class="dv">1</span>, <span class="at">max_size =</span> <span class="dv">5</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details><div class="cell-output-display">
 <div id="fig-frequency-words" class="quarto-float quarto-figure quarto-figure-center anchored">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-frequency-words-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
@@ -758,105 +716,90 @@ MathJax ={
 </div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1"></a><span class="fu">library</span>(quanteda.textstats)</span>
-<span id="cb9-2"><a href="#cb9-2"></a><span class="co"># 2个词 最少出现 40 次</span></span>
-<span id="cb9-3"><a href="#cb9-3"></a>pdb_toks <span class="ot">&lt;-</span> <span class="fu">tokens</span>(pdb_doc)</span>
-<span id="cb9-4"><a href="#cb9-4"></a>word2 <span class="ot">&lt;-</span> pdb_toks <span class="sc">|&gt;</span> </span>
-<span id="cb9-5"><a href="#cb9-5"></a>    <span class="fu">tokens_remove</span>(<span class="fu">stopwords</span>(<span class="st">"en"</span>)) <span class="sc">|&gt;</span> </span>
-<span id="cb9-6"><a href="#cb9-6"></a>    <span class="fu">tokens_select</span>(<span class="at">pattern =</span> <span class="st">"^[A-Z]"</span>, <span class="at">valuetype =</span> <span class="st">"regex"</span>, </span>
-<span id="cb9-7"><a href="#cb9-7"></a>                  <span class="at">case_insensitive =</span> <span class="cn">FALSE</span>, <span class="at">padding =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span></span>
-<span id="cb9-8"><a href="#cb9-8"></a>    <span class="fu">textstat_collocations</span>(<span class="at">min_count =</span> <span class="dv">50</span>, <span class="at">size =</span> <span class="dv">2</span>, <span class="at">tolower =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb9-9"><a href="#cb9-9"></a>word2</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1"></a><span class="fu">library</span>(quanteda.textstats)</span>
+<span id="cb13-2"><a href="#cb13-2"></a><span class="co"># 2个词 最少出现 40 次</span></span>
+<span id="cb13-3"><a href="#cb13-3"></a>pdb_toks <span class="ot">&lt;-</span> <span class="fu">tokens</span>(pdb_doc)</span>
+<span id="cb13-4"><a href="#cb13-4"></a>word2 <span class="ot">&lt;-</span> pdb_toks <span class="sc">|&gt;</span> </span>
+<span id="cb13-5"><a href="#cb13-5"></a>    <span class="fu">tokens_remove</span>(<span class="fu">stopwords</span>(<span class="st">"en"</span>)) <span class="sc">|&gt;</span> </span>
+<span id="cb13-6"><a href="#cb13-6"></a>    <span class="fu">tokens_select</span>(<span class="at">pattern =</span> <span class="st">"^[A-Z]"</span>, <span class="at">valuetype =</span> <span class="st">"regex"</span>, </span>
+<span id="cb13-7"><a href="#cb13-7"></a>                  <span class="at">case_insensitive =</span> <span class="cn">FALSE</span>, <span class="at">padding =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span></span>
+<span id="cb13-8"><a href="#cb13-8"></a>    <span class="fu">textstat_collocations</span>(<span class="at">min_count =</span> <span class="dv">50</span>, <span class="at">size =</span> <span class="dv">2</span>, <span class="at">tolower =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb13-9"><a href="#cb13-9"></a>word2 <span class="sc">|&gt;</span> </span>
+<span id="cb13-10"><a href="#cb13-10"></a>  <span class="fu">subset</span>(<span class="at">select =</span> <span class="fu">c</span>(<span class="st">"collocation"</span>, <span class="st">"count"</span>, <span class="st">"lambda"</span>, <span class="st">"z"</span>)) <span class="sc">|&gt;</span> </span>
+<span id="cb13-11"><a href="#cb13-11"></a>  (\(x) x[<span class="fu">order</span>(x<span class="sc">$</span>count, <span class="at">decreasing =</span> T), ])()</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>#&gt;             collocation count count_nested length    lambda         z
-#&gt; 1           Time Series   358            0      2  9.006926 43.391383
-#&gt; 2    Generalized Linear   109            0      2  5.057559 39.275087
-#&gt; 3    Variable Selection    96            0      2  6.092266 38.962974
-#&gt; 4           R Interface   119            0      2  4.333113 35.731495
-#&gt; 5           Sample Size   106            0      2  8.888768 35.599219
-#&gt; 6       Clinical Trials    60            0      2  7.053179 33.794375
-#&gt; 7  Confidence Intervals    63            0      2  8.171412 32.476555
-#&gt; 8    Maximum Likelihood    65            0      2  8.013360 32.162154
-#&gt; 9      Machine Learning   119            0      2  8.524257 31.005620
-#&gt; 10        Linear Models   128            0      2  3.271254 30.599106
-#&gt; 11    Regression Models   140            0      2  2.994342 30.178069
-#&gt; 12         Linear Mixed    59            0      2  4.893686 29.276574
-#&gt; 13  Structural Equation    65            0      2  8.910749 29.128523
-#&gt; 14        Data Analysis   249            0      2  2.070662 28.894179
-#&gt; 15            Data Sets   111            0      2  5.107881 26.322358
-#&gt; 16   Density Estimation    51            0      2  4.797055 25.635160
-#&gt; 17  Quantile Regression    52            0      2  4.869997 24.550476
-#&gt; 18         Mixed Models    72            0      2  3.650644 24.385088
-#&gt; 19  Logistic Regression    50            0      2  5.248696 23.463852
-#&gt; 20           R Markdown    60            0      2  5.658139 23.400712
-#&gt; 21    Linear Regression    67            0      2  3.112474 22.816644
-#&gt; 22        Least Squares    59            0      2 11.040175 22.765498
-#&gt; 23            R Package    52            0      2  3.085157 20.003793
-#&gt; 24   Component Analysis    54            0      2  4.658447 19.821265
-#&gt; 25         Missing Data    53            0      2  3.172013 17.250679
-#&gt; 26    Survival Analysis    51            0      2  2.745405 17.146027
-#&gt; 27      Functional Data    55            0      2  2.654504 16.204868
-#&gt; 28        Survival Data    51            0      2  2.176754 13.652829
-#&gt; 29          Data Frames    57            0      2  7.582947  9.164979
-#&gt; 30          Monte Carlo    60            0      2 17.055968  8.510408</code></pre>
+<pre><code>#&gt;             collocation count    lambda         z
+#&gt; 1           Time Series   358  9.006926 43.391383
+#&gt; 14        Data Analysis   249  2.070662 28.894179
+#&gt; 11    Regression Models   140  2.994342 30.178069
+#&gt; 10        Linear Models   128  3.271254 30.599106
+#&gt; 4           R Interface   119  4.333113 35.731495
+#&gt; 9      Machine Learning   119  8.524257 31.005620
+#&gt; 15            Data Sets   111  5.107881 26.322358
+#&gt; 2    Generalized Linear   109  5.057559 39.275087
+#&gt; 5           Sample Size   106  8.888768 35.599219
+#&gt; 3    Variable Selection    96  6.092266 38.962974
+#&gt; 18         Mixed Models    72  3.650644 24.385088
+#&gt; 21    Linear Regression    67  3.112474 22.816644
+#&gt; 8    Maximum Likelihood    65  8.013360 32.162154
+#&gt; 13  Structural Equation    65  8.910749 29.128523
+#&gt; 7  Confidence Intervals    63  8.171412 32.476555
+#&gt; 6       Clinical Trials    60  7.053179 33.794375
+#&gt; 20           R Markdown    60  5.658139 23.400712
+#&gt; 30          Monte Carlo    60 17.055968  8.510408
+#&gt; 12         Linear Mixed    59  4.893686 29.276574
+#&gt; 22        Least Squares    59 11.040175 22.765498
+#&gt; 29          Data Frames    57  7.582947  9.164979
+#&gt; 27      Functional Data    55  2.654504 16.204868
+#&gt; 24   Component Analysis    54  4.658447 19.821265
+#&gt; 25         Missing Data    53  3.172013 17.250679
+#&gt; 17  Quantile Regression    52  4.869997 24.550476
+#&gt; 23            R Package    52  3.085157 20.003793
+#&gt; 16   Density Estimation    51  4.797055 25.635160
+#&gt; 26    Survival Analysis    51  2.745405 17.146027
+#&gt; 28        Survival Data    51  2.176754 13.652829
+#&gt; 19  Logistic Regression    50  5.248696 23.463852</code></pre>
 </div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1"></a><span class="co"># 3 个词 最少出现 20 次</span></span>
-<span id="cb11-2"><a href="#cb11-2"></a>word3 <span class="ot">&lt;-</span> pdb_toks <span class="sc">|&gt;</span> </span>
-<span id="cb11-3"><a href="#cb11-3"></a>    <span class="fu">tokens_remove</span>(<span class="fu">stopwords</span>(<span class="st">"en"</span>)) <span class="sc">|&gt;</span> </span>
-<span id="cb11-4"><a href="#cb11-4"></a>    <span class="fu">tokens_select</span>(<span class="at">pattern =</span> <span class="st">"^[A-Z]"</span>, <span class="at">valuetype =</span> <span class="st">"regex"</span>, </span>
-<span id="cb11-5"><a href="#cb11-5"></a>                  <span class="at">case_insensitive =</span> <span class="cn">FALSE</span>, <span class="at">padding =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span></span>
-<span id="cb11-6"><a href="#cb11-6"></a>    <span class="fu">textstat_collocations</span>(<span class="at">min_count =</span> <span class="dv">20</span>, <span class="at">size =</span> <span class="dv">3</span>, <span class="at">tolower =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb11-7"><a href="#cb11-7"></a>word3</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1"></a><span class="co"># 3 个词 最少出现 20 次</span></span>
+<span id="cb15-2"><a href="#cb15-2"></a>word3 <span class="ot">&lt;-</span> pdb_toks <span class="sc">|&gt;</span> </span>
+<span id="cb15-3"><a href="#cb15-3"></a>    <span class="fu">tokens_remove</span>(<span class="fu">stopwords</span>(<span class="st">"en"</span>)) <span class="sc">|&gt;</span> </span>
+<span id="cb15-4"><a href="#cb15-4"></a>    <span class="fu">tokens_select</span>(<span class="at">pattern =</span> <span class="st">"^[A-Z]"</span>, <span class="at">valuetype =</span> <span class="st">"regex"</span>, </span>
+<span id="cb15-5"><a href="#cb15-5"></a>                  <span class="at">case_insensitive =</span> <span class="cn">FALSE</span>, <span class="at">padding =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span></span>
+<span id="cb15-6"><a href="#cb15-6"></a>    <span class="fu">textstat_collocations</span>(<span class="at">min_count =</span> <span class="dv">20</span>, <span class="at">size =</span> <span class="dv">3</span>, <span class="at">tolower =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb15-7"><a href="#cb15-7"></a>word3 <span class="sc">|&gt;</span> </span>
+<span id="cb15-8"><a href="#cb15-8"></a>  <span class="fu">subset</span>(<span class="at">select =</span> <span class="fu">c</span>(<span class="st">"collocation"</span>, <span class="st">"count"</span>, <span class="st">"lambda"</span>, <span class="st">"z"</span>))  <span class="sc">|&gt;</span> </span>
+<span id="cb15-9"><a href="#cb15-9"></a>  (\(x) x[<span class="fu">order</span>(x<span class="sc">$</span>count, <span class="at">decreasing =</span> T), ])()</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>#&gt;                      collocation count count_nested length     lambda
-#&gt; 1           Mixed Effects Models    20            0      3  1.9944778
-#&gt; 2          Small Area Estimation    35            0      3  2.9637731
-#&gt; 3       Graphical User Interface    25            0      3  2.8429215
-#&gt; 4           Item Response Theory    36            0      3  1.7505452
-#&gt; 5           Hidden Markov Models    31            0      3  0.8167421
-#&gt; 6   Structural Equation Modeling    28            0      3  1.5167356
-#&gt; 7           Time Series Analysis    41            0      3  0.9843681
-#&gt; 8               Time Series Data    31            0      3  0.4080359
-#&gt; 9        Time Series Forecasting    32            0      3 -0.3895522
-#&gt; 10    Structural Equation Models    24            0      3 -0.2825118
-#&gt; 11     Kernel Density Estimation    23            0      3 -0.2280449
-#&gt; 12 Maximum Likelihood Estimation    31            0      3 -0.7001378
-#&gt; 13     Generalized Linear Models    66            0      3 -0.2801898
-#&gt; 14           Linear Mixed Models    40            0      3 -0.3689316
-#&gt; 15       Sample Size Calculation    22            0      3 -1.8761268
-#&gt; 16   Generalized Additive Models    20            0      3 -0.8619322
-#&gt; 17         Partial Least Squares    21            0      3 -5.0778328
-#&gt; 18  Principal Component Analysis    35            0      3 -2.9485013
-#&gt;             z
-#&gt; 1   2.9694039
-#&gt; 2   1.7033663
-#&gt; 3   1.3693191
-#&gt; 4   1.0324294
-#&gt; 5   0.7919234
-#&gt; 6   0.7424072
-#&gt; 7   0.6530352
-#&gt; 8   0.4102911
-#&gt; 9  -0.1919605
-#&gt; 10 -0.2728355
-#&gt; 11 -0.2830313
-#&gt; 12 -0.7466378
-#&gt; 13 -0.8890003
-#&gt; 14 -0.9390730
-#&gt; 15 -1.1173717
-#&gt; 16 -1.7385127
-#&gt; 17 -4.2502769
-#&gt; 18 -4.7122596</code></pre>
+<pre><code>#&gt;                      collocation count     lambda          z
+#&gt; 13     Generalized Linear Models    66 -0.2801898 -0.8890003
+#&gt; 7           Time Series Analysis    41  0.9843681  0.6530352
+#&gt; 14           Linear Mixed Models    40 -0.3689316 -0.9390730
+#&gt; 4           Item Response Theory    36  1.7505452  1.0324294
+#&gt; 2          Small Area Estimation    35  2.9637731  1.7033663
+#&gt; 18  Principal Component Analysis    35 -2.9485013 -4.7122596
+#&gt; 9        Time Series Forecasting    32 -0.3895522 -0.1919605
+#&gt; 5           Hidden Markov Models    31  0.8167421  0.7919234
+#&gt; 8               Time Series Data    31  0.4080359  0.4102911
+#&gt; 12 Maximum Likelihood Estimation    31 -0.7001378 -0.7466378
+#&gt; 6   Structural Equation Modeling    28  1.5167356  0.7424072
+#&gt; 3       Graphical User Interface    25  2.8429215  1.3693191
+#&gt; 10    Structural Equation Models    24 -0.2825118 -0.2728355
+#&gt; 11     Kernel Density Estimation    23 -0.2280449 -0.2830313
+#&gt; 15       Sample Size Calculation    22 -1.8761268 -1.1173717
+#&gt; 17         Partial Least Squares    21 -5.0778328 -4.2502769
+#&gt; 1           Mixed Effects Models    20  1.9944778  2.9694039
+#&gt; 16   Generalized Additive Models    20 -0.8619322 -1.7385127</code></pre>
 </div>
 </div>
-<details class="code-fold"><summary>代码</summary><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1"></a><span class="fu">ggplot</span>(<span class="at">data =</span> word2, <span class="fu">aes</span>(<span class="at">x =</span> count, <span class="at">y =</span> <span class="fu">reorder</span>(collocation, count))) <span class="sc">+</span></span>
-<span id="cb13-2"><a href="#cb13-2"></a>  <span class="fu">geom_col</span>() <span class="sc">+</span></span>
-<span id="cb13-3"><a href="#cb13-3"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="cn">NULL</span>, <span class="at">y =</span> <span class="cn">NULL</span>)</span>
-<span id="cb13-4"><a href="#cb13-4"></a></span>
-<span id="cb13-5"><a href="#cb13-5"></a><span class="fu">ggplot</span>(<span class="at">data =</span> word3, <span class="fu">aes</span>(<span class="at">x =</span> count, <span class="at">y =</span> <span class="fu">reorder</span>(collocation, count))) <span class="sc">+</span></span>
-<span id="cb13-6"><a href="#cb13-6"></a>  <span class="fu">geom_col</span>() <span class="sc">+</span></span>
-<span id="cb13-7"><a href="#cb13-7"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="cn">NULL</span>, <span class="at">y =</span> <span class="cn">NULL</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<details class="code-fold"><summary>代码</summary><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1"></a><span class="fu">ggplot</span>(<span class="at">data =</span> word2, <span class="fu">aes</span>(<span class="at">x =</span> count, <span class="at">y =</span> <span class="fu">reorder</span>(collocation, count))) <span class="sc">+</span></span>
+<span id="cb17-2"><a href="#cb17-2"></a>  <span class="fu">geom_col</span>() <span class="sc">+</span></span>
+<span id="cb17-3"><a href="#cb17-3"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="cn">NULL</span>, <span class="at">y =</span> <span class="cn">NULL</span>)</span>
+<span id="cb17-4"><a href="#cb17-4"></a></span>
+<span id="cb17-5"><a href="#cb17-5"></a><span class="fu">ggplot</span>(<span class="at">data =</span> word3, <span class="fu">aes</span>(<span class="at">x =</span> count, <span class="at">y =</span> <span class="fu">reorder</span>(collocation, count))) <span class="sc">+</span></span>
+<span id="cb17-6"><a href="#cb17-6"></a>  <span class="fu">geom_col</span>() <span class="sc">+</span></span>
+<span id="cb17-7"><a href="#cb17-7"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="cn">NULL</span>, <span class="at">y =</span> <span class="cn">NULL</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details><div id="fig-frequency-phrase" class="quarto-layout-panel">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-frequency-phrase-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="quarto-layout-row">
@@ -888,8 +831,87 @@ MathJax ={
 图&nbsp;19.2: 高频短语
 </figcaption></figure>
 </div>
-</section><section id="sec-analysis-text-data-exercises" class="level2" data-number="19.2"><h2 data-number="19.2" class="anchored" data-anchor-id="sec-analysis-text-data-exercises">
-<span class="header-section-number">19.2</span> 习题</h2>
+</section><section id="sec-co-occurrence-network" class="level2" data-number="19.3"><h2 data-number="19.3" class="anchored" data-anchor-id="sec-co-occurrence-network">
+<span class="header-section-number">19.3</span> 特征共现网络</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1"></a><span class="co"># 文档词矩阵</span></span>
+<span id="cb18-2"><a href="#cb18-2"></a>pdb_dfm <span class="ot">&lt;-</span> pdb_doc <span class="sc">|&gt;</span> </span>
+<span id="cb18-3"><a href="#cb18-3"></a>    <span class="fu">tokens</span>(<span class="at">remove_punct =</span> <span class="cn">TRUE</span>, <span class="at">remove_symbols =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span></span>
+<span id="cb18-4"><a href="#cb18-4"></a>    <span class="fu">tokens_remove</span>(<span class="fu">stopwords</span>(<span class="st">"en"</span>)) <span class="sc">|&gt;</span> </span>
+<span id="cb18-5"><a href="#cb18-5"></a>    <span class="fu">dfm</span>()</span>
+<span id="cb18-6"><a href="#cb18-6"></a><span class="co"># 最高频的特征、主要特征</span></span>
+<span id="cb18-7"><a href="#cb18-7"></a><span class="fu">topfeatures</span>(pdb_dfm)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>#&gt;       data   analysis     models          r      using      model regression 
+#&gt;       3704       2188       1655       1368       1069        943        903 
+#&gt; estimation  functions      tools 
+#&gt;        819        811        705</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1"></a><span class="co"># 特征共现矩阵</span></span>
+<span id="cb20-2"><a href="#cb20-2"></a>pdb_fcm <span class="ot">&lt;-</span> pdb_doc <span class="sc">|&gt;</span> </span>
+<span id="cb20-3"><a href="#cb20-3"></a>    <span class="fu">tokens</span>(<span class="at">remove_punct =</span> <span class="cn">TRUE</span>, <span class="at">remove_symbols =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span></span>
+<span id="cb20-4"><a href="#cb20-4"></a>    <span class="fu">tokens_remove</span>(<span class="fu">stopwords</span>(<span class="st">"en"</span>)) <span class="sc">|&gt;</span> </span>
+<span id="cb20-5"><a href="#cb20-5"></a>    <span class="fu">fcm</span>(<span class="at">context =</span> <span class="st">"window"</span>, <span class="at">window =</span> <span class="dv">5</span>)  </span>
+<span id="cb20-6"><a href="#cb20-6"></a><span class="co"># 高频特征</span></span>
+<span id="cb20-7"><a href="#cb20-7"></a>pdb_feat <span class="ot">&lt;-</span> <span class="fu">colSums</span>(pdb_fcm) <span class="sc">|&gt;</span></span>
+<span id="cb20-8"><a href="#cb20-8"></a>  <span class="fu">sort</span>(<span class="at">decreasing =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span></span>
+<span id="cb20-9"><a href="#cb20-9"></a>  <span class="fu">head</span>(<span class="dv">30</span>) <span class="sc">|&gt;</span></span>
+<span id="cb20-10"><a href="#cb20-10"></a>  <span class="fu">names</span>()</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<details class="code-fold"><summary>代码</summary><div class="sourceCode cell-code" id="cb21"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1"></a><span class="fu">fcm_select</span>(pdb_fcm, <span class="at">pattern =</span> pdb_feat) <span class="sc">|&gt;</span></span>
+<span id="cb21-2"><a href="#cb21-2"></a>    <span class="fu">textplot_network</span>(<span class="at">min_freq =</span> <span class="fl">0.5</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details><div class="cell-output-display">
+<div id="fig-co-occurrence-network" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-co-occurrence-network-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="analyze-text-data_files/figure-html/fig-co-occurrence-network-1.png" class="img-fluid figure-img" width="576">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-co-occurrence-network-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;19.3: 特征共现网络
+</figcaption></figure>
+</div>
+</div>
+</div>
+</section><section id="sec-topic-modeling" class="level2" data-number="19.4"><h2 data-number="19.4" class="anchored" data-anchor-id="sec-topic-modeling">
+<span class="header-section-number">19.4</span> 文本主题探索</h2>
+<p>高维特征（15K）降至低维（10），SVD 分解，取主要的部分（特征值非零的矩阵块）</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1"></a>tmod <span class="ot">&lt;-</span> <span class="fu">textmodel_lsa</span>(pdb_dfm, <span class="at">nd =</span> <span class="dv">10</span>)</span>
+<span id="cb22-2"><a href="#cb22-2"></a><span class="fu">head</span>(tmod<span class="sc">$</span>docs)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>先用 4000 个 R 包的标题文本</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1"></a><span class="fu">library</span>(text2vec)</span>
+<span id="cb23-2"><a href="#cb23-2"></a></span>
+<span id="cb23-3"><a href="#cb23-3"></a>tokens <span class="ot">=</span> <span class="fu">tolower</span>(pdb<span class="sc">$</span>Title[<span class="dv">1</span><span class="sc">:</span><span class="dv">4000</span>])</span>
+<span id="cb23-4"><a href="#cb23-4"></a><span class="co"># 尚需清理一些无用的停止词</span></span>
+<span id="cb23-5"><a href="#cb23-5"></a>tokens <span class="ot">=</span> <span class="fu">word_tokenizer</span>(tokens)</span>
+<span id="cb23-6"><a href="#cb23-6"></a>it <span class="ot">=</span> <span class="fu">itoken</span>(tokens, <span class="at">ids =</span> pdb<span class="sc">$</span>Package[<span class="dv">1</span><span class="sc">:</span><span class="dv">4000</span>], <span class="at">progressbar =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb23-7"><a href="#cb23-7"></a>v <span class="ot">=</span> <span class="fu">create_vocabulary</span>(it)</span>
+<span id="cb23-8"><a href="#cb23-8"></a>v <span class="ot">=</span> <span class="fu">prune_vocabulary</span>(v, <span class="at">term_count_min =</span> <span class="dv">10</span>, <span class="at">doc_proportion_max =</span> <span class="fl">0.2</span>)</span>
+<span id="cb23-9"><a href="#cb23-9"></a>  </span>
+<span id="cb23-10"><a href="#cb23-10"></a>vectorizer <span class="ot">=</span> <span class="fu">vocab_vectorizer</span>(v)</span>
+<span id="cb23-11"><a href="#cb23-11"></a>dtm <span class="ot">=</span> <span class="fu">create_dtm</span>(it, vectorizer, <span class="at">type =</span> <span class="st">"dgTMatrix"</span>)</span>
+<span id="cb23-12"><a href="#cb23-12"></a></span>
+<span id="cb23-13"><a href="#cb23-13"></a>lda_model <span class="ot">=</span> LDA<span class="sc">$</span><span class="fu">new</span>(<span class="at">n_topics =</span> <span class="dv">10</span>, <span class="at">doc_topic_prior =</span> <span class="fl">0.1</span>, <span class="at">topic_word_prior =</span> <span class="fl">0.01</span>)</span>
+<span id="cb23-14"><a href="#cb23-14"></a>doc_topic_distr <span class="ot">=</span> </span>
+<span id="cb23-15"><a href="#cb23-15"></a>  lda_model<span class="sc">$</span><span class="fu">fit_transform</span>(<span class="at">x =</span> dtm, <span class="at">n_iter =</span> <span class="dv">1000</span>, </span>
+<span id="cb23-16"><a href="#cb23-16"></a>                          <span class="at">convergence_tol =</span> <span class="fl">0.001</span>, <span class="at">n_check_convergence =</span> <span class="dv">25</span>, </span>
+<span id="cb23-17"><a href="#cb23-17"></a>                          <span class="at">progressbar =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb23-18"><a href="#cb23-18"></a></span>
+<span id="cb23-19"><a href="#cb23-19"></a><span class="fu">barplot</span>(doc_topic_distr[<span class="dv">1</span>, ], <span class="at">xlab =</span> <span class="st">"topic"</span>, </span>
+<span id="cb23-20"><a href="#cb23-20"></a>        <span class="at">ylab =</span> <span class="st">"proportion"</span>, <span class="at">ylim =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>), </span>
+<span id="cb23-21"><a href="#cb23-21"></a>        <span class="at">names.arg =</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">ncol</span>(doc_topic_distr))</span>
+<span id="cb23-22"><a href="#cb23-22"></a></span>
+<span id="cb23-23"><a href="#cb23-23"></a>lda_model<span class="sc">$</span><span class="fu">get_top_words</span>(<span class="at">n =</span> <span class="dv">10</span>, <span class="at">topic_number =</span> <span class="fu">c</span>(<span class="dv">1</span>L, <span class="dv">5</span>L, <span class="dv">10</span>L), <span class="at">lambda =</span> <span class="dv">1</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section><section id="sec-text-similarity" class="level2" data-number="19.5"><h2 data-number="19.5" class="anchored" data-anchor-id="sec-text-similarity">
+<span class="header-section-number">19.5</span> 文本相似性</h2>
+<p>text2vec 包计算<a href="https://quanteda.io/articles/pkgdown/replication/text2vec.html">文本相似度</a></p>
+</section><section id="sec-analysis-text-data-exercises" class="level2" data-number="19.6"><h2 data-number="19.6" class="anchored" data-anchor-id="sec-analysis-text-data-exercises">
+<span class="header-section-number">19.6</span> 习题</h2>
 <ol type="1">
 <li><p><strong>text2vec</strong> 包内置的电影评论数据集 <code>movie_review</code> 中 sentiment（表示正面或负面评价）列作为响应变量，构建二分类模型，对用户的一段评论分类。（提示：词向量化后，采用 <strong>glmnet</strong> 包做交叉验证调整参数、模型）</p></li>
 <li><p>接习题 2，根据任务视图对 R 包的标记，建立有监督的多分类模型，评估模型的分类效果，并对尚未标记的 R 包分类。（提示：一个 R 包可能同时属于多个任务视图，考虑使用 xgboost 包）</p></li>
