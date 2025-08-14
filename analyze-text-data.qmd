@@ -6,22 +6,114 @@
 source("_common.R")
 ```
 
-R 语言任务视图中以自然语言处理（Natural Language Processing）涵盖文本分析（Text Analysis）的内容。R 语言社区中有两本文本分析相关的著作，分别是《Text Mining with R》[@Silge2017]和《Supervised Machine Learning for Text Analysis in R》[@Hvitfeldt2021]。
+R 语言官网的任务视图中有自然语言处理（Natural Language Processing）视图，它涵盖文本数据分析（Text Analysis）的内容。R 语言社区中有两本文本分析相关的著作，分别是《Text Mining with R》[@Silge2017]和《Supervised Machine Learning for Text Analysis in R》[@Hvitfeldt2021]。
+
+本文获取 CRAN 上发布的 R 包元数据中的描述字段，利用文本分析工具，实现 R 包主题分类。首先加载后续用到的一些文本分析和建模的 R 包。
+
+```{r, message=FALSE}
+library(quanteda)  # 词库 分词
+library(quanteda.textplots)
+library(quanteda.textstats)
+library(tidytext)
+library(ggplot2)     # 绘图
+library(ggrepel)
+library(text2vec)    # LDA 算法
+```
+
+接着，调用 `tools` 包的函数 `CRAN_package_db()` 获取 R 包元数据，为了方便后续重复使用，保存到本地。
 
 ```{r}
-library(quanteda)  # 词库 分词
-# library(readtext) # 读取文本语料
-library(tidytext)
-library(ggplot2)  # 绘图
-library(ggrepel)
-library(ggwordcloud) # 词云
-library(text2vec)    # LDA 算法
+pdb <- readRDS(file = "data/cran-package-db-20250801.rds")
+pdb <- subset(
+  x = pdb, subset = !duplicated(Package), select = c("Package", "Title")
+)
+```
+
+去除重复的记录，保留 Package 和 Title 字段，该数据集共含有 `r dim(pdb)[1]` 个 R 包的元数据。
+
+```{r}
+head(pdb)
+```
+
+接下来，要把该数据集整理成文本分析工具可以使用的数据类型 -- 制作语料。
+
+```{r}
+pdb_doc <- corpus(pdb, docid_field = "Package", text_field = "Title")
+```
+
+## 高频词、短语 {#sec-frequency-analysis}
+
+发现一些高频出现的词语或短语，通过这些高频词，这暗示一些信息。
+
+```{r}
+library(quanteda.textplots)
+word1 <- pdb_doc |> 
+    tokens(remove_punct = TRUE, remove_symbols = TRUE) |>
+    tokens_remove(stopwords("en")) |> 
+    dfm() |>
+    dfm_trim(min_termfreq = 100, verbose = FALSE)
+# 高频词
+colSums(word1)
+```
+
+```{r}
+#| label: fig-frequency-words
+#| fig-cap: "高频词的词云图"
+#| fig-showtext: true
+#| fig-width: 6
+#| fig-height: 5
+#| code-fold: true
+# 词云
+set.seed(20252025)
+textplot_wordcloud(word1, min_size = 1, max_size = 5)
+```
+
+```{r}
+library(quanteda.textstats)
+# 2个词 最少出现 40 次
+pdb_toks <- tokens(pdb_doc)
+word2 <- pdb_toks |> 
+    tokens_remove(stopwords("en")) |> 
+    tokens_select(pattern = "^[A-Z]", valuetype = "regex", 
+                  case_insensitive = FALSE, padding = TRUE) |>
+    textstat_collocations(min_count = 50, size = 2, tolower = FALSE)
+word2
+```
+
+```{r}
+# 3 个词 最少出现 20 次
+word3 <- pdb_toks |> 
+    tokens_remove(stopwords("en")) |> 
+    tokens_select(pattern = "^[A-Z]", valuetype = "regex", 
+                  case_insensitive = FALSE, padding = TRUE) |>
+    textstat_collocations(min_count = 20, size = 3, tolower = FALSE)
+word3
+```
+
+```{r}
+#| label: fig-frequency-phrase
+#| fig-cap: 高频短语
+#| fig-subcap: 
+#| - 两个词的高频短语
+#| - 三个词的高频短语
+#| layout-ncol: 1
+#| fig-showtext: true
+#| fig-width: 6
+#| fig-height: 5
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
+
+ggplot(data = word2, aes(x = count, y = reorder(collocation, count))) +
+  geom_col() +
+  labs(x = NULL, y = NULL)
+
+ggplot(data = word3, aes(x = count, y = reorder(collocation, count))) +
+  geom_col() +
+  labs(x = NULL, y = NULL)
 ```
 
 ## 习题 {#sec-analysis-text-data-exercises}
 
 1.  **text2vec** 包内置的电影评论数据集 `movie_review` 中 sentiment（表示正面或负面评价）列作为响应变量，构建二分类模型，对用户的一段评论分类。（提示：词向量化后，采用 **glmnet** 包做交叉验证调整参数、模型）
 
-2.  根据 CRAN 上发布的 R 包元数据分析 R 包的描述字段，实现 R 包主题分类。
-
-3.  接习题 2，根据任务视图对 R 包的标记，建立有监督的多分类模型，评估模型的分类效果，并对尚未标记的 R 包分类。（提示：一个 R 包可能同时属于多个任务视图，考虑使用 xgboost 包）
+2.  接习题 2，根据任务视图对 R 包的标记，建立有监督的多分类模型，评估模型的分类效果，并对尚未标记的 R 包分类。（提示：一个 R 包可能同时属于多个任务视图，考虑使用 xgboost 包）
