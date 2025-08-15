@@ -205,18 +205,44 @@ fcm_select(pdb_fcm, pattern = pdb_feat) |>
   textplot_network(min_freq = 0.5)
 ```
 
-## 文本主题探索 {#sec-topic-modeling}
+## 词频文档统计 {#sec-term-frequency}
+
+TF-IDF 词频与逆文档频率（term frequency-inverse document frequency weighting）
+
+```{r}
+x = dfm_tfidf(pdb_dfm, base = 2, scheme_tf = "prop")
+
+head(x[, 5:10])
+```
+
+每个特征的文档频率
+
+```{r}
+docfreq(pdb_dfm)[5:15]
+```
+
+特征频次作为权重
+
+```{r}
+head(dfm_weight(pdb_dfm, scheme = "count")[, 5:10])
+```
+
+## 潜在语义分析 {#sec-latent-semantic-analysis}
 
 高维特征（15K）降至低维（10），SVD 分解，取主要的部分（特征值非零的矩阵块）
 
 ```{r}
 #| eval: false
 
-tmod <- textmodel_lsa(pdb_dfm, nd = 10)
+tmod <- textmodel_lsa(pdb_dfm[1:20000], nd = 10)
 head(tmod$docs)
+pred <- predict(tmod, newdata = pdb_dfm[20001:20100, ])
+pred$docs_newspace
 ```
 
-text2vec 包的实现 LDA 算法做文本主题建模。
+## 文本主题探索 {#sec-topic-modeling}
+
+text2vec 包的实现 LDA（Latent Dirichlet Allocation）算法做文本主题建模。
 
 ```{r}
 library(text2vec)
@@ -259,24 +285,65 @@ barplot(doc_topic_distr[1, ],
 每个主题抽取 Top 的 10 个词
 
 ```{r}
-lda_model$get_top_words(n = 10, topic_number = c(1L, 5L, 10L), lambda = 1)
+lda_model$get_top_words(n = 10, topic_number = 1L:10L, lambda = 1)
 ```
 
-TODO: 使用 perplexity 获取最佳的主题个数
+TODO: 使用交叉验证配合 perplexity 度量获取最佳的主题个数 [@Zhang2023]
 
 ## 文本相似性 {#sec-text-similarity}
 
-text2vec 包计算[文本相似度](https://quanteda.io/articles/pkgdown/replication/text2vec.html)
+在互联网 App 中，计算文本之间的相似性有很多应用，如搜索、推荐和广告的召回阶段，根据用户输入的文本召回相关的内容。
+
+text2vec 包实现了 GloVe 模型 --- 一种词向量表示的无监督学习算法。从语料中生成词共现矩阵，基于此训练数据，算法得出的是词向量空间中的线性子结构。GloVe 度量了词与词之间共现的可能性，词与词抽象的概念差异可以表示成向量的差异。下面继续基于这份文本数据，生成词共现矩阵，计算文本相似度。
+
+参考 quanteda 包官网对 text2vec 包[GloVe 模块的介绍](https://quanteda.io/articles/pkgdown/replication/text2vec.html)。
 
 ```{r}
-#| eval: false
+# 特征筛选
+feats <- dfm(pdb_toks, verbose = TRUE) |>
+    dfm_trim(min_termfreq = 5) |>
+    featnames()
+# Token 处理
+pdb_toks <- tokens_select(pdb_toks, feats, padding = TRUE)
+# 特征共现矩阵
+pdb_fcm <- fcm(pdb_toks, context = "window", count = "weighted", weights = 1 / (1:5), tri = TRUE)
+```
 
-library(quanteda.textstats)
-# 文档的余弦相似性 取一个小数据
-pdb_simi <- textstat_simil(
-  pdb_dfm[1:100, 1:100],
-  margin = "documents", method = "cosine"
+```{r}
+library(text2vec)
+# GloVe 模型  50 维词向量表示
+glove <- GlobalVectors$new(rank = 50, x_max = 10)
+wv_main <- glove$fit_transform(
+  pdb_fcm,
+  n_iter = 10,
+  convergence_tol = 0.01,
+  n_threads = 8,
+  progressbar = FALSE
 )
+
+dim(wv_main)
+
+wv_context <- glove$components
+
+dim(wv_context)
+
+word_vectors <- wv_main + t(wv_context)
+```
+
+计算距离
+
+```{r}
+cpp <- word_vectors["rcpp", , drop = FALSE] -
+  word_vectors["stan", , drop = FALSE] +
+    word_vectors["python", , drop = FALSE]
+
+# 文档的余弦相似性 取一个小数据
+library(quanteda.textstats)
+cos_sim <- textstat_simil(
+  x = as.dfm(word_vectors), y = as.dfm(cpp),
+  margin = "documents", method = "cosine")
+# 召回的相关词
+head(sort(cos_sim[, 1], decreasing = TRUE), 5)
 ```
 
 ## 习题 {#sec-analysis-text-data-exercises}
