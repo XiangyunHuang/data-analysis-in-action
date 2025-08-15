@@ -11,13 +11,13 @@ R 语言官网的任务视图中有自然语言处理（Natural Language Process
 本文获取 CRAN 上发布的 R 包元数据中的描述字段，利用文本分析工具，实现 R 包主题分类。首先加载后续用到的一些文本分析和建模的 R 包。
 
 ```{r, message=FALSE}
-library(quanteda)  # 词库 分词
-library(quanteda.textplots)
-library(quanteda.textstats)
+library(quanteda) # 词库、分词
+library(quanteda.textplots) # 词云图、共现网络图等
+library(quanteda.textstats) # 查询、统计
 library(quanteda.textmodels) # LSA
-library(ggplot2)     # 绘图
+library(ggplot2) # 绘图
 library(ggrepel)
-library(text2vec)    # LDA 算法
+library(text2vec) # LDA 算法
 ```
 
 接着，调用 `tools` 包的函数 `CRAN_package_db()` 获取 R 包元数据，为了方便后续重复使用，保存到本地。
@@ -35,15 +35,24 @@ pdb <- subset(
 head(pdb)
 ```
 
-## 数据清理和准备 {#sec-data-cleaning-stemming}
+## 语料预处理 {#sec-data-cleaning-stemming}
 
--   去掉换行符 `\n` 和单引号 `'` 等，
+-   去掉换行符 `\n` 和单引号 `'` 等。
+
+```{r}
+pdb$Title <- gsub(pattern = "\n", replacement = " ", x = pdb$Title, fixed = T)
+pdb$Title <- gsub(pattern = "'", replacement = "", x = pdb$Title, fixed = T)
+pdb$Title <- gsub(pattern = '"', replacement = "", x = pdb$Title, fixed = T)
+```
+
 -   名词和动词还原，如 models / modeling 还原为 model， methods 还原为 method 等等。
 
 ```{r}
 # Token 化之后操作
 # 安装 tidytext 包
+# 名词
 SnowballC::wordStem(words = c("methods", "models"))
+# pdb$Title_stem <- SnowballC::wordStem(pdb$Title)
 tokenizers::tokenize_word_stems(x = c("methods", "models"))
 ```
 
@@ -53,22 +62,36 @@ tokenizers::tokenize_word_stems(x = c("methods", "models"))
 pdb_doc <- corpus(pdb, docid_field = "Package", text_field = "Title")
 ```
 
-## 高频词、短语 {#sec-frequency-analysis}
+## 关键词检索 {#sec-keywords-in-context}
+
+关键词检索就是从语料中查询某个字词及其在语料中的位置，函数 `kwic()` （函数名是 keywords-in-context 简写）用来做这个事。举两个例子，第一个例子查询语料中包含 Stan 的条目且精确匹配，返回检索词前后 3 个词。第二个例子查询语料中包含 `text mining` 的条目，采用正则方式匹配，返回检索词前后 2 个词。
+
+```{r}
+pdb_toks <- tokens(pdb_doc)
+# 查询词 精确匹配
+kwic(pdb_toks, pattern = "Stan", valuetype = "fixed", window = 3)
+# 查询短语 正则匹配
+kwic(pdb_toks, pattern = phrase("text mining"), valuetype = "regex", window = 2)
+```
+
+## 高频词、词云 {#sec-frequency-analysis}
 
 发现一些高频出现的词语或短语，通过这些高频词，这暗示一些信息。
 
 ```{r}
 library(quanteda.textplots)
-word1 <- pdb_doc |> 
-    tokens(remove_punct = TRUE, remove_symbols = TRUE) |>
-    tokens_remove(stopwords("en")) |> 
-    dfm() |>
-    dfm_trim(min_termfreq = 100, termfreq_type = "count", verbose = FALSE)
+word1 <- pdb_doc |>
+  tokens(remove_punct = TRUE, remove_symbols = TRUE) |>
+  tokens_remove(stopwords("en")) |>
+  dfm() |>
+  dfm_trim(min_termfreq = 100, termfreq_type = "count", verbose = FALSE)
 # 高频词
-colSums(word1) |> 
-  sort(decreasing = T) |> 
+colSums(word1) |>
+  sort(decreasing = T) |>
   head(50)
 ```
+
+R 语言作为一门主要用于数据获取、分析、处理、建模和可视化的统计语言，从 data、analysis、 model 和 regression 等这些高频词可以看出 R 语言面向的领域的特点。在文本分析领域，词云图是很常见的，用来展示文本中的突出信息。下图展示了词频不小于 100 的词。
 
 ```{r}
 #| label: fig-frequency-words
@@ -82,36 +105,46 @@ set.seed(20252025)
 textplot_wordcloud(word1, min_size = 1, max_size = 5)
 ```
 
+## 关联词、短语 {#sec-multi-word-expressions}
+
+函数 `textstat_collocations()` 可以挖掘出词与词之间的关联度，下面统计出关联度很高的2个词的情况。
+
 ```{r}
 library(quanteda.textstats)
-# 2个词 最少出现 40 次
+# 2个词 最少出现 50 次
 pdb_toks <- tokens(pdb_doc)
-word2 <- pdb_toks |> 
-    tokens_remove(stopwords("en")) |> 
-    tokens_select(pattern = "^[A-Z]", valuetype = "regex", 
-                  case_insensitive = FALSE, padding = TRUE) |>
-    textstat_collocations(min_count = 50, size = 2, tolower = FALSE)
-word2 |> 
-  subset(select = c("collocation", "count", "lambda", "z")) |> 
+word2 <- pdb_toks |>
+  tokens_remove(stopwords("en")) |>
+  tokens_select(
+    pattern = "^[A-Z]", valuetype = "regex",
+    case_insensitive = FALSE, padding = TRUE
+  ) |>
+  textstat_collocations(min_count = 50, size = 2, tolower = FALSE)
+word2 |>
+  subset(select = c("collocation", "count", "lambda", "z")) |>
   (\(x) x[order(x$count, decreasing = T), ])()
 ```
 
+下面统计出关联度很高的3个词的情况。
+
 ```{r}
 # 3 个词 最少出现 20 次
-word3 <- pdb_toks |> 
-    tokens_remove(stopwords("en")) |> 
-    tokens_select(pattern = "^[A-Z]", valuetype = "regex", 
-                  case_insensitive = FALSE, padding = TRUE) |>
-    textstat_collocations(min_count = 20, size = 3, tolower = FALSE)
-word3 |> 
-  subset(select = c("collocation", "count", "lambda", "z"))  |> 
+word3 <- pdb_toks |>
+  tokens_remove(stopwords("en")) |>
+  tokens_select(
+    pattern = "^[A-Z]", valuetype = "regex",
+    case_insensitive = FALSE, padding = TRUE
+  ) |>
+  textstat_collocations(min_count = 20, size = 3, tolower = FALSE)
+word3 |>
+  subset(select = c("collocation", "count", "lambda", "z")) |>
   (\(x) x[order(x$count, decreasing = T), ])()
 ```
 
 ```{r}
 #| label: fig-frequency-phrase
 #| fig-cap: 高频短语
-#| fig-subcap: 
+#| fig-subcap:
 #| - 两个词的高频短语
 #| - 三个词的高频短语
 #| layout-ncol: 1
@@ -124,7 +157,6 @@ word3 |>
 ggplot(data = word2, aes(x = count, y = reorder(collocation, count))) +
   geom_col() +
   labs(x = NULL, y = NULL)
-
 ggplot(data = word3, aes(x = count, y = reorder(collocation, count))) +
   geom_col() +
   labs(x = NULL, y = NULL)
@@ -132,28 +164,34 @@ ggplot(data = word3, aes(x = count, y = reorder(collocation, count))) +
 
 ## 特征共现网络 {#sec-co-occurrence-network}
 
+在文档 Token 化之后，函数 `dfm()` 构建文档特征（词）矩阵，函数 `topfeatures()` 提取文档-词矩阵中的主要特征（词）。
+
 ```{r}
 # 文档词矩阵
-pdb_dfm <- pdb_doc |> 
-    tokens(remove_punct = TRUE, remove_symbols = TRUE) |>
-    tokens_remove(stopwords("en")) |> 
-    dfm()
-# 最高频的特征、主要特征
+pdb_dfm <- pdb_doc |>
+  tokens(remove_punct = TRUE, remove_symbols = TRUE) |>
+  tokens_remove(stopwords("en")) |>
+  dfm()
+# 主要特征
 topfeatures(pdb_dfm)
 ```
 
+在文档 Token 化之后，函数 `fcm()` 构建特征（词）共现矩阵，统计词频，挑选前 30 个高频词。
+
 ```{r}
 # 特征共现矩阵
-pdb_fcm <- pdb_doc |> 
-    tokens(remove_punct = TRUE, remove_symbols = TRUE) |>
-    tokens_remove(stopwords("en")) |> 
-    fcm(context = "window", window = 5)  
+pdb_fcm <- pdb_doc |>
+  tokens(remove_punct = TRUE, remove_symbols = TRUE) |>
+  tokens_remove(stopwords("en")) |>
+  fcm(context = "window", window = 5)
 # 高频特征
 pdb_feat <- colSums(pdb_fcm) |>
   sort(decreasing = TRUE) |>
   head(30) |>
   names()
 ```
+
+下图以网络图方式展示词与词之间的关联度，关联度越高，词与词之间的边越宽。
 
 ```{r}
 #| label: fig-co-occurrence-network
@@ -164,7 +202,7 @@ pdb_feat <- colSums(pdb_fcm) |>
 #| code-fold: true
 
 fcm_select(pdb_fcm, pattern = pdb_feat) |>
-    textplot_network(min_freq = 0.5)
+  textplot_network(min_freq = 0.5)
 ```
 
 ## 文本主题探索 {#sec-topic-modeling}
@@ -178,39 +216,68 @@ tmod <- textmodel_lsa(pdb_dfm, nd = 10)
 head(tmod$docs)
 ```
 
-先用 4000 个 R 包的标题文本
+text2vec 包的实现 LDA 算法做文本主题建模。
 
 ```{r}
-#| eval: false
-
 library(text2vec)
+# 创建 Tokens
+pdb_tokens <- word_tokenizer(tolower(pdb$Title))
+pdb_itokens <- itoken(pdb_tokens, ids = pdb$Package, progressbar = FALSE)
+# 去掉停止词
+pdb_v <- create_vocabulary(pdb_itokens, stopwords = stopwords("en"))
+# 词频不小于 10 的词
+# 文档比例不大于 0.2
+pdb_v <- prune_vocabulary(pdb_v, term_count_min = 10, doc_proportion_max = 0.2)
+pdb_v
+```
 
-tokens = tolower(pdb$Title[1:4000])
-# 尚需清理一些无用的停止词
-tokens = word_tokenizer(tokens)
-it = itoken(tokens, ids = pdb$Package[1:4000], progressbar = FALSE)
-v = create_vocabulary(it)
-v = prune_vocabulary(v, term_count_min = 10, doc_proportion_max = 0.2)
-  
-vectorizer = vocab_vectorizer(v)
-dtm = create_dtm(it, vectorizer, type = "dgTMatrix")
+```{r}
+vectorizer <- vocab_vectorizer(pdb_v)
+pdb_dtm <- create_dtm(pdb_itokens, vectorizer, type = "dgTMatrix")
+lda_model <- LDA$new(n_topics = 10, doc_topic_prior = 0.1, topic_word_prior = 0.01)
+doc_topic_distr <- lda_model$fit_transform(
+  x = pdb_dtm, n_iter = 1000,
+  convergence_tol = 0.001, n_check_convergence = 25,
+  progressbar = FALSE
+)
+```
 
-lda_model = LDA$new(n_topics = 10, doc_topic_prior = 0.1, topic_word_prior = 0.01)
-doc_topic_distr = 
-  lda_model$fit_transform(x = dtm, n_iter = 1000, 
-                          convergence_tol = 0.001, n_check_convergence = 25, 
-                          progressbar = FALSE)
+```{r}
+#| label: fig-doc-topic-distr
+#| fig-cap: "文档主题分布"
+#| fig-showtext: true
+#| fig-width: 6
+#| fig-height: 5
+#| code-fold: true
 
-barplot(doc_topic_distr[1, ], xlab = "topic", 
-        ylab = "proportion", ylim = c(0, 1), 
-        names.arg = 1:ncol(doc_topic_distr))
+barplot(doc_topic_distr[1, ],
+  xlab = "topic", ylab = "proportion", ylim = c(0, 1),
+  names.arg = 1:ncol(doc_topic_distr)
+)
+```
 
+每个主题抽取 Top 的 10 个词
+
+```{r}
 lda_model$get_top_words(n = 10, topic_number = c(1L, 5L, 10L), lambda = 1)
 ```
+
+TODO: 使用 perplexity 获取最佳的主题个数
 
 ## 文本相似性 {#sec-text-similarity}
 
 text2vec 包计算[文本相似度](https://quanteda.io/articles/pkgdown/replication/text2vec.html)
+
+```{r}
+#| eval: false
+
+library(quanteda.textstats)
+# 文档的余弦相似性 取一个小数据
+pdb_simi <- textstat_simil(
+  pdb_dfm[1:100, 1:100],
+  margin = "documents", method = "cosine"
+)
+```
 
 ## 习题 {#sec-analysis-text-data-exercises}
 
