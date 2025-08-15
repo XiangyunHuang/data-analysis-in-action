@@ -67,7 +67,9 @@ pdb_doc <- corpus(pdb, docid_field = "Package", text_field = "Title")
 关键词检索就是从语料中查询某个字词及其在语料中的位置，函数 `kwic()` （函数名是 keywords-in-context 简写）用来做这个事。举两个例子，第一个例子查询语料中包含 Stan 的条目且精确匹配，返回检索词前后 3 个词。第二个例子查询语料中包含 `text mining` 的条目，采用正则方式匹配，返回检索词前后 2 个词。
 
 ```{r}
-pdb_toks <- tokens(pdb_doc)
+pdb_toks <- pdb_doc |>
+  tokens(remove_punct = TRUE, remove_symbols = TRUE) |>
+  tokens_remove(stopwords("en"))
 # 查询词 精确匹配
 kwic(pdb_toks, pattern = "Stan", valuetype = "fixed", window = 3)
 # 查询短语 正则匹配
@@ -80,9 +82,7 @@ kwic(pdb_toks, pattern = phrase("text mining"), valuetype = "regex", window = 2)
 
 ```{r}
 library(quanteda.textplots)
-word1 <- pdb_doc |>
-  tokens(remove_punct = TRUE, remove_symbols = TRUE) |>
-  tokens_remove(stopwords("en")) |>
+word1 <- pdb_toks |>
   dfm() |>
   dfm_trim(min_termfreq = 100, termfreq_type = "count", verbose = FALSE)
 # 高频词
@@ -112,9 +112,7 @@ textplot_wordcloud(word1, min_size = 1, max_size = 5)
 ```{r}
 library(quanteda.textstats)
 # 2个词 最少出现 50 次
-pdb_toks <- tokens(pdb_doc)
 word2 <- pdb_toks |>
-  tokens_remove(stopwords("en")) |>
   tokens_select(
     pattern = "^[A-Z]", valuetype = "regex",
     case_insensitive = FALSE, padding = TRUE
@@ -130,7 +128,6 @@ word2 |>
 ```{r}
 # 3 个词 最少出现 20 次
 word3 <- pdb_toks |>
-  tokens_remove(stopwords("en")) |>
   tokens_select(
     pattern = "^[A-Z]", valuetype = "regex",
     case_insensitive = FALSE, padding = TRUE
@@ -168,9 +165,7 @@ ggplot(data = word3, aes(x = count, y = reorder(collocation, count))) +
 
 ```{r}
 # 文档词矩阵
-pdb_dfm <- pdb_doc |>
-  tokens(remove_punct = TRUE, remove_symbols = TRUE) |>
-  tokens_remove(stopwords("en")) |>
+pdb_dfm <- pdb_toks |>
   dfm()
 # 主要特征
 topfeatures(pdb_dfm)
@@ -180,9 +175,7 @@ topfeatures(pdb_dfm)
 
 ```{r}
 # 特征共现矩阵
-pdb_fcm <- pdb_doc |>
-  tokens(remove_punct = TRUE, remove_symbols = TRUE) |>
-  tokens_remove(stopwords("en")) |>
+pdb_fcm <- pdb_toks |>
   fcm(context = "window", window = 5)
 # 高频特征
 pdb_feat <- colSums(pdb_fcm) |>
