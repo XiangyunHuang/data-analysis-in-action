@@ -36,15 +36,16 @@ head(pdb)
 
 ## 语料预处理 {#sec-data-cleaning-stemming}
 
--   去掉换行符 `\n` 和单引号 `'` 等。
+-   去掉换行符 `\n` 和单引号 `'`，字母全部转小写等。
 
 ```{r}
 pdb$Title <- gsub(pattern = "\n", replacement = " ", x = pdb$Title, fixed = T)
 pdb$Title <- gsub(pattern = "'", replacement = "", x = pdb$Title, fixed = T)
 pdb$Title <- gsub(pattern = '"', replacement = "", x = pdb$Title, fixed = T)
+pdb$Title <- tolower(pdb$Title)
 ```
 
--   名词和动词还原，如 models / modeling 还原为 model， methods 还原为 method 等等。
+-   提取词干和词形还原。这一步比较麻烦，需要根据词性使用不同的规则处理。做名词还原调用 **SemNetCleaner** 包的函数 `singularize()` ，如 models / modeling 还原为 model， methods 还原为 method 等等。
 
 ```{r}
 # Token 化之后操作
@@ -53,6 +54,23 @@ pdb$Title <- gsub(pattern = '"', replacement = "", x = pdb$Title, fixed = T)
 SnowballC::wordStem(words = c("methods", "models"))
 # pdb$Title_stem <- SnowballC::wordStem(pdb$Title)
 tokenizers::tokenize_word_stems(x = c("methods", "models"))
+```
+
+R 包标题文本的长度分布
+
+```{r}
+#| label: fig-title-len
+#| fig-cap: "R 包标题文本的长度分布"
+#| fig-showtext: true
+#| fig-width: 6
+#| fig-height: 5
+#| code-fold: true
+
+data.frame(title_len = nchar(pdb$Title)) |>
+  ggplot() +
+  geom_histogram(aes(x = title_len), bins = 30) +
+  theme_bw() +
+  labs(x = "字符长度", y = "R 包数量")
 ```
 
 接下来，要把该数据集整理成文本分析工具可以使用的数据类型 -- 制作语料。
@@ -349,4 +367,4 @@ head(sort(cos_sim[, 1], decreasing = TRUE), 5)
 
 1.  **text2vec** 包内置的电影评论数据集 `movie_review` 中 sentiment（表示正面或负面评价）列作为响应变量，构建二分类模型，对用户的一段评论分类。（提示：词向量化后，采用 **glmnet** 包做交叉验证调整参数、模型）
 
-2.  根据任务视图对 R 包的标记，建立有监督的多分类模型，评估模型的分类效果，并对尚未标记的 R 包分类。（提示：一个 R 包可能同时属于多个任务视图，考虑使用 xgboost 包）
+2.  根据任务视图对 R 包的标记，建立有监督的多分类模型，评估模型的分类效果，并对尚未标记的 R 包分类。（提示：一个 R 包可能同时属于多个任务视图，考虑使用 **xgboost** 包）
