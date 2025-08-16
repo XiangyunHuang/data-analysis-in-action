@@ -16,7 +16,6 @@ library(quanteda.textplots) # 词云图、共现网络图等
 library(quanteda.textstats) # 查询、统计
 library(quanteda.textmodels) # LSA
 library(ggplot2) # 绘图
-library(ggrepel)
 library(text2vec) # LDA 算法
 ```
 
@@ -297,7 +296,7 @@ text2vec 包实现了 GloVe 模型 --- 一种词向量表示的无监督学习�
 
 ```{r}
 # 特征筛选
-feats <- dfm(pdb_toks, verbose = TRUE) |>
+feats <- dfm(pdb_toks, verbose = FALSE) |>
     dfm_trim(min_termfreq = 5) |>
     featnames()
 # Token 处理
@@ -306,10 +305,13 @@ pdb_toks <- tokens_select(pdb_toks, feats, padding = TRUE)
 pdb_fcm <- fcm(pdb_toks, context = "window", count = "weighted", weights = 1 / (1:5), tri = TRUE)
 ```
 
+GloVe 模型
+
 ```{r}
 library(text2vec)
 # GloVe 模型  50 维词向量表示
 glove <- GlobalVectors$new(rank = 50, x_max = 10)
+# 词共现矩阵
 wv_main <- glove$fit_transform(
   pdb_fcm,
   n_iter = 10,
