@@ -222,15 +222,19 @@ head(dfm_weight(pdb_dfm, scheme = "count")[, 5:10])
 
 ## 潜在语义分析 {#sec-latent-semantic-analysis}
 
-高维特征（15K）降至低维（10），SVD 分解，取主要的部分（特征值非零的矩阵块）
+文档特征矩阵通过 SVD 分解将高维特征（15K）降至低维（10），获得文档主题矩阵与主题特征矩阵两个低秩矩阵，SVD 分解的作用在于去掉大量的噪声，取主要的信号部分（特征值非零的矩阵块）。
 
 ```{r}
-#| eval: false
-
-tmod <- textmodel_lsa(pdb_dfm[1:20000], nd = 10)
+# 演示目的，减少特征量
+pdb_dfm_core <- dfm_trim(pdb_dfm, min_termfreq = 100, termfreq_type = "count")
+# 文档特征矩阵 SVD 分解 
+tmod <- textmodel_lsa(pdb_dfm_core[1:2000,], nd = 10)
+# 10 维的特征
 head(tmod$docs)
-pred <- predict(tmod, newdata = pdb_dfm[20001:20100, ])
-pred$docs_newspace
+# 将新的数据代入 
+pred <- predict(tmod, newdata = pdb_dfm_core[2001:2010, ])
+# 查看前两个特征向量
+pred$docs_newspace[, 1:2]
 ```
 
 ## 文本主题探索 {#sec-topic-modeling}
@@ -343,4 +347,4 @@ head(sort(cos_sim[, 1], decreasing = TRUE), 5)
 
 1.  **text2vec** 包内置的电影评论数据集 `movie_review` 中 sentiment（表示正面或负面评价）列作为响应变量，构建二分类模型，对用户的一段评论分类。（提示：词向量化后，采用 **glmnet** 包做交叉验证调整参数、模型）
 
-2.  接习题 2，根据任务视图对 R 包的标记，建立有监督的多分类模型，评估模型的分类效果，并对尚未标记的 R 包分类。（提示：一个 R 包可能同时属于多个任务视图，考虑使用 xgboost 包）
+2.  根据任务视图对 R 包的标记，建立有监督的多分类模型，评估模型的分类效果，并对尚未标记的 R 包分类。（提示：一个 R 包可能同时属于多个任务视图，考虑使用 xgboost 包）
