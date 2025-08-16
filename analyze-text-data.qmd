@@ -6,22 +6,365 @@
 source("_common.R")
 ```
 
-R 语言任务视图中以自然语言处理（Natural Language Processing）涵盖文本分析（Text Analysis）的内容。R 语言社区中有两本文本分析相关的著作，分别是《Text Mining with R》[@Silge2017]和《Supervised Machine Learning for Text Analysis in R》[@Hvitfeldt2021]。
+R 语言官网的任务视图中有自然语言处理（Natural Language Processing）视图，它涵盖文本数据分析（Text Analysis）的内容。R 语言社区中有两本文本分析相关的著作，分别是《Text Mining with R》[@Silge2017]和《Supervised Machine Learning for Text Analysis in R》[@Hvitfeldt2021]。
+
+本文获取 CRAN 上发布的 R 包元数据中的描述字段，利用文本分析工具，实现 R 包主题分类。首先加载后续用到的一些文本分析和建模的 R 包。
+
+```{r, message=FALSE}
+library(quanteda) # 词库、分词
+library(quanteda.textplots) # 词云图、共现网络图等
+library(quanteda.textstats) # 查询、统计
+library(quanteda.textmodels) # LSA
+library(ggplot2) # 绘图
+library(text2vec) # LDA 算法
+```
+
+接着，调用 `tools` 包的函数 `CRAN_package_db()` 获取 R 包元数据，为了方便后续重复使用，保存到本地。
 
 ```{r}
-library(quanteda)  # 词库 分词
-# library(readtext) # 读取文本语料
-library(tidytext)
-library(ggplot2)  # 绘图
-library(ggrepel)
-library(ggwordcloud) # 词云
-library(text2vec)    # LDA 算法
+pdb <- readRDS(file = "data/cran-package-db-20250801.rds")
+pdb <- subset(
+  x = pdb, subset = !duplicated(Package), select = c("Package", "Title")
+)
+```
+
+去除重复的记录，保留 Package 和 Title 字段，该数据集共含有 `r dim(pdb)[1]` 个 R 包的元数据。
+
+```{r}
+head(pdb)
+```
+
+## 语料预处理 {#sec-data-cleaning-stemming}
+
+-   去掉换行符 `\n` 和单引号 `'`，字母全部转小写等。
+
+```{r}
+pdb$Title <- gsub(pattern = "\n", replacement = " ", x = pdb$Title, fixed = T)
+pdb$Title <- gsub(pattern = "'", replacement = "", x = pdb$Title, fixed = T)
+pdb$Title <- gsub(pattern = '"', replacement = "", x = pdb$Title, fixed = T)
+pdb$Title <- tolower(pdb$Title)
+```
+
+-   提取词干和词形还原。这一步比较麻烦，需要根据词性使用不同的规则处理。做名词还原调用 **SemNetCleaner** 包的函数 `singularize()` ，如 models / modeling 还原为 model， methods 还原为 method 等等。
+
+```{r}
+# Token 化之后操作
+# 安装 tidytext 包
+# 名词
+SnowballC::wordStem(words = c("methods", "models"))
+# pdb$Title_stem <- SnowballC::wordStem(pdb$Title)
+tokenizers::tokenize_word_stems(x = c("methods", "models"))
+```
+
+R 包标题文本的长度分布
+
+```{r}
+#| label: fig-title-len
+#| fig-cap: "R 包标题文本的长度分布"
+#| fig-showtext: true
+#| fig-width: 5
+#| fig-height: 4
+#| code-fold: true
+
+data.frame(title_len = nchar(pdb$Title)) |>
+  ggplot() +
+  geom_histogram(aes(x = title_len), bins = 30) +
+  theme_bw() +
+  labs(x = "字符长度", y = "R 包数量")
+```
+
+接下来，要把该数据集整理成文本分析工具可以使用的数据类型 -- 制作语料。
+
+```{r}
+pdb_doc <- corpus(pdb, docid_field = "Package", text_field = "Title")
+```
+
+## 关键词检索 {#sec-keywords-in-context}
+
+关键词检索就是从语料中查询某个字词及其在语料中的位置，函数 `kwic()` （函数名是 keywords-in-context 简写）用来做这个事。举两个例子，第一个例子查询语料中包含 Stan 的条目且精确匹配，返回检索词前后 3 个词。第二个例子查询语料中包含 `text mining` 的条目，采用正则方式匹配，返回检索词前后 2 个词。
+
+```{r}
+pdb_toks <- pdb_doc |>
+  tokens(remove_punct = TRUE, remove_symbols = TRUE) |>
+  tokens_remove(stopwords("en"))
+# 查询词 精确匹配
+kwic(pdb_toks, pattern = "Stan", valuetype = "fixed", window = 3)
+# 查询短语 正则匹配
+kwic(pdb_toks, pattern = phrase("text mining"), valuetype = "regex", window = 2)
+```
+
+## 高频词、词云 {#sec-frequency-analysis}
+
+发现一些高频出现的词语或短语，通过这些高频词，这暗示一些信息。
+
+```{r}
+library(quanteda.textplots)
+word1 <- pdb_toks |>
+  dfm() |>
+  dfm_trim(min_termfreq = 100, termfreq_type = "count", verbose = FALSE)
+# 高频词
+colSums(word1) |>
+  sort(decreasing = T) |>
+  head(50)
+```
+
+R 语言作为一门主要用于数据获取、分析、处理、建模和可视化的统计语言，从 data、analysis、 model 和 regression 等这些高频词可以看出 R 语言面向的领域的特点。在文本分析领域，词云图是很常见的，用来展示文本中的突出信息。下图展示了词频不小于 100 的词。
+
+```{r}
+#| label: fig-frequency-words
+#| fig-cap: "高频词的词云图"
+#| fig-showtext: true
+#| fig-width: 6
+#| fig-height: 5
+#| code-fold: true
+# 词云
+set.seed(20252025)
+textplot_wordcloud(word1, min_size = 1, max_size = 5)
+```
+
+## 关联词、短语 {#sec-multi-word-expressions}
+
+函数 `textstat_collocations()` 可以挖掘出词与词之间的关联度，下面统计出关联度很高的2个词的情况。
+
+```{r}
+library(quanteda.textstats)
+# 2个词 最少出现 50 次
+word2 <- pdb_toks |>
+  tokens_select(
+    pattern = "^[aA-zZ]", valuetype = "regex",
+    case_insensitive = FALSE, padding = TRUE
+  ) |>
+  textstat_collocations(min_count = 50, size = 2, tolower = FALSE)
+word2 |>
+  subset(select = c("collocation", "count", "lambda", "z")) |>
+  (\(x) x[order(x$count, decreasing = T), ])()
+```
+
+下面统计出关联度很高的3个词的情况。
+
+```{r}
+# 3 个词 最少出现 20 次
+word3 <- pdb_toks |>
+  tokens_select(
+    pattern = "^[aA-zZ]", valuetype = "regex",
+    case_insensitive = FALSE, padding = TRUE
+  ) |>
+  textstat_collocations(min_count = 20, size = 3, tolower = FALSE)
+word3 |>
+  subset(select = c("collocation", "count", "lambda", "z")) |>
+  (\(x) x[order(x$count, decreasing = T), ])()
+```
+
+```{r}
+#| label: fig-frequency-phrase
+#| fig-cap: 高频短语
+#| fig-subcap:
+#| - 两个词的高频短语
+#| - 三个词的高频短语
+#| layout-ncol: 1
+#| fig-showtext: true
+#| fig-width: 6
+#| fig-height: 5
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
+
+ggplot(data = word2, aes(x = count, y = reorder(collocation, count))) +
+  geom_col() +
+  labs(x = NULL, y = NULL)
+ggplot(data = word3, aes(x = count, y = reorder(collocation, count))) +
+  geom_col() +
+  labs(x = NULL, y = NULL)
+```
+
+## 特征共现网络 {#sec-co-occurrence-network}
+
+在文档 Token 化之后，函数 `dfm()` 构建文档特征（词）矩阵，函数 `topfeatures()` 提取文档-词矩阵中的主要特征（词）。
+
+```{r}
+# 文档词矩阵
+pdb_dfm <- pdb_toks |>
+  dfm()
+# 主要特征
+topfeatures(pdb_dfm)
+```
+
+在文档 Token 化之后，函数 `fcm()` 构建特征（词）共现矩阵，统计词频，挑选前 30 个高频词。
+
+```{r}
+# 特征共现矩阵
+pdb_fcm <- pdb_toks |>
+  fcm(context = "window", window = 5)
+# 高频特征
+pdb_feat <- colSums(pdb_fcm) |>
+  sort(decreasing = TRUE) |>
+  head(30) |>
+  names()
+```
+
+下图以网络图方式展示词与词之间的关联度，关联度越高，词与词之间的边越宽。
+
+```{r}
+#| label: fig-co-occurrence-network
+#| fig-cap: "特征共现网络"
+#| fig-showtext: true
+#| fig-width: 6
+#| fig-height: 5
+#| code-fold: true
+
+fcm_select(pdb_fcm, pattern = pdb_feat) |>
+  textplot_network(min_freq = 0.5)
+```
+
+## 词频文档统计 {#sec-term-frequency}
+
+TF-IDF 词频与逆文档频率（term frequency-inverse document frequency weighting）
+
+```{r}
+x = dfm_tfidf(pdb_dfm, base = 2, scheme_tf = "prop")
+
+head(x[, 5:10])
+```
+
+每个特征的文档频率
+
+```{r}
+docfreq(pdb_dfm)[5:15]
+```
+
+特征频次作为权重
+
+```{r}
+head(dfm_weight(pdb_dfm, scheme = "count")[, 5:10])
+```
+
+## 潜在语义分析 {#sec-latent-semantic-analysis}
+
+文档特征矩阵通过 SVD 分解将高维特征（15K）降至低维（10），获得文档主题矩阵与主题特征矩阵两个低秩矩阵，SVD 分解的作用在于去掉大量的噪声，取主要的信号部分（特征值非零的矩阵块）。
+
+```{r}
+# 演示目的，减少特征量
+pdb_dfm_core <- dfm_trim(pdb_dfm, min_termfreq = 100, termfreq_type = "count")
+# 文档特征矩阵 SVD 分解 
+tmod <- textmodel_lsa(pdb_dfm_core[1:2000,], nd = 10)
+# 10 维的特征
+head(tmod$docs)
+# 将新的数据代入 
+pred <- predict(tmod, newdata = pdb_dfm_core[2001:2010, ])
+# 查看前两个特征向量
+pred$docs_newspace[, 1:2]
+```
+
+## 文本主题探索 {#sec-topic-modeling}
+
+text2vec 包的实现 LDA（Latent Dirichlet Allocation）算法做文本主题建模。
+
+```{r}
+library(text2vec)
+# 创建 Tokens
+pdb_tokens <- word_tokenizer(pdb$Title)
+pdb_itokens <- itoken(pdb_tokens, ids = pdb$Package, progressbar = FALSE)
+# 去掉停止词
+pdb_v <- create_vocabulary(pdb_itokens, stopwords = stopwords("en"))
+# 词频不小于 10 的词
+# 文档比例不大于 0.2
+pdb_v <- prune_vocabulary(pdb_v, term_count_min = 10, doc_proportion_max = 0.2)
+pdb_v
+```
+
+```{r}
+vectorizer <- vocab_vectorizer(pdb_v)
+pdb_dtm <- create_dtm(pdb_itokens, vectorizer, type = "dgTMatrix")
+lda_model <- LDA$new(n_topics = 10, doc_topic_prior = 0.1, topic_word_prior = 0.01)
+doc_topic_distr <- lda_model$fit_transform(
+  x = pdb_dtm, n_iter = 1000,
+  convergence_tol = 0.001, n_check_convergence = 25,
+  progressbar = FALSE
+)
+```
+
+```{r}
+#| label: fig-doc-topic-distr
+#| fig-cap: "文档主题分布"
+#| fig-showtext: true
+#| fig-width: 6
+#| fig-height: 5
+#| code-fold: true
+
+barplot(doc_topic_distr[1, ],
+  xlab = "topic", ylab = "proportion", ylim = c(0, 1),
+  names.arg = 1:ncol(doc_topic_distr)
+)
+```
+
+每个主题抽取 Top 的 10 个词
+
+```{r}
+lda_model$get_top_words(n = 10, topic_number = 1L:10L, lambda = 1)
+```
+
+TODO: 使用交叉验证配合 perplexity 度量获取最佳的主题个数 [@Zhang2023]
+
+## 文本相似性 {#sec-text-similarity}
+
+在互联网 App 中，计算文本之间的相似性有很多应用，如搜索、推荐和广告的召回阶段，根据用户输入的文本召回相关的内容。
+
+text2vec 包实现了 GloVe 模型 --- 一种词向量表示的无监督学习算法。从语料中生成词共现矩阵，基于此训练数据，算法得出的是词向量空间中的线性子结构。GloVe 度量了词与词之间共现的可能性，词与词抽象的概念差异可以表示成向量的差异。下面继续基于这份文本数据，生成词共现矩阵，计算文本相似度。
+
+参考 quanteda 包官网对 text2vec 包[GloVe 模块的介绍](https://quanteda.io/articles/pkgdown/replication/text2vec.html)。
+
+```{r}
+# 特征筛选
+feats <- dfm(pdb_toks, verbose = FALSE) |>
+    dfm_trim(min_termfreq = 5) |>
+    featnames()
+# Token 处理
+pdb_toks <- tokens_select(pdb_toks, feats, padding = TRUE)
+# 特征共现矩阵
+pdb_fcm <- fcm(pdb_toks, context = "window", count = "weighted", weights = 1 / (1:5), tri = TRUE)
+```
+
+GloVe 模型
+
+```{r}
+library(text2vec)
+# GloVe 模型  50 维词向量表示
+glove <- GlobalVectors$new(rank = 50, x_max = 10)
+# 词共现矩阵
+wv_main <- glove$fit_transform(
+  pdb_fcm,
+  n_iter = 10,
+  convergence_tol = 0.01,
+  n_threads = 8,
+  progressbar = FALSE
+)
+
+dim(wv_main)
+
+wv_context <- glove$components
+
+dim(wv_context)
+
+word_vectors <- wv_main + t(wv_context)
+```
+
+计算距离
+
+```{r}
+cpp <- word_vectors["rcpp", , drop = FALSE] -
+  word_vectors["stan", , drop = FALSE] +
+    word_vectors["python", , drop = FALSE]
+
+# 文档的余弦相似性 取一个小数据
+library(quanteda.textstats)
+cos_sim <- textstat_simil(
+  x = as.dfm(word_vectors), y = as.dfm(cpp),
+  margin = "documents", method = "cosine")
+# 召回的相关词
+head(sort(cos_sim[, 1], decreasing = TRUE), 5)
 ```
 
 ## 习题 {#sec-analysis-text-data-exercises}
 
 1.  **text2vec** 包内置的电影评论数据集 `movie_review` 中 sentiment（表示正面或负面评价）列作为响应变量，构建二分类模型，对用户的一段评论分类。（提示：词向量化后，采用 **glmnet** 包做交叉验证调整参数、模型）
 
-2.  根据 CRAN 上发布的 R 包元数据分析 R 包的描述字段，实现 R 包主题分类。
-
-3.  接习题 2，根据任务视图对 R 包的标记，建立有监督的多分类模型，评估模型的分类效果，并对尚未标记的 R 包分类。（提示：一个 R 包可能同时属于多个任务视图，考虑使用 xgboost 包）
+2.  根据任务视图对 R 包的标记，建立有监督的多分类模型，评估模型的分类效果，并对尚未标记的 R 包分类。（提示：一个 R 包可能同时属于多个任务视图，考虑使用 **xgboost** 包）
