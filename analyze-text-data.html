@@ -611,8 +611,7 @@ MathJax ={
 <span id="cb1-3"><a href="#cb1-3"></a><span class="fu">library</span>(quanteda.textstats) <span class="co"># 查询、统计</span></span>
 <span id="cb1-4"><a href="#cb1-4"></a><span class="fu">library</span>(quanteda.textmodels) <span class="co"># LSA</span></span>
 <span id="cb1-5"><a href="#cb1-5"></a><span class="fu">library</span>(ggplot2) <span class="co"># 绘图</span></span>
-<span id="cb1-6"><a href="#cb1-6"></a><span class="fu">library</span>(ggrepel)</span>
-<span id="cb1-7"><a href="#cb1-7"></a><span class="fu">library</span>(text2vec) <span class="co"># LDA 算法</span></span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb1-6"><a href="#cb1-6"></a><span class="fu">library</span>(text2vec) <span class="co"># LDA 算法</span></span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>接着，调用 <code>tools</code> 包的函数 <code>CRAN_package_db()</code> 获取 R 包元数据，为了方便后续重复使用，保存到本地。</p>
 <div class="cell">
@@ -1231,66 +1230,56 @@ MathJax ={
 <p>参考 quanteda 包官网对 text2vec 包<a href="https://quanteda.io/articles/pkgdown/replication/text2vec.html">GloVe 模块的介绍</a>。</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb43"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1"></a><span class="co"># 特征筛选</span></span>
-<span id="cb43-2"><a href="#cb43-2"></a>feats <span class="ot">&lt;-</span> <span class="fu">dfm</span>(pdb_toks, <span class="at">verbose =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span></span>
+<span id="cb43-2"><a href="#cb43-2"></a>feats <span class="ot">&lt;-</span> <span class="fu">dfm</span>(pdb_toks, <span class="at">verbose =</span> <span class="cn">FALSE</span>) <span class="sc">|&gt;</span></span>
 <span id="cb43-3"><a href="#cb43-3"></a>    <span class="fu">dfm_trim</span>(<span class="at">min_termfreq =</span> <span class="dv">5</span>) <span class="sc">|&gt;</span></span>
-<span id="cb43-4"><a href="#cb43-4"></a>    <span class="fu">featnames</span>()</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stderr">
-<pre><code>#&gt; Creating a dfm from a tokens object...</code></pre>
+<span id="cb43-4"><a href="#cb43-4"></a>    <span class="fu">featnames</span>()</span>
+<span id="cb43-5"><a href="#cb43-5"></a><span class="co"># Token 处理</span></span>
+<span id="cb43-6"><a href="#cb43-6"></a>pdb_toks <span class="ot">&lt;-</span> <span class="fu">tokens_select</span>(pdb_toks, feats, <span class="at">padding =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb43-7"><a href="#cb43-7"></a><span class="co"># 特征共现矩阵</span></span>
+<span id="cb43-8"><a href="#cb43-8"></a>pdb_fcm <span class="ot">&lt;-</span> <span class="fu">fcm</span>(pdb_toks, <span class="at">context =</span> <span class="st">"window"</span>, <span class="at">count =</span> <span class="st">"weighted"</span>, <span class="at">weights =</span> <span class="dv">1</span> <span class="sc">/</span> (<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>), <span class="at">tri =</span> <span class="cn">TRUE</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div class="cell-output cell-output-stderr">
-<pre><code>#&gt;  ...lowercasing</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>#&gt;  ...complete, elapsed time: 0.038 seconds.</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>#&gt; Finished constructing a 22,509 x 15,632 sparse dfm.</code></pre>
-</div>
-<div class="sourceCode cell-code" id="cb48"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1"></a><span class="co"># Token 处理</span></span>
-<span id="cb48-2"><a href="#cb48-2"></a>pdb_toks <span class="ot">&lt;-</span> <span class="fu">tokens_select</span>(pdb_toks, feats, <span class="at">padding =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb48-3"><a href="#cb48-3"></a><span class="co"># 特征共现矩阵</span></span>
-<span id="cb48-4"><a href="#cb48-4"></a>pdb_fcm <span class="ot">&lt;-</span> <span class="fu">fcm</span>(pdb_toks, <span class="at">context =</span> <span class="st">"window"</span>, <span class="at">count =</span> <span class="st">"weighted"</span>, <span class="at">weights =</span> <span class="dv">1</span> <span class="sc">/</span> (<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>), <span class="at">tri =</span> <span class="cn">TRUE</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
+<p>GloVe 模型</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb49"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1"></a><span class="fu">library</span>(text2vec)</span>
-<span id="cb49-2"><a href="#cb49-2"></a><span class="co"># GloVe 模型  50 维词向量表示</span></span>
-<span id="cb49-3"><a href="#cb49-3"></a>glove <span class="ot">&lt;-</span> GlobalVectors<span class="sc">$</span><span class="fu">new</span>(<span class="at">rank =</span> <span class="dv">50</span>, <span class="at">x_max =</span> <span class="dv">10</span>)</span>
-<span id="cb49-4"><a href="#cb49-4"></a>wv_main <span class="ot">&lt;-</span> glove<span class="sc">$</span><span class="fu">fit_transform</span>(</span>
-<span id="cb49-5"><a href="#cb49-5"></a>  pdb_fcm,</span>
-<span id="cb49-6"><a href="#cb49-6"></a>  <span class="at">n_iter =</span> <span class="dv">10</span>,</span>
-<span id="cb49-7"><a href="#cb49-7"></a>  <span class="at">convergence_tol =</span> <span class="fl">0.01</span>,</span>
-<span id="cb49-8"><a href="#cb49-8"></a>  <span class="at">n_threads =</span> <span class="dv">8</span>,</span>
-<span id="cb49-9"><a href="#cb49-9"></a>  <span class="at">progressbar =</span> <span class="cn">FALSE</span></span>
-<span id="cb49-10"><a href="#cb49-10"></a>)</span>
-<span id="cb49-11"><a href="#cb49-11"></a></span>
-<span id="cb49-12"><a href="#cb49-12"></a><span class="fu">dim</span>(wv_main)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1"></a><span class="fu">library</span>(text2vec)</span>
+<span id="cb44-2"><a href="#cb44-2"></a><span class="co"># GloVe 模型  50 维词向量表示</span></span>
+<span id="cb44-3"><a href="#cb44-3"></a>glove <span class="ot">&lt;-</span> GlobalVectors<span class="sc">$</span><span class="fu">new</span>(<span class="at">rank =</span> <span class="dv">50</span>, <span class="at">x_max =</span> <span class="dv">10</span>)</span>
+<span id="cb44-4"><a href="#cb44-4"></a><span class="co"># 词共现矩阵</span></span>
+<span id="cb44-5"><a href="#cb44-5"></a>wv_main <span class="ot">&lt;-</span> glove<span class="sc">$</span><span class="fu">fit_transform</span>(</span>
+<span id="cb44-6"><a href="#cb44-6"></a>  pdb_fcm,</span>
+<span id="cb44-7"><a href="#cb44-7"></a>  <span class="at">n_iter =</span> <span class="dv">10</span>,</span>
+<span id="cb44-8"><a href="#cb44-8"></a>  <span class="at">convergence_tol =</span> <span class="fl">0.01</span>,</span>
+<span id="cb44-9"><a href="#cb44-9"></a>  <span class="at">n_threads =</span> <span class="dv">8</span>,</span>
+<span id="cb44-10"><a href="#cb44-10"></a>  <span class="at">progressbar =</span> <span class="cn">FALSE</span></span>
+<span id="cb44-11"><a href="#cb44-11"></a>)</span>
+<span id="cb44-12"><a href="#cb44-12"></a></span>
+<span id="cb44-13"><a href="#cb44-13"></a><span class="fu">dim</span>(wv_main)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; [1] 3620   50</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb51"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb51-1"><a href="#cb51-1"></a>wv_context <span class="ot">&lt;-</span> glove<span class="sc">$</span>components</span>
-<span id="cb51-2"><a href="#cb51-2"></a></span>
-<span id="cb51-3"><a href="#cb51-3"></a><span class="fu">dim</span>(wv_context)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1"></a>wv_context <span class="ot">&lt;-</span> glove<span class="sc">$</span>components</span>
+<span id="cb46-2"><a href="#cb46-2"></a></span>
+<span id="cb46-3"><a href="#cb46-3"></a><span class="fu">dim</span>(wv_context)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; [1]   50 3620</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb53"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb53-1"><a href="#cb53-1"></a>word_vectors <span class="ot">&lt;-</span> wv_main <span class="sc">+</span> <span class="fu">t</span>(wv_context)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb48"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1"></a>word_vectors <span class="ot">&lt;-</span> wv_main <span class="sc">+</span> <span class="fu">t</span>(wv_context)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>计算距离</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb54"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb54-1"><a href="#cb54-1"></a>cpp <span class="ot">&lt;-</span> word_vectors[<span class="st">"rcpp"</span>, , drop <span class="ot">=</span> <span class="cn">FALSE</span>] <span class="sc">-</span></span>
-<span id="cb54-2"><a href="#cb54-2"></a>  word_vectors[<span class="st">"stan"</span>, , drop <span class="ot">=</span> <span class="cn">FALSE</span>] <span class="sc">+</span></span>
-<span id="cb54-3"><a href="#cb54-3"></a>    word_vectors[<span class="st">"python"</span>, , drop <span class="ot">=</span> <span class="cn">FALSE</span>]</span>
-<span id="cb54-4"><a href="#cb54-4"></a></span>
-<span id="cb54-5"><a href="#cb54-5"></a><span class="co"># 文档的余弦相似性 取一个小数据</span></span>
-<span id="cb54-6"><a href="#cb54-6"></a><span class="fu">library</span>(quanteda.textstats)</span>
-<span id="cb54-7"><a href="#cb54-7"></a>cos_sim <span class="ot">&lt;-</span> <span class="fu">textstat_simil</span>(</span>
-<span id="cb54-8"><a href="#cb54-8"></a>  <span class="at">x =</span> <span class="fu">as.dfm</span>(word_vectors), <span class="at">y =</span> <span class="fu">as.dfm</span>(cpp),</span>
-<span id="cb54-9"><a href="#cb54-9"></a>  <span class="at">margin =</span> <span class="st">"documents"</span>, <span class="at">method =</span> <span class="st">"cosine"</span>)</span>
-<span id="cb54-10"><a href="#cb54-10"></a><span class="co"># 召回的相关词</span></span>
-<span id="cb54-11"><a href="#cb54-11"></a><span class="fu">head</span>(<span class="fu">sort</span>(cos_sim[, <span class="dv">1</span>], <span class="at">decreasing =</span> <span class="cn">TRUE</span>), <span class="dv">5</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb49"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1"></a>cpp <span class="ot">&lt;-</span> word_vectors[<span class="st">"rcpp"</span>, , drop <span class="ot">=</span> <span class="cn">FALSE</span>] <span class="sc">-</span></span>
+<span id="cb49-2"><a href="#cb49-2"></a>  word_vectors[<span class="st">"stan"</span>, , drop <span class="ot">=</span> <span class="cn">FALSE</span>] <span class="sc">+</span></span>
+<span id="cb49-3"><a href="#cb49-3"></a>    word_vectors[<span class="st">"python"</span>, , drop <span class="ot">=</span> <span class="cn">FALSE</span>]</span>
+<span id="cb49-4"><a href="#cb49-4"></a></span>
+<span id="cb49-5"><a href="#cb49-5"></a><span class="co"># 文档的余弦相似性 取一个小数据</span></span>
+<span id="cb49-6"><a href="#cb49-6"></a><span class="fu">library</span>(quanteda.textstats)</span>
+<span id="cb49-7"><a href="#cb49-7"></a>cos_sim <span class="ot">&lt;-</span> <span class="fu">textstat_simil</span>(</span>
+<span id="cb49-8"><a href="#cb49-8"></a>  <span class="at">x =</span> <span class="fu">as.dfm</span>(word_vectors), <span class="at">y =</span> <span class="fu">as.dfm</span>(cpp),</span>
+<span id="cb49-9"><a href="#cb49-9"></a>  <span class="at">margin =</span> <span class="st">"documents"</span>, <span class="at">method =</span> <span class="st">"cosine"</span>)</span>
+<span id="cb49-10"><a href="#cb49-10"></a><span class="co"># 召回的相关词</span></span>
+<span id="cb49-11"><a href="#cb49-11"></a><span class="fu">head</span>(<span class="fu">sort</span>(cos_sim[, <span class="dv">1</span>], <span class="at">decreasing =</span> <span class="cn">TRUE</span>), <span class="dv">5</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>#&gt;      rcpp    python Arguments   p-Value    CRISPR 
-#&gt; 0.5397648 0.5213746 0.4618499 0.4249672 0.4055340</code></pre>
+<pre><code>#&gt;       python Parsimonious       Ratios        React   Throughput 
+#&gt;    0.6656645    0.4334941    0.4287277    0.4263988    0.3849644</code></pre>
 </div>
 </div>
 </section><section id="sec-analysis-text-data-exercises" class="level2" data-number="19.10"><h2 data-number="19.10" class="anchored" data-anchor-id="sec-analysis-text-data-exercises">
