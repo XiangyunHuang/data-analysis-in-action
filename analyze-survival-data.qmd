@@ -11,15 +11,17 @@
 
 library(survival)  # survfit
 library(ggplot2)
-library(ggfortify) # autoplot
 library(glmnet)    # Cox Models
-library(VGAM)      # R >= 4.4.0
-library(INLA)
+library(ggsurvfit)
+# library(VGAM)      # R >= 4.4.0
+# library(INLA)
 ```
 
-生存分析可以用于用户流失分析，注册、激活、活跃。 分析次日留存、7日留存、15日留存。有学生来上体验课，多久来付费上课。 有一个人医院看病之后，多久办理住院。 最早，生存分析用于研究飞机出去之后，有多少返回的。还是要回归到原始文献去了解基本概念，及其背后的思考和应用
+生存分析可以用于用户流失分析，注册、激活、活跃。 分析次日留存、7日留存、15日留存。有学生来上体验课，多久来付费上课。 有一个人医院看病之后，多久办理住院。 最早，生存分析用于研究飞机出去之后，有多少还能返回的。生存分析的学习还是要回归到原始文献去了解基本概念，及其背后的思考和应用。
 
-以一个问题提出本章主题，讲述和展示一个数据集。建立模型，拟合模型，结果解释。
+以一个生存问题引出本章主题，讲述和展示一个数据集，先探索和分析数据，之后建立和拟合模型，结果解释。
+
+lung 数据集 **survival** 包（模型）和 **ggsurvfit** 包（可视化）
 
 ## 问题背景 {#sec-aml}
 
@@ -28,7 +30,7 @@ library(INLA)
 ```{r}
 library(survival)
 data(cancer, package = "survival")
-str(aml)
+str(lung)
 ```
 
 数据的分布情况如下
@@ -40,7 +42,7 @@ str(aml)
 #| fig-width: 4.5
 #| fig-height: 3
 
-ggplot(data = aml, aes(x = time, y = status, color = x)) +
+ggplot(data = lung, aes(x = time, y = status, color = factor(sex))) +
   geom_jitter(height = 0.2) +
   theme_minimal()
 ```
@@ -55,27 +57,24 @@ Cox 比例风险回归模型与 Box-Cox 变换 [@Box1964]
 -   `MASS::boxcox()` Box-Cox 变换
 -   `glmnet::glmnet(family = "cox")`
 -   INLA 包的函数 `inla()` 与 `inla.surv()` 一起拟合，[链接](https://becarioprecario.bitbucket.io/inla-gitbook/ch-survival.html)
--   [survstan](https://github.com/fndemarqui/survstan) Stan 与生存分析
--   rstanarm 包的函数 `stan_jm()` 使用说明 Estimating Joint Models for Longitudinal and Time-to-Event Data with rstanarm [链接](https://cran.r-project.org/web/packages/rstanarm/vignettes/jm.html)
--   rstanarm 包的[生存分析分支](https://github.com/stan-dev/rstanarm/pull/323)
 
 ### survival
 
 R 软件内置了 [survival](https://github.com/therneau/survival) 包，它是实现生存分析的核心 R 包 [@Terry2000]，其函数 `survfit()` 拟合模型。
 
 ```{r}
-aml_survival <- survfit(Surv(time, status) ~ x, data = aml)
-summary(aml_survival)
+lung_survival <- survfit(Surv(time, status) ~ x, data = lung)
+summary(lung_survival)
 ```
 
 拟合 Cox 比例风险回归模型（Cox Proportional Hazards Regression Model）
 
 ```{r}
-aml_coxph <- coxph(Surv(time, status) ~ 1 + x, data = aml)
+aml_coxph <- coxph(Surv(time, status) ~ 1 + x, data = lung)
 summary(aml_coxph)
 ```
 
-展示拟合结果。可以绘制生存分析的图的 R 包有很多，比如 ggfortify 包、[ggsurvfit](https://github.com/ddsjoberg/ggsurvfit/) 包和 [survminer](https://github.com/kassambara/survminer) 包等。ggfortify 包可以直接针对函数 `survfit()` 的返回对象绘图，[ggsurvfit](https://github.com/ddsjoberg/ggsurvfit/) 包提供新函数 `survfit2()` 拟合模型、函数 `ggsurvfit()` 绘制图形，画面内容更加丰富，而 [survminer](https://github.com/kassambara/survminer) 包依赖很多。
+展示拟合结果。可以绘制生存分析的图的 R 包有很多，比如 ggfortify 包、[ggsurvfit](https://github.com/pharmaverse/ggsurvfit) 包和 [survminer](https://github.com/kassambara/survminer) 包等。ggfortify 包可以直接针对函数 `survfit()` 的返回对象绘图，ggsurvfit 包提供新函数 `survfit2()` 拟合模型、函数 `ggsurvfit()` 绘制图形，画面内容更加丰富，而 survminer 包依赖很多。
 
 ```{r}
 #| label: fig-leukemia-surv
@@ -85,7 +84,6 @@ summary(aml_coxph)
 #| fig-height: 3
 
 library(ggplot2)
-library(ggfortify)
 autoplot(aml_survival, data = aml) +
   theme_minimal()
 ```
