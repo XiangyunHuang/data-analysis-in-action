@@ -63,15 +63,15 @@ Cox 比例风险回归模型与 Box-Cox 变换 [@Box1964]
 R 软件内置了 [survival](https://github.com/therneau/survival) 包，它是实现生存分析的核心 R 包 [@Terry2000]，其函数 `survfit()` 拟合模型。
 
 ```{r}
-lung_survival <- survfit(Surv(time, status) ~ x, data = lung)
-summary(lung_survival)
+lung_surv <- survfit(Surv(time, status) ~ sex, data = lung)
+lung_surv
 ```
 
 拟合 Cox 比例风险回归模型（Cox Proportional Hazards Regression Model）
 
 ```{r}
-aml_coxph <- coxph(Surv(time, status) ~ 1 + x, data = lung)
-summary(aml_coxph)
+lung_coxph <- coxph(Surv(time, status) ~ 1 + sex, data = lung)
+summary(lung_coxph)
 ```
 
 展示拟合结果。可以绘制生存分析的图的 R 包有很多，比如 ggfortify 包、[ggsurvfit](https://github.com/pharmaverse/ggsurvfit) 包和 [survminer](https://github.com/kassambara/survminer) 包等。ggfortify 包可以直接针对函数 `survfit()` 的返回对象绘图，ggsurvfit 包提供新函数 `survfit2()` 拟合模型、函数 `ggsurvfit()` 绘制图形，画面内容更加丰富，而 survminer 包依赖很多。
@@ -81,18 +81,22 @@ summary(aml_coxph)
 #| fig-cap: "急性粒细胞白血病生存数据"
 #| fig-showtext: true
 #| fig-width: 6
-#| fig-height: 3
+#| fig-height: 5
 
-library(ggplot2)
-autoplot(aml_survival, data = aml) +
-  theme_minimal()
-```
-
-参数化的生存分析模型（参数模型，相对于非参数模型而言）
-
-```{r}
-aml_surv_reg <- survreg(Surv(time, status) ~ x, data = aml, dist = "weibull")
-summary(aml_surv_reg)
+p <- survfit2(Surv(time, status) ~ sex, data = lung) |>
+  ggsurvfit(linewidth = 1) +
+  add_confidence_interval() +
+  add_risktable() +
+  add_quantile(y_value = 0.6, color = "gray50", linewidth = 0.75) +
+  scale_ggsurvfit()
+p +
+  # limit plot to show 8 years and less
+  coord_cartesian(xlim = c(0, 1000)) +
+  # update figure labels/titles
+  labs(
+    y = "Percentage Survival",
+    title = "Recurrence by Time From Surgery to Randomization",
+  )
 ```
 
 ### glmnet
@@ -104,8 +108,8 @@ glmnet 包拟合 Cox 比例风险回归模型 [@simon2011] 适合需要多变量
 
 library(glmnet)
 # alpha = 1 lasso
-aml_glmnet <- glmnet(x = aml$x, y = Surv(aml$time, aml$status), family = "cox", alpha = 1)
-aml_glmnet_cv <- cv.glmnet(x = aml$x, y = Surv(aml$time, aml$status), family = "cox", alpha = 1)
+lung_glmnet <- glmnet(x = lung$sex, y = Surv(lung$time, lung$status), family = "cox", alpha = 1)
+lung_glmnet_cv <- cv.glmnet(x = lung$sex, y = Surv(lung$time, lung$status), family = "cox", alpha = 1)
 ```
 
 ### INLA
@@ -113,10 +117,13 @@ aml_glmnet_cv <- cv.glmnet(x = aml$x, y = Surv(aml$time, aml$status), family = "
 INLA 包拟合 Cox 比例风险回归模型 [@Virgilio2020] 采用近似贝叶斯推断。
 
 ```{r}
+#| eval: false
+
 library(INLA)
 inla.setOption(short.summary = TRUE)
-aml_inla <- inla(inla.surv(time, status) ~ x, data = aml, family = "exponential.surv", num.threads = "1:1")
-summary(aml_inla)
+lung_inla <- inla(inla.surv(time, status) ~ sex, data = lung, 
+                  family = "exponential.surv", num.threads = "1:1")
+summary(lung_inla)
 ```
 
 ## Tobit 回归 {#sec-tobit-regression}
@@ -133,17 +140,7 @@ Tobit (Tobin's Probit) regression 起源于计量经济学中的 Tobit 模型，
 
 library(VGAM) # Vector Generalized Linear and Additive Models
 # VGAM::vglm(family = tobit(Upper = 800)) # Tobit regression
-```
-
-```{r}
-library(VGAM)
-with(aml, SurvS4(time, status))
-```
-
-```{r}
-#| eval: false
-#| echo: false
-
-aml_vglm <- vglm(SurvS4(time, status) ~ x, data = aml, family = cens.poisson)
-summary(aml_vglm)
+with(lung, SurvS4(time, status))
+lung_vglm <- vglm(SurvS4(time, status) ~ sex, data = lung, family = cens.poisson)
+summary(lung_vglm)
 ```
