@@ -17,6 +17,8 @@ library(quanteda.textstats) # 查询、统计
 library(quanteda.textmodels) # LSA
 library(ggplot2) # 绘图
 library(text2vec) # LDA 算法
+library(spacyr)
+library(data.table)
 ```
 
 接着，调用 `tools` 包的函数 `CRAN_package_db()` 获取 R 包元数据，为了方便后续重复使用，保存到本地。
@@ -45,15 +47,57 @@ pdb$Title <- gsub(pattern = '"', replacement = "", x = pdb$Title, fixed = T)
 pdb$Title <- tolower(pdb$Title)
 ```
 
--   提取词干和词形还原。这一步比较麻烦，需要根据词性使用不同的规则处理。做名词还原调用 **SemNetCleaner** 包的函数 `singularize()` ，如 models / modeling 还原为 model， methods 还原为 method 等等。
+-   提取词干和词形还原。这一步比较麻烦，需要先使用 **spacyr** 包解析出词性，再根据词性使用不同的规则处理。做名词还原调用 **SemNetCleaner** 包的函数 `singularize()` ，如 models / modeling 还原为 model， methods 还原为 method 等等。
 
 ```{r}
+#| message: false
+
+# 向量化函数 singularize 用于函数 fcase
+vec_singularize <- function(word, ...){
+ unlist(lapply(word, SemNetCleaner::singularize, ...)) 
+}
+vec_singularize(word = c("methods", "models", "data"))
+
+library(spacyr)
+# OpenMP 
+Sys.setenv(KMP_DUPLICATE_LIB_OK=TRUE )
+# 初始化 不需要实体识别
+spacy_initialize(model = "en_core_web_sm", entity = F)
+
+# 准备解析文本向量
+title_desc <- pdb$Title
+names(title_desc) <- pdb$Package
+# 需要一点时间 1 分钟
+title_token = spacy_parse(x = title_desc, entity = F)
+
+library(data.table)
+title_token <- as.data.table(title_token)
+# 生成新的一列作为 lemma
+title_token$lemma2 <- title_token$lemma
+# 处理动词和名词
+title_token$lemma2 <- fcase(
+  title_token$pos %in% c("VERB", "AUX"), title_token$lemma,
+  title_token$pos %in% c("NOUN", "PROPN", "PRON"), vec_singularize(title_token$token),
+ !title_token$pos %in% c("VERB", "AUX", "NOUN", "PROPN", "PRON"), title_token$token
+)
+# 还原成向量
+pdb <- aggregate(title_token, lemma2 ~ doc_id, paste,  collapse = " ")
+colnames(pdb) <- c("Package", "Title")
+# 清理中间变量
+rm(title_token, title_desc)
+```
+
+```{r}
+#| eval: false
+#| code-fold: true
+
 # Token 化之后操作
-# 安装 tidytext 包
 # 名词
-SnowballC::wordStem(words = c("methods", "models"))
+SnowballC::wordStem(words = c("methods", "models", "data"))
 # pdb$Title_stem <- SnowballC::wordStem(pdb$Title)
-tokenizers::tokenize_word_stems(x = c("methods", "models"))
+tokenizers::tokenize_word_stems(x = c("methods", "models", "data"))
+# 调用 SnowballC 包 提取词干
+quanteda::tokens_wordstem(tokens(x = c("methods models data")))
 ```
 
 R 包标题文本的长度分布
@@ -154,6 +198,8 @@ word3 |>
   subset(select = c("collocation", "count", "lambda", "z")) |>
   (\(x) x[order(x$count, decreasing = T), ])()
 ```
+
+其中有两个词组 `via windsor.ai api` 和 `amazon web service` 乍一看有点奇怪，其实是这两个公司发布的一系列 R 包导致。
 
 ```{r}
 #| label: fig-frequency-phrase
