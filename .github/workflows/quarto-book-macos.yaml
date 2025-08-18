@@ -37,6 +37,7 @@ jobs:
         with:
           pandoc-version: ${{ env.PANDOC_VERSION }}
 
+
       - name: Install TinyTeX
         uses: r-lib/actions/setup-tinytex@v2
         env:
@@ -51,6 +52,17 @@ jobs:
           brew install --cask font-noto-sans-cjk-sc font-noto-serif-cjk-sc
           fc-list | sort
           
+
+      - name: Setup Python
+        run: |
+          sudo mkdir -p /opt/.virtualenvs/r-tensorflow
+          sudo chown -R $(whoami):staff /opt/.virtualenvs/r-tensorflow
+          virtualenv -p /usr/bin/python3 $RETICULATE_PYTHON_ENV
+          source $RETICULATE_PYTHON_ENV/bin/activate
+          pip3 install -r docker/requirements.txt
+          python -m spacy download en_core_web_sm
+          deactivate
+          
       - name: Install LaTeX packages
         run: |
           if(!require('tinytex')) install.packages('tinytex')
@@ -62,9 +74,13 @@ jobs:
         
       - name: Render Book
         run: |
+          source $RETICULATE_PYTHON_ENV/bin/activate
           quarto check
           quarto render
         shell: bash
+        env:
+          RETICULATE_PYTHON_ENV: /opt/.virtualenvs/r-tensorflow
+          RETICULATE_PYTHON: /opt/.virtualenvs/r-tensorflow/bin/python
 
       - name: Deploy book to bookdown.org
         if: github.event_name == 'pull_request'
