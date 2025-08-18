@@ -57,19 +57,19 @@ vec_singularize <- function(word, ...){
  unlist(lapply(word, SemNetCleaner::singularize, ...)) 
 }
 vec_singularize(word = c("methods", "models", "data"))
-
 library(spacyr)
-# OpenMP 
-Sys.setenv(KMP_DUPLICATE_LIB_OK=TRUE )
+# OpenMP
+Sys.setenv(KMP_DUPLICATE_LIB_OK = TRUE)
 # 初始化 不需要实体识别
 spacy_initialize(model = "en_core_web_sm", entity = F)
 
 # 准备解析文本向量
 title_desc <- pdb$Title
 names(title_desc) <- pdb$Package
-# 需要一点时间 1 分钟
-title_token = spacy_parse(x = title_desc, entity = F)
+# 解析文本需要一点时间约 1 分钟
+title_token <- spacy_parse(x = title_desc, entity = F)
 
+# 调用 data.table 操作数据提升效率
 library(data.table)
 title_token <- as.data.table(title_token)
 # 生成新的一列作为 lemma
@@ -78,10 +78,10 @@ title_token$lemma2 <- title_token$lemma
 title_token$lemma2 <- fcase(
   title_token$pos %in% c("VERB", "AUX"), title_token$lemma,
   title_token$pos %in% c("NOUN", "PROPN", "PRON"), vec_singularize(title_token$token),
- !title_token$pos %in% c("VERB", "AUX", "NOUN", "PROPN", "PRON"), title_token$token
+  !title_token$pos %in% c("VERB", "AUX", "NOUN", "PROPN", "PRON"), title_token$token
 )
 # 还原成向量
-pdb <- aggregate(title_token, lemma2 ~ doc_id, paste,  collapse = " ")
+pdb <- aggregate(title_token, lemma2 ~ doc_id, paste, collapse = " ")
 colnames(pdb) <- c("Package", "Title")
 # 清理中间变量
 rm(title_token, title_desc)
@@ -163,7 +163,7 @@ R 语言作为一门主要用于数据获取、分析、处理、建模和可视
 #| code-fold: true
 # 词云
 set.seed(20252025)
-textplot_wordcloud(word1, min_size = 1, max_size = 5)
+textplot_wordcloud(word1, min_size = 0.9, max_size = 5)
 ```
 
 ## 关联词、短语 {#sec-multi-word-expressions}
