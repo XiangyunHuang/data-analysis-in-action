@@ -198,7 +198,41 @@ corMatrix(cs3Exp)
 diag(0.2, 5) + (1 - 0.2) * exp(-as.matrix(dist(spatDat)))
 ```
 
-各个参数的估计值小数点后四舍五入保留三位有效数字。
+接下来，将 rongelap 观测数据代入，得到下图所示的位置相关性。
+
+```{r}
+#| label: fig-rongelap-corr-mat
+#| fig-cap: "用热图表示基于空间位置的指数型相关性"
+#| fig-showtext: true
+#| fig-width: 5
+#| fig-height: 4.5
+#| code-fold: true
+#| echo: !expr knitr::is_html_output()
+
+csExp <- corExp(c(500, 0.2), form = ~ cX + cY, nugget = TRUE)
+csExp <- Initialize(csExp, rongelap)
+rongelap_corr_mat <- corMatrix(csExp)
+
+library(lattice)
+levelplot(rongelap_corr_mat,
+  xlab = NULL, ylab = NULL,
+  aspect = 1, colorkey = T, col.regions = cm.colors,
+  scales = list(draw = FALSE), 
+  lattice.options = list(
+    layout.widths = list(
+      left.padding = list(x = 0, units = "inches"),
+      right.padding = list(x = 0, units = "inches")
+    ),
+    layout.heights = list(
+      bottom.padding = list(x = 0, units = "inches"),
+      top.padding = list(x = 0, units = "inches")
+    )
+  ),
+  par.settings = list(axis.line = list(col = "transparent"))
+)
+```
+
+最后，整理模型输出结果，下面是各个参数的估计值，小数点后四舍五入保留三位有效数字。
 
 -   (Intercept) 截距对应于 $\beta$ 是 1.813
 -   range 对应于 $\phi$ 是 169.747
