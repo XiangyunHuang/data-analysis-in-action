@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="zh-Hans" xml:lang="zh-Hans"><head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.7.32">
+<meta name="generator" content="quarto-1.8.24">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 <title>24&nbsp; 优化问题 – R 语言数据分析实战</title>
 <style>
@@ -85,18 +85,19 @@ div.csl-indent {
 <link href="./numerical-optimization.html" rel="prev">
 <script src="site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/axe/axe-check.js" type="module"></script>
 <script src="site_libs/quarto-html/popper.min.js"></script>
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="site_libs/quarto-html/anchor.min.js"></script>
 <link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-37eea08aefeeee20ff55810ff984fec1.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-dark-2fef5ea3f8957b3e4ecc936fc74692ca.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-37eea08aefeeee20ff55810ff984fec1.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-dc55a5b9e770e841cd82e46aadbfb9b0.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-dark-b651517ce65839d647a86e2780455cfb.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-dc55a5b9e770e841cd82e46aadbfb9b0.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-eaec1411600aaa3d517a4c2d9683cbbb.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="site_libs/bootstrap/bootstrap-dark-11608ecab0b4e008b87a77b96745bd9e.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="site_libs/bootstrap/bootstrap-eaec1411600aaa3d517a4c2d9683cbbb.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light"><script id="quarto-search-options" type="application/json">{
+<link href="site_libs/bootstrap/bootstrap-f2e7a7605c80472e4829c77b95a905a7.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark-194232c968a292054ad9c2d54c766ee0.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="site_libs/bootstrap/bootstrap-f2e7a7605c80472e4829c77b95a905a7.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light"><script id="quarto-search-options" type="application/json">{
   "location": "sidebar",
   "copy-button": false,
   "collapse-after": 3,
@@ -147,7 +148,7 @@ const typesetMath = (el) => {
     var macros = [];
     for (var i = 0; i < mathElements.length; i++) {
       var texText = mathElements[i].firstChild;
-      if (mathElements[i].tagName == "SPAN") {
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
         window.katex.render(texText.data, mathElements[i], {
           displayMode: mathElements[i].classList.contains('display'),
           throwOnError: false,
@@ -341,7 +342,9 @@ window.Quarto = {
     </div>
   </nav></header><!-- content --><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
 <!-- sidebar -->
-  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto"><div class="pt-lg-2 mt-2 text-left sidebar-header">
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto"><div class="pt-lg-2 mt-2 text-left sidebar-header sidebar-header-stacked">
+      <a href="./index.html" class="sidebar-logo-link">
+      </a>
     <div class="sidebar-title mb-0 py-0">
       <a href="./">R 语言数据分析实战</a> 
         <div class="sidebar-tools-main tools-wide">
@@ -631,7 +634,7 @@ window.Quarto = {
 
 
 </header><div class="cell">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a><span class="fu">library</span>(ROI)</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a><span class="fu">library</span>(ROI)</span>
 <span id="cb1-2"><a href="#cb1-2"></a><span class="fu">library</span>(ROI.plugin.glpk)</span>
 <span id="cb1-3"><a href="#cb1-3"></a><span class="fu">library</span>(ROI.plugin.nloptr)</span>
 <span id="cb1-4"><a href="#cb1-4"></a><span class="fu">library</span>(ROI.plugin.scs)</span>
@@ -643,7 +646,7 @@ window.Quarto = {
 <span id="cb1-10"><a href="#cb1-10"></a>    <span class="at">h =</span> height, <span class="at">s =</span> <span class="dv">1</span> <span class="sc">-</span> saturation <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">-</span> (<span class="dv">1</span> <span class="sc">-</span> ref)<span class="sc">^</span><span class="fl">0.5</span>),</span>
 <span id="cb1-11"><a href="#cb1-11"></a>    <span class="at">v =</span> irr</span>
 <span id="cb1-12"><a href="#cb1-12"></a>  )</span>
-<span id="cb1-13"><a href="#cb1-13"></a>}</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb1-13"><a href="#cb1-13"></a>}</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <section id="sec-traveling-salesman-problem" class="level2" data-number="24.1"><h2 data-number="24.1" class="anchored" data-anchor-id="sec-traveling-salesman-problem">
 <span class="header-section-number">24.1</span> 旅行商问题</h2>
@@ -662,7 +665,7 @@ window.Quarto = {
 \]</span></p>
 <p>某人要去美国 10 个城市旅行，分别是亚特兰大 Atlanta、芝加哥 Chicago、丹佛 Denver 、休斯顿 Houston、洛杉矶 Los Angeles、迈阿密 Miami、纽约 New York、旧金山 San Francisco、 西雅图 Seattle、华盛顿特区 Washington DC。10 个城市的分布如 <a href="#fig-tsp-problem" class="quarto-xref">图&nbsp;<span>24.1</span></a> 所示。从洛杉矶出发，最后回到洛杉矶，如何规划旅行线路使得总行程最短？行程最短的路径是什么？</p>
 <div class="cell">
-<details class="code-fold"><summary>代码</summary><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1"></a><span class="co"># 10 个城市的经纬度数据来自 maps 包的 us.cities 数据集</span></span>
+<details class="code-fold"><summary>代码</summary><div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1"></a><span class="co"># 10 个城市的经纬度数据来自 maps 包的 us.cities 数据集</span></span>
 <span id="cb2-2"><a href="#cb2-2"></a>us_city_latlong <span class="ot">&lt;-</span> <span class="fu">read.table</span>(<span class="at">file =</span> <span class="fu">textConnection</span>(<span class="st">"</span></span>
 <span id="cb2-3"><a href="#cb2-3"></a><span class="st">City, Latitude, Longitude</span></span>
 <span id="cb2-4"><a href="#cb2-4"></a><span class="st">Atlanta, 33.76, -84.42</span></span>
@@ -690,7 +693,7 @@ window.Quarto = {
 <span id="cb2-26"><a href="#cb2-26"></a>  <span class="fu">geom_sf</span>(<span class="at">data =</span> us_city_latlong, <span class="at">color =</span> <span class="st">"red"</span>) <span class="sc">+</span></span>
 <span id="cb2-27"><a href="#cb2-27"></a>  <span class="fu">coord_sf</span>(<span class="at">crs =</span> <span class="st">"ESRI:102003"</span>) <span class="sc">+</span></span>
 <span id="cb2-28"><a href="#cb2-28"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span></span>
-<span id="cb2-29"><a href="#cb2-29"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"经度"</span>, <span class="at">y =</span> <span class="st">"纬度"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb2-29"><a href="#cb2-29"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"经度"</span>, <span class="at">y =</span> <span class="st">"纬度"</span>)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 </details><div class="cell-output-display">
 <div id="fig-tsp-problem" class="quarto-float quarto-figure quarto-figure-center anchored">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-tsp-problem-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
@@ -704,13 +707,13 @@ window.Quarto = {
 </div>
 <p>简单起见，这 10 个城市之间的距离以直线距离代替，R 内置的数据集 <code>UScitiesD</code> 已经记录了这 10 个城市之间的直线距离。 <code>UScitiesD</code> 是一个 dist 类型的数据，可以用函数 <code><a href="https://rdrr.io/r/base/matrix.html">as.matrix()</a></code> 将其转化为矩阵类型。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1"></a><span class="fu">data</span>(UScitiesD)</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1"></a><span class="fu">data</span>(UScitiesD)</span>
 <span id="cb3-2"><a href="#cb3-2"></a>D <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(UScitiesD)</span>
 <span id="cb3-3"><a href="#cb3-3"></a><span class="fu">library</span>(TSP)</span>
 <span id="cb3-4"><a href="#cb3-4"></a>D_tsp <span class="ot">&lt;-</span> <span class="fu">as.TSP</span>(D)</span>
 <span id="cb3-5"><a href="#cb3-5"></a><span class="co"># 出发城市洛杉矶</span></span>
 <span id="cb3-6"><a href="#cb3-6"></a>tour_sol <span class="ot">&lt;-</span> <span class="fu">solve_TSP</span>(<span class="at">x =</span> D_tsp, <span class="at">method =</span> <span class="st">"nearest_insertion"</span>, <span class="at">start =</span> <span class="dv">5</span>)</span>
-<span id="cb3-7"><a href="#cb3-7"></a>tour_sol</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb3-7"><a href="#cb3-7"></a>tour_sol</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; object of class 'TOUR' 
 #&gt; result of method 'nearest_insertion' for 10 cities
@@ -719,26 +722,26 @@ window.Quarto = {
 </div>
 <p>途经 10 个城市的最短路程为 7373 。因采用启发式的随机优化算法，每次求解的结果可能会有所不同，建议运行多次，比较结果，选择最优的方法。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1"></a><span class="co"># 旅行最短路程</span></span>
-<span id="cb5-2"><a href="#cb5-2"></a><span class="fu">tour_length</span>(tour_sol)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1"></a><span class="co"># 旅行最短路程</span></span>
+<span id="cb5-2"><a href="#cb5-2"></a><span class="fu">tour_length</span>(tour_sol)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; [1] 7373</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1"></a><span class="co"># 旅行线路方案</span></span>
-<span id="cb7-2"><a href="#cb7-2"></a><span class="fu">as.integer</span>(tour_sol)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1"></a><span class="co"># 旅行线路方案</span></span>
+<span id="cb7-2"><a href="#cb7-2"></a><span class="fu">as.integer</span>(tour_sol)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>#&gt;  [1]  5  8  9  3  2  7 10  1  6  4</code></pre>
+<pre><code>#&gt;  [1]  5  4  6  1 10  7  2  3  9  8</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1"></a><span class="fu">labels</span>(D_tsp)[<span class="fu">as.integer</span>(tour_sol)]</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1"></a><span class="fu">labels</span>(D_tsp)[<span class="fu">as.integer</span>(tour_sol)]</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>#&gt;  [1] "LosAngeles"    "SanFrancisco"  "Seattle"       "Denver"       
-#&gt;  [5] "Chicago"       "NewYork"       "Washington.DC" "Atlanta"      
-#&gt;  [9] "Miami"         "Houston"</code></pre>
+<pre><code>#&gt;  [1] "LosAngeles"    "Houston"       "Miami"         "Atlanta"      
+#&gt;  [5] "Washington.DC" "NewYork"       "Chicago"       "Denver"       
+#&gt;  [9] "Seattle"       "SanFrancisco"</code></pre>
 </div>
 </div>
 <p>求解结果对应的旅行方案，如 <a href="#fig-tsp-solution" class="quarto-xref">图&nbsp;<span>24.2</span></a> 所示，依次走过的城市是：洛杉矶、旧金山、西雅图、丹佛、芝加哥、纽约、华盛顿特区、亚特兰大、迈阿密、休斯顿。</p>
 <div class="cell">
-<details class="code-fold"><summary>代码</summary><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1"></a>us_city_tour <span class="ot">&lt;-</span> <span class="fu">st_cast</span>(<span class="fu">st_combine</span>(<span class="fu">st_geometry</span>(us_city_latlong[<span class="fu">as.integer</span>(tour_sol),])), <span class="st">"POLYGON"</span>)</span>
+<details class="code-fold"><summary>代码</summary><div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1"></a>us_city_tour <span class="ot">&lt;-</span> <span class="fu">st_cast</span>(<span class="fu">st_combine</span>(<span class="fu">st_geometry</span>(us_city_latlong[<span class="fu">as.integer</span>(tour_sol),])), <span class="st">"POLYGON"</span>)</span>
 <span id="cb11-2"><a href="#cb11-2"></a><span class="fu">ggplot</span>() <span class="sc">+</span></span>
 <span id="cb11-3"><a href="#cb11-3"></a>  <span class="fu">geom_sf_label</span>(</span>
 <span id="cb11-4"><a href="#cb11-4"></a>    <span class="at">data =</span> us_city_latlong, <span class="fu">aes</span>(<span class="at">label =</span> City),</span>
@@ -748,7 +751,7 @@ window.Quarto = {
 <span id="cb11-8"><a href="#cb11-8"></a>  <span class="fu">geom_sf</span>(<span class="at">data =</span> us_city_tour, <span class="at">fill =</span> <span class="cn">NA</span>, <span class="at">color =</span> <span class="st">"black"</span>) <span class="sc">+</span></span>
 <span id="cb11-9"><a href="#cb11-9"></a>  <span class="fu">coord_sf</span>(<span class="at">crs =</span> <span class="st">"ESRI:102003"</span>) <span class="sc">+</span></span>
 <span id="cb11-10"><a href="#cb11-10"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span></span>
-<span id="cb11-11"><a href="#cb11-11"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"经度"</span>, <span class="at">y =</span> <span class="st">"纬度"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb11-11"><a href="#cb11-11"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"经度"</span>, <span class="at">y =</span> <span class="st">"纬度"</span>)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 </details><div class="cell-output-display">
 <div id="fig-tsp-solution" class="quarto-float quarto-figure quarto-figure-center anchored">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-tsp-solution-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
@@ -772,16 +775,16 @@ window.Quarto = {
 <p>其中，<span class="math inline">\(\boldsymbol{w}\)</span> 是权重向量，每个分量代表对投资对象的投资比例，<span class="math inline">\(\hat{\Sigma}\)</span> 是关于投资对象的协方差矩阵，约束条件中包含两个部分，一个是权重之和为 1，一个是投资组合的收益率达到预期值。下面基于 12个科技公司公开的股价数据介绍此组合优化问题。</p>
 <p>首先利用 <strong>quantmod</strong> 包获取微软、谷歌、亚马逊、惠普、甲骨文、英特尔、威瑞森、eBay、AT&amp;T、Apple、Adobe 和 IBM 等 12 支股票的历史股价数据。根据 2022-11-01 至 2022-12-01 期间的股票调整价，计算各支股票天粒度的收益率。收益率可以看作一个随机变量，收益率的波动变化，即随机变量的方差，可以看作风险。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1"></a><span class="co"># 12 支股票的收益率</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1"></a><span class="co"># 12 支股票的收益率</span></span>
 <span id="cb12-2"><a href="#cb12-2"></a>tech_stock_return <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="at">file =</span> <span class="st">"data/tech_stock_return.rds"</span>)</span>
 <span id="cb12-3"><a href="#cb12-3"></a>DD <span class="ot">&lt;-</span> <span class="dv">100</span> <span class="sc">*</span> tech_stock_return</span>
 <span id="cb12-4"><a href="#cb12-4"></a><span class="co"># 平均收益率</span></span>
 <span id="cb12-5"><a href="#cb12-5"></a>r <span class="ot">&lt;-</span> <span class="fu">mean</span>(DD)</span>
-<span id="cb12-6"><a href="#cb12-6"></a>r</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb12-6"><a href="#cb12-6"></a>r</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; [1] 0.3476413</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1"></a><span class="co"># 目标函数</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1"></a><span class="co"># 目标函数</span></span>
 <span id="cb14-2"><a href="#cb14-2"></a>foo <span class="ot">&lt;-</span> <span class="fu">Q_objective</span>(<span class="at">Q =</span> <span class="fu">cov</span>(DD), <span class="at">L =</span> <span class="fu">rep</span>(<span class="dv">0</span>, <span class="fu">ncol</span>(DD)))</span>
 <span id="cb14-3"><a href="#cb14-3"></a><span class="co"># 投资约束</span></span>
 <span id="cb14-4"><a href="#cb14-4"></a>full_invest <span class="ot">&lt;-</span> <span class="fu">L_constraint</span>(<span class="fu">rep</span>(<span class="dv">1</span>, <span class="fu">ncol</span>(DD)), <span class="st">"=="</span>, <span class="dv">1</span>)</span>
@@ -789,7 +792,7 @@ window.Quarto = {
 <span id="cb14-6"><a href="#cb14-6"></a>target_return <span class="ot">&lt;-</span> <span class="fu">L_constraint</span>(<span class="fu">apply</span>(DD, <span class="dv">2</span>, mean), <span class="st">"=="</span>, r)</span>
 <span id="cb14-7"><a href="#cb14-7"></a><span class="co"># 目标规划</span></span>
 <span id="cb14-8"><a href="#cb14-8"></a>op <span class="ot">&lt;-</span> <span class="fu">OP</span>(<span class="at">objective =</span> foo, <span class="at">constraints =</span> <span class="fu">rbind</span>(full_invest, target_return))</span>
-<span id="cb14-9"><a href="#cb14-9"></a>op</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb14-9"><a href="#cb14-9"></a>op</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; ROI Optimization Problem:
 #&gt; 
@@ -803,18 +806,18 @@ window.Quarto = {
 </div>
 <p>求解器 <code>nloptr.slsqp</code> 需要给初值和等式约束的梯度，而求解器 <code>quadprog</code> 不需要给初值。下面使用 <code>quadprog</code> 来求解组合优化问题。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1"></a><span class="fu">library</span>(ROI.plugin.quadprog)</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1"></a><span class="fu">library</span>(ROI.plugin.quadprog)</span>
 <span id="cb16-2"><a href="#cb16-2"></a>sol <span class="ot">&lt;-</span> <span class="fu">ROI_solve</span>(op, <span class="at">solver =</span> <span class="st">"quadprog"</span>)</span>
 <span id="cb16-3"><a href="#cb16-3"></a><span class="co"># 最优解：投资组合</span></span>
 <span id="cb16-4"><a href="#cb16-4"></a>w <span class="ot">&lt;-</span> sol<span class="sc">$</span>solution</span>
 <span id="cb16-5"><a href="#cb16-5"></a><span class="co"># 保留 4 位小数</span></span>
-<span id="cb16-6"><a href="#cb16-6"></a><span class="fu">round</span>(w, <span class="dv">4</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb16-6"><a href="#cb16-6"></a><span class="fu">round</span>(w, <span class="dv">4</span>)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt;  [1] 0.0000 0.0000 0.0000 0.0000 0.3358 0.0000 0.0000 0.0000 0.3740 0.0000
 #&gt; [11] 0.0000 0.2902</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1"></a><span class="co"># 目标函数值：投资风险</span></span>
-<span id="cb18-2"><a href="#cb18-2"></a><span class="fu">sqrt</span>(<span class="fu">t</span>(w) <span class="sc">%*%</span> <span class="fu">cov</span>(DD) <span class="sc">%*%</span> w)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1"></a><span class="co"># 目标函数值：投资风险</span></span>
+<span id="cb18-2"><a href="#cb18-2"></a><span class="fu">sqrt</span>(<span class="fu">t</span>(w) <span class="sc">%*%</span> <span class="fu">cov</span>(DD) <span class="sc">%*%</span> w)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt;           [,1]
 #&gt; [1,] 0.9860861</code></pre>
@@ -831,14 +834,14 @@ window.Quarto = {
 \]</span></p>
 <p>其中，目标函数中 <span class="math inline">\(\hat{\boldsymbol{\mu}}\)</span> 表示根据历史数据获得的投资对象的收益率，约束条件中 <span class="math inline">\(\sigma\)</span> 表示投资者可以接受的投资风险，其他符号的含义同前。在给定风险约束 <span class="math inline">\(\sigma\)</span> 下，求取回报最大的组合。线性约束也可以用函数 <code>Q_constraint()</code> 来表示，这样线性约束和二次约束可以整合在一起，代码如下：</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1"></a><span class="co"># 风险阈值</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1"></a><span class="co"># 风险阈值</span></span>
 <span id="cb20-2"><a href="#cb20-2"></a>sigma <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(<span class="fu">t</span>(w) <span class="sc">%*%</span> <span class="fu">cov</span>(DD) <span class="sc">%*%</span> w)</span>
-<span id="cb20-3"><a href="#cb20-3"></a>sigma</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb20-3"><a href="#cb20-3"></a>sigma</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt;           [,1]
 #&gt; [1,] 0.9860861</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1"></a><span class="co"># 12 阶的全 0 矩阵</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb22"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1"></a><span class="co"># 12 阶的全 0 矩阵</span></span>
 <span id="cb22-2"><a href="#cb22-2"></a>zero_mat <span class="ot">&lt;-</span> <span class="fu">diag</span>(<span class="at">x =</span> <span class="fu">rep</span>(<span class="dv">0</span>, <span class="fu">ncol</span>(DD)))</span>
 <span id="cb22-3"><a href="#cb22-3"></a><span class="co"># 目标函数</span></span>
 <span id="cb22-4"><a href="#cb22-4"></a>foo <span class="ot">&lt;-</span> <span class="fu">Q_objective</span>(<span class="at">Q =</span> zero_mat, <span class="at">L =</span> <span class="fu">colMeans</span>(DD))</span>
@@ -853,7 +856,7 @@ window.Quarto = {
 <span id="cb22-13"><a href="#cb22-13"></a>)</span>
 <span id="cb22-14"><a href="#cb22-14"></a><span class="co"># 目标规划</span></span>
 <span id="cb22-15"><a href="#cb22-15"></a>op <span class="ot">&lt;-</span> <span class="fu">OP</span>(<span class="at">objective =</span> foo, <span class="at">constraints =</span> maxret_constr, <span class="at">maximum =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb22-16"><a href="#cb22-16"></a>op</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb22-16"><a href="#cb22-16"></a>op</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; ROI Optimization Problem:
 #&gt; 
@@ -867,7 +870,7 @@ window.Quarto = {
 </div>
 <p>函数 <code>ROI_applicable_solvers()</code> 识别规划问题类型，给出可求解此规划问题的求解器。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1"></a><span class="fu">ROI_applicable_solvers</span>(op)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb24"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1"></a><span class="fu">ROI_applicable_solvers</span>(op)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; [1] "nloptr.cobyla" "nloptr.mma"    "nloptr.auglag" "nloptr.isres" 
 #&gt; [5] "nloptr.slsqp"</code></pre>
@@ -875,18 +878,18 @@ window.Quarto = {
 </div>
 <p><code>quadprog</code> 求解器不能求解该问题，尝试求解器 <code>nloptr.slsqp</code> ，12 支股票同等看待，所以，权重的初始值都设置为 <span class="math inline">\(\frac{1}{12}\)</span> 。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1"></a><span class="co"># 求解规划问题</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb26"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1"></a><span class="co"># 求解规划问题</span></span>
 <span id="cb26-2"><a href="#cb26-2"></a>nlp <span class="ot">&lt;-</span> <span class="fu">ROI_solve</span>(op, <span class="at">solver =</span> <span class="st">"nloptr.slsqp"</span>, <span class="at">start =</span> <span class="fu">rep</span>(<span class="dv">1</span><span class="sc">/</span><span class="dv">12</span>, <span class="dv">12</span>))</span>
 <span id="cb26-3"><a href="#cb26-3"></a><span class="co"># 投资组合</span></span>
 <span id="cb26-4"><a href="#cb26-4"></a>w <span class="ot">&lt;-</span> nlp<span class="sc">$</span>solution</span>
 <span id="cb26-5"><a href="#cb26-5"></a><span class="co"># 保留 4 位小数</span></span>
-<span id="cb26-6"><a href="#cb26-6"></a><span class="fu">round</span>(w, <span class="dv">4</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb26-6"><a href="#cb26-6"></a><span class="fu">round</span>(w, <span class="dv">4</span>)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt;  [1] 0.0000 0.0000 0.0000 0.0000 0.3358 0.0000 0.0000 0.0000 0.3740 0.0000
 #&gt; [11] 0.0000 0.2902</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1"></a><span class="co"># 投资组合的预期收益</span></span>
-<span id="cb28-2"><a href="#cb28-2"></a>w <span class="sc">%*%</span> <span class="fu">colMeans</span>(DD)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb28"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1"></a><span class="co"># 投资组合的预期收益</span></span>
+<span id="cb28-2"><a href="#cb28-2"></a>w <span class="sc">%*%</span> <span class="fu">colMeans</span>(DD)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt;           [,1]
 #&gt; [1,] 0.3476413</code></pre>
@@ -895,7 +898,7 @@ window.Quarto = {
 <p>结果显示，投资组合是甲骨文、 AT&amp;T 和 IBM，投资比例分别是 33.58% 、37.40% 和 29.02% 。</p>
 <p>值得注意，当约束条件比较复杂，比如包含一些非线性的等式或不等式约束，可以用函数 <code>F_constraint()</code> 来表示，这更加的灵活，但需要传递（非）线性约束的雅可比向量或矩阵。用函数 <code>F_constraint()</code> 表示的代码如下，求解结果是一样的。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1"></a><span class="co"># x 是一个表示权重的列向量 </span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb30"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1"></a><span class="co"># x 是一个表示权重的列向量 </span></span>
 <span id="cb30-2"><a href="#cb30-2"></a><span class="co"># 等式约束</span></span>
 <span id="cb30-3"><a href="#cb30-3"></a><span class="co"># 权重之和为 1 的约束</span></span>
 <span id="cb30-4"><a href="#cb30-4"></a>heq <span class="ot">&lt;-</span> <span class="cf">function</span>(x) {</span>
@@ -929,7 +932,7 @@ window.Quarto = {
 <span id="cb30-32"><a href="#cb30-32"></a>  <span class="at">bounds =</span> <span class="fu">V_bound</span>(<span class="at">ld =</span> <span class="dv">0</span>, <span class="at">ud =</span> <span class="dv">1</span>, <span class="at">nobj =</span> <span class="dv">12</span>L),</span>
 <span id="cb30-33"><a href="#cb30-33"></a>  <span class="at">maximum =</span> <span class="cn">TRUE</span> <span class="co"># 最大回报</span></span>
 <span id="cb30-34"><a href="#cb30-34"></a>)</span>
-<span id="cb30-35"><a href="#cb30-35"></a>op</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb30-35"><a href="#cb30-35"></a>op</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; ROI Optimization Problem:
 #&gt; 
@@ -940,17 +943,17 @@ window.Quarto = {
 #&gt; - 2 constraints of type nonlinear.
 #&gt; - 0 lower and 12 upper non-standard variable bounds.</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1"></a><span class="co"># 求解规划问题</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb32"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1"></a><span class="co"># 求解规划问题</span></span>
 <span id="cb32-2"><a href="#cb32-2"></a>nlp <span class="ot">&lt;-</span> <span class="fu">ROI_solve</span>(op, <span class="at">solver =</span> <span class="st">"nloptr.slsqp"</span>, <span class="at">start =</span> <span class="fu">rep</span>(<span class="dv">1</span><span class="sc">/</span><span class="dv">12</span>, <span class="dv">12</span>))</span>
 <span id="cb32-3"><a href="#cb32-3"></a><span class="co"># 投资组合</span></span>
 <span id="cb32-4"><a href="#cb32-4"></a>w <span class="ot">&lt;-</span> nlp<span class="sc">$</span>solution</span>
-<span id="cb32-5"><a href="#cb32-5"></a><span class="fu">round</span>(w, <span class="dv">4</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb32-5"><a href="#cb32-5"></a><span class="fu">round</span>(w, <span class="dv">4</span>)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt;  [1] 0.0000 0.0000 0.0000 0.0000 0.3358 0.0000 0.0000 0.0000 0.3740 0.0000
 #&gt; [11] 0.0000 0.2902</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1"></a><span class="co"># 投资组合的预期收益</span></span>
-<span id="cb34-2"><a href="#cb34-2"></a>w <span class="sc">%*%</span> <span class="fu">colMeans</span>(DD)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb34"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1"></a><span class="co"># 投资组合的预期收益</span></span>
+<span id="cb34-2"><a href="#cb34-2"></a>w <span class="sc">%*%</span> <span class="fu">colMeans</span>(DD)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt;           [,1]
 #&gt; [1,] 0.3476413</code></pre>
@@ -972,9 +975,9 @@ window.Quarto = {
 \]</span></p>
 <p>下面考虑一个来自 <strong>MASS</strong> 包真实数据 <code>topo</code>。topo 数据集最初来自 John C. Davis （1973年）所著的书《Statistics and Data Analysis in Geology》。后来， J. J. Warnes 和 B. D. Ripley （1987年）以该数据集为例指出空间高斯过程的协方差函数的似然估计中存在的问题<span class="citation" data-cites="Ripley1987">(<a href="references.html#ref-Ripley1987" role="doc-biblioref">Warnes 和 Ripley 1987</a>)</span>，并将其作为数据集 <code>topo</code> 放在 <strong>MASS</strong> 包里。Paulo J. Ribeiro Jr 和 Peter J. Diggle （2001年）将该数据集打包成自定义的 <code>geodata</code> 数据类型，放在 <strong>geoR</strong> 包里，并在他俩合著的书《Model-based Geostatistics》中多次出现。<code>topo</code> 是空间地形数据集，包含有 52 行 3 列，数据点是 310 平方英尺范围内的海拔高度数据，<code>x</code> 坐标每单位 50 英尺，<code>y</code> 坐标单位同 <code>x</code> 坐标，海拔高度 <code>z</code> 单位是英尺。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1"></a><span class="fu">library</span>(MASS)</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb36"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1"></a><span class="fu">library</span>(MASS)</span>
 <span id="cb36-2"><a href="#cb36-2"></a><span class="fu">data</span>(topo)</span>
-<span id="cb36-3"><a href="#cb36-3"></a><span class="fu">str</span>(topo)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb36-3"><a href="#cb36-3"></a><span class="fu">str</span>(topo)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; 'data.frame':    52 obs. of  3 variables:
 #&gt;  $ x: num  0.3 1.4 2.4 3.6 5.7 1.6 2.9 3.4 3.4 4.8 ...
@@ -984,7 +987,7 @@ window.Quarto = {
 </div>
 <p>根据 <code>topo</code> 数据集， <span class="math inline">\(D = \boldsymbol{1}\)</span> 是一个 <span class="math inline">\(52 \times 1\)</span> 的列向量，<span class="math inline">\(\boldsymbol{\beta} = \beta\)</span> 是一个截距项。设置参数初值 <span class="math inline">\((\sigma,\phi) = (65,2)\)</span> 。为了与 Ripley 的论文中的图比较，下面扔掉了对数似然函数中常数项，用 R 语言编码的似然函数如下：</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1"></a>log_lik <span class="ot">&lt;-</span> <span class="cf">function</span>(x) {</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb38"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1"></a>log_lik <span class="ot">&lt;-</span> <span class="cf">function</span>(x) {</span>
 <span id="cb38-2"><a href="#cb38-2"></a>  n <span class="ot">&lt;-</span> <span class="fu">nrow</span>(topo)</span>
 <span id="cb38-3"><a href="#cb38-3"></a>  D <span class="ot">&lt;-</span> <span class="fu">t</span>(<span class="fu">t</span>(<span class="fu">rep</span>(<span class="dv">1</span>, n)))</span>
 <span id="cb38-4"><a href="#cb38-4"></a>  Sigma <span class="ot">&lt;-</span> x[<span class="dv">1</span>]<span class="sc">^</span><span class="dv">2</span> <span class="sc">*</span> <span class="fu">exp</span>(<span class="sc">-</span><span class="fu">as.matrix</span>(<span class="fu">dist</span>(topo[, <span class="fu">c</span>(<span class="st">"x"</span>, <span class="st">"y"</span>)])) <span class="sc">/</span> x[<span class="dv">2</span>])</span>
@@ -992,72 +995,72 @@ window.Quarto = {
 <span id="cb38-6"><a href="#cb38-6"></a>  P <span class="ot">&lt;-</span> <span class="fu">diag</span>(<span class="dv">1</span>, n) <span class="sc">-</span> D <span class="sc">%*%</span> <span class="fu">solve</span>(<span class="fu">t</span>(D) <span class="sc">%*%</span> <span class="fu">solve</span>(Sigma, D), <span class="fu">t</span>(D)) <span class="sc">%*%</span> inv_Sigma</span>
 <span id="cb38-7"><a href="#cb38-7"></a>  <span class="fu">as.vector</span>(<span class="sc">-</span><span class="dv">1</span> <span class="sc">/</span> <span class="dv">2</span> <span class="sc">*</span> <span class="fu">log</span>(<span class="fu">det</span>(Sigma)) <span class="sc">-</span> <span class="dv">1</span> <span class="sc">/</span> <span class="dv">2</span> <span class="sc">*</span> <span class="fu">t</span>(topo[, <span class="st">"z"</span>]) <span class="sc">%*%</span> inv_Sigma <span class="sc">%*%</span> P <span class="sc">%*%</span> topo[, <span class="st">"z"</span>])</span>
 <span id="cb38-8"><a href="#cb38-8"></a>}</span>
-<span id="cb38-9"><a href="#cb38-9"></a><span class="fu">log_lik</span>(<span class="at">x =</span> <span class="fu">c</span>(<span class="dv">65</span>, <span class="dv">2</span>))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb38-9"><a href="#cb38-9"></a><span class="fu">log_lik</span>(<span class="at">x =</span> <span class="fu">c</span>(<span class="dv">65</span>, <span class="dv">2</span>))</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; [1] -207.1364</code></pre>
 </div>
 </div>
 <p>关于参数的偏导计算复杂，就不计算梯度了，下面调用 R 软件内置的 <code>nlminb</code> 优化器。发现，对不同的初始值，收敛到不同的位置，目标函数值非常接近。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1"></a>op <span class="ot">&lt;-</span> <span class="fu">OP</span>(</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb40"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1"></a>op <span class="ot">&lt;-</span> <span class="fu">OP</span>(</span>
 <span id="cb40-2"><a href="#cb40-2"></a>  <span class="at">objective =</span> <span class="fu">F_objective</span>(log_lik, <span class="at">n =</span> <span class="dv">2</span>L),</span>
 <span id="cb40-3"><a href="#cb40-3"></a>  <span class="at">bounds =</span> <span class="fu">V_bound</span>(<span class="at">lb =</span> <span class="fu">c</span>(<span class="dv">55</span>, <span class="dv">5</span>), <span class="at">ub =</span> <span class="fu">c</span>(<span class="dv">75</span>, <span class="dv">8</span>)),</span>
 <span id="cb40-4"><a href="#cb40-4"></a>  <span class="at">maximum =</span> <span class="cn">TRUE</span></span>
 <span id="cb40-5"><a href="#cb40-5"></a>)</span>
 <span id="cb40-6"><a href="#cb40-6"></a>nlp <span class="ot">&lt;-</span> <span class="fu">ROI_solve</span>(op, <span class="at">solver =</span> <span class="st">"nlminb"</span>, <span class="at">start =</span> <span class="fu">c</span>(<span class="dv">65</span>, <span class="dv">2</span>))</span>
-<span id="cb40-7"><a href="#cb40-7"></a>nlp<span class="sc">$</span>solution</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb40-7"><a href="#cb40-7"></a>nlp<span class="sc">$</span>solution</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; [1] 65  5</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1"></a>nlp<span class="sc">$</span>objval</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb42"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1"></a>nlp<span class="sc">$</span>objval</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; [1] -197.4197</code></pre>
 </div>
 </div>
 <p>如果初始值靠近局部极值点，则就近收敛到该极值点，比如初值 <span class="math inline">\((65, 7)\)</span> ， <span class="math inline">\((70, 7.5)\)</span> 。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1"></a>nlp <span class="ot">&lt;-</span> <span class="fu">ROI_solve</span>(op, <span class="at">solver =</span> <span class="st">"nlminb"</span>, <span class="at">start =</span> <span class="fu">c</span>(<span class="dv">65</span>, <span class="dv">7</span>))</span>
-<span id="cb44-2"><a href="#cb44-2"></a>nlp<span class="sc">$</span>solution</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb44"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1"></a>nlp <span class="ot">&lt;-</span> <span class="fu">ROI_solve</span>(op, <span class="at">solver =</span> <span class="st">"nlminb"</span>, <span class="at">start =</span> <span class="fu">c</span>(<span class="dv">65</span>, <span class="dv">7</span>))</span>
+<span id="cb44-2"><a href="#cb44-2"></a>nlp<span class="sc">$</span>solution</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; [1] 65  7</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1"></a>nlp<span class="sc">$</span>objval</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb46"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1"></a>nlp<span class="sc">$</span>objval</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; [1] -196.9407</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb48"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1"></a>nlp <span class="ot">&lt;-</span> <span class="fu">ROI_solve</span>(op, <span class="at">solver =</span> <span class="st">"nlminb"</span>, <span class="at">start =</span> <span class="fu">c</span>(<span class="dv">70</span>, <span class="fl">7.5</span>))</span>
-<span id="cb48-2"><a href="#cb48-2"></a>nlp<span class="sc">$</span>solution</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb48"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1"></a>nlp <span class="ot">&lt;-</span> <span class="fu">ROI_solve</span>(op, <span class="at">solver =</span> <span class="st">"nlminb"</span>, <span class="at">start =</span> <span class="fu">c</span>(<span class="dv">70</span>, <span class="fl">7.5</span>))</span>
+<span id="cb48-2"><a href="#cb48-2"></a>nlp<span class="sc">$</span>solution</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; [1] 70.0  7.5</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb50"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb50-1"><a href="#cb50-1"></a>nlp<span class="sc">$</span>objval</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb50"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb50-1"><a href="#cb50-1"></a>nlp<span class="sc">$</span>objval</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; [1] -196.8441</code></pre>
 </div>
 </div>
 <p>尝试调用来自 <strong>nloptr</strong> 包的全局优化求解器 <code>nloptr.directL</code> ，大大小小的坑都跳过去了，结果还是比较满意的。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb52"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb52-1"><a href="#cb52-1"></a>nlp <span class="ot">&lt;-</span> <span class="fu">ROI_solve</span>(op, <span class="at">solver =</span> <span class="st">"nloptr.directL"</span>)</span>
-<span id="cb52-2"><a href="#cb52-2"></a>nlp<span class="sc">$</span>solution</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb52"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb52-1"><a href="#cb52-1"></a>nlp <span class="ot">&lt;-</span> <span class="fu">ROI_solve</span>(op, <span class="at">solver =</span> <span class="st">"nloptr.directL"</span>)</span>
+<span id="cb52-2"><a href="#cb52-2"></a>nlp<span class="sc">$</span>solution</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>#&gt; [1] 63.934143  6.121323</code></pre>
+<pre><code>#&gt; [1] 63.934218  6.121339</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb54"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb54-1"><a href="#cb54-1"></a>nlp<span class="sc">$</span>objval</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb54"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb54-1"><a href="#cb54-1"></a>nlp<span class="sc">$</span>objval</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; [1] -196.8158</code></pre>
 </div>
 </div>
 <p>目标区域网格化，计算格点处的似然函数值，然后绘制似然函数图像。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb56"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb56-1"><a href="#cb56-1"></a>dat <span class="ot">&lt;-</span> <span class="fu">expand.grid</span>(</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb56"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb56-1"><a href="#cb56-1"></a>dat <span class="ot">&lt;-</span> <span class="fu">expand.grid</span>(</span>
 <span id="cb56-2"><a href="#cb56-2"></a>  <span class="at">sigma =</span> <span class="fu">seq</span>(<span class="at">from =</span> <span class="dv">55</span>, <span class="at">to =</span> <span class="dv">75</span>, <span class="at">length.out =</span> <span class="dv">41</span>),</span>
 <span id="cb56-3"><a href="#cb56-3"></a>  <span class="at">phi =</span> <span class="fu">seq</span>(<span class="at">from =</span> <span class="dv">5</span>, <span class="at">to =</span> <span class="dv">8</span>, <span class="at">length.out =</span> <span class="dv">31</span>)</span>
 <span id="cb56-4"><a href="#cb56-4"></a>)</span>
-<span id="cb56-5"><a href="#cb56-5"></a>dat<span class="sc">$</span>fn <span class="ot">&lt;-</span> <span class="fu">apply</span>(dat, <span class="dv">1</span>, log_lik)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb56-5"><a href="#cb56-5"></a>dat<span class="sc">$</span>fn <span class="ot">&lt;-</span> <span class="fu">apply</span>(dat, <span class="dv">1</span>, log_lik)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>似然函数关于参数 <span class="math inline">\((\sigma,\phi)\)</span> 的三维曲面见 <a href="#fig-topo-loglik-persp" class="quarto-xref">图&nbsp;<span>24.3</span></a> 。</p>
 <div class="cell">
-<details class="code-fold"><summary>代码</summary><div class="sourceCode cell-code" id="cb57"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb57-1"><a href="#cb57-1"></a><span class="fu">wireframe</span>(</span>
+<details class="code-fold"><summary>代码</summary><div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb57"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb57-1"><a href="#cb57-1"></a><span class="fu">wireframe</span>(</span>
 <span id="cb57-2"><a href="#cb57-2"></a>  <span class="at">data =</span> dat, fn <span class="sc">~</span> sigma <span class="sc">*</span> phi,</span>
 <span id="cb57-3"><a href="#cb57-3"></a>  <span class="at">shade =</span> <span class="cn">TRUE</span>, <span class="at">drape =</span> <span class="cn">FALSE</span>,</span>
 <span id="cb57-4"><a href="#cb57-4"></a>  <span class="at">xlab =</span> <span class="fu">expression</span>(sigma), <span class="at">ylab =</span> <span class="fu">expression</span>(phi),</span>
@@ -1079,7 +1082,7 @@ window.Quarto = {
 <span id="cb57-20"><a href="#cb57-20"></a>  ),</span>
 <span id="cb57-21"><a href="#cb57-21"></a>  <span class="at">par.settings =</span> <span class="fu">list</span>(<span class="at">axis.line =</span> <span class="fu">list</span>(<span class="at">col =</span> <span class="st">"transparent"</span>)),</span>
 <span id="cb57-22"><a href="#cb57-22"></a>  <span class="at">screen =</span> <span class="fu">list</span>(<span class="at">z =</span> <span class="dv">30</span>, <span class="at">x =</span> <span class="sc">-</span><span class="dv">65</span>, <span class="at">y =</span> <span class="dv">0</span>)</span>
-<span id="cb57-23"><a href="#cb57-23"></a>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb57-23"><a href="#cb57-23"></a>)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 </details><div class="cell-output-display">
 <div id="fig-topo-loglik-persp" class="quarto-float quarto-figure quarto-figure-center anchored">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-topo-loglik-persp-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
@@ -1093,7 +1096,7 @@ window.Quarto = {
 </div>
 <p>等高线图呈现一道非常长且平滑的山岭 long flat ridge，山岭上布满许多局部极大值，普通的数值优化求解器常常陷入其中，只有全局优化求解器才可能找到全局极大值点。高斯过程回归模型的对数似然函数是非凸的，多模态的。</p>
 <div class="cell">
-<details class="code-fold"><summary>代码</summary><div class="sourceCode cell-code" id="cb58"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb58-1"><a href="#cb58-1"></a><span class="fu">levelplot</span>(fn <span class="sc">~</span> sigma <span class="sc">*</span> phi,</span>
+<details class="code-fold"><summary>代码</summary><div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb58"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb58-1"><a href="#cb58-1"></a><span class="fu">levelplot</span>(fn <span class="sc">~</span> sigma <span class="sc">*</span> phi,</span>
 <span id="cb58-2"><a href="#cb58-2"></a>  <span class="at">data =</span> dat, <span class="at">aspect =</span> <span class="dv">1</span>,</span>
 <span id="cb58-3"><a href="#cb58-3"></a>  <span class="at">xlim =</span> <span class="fu">c</span>(<span class="fl">54.5</span>, <span class="fl">75.5</span>), <span class="at">ylim =</span> <span class="fu">c</span>(<span class="fl">4.9</span>, <span class="fl">8.1</span>),</span>
 <span id="cb58-4"><a href="#cb58-4"></a>  <span class="at">xlab =</span> <span class="fu">expression</span>(sigma), <span class="at">ylab =</span> <span class="fu">expression</span>(phi),</span>
@@ -1113,7 +1116,7 @@ window.Quarto = {
 <span id="cb58-18"><a href="#cb58-18"></a>      <span class="at">top.padding =</span> <span class="fu">list</span>(<span class="at">x =</span> <span class="sc">-</span>.<span class="dv">5</span>, <span class="at">units =</span> <span class="st">"inches"</span>)</span>
 <span id="cb58-19"><a href="#cb58-19"></a>    )</span>
 <span id="cb58-20"><a href="#cb58-20"></a>  )</span>
-<span id="cb58-21"><a href="#cb58-21"></a>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb58-21"><a href="#cb58-21"></a>)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 </details><div class="cell-output-display">
 <div id="fig-topo-loglik-contour" class="quarto-float quarto-figure quarto-figure-center anchored">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-topo-loglik-contour-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
@@ -1128,12 +1131,12 @@ window.Quarto = {
 <p>上图中没有看到许多局部极小值，与作者论文中的图 1 似乎不符。原因是什么？似然函数中涉及到的矩阵运算不精确，应该设计精度更高的运算方式？<strong>lattice</strong> 包绘图引擎无法展示更加细微的差异？还有一种解释，上图是对的，算法迭代时，对不同的初值，常常收敛到不同的结果，而这些不同的结果都位于岭上不同位置，对应的对数似然值却又几乎一样。</p>
 <p>作为验证，下面调用 <strong>nlme</strong> 包的 <code>gls()</code> 函数拟合数据，参数的极大似然估计结果与全局优化求解器的结果比较一致。参数估计结果 <span class="math inline">\((\sigma, \phi)= (63.93429, 6.121352)\)</span> ，对数似然函数值为 -244.6006 ，自编的似然函数 <code>log_lik()</code> 在最优解处的值为 -196.8158，再加上之前扔掉的常数项 <code>-52 / 2 * log(2 * pi)</code> ，就是 -244.6006 ，丝毫不差。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb59"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb59-1"><a href="#cb59-1"></a><span class="fu">library</span>(nlme)</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb59"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb59-1"><a href="#cb59-1"></a><span class="fu">library</span>(nlme)</span>
 <span id="cb59-2"><a href="#cb59-2"></a>fit_topo_ml <span class="ot">&lt;-</span> <span class="fu">gls</span>(z <span class="sc">~</span> <span class="dv">1</span>,</span>
 <span id="cb59-3"><a href="#cb59-3"></a>  <span class="at">data =</span> topo, <span class="at">method =</span> <span class="st">"ML"</span>,</span>
 <span id="cb59-4"><a href="#cb59-4"></a>  <span class="at">correlation =</span> <span class="fu">corExp</span>(<span class="at">value =</span> <span class="dv">65</span>, <span class="at">form =</span> <span class="sc">~</span> x <span class="sc">+</span> y)</span>
 <span id="cb59-5"><a href="#cb59-5"></a>)</span>
-<span id="cb59-6"><a href="#cb59-6"></a><span class="fu">summary</span>(fit_topo_ml)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb59-6"><a href="#cb59-6"></a><span class="fu">summary</span>(fit_topo_ml)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; Generalized least squares fit by maximum likelihood
 #&gt;   Model: z ~ 1 
@@ -1161,11 +1164,11 @@ window.Quarto = {
 </div>
 <p>如果使用限制极大似然估计，会发现参数估计结果与之相距甚远，而对数似然函数值相差无几。参数估计结果 <span class="math inline">\((\sigma,\phi) = (128.8275, 25.47324)\)</span> 。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb61"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb61-1"><a href="#cb61-1"></a>fit_topo_reml <span class="ot">&lt;-</span> <span class="fu">gls</span>(z <span class="sc">~</span> <span class="dv">1</span>,</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb61"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb61-1"><a href="#cb61-1"></a>fit_topo_reml <span class="ot">&lt;-</span> <span class="fu">gls</span>(z <span class="sc">~</span> <span class="dv">1</span>,</span>
 <span id="cb61-2"><a href="#cb61-2"></a>  <span class="at">data =</span> topo, <span class="at">method =</span> <span class="st">"REML"</span>,</span>
 <span id="cb61-3"><a href="#cb61-3"></a>  <span class="at">correlation =</span> <span class="fu">corExp</span>(<span class="at">value =</span> <span class="dv">65</span>, <span class="at">form =</span> <span class="sc">~</span> x <span class="sc">+</span> y)</span>
 <span id="cb61-4"><a href="#cb61-4"></a>)</span>
-<span id="cb61-5"><a href="#cb61-5"></a><span class="fu">summary</span>(fit_topo_reml)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb61-5"><a href="#cb61-5"></a><span class="fu">summary</span>(fit_topo_reml)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; Generalized least squares fit by REML
 #&gt;   Model: z ~ 1 
@@ -1254,7 +1257,7 @@ Y \sim \left\{
 </div>
 <p>考虑到夏季和冬季对老人死亡率的影响是不同的，因此，引入泊松混合分布来对数据建模。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb63"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb63-1"><a href="#cb63-1"></a><span class="co"># 对数似然函数</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb63"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb63-1"><a href="#cb63-1"></a><span class="co"># 对数似然函数</span></span>
 <span id="cb63-2"><a href="#cb63-2"></a><span class="co"># p 是一个长度为 3 的向量</span></span>
 <span id="cb63-3"><a href="#cb63-3"></a><span class="co"># y 是观测数据向量</span></span>
 <span id="cb63-4"><a href="#cb63-4"></a>poissmix_loglik <span class="ot">&lt;-</span> <span class="cf">function</span>(p, y) {</span>
@@ -1271,45 +1274,44 @@ Y \sim \left\{
 <span id="cb63-15"><a href="#cb63-15"></a><span class="co"># 随机生成一组参数初始值</span></span>
 <span id="cb63-16"><a href="#cb63-16"></a>p0 <span class="ot">&lt;-</span> <span class="fu">runif</span>(<span class="dv">3</span>, <span class="fu">c</span>(<span class="fl">0.2</span>, <span class="dv">1</span>, <span class="dv">1</span>), <span class="fu">c</span>(<span class="fl">0.8</span>, <span class="dv">5</span>, <span class="dv">8</span>)) </span>
 <span id="cb63-17"><a href="#cb63-17"></a><span class="co"># 汇总统计出来的死亡人数的频次分布</span></span>
-<span id="cb63-18"><a href="#cb63-18"></a>y <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">162</span>, <span class="dv">267</span>, <span class="dv">271</span>, <span class="dv">185</span>, <span class="dv">111</span>, <span class="dv">61</span>, <span class="dv">27</span>, <span class="dv">8</span>, <span class="dv">3</span>, <span class="dv">1</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb63-18"><a href="#cb63-18"></a>y <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">162</span>, <span class="dv">267</span>, <span class="dv">271</span>, <span class="dv">185</span>, <span class="dv">111</span>, <span class="dv">61</span>, <span class="dv">27</span>, <span class="dv">8</span>, <span class="dv">3</span>, <span class="dv">1</span>)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>调用 <strong>BB</strong> 包的函数 <code>BBoptim()</code> 求解多元非线性箱式约束优化问题。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb64"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb64-1"><a href="#cb64-1"></a><span class="fu">library</span>(BB)</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb64"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb64-1"><a href="#cb64-1"></a><span class="fu">library</span>(BB)</span>
 <span id="cb64-2"><a href="#cb64-2"></a><span class="co"># 参数估计</span></span>
 <span id="cb64-3"><a href="#cb64-3"></a>ans <span class="ot">&lt;-</span> <span class="fu">BBoptim</span>(</span>
 <span id="cb64-4"><a href="#cb64-4"></a>  <span class="at">par =</span> p0, <span class="at">fn =</span> poissmix_loglik, <span class="at">y =</span> y,</span>
 <span id="cb64-5"><a href="#cb64-5"></a>  <span class="at">lower =</span> lo, <span class="at">upper =</span> hi, </span>
 <span id="cb64-6"><a href="#cb64-6"></a>  <span class="at">control =</span> <span class="fu">list</span>(<span class="at">maximize =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb64-7"><a href="#cb64-7"></a>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb64-7"><a href="#cb64-7"></a>)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>#&gt; iter:  0  f-value:  -2666.754  pgrad:  6.066083 
-#&gt; iter:  10  f-value:  -1990.286  pgrad:  1.327878 
-#&gt; iter:  20  f-value:  -1990  pgrad:  0.7123754 
-#&gt; iter:  30  f-value:  -1989.958  pgrad:  1.169108 
-#&gt; iter:  40  f-value:  -1989.946  pgrad:  0.007296421 
-#&gt; iter:  50  f-value:  -1989.946  pgrad:  0.04042022 
+<pre><code>#&gt; iter:  0  f-value:  -1995.414  pgrad:  6.294131 
+#&gt; iter:  10  f-value:  -1990.003  pgrad:  0.4634376 
+#&gt; iter:  20  f-value:  -1989.955  pgrad:  0.9953396 
+#&gt; iter:  30  f-value:  -1989.946  pgrad:  0.03060222 
+#&gt; iter:  40  f-value:  -1989.946  pgrad:  7.048584e-05 
 #&gt;   Successful convergence.</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb66"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb66-1"><a href="#cb66-1"></a>ans</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb66"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb66-1"><a href="#cb66-1"></a>ans</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; $par
-#&gt; [1] 0.3598833 1.2560917 2.6634016
+#&gt; [1] 0.3598796 1.2560843 2.6633977
 #&gt; 
 #&gt; $value
 #&gt; [1] -1989.946
 #&gt; 
 #&gt; $gradient
-#&gt; [1] 7.958079e-05
+#&gt; [1] 7.048584e-05
 #&gt; 
 #&gt; $fn.reduction
-#&gt; [1] -676.8085
+#&gt; [1] -5.468026
 #&gt; 
 #&gt; $iter
-#&gt; [1] 55
+#&gt; [1] 40
 #&gt; 
 #&gt; $feval
-#&gt; [1] 57
+#&gt; [1] 44
 #&gt; 
 #&gt; $convergence
 #&gt; [1] 0
@@ -1324,25 +1326,25 @@ Y \sim \left\{
 </div>
 <p><code><a href="https://rdrr.io/pkg/numDeriv/man/hessian.html">numDeriv::hessian</a></code> 计算极大似然点的黑塞矩阵，然后计算参数估计的标准差。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb68"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb68-1"><a href="#cb68-1"></a><span class="co"># 黑塞矩阵</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb68"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb68-1"><a href="#cb68-1"></a><span class="co"># 黑塞矩阵</span></span>
 <span id="cb68-2"><a href="#cb68-2"></a>hess <span class="ot">&lt;-</span> numDeriv<span class="sc">::</span><span class="fu">hessian</span>(<span class="at">x =</span> ans<span class="sc">$</span>par, <span class="at">func =</span> poissmix_loglik, <span class="at">y =</span> y)</span>
-<span id="cb68-3"><a href="#cb68-3"></a>hess</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb68-3"><a href="#cb68-3"></a>hess</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt;           [,1]       [,2]       [,3]
-#&gt; [1,] -907.1096  270.22860  341.25404
-#&gt; [2,]  270.2286 -113.47948  -61.68197
-#&gt; [3,]  341.2540  -61.68197 -192.78195</code></pre>
+#&gt; [1,] -907.1157  270.22801  341.25647
+#&gt; [2,]  270.2280 -113.47837  -61.68155
+#&gt; [3,]  341.2565  -61.68155 -192.78389</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb70"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb70-1"><a href="#cb70-1"></a><span class="co"># 标准差</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb70"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb70-1"><a href="#cb70-1"></a><span class="co"># 标准差</span></span>
 <span id="cb70-2"><a href="#cb70-2"></a>se <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(<span class="fu">diag</span>(<span class="fu">solve</span>(<span class="sc">-</span>hess)))</span>
-<span id="cb70-3"><a href="#cb70-3"></a>se</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb70-3"><a href="#cb70-3"></a>se</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>#&gt; [1] 0.1946832 0.3500296 0.2504766</code></pre>
+<pre><code>#&gt; [1] 0.1946829 0.3500324 0.2504758</code></pre>
 </div>
 </div>
 <p><code>multiStart</code> 从不同初始值出发寻找全局最大值，先找一系列局部极大值，通过比较获得全局最大值。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb72"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb72-1"><a href="#cb72-1"></a><span class="co"># 随机生成 10 组初始值</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb72"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb72-1"><a href="#cb72-1"></a><span class="co"># 随机生成 10 组初始值</span></span>
 <span id="cb72-2"><a href="#cb72-2"></a>p0 <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">runif</span>(<span class="dv">30</span>, <span class="fu">c</span>(<span class="fl">0.2</span>, <span class="dv">1</span>, <span class="dv">1</span>), <span class="fu">c</span>(<span class="fl">0.8</span>, <span class="dv">8</span>, <span class="dv">8</span>)), </span>
 <span id="cb72-3"><a href="#cb72-3"></a>             <span class="at">nrow =</span> <span class="dv">10</span>, <span class="at">ncol =</span> <span class="dv">3</span>, <span class="at">byrow =</span> <span class="cn">TRUE</span>)</span>
 <span id="cb72-4"><a href="#cb72-4"></a>ans <span class="ot">&lt;-</span> <span class="fu">multiStart</span>(</span>
@@ -1355,13 +1357,12 @@ Y \sim \left\{
 <span id="cb72-11"><a href="#cb72-11"></a><span class="fu">dimnames</span>(pmat) <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="cn">NULL</span>, <span class="fu">c</span>(<span class="st">"fvalue"</span>, <span class="st">"parameter 1"</span>, </span>
 <span id="cb72-12"><a href="#cb72-12"></a>                               <span class="st">"parameter 2"</span>, <span class="st">"parameter 3"</span>))</span>
 <span id="cb72-13"><a href="#cb72-13"></a><span class="co"># 去掉结果一样的重复解</span></span>
-<span id="cb72-14"><a href="#cb72-14"></a>pmat[<span class="sc">!</span><span class="fu">duplicated</span>(pmat), ]</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb72-14"><a href="#cb72-14"></a>pmat[<span class="sc">!</span><span class="fu">duplicated</span>(pmat), ]</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt;         fvalue parameter 1 parameter 2 parameter 3
 #&gt; [1,] -1989.946      0.6401      2.6634      1.2561
 #&gt; [2,] -1989.946      0.3599      1.2561      2.6634
-#&gt; [3,] -2001.158      0.1677      2.0095      2.1909
-#&gt; [4,] -1989.946      0.6401      2.6634      1.2560</code></pre>
+#&gt; [3,] -2000.663      0.9625      2.1485      2.8418</code></pre>
 </div>
 </div>
 </section><section id="sec-maximum-likelihood-estimation" class="level2" data-number="24.5"><h2 data-number="24.5" class="anchored" data-anchor-id="sec-maximum-likelihood-estimation">
@@ -1373,7 +1374,7 @@ f(x;\alpha,\sigma) = \frac{1}{\sigma^\alpha \Gamma(\alpha)}x^{\alpha - 1} \exp(-
 \]</span></p>
 <p>其中，<span class="math inline">\(\Gamma(\cdot)\)</span> 表示伽马函数，伽马分布的均值为 <span class="math inline">\(\alpha \sigma\)</span> ，方差为 <span class="math inline">\(\alpha\sigma^2\)</span> 。下 <a href="#fig-dgamma" class="quarto-xref">图&nbsp;<span>24.5</span></a> 展示两个伽马分布的概率密度函数，形状参数分别为 5 和 9，尺度参数均为 1，即伽马分布 <span class="math inline">\(f(x; 5, 1)\)</span> 和 <span class="math inline">\(f(x; 9, 1)\)</span> 。</p>
 <div class="cell">
-<details class="code-fold"><summary>代码</summary><div class="sourceCode cell-code" id="cb74"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb74-1"><a href="#cb74-1"></a><span class="fu">ggplot</span>() <span class="sc">+</span></span>
+<details class="code-fold"><summary>代码</summary><div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb74"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb74-1"><a href="#cb74-1"></a><span class="fu">ggplot</span>() <span class="sc">+</span></span>
 <span id="cb74-2"><a href="#cb74-2"></a>  <span class="fu">geom_function</span>(</span>
 <span id="cb74-3"><a href="#cb74-3"></a>    <span class="at">fun =</span> dgamma, <span class="at">args =</span> <span class="fu">list</span>(<span class="at">shape =</span> <span class="dv">9</span>, <span class="at">scale =</span> <span class="dv">1</span>),</span>
 <span id="cb74-4"><a href="#cb74-4"></a>    <span class="fu">aes</span>(<span class="at">colour =</span> <span class="st">"list(alpha == 9, sigma == 1)"</span>),</span>
@@ -1393,7 +1394,7 @@ f(x;\alpha,\sigma) = \frac{1}{\sigma^\alpha \Gamma(\alpha)}x^{\alpha - 1} \exp(-
 <span id="cb74-18"><a href="#cb74-18"></a>  <span class="fu">theme</span>(<span class="at">axis.title =</span> <span class="fu">element_text</span>(<span class="at">family =</span> <span class="st">"Noto Serif CJK SC"</span>),</span>
 <span id="cb74-19"><a href="#cb74-19"></a>        <span class="at">legend.title =</span> <span class="fu">element_text</span>(<span class="at">family =</span> <span class="st">"Noto Serif CJK SC"</span>),</span>
 <span id="cb74-20"><a href="#cb74-20"></a>        <span class="at">legend.position =</span> <span class="st">"top"</span>, <span class="at">legend.justification =</span> <span class="st">"right"</span>) <span class="sc">+</span></span>
-<span id="cb74-21"><a href="#cb74-21"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"随机变量"</span>, <span class="at">y =</span> <span class="st">"概率密度"</span>, <span class="at">color =</span> <span class="st">"参数"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb74-21"><a href="#cb74-21"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"随机变量"</span>, <span class="at">y =</span> <span class="st">"概率密度"</span>, <span class="at">color =</span> <span class="st">"参数"</span>)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 </details><div class="cell-output-display">
 <div id="fig-dgamma" class="quarto-float quarto-figure quarto-figure-center anchored">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-dgamma-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
@@ -1425,14 +1426,14 @@ f(x;\alpha,\sigma) = \frac{1}{\sigma^\alpha \Gamma(\alpha)}x^{\alpha - 1} \exp(-
 \log(\alpha) - \big(\log \Gamma(\alpha)\big)' = \log\big(\frac{1}{n}\sum_{i=1}^{n}x_i\big) - \frac{1}{n}\sum_{i=1}^{n}\log (x_i)
 \]</span></p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb75"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb75-1"><a href="#cb75-1"></a><span class="fu">set.seed</span>(<span class="dv">20232023</span>)</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb75"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb75-1"><a href="#cb75-1"></a><span class="fu">set.seed</span>(<span class="dv">20232023</span>)</span>
 <span id="cb75-2"><a href="#cb75-2"></a>x <span class="ot">&lt;-</span> <span class="fu">rgamma</span>(<span class="dv">1000</span>, <span class="at">shape =</span> <span class="fl">1.5</span>, <span class="at">scale =</span> <span class="dv">2</span>)</span>
 <span id="cb75-3"><a href="#cb75-3"></a><span class="co"># 形状参数和尺度参数的矩估计</span></span>
-<span id="cb75-4"><a href="#cb75-4"></a><span class="fu">c</span>(<span class="fu">mean</span>(x)<span class="sc">^</span><span class="dv">2</span> <span class="sc">/</span><span class="fu">var</span>(x), <span class="fu">var</span>(x)<span class="sc">/</span><span class="fu">mean</span>(x))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb75-4"><a href="#cb75-4"></a><span class="fu">c</span>(<span class="fu">mean</span>(x)<span class="sc">^</span><span class="dv">2</span> <span class="sc">/</span><span class="fu">var</span>(x), <span class="fu">var</span>(x)<span class="sc">/</span><span class="fu">mean</span>(x))</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; [1] 1.636030 1.902239</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb77"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb77-1"><a href="#cb77-1"></a><span class="co"># 极大似然估计</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb77"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb77-1"><a href="#cb77-1"></a><span class="co"># 极大似然估计</span></span>
 <span id="cb77-2"><a href="#cb77-2"></a><span class="co"># 常量</span></span>
 <span id="cb77-3"><a href="#cb77-3"></a>cc <span class="ot">&lt;-</span> <span class="fu">log</span>(<span class="fu">mean</span>(x)) <span class="sc">-</span> <span class="fu">mean</span>(<span class="fu">log</span>(x))</span>
 <span id="cb77-4"><a href="#cb77-4"></a><span class="co"># 方程</span></span>
@@ -1440,7 +1441,7 @@ f(x;\alpha,\sigma) = \frac{1}{\sigma^\alpha \Gamma(\alpha)}x^{\alpha - 1} \exp(-
 <span id="cb77-6"><a href="#cb77-6"></a>  <span class="fu">log</span>(alpha) <span class="sc">-</span> <span class="fu">digamma</span>(alpha) <span class="sc">-</span> cc</span>
 <span id="cb77-7"><a href="#cb77-7"></a>}</span>
 <span id="cb77-8"><a href="#cb77-8"></a><span class="co"># 找根</span></span>
-<span id="cb77-9"><a href="#cb77-9"></a><span class="fu">uniroot</span>(<span class="at">f =</span> fun, <span class="at">interval =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb77-9"><a href="#cb77-9"></a><span class="fu">uniroot</span>(<span class="at">f =</span> fun, <span class="at">interval =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>))</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; $root
 #&gt; [1] 1.610272
@@ -1461,9 +1462,9 @@ f(x;\alpha,\sigma) = \frac{1}{\sigma^\alpha \Gamma(\alpha)}x^{\alpha - 1} \exp(-
 <p>求得形状参数的估计 <span class="math inline">\(\alpha = 1.610272\)</span> ，进而，可得尺度参数的估计 <span class="math inline">\(\sigma = 1.932667\)</span> 。</p>
 <p>函数 <code><a href="https://rdrr.io/r/stats/uniroot.html">uniroot()</a></code> 只能找到方程的一个根，<strong>rootSolve</strong> 包采用牛顿-拉弗森（ Newton-Raphson ）算法找一元非线性方程（组）的根，特别适合有多个根的情况。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb79"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb79-1"><a href="#cb79-1"></a><span class="fu">library</span>(rootSolve)</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb79"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb79-1"><a href="#cb79-1"></a><span class="fu">library</span>(rootSolve)</span>
 <span id="cb79-2"><a href="#cb79-2"></a><span class="co"># 非线性方程（组）的根</span></span>
-<span id="cb79-3"><a href="#cb79-3"></a><span class="fu">multiroot</span>(<span class="at">f =</span> fun, <span class="at">start =</span> <span class="fl">1.2</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb79-3"><a href="#cb79-3"></a><span class="fu">multiroot</span>(<span class="at">f =</span> fun, <span class="at">start =</span> <span class="fl">1.2</span>)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; $root
 #&gt; [1] 1.610272
@@ -1477,8 +1478,8 @@ f(x;\alpha,\sigma) = \frac{1}{\sigma^\alpha \Gamma(\alpha)}x^{\alpha - 1} \exp(-
 #&gt; $estim.precis
 #&gt; [1] 3.121097e-10</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb81"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb81-1"><a href="#cb81-1"></a><span class="co"># 搜索一个方程在区间内所有的根</span></span>
-<span id="cb81-2"><a href="#cb81-2"></a><span class="fu">uniroot.all</span>(<span class="at">f =</span> fun, <span class="at">interval =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb81"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb81-1"><a href="#cb81-1"></a><span class="co"># 搜索一个方程在区间内所有的根</span></span>
+<span id="cb81-2"><a href="#cb81-2"></a><span class="fu">uniroot.all</span>(<span class="at">f =</span> fun, <span class="at">interval =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">3</span>))</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; [1] 1.610339</code></pre>
 </div>
@@ -1490,7 +1491,7 @@ f(x;\alpha,\sigma) = \frac{1}{\sigma^\alpha \Gamma(\alpha)}x^{\alpha - 1} \exp(-
 <li><p>有限混合模型也常用 EM 算法来估计参数，美国黄石公园老忠实间歇泉的喷发规律近似为二维高斯混合分布，请读者以 R 软件内置的数据集 <code>faithful</code> 为基础，采用 EM 算法估计参数。</p></li>
 <li>
 <p>获取百度、阿里、腾讯、京东、美团、滴滴、字节、360、网易、新浪等 10 支股票的历史股价数据。根据 2021-12-01 至 2022-12-01 股票的调整价计算 12 个月的股价收益率，根据月度股价收益率和波动率数据，设置投资组合，使得月度收益率不低于2%。股票代码以数字编码和 HK 结尾的为港股代码，有的公司在美股和港股上都有。可以用 <strong>quantmod</strong> 包下载各个公司的股价数据，下载拼多多股价数据的代码如下：</p>
-<div class="sourceCode" id="cb83"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb83-1"><a href="#cb83-1"></a>quantmod<span class="sc">::</span><span class="fu">getSymbols</span>(<span class="st">"PDD"</span>, <span class="at">auto.assign =</span> <span class="cn">FALSE</span>, <span class="at">src =</span> <span class="st">"yahoo"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb83"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb83-1"><a href="#cb83-1"></a>quantmod<span class="sc">::</span><span class="fu">getSymbols</span>(<span class="st">"PDD"</span>, <span class="at">auto.assign =</span> <span class="cn">FALSE</span>, <span class="at">src =</span> <span class="st">"yahoo"</span>)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div id="tbl-stock-company" class="quarto-float quarto-figure quarto-figure-center anchored">
 <figure class="quarto-float quarto-float-tbl figure"><figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-stock-company-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 表&nbsp;24.2: 一些互联网公司及股票代码
@@ -1618,13 +1619,14 @@ Warnes, J. J., 和 B. D. Ripley. 1987. <span>《Problems with likelihood estimat
       e.clearSelection();
     }
     const getTextToCopy = function(trigger) {
-        const codeEl = trigger.previousElementSibling.cloneNode(true);
-        for (const childEl of codeEl.children) {
-          if (isCodeAnnotation(childEl)) {
-            childEl.remove();
-          }
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
         }
-        return codeEl.innerText;
+      }
+      return codeEl.innerText;
     }
     const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
       text: getTextToCopy

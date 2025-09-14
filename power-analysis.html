@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="zh-Hans" xml:lang="zh-Hans"><head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.7.32">
+<meta name="generator" content="quarto-1.8.24">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 <title>17&nbsp; 统计检验的功效 – R 语言数据分析实战</title>
 <style>
@@ -65,18 +65,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <link href="./categorical-data-analysis.html" rel="prev">
 <script src="site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/axe/axe-check.js" type="module"></script>
 <script src="site_libs/quarto-html/popper.min.js"></script>
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="site_libs/quarto-html/anchor.min.js"></script>
 <link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-37eea08aefeeee20ff55810ff984fec1.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-dark-2fef5ea3f8957b3e4ecc936fc74692ca.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-37eea08aefeeee20ff55810ff984fec1.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-dc55a5b9e770e841cd82e46aadbfb9b0.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-dark-b651517ce65839d647a86e2780455cfb.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-dc55a5b9e770e841cd82e46aadbfb9b0.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-eaec1411600aaa3d517a4c2d9683cbbb.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="site_libs/bootstrap/bootstrap-dark-11608ecab0b4e008b87a77b96745bd9e.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="site_libs/bootstrap/bootstrap-eaec1411600aaa3d517a4c2d9683cbbb.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light"><script id="quarto-search-options" type="application/json">{
+<link href="site_libs/bootstrap/bootstrap-f2e7a7605c80472e4829c77b95a905a7.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark-194232c968a292054ad9c2d54c766ee0.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="site_libs/bootstrap/bootstrap-f2e7a7605c80472e4829c77b95a905a7.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light"><script id="quarto-search-options" type="application/json">{
   "location": "sidebar",
   "copy-button": false,
   "collapse-after": 3,
@@ -127,7 +128,7 @@ const typesetMath = (el) => {
     var macros = [];
     for (var i = 0; i < mathElements.length; i++) {
       var texText = mathElements[i].firstChild;
-      if (mathElements[i].tagName == "SPAN") {
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
         window.katex.render(texText.data, mathElements[i], {
           displayMode: mathElements[i].classList.contains('display'),
           throwOnError: false,
@@ -321,7 +322,9 @@ window.Quarto = {
     </div>
   </nav></header><!-- content --><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
 <!-- sidebar -->
-  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto"><div class="pt-lg-2 mt-2 text-left sidebar-header">
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto"><div class="pt-lg-2 mt-2 text-left sidebar-header sidebar-header-stacked">
+      <a href="./index.html" class="sidebar-logo-link">
+      </a>
     <div class="sidebar-title mb-0 py-0">
       <a href="./">R 语言数据分析实战</a> 
         <div class="sidebar-tools-main tools-wide">
@@ -636,7 +639,7 @@ window.Quarto = {
 <p>检验的功效常用于样本量的计算</p>
 <p><code><a href="https://rdrr.io/r/stats/power.t.test.html">power.t.test()</a></code> 计算单样本或两样本的 t 检验的功效，或者根据功效计算参数，如样本量</p>
 <div class="cell">
-<details class="code-fold"><summary>代码</summary><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a><span class="fu">library</span>(ggplot2)</span>
+<details class="code-fold"><summary>代码</summary><div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a><span class="fu">library</span>(ggplot2)</span>
 <span id="cb1-2"><a href="#cb1-2"></a>n <span class="ot">&lt;-</span> <span class="dv">30</span> <span class="co"># 样本量（只是一个例子）</span></span>
 <span id="cb1-3"><a href="#cb1-3"></a>x <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="at">from =</span> <span class="dv">0</span>, <span class="at">to =</span> <span class="dv">12</span>, <span class="at">by =</span> <span class="fl">0.01</span>)</span>
 <span id="cb1-4"><a href="#cb1-4"></a>dat <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">xx =</span> x <span class="sc">/</span> <span class="fu">sqrt</span>(n), <span class="at">yy =</span> <span class="dv">2</span> <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">-</span> <span class="fu">pt</span>(x, n <span class="sc">-</span> <span class="dv">1</span>)))</span>
@@ -645,7 +648,7 @@ window.Quarto = {
 <span id="cb1-7"><a href="#cb1-7"></a>  <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> <span class="fu">c</span>(<span class="fl">0.01</span>, <span class="fl">0.2</span>, <span class="fl">0.5</span>, <span class="fl">0.8</span>, <span class="fl">1.2</span>, <span class="dv">2</span>), <span class="at">linetype =</span> <span class="dv">2</span>) <span class="sc">+</span></span>
 <span id="cb1-8"><a href="#cb1-8"></a>  <span class="fu">theme_classic</span>(<span class="at">base_size =</span> <span class="dv">13</span>) <span class="sc">+</span></span>
 <span id="cb1-9"><a href="#cb1-9"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"$d = </span><span class="sc">\\</span><span class="st">frac{t}{</span><span class="sc">\\</span><span class="st">sqrt{n}}$"</span>, </span>
-<span id="cb1-10"><a href="#cb1-10"></a>       <span class="at">y =</span> <span class="st">"$2(1 - </span><span class="sc">\\</span><span class="st">mathrm{pt}(x, n - 1))$"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb1-10"><a href="#cb1-10"></a>       <span class="at">y =</span> <span class="st">"$2(1 - </span><span class="sc">\\</span><span class="st">mathrm{pt}(x, n - 1))$"</span>)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 </details><div class="cell-output-display">
 <div id="fig-power-t-test" class="quarto-float quarto-figure quarto-figure-center anchored">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-power-t-test-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
@@ -658,12 +661,12 @@ window.Quarto = {
 </div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1"></a><span class="fu">power.t.test</span>(</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1"></a><span class="fu">power.t.test</span>(</span>
 <span id="cb2-2"><a href="#cb2-2"></a>  <span class="at">n =</span> <span class="dv">100</span>, <span class="at">delta =</span> <span class="fl">2.2</span>,</span>
 <span id="cb2-3"><a href="#cb2-3"></a>  <span class="at">sd =</span> <span class="dv">1</span>, <span class="at">sig.level =</span> <span class="fl">0.05</span>,</span>
 <span id="cb2-4"><a href="#cb2-4"></a>  <span class="at">type =</span> <span class="st">"two.sample"</span>,</span>
 <span id="cb2-5"><a href="#cb2-5"></a>  <span class="at">alternative =</span> <span class="st">"two.sided"</span></span>
-<span id="cb2-6"><a href="#cb2-6"></a>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb2-6"><a href="#cb2-6"></a>)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; 
 #&gt;      Two-sample t test power calculation 
@@ -728,7 +731,7 @@ window.Quarto = {
 </div>
 <p>参数 <code>n</code>，<code>delta</code>，<code>power</code>，<code>sd</code> 和 <code>sig.level</code> 必须有一个值为 <code>NULL</code>，为 <code>NULL</code> 的参数是由其它参数决定的。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1"></a><span class="co"># 前面 t 检验的等价功效计算</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1"></a><span class="co"># 前面 t 检验的等价功效计算</span></span>
 <span id="cb4-2"><a href="#cb4-2"></a><span class="fu">library</span>(pwr)</span>
 <span id="cb4-3"><a href="#cb4-3"></a><span class="fu">pwr.t.test</span>(</span>
 <span id="cb4-4"><a href="#cb4-4"></a>  <span class="at">d =</span> <span class="fl">2.2</span> <span class="sc">/</span> <span class="fl">6.4</span>,</span>
@@ -736,7 +739,7 @@ window.Quarto = {
 <span id="cb4-6"><a href="#cb4-6"></a>  <span class="at">sig.level =</span> <span class="fl">0.05</span>,</span>
 <span id="cb4-7"><a href="#cb4-7"></a>  <span class="at">type =</span> <span class="st">"two.sample"</span>,</span>
 <span id="cb4-8"><a href="#cb4-8"></a>  <span class="at">alternative =</span> <span class="st">"two.sided"</span></span>
-<span id="cb4-9"><a href="#cb4-9"></a>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb4-9"><a href="#cb4-9"></a>)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; 
 #&gt;      Two-sample t test power calculation 
@@ -752,21 +755,21 @@ window.Quarto = {
 </div>
 <p>sleep 数据集为例，计算功效</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1"></a><span class="co"># 分组计算均值</span></span>
-<span id="cb6-2"><a href="#cb6-2"></a><span class="fu">aggregate</span>(<span class="at">data =</span> sleep, extra <span class="sc">~</span> group, <span class="at">FUN =</span> mean)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1"></a><span class="co"># 分组计算均值</span></span>
+<span id="cb6-2"><a href="#cb6-2"></a><span class="fu">aggregate</span>(<span class="at">data =</span> sleep, extra <span class="sc">~</span> group, <span class="at">FUN =</span> mean)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt;   group extra
 #&gt; 1     1  0.75
 #&gt; 2     2  2.33</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1"></a><span class="co"># 分组计算标准差</span></span>
-<span id="cb8-2"><a href="#cb8-2"></a><span class="fu">aggregate</span>(<span class="at">data =</span> sleep, extra <span class="sc">~</span> group, <span class="at">FUN =</span> sd)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1"></a><span class="co"># 分组计算标准差</span></span>
+<span id="cb8-2"><a href="#cb8-2"></a><span class="fu">aggregate</span>(<span class="at">data =</span> sleep, extra <span class="sc">~</span> group, <span class="at">FUN =</span> sd)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt;   group    extra
 #&gt; 1     1 1.789010
 #&gt; 2     2 2.002249</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1"></a><span class="co"># 代入计算功效</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1"></a><span class="co"># 代入计算功效</span></span>
 <span id="cb10-2"><a href="#cb10-2"></a><span class="fu">power.t.test</span>(</span>
 <span id="cb10-3"><a href="#cb10-3"></a>  <span class="at">delta =</span> <span class="fl">2.33</span> <span class="sc">-</span> <span class="fl">0.75</span>,            <span class="co"># 两组均值之差</span></span>
 <span id="cb10-4"><a href="#cb10-4"></a>  <span class="at">sd =</span> (<span class="fl">2.002249</span> <span class="sc">+</span> <span class="fl">1.789010</span>) <span class="sc">/</span> <span class="dv">2</span>, <span class="co"># 标准差</span></span>
@@ -774,7 +777,7 @@ window.Quarto = {
 <span id="cb10-6"><a href="#cb10-6"></a>  <span class="at">type =</span> <span class="st">"two.sample"</span>,      <span class="co"># 两样本</span></span>
 <span id="cb10-7"><a href="#cb10-7"></a>  <span class="at">power =</span> <span class="fl">0.95</span>,             <span class="co"># 功效水平</span></span>
 <span id="cb10-8"><a href="#cb10-8"></a>  <span class="at">alternative =</span> <span class="st">"two.sided"</span> <span class="co"># 双边检验</span></span>
-<span id="cb10-9"><a href="#cb10-9"></a>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb10-9"><a href="#cb10-9"></a>)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; 
 #&gt;      Two-sample t test power calculation 
@@ -791,7 +794,7 @@ window.Quarto = {
 </div>
 <p>经检验，上面取两组的平均方差代替共同方差和下面精确计算的结果差不多。各组至少需要 39 个样本。<strong>MKpower</strong> 包精确计算 Welch t 检验的功效</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1"></a><span class="fu">library</span>(MKpower)</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1"></a><span class="fu">library</span>(MKpower)</span>
 <span id="cb12-2"><a href="#cb12-2"></a><span class="fu">power.welch.t.test</span>(</span>
 <span id="cb12-3"><a href="#cb12-3"></a>  <span class="at">delta =</span> <span class="fl">2.33</span> <span class="sc">-</span> <span class="fl">0.75</span>,</span>
 <span id="cb12-4"><a href="#cb12-4"></a>  <span class="at">sd1 =</span> <span class="fl">2.002249</span>,</span>
@@ -799,22 +802,22 @@ window.Quarto = {
 <span id="cb12-6"><a href="#cb12-6"></a>  <span class="at">sig.level =</span> <span class="fl">0.05</span>,</span>
 <span id="cb12-7"><a href="#cb12-7"></a>  <span class="at">power =</span> <span class="fl">0.95</span>,</span>
 <span id="cb12-8"><a href="#cb12-8"></a>  <span class="at">alternative =</span> <span class="st">"two.sided"</span></span>
-<span id="cb12-9"><a href="#cb12-9"></a>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb12-9"><a href="#cb12-9"></a>)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>我国著名统计学家许宝騄先生对此功效计算方法做出过巨大贡献。</p>
 </section><section id="比例检验的功效" class="level2" data-number="17.3"><h2 data-number="17.3" class="anchored" data-anchor-id="比例检验的功效">
 <span class="header-section-number">17.3</span> 比例检验的功效</h2>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1"></a><span class="co"># power.prop.test()</span></span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1"></a><span class="co"># power.prop.test()</span></span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p><code><a href="https://rdrr.io/r/stats/power.prop.test.html">power.prop.test()</a></code> 计算两样本比例检验的功效</p>
 <p>功效可以用来计算实验所需要的样本量，检验统计量的功效越大/高，检验方法越好，实验所需要的样本量越少</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1"></a><span class="co"># p1 &gt;= p2 的检验 单边和双边检验</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1"></a><span class="co"># p1 &gt;= p2 的检验 单边和双边检验</span></span>
 <span id="cb14-2"><a href="#cb14-2"></a><span class="fu">power.prop.test</span>(</span>
 <span id="cb14-3"><a href="#cb14-3"></a>  <span class="at">p1 =</span> .<span class="dv">65</span>, <span class="at">p2 =</span> <span class="fl">0.6</span>, <span class="at">sig.level =</span> .<span class="dv">05</span>,</span>
 <span id="cb14-4"><a href="#cb14-4"></a>  <span class="at">power =</span> <span class="fl">0.90</span>, <span class="at">alternative =</span> <span class="st">"one.sided"</span></span>
-<span id="cb14-5"><a href="#cb14-5"></a>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb14-5"><a href="#cb14-5"></a>)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; 
 #&gt;      Two-sample comparison of proportions power calculation 
@@ -828,10 +831,10 @@ window.Quarto = {
 #&gt; 
 #&gt; NOTE: n is number in *each* group</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1"></a><span class="fu">power.prop.test</span>(</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1"></a><span class="fu">power.prop.test</span>(</span>
 <span id="cb16-2"><a href="#cb16-2"></a>  <span class="at">p1 =</span> .<span class="dv">65</span>, <span class="at">p2 =</span> <span class="fl">0.6</span>, <span class="at">sig.level =</span> .<span class="dv">05</span>,</span>
 <span id="cb16-3"><a href="#cb16-3"></a>  <span class="at">power =</span> <span class="fl">0.90</span>, <span class="at">alternative =</span> <span class="st">"two.sided"</span></span>
-<span id="cb16-4"><a href="#cb16-4"></a>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb16-4"><a href="#cb16-4"></a>)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; 
 #&gt;      Two-sample comparison of proportions power calculation 
@@ -848,13 +851,13 @@ window.Quarto = {
 </div>
 <p><strong>pwr</strong> 包 <code>pwr.2p.test()</code> 函数提供了类似 <code><a href="https://rdrr.io/r/stats/power.prop.test.html">power.prop.test()</a></code> 函数的功能</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1"></a><span class="fu">library</span>(pwr)</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1"></a><span class="fu">library</span>(pwr)</span>
 <span id="cb18-2"><a href="#cb18-2"></a><span class="co"># 明确 p1 &gt; p2 的检验</span></span>
 <span id="cb18-3"><a href="#cb18-3"></a><span class="co"># 单边检验拆分更加明细，分为大于和小于</span></span>
 <span id="cb18-4"><a href="#cb18-4"></a><span class="fu">pwr.2p.test</span>(</span>
 <span id="cb18-5"><a href="#cb18-5"></a>  <span class="at">h =</span> <span class="fu">ES.h</span>(<span class="at">p1 =</span> <span class="fl">0.65</span>, <span class="at">p2 =</span> <span class="fl">0.6</span>),</span>
 <span id="cb18-6"><a href="#cb18-6"></a>  <span class="at">sig.level =</span> <span class="fl">0.05</span>, <span class="at">power =</span> <span class="fl">0.9</span>, <span class="at">alternative =</span> <span class="st">"greater"</span></span>
-<span id="cb18-7"><a href="#cb18-7"></a>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb18-7"><a href="#cb18-7"></a>)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; 
 #&gt;      Difference of proportion power calculation for binomial distribution (arcsine transformation) 
@@ -870,10 +873,10 @@ window.Quarto = {
 </div>
 <p>已知两样本的样本量不等，检验 H_0: <span class="math inline">\(p_1 = p_2\)</span> H_1: <span class="math inline">\(p_1 \neq p_2\)</span> 的功效</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1"></a><span class="fu">pwr.2p2n.test</span>(</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1"></a><span class="fu">pwr.2p2n.test</span>(</span>
 <span id="cb20-2"><a href="#cb20-2"></a>  <span class="at">h =</span> <span class="fl">0.30</span>, <span class="at">n1 =</span> <span class="dv">80</span>, <span class="at">n2 =</span> <span class="dv">245</span>,</span>
 <span id="cb20-3"><a href="#cb20-3"></a>  <span class="at">sig.level =</span> <span class="fl">0.05</span>, <span class="at">alternative =</span> <span class="st">"greater"</span></span>
-<span id="cb20-4"><a href="#cb20-4"></a>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb20-4"><a href="#cb20-4"></a>)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; 
 #&gt;      difference of proportion power calculation for binomial distribution (arcsine transformation) 
@@ -893,12 +896,12 @@ window.Quarto = {
 <span class="header-section-number">17.4</span> 方差分析的功效</h2>
 <p><code><a href="https://rdrr.io/r/stats/power.anova.test.html">power.anova.test()</a></code> 计算平衡的单因素方差分析检验的功效</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1"></a><span class="fu">power.anova.test</span>(</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb22"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1"></a><span class="fu">power.anova.test</span>(</span>
 <span id="cb22-2"><a href="#cb22-2"></a>  <span class="at">groups =</span> <span class="dv">4</span>,       <span class="co">#  4 个组  </span></span>
 <span id="cb22-3"><a href="#cb22-3"></a>  <span class="at">between.var =</span> <span class="dv">1</span>,  <span class="co"># 组间方差为 1</span></span>
 <span id="cb22-4"><a href="#cb22-4"></a>  <span class="at">within.var =</span> <span class="dv">3</span>,   <span class="co"># 组内方差为 3</span></span>
 <span id="cb22-5"><a href="#cb22-5"></a>  <span class="at">power =</span> <span class="fl">0.95</span>      <span class="co"># 1 - 犯第二类错误的概率</span></span>
-<span id="cb22-6"><a href="#cb22-6"></a>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb22-6"><a href="#cb22-6"></a>)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; 
 #&gt;      Balanced one-way analysis of variance power calculation 
@@ -914,14 +917,14 @@ window.Quarto = {
 </div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1"></a><span class="fu">library</span>(pwr)</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb24"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1"></a><span class="fu">library</span>(pwr)</span>
 <span id="cb24-2"><a href="#cb24-2"></a><span class="co"># f 是如何和上面的组间/组内方差等价指定的</span></span>
 <span id="cb24-3"><a href="#cb24-3"></a><span class="fu">pwr.anova.test</span>(</span>
 <span id="cb24-4"><a href="#cb24-4"></a>  <span class="at">k =</span> <span class="dv">4</span>,            <span class="co"># 组数</span></span>
 <span id="cb24-5"><a href="#cb24-5"></a>  <span class="at">f =</span> <span class="fl">0.5</span>,          <span class="co"># 效应大小</span></span>
 <span id="cb24-6"><a href="#cb24-6"></a>  <span class="at">sig.level =</span> <span class="fl">0.05</span>, <span class="co"># 显著性水平</span></span>
 <span id="cb24-7"><a href="#cb24-7"></a>  <span class="at">power =</span> <span class="fl">0.95</span>      <span class="co"># 检验的效</span></span>
-<span id="cb24-8"><a href="#cb24-8"></a>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb24-8"><a href="#cb24-8"></a>)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; 
 #&gt;      Balanced one-way analysis of variance power calculation 
@@ -1001,13 +1004,14 @@ window.Quarto = {
       e.clearSelection();
     }
     const getTextToCopy = function(trigger) {
-        const codeEl = trigger.previousElementSibling.cloneNode(true);
-        for (const childEl of codeEl.children) {
-          if (isCodeAnnotation(childEl)) {
-            childEl.remove();
-          }
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
         }
-        return codeEl.innerText;
+      }
+      return codeEl.innerText;
     }
     const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
       text: getTextToCopy

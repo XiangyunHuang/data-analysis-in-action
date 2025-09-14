@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="zh-Hans" xml:lang="zh-Hans"><head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.7.32">
+<meta name="generator" content="quarto-1.8.24">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 <title>19&nbsp; 空间数据分析 – R 语言数据分析实战</title>
 <style>
@@ -65,18 +65,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <link href="./analyze-network-data.html" rel="prev">
 <script src="site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/axe/axe-check.js" type="module"></script>
 <script src="site_libs/quarto-html/popper.min.js"></script>
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="site_libs/quarto-html/anchor.min.js"></script>
 <link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-37eea08aefeeee20ff55810ff984fec1.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-dark-2fef5ea3f8957b3e4ecc936fc74692ca.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-37eea08aefeeee20ff55810ff984fec1.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-dc55a5b9e770e841cd82e46aadbfb9b0.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-dark-b651517ce65839d647a86e2780455cfb.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-dc55a5b9e770e841cd82e46aadbfb9b0.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-eaec1411600aaa3d517a4c2d9683cbbb.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="site_libs/bootstrap/bootstrap-dark-11608ecab0b4e008b87a77b96745bd9e.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="site_libs/bootstrap/bootstrap-eaec1411600aaa3d517a4c2d9683cbbb.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light"><script id="quarto-search-options" type="application/json">{
+<link href="site_libs/bootstrap/bootstrap-f2e7a7605c80472e4829c77b95a905a7.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark-194232c968a292054ad9c2d54c766ee0.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="site_libs/bootstrap/bootstrap-f2e7a7605c80472e4829c77b95a905a7.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light"><script id="quarto-search-options" type="application/json">{
   "location": "sidebar",
   "copy-button": false,
   "collapse-after": 3,
@@ -127,7 +128,7 @@ const typesetMath = (el) => {
     var macros = [];
     for (var i = 0; i < mathElements.length; i++) {
       var texText = mathElements[i].firstChild;
-      if (mathElements[i].tagName == "SPAN") {
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
         window.katex.render(texText.data, mathElements[i], {
           displayMode: mathElements[i].classList.contains('display'),
           throwOnError: false,
@@ -321,7 +322,9 @@ window.Quarto = {
     </div>
   </nav></header><!-- content --><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
 <!-- sidebar -->
-  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto"><div class="pt-lg-2 mt-2 text-left sidebar-header">
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto"><div class="pt-lg-2 mt-2 text-left sidebar-header sidebar-header-stacked">
+      <a href="./index.html" class="sidebar-logo-link">
+      </a>
     <div class="sidebar-title mb-0 py-0">
       <a href="./">R 语言数据分析实战</a> 
         <div class="sidebar-tools-main tools-wide">
@@ -609,28 +612,28 @@ window.Quarto = {
 
 </header><p>本章开始介绍空间数据的分析过程，首先在 R 语言控制台加载如下几个 R 包。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a><span class="fu">library</span>(nlme)          <span class="co"># GLS 广义最小二乘拟合</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a><span class="fu">library</span>(nlme)          <span class="co"># GLS 广义最小二乘拟合</span></span>
 <span id="cb1-2"><a href="#cb1-2"></a><span class="fu">library</span>(scatterplot3d) <span class="co"># 绘制三维散点透视图</span></span>
 <span id="cb1-3"><a href="#cb1-3"></a><span class="fu">library</span>(ggplot2)      <span class="co"># 绘制平面图</span></span>
 <span id="cb1-4"><a href="#cb1-4"></a><span class="fu">library</span>(gstat)        <span class="co"># 克里金插值预测</span></span>
 <span id="cb1-5"><a href="#cb1-5"></a><span class="fu">library</span>(sf)           <span class="co"># 空间数据操作</span></span>
 <span id="cb1-6"><a href="#cb1-6"></a><span class="do">## Linking to GEOS 3.12.1, GDAL 3.8.4, PROJ 9.4.0; sf_use_s2() is TRUE</span></span>
 <span id="cb1-7"><a href="#cb1-7"></a><span class="fu">library</span>(abind)</span>
-<span id="cb1-8"><a href="#cb1-8"></a><span class="fu">library</span>(stars)        <span class="co"># 空间网格数据操作</span></span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb1-8"><a href="#cb1-8"></a><span class="fu">library</span>(stars)        <span class="co"># 空间网格数据操作</span></span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>接着加载本章所用的两个数据，分别是朗格拉普岛核辐射检测数据和海岸线坐标数据，后续将根据这两份数据预测全岛的核辐射分布情况。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1"></a>rongelap <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="at">file =</span> <span class="st">"data/rongelap.rds"</span>)</span>
-<span id="cb2-2"><a href="#cb2-2"></a>rongelap_coastline <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="at">file =</span> <span class="st">"data/rongelap_coastline.rds"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1"></a>rongelap <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="at">file =</span> <span class="st">"data/rongelap.rds"</span>)</span>
+<span id="cb2-2"><a href="#cb2-2"></a>rongelap_coastline <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="at">file =</span> <span class="st">"data/rongelap_coastline.rds"</span>)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>这两个数据集的部分内容见下表，这些数据的采集点和朗格拉普岛的海岸线见下图。</p>
-<details class="code-fold"><summary>代码</summary><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1"></a><span class="fu">library</span>(knitr)</span>
+<details class="code-fold"><summary>代码</summary><div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1"></a><span class="fu">library</span>(knitr)</span>
 <span id="cb3-2"><a href="#cb3-2"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(<span class="fu">head</span>(rongelap, <span class="dv">6</span>),</span>
 <span id="cb3-3"><a href="#cb3-3"></a>  <span class="at">col.names =</span> <span class="fu">c</span>(<span class="st">"横坐标"</span>, <span class="st">"纵坐标"</span>, <span class="st">"数目"</span>, <span class="st">"时间"</span>)</span>
 <span id="cb3-4"><a href="#cb3-4"></a>)</span>
 <span id="cb3-5"><a href="#cb3-5"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(<span class="fu">head</span>(rongelap_coastline, <span class="dv">6</span>),</span>
 <span id="cb3-6"><a href="#cb3-6"></a>  <span class="at">col.names =</span> <span class="fu">c</span>(<span class="st">"横坐标"</span>, <span class="st">"纵坐标"</span>)</span>
-<span id="cb3-7"><a href="#cb3-7"></a>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb3-7"><a href="#cb3-7"></a>)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 </details><div id="tbl-rongelap-nuclear-data" class="quarto-layout-panel anchored">
 <figure class="quarto-float quarto-float-tbl figure"><figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-rongelap-nuclear-data-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 表&nbsp;19.1: 朗格拉普岛核辐射检测数据及海岸线坐标数据
@@ -737,13 +740,13 @@ window.Quarto = {
 </figure>
 </div>
 <div class="cell">
-<details class="code-fold"><summary>代码</summary><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1"></a><span class="fu">plot</span>(<span class="fu">c</span>(<span class="sc">-</span><span class="dv">6250</span>, <span class="dv">0</span>), <span class="fu">c</span>(<span class="sc">-</span><span class="dv">3600</span>, <span class="dv">100</span>),</span>
+<details class="code-fold"><summary>代码</summary><div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1"></a><span class="fu">plot</span>(<span class="fu">c</span>(<span class="sc">-</span><span class="dv">6250</span>, <span class="dv">0</span>), <span class="fu">c</span>(<span class="sc">-</span><span class="dv">3600</span>, <span class="dv">100</span>),</span>
 <span id="cb4-2"><a href="#cb4-2"></a>  <span class="at">type =</span> <span class="st">"n"</span>, <span class="at">panel.first =</span> <span class="fu">grid</span>(),</span>
 <span id="cb4-3"><a href="#cb4-3"></a>  <span class="at">main =</span> <span class="st">"朗格拉普岛核辐射检测站点及其海岸线"</span>,</span>
 <span id="cb4-4"><a href="#cb4-4"></a>  <span class="at">xlab =</span> <span class="st">"横坐标（米）"</span>, <span class="at">ylab =</span> <span class="st">"纵坐标（米）"</span></span>
 <span id="cb4-5"><a href="#cb4-5"></a>)</span>
 <span id="cb4-6"><a href="#cb4-6"></a><span class="fu">points</span>(rongelap, <span class="at">pch =</span> <span class="dv">16</span>, <span class="at">cex =</span> <span class="fl">0.5</span>)</span>
-<span id="cb4-7"><a href="#cb4-7"></a><span class="fu">points</span>(rongelap_coastline, <span class="at">pch =</span> <span class="dv">16</span>, <span class="at">cex =</span> <span class="fl">0.3</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb4-7"><a href="#cb4-7"></a><span class="fu">points</span>(rongelap_coastline, <span class="at">pch =</span> <span class="dv">16</span>, <span class="at">cex =</span> <span class="fl">0.3</span>)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 </details><div class="cell-output-display">
 <div id="fig-rongelap-location" class="quarto-float quarto-figure quarto-figure-center anchored">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-rongelap-location-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
@@ -758,7 +761,7 @@ window.Quarto = {
 <p>这个数据集内容比较简单，写作上也容易一些。作为空间数据分析方法的介绍已然足够，它具有空间数据的一般性，包含横纵坐标，研究目标及区域。</p>
 <p>朗格拉普岛上各采样点的辐射强度见下图，这是一个三维散点透视图，是采用 <strong>scatterplot3d</strong> 包绘制的，相比于上图，多了辐射强度数据。图中每个线段一端表示采样点的位置，另一端表示辐射强度值，线段越长代表辐射强度越高。</p>
 <div class="cell">
-<details class="code-fold"><summary>代码</summary><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1"></a><span class="co"># 可选的替代三维图形</span></span>
+<details class="code-fold"><summary>代码</summary><div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1"></a><span class="co"># 可选的替代三维图形</span></span>
 <span id="cb5-2"><a href="#cb5-2"></a><span class="fu">library</span>(scatterplot3d)</span>
 <span id="cb5-3"><a href="#cb5-3"></a><span class="co"># 将连续型数据向量转化为颜色向量</span></span>
 <span id="cb5-4"><a href="#cb5-4"></a>colorize_numeric <span class="ot">&lt;-</span> <span class="cf">function</span>(x) {</span>
@@ -788,7 +791,7 @@ window.Quarto = {
 <span id="cb5-28"><a href="#cb5-28"></a><span class="do">## 三维空间坐标转二维平面坐标</span></span>
 <span id="cb5-29"><a href="#cb5-29"></a>xy <span class="ot">&lt;-</span> <span class="fu">unlist</span>(plt<span class="sc">$</span><span class="fu">xyz.convert</span>(<span class="dv">2200</span>, <span class="sc">-</span><span class="dv">1500</span>, <span class="dv">0</span>))</span>
 <span id="cb5-30"><a href="#cb5-30"></a><span class="do">## 添加 y 轴标签</span></span>
-<span id="cb5-31"><a href="#cb5-31"></a><span class="fu">text</span>(xy[<span class="dv">1</span>], xy[<span class="dv">2</span>], <span class="st">"</span><span class="sc">\n</span><span class="st">纵坐标（米）"</span>, <span class="at">srt =</span> <span class="dv">50</span>, <span class="at">pos =</span> <span class="dv">2</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb5-31"><a href="#cb5-31"></a><span class="fu">text</span>(xy[<span class="dv">1</span>], xy[<span class="dv">2</span>], <span class="st">"</span><span class="sc">\n</span><span class="st">纵坐标（米）"</span>, <span class="at">srt =</span> <span class="dv">50</span>, <span class="at">pos =</span> <span class="dv">2</span>)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 </details><div class="cell-output-display">
 <div id="fig-rongelap-concentration" class="quarto-float quarto-figure quarto-figure-center anchored">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-rongelap-concentration-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
@@ -804,13 +807,13 @@ window.Quarto = {
 <span class="header-section-number">19.1</span> 模型拟合</h2>
 <p>下面采用 <strong>nlme</strong> 包的 <code>gls(</code>) 函数拟合模型，该函数使用广义最小二乘拟合模型，模型参数的估计方法采用了限制极大似然估计。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1"></a><span class="fu">library</span>(nlme)</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1"></a><span class="fu">library</span>(nlme)</span>
 <span id="cb6-2"><a href="#cb6-2"></a><span class="co"># 无块金效应</span></span>
 <span id="cb6-3"><a href="#cb6-3"></a>fit_rongelap_gls <span class="ot">&lt;-</span> nlme<span class="sc">::</span><span class="fu">gls</span>(</span>
 <span id="cb6-4"><a href="#cb6-4"></a>  <span class="at">model =</span> <span class="fu">log</span>(counts <span class="sc">/</span> time) <span class="sc">~</span> <span class="dv">1</span>, <span class="at">data =</span> rongelap,</span>
 <span id="cb6-5"><a href="#cb6-5"></a>  <span class="at">correlation =</span> nlme<span class="sc">::</span><span class="fu">corExp</span>(<span class="at">form =</span> <span class="sc">~</span> cX <span class="sc">+</span> cY, <span class="at">nugget =</span> T)</span>
 <span id="cb6-6"><a href="#cb6-6"></a>)</span>
-<span id="cb6-7"><a href="#cb6-7"></a><span class="fu">summary</span>(fit_rongelap_gls)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb6-7"><a href="#cb6-7"></a><span class="fu">summary</span>(fit_rongelap_gls)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Generalized least squares fit by REML
   Model: log(counts/time) ~ 1 
@@ -872,10 +875,10 @@ V_{T}(u_{ij}) &amp;= \frac{1}{2}\mathsf{Var}\{T(x_i)-T(x_j)\} \\
 \]</span></p>
 <p>这个重参数化的目的是软件实现上的方便，单独估计模型参数 <span class="math inline">\(\tau^2\)</span> 和 <span class="math inline">\(\sigma^2\)</span> 存在可识别问题，转而估计其比值则大大改善可识别性问题，它是噪声与总方差的比值，或者说作用等同于信噪比。为了说明自相关函数 <code>corExp()</code> 及各个参数的作用，设置 <span class="math inline">\(\phi = 1,\delta=0.2\)</span> ，示例如下：</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1"></a>spatDat <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">x =</span> (<span class="dv">0</span><span class="sc">:</span><span class="dv">4</span>)<span class="sc">/</span><span class="dv">4</span>, <span class="at">y =</span> (<span class="dv">0</span><span class="sc">:</span><span class="dv">4</span>)<span class="sc">/</span><span class="dv">4</span>)</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1"></a>spatDat <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">x =</span> (<span class="dv">0</span><span class="sc">:</span><span class="dv">4</span>)<span class="sc">/</span><span class="dv">4</span>, <span class="at">y =</span> (<span class="dv">0</span><span class="sc">:</span><span class="dv">4</span>)<span class="sc">/</span><span class="dv">4</span>)</span>
 <span id="cb8-2"><a href="#cb8-2"></a>cs3Exp <span class="ot">&lt;-</span> <span class="fu">corExp</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="fl">0.2</span>), <span class="at">form =</span> <span class="sc">~</span> x <span class="sc">+</span> y, <span class="at">nugget =</span> <span class="cn">TRUE</span>)</span>
 <span id="cb8-3"><a href="#cb8-3"></a>cs3Exp <span class="ot">&lt;-</span> <span class="fu">Initialize</span>(cs3Exp, spatDat)</span>
-<span id="cb8-4"><a href="#cb8-4"></a><span class="fu">corMatrix</span>(cs3Exp)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb8-4"><a href="#cb8-4"></a><span class="fu">corMatrix</span>(cs3Exp)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>          [,1]      [,2]      [,3]      [,4]      [,5]
 [1,] 1.0000000 0.5617508 0.3944550 0.2769817 0.1944934
@@ -887,7 +890,7 @@ V_{T}(u_{ij}) &amp;= \frac{1}{2}\mathsf{Var}\{T(x_i)-T(x_j)\} \\
 </div>
 <p>根据上面带块金效应的指数型自相关函数的数学公式，结果与上面是一样的，自编代码如下：</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1"></a><span class="fu">diag</span>(<span class="fl">0.2</span>, <span class="dv">5</span>) <span class="sc">+</span> (<span class="dv">1</span> <span class="sc">-</span> <span class="fl">0.2</span>) <span class="sc">*</span> <span class="fu">exp</span>(<span class="sc">-</span><span class="fu">as.matrix</span>(<span class="fu">dist</span>(spatDat)))</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1"></a><span class="fu">diag</span>(<span class="fl">0.2</span>, <span class="dv">5</span>) <span class="sc">+</span> (<span class="dv">1</span> <span class="sc">-</span> <span class="fl">0.2</span>) <span class="sc">*</span> <span class="fu">exp</span>(<span class="sc">-</span><span class="fu">as.matrix</span>(<span class="fu">dist</span>(spatDat)))</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>          1         2         3         4         5
 1 1.0000000 0.5617508 0.3944550 0.2769817 0.1944934
@@ -899,7 +902,7 @@ V_{T}(u_{ij}) &amp;= \frac{1}{2}\mathsf{Var}\{T(x_i)-T(x_j)\} \\
 </div>
 <p>接下来，将 rongelap 观测数据代入，得到下图所示的位置相关性。</p>
 <div class="cell">
-<details class="code-fold"><summary>代码</summary><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1"></a>csExp <span class="ot">&lt;-</span> <span class="fu">corExp</span>(<span class="fu">c</span>(<span class="dv">500</span>, <span class="fl">0.2</span>), <span class="at">form =</span> <span class="sc">~</span> cX <span class="sc">+</span> cY, <span class="at">nugget =</span> <span class="cn">TRUE</span>)</span>
+<details class="code-fold"><summary>代码</summary><div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1"></a>csExp <span class="ot">&lt;-</span> <span class="fu">corExp</span>(<span class="fu">c</span>(<span class="dv">500</span>, <span class="fl">0.2</span>), <span class="at">form =</span> <span class="sc">~</span> cX <span class="sc">+</span> cY, <span class="at">nugget =</span> <span class="cn">TRUE</span>)</span>
 <span id="cb12-2"><a href="#cb12-2"></a>csExp <span class="ot">&lt;-</span> <span class="fu">Initialize</span>(csExp, rongelap)</span>
 <span id="cb12-3"><a href="#cb12-3"></a>rongelap_corr_mat <span class="ot">&lt;-</span> <span class="fu">corMatrix</span>(csExp)</span>
 <span id="cb12-4"><a href="#cb12-4"></a></span>
@@ -919,7 +922,7 @@ V_{T}(u_{ij}) &amp;= \frac{1}{2}\mathsf{Var}\{T(x_i)-T(x_j)\} \\
 <span id="cb12-18"><a href="#cb12-18"></a>    )</span>
 <span id="cb12-19"><a href="#cb12-19"></a>  ),</span>
 <span id="cb12-20"><a href="#cb12-20"></a>  <span class="at">par.settings =</span> <span class="fu">list</span>(<span class="at">axis.line =</span> <span class="fu">list</span>(<span class="at">col =</span> <span class="st">"transparent"</span>))</span>
-<span id="cb12-21"><a href="#cb12-21"></a>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb12-21"><a href="#cb12-21"></a>)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 </details><div class="cell-output-display">
 <div id="fig-rongelap-corr-mat" class="quarto-float quarto-figure quarto-figure-center anchored">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-rongelap-corr-mat-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
@@ -945,7 +948,7 @@ V_{T}(u_{ij}) &amp;= \frac{1}{2}\mathsf{Var}\{T(x_i)-T(x_j)\} \\
 <span class="header-section-number">19.2</span> 空间操作</h2>
 <p>将 <code>data.frame</code> （data frame 二维表格）类型数据转为 <code>sf</code> （simple feature 空间几何数据）类型的数据，通过对研究岛屿的网格化，获得预测位置。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1"></a><span class="fu">library</span>(sf)</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1"></a><span class="fu">library</span>(sf)</span>
 <span id="cb13-2"><a href="#cb13-2"></a><span class="fu">library</span>(abind)</span>
 <span id="cb13-3"><a href="#cb13-3"></a><span class="fu">library</span>(stars)</span>
 <span id="cb13-4"><a href="#cb13-4"></a><span class="co"># 准备数据</span></span>
@@ -956,7 +959,7 @@ V_{T}(u_{ij}) &amp;= \frac{1}{2}\mathsf{Var}\{T(x_i)-T(x_j)\} \\
 <span id="cb13-9"><a href="#cb13-9"></a>rongelap_grid_stars <span class="ot">&lt;-</span> <span class="fu">st_bbox</span>(rongelap_coastline_sfp) <span class="sc">|&gt;</span></span>
 <span id="cb13-10"><a href="#cb13-10"></a>  <span class="fu">st_as_stars</span>(<span class="at">dx =</span> <span class="dv">32</span>, <span class="at">dy =</span> <span class="dv">16</span>) <span class="sc">|&gt;</span></span>
 <span id="cb13-11"><a href="#cb13-11"></a>  <span class="fu">st_crop</span>(rongelap_coastline_sfp)</span>
-<span id="cb13-12"><a href="#cb13-12"></a>rongelap_grid_stars</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb13-12"><a href="#cb13-12"></a>rongelap_grid_stars</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>stars object with 2 dimensions and 1 attribute
 attribute(s):
@@ -979,13 +982,13 @@ y    1 231  103.5   -16 [y]</code></pre>
 <li><p><code>model</code> 这个参数传递函数 <code>vgm()</code> 返回的对象，指定空间相关性的结构，如刻画空间相关性的核函数，是否含有块金效应。函数 <code>vgm()</code> 有几个重要的参数，<code>psill</code> 代表空间效应的方差 <span class="math inline">\(\sigma^2\)</span> ，<code>model</code> 代表空间效应的核函数，<code>range</code> 代表范围参数，是一个固定值，来自前面函数 <code>gls()</code> 的估计结果，<code>nugget</code> 代表块金效应。</p></li>
 </ul>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1"></a><span class="co"># 变差结构中的各参数</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1"></a><span class="co"># 变差结构中的各参数</span></span>
 <span id="cb15-2"><a href="#cb15-2"></a><span class="fu">library</span>(gstat)</span>
 <span id="cb15-3"><a href="#cb15-3"></a>fit_rongelap_gstat <span class="ot">&lt;-</span> <span class="fu">fit.variogram.reml</span>(<span class="at">formula =</span> <span class="fu">log</span>(counts <span class="sc">/</span> time) <span class="sc">~</span> <span class="dv">1</span>,</span>
 <span id="cb15-4"><a href="#cb15-4"></a>  <span class="at">locations =</span> <span class="sc">~</span> cX <span class="sc">+</span> cY, <span class="at">data =</span> rongelap,</span>
 <span id="cb15-5"><a href="#cb15-5"></a>  <span class="at">model =</span> <span class="fu">vgm</span>(<span class="at">psill =</span> <span class="dv">1</span>, <span class="at">model =</span> <span class="st">"Exp"</span>, <span class="at">range =</span> <span class="fl">169.7472</span>, <span class="at">nugget =</span> <span class="dv">1</span>)</span>
 <span id="cb15-6"><a href="#cb15-6"></a>)</span>
-<span id="cb15-7"><a href="#cb15-7"></a>fit_rongelap_gstat</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb15-7"><a href="#cb15-7"></a>fit_rongelap_gstat</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>  model      psill    range
 1   Nug 0.02958585   0.0000
@@ -994,17 +997,17 @@ y    1 231  103.5   -16 [y]</code></pre>
 </div>
 <p>输出结果中第一行是块金效应 <span class="math inline">\(\tau^2 = 0.0296\)</span> ，第二行是指数型空间相关性结构中的方差参数 <span class="math inline">\(\sigma^2=0.325\)</span> 和范围参数，这个结果与 <strong>nlme</strong> 包的函数 <code>gls()</code> 的输出结果是差不多的。在这里使用 gstat 包，那么，预测部分可以直接使用克里金插值预测函数 <code>krige()</code> ，而 nlme 包对这种情况是不提供预测方法的。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1"></a><span class="co"># 预测</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1"></a><span class="co"># 预测</span></span>
 <span id="cb17-2"><a href="#cb17-2"></a>fit_krige_pred <span class="ot">&lt;-</span> <span class="fu">krige</span>(</span>
 <span id="cb17-3"><a href="#cb17-3"></a>  <span class="at">formula =</span> <span class="fu">log</span>(counts <span class="sc">/</span> time) <span class="sc">~</span> <span class="dv">1</span>, </span>
 <span id="cb17-4"><a href="#cb17-4"></a>  <span class="at">locations =</span> rongelap_sf,</span>
 <span id="cb17-5"><a href="#cb17-5"></a>  <span class="at">newdata =</span> rongelap_grid_stars, </span>
 <span id="cb17-6"><a href="#cb17-6"></a>  <span class="at">model =</span> fit_rongelap_gstat</span>
-<span id="cb17-7"><a href="#cb17-7"></a>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb17-7"><a href="#cb17-7"></a>)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[using ordinary kriging]</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1"></a>fit_krige_pred</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb19"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1"></a>fit_krige_pred</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>stars object with 2 dimensions and 2 attributes
 attribute(s):
@@ -1018,7 +1021,7 @@ y    1 231  103.5   -16 [y]</code></pre>
 </div>
 </div>
 <p>展示克里金插值方法预测整个岛屿核辐射强度。克里金插值方法的预测方差，从图中可以观测到四个密集的采样区，预测方差相对于周围区域会小很多（这是正常的，采样点越多预测误差越小越准确），小范围内展示的预测误差接近于系统的测量误差（块金效应）或者说是噪声。相对较远的位置之间的预测误差主要包含空间随机效应对应的方差或者说是信号，也是建模考虑的主要对象之一。</p>
-<details class="code-fold"><summary>代码</summary><div class="sourceCode cell-code" id="cb21"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1"></a><span class="fu">library</span>(ggplot2)</span>
+<details class="code-fold"><summary>代码</summary><div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb21"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1"></a><span class="fu">library</span>(ggplot2)</span>
 <span id="cb21-2"><a href="#cb21-2"></a><span class="fu">ggplot</span>() <span class="sc">+</span> </span>
 <span id="cb21-3"><a href="#cb21-3"></a>  <span class="fu">geom_stars</span>(<span class="at">data =</span> fit_krige_pred, <span class="fu">aes</span>(<span class="at">fill =</span> <span class="fu">exp</span>(var1.pred)), </span>
 <span id="cb21-4"><a href="#cb21-4"></a>             <span class="at">na.action =</span> na.omit) <span class="sc">+</span> </span>
@@ -1031,7 +1034,7 @@ y    1 231  103.5   -16 [y]</code></pre>
 <span id="cb21-11"><a href="#cb21-11"></a>             <span class="at">na.action =</span> na.omit) <span class="sc">+</span> </span>
 <span id="cb21-12"><a href="#cb21-12"></a>  <span class="fu">scale_fill_distiller</span>(<span class="at">palette =</span> <span class="st">"Spectral"</span>) <span class="sc">+</span></span>
 <span id="cb21-13"><a href="#cb21-13"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span></span>
-<span id="cb21-14"><a href="#cb21-14"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"横坐标"</span>, <span class="at">y =</span> <span class="st">"纵坐标"</span>, <span class="at">fill =</span> <span class="st">"预测方差"</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb21-14"><a href="#cb21-14"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"横坐标"</span>, <span class="at">y =</span> <span class="st">"纵坐标"</span>, <span class="at">fill =</span> <span class="st">"预测方差"</span>)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 </details><div id="fig-kriging-prediction" class="quarto-layout-panel">
 <figure class="quarto-float quarto-float-fig figure"><div aria-describedby="fig-kriging-prediction-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="quarto-layout-row">
@@ -1129,13 +1132,14 @@ y    1 231  103.5   -16 [y]</code></pre>
       e.clearSelection();
     }
     const getTextToCopy = function(trigger) {
-        const codeEl = trigger.previousElementSibling.cloneNode(true);
-        for (const childEl of codeEl.children) {
-          if (isCodeAnnotation(childEl)) {
-            childEl.remove();
-          }
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
         }
-        return codeEl.innerText;
+      }
+      return codeEl.innerText;
     }
     const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
       text: getTextToCopy

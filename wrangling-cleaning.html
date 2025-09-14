@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="zh-Hans" xml:lang="zh-Hans"><head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.7.32">
+<meta name="generator" content="quarto-1.8.24">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 <title>3&nbsp; 数据清洗 – R 语言数据分析实战</title>
 <style>
@@ -65,18 +65,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <link href="./wrangling-collection.html" rel="prev">
 <script src="site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/axe/axe-check.js" type="module"></script>
 <script src="site_libs/quarto-html/popper.min.js"></script>
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="site_libs/quarto-html/anchor.min.js"></script>
 <link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-37eea08aefeeee20ff55810ff984fec1.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-dark-2fef5ea3f8957b3e4ecc936fc74692ca.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-37eea08aefeeee20ff55810ff984fec1.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-dc55a5b9e770e841cd82e46aadbfb9b0.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-dark-b651517ce65839d647a86e2780455cfb.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-dc55a5b9e770e841cd82e46aadbfb9b0.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-eaec1411600aaa3d517a4c2d9683cbbb.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="site_libs/bootstrap/bootstrap-dark-11608ecab0b4e008b87a77b96745bd9e.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="site_libs/bootstrap/bootstrap-eaec1411600aaa3d517a4c2d9683cbbb.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light"><script id="quarto-search-options" type="application/json">{
+<link href="site_libs/bootstrap/bootstrap-f2e7a7605c80472e4829c77b95a905a7.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark-194232c968a292054ad9c2d54c766ee0.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="site_libs/bootstrap/bootstrap-f2e7a7605c80472e4829c77b95a905a7.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light"><script id="quarto-search-options" type="application/json">{
   "location": "sidebar",
   "copy-button": false,
   "collapse-after": 3,
@@ -296,7 +297,9 @@ MathJax ={
     </div>
   </nav></header><!-- content --><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
 <!-- sidebar -->
-  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto"><div class="pt-lg-2 mt-2 text-left sidebar-header">
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto"><div class="pt-lg-2 mt-2 text-left sidebar-header sidebar-header-stacked">
+      <a href="./index.html" class="sidebar-logo-link">
+      </a>
     <div class="sidebar-title mb-0 py-0">
       <a href="./">R 语言数据分析实战</a> 
         <div class="sidebar-tools-main tools-wide">
@@ -600,17 +603,17 @@ MathJax ={
 </header><p>从非结构的、半结构的数据中抽取有用的信息，常常需要一番数据清洗操作，最重要的工具之一是正则表达式。R 语言内置一系列函数，组成一套工具，详见 <code><a href="https://rdrr.io/r/base/regex.html">?regex</a></code> 。</p>
 <p>以 CRAN 上 R 包的元数据作为本章数据清洗的对象。数据清洗主要用于文本分析，元数据中挑选 Package 、Maintainer、Title 、Description 和 Authors@R 等 5个字段。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a>pdb <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="at">file =</span> <span class="st">"data/cran-package-db-20241231.rds"</span>)</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a>pdb <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="at">file =</span> <span class="st">"data/cran-package-db-20241231.rds"</span>)</span>
 <span id="cb1-2"><a href="#cb1-2"></a>pdb <span class="ot">&lt;-</span> <span class="fu">subset</span>(</span>
 <span id="cb1-3"><a href="#cb1-3"></a>  <span class="at">x =</span> pdb, <span class="at">subset =</span> <span class="sc">!</span><span class="fu">duplicated</span>(Package),</span>
 <span id="cb1-4"><a href="#cb1-4"></a>  <span class="at">select =</span> <span class="fu">c</span>(<span class="st">"Package"</span>, <span class="st">"Maintainer"</span>, <span class="st">"Title"</span>, <span class="st">"Description"</span>, <span class="st">"Authors@R"</span>)</span>
-<span id="cb1-5"><a href="#cb1-5"></a>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb1-5"><a href="#cb1-5"></a>)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <section id="sec-regexp" class="level2" data-number="3.1"><h2 data-number="3.1" class="anchored" data-anchor-id="sec-regexp">
 <span class="header-section-number">3.1</span> 正则表达式</h2>
 <p>简单起见，考虑 Rcpp 包的几个字段</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1"></a>pdb[pdb<span class="sc">$</span>Package <span class="sc">==</span> <span class="st">"Rcpp"</span>,<span class="st">"Description"</span>] </span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1"></a>pdb[pdb<span class="sc">$</span>Package <span class="sc">==</span> <span class="st">"Rcpp"</span>,<span class="st">"Description"</span>] </span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] "The 'Rcpp' package provides R functions as well as C++ classes which\n offer a seamless integration of R and C++. Many R data types and objects can be\n mapped back and forth to C++ equivalents which facilitates both writing of new\n code as well as easier integration of third-party libraries. Documentation\n about 'Rcpp' is provided by several vignettes included in this package, via the\n 'Rcpp Gallery' site at &lt;https://gallery.rcpp.org&gt;, the paper by Eddelbuettel and\n Francois (2011, &lt;doi:10.18637/jss.v040.i08&gt;), the book by Eddelbuettel (2013,\n &lt;doi:10.1007/978-1-4614-6868-4&gt;) and the paper by Eddelbuettel and Balamuta (2018,\n &lt;doi:10.1080/00031305.2017.1375990&gt;); see 'citation(\"Rcpp\")' for details."</code></pre>
 </div>
@@ -619,7 +622,7 @@ MathJax ={
 <span class="header-section-number">3.1.1</span> 量词</h3>
 <p>字段 Description 中有多个换行符 <code>\n</code> 、多对括号，查找和替换</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1"></a><span class="fu">grep</span>(<span class="at">pattern =</span> <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>, <span class="at">x =</span> pdb[pdb<span class="sc">$</span>Package <span class="sc">==</span> <span class="st">"Rcpp"</span>, <span class="st">"Description"</span>], <span class="at">fixed =</span> <span class="cn">TRUE</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1"></a><span class="fu">grep</span>(<span class="at">pattern =</span> <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>, <span class="at">x =</span> pdb[pdb<span class="sc">$</span>Package <span class="sc">==</span> <span class="st">"Rcpp"</span>, <span class="st">"Description"</span>], <span class="at">fixed =</span> <span class="cn">TRUE</span>)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] 1</code></pre>
 </div>
@@ -639,22 +642,22 @@ MathJax ={
 <span class="header-section-number">3.2.1</span> 查找</h3>
 <p><code><a href="https://rdrr.io/r/base/grep.html">grep()</a></code> 和 <code><a href="https://rdrr.io/r/base/grep.html">grepl()</a></code> 是一对字符串匹配函数，返回是否匹配到字符串的结果，前者返回值是整数向量，后者是逻辑向量。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1"></a><span class="fu">grep</span>(<span class="at">pattern =</span> <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>, <span class="at">x =</span> pdb[pdb<span class="sc">$</span>Package <span class="sc">==</span> <span class="st">"Rcpp"</span>, <span class="st">"Description"</span>], <span class="at">fixed =</span> <span class="cn">TRUE</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1"></a><span class="fu">grep</span>(<span class="at">pattern =</span> <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>, <span class="at">x =</span> pdb[pdb<span class="sc">$</span>Package <span class="sc">==</span> <span class="st">"Rcpp"</span>, <span class="st">"Description"</span>], <span class="at">fixed =</span> <span class="cn">TRUE</span>)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] 1</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1"></a><span class="co"># 如果匹配上，则返回原字符串</span></span>
-<span id="cb8-2"><a href="#cb8-2"></a><span class="fu">grep</span>(<span class="at">pattern =</span> <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>, <span class="at">x =</span> pdb[pdb<span class="sc">$</span>Package <span class="sc">==</span> <span class="st">"Rcpp"</span>, <span class="st">"Description"</span>], <span class="at">value =</span> T, <span class="at">fixed =</span> <span class="cn">TRUE</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1"></a><span class="co"># 如果匹配上，则返回原字符串</span></span>
+<span id="cb8-2"><a href="#cb8-2"></a><span class="fu">grep</span>(<span class="at">pattern =</span> <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>, <span class="at">x =</span> pdb[pdb<span class="sc">$</span>Package <span class="sc">==</span> <span class="st">"Rcpp"</span>, <span class="st">"Description"</span>], <span class="at">value =</span> T, <span class="at">fixed =</span> <span class="cn">TRUE</span>)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] "The 'Rcpp' package provides R functions as well as C++ classes which\n offer a seamless integration of R and C++. Many R data types and objects can be\n mapped back and forth to C++ equivalents which facilitates both writing of new\n code as well as easier integration of third-party libraries. Documentation\n about 'Rcpp' is provided by several vignettes included in this package, via the\n 'Rcpp Gallery' site at &lt;https://gallery.rcpp.org&gt;, the paper by Eddelbuettel and\n Francois (2011, &lt;doi:10.18637/jss.v040.i08&gt;), the book by Eddelbuettel (2013,\n &lt;doi:10.1007/978-1-4614-6868-4&gt;) and the paper by Eddelbuettel and Balamuta (2018,\n &lt;doi:10.1080/00031305.2017.1375990&gt;); see 'citation(\"Rcpp\")' for details."</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1"></a><span class="co"># 等同于 grep(..., value = T)</span></span>
-<span id="cb10-2"><a href="#cb10-2"></a><span class="fu">grepv</span>(<span class="at">pattern =</span> <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>, <span class="at">x =</span> pdb[pdb<span class="sc">$</span>Package <span class="sc">==</span> <span class="st">"Rcpp"</span>, <span class="st">"Description"</span>], <span class="at">fixed =</span> <span class="cn">TRUE</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1"></a><span class="co"># 等同于 grep(..., value = T)</span></span>
+<span id="cb10-2"><a href="#cb10-2"></a><span class="fu">grepv</span>(<span class="at">pattern =</span> <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>, <span class="at">x =</span> pdb[pdb<span class="sc">$</span>Package <span class="sc">==</span> <span class="st">"Rcpp"</span>, <span class="st">"Description"</span>], <span class="at">fixed =</span> <span class="cn">TRUE</span>)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] "The 'Rcpp' package provides R functions as well as C++ classes which\n offer a seamless integration of R and C++. Many R data types and objects can be\n mapped back and forth to C++ equivalents which facilitates both writing of new\n code as well as easier integration of third-party libraries. Documentation\n about 'Rcpp' is provided by several vignettes included in this package, via the\n 'Rcpp Gallery' site at &lt;https://gallery.rcpp.org&gt;, the paper by Eddelbuettel and\n Francois (2011, &lt;doi:10.18637/jss.v040.i08&gt;), the book by Eddelbuettel (2013,\n &lt;doi:10.1007/978-1-4614-6868-4&gt;) and the paper by Eddelbuettel and Balamuta (2018,\n &lt;doi:10.1080/00031305.2017.1375990&gt;); see 'citation(\"Rcpp\")' for details."</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1"></a><span class="co"># 如果匹配上，则返回逻辑向量</span></span>
-<span id="cb12-2"><a href="#cb12-2"></a><span class="fu">grepl</span>(<span class="at">pattern =</span> <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>, <span class="at">x =</span> pdb[pdb<span class="sc">$</span>Package <span class="sc">==</span> <span class="st">"Rcpp"</span>, <span class="st">"Description"</span>], <span class="at">fixed =</span> <span class="cn">TRUE</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1"></a><span class="co"># 如果匹配上，则返回逻辑向量</span></span>
+<span id="cb12-2"><a href="#cb12-2"></a><span class="fu">grepl</span>(<span class="at">pattern =</span> <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>, <span class="at">x =</span> pdb[pdb<span class="sc">$</span>Package <span class="sc">==</span> <span class="st">"Rcpp"</span>, <span class="st">"Description"</span>], <span class="at">fixed =</span> <span class="cn">TRUE</span>)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] TRUE</code></pre>
 </div>
@@ -663,22 +666,22 @@ MathJax ={
 <span class="header-section-number">3.2.2</span> 替换</h3>
 <p><code><a href="https://rdrr.io/r/base/grep.html">sub()</a></code> 和 <code><a href="https://rdrr.io/r/base/grep.html">gsub()</a></code> 是一对替换字符串的函数，前者匹配和替换一次，而后者可以全部替换。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1"></a><span class="fu">sub</span>(<span class="at">pattern =</span> <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>, <span class="at">x =</span> pdb[pdb<span class="sc">$</span>Package <span class="sc">==</span> <span class="st">"Rcpp"</span>, <span class="st">"Description"</span>], <span class="at">replacement =</span> <span class="st">""</span>, <span class="at">fixed =</span> <span class="cn">TRUE</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1"></a><span class="fu">sub</span>(<span class="at">pattern =</span> <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>, <span class="at">x =</span> pdb[pdb<span class="sc">$</span>Package <span class="sc">==</span> <span class="st">"Rcpp"</span>, <span class="st">"Description"</span>], <span class="at">replacement =</span> <span class="st">""</span>, <span class="at">fixed =</span> <span class="cn">TRUE</span>)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] "The 'Rcpp' package provides R functions as well as C++ classes which offer a seamless integration of R and C++. Many R data types and objects can be\n mapped back and forth to C++ equivalents which facilitates both writing of new\n code as well as easier integration of third-party libraries. Documentation\n about 'Rcpp' is provided by several vignettes included in this package, via the\n 'Rcpp Gallery' site at &lt;https://gallery.rcpp.org&gt;, the paper by Eddelbuettel and\n Francois (2011, &lt;doi:10.18637/jss.v040.i08&gt;), the book by Eddelbuettel (2013,\n &lt;doi:10.1007/978-1-4614-6868-4&gt;) and the paper by Eddelbuettel and Balamuta (2018,\n &lt;doi:10.1080/00031305.2017.1375990&gt;); see 'citation(\"Rcpp\")' for details."</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1"></a><span class="co"># 换行符</span></span>
-<span id="cb16-2"><a href="#cb16-2"></a><span class="fu">gsub</span>(<span class="at">pattern =</span> <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>, <span class="at">x =</span> pdb[pdb<span class="sc">$</span>Package <span class="sc">==</span> <span class="st">"Rcpp"</span>, <span class="st">"Description"</span>], <span class="at">replacement =</span> <span class="st">""</span>, <span class="at">fixed =</span> <span class="cn">TRUE</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1"></a><span class="co"># 换行符</span></span>
+<span id="cb16-2"><a href="#cb16-2"></a><span class="fu">gsub</span>(<span class="at">pattern =</span> <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>, <span class="at">x =</span> pdb[pdb<span class="sc">$</span>Package <span class="sc">==</span> <span class="st">"Rcpp"</span>, <span class="st">"Description"</span>], <span class="at">replacement =</span> <span class="st">""</span>, <span class="at">fixed =</span> <span class="cn">TRUE</span>)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] "The 'Rcpp' package provides R functions as well as C++ classes which offer a seamless integration of R and C++. Many R data types and objects can be mapped back and forth to C++ equivalents which facilitates both writing of new code as well as easier integration of third-party libraries. Documentation about 'Rcpp' is provided by several vignettes included in this package, via the 'Rcpp Gallery' site at &lt;https://gallery.rcpp.org&gt;, the paper by Eddelbuettel and Francois (2011, &lt;doi:10.18637/jss.v040.i08&gt;), the book by Eddelbuettel (2013, &lt;doi:10.1007/978-1-4614-6868-4&gt;) and the paper by Eddelbuettel and Balamuta (2018, &lt;doi:10.1080/00031305.2017.1375990&gt;); see 'citation(\"Rcpp\")' for details."</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1"></a><span class="co"># 单引号</span></span>
-<span id="cb18-2"><a href="#cb18-2"></a><span class="fu">gsub</span>(<span class="at">pattern =</span> <span class="st">"'"</span>, <span class="at">x =</span> pdb[pdb<span class="sc">$</span>Package <span class="sc">==</span> <span class="st">"Rcpp"</span>, <span class="st">"Description"</span>], <span class="at">replacement =</span> <span class="st">""</span>, <span class="at">fixed =</span> <span class="cn">TRUE</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1"></a><span class="co"># 单引号</span></span>
+<span id="cb18-2"><a href="#cb18-2"></a><span class="fu">gsub</span>(<span class="at">pattern =</span> <span class="st">"'"</span>, <span class="at">x =</span> pdb[pdb<span class="sc">$</span>Package <span class="sc">==</span> <span class="st">"Rcpp"</span>, <span class="st">"Description"</span>], <span class="at">replacement =</span> <span class="st">""</span>, <span class="at">fixed =</span> <span class="cn">TRUE</span>)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] "The Rcpp package provides R functions as well as C++ classes which\n offer a seamless integration of R and C++. Many R data types and objects can be\n mapped back and forth to C++ equivalents which facilitates both writing of new\n code as well as easier integration of third-party libraries. Documentation\n about Rcpp is provided by several vignettes included in this package, via the\n Rcpp Gallery site at &lt;https://gallery.rcpp.org&gt;, the paper by Eddelbuettel and\n Francois (2011, &lt;doi:10.18637/jss.v040.i08&gt;), the book by Eddelbuettel (2013,\n &lt;doi:10.1007/978-1-4614-6868-4&gt;) and the paper by Eddelbuettel and Balamuta (2018,\n &lt;doi:10.1080/00031305.2017.1375990&gt;); see citation(\"Rcpp\") for details."</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1"></a><span class="co"># 双引号</span></span>
-<span id="cb20-2"><a href="#cb20-2"></a><span class="fu">gsub</span>(<span class="at">pattern =</span> <span class="st">'</span><span class="sc">\"</span><span class="st">'</span>, <span class="at">x =</span> pdb[pdb<span class="sc">$</span>Package <span class="sc">==</span> <span class="st">"Rcpp"</span>, <span class="st">"Description"</span>], <span class="at">replacement =</span> <span class="st">""</span>, <span class="at">fixed =</span> <span class="cn">TRUE</span>)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1"></a><span class="co"># 双引号</span></span>
+<span id="cb20-2"><a href="#cb20-2"></a><span class="fu">gsub</span>(<span class="at">pattern =</span> <span class="st">'</span><span class="sc">\"</span><span class="st">'</span>, <span class="at">x =</span> pdb[pdb<span class="sc">$</span>Package <span class="sc">==</span> <span class="st">"Rcpp"</span>, <span class="st">"Description"</span>], <span class="at">replacement =</span> <span class="st">""</span>, <span class="at">fixed =</span> <span class="cn">TRUE</span>)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] "The 'Rcpp' package provides R functions as well as C++ classes which\n offer a seamless integration of R and C++. Many R data types and objects can be\n mapped back and forth to C++ equivalents which facilitates both writing of new\n code as well as easier integration of third-party libraries. Documentation\n about 'Rcpp' is provided by several vignettes included in this package, via the\n 'Rcpp Gallery' site at &lt;https://gallery.rcpp.org&gt;, the paper by Eddelbuettel and\n Francois (2011, &lt;doi:10.18637/jss.v040.i08&gt;), the book by Eddelbuettel (2013,\n &lt;doi:10.1007/978-1-4614-6868-4&gt;) and the paper by Eddelbuettel and Balamuta (2018,\n &lt;doi:10.1080/00031305.2017.1375990&gt;); see 'citation(Rcpp)' for details."</code></pre>
 </div>
@@ -687,24 +690,24 @@ MathJax ={
 <span class="header-section-number">3.2.3</span> 提取</h3>
 <p>前面的 <code><a href="https://rdrr.io/r/base/grep.html">sub()</a></code> 和 <code><a href="https://rdrr.io/r/base/grep.html">gsub()</a></code> 是一对关于字符串替换的函数，<code><a href="https://rdrr.io/r/base/grep.html">regexpr()</a></code> 和 <code><a href="https://rdrr.io/r/base/grep.html">gregexpr()</a></code> 是另一对字符串提取函数，函数 <code><a href="https://rdrr.io/r/base/grep.html">regexpr()</a></code> 前加字幕 g 的含义与之相同，均表示全局操作的意思。</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1"></a>x <span class="ot">=</span> <span class="fu">gsub</span>(<span class="at">pattern =</span> <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>, <span class="at">x =</span> pdb[pdb<span class="sc">$</span>Package <span class="sc">==</span> <span class="st">"Rcpp"</span>, <span class="st">"Description"</span>], <span class="at">replacement =</span> <span class="st">""</span>, <span class="at">fixed =</span> <span class="cn">TRUE</span>)</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb22"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1"></a>x <span class="ot">=</span> <span class="fu">gsub</span>(<span class="at">pattern =</span> <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>, <span class="at">x =</span> pdb[pdb<span class="sc">$</span>Package <span class="sc">==</span> <span class="st">"Rcpp"</span>, <span class="st">"Description"</span>], <span class="at">replacement =</span> <span class="st">""</span>, <span class="at">fixed =</span> <span class="cn">TRUE</span>)</span>
 <span id="cb22-2"><a href="#cb22-2"></a>x <span class="ot">=</span> <span class="fu">gsub</span>(<span class="at">pattern =</span> <span class="st">'</span><span class="sc">\"</span><span class="st">'</span>, <span class="at">x =</span> x, <span class="at">replacement =</span> <span class="st">""</span>, <span class="at">fixed =</span> <span class="cn">TRUE</span>)</span>
 <span id="cb22-3"><a href="#cb22-3"></a><span class="co"># 提取 URL 链接</span></span>
 <span id="cb22-4"><a href="#cb22-4"></a>str_extract <span class="ot">&lt;-</span> <span class="cf">function</span>(text, pattern, ...) <span class="fu">regmatches</span>(text, <span class="fu">regexpr</span>(pattern, text, ...))</span>
-<span id="cb22-5"><a href="#cb22-5"></a><span class="fu">str_extract</span>(<span class="at">text =</span> x, <span class="at">pattern =</span> <span class="st">"(&lt;.*?&gt;)"</span>, <span class="at">perl =</span> T)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb22-5"><a href="#cb22-5"></a><span class="fu">str_extract</span>(<span class="at">text =</span> x, <span class="at">pattern =</span> <span class="st">"(&lt;.*?&gt;)"</span>, <span class="at">perl =</span> T)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] "&lt;https://gallery.rcpp.org&gt;"</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1"></a><span class="co"># 提取括号内容</span></span>
-<span id="cb24-2"><a href="#cb24-2"></a><span class="fu">str_extract</span>(<span class="at">text =</span> x, <span class="at">pattern =</span> <span class="st">"(</span><span class="sc">\\</span><span class="st">(.*?</span><span class="sc">\\</span><span class="st">))"</span>, <span class="at">perl =</span> T)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb24"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1"></a><span class="co"># 提取括号内容</span></span>
+<span id="cb24-2"><a href="#cb24-2"></a><span class="fu">str_extract</span>(<span class="at">text =</span> x, <span class="at">pattern =</span> <span class="st">"(</span><span class="sc">\\</span><span class="st">(.*?</span><span class="sc">\\</span><span class="st">))"</span>, <span class="at">perl =</span> T)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] "(2011, &lt;doi:10.18637/jss.v040.i08&gt;)"</code></pre>
 </div>
 </div>
 <p>描述字段中含有多个括号包裹 doi 链接，都提取出来</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1"></a>str_extract_g <span class="ot">&lt;-</span> <span class="cf">function</span>(text, pattern, ...) <span class="fu">regmatches</span>(text, <span class="fu">gregexpr</span>(pattern, text, ...))</span>
-<span id="cb26-2"><a href="#cb26-2"></a><span class="fu">str_extract_g</span>(<span class="at">text =</span> x, <span class="at">pattern =</span> <span class="st">"(</span><span class="sc">\\</span><span class="st">(.*?</span><span class="sc">\\</span><span class="st">))"</span>, <span class="at">perl =</span> T)</span></code><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb26"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1"></a>str_extract_g <span class="ot">&lt;-</span> <span class="cf">function</span>(text, pattern, ...) <span class="fu">regmatches</span>(text, <span class="fu">gregexpr</span>(pattern, text, ...))</span>
+<span id="cb26-2"><a href="#cb26-2"></a><span class="fu">str_extract_g</span>(<span class="at">text =</span> x, <span class="at">pattern =</span> <span class="st">"(</span><span class="sc">\\</span><span class="st">(.*?</span><span class="sc">\\</span><span class="st">))"</span>, <span class="at">perl =</span> T)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[[1]]
 [1] "(2011, &lt;doi:10.18637/jss.v040.i08&gt;)"        
@@ -779,13 +782,14 @@ MathJax ={
       e.clearSelection();
     }
     const getTextToCopy = function(trigger) {
-        const codeEl = trigger.previousElementSibling.cloneNode(true);
-        for (const childEl of codeEl.children) {
-          if (isCodeAnnotation(childEl)) {
-            childEl.remove();
-          }
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
         }
-        return codeEl.innerText;
+      }
+      return codeEl.innerText;
     }
     const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
       text: getTextToCopy
