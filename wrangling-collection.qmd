@@ -80,6 +80,8 @@ lapply(x, function(x) {
 })
 ```
 
+笔者曾用此方法获取历年中央决算报告中的所需数据，详见[房地产相关的核心数据](https://xiangyun.rbind.io/2025/08/real-estate/)。
+
 ### 豆瓣排行榜 {#sec-douban}
 
 参见[岁月沉淀的光影艺术](https://xiangyun.rbind.io/2022/08/douban-movie-top250/)，在豆瓣排行榜抓取电影Top250的数据。
@@ -210,17 +212,36 @@ head(gh_repo_db, 20)
 
 ### 中国地震台网 {#sec-earthquake-cenc}
 
-[中国地震台网](https://news.ceic.ac.cn/) 可以想象后台有一个数据库，在页面的小窗口中输入查询条件，转化为某种 SQL 语句，传递给数据库管理系统，执行查询语句，返回查询结果，即数据。
-
-### 美国地质调查局 {#sec-earthquake-usgs}
-
-[美国地质调查局](https://earthquake.usgs.gov/earthquakes/search/)提供一些选项窗口，可供选择数据范围，直接下载 CSV 或 XLS 文件。
+[中国地震台网](https://news.ceic.ac.cn/)可以想象后台有一个数据库，在页面的小窗口中输入查询条件，转化为某种 SQL 语句，传递给数据库管理系统，执行查询语句，返回查询结果，即数据。类似地，[美国地质调查局](https://earthquake.usgs.gov/earthquakes/search/)提供一些选项窗口，可供选择数据范围，直接下载 CSV 或 XLS 文件。笔者曾下载了2012-2022 年的地震数据，并用各类可视化手段探索数据，发现**地下很深的位置往往发生大地震，而大地震不一定发生在地下很深的位置**。详见[地震越来越频繁了吗？](https://xiangyun.rbind.io/2019/07/earthquake/)
 
 ### 美国人口调查局 {#sec-census-bureau}
 
-[美国人口调查局](https://www.census.gov/)
+[美国人口调查局](https://www.census.gov/)每年会发布大量国家社会经济发展水平相关的数据，通过访问令牌可以批量下载数据。用户需要先[注册账号](https://api.census.gov/data/key_signup.html)，获取使用 API 接口的访问令牌，可以想象后台不仅有一个数据库，在此之上，还有一层数据鉴权。[**tidycensus**](https://github.com/walkerke/tidycensus/) 包将数据下载并整理成 tidyverse 风格数据集。
 
-[**tidycensus**](https://github.com/walkerke/tidycensus/) 需要注册账号，获取使用 API 接口的访问令牌，可以想象后台不仅有一个数据库，在此之上，还有一层数据鉴权。
+```{r}
+#| message: false
+
+library(tidycensus)
+library(sf)
+options(tigris_use_cache = TRUE)
+# 下载北卡州郡级人口调查数据
+nc_income_race_county <- get_acs(
+  state = "NC", # 北卡州
+  geography = "county", # 郡级
+  # 三个数据指标：家庭年收入，白人数量，总人数
+  variables = c("B19013_001", "B02001_001", "B02001_002"),
+  key = Sys.getenv("CENSUS_API_KEY"), # 设置访问令牌
+  geometry = TRUE, # 调 tigris 包下载北卡州郡级地图数据 
+  progress_bar = F, # 不显示下载进度
+  output = "wide", # 输出宽格式数据
+  year = 2023,     # 2019-2023 年度
+  survey = "acs5", # 5 年
+  moe_level = 90   # 置信水平 90%
+)
+nc_income_race_county
+```
+
+下载了2019-2023年度美国北卡罗来纳州各个郡的人口调查统计数据，分别是家庭年收入、白人数量和总人数，同时下载北卡州郡级行政区划地图数据。笔者曾用此方法获取数据，可视化北卡罗来纳州家年年收入和白人占比的关系，详见[地区分布图及其应用](https://xiangyun.rbind.io/2022/04/choropleth-map/)。
 
 ### 世界银行 {#sec-world-bank}
 
