@@ -218,9 +218,29 @@ head(gh_repo_db, 20)
 
 ### 美国人口调查局 {#sec-census-bureau}
 
-[美国人口调查局](https://www.census.gov/)
+[美国人口调查局](https://www.census.gov/)每年会发布大量国家社会经济发展水平相关的数据，通过访问令牌可以批量下载数据。用户需要先[注册账号](https://api.census.gov/data/key_signup.html)，获取使用 API 接口的访问令牌，可以想象后台不仅有一个数据库，在此之上，还有一层数据鉴权。[**tidycensus**](https://github.com/walkerke/tidycensus/) 包将数据下载并整理成 tidyverse 风格数据集。
 
-[**tidycensus**](https://github.com/walkerke/tidycensus/) 需要注册账号，获取使用 API 接口的访问令牌，可以想象后台不仅有一个数据库，在此之上，还有一层数据鉴权。
+```{r}
+library(tidycensus)
+# 设置访问令牌
+census_api_key(key = Sys.getenv("CENSUS_API_KEY"))
+library(sf)
+# 下载北卡州郡级人口调查数据
+nc_income_race_county <- get_acs(
+  state = "NC", # 北卡州
+  geography = "county", # 郡级
+  # 三个数据指标：家庭年收入，白人数量，总人数
+  variables = c("B19013_001", "B02001_001", "B02001_002"),
+  geometry = TRUE, # 下载北卡州郡级地图数据
+  output = "wide", # 输出宽格式数据
+  year = 2023,     # 2019-2023 年度
+  survey = "acs5", # 5 年
+  moe_level = 90   # 置信水平 90%
+)
+nc_income_race_county
+```
+
+下载了2019-2023年度美国北卡罗来纳州各个郡的人口调查统计数据，分别是家庭年收入、白人数量和总人数，同时下载北卡州郡级行政区划地图数据。
 
 ### 世界银行 {#sec-world-bank}
 
