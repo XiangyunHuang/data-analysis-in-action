@@ -844,175 +844,23 @@ MathJax ={
 <p><a href="https://www.census.gov/">美国人口调查局</a>每年会发布大量国家社会经济发展水平相关的数据，通过访问令牌可以批量下载数据。用户需要先<a href="https://api.census.gov/data/key_signup.html">注册账号</a>，获取使用 API 接口的访问令牌，可以想象后台不仅有一个数据库，在此之上，还有一层数据鉴权。<a href="https://github.com/walkerke/tidycensus/"><strong>tidycensus</strong></a> 包将数据下载并整理成 tidyverse 风格数据集。</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1"></a><span class="fu">library</span>(tidycensus)</span>
-<span id="cb16-2"><a href="#cb16-2"></a><span class="co"># 设置访问令牌</span></span>
-<span id="cb16-3"><a href="#cb16-3"></a><span class="fu">census_api_key</span>(<span class="at">key =</span> <span class="fu">Sys.getenv</span>(<span class="st">"CENSUS_API_KEY"</span>), <span class="at">install =</span> <span class="cn">TRUE</span>)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] "309076042f04a3e30ff824d1b547b40eb442c3a6"</code></pre>
-</div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1"></a><span class="fu">library</span>(sf)</span>
-<span id="cb18-2"><a href="#cb18-2"></a><span class="fu">options</span>(<span class="at">tigris_use_cache =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb18-3"><a href="#cb18-3"></a><span class="co"># 下载北卡州郡级人口调查数据</span></span>
-<span id="cb18-4"><a href="#cb18-4"></a>nc_income_race_county <span class="ot">&lt;-</span> <span class="fu">get_acs</span>(</span>
-<span id="cb18-5"><a href="#cb18-5"></a>  <span class="at">state =</span> <span class="st">"NC"</span>, <span class="co"># 北卡州</span></span>
-<span id="cb18-6"><a href="#cb18-6"></a>  <span class="at">geography =</span> <span class="st">"county"</span>, <span class="co"># 郡级</span></span>
-<span id="cb18-7"><a href="#cb18-7"></a>  <span class="co"># 三个数据指标：家庭年收入，白人数量，总人数</span></span>
-<span id="cb18-8"><a href="#cb18-8"></a>  <span class="at">variables =</span> <span class="fu">c</span>(<span class="st">"B19013_001"</span>, <span class="st">"B02001_001"</span>, <span class="st">"B02001_002"</span>),</span>
-<span id="cb18-9"><a href="#cb18-9"></a>  <span class="at">geometry =</span> <span class="cn">TRUE</span>, <span class="co"># 调 tigris 包下载北卡州郡级地图数据 </span></span>
-<span id="cb18-10"><a href="#cb18-10"></a>  <span class="at">output =</span> <span class="st">"wide"</span>, <span class="co"># 输出宽格式数据</span></span>
-<span id="cb18-11"><a href="#cb18-11"></a>  <span class="at">year =</span> <span class="dv">2023</span>,     <span class="co"># 2019-2023 年度</span></span>
-<span id="cb18-12"><a href="#cb18-12"></a>  <span class="at">survey =</span> <span class="st">"acs5"</span>, <span class="co"># 5 年</span></span>
-<span id="cb18-13"><a href="#cb18-13"></a>  <span class="at">moe_level =</span> <span class="dv">90</span>   <span class="co"># 置信水平 90%</span></span>
-<span id="cb18-14"><a href="#cb18-14"></a>)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>
-  |                                                                            
-  |                                                                      |   0%
-  |                                                                            
-  |=                                                                     |   1%
-  |                                                                            
-  |=                                                                     |   2%
-  |                                                                            
-  |==                                                                    |   2%
-  |                                                                            
-  |==                                                                    |   3%
-  |                                                                            
-  |===                                                                   |   4%
-  |                                                                            
-  |====                                                                  |   5%
-  |                                                                            
-  |====                                                                  |   6%
-  |                                                                            
-  |=====                                                                 |   6%
-  |                                                                            
-  |=====                                                                 |   7%
-  |                                                                            
-  |======                                                                |   9%
-  |                                                                            
-  |=======                                                               |  10%
-  |                                                                            
-  |========                                                              |  12%
-  |                                                                            
-  |=========                                                             |  13%
-  |                                                                            
-  |==========                                                            |  15%
-  |                                                                            
-  |===========                                                           |  16%
-  |                                                                            
-  |=============                                                         |  19%
-  |                                                                            
-  |==============                                                        |  20%
-  |                                                                            
-  |===============                                                       |  22%
-  |                                                                            
-  |================                                                      |  23%
-  |                                                                            
-  |=================                                                     |  25%
-  |                                                                            
-  |==================                                                    |  26%
-  |                                                                            
-  |===================                                                   |  27%
-  |                                                                            
-  |====================                                                  |  29%
-  |                                                                            
-  |=====================                                                 |  30%
-  |                                                                            
-  |======================                                                |  32%
-  |                                                                            
-  |=======================                                               |  33%
-  |                                                                            
-  |=========================                                             |  36%
-  |                                                                            
-  |==========================                                            |  37%
-  |                                                                            
-  |===========================                                           |  39%
-  |                                                                            
-  |============================                                          |  40%
-  |                                                                            
-  |=============================                                         |  42%
-  |                                                                            
-  |==============================                                        |  43%
-  |                                                                            
-  |===============================                                       |  45%
-  |                                                                            
-  |================================                                      |  46%
-  |                                                                            
-  |=================================                                     |  47%
-  |                                                                            
-  |==================================                                    |  49%
-  |                                                                            
-  |===================================                                   |  50%
-  |                                                                            
-  |====================================                                  |  51%
-  |                                                                            
-  |=====================================                                 |  53%
-  |                                                                            
-  |======================================                                |  54%
-  |                                                                            
-  |=======================================                               |  55%
-  |                                                                            
-  |========================================                              |  57%
-  |                                                                            
-  |=========================================                             |  58%
-  |                                                                            
-  |==========================================                            |  60%
-  |                                                                            
-  |===========================================                           |  61%
-  |                                                                            
-  |============================================                          |  62%
-  |                                                                            
-  |=============================================                         |  64%
-  |                                                                            
-  |=============================================                         |  65%
-  |                                                                            
-  |==============================================                        |  66%
-  |                                                                            
-  |===============================================                       |  68%
-  |                                                                            
-  |================================================                      |  69%
-  |                                                                            
-  |=================================================                     |  70%
-  |                                                                            
-  |==================================================                    |  72%
-  |                                                                            
-  |===================================================                   |  73%
-  |                                                                            
-  |====================================================                  |  75%
-  |                                                                            
-  |======================================================                |  78%
-  |                                                                            
-  |=======================================================               |  79%
-  |                                                                            
-  |========================================================              |  80%
-  |                                                                            
-  |=========================================================             |  82%
-  |                                                                            
-  |==========================================================            |  83%
-  |                                                                            
-  |===========================================================           |  84%
-  |                                                                            
-  |============================================================          |  85%
-  |                                                                            
-  |=============================================================         |  87%
-  |                                                                            
-  |==============================================================        |  88%
-  |                                                                            
-  |===============================================================       |  90%
-  |                                                                            
-  |===============================================================       |  91%
-  |                                                                            
-  |================================================================      |  92%
-  |                                                                            
-  |=================================================================     |  93%
-  |                                                                            
-  |==================================================================    |  95%
-  |                                                                            
-  |====================================================================  |  98%
-  |                                                                            
-  |===================================================================== |  99%
-  |                                                                            
-  |======================================================================| 100%</code></pre>
-</div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1"></a>nc_income_race_county</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb16-2"><a href="#cb16-2"></a><span class="fu">library</span>(sf)</span>
+<span id="cb16-3"><a href="#cb16-3"></a><span class="fu">options</span>(<span class="at">tigris_use_cache =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb16-4"><a href="#cb16-4"></a><span class="co"># 下载北卡州郡级人口调查数据</span></span>
+<span id="cb16-5"><a href="#cb16-5"></a>nc_income_race_county <span class="ot">&lt;-</span> <span class="fu">get_acs</span>(</span>
+<span id="cb16-6"><a href="#cb16-6"></a>  <span class="at">state =</span> <span class="st">"NC"</span>, <span class="co"># 北卡州</span></span>
+<span id="cb16-7"><a href="#cb16-7"></a>  <span class="at">geography =</span> <span class="st">"county"</span>, <span class="co"># 郡级</span></span>
+<span id="cb16-8"><a href="#cb16-8"></a>  <span class="co"># 三个数据指标：家庭年收入，白人数量，总人数</span></span>
+<span id="cb16-9"><a href="#cb16-9"></a>  <span class="at">variables =</span> <span class="fu">c</span>(<span class="st">"B19013_001"</span>, <span class="st">"B02001_001"</span>, <span class="st">"B02001_002"</span>),</span>
+<span id="cb16-10"><a href="#cb16-10"></a>  <span class="at">key =</span> <span class="fu">Sys.getenv</span>(<span class="st">"CENSUS_API_KEY"</span>), <span class="co"># 设置访问令牌</span></span>
+<span id="cb16-11"><a href="#cb16-11"></a>  <span class="at">geometry =</span> <span class="cn">TRUE</span>, <span class="co"># 调 tigris 包下载北卡州郡级地图数据 </span></span>
+<span id="cb16-12"><a href="#cb16-12"></a>  <span class="at">progress_bar =</span> F, <span class="co"># 不显示下载进度</span></span>
+<span id="cb16-13"><a href="#cb16-13"></a>  <span class="at">output =</span> <span class="st">"wide"</span>, <span class="co"># 输出宽格式数据</span></span>
+<span id="cb16-14"><a href="#cb16-14"></a>  <span class="at">year =</span> <span class="dv">2023</span>,     <span class="co"># 2019-2023 年度</span></span>
+<span id="cb16-15"><a href="#cb16-15"></a>  <span class="at">survey =</span> <span class="st">"acs5"</span>, <span class="co"># 5 年</span></span>
+<span id="cb16-16"><a href="#cb16-16"></a>  <span class="at">moe_level =</span> <span class="dv">90</span>   <span class="co"># 置信水平 90%</span></span>
+<span id="cb16-17"><a href="#cb16-17"></a>)</span>
+<span id="cb16-18"><a href="#cb16-18"></a>nc_income_race_county</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Simple feature collection with 100 features and 8 fields
 Geometry type: MULTIPOLYGON
@@ -1049,19 +897,19 @@ First 10 features:
 <span class="header-section-number">2.4.5</span> 世界银行</h3>
 <p><a href="https://www.shihang.org/zh/home">世界银行</a>和<a href="https://www.imf.org/zh/Home">国际货币基金组织</a>都公开一些经济数据，<a href="https://github.com/pachadotdev/wbstats"><strong>wbstats</strong></a> 包和 <a href="https://github.com/vincentarelbundock/WDI/">WDI</a> 包封装世界银行提供的数据接口 REST API ，下面通过 wbstats 包下载2024 年全球各国的预期寿命、人均 GDP和人口总数数据。</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb22"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1"></a><span class="fu">library</span>(wbstats)</span>
-<span id="cb22-2"><a href="#cb22-2"></a><span class="co"># 从世界银行数据库获取宏观经济数据</span></span>
-<span id="cb22-3"><a href="#cb22-3"></a>wb_world_indicator <span class="ot">&lt;-</span> wbstats<span class="sc">::</span><span class="fu">wb_data</span>(</span>
-<span id="cb22-4"><a href="#cb22-4"></a>  <span class="at">indicator =</span> <span class="fu">c</span>(</span>
-<span id="cb22-5"><a href="#cb22-5"></a>    <span class="st">"SP.DYN.LE00.IN"</span>, <span class="co"># 预期寿命</span></span>
-<span id="cb22-6"><a href="#cb22-6"></a>    <span class="st">"NY.GDP.PCAP.CD"</span>, <span class="co"># 人均 GDP</span></span>
-<span id="cb22-7"><a href="#cb22-7"></a>    <span class="st">"SP.POP.TOTL"</span> <span class="co"># 人口总数</span></span>
-<span id="cb22-8"><a href="#cb22-8"></a>  ),</span>
-<span id="cb22-9"><a href="#cb22-9"></a>  <span class="at">country =</span> <span class="st">"countries_only"</span>,</span>
-<span id="cb22-10"><a href="#cb22-10"></a>  <span class="at">return_wide =</span> <span class="cn">FALSE</span>,</span>
-<span id="cb22-11"><a href="#cb22-11"></a>  <span class="at">start_date =</span> <span class="dv">2010</span>, <span class="at">end_date =</span> <span class="dv">2023</span></span>
-<span id="cb22-12"><a href="#cb22-12"></a>)</span>
-<span id="cb22-13"><a href="#cb22-13"></a>wb_world_indicator</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1"></a><span class="fu">library</span>(wbstats)</span>
+<span id="cb18-2"><a href="#cb18-2"></a><span class="co"># 从世界银行数据库获取宏观经济数据</span></span>
+<span id="cb18-3"><a href="#cb18-3"></a>wb_world_indicator <span class="ot">&lt;-</span> wbstats<span class="sc">::</span><span class="fu">wb_data</span>(</span>
+<span id="cb18-4"><a href="#cb18-4"></a>  <span class="at">indicator =</span> <span class="fu">c</span>(</span>
+<span id="cb18-5"><a href="#cb18-5"></a>    <span class="st">"SP.DYN.LE00.IN"</span>, <span class="co"># 预期寿命</span></span>
+<span id="cb18-6"><a href="#cb18-6"></a>    <span class="st">"NY.GDP.PCAP.CD"</span>, <span class="co"># 人均 GDP</span></span>
+<span id="cb18-7"><a href="#cb18-7"></a>    <span class="st">"SP.POP.TOTL"</span> <span class="co"># 人口总数</span></span>
+<span id="cb18-8"><a href="#cb18-8"></a>  ),</span>
+<span id="cb18-9"><a href="#cb18-9"></a>  <span class="at">country =</span> <span class="st">"countries_only"</span>,</span>
+<span id="cb18-10"><a href="#cb18-10"></a>  <span class="at">return_wide =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb18-11"><a href="#cb18-11"></a>  <span class="at">start_date =</span> <span class="dv">2010</span>, <span class="at">end_date =</span> <span class="dv">2023</span></span>
+<span id="cb18-12"><a href="#cb18-12"></a>)</span>
+<span id="cb18-13"><a href="#cb18-13"></a>wb_world_indicator</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code># A tibble: 9,114 × 10
    indicator_id   indicator     iso2c iso3c country  date value unit  obs_status
