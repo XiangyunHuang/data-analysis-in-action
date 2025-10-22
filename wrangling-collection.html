@@ -841,25 +841,239 @@ MathJax ={
 <p><a href="https://earthquake.usgs.gov/earthquakes/search/">美国地质调查局</a>提供一些选项窗口，可供选择数据范围，直接下载 CSV 或 XLS 文件。</p>
 </section><section id="sec-census-bureau" class="level3" data-number="2.4.4"><h3 data-number="2.4.4" class="anchored" data-anchor-id="sec-census-bureau">
 <span class="header-section-number">2.4.4</span> 美国人口调查局</h3>
-<p><a href="https://www.census.gov/">美国人口调查局</a></p>
-<p><a href="https://github.com/walkerke/tidycensus/"><strong>tidycensus</strong></a> 需要注册账号，获取使用 API 接口的访问令牌，可以想象后台不仅有一个数据库，在此之上，还有一层数据鉴权。</p>
+<p><a href="https://www.census.gov/">美国人口调查局</a>每年会发布大量国家社会经济发展水平相关的数据，通过访问令牌可以批量下载数据。用户需要先<a href="https://api.census.gov/data/key_signup.html">注册账号</a>，获取使用 API 接口的访问令牌，可以想象后台不仅有一个数据库，在此之上，还有一层数据鉴权。<a href="https://github.com/walkerke/tidycensus/"><strong>tidycensus</strong></a> 包将数据下载并整理成 tidyverse 风格数据集。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1"></a><span class="fu">library</span>(tidycensus)</span>
+<span id="cb16-2"><a href="#cb16-2"></a><span class="co"># 设置访问令牌</span></span>
+<span id="cb16-3"><a href="#cb16-3"></a><span class="fu">census_api_key</span>(<span class="at">key =</span> <span class="fu">Sys.getenv</span>(<span class="st">"CENSUS_API_KEY"</span>))</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>To install your API key for use in future sessions, run this function with `install = TRUE`.</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1"></a><span class="fu">library</span>(sf)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Linking to GEOS 3.12.1, GDAL 3.8.4, PROJ 9.4.0; sf_use_s2() is TRUE</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1"></a><span class="co"># 下载北卡州郡级人口调查数据</span></span>
+<span id="cb20-2"><a href="#cb20-2"></a>nc_income_race_county <span class="ot">&lt;-</span> <span class="fu">get_acs</span>(</span>
+<span id="cb20-3"><a href="#cb20-3"></a>  <span class="at">state =</span> <span class="st">"NC"</span>, <span class="co"># 北卡州</span></span>
+<span id="cb20-4"><a href="#cb20-4"></a>  <span class="at">geography =</span> <span class="st">"county"</span>, <span class="co"># 郡级</span></span>
+<span id="cb20-5"><a href="#cb20-5"></a>  <span class="co"># 三个数据指标：家庭年收入，白人数量，总人数</span></span>
+<span id="cb20-6"><a href="#cb20-6"></a>  <span class="at">variables =</span> <span class="fu">c</span>(<span class="st">"B19013_001"</span>, <span class="st">"B02001_001"</span>, <span class="st">"B02001_002"</span>),</span>
+<span id="cb20-7"><a href="#cb20-7"></a>  <span class="at">geometry =</span> <span class="cn">TRUE</span>, <span class="co"># 下载北卡州郡级地图数据</span></span>
+<span id="cb20-8"><a href="#cb20-8"></a>  <span class="at">output =</span> <span class="st">"wide"</span>, <span class="co"># 输出宽格式数据</span></span>
+<span id="cb20-9"><a href="#cb20-9"></a>  <span class="at">year =</span> <span class="dv">2023</span>,     <span class="co"># 2019-2023 年度</span></span>
+<span id="cb20-10"><a href="#cb20-10"></a>  <span class="at">survey =</span> <span class="st">"acs5"</span>, <span class="co"># 5 年</span></span>
+<span id="cb20-11"><a href="#cb20-11"></a>  <span class="at">moe_level =</span> <span class="dv">90</span>   <span class="co"># 置信水平 90%</span></span>
+<span id="cb20-12"><a href="#cb20-12"></a>)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Getting data from the 2019-2023 5-year ACS</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: • You have not set a Census API key. Users without a key are limited to 500
+queries per day and may experience performance limitations.
+ℹ For best results, get a Census API key at
+http://api.census.gov/data/key_signup.html and then supply the key to the
+`census_api_key()` function to use it throughout your tidycensus session.
+This warning is displayed once per session.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Downloading feature geometry from the Census website.  To cache shapefiles for use in future sessions, set `options(tigris_use_cache = TRUE)`.</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+  |                                                                            
+  |                                                                      |   0%
+  |                                                                            
+  |                                                                      |   1%
+  |                                                                            
+  |=                                                                     |   1%
+  |                                                                            
+  |=                                                                     |   2%
+  |                                                                            
+  |==                                                                    |   2%
+  |                                                                            
+  |==                                                                    |   3%
+  |                                                                            
+  |===                                                                   |   4%
+  |                                                                            
+  |===                                                                   |   5%
+  |                                                                            
+  |====                                                                  |   5%
+  |                                                                            
+  |====                                                                  |   6%
+  |                                                                            
+  |=====                                                                 |   6%
+  |                                                                            
+  |=====                                                                 |   7%
+  |                                                                            
+  |=====                                                                 |   8%
+  |                                                                            
+  |======                                                                |   8%
+  |                                                                            
+  |======                                                                |   9%
+  |                                                                            
+  |=======                                                               |   9%
+  |                                                                            
+  |=======                                                               |  10%
+  |                                                                            
+  |========                                                              |  11%
+  |                                                                            
+  |========                                                              |  12%
+  |                                                                            
+  |=========                                                             |  13%
+  |                                                                            
+  |==========                                                            |  14%
+  |                                                                            
+  |==========                                                            |  15%
+  |                                                                            
+  |===========                                                           |  15%
+  |                                                                            
+  |===========                                                           |  16%
+  |                                                                            
+  |============                                                          |  16%
+  |                                                                            
+  |============                                                          |  17%
+  |                                                                            
+  |=============                                                         |  18%
+  |                                                                            
+  |==============                                                        |  19%
+  |                                                                            
+  |===============                                                       |  22%
+  |                                                                            
+  |=================                                                     |  25%
+  |                                                                            
+  |===================                                                   |  26%
+  |                                                                            
+  |=====================                                                 |  31%
+  |                                                                            
+  |======================                                                |  32%
+  |                                                                            
+  |========================                                              |  34%
+  |                                                                            
+  |=========================                                             |  35%
+  |                                                                            
+  |==========================                                            |  37%
+  |                                                                            
+  |===========================                                           |  38%
+  |                                                                            
+  |============================                                          |  40%
+  |                                                                            
+  |==============================                                        |  43%
+  |                                                                            
+  |===============================                                       |  44%
+  |                                                                            
+  |=================================                                     |  47%
+  |                                                                            
+  |==================================                                    |  49%
+  |                                                                            
+  |====================================                                  |  52%
+  |                                                                            
+  |======================================                                |  54%
+  |                                                                            
+  |=======================================                               |  55%
+  |                                                                            
+  |========================================                              |  57%
+  |                                                                            
+  |=========================================                             |  58%
+  |                                                                            
+  |===========================================                           |  61%
+  |                                                                            
+  |============================================                          |  63%
+  |                                                                            
+  |=============================================                         |  65%
+  |                                                                            
+  |==============================================                        |  66%
+  |                                                                            
+  |===============================================                       |  68%
+  |                                                                            
+  |=================================================                     |  69%
+  |                                                                            
+  |==================================================                    |  71%
+  |                                                                            
+  |===================================================                   |  72%
+  |                                                                            
+  |=====================================================                 |  75%
+  |                                                                            
+  |======================================================                |  77%
+  |                                                                            
+  |=======================================================               |  78%
+  |                                                                            
+  |========================================================              |  80%
+  |                                                                            
+  |=========================================================             |  82%
+  |                                                                            
+  |==========================================================            |  83%
+  |                                                                            
+  |===========================================================           |  85%
+  |                                                                            
+  |============================================================          |  86%
+  |                                                                            
+  |==============================================================        |  88%
+  |                                                                            
+  |===============================================================       |  89%
+  |                                                                            
+  |=================================================================     |  93%
+  |                                                                            
+  |==================================================================    |  94%
+  |                                                                            
+  |===================================================================   |  96%
+  |                                                                            
+  |====================================================================  |  97%
+  |                                                                            
+  |===================================================================== |  99%
+  |                                                                            
+  |======================================================================| 100%</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb25"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1"></a>nc_income_race_county</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Simple feature collection with 100 features and 8 fields
+Geometry type: MULTIPOLYGON
+Dimension:     XY
+Bounding box:  xmin: -84.32187 ymin: 33.84232 xmax: -75.46062 ymax: 36.58812
+Geodetic CRS:  NAD83
+First 10 features:
+   GEOID                               NAME B19013_001E B19013_001M B02001_001E
+1  37133      Onslow County, North Carolina       64568        1873      208537
+2  37009        Ashe County, North Carolina       50827        3707       26831
+3  37169      Stokes County, North Carolina       60039        2412       44889
+4  37053   Currituck County, North Carolina       91548        8181       29612
+5  37173       Swain County, North Carolina       55429        6686       14065
+6  37131 Northampton County, North Carolina       47935        3311       17212
+7  37153    Richmond County, North Carolina       43626        5421       42818
+8  37051  Cumberland County, North Carolina       58780         855      336749
+9  37085     Harnett County, North Carolina       69012        3266      136503
+10 37199      Yancey County, North Carolina       54961        5646       18676
+   B02001_001M B02001_002E B02001_002M                       geometry
+1           NA      144394        1126 MULTIPOLYGON (((-77.17131 3...
+2           NA       25215         344 MULTIPOLYGON (((-81.74065 3...
+3           NA       40992         304 MULTIPOLYGON (((-80.4502 36...
+4           NA       25360         338 MULTIPOLYGON (((-76.3133 36...
+5           NA        8601         125 MULTIPOLYGON (((-83.94939 3...
+6           NA        6827          90 MULTIPOLYGON (((-77.89977 3...
+7           NA       24360         363 MULTIPOLYGON (((-80.07567 3...
+8           NA      147878        1159 MULTIPOLYGON (((-79.11285 3...
+9           NA       85935         904 MULTIPOLYGON (((-79.22186 3...
+10          NA       17268         127 MULTIPOLYGON (((-82.50538 3...</code></pre>
+</div>
+</div>
+<p>下载了2019-2023年度美国北卡罗来纳州各个郡的人口调查统计数据，分别是家庭年收入、白人数量和总人数，同时下载北卡州郡级行政区划地图数据。</p>
 </section><section id="sec-world-bank" class="level3" data-number="2.4.5"><h3 data-number="2.4.5" class="anchored" data-anchor-id="sec-world-bank">
 <span class="header-section-number">2.4.5</span> 世界银行</h3>
 <p><a href="https://www.shihang.org/zh/home">世界银行</a>和<a href="https://www.imf.org/zh/Home">国际货币基金组织</a>都公开一些经济数据，<a href="https://github.com/pachadotdev/wbstats"><strong>wbstats</strong></a> 包和 <a href="https://github.com/vincentarelbundock/WDI/">WDI</a> 包封装世界银行提供的数据接口 REST API ，下面通过 wbstats 包下载2024 年全球各国的预期寿命、人均 GDP和人口总数数据。</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1"></a><span class="fu">library</span>(wbstats)</span>
-<span id="cb16-2"><a href="#cb16-2"></a><span class="co"># 从世界银行数据库获取宏观经济数据</span></span>
-<span id="cb16-3"><a href="#cb16-3"></a>wb_world_indicator <span class="ot">&lt;-</span> wbstats<span class="sc">::</span><span class="fu">wb_data</span>(</span>
-<span id="cb16-4"><a href="#cb16-4"></a>  <span class="at">indicator =</span> <span class="fu">c</span>(</span>
-<span id="cb16-5"><a href="#cb16-5"></a>    <span class="st">"SP.DYN.LE00.IN"</span>, <span class="co"># 预期寿命</span></span>
-<span id="cb16-6"><a href="#cb16-6"></a>    <span class="st">"NY.GDP.PCAP.CD"</span>, <span class="co"># 人均 GDP</span></span>
-<span id="cb16-7"><a href="#cb16-7"></a>    <span class="st">"SP.POP.TOTL"</span> <span class="co"># 人口总数</span></span>
-<span id="cb16-8"><a href="#cb16-8"></a>  ),</span>
-<span id="cb16-9"><a href="#cb16-9"></a>  <span class="at">country =</span> <span class="st">"countries_only"</span>,</span>
-<span id="cb16-10"><a href="#cb16-10"></a>  <span class="at">return_wide =</span> <span class="cn">FALSE</span>,</span>
-<span id="cb16-11"><a href="#cb16-11"></a>  <span class="at">start_date =</span> <span class="dv">2010</span>, <span class="at">end_date =</span> <span class="dv">2023</span></span>
-<span id="cb16-12"><a href="#cb16-12"></a>)</span>
-<span id="cb16-13"><a href="#cb16-13"></a>wb_world_indicator</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb27"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1"></a><span class="fu">library</span>(wbstats)</span>
+<span id="cb27-2"><a href="#cb27-2"></a><span class="co"># 从世界银行数据库获取宏观经济数据</span></span>
+<span id="cb27-3"><a href="#cb27-3"></a>wb_world_indicator <span class="ot">&lt;-</span> wbstats<span class="sc">::</span><span class="fu">wb_data</span>(</span>
+<span id="cb27-4"><a href="#cb27-4"></a>  <span class="at">indicator =</span> <span class="fu">c</span>(</span>
+<span id="cb27-5"><a href="#cb27-5"></a>    <span class="st">"SP.DYN.LE00.IN"</span>, <span class="co"># 预期寿命</span></span>
+<span id="cb27-6"><a href="#cb27-6"></a>    <span class="st">"NY.GDP.PCAP.CD"</span>, <span class="co"># 人均 GDP</span></span>
+<span id="cb27-7"><a href="#cb27-7"></a>    <span class="st">"SP.POP.TOTL"</span> <span class="co"># 人口总数</span></span>
+<span id="cb27-8"><a href="#cb27-8"></a>  ),</span>
+<span id="cb27-9"><a href="#cb27-9"></a>  <span class="at">country =</span> <span class="st">"countries_only"</span>,</span>
+<span id="cb27-10"><a href="#cb27-10"></a>  <span class="at">return_wide =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb27-11"><a href="#cb27-11"></a>  <span class="at">start_date =</span> <span class="dv">2010</span>, <span class="at">end_date =</span> <span class="dv">2023</span></span>
+<span id="cb27-12"><a href="#cb27-12"></a>)</span>
+<span id="cb27-13"><a href="#cb27-13"></a>wb_world_indicator</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code># A tibble: 9,114 × 10
    indicator_id   indicator     iso2c iso3c country  date value unit  obs_status
