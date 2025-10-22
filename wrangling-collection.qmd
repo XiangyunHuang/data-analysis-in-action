@@ -47,7 +47,42 @@ Apache Arrow 的 R 语言接口 [arrow](https://github.com/apache/arrow/tree/mas
 
 rvest 包从网页、网站抓取数据， 再用 xml2 和 httr2 解析处理网页数据。
 
+### 财政部官网 {#sec-mof}
+
+从中央到地方的各级政府每年都发布大量的公告，这些公告里包含大量的数据信息。比如财政部官网每年发布各类财政数据，各项收入、支出、债务以及转移支付等，下面从国务院关于中央决算的报告里，获取国债余额限额数据。
+
+```{r}
+library(rvest)
+# 国务院关于中央决算的报告 2022-2024 年
+# https://www.mof.gov.cn/gkml/caizhengshuju/
+links_df <- tibble::tribble(
+  ~year, ~ link,
+  2022 , "https://www.mof.gov.cn/zhengwuxinxi/caizhengxinwen/202307/t20230704_3894361.htm",
+  2023 , "https://www.mof.gov.cn/gkml/caizhengshuju/202407/t20240701_3938460.htm",
+  2024 , "https://www.mof.gov.cn/zhengwuxinxi/caizhengxinwen/202506/t20250630_3966883.htm"
+)
+# 下载网页
+web_pages <- lapply(links_df$link, read_html)
+# 提取文本内容
+extract_text <- function(x) {
+  html_text(html_elements(x, "div.my_doccontent p"))
+}
+web_texts <- lapply(web_pages, extract_text)
+```
+
+**rvest** 包的函数 `read_html` 下载网页，再用函数 `html_elements` 选取网页中目标段落，最后，用函数 `html_text` 将段落转化为文本数据。有了文本数据，便可以用正则表达式提取所需数据。
+
+```{r}
+# 筛选国债余额限额数据
+x <- lapply(web_texts, stringr::str_extract, pattern = "(国债余额限额)(\\d+.*?)亿元")
+lapply(x, function(x) {
+  x[!is.na(x)]
+})
+```
+
 ### 豆瓣排行榜 {#sec-douban}
+
+参见[岁月沉淀的光影艺术](https://xiangyun.rbind.io/2022/08/douban-movie-top250/)，在豆瓣排行榜抓取电影Top250的数据。
 
 ### 链家二手房 {#sec-lianjia}
 
