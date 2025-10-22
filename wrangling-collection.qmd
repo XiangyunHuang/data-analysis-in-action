@@ -224,8 +224,6 @@ head(gh_repo_db, 20)
 #| message: false
 
 library(tidycensus)
-# 设置访问令牌
-census_api_key(key = Sys.getenv("CENSUS_API_KEY"), install = TRUE)
 library(sf)
 options(tigris_use_cache = TRUE)
 # 下载北卡州郡级人口调查数据
@@ -234,7 +232,9 @@ nc_income_race_county <- get_acs(
   geography = "county", # 郡级
   # 三个数据指标：家庭年收入，白人数量，总人数
   variables = c("B19013_001", "B02001_001", "B02001_002"),
+  key = Sys.getenv("CENSUS_API_KEY"), # 设置访问令牌
   geometry = TRUE, # 调 tigris 包下载北卡州郡级地图数据 
+  progress_bar = F, # 不显示下载进度
   output = "wide", # 输出宽格式数据
   year = 2023,     # 2019-2023 年度
   survey = "acs5", # 5 年
