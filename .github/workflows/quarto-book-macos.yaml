@@ -37,7 +37,6 @@ jobs:
         with:
           pandoc-version: ${{ env.PANDOC_VERSION }}
 
-
       - name: Install TinyTeX
         uses: r-lib/actions/setup-tinytex@v2
         env:
@@ -51,7 +50,13 @@ jobs:
           brew install --cask xquartz
           brew install --cask font-noto-sans-cjk-sc font-noto-serif-cjk-sc
           fc-list | sort
-          
+
+      - name: Install ODBC Driver
+        run: |
+          export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
+          brew install unixodbc sqliteodbc
+          odbcinst -j
+          cp odbc/macos_odbcinst.ini /opt/homebrew/etc/odbcinst.ini
 
       - name: Setup Python
         run: |

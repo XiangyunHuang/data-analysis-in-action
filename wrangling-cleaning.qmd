@@ -14,16 +14,15 @@ pdb <- subset(
 
 ## 正则表达式 {#sec-regexp}
 
-简单起见，考虑 Rcpp 包的几个字段
+简单起见，考虑 Rcpp 包的几个字段。
 
 ```{r}
-pdb[pdb$Package == "Rcpp","Description"] 
-
+pdb[pdb$Package == "Rcpp","Description"]
 ```
 
 ### 量词 {#sec-quantifiers}
 
-字段 Description 中有多个换行符 `\n` 、多对括号，查找和替换
+字段 Description 中有多个换行符 `\n` 、多对括号，查找和替换。
 
 ```{r}
 grep(pattern = "\n", x = pdb[pdb$Package == "Rcpp", "Description"], fixed = TRUE)
@@ -37,7 +36,50 @@ grep(pattern = "\n", x = pdb[pdb$Package == "Rcpp", "Description"], fixed = TRUE
 
 ### 反向引用 {#sec-back-reference}
 
+```{r}
+x <- "年末国债余额为345723.62亿元，包括内债余额342063.98亿元、外债余额3659.64亿元，控制在全国人大批准的国债余额限额352008.35亿元以内。"
+str_extract <- function(text, pattern, ...) regmatches(text, regexpr(pattern, text, ...))
+# 提取一段匹配上的文本
+x <- str_extract(text = x, pattern = "(国债余额限额)(\\d+.*?)亿元")
+# 提取文本中的关键信息
+sub(pattern = "(国债余额限额)(\\d+.*?)亿元", x = x, replacement = "\\1")
+sub(pattern = "(国债余额限额)(\\d+.*?)亿元", x = x, replacement = "\\2")
+```
+
+参数 `replacement` 中，可以传递正则表达式的反向引用，其中 `\\1` 表示匹配上的第一个组，`\\2` 含义类似。
+
 ### 命名捕捉 {#sec-named-capture}
+
+正则表达式中，可以对某个子匹配赋于一个名称。
+
+```{r}
+x <- c(
+  `2023` = "控制在全国人大批准的国债余额限额308608.35亿元以内",
+  `2024` = "控制在全国人大批准的国债余额限额352008.35亿元以内"
+)
+
+m <- regexec(pattern = "(?<first>国债余额限额)(?<last>\\d+.*?)亿元", text = x, perl = TRUE)
+regmatches(x = x, m = m)
+```
+
+群组名称中，`first` 对应国债余额限额，`last` 对应 352008.35 ，表达式群组名称也可以用中文。
+
+```{r}
+m <- regexec(pattern = "(?<指标>国债余额限额)(?<数值>\\d+.*?)(?<单位>亿元)", text = x, perl = TRUE)
+regmatches(x = x, m = m)
+```
+
+函数 `regmatches()` 返回一个列表，列表中的元素是命名的字符串向量，下面根据索引位置提取向量中的部分内容。
+
+```{r}
+lapply(regmatches(x = x, m = m), `[`, c(2, 3, 4))
+```
+
+最后，将提取的数据合并成二维数组。
+
+```{r}
+do.call(rbind, lapply(regmatches(x = x, m = m), `[`, c(2, 3, 4)))
+```
 
 ## 字符串操作 {#sec-string-operations}
 
