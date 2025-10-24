@@ -42,11 +42,29 @@ Apache Arrow 的 R 语言接口 [arrow](https://github.com/apache/arrow/tree/mas
 
 ### RSQLite
 
+以 RSQLite 包内置的数据库 datasets.sqlite 为例，下面展示连接、查询和关闭连接数据库的过程。
+
+```{r}
+library(DBI)
+# 连接数据库
+con <- dbConnect(RSQLite::SQLite(), system.file("db", "datasets.sqlite", 
+        package = "RSQLite"))
+# 查询数据
+dbGetQuery(con, "SELECT * FROM mtcars WHERE cyl = 6")
+# 参数化查询
+dbGetQuery(con, 'SELECT * FROM mtcars WHERE "cyl" = :x',
+  params = list(x = 6))
+# 断开连接
+dbDisconnect(con)
+```
+
 ### odbc
+
+odbc 开放数据库连接标准
 
 ### RJDBC
 
-很多数据库都有 Java 接口驱动
+很多数据库都有 Java 接口驱动。
 
 ## 从各类网页中抓取 {#sec-web-scraping}
 
@@ -54,20 +72,28 @@ rvest 包从网页、网站抓取数据， 再用 xml2 和 httr2 解析处理网
 
 ### 财政部官网 {#sec-mof}
 
-从中央到地方的各级政府每年都发布大量的公告，这些公告里包含大量的数据信息。比如财政部官网每年发布各类财政数据，各项收入、支出、债务以及转移支付等，下面从国务院关于中央决算的报告里，获取国债余额限额数据。
+从中央到地方的各级政府每年都发布大量的公告，这些公告里包含大量的数据信息。比如财政部官网每年发布各类财政数据，各项收入、支出、债务以及转移支付等，下面从国务院关于中央决算的报告里，获取中央政府国债余额限额数据。
 
 ```{r}
 library(rvest)
-# 国务院关于中央决算的报告 2022-2024 年
+# 国务院关于中央决算的报告 2012-2024 年
 # https://www.mof.gov.cn/gkml/caizhengshuju/
-links_df <- tibble::tribble(
-  ~year, ~ link,
-  2022 , "https://www.mof.gov.cn/zhengwuxinxi/caizhengxinwen/202307/t20230704_3894361.htm",
-  2023 , "https://www.mof.gov.cn/gkml/caizhengshuju/202407/t20240701_3938460.htm",
-  2024 , "https://www.mof.gov.cn/zhengwuxinxi/caizhengxinwen/202506/t20250630_3966883.htm"
+links_vec <- c(
+  `2012` = "https://www.mof.gov.cn/zhengwuxinxi/caizhengxinwen/201306/t20130629_942538.htm",
+  `2013` = "https://www.mof.gov.cn/gkml/caizhengshuju/201406/t20140624_1103948.htm",
+  `2014` = "https://www.mof.gov.cn/zhengwuxinxi/caizhengxinwen/201506/t20150629_1262257.htm",
+  `2015` = "https://www.mof.gov.cn/gkml/caizhengshuju/201607/t20160701_2343739.htm",
+  `2017` = "https://www.mof.gov.cn/gkml/caizhengshuju/201806/t20180621_2935796.htm",
+  `2018` = "https://www.mof.gov.cn/zhengwuxinxi/caizhengxinwen/201906/t20190627_3286107.htm",
+  `2019` = "https://www.mof.gov.cn/zhengwuxinxi/caizhengxinwen/202006/t20200622_3536392.htm",
+  `2020` = "https://www.mof.gov.cn/zhengwuxinxi/caizhengxinwen/202106/t20210608_3715911.htm",
+  `2021` = "https://www.mof.gov.cn/zhengwuxinxi/caizhengxinwen/202206/t20220624_3820957.htm",
+  `2022` = "https://www.mof.gov.cn/zhengwuxinxi/caizhengxinwen/202307/t20230704_3894361.htm",
+  `2023` = "https://www.mof.gov.cn/gkml/caizhengshuju/202407/t20240701_3938460.htm",
+  `2024` = "https://www.mof.gov.cn/zhengwuxinxi/caizhengxinwen/202506/t20250630_3966883.htm"
 )
 # 下载网页
-web_pages <- lapply(links_df$link, read_html)
+web_pages <- lapply(links_vec, read_html)
 # 提取文本内容
 extract_text <- function(x) {
   html_text(html_elements(x, "div.my_doccontent p"))
@@ -79,7 +105,7 @@ web_texts <- lapply(web_pages, extract_text)
 
 ```{r}
 # 筛选国债余额限额数据
-x <- lapply(web_texts, stringr::str_extract, pattern = "(国债余额限额)(\\d+.*?)亿元")
+x <- lapply(web_texts, stringr::str_extract, pattern = "(国债余额限额)(\\d+.*?)亿元", group = 2)
 lapply(x, function(x) {
   x[!is.na(x)]
 })
