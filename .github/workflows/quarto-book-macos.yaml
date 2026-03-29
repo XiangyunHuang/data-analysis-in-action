@@ -54,15 +54,15 @@ jobs:
       - name: Install ODBC Driver
         run: |
           export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
-          brew install unixodbc sqliteodbc
+          brew install sqliteodbc
           odbcinst -j
-          cp odbc/macos_odbcinst.ini /opt/homebrew/etc/odbcinst.ini
+          cp odbc/macos_odbcinst.ini /usr/local/etc/odbcinst.ini
 
       - name: Setup Python
         run: |
           sudo mkdir -p /opt/.virtualenvs/r-tensorflow
           sudo chown -R $(whoami):staff /opt/.virtualenvs/r-tensorflow
-          virtualenv -p /usr/bin/python3 $RETICULATE_PYTHON_ENV
+          virtualenv -p $(which python3.13) $RETICULATE_PYTHON_ENV
           source $RETICULATE_PYTHON_ENV/bin/activate
           pip3 install -r docker/requirements.txt
           python -m spacy download en_core_web_sm
