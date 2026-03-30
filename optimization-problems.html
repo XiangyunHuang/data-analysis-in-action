@@ -2,10 +2,13 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="zh-Hans" xml:lang="zh-Hans"><head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.8.24">
+<meta name="generator" content="quarto-1.9.36">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 <title>24&nbsp; 优化问题 – R 语言数据分析实战</title>
 <style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
 div.columns{display: flex; gap: min(4vw, 1.5em);}
@@ -56,7 +59,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 div.csl-bib-body { }
 div.csl-entry {
   clear: both;
-  margin-bottom: 0em;
 }
 .hanging-indent div.csl-entry {
   margin-left:2em;
@@ -85,19 +87,18 @@ div.csl-indent {
 <link href="./numerical-optimization.html" rel="prev">
 <script src="site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
-<script src="site_libs/quarto-html/axe/axe-check.js" type="module"></script>
 <script src="site_libs/quarto-html/popper.min.js"></script>
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="site_libs/quarto-html/anchor.min.js"></script>
 <link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-dc55a5b9e770e841cd82e46aadbfb9b0.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-dark-b651517ce65839d647a86e2780455cfb.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-dc55a5b9e770e841cd82e46aadbfb9b0.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-dark-f418161beb48e0141c760e455f12af2c.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-22e83d4e5eff2a99ccc45532742ac980.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="site_libs/bootstrap/bootstrap-dark-234501a227967ac462f24af7be37efa8.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="site_libs/bootstrap/bootstrap-22e83d4e5eff2a99ccc45532742ac980.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light"><script id="quarto-search-options" type="application/json">{
+<link href="site_libs/bootstrap/bootstrap-b9eaee60a963b5d74e9d33cc267de6a6.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark-aa873432a3c62897e6c2091c0d30a948.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="site_libs/bootstrap/bootstrap-b9eaee60a963b5d74e9d33cc267de6a6.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light"><script id="quarto-search-options" type="application/json">{
   "location": "sidebar",
   "copy-button": false,
   "collapse-after": 3,
@@ -137,7 +138,7 @@ MathJax ={
     }
   }
 };
-</script><script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script><script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script><script type="text/javascript">
+</script><script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script><script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script><script type="text/javascript">
 const typesetMath = (el) => {
   if (window.MathJax) {
     // MathJax Typeset
@@ -342,9 +343,7 @@ window.Quarto = {
     </div>
   </nav></header><!-- content --><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
 <!-- sidebar -->
-  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto"><div class="pt-lg-2 mt-2 text-left sidebar-header sidebar-header-stacked">
-      <a href="./index.html" class="sidebar-logo-link">
-      </a>
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto"><div class="pt-lg-2 mt-2 text-left sidebar-header">
     <div class="sidebar-title mb-0 py-0">
       <a href="./">R 语言数据分析实战</a> 
         <div class="sidebar-tools-main tools-wide">
@@ -650,7 +649,7 @@ window.Quarto = {
 </div>
 <section id="sec-traveling-salesman-problem" class="level2" data-number="24.1"><h2 data-number="24.1" class="anchored" data-anchor-id="sec-traveling-salesman-problem">
 <span class="header-section-number">24.1</span> 旅行商问题</h2>
-<p>旅行商问题 The Traveling Salesman Problem 是一个混合整数线性规划问题，<strong>TSP</strong> 包 <span class="citation" data-cites="TSP2007">(<a href="references.html#ref-TSP2007" role="doc-biblioref">Hahsler 和 Hornik 2007</a>)</span> 是求解此问题的最佳工具包。一般地，旅行商问题作如下定义。已知 <span class="math inline">\(n\)</span> 个城市之间的距离，以矩阵 <span class="math inline">\(D\)</span> 表示各个城市之间的距离，其元素 <span class="math inline">\(d_{ij}\)</span> 表示城市 <span class="math inline">\(i\)</span> 到城市 <span class="math inline">\(j\)</span> 之间的距离，其对角元素 <span class="math inline">\(d_{ii} = 0\)</span>，其中 <span class="math inline">\(i,j = 1,2,\cdots, n\)</span> 。一个旅行路线可以用 <span class="math inline">\(\{1,2,\ldots,n\}\)</span> 的循环排列 <span class="math inline">\(\pi\)</span> 表示，<span class="math inline">\(\pi(i)\)</span> 表示在旅行线路中跟在城市 <span class="math inline">\(i\)</span> 之后的城市。旅行商问题就是找一个排列 <span class="math inline">\(\pi\)</span> 使得如下旅行线路最短。</p>
+<p>旅行商问题 The Traveling Salesman Problem 是一个混合整数线性规划问题，<strong>TSP</strong> 包 <span class="citation" data-cites="TSP2007">(<a href="references.html#ref-TSP2007" role="doc-biblioref">Hahsler 和 Hornik 2007年</a>)</span> 是求解此问题的最佳工具包。一般地，旅行商问题作如下定义。已知 <span class="math inline">\(n\)</span> 个城市之间的距离，以矩阵 <span class="math inline">\(D\)</span> 表示各个城市之间的距离，其元素 <span class="math inline">\(d_{ij}\)</span> 表示城市 <span class="math inline">\(i\)</span> 到城市 <span class="math inline">\(j\)</span> 之间的距离，其对角元素 <span class="math inline">\(d_{ii} = 0\)</span>，其中 <span class="math inline">\(i,j = 1,2,\cdots, n\)</span> 。一个旅行路线可以用 <span class="math inline">\(\{1,2,\ldots,n\}\)</span> 的循环排列 <span class="math inline">\(\pi\)</span> 表示，<span class="math inline">\(\pi(i)\)</span> 表示在旅行线路中跟在城市 <span class="math inline">\(i\)</span> 之后的城市。旅行商问题就是找一个排列 <span class="math inline">\(\pi\)</span> 使得如下旅行线路最短。</p>
 <p><span class="math display">\[
 \sum_{i=1}^{n} d_{i\pi(i)}
 \]</span></p>
@@ -730,13 +729,13 @@ window.Quarto = {
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1"></a><span class="co"># 旅行线路方案</span></span>
 <span id="cb7-2"><a href="#cb7-2"></a><span class="fu">as.integer</span>(tour_sol)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>#&gt;  [1]  5  4  6  1 10  7  2  3  9  8</code></pre>
+<pre><code>#&gt;  [1]  5  8  9  3  2  7 10  1  6  4</code></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1"></a><span class="fu">labels</span>(D_tsp)[<span class="fu">as.integer</span>(tour_sol)]</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>#&gt;  [1] "LosAngeles"    "Houston"       "Miami"         "Atlanta"      
-#&gt;  [5] "Washington.DC" "NewYork"       "Chicago"       "Denver"       
-#&gt;  [9] "Seattle"       "SanFrancisco"</code></pre>
+<pre><code>#&gt;  [1] "LosAngeles"    "SanFrancisco"  "Seattle"       "Denver"       
+#&gt;  [5] "Chicago"       "NewYork"       "Washington.DC" "Atlanta"      
+#&gt;  [9] "Miami"         "Houston"</code></pre>
 </div>
 </div>
 <p>求解结果对应的旅行方案，如 <a href="#fig-tsp-solution" class="quarto-xref">图&nbsp;<span>24.2</span></a> 所示，依次走过的城市是：洛杉矶、旧金山、西雅图、丹佛、芝加哥、纽约、华盛顿特区、亚特兰大、迈阿密、休斯顿。</p>
@@ -973,7 +972,7 @@ window.Quarto = {
 <p><span class="math display">\[
 \log \mathcal{L}(\boldsymbol{\theta}) = -\frac{n}{2}\log (2\pi) - \frac{1}{2}\log (\det V_{\boldsymbol{\theta}}) -\frac{1}{2}\boldsymbol{y}^{\top}V_{\boldsymbol{\theta}}^{-1}\big(I - D(D^{\top}V_{\boldsymbol{\theta}}^{-1}D)^{-1}D^{\top}V_{\boldsymbol{\theta}}^{-1}\big)\boldsymbol{y}
 \]</span></p>
-<p>下面考虑一个来自 <strong>MASS</strong> 包真实数据 <code>topo</code>。topo 数据集最初来自 John C. Davis （1973年）所著的书《Statistics and Data Analysis in Geology》。后来， J. J. Warnes 和 B. D. Ripley （1987年）以该数据集为例指出空间高斯过程的协方差函数的似然估计中存在的问题<span class="citation" data-cites="Ripley1987">(<a href="references.html#ref-Ripley1987" role="doc-biblioref">Warnes 和 Ripley 1987</a>)</span>，并将其作为数据集 <code>topo</code> 放在 <strong>MASS</strong> 包里。Paulo J. Ribeiro Jr 和 Peter J. Diggle （2001年）将该数据集打包成自定义的 <code>geodata</code> 数据类型，放在 <strong>geoR</strong> 包里，并在他俩合著的书《Model-based Geostatistics》中多次出现。<code>topo</code> 是空间地形数据集，包含有 52 行 3 列，数据点是 310 平方英尺范围内的海拔高度数据，<code>x</code> 坐标每单位 50 英尺，<code>y</code> 坐标单位同 <code>x</code> 坐标，海拔高度 <code>z</code> 单位是英尺。</p>
+<p>下面考虑一个来自 <strong>MASS</strong> 包真实数据 <code>topo</code>。topo 数据集最初来自 John C. Davis （1973年）所著的书《Statistics and Data Analysis in Geology》。后来， J. J. Warnes 和 B. D. Ripley （1987年）以该数据集为例指出空间高斯过程的协方差函数的似然估计中存在的问题<span class="citation" data-cites="Ripley1987">(<a href="references.html#ref-Ripley1987" role="doc-biblioref">Warnes 和 Ripley 1987年</a>)</span>，并将其作为数据集 <code>topo</code> 放在 <strong>MASS</strong> 包里。Paulo J. Ribeiro Jr 和 Peter J. Diggle （2001年）将该数据集打包成自定义的 <code>geodata</code> 数据类型，放在 <strong>geoR</strong> 包里，并在他俩合著的书《Model-based Geostatistics》中多次出现。<code>topo</code> 是空间地形数据集，包含有 52 行 3 列，数据点是 310 平方英尺范围内的海拔高度数据，<code>x</code> 坐标每单位 50 英尺，<code>y</code> 坐标单位同 <code>x</code> 坐标，海拔高度 <code>z</code> 单位是英尺。</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb36"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1"></a><span class="fu">library</span>(MASS)</span>
 <span id="cb36-2"><a href="#cb36-2"></a><span class="fu">data</span>(topo)</span>
@@ -1043,7 +1042,7 @@ window.Quarto = {
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb52"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb52-1"><a href="#cb52-1"></a>nlp <span class="ot">&lt;-</span> <span class="fu">ROI_solve</span>(op, <span class="at">solver =</span> <span class="st">"nloptr.directL"</span>)</span>
 <span id="cb52-2"><a href="#cb52-2"></a>nlp<span class="sc">$</span>solution</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>#&gt; [1] 63.93418  6.12133</code></pre>
+<pre><code>#&gt; [1] 63.934218  6.121339</code></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb54"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb54-1"><a href="#cb54-1"></a>nlp<span class="sc">$</span>objval</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
@@ -1196,7 +1195,7 @@ window.Quarto = {
 </div>
 </section><section id="sec-poisson-mixture-distributions" class="level2" data-number="24.4"><h2 data-number="24.4" class="anchored" data-anchor-id="sec-poisson-mixture-distributions">
 <span class="header-section-number">24.4</span> 泊松混合分布</h2>
-<p>有限混合模型（Finite Mixtures of Distributions）的应用非常广泛，本节参考 <strong>BB</strong> 包 <span class="citation" data-cites="BB2009">(<a href="references.html#ref-BB2009" role="doc-biblioref">Varadhan 和 Gilbert 2009</a>)</span> 的帮助手册，以泊松混合分布为例，介绍其参数的极大似然估计。更多详细的理论和算法介绍从略，感兴趣的读者可以查阅相关文献 <span class="citation" data-cites="Hasselblad1969">(<a href="references.html#ref-Hasselblad1969" role="doc-biblioref">Hasselblad 1969</a>)</span>。<strong>BB</strong> 包比内置函数 <code><a href="https://rdrr.io/r/stats/optim.html">optim()</a></code> 功能更强，可以求解大规模非线性方程组，也可以求解带简单约束的非线性优化问题，还可以从多个初始值出发寻找全局最优解。</p>
+<p>有限混合模型（Finite Mixtures of Distributions）的应用非常广泛，本节参考 <strong>BB</strong> 包 <span class="citation" data-cites="BB2009">(<a href="references.html#ref-BB2009" role="doc-biblioref">Varadhan 和 Gilbert 2009年</a>)</span> 的帮助手册，以泊松混合分布为例，介绍其参数的极大似然估计。更多详细的理论和算法介绍从略，感兴趣的读者可以查阅相关文献 <span class="citation" data-cites="Hasselblad1969">(<a href="references.html#ref-Hasselblad1969" role="doc-biblioref">Hasselblad 1969年</a>)</span>。<strong>BB</strong> 包比内置函数 <code><a href="https://rdrr.io/r/stats/optim.html">optim()</a></code> 功能更强，可以求解大规模非线性方程组，也可以求解带简单约束的非线性优化问题，还可以从多个初始值出发寻找全局最优解。</p>
 <p>两个泊松分布以一定比例 <span class="math inline">\(p\)</span> 混合，以概率 <span class="math inline">\(p\)</span> 服从泊松分布 <span class="math inline">\(\mathrm{Poisson}(\lambda_1)\)</span> ，而以概率 <span class="math inline">\(1-p\)</span> 服从泊松分布 <span class="math inline">\(\mathrm{Poisson}(\lambda_1)\)</span> 。</p>
 <p><span class="math display">\[
 p\times \mathrm{Poisson}(\lambda_1) + (1 - p)\times \mathrm{Poisson}(\lambda_2)
@@ -1219,7 +1218,7 @@ Y \sim \left\{
 <p><span class="math display">\[
 \ell(p,\lambda_1,\lambda_2) = \sum_{i=0}^{n}y_i \log\big(p\times \exp(-\lambda_1) \times\frac{\lambda_1^{x_i}}{x_i!} + (1 - p)\times \exp(-\lambda_2) \times\frac{\lambda_2 ^{x_i}}{x_i!} \big)
 \]</span></p>
-<p>下 <a href="#tbl-death-count" class="quarto-xref">表&nbsp;<span>24.1</span></a> 数据来自 1947 年 Walter Schilling 发表在 JASA 的一篇文章 <span class="citation" data-cites="Schilling1947">(<a href="references.html#ref-Schilling1947" role="doc-biblioref">Schilling 1947</a>)</span>。连续三年搜集伦敦《泰晤士报》刊登的死亡告示，每天的告示发布 80 岁及以上女性死亡人数。经过汇总统计，发现，在三年里，没有人死亡的告示出现 162 次，死亡 1 人的告示出现 267 次。</p>
+<p>下 <a href="#tbl-death-count" class="quarto-xref">表&nbsp;<span>24.1</span></a> 数据来自 1947 年 Walter Schilling 发表在 JASA 的一篇文章 <span class="citation" data-cites="Schilling1947">(<a href="references.html#ref-Schilling1947" role="doc-biblioref">Schilling 1947年</a>)</span>。连续三年搜集伦敦《泰晤士报》刊登的死亡告示，每天的告示发布 80 岁及以上女性死亡人数。经过汇总统计，发现，在三年里，没有人死亡的告示出现 162 次，死亡 1 人的告示出现 267 次。</p>
 <div id="tbl-death-count" class="quarto-float quarto-figure quarto-figure-center anchored">
 <figure class="quarto-float quarto-float-tbl figure"><figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-death-count-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 表&nbsp;24.1: 死亡人数的统计
@@ -1286,32 +1285,33 @@ Y \sim \left\{
 <span id="cb64-6"><a href="#cb64-6"></a>  <span class="at">control =</span> <span class="fu">list</span>(<span class="at">maximize =</span> <span class="cn">TRUE</span>)</span>
 <span id="cb64-7"><a href="#cb64-7"></a>)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>#&gt; iter:  0  f-value:  -1999.942  pgrad:  3.880017 
-#&gt; iter:  10  f-value:  -1991.362  pgrad:  2.449704 
-#&gt; iter:  20  f-value:  -1990.324  pgrad:  1.391581 
-#&gt; iter:  30  f-value:  -1989.981  pgrad:  1.798712 
-#&gt; iter:  40  f-value:  -1989.946  pgrad:  0.0269597 
+<pre><code>#&gt; iter:  0  f-value:  -2002.234  pgrad:  23.08246 
+#&gt; iter:  10  f-value:  -1995.162  pgrad:  27.00782 
+#&gt; iter:  20  f-value:  -1991.368  pgrad:  9.219459 
+#&gt; iter:  30  f-value:  -1990.443  pgrad:  1.472295 
+#&gt; iter:  40  f-value:  -1989.946  pgrad:  0.01096396 
+#&gt; iter:  50  f-value:  -1989.946  pgrad:  1.818989e-05 
 #&gt;   Successful convergence.</code></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb66"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb66-1"><a href="#cb66-1"></a>ans</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt; $par
-#&gt; [1] 0.3598738 1.2560747 2.6633902
+#&gt; [1] 0.359883 1.256091 2.663401
 #&gt; 
 #&gt; $value
 #&gt; [1] -1989.946
 #&gt; 
 #&gt; $gradient
-#&gt; [1] 0.0001818989
+#&gt; [1] 6.82121e-06
 #&gt; 
 #&gt; $fn.reduction
-#&gt; [1] -9.996218
+#&gt; [1] -12.28769
 #&gt; 
 #&gt; $iter
-#&gt; [1] 48
+#&gt; [1] 51
 #&gt; 
 #&gt; $feval
-#&gt; [1] 52
+#&gt; [1] 261
 #&gt; 
 #&gt; $convergence
 #&gt; [1] 0
@@ -1331,15 +1331,15 @@ Y \sim \left\{
 <span id="cb68-3"><a href="#cb68-3"></a>hess</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt;           [,1]       [,2]       [,3]
-#&gt; [1,] -907.1220  270.22609  341.26005
-#&gt; [2,]  270.2261 -113.47621  -61.68116
-#&gt; [3,]  341.2601  -61.68116 -192.78704</code></pre>
+#&gt; [1,] -907.1103  270.22862  341.25424
+#&gt; [2,]  270.2286 -113.47942  -61.68192
+#&gt; [3,]  341.2542  -61.68192 -192.78209</code></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb70"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb70-1"><a href="#cb70-1"></a><span class="co"># 标准差</span></span>
 <span id="cb70-2"><a href="#cb70-2"></a>se <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(<span class="fu">diag</span>(<span class="fu">solve</span>(<span class="sc">-</span>hess)))</span>
 <span id="cb70-3"><a href="#cb70-3"></a>se</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>#&gt; [1] 0.1946797 0.3500316 0.2504710</code></pre>
+<pre><code>#&gt; [1] 0.1946834 0.3500301 0.2504768</code></pre>
 </div>
 </div>
 <p><code>multiStart</code> 从不同初始值出发寻找全局最大值，先找一系列局部极大值，通过比较获得全局最大值。</p>
@@ -1360,10 +1360,13 @@ Y \sim \left\{
 <span id="cb72-14"><a href="#cb72-14"></a>pmat[<span class="sc">!</span><span class="fu">duplicated</span>(pmat), ]</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>#&gt;         fvalue parameter 1 parameter 2 parameter 3
-#&gt; [1,] -1995.643      0.3049      2.7211      1.9053
-#&gt; [2,] -1989.946      0.6401      2.6634      1.2561
-#&gt; [3,] -1989.946      0.3599      1.2561      2.6634
-#&gt; [4,] -2000.745      0.8675      2.2028      1.8748</code></pre>
+#&gt; [1,] -1989.946      0.6401      2.6634      1.2561
+#&gt; [2,] -1997.123      0.2303      2.7327      1.9837
+#&gt; [3,] -1996.894      0.6756      1.9296      2.6139
+#&gt; [4,] -1989.946      0.6402      2.6633      1.2560
+#&gt; [5,] -1989.946      0.3599      1.2561      2.6634
+#&gt; [6,] -2000.309      0.2264      2.4215      2.0662
+#&gt; [7,] -1997.902      0.2709      2.6071      1.9828</code></pre>
 </div>
 </div>
 </section><section id="sec-maximum-likelihood-estimation" class="level2" data-number="24.5"><h2 data-number="24.5" class="anchored" data-anchor-id="sec-maximum-likelihood-estimation">
@@ -1539,21 +1542,21 @@ f(x;\alpha,\sigma) = \frac{1}{\sigma^\alpha \Gamma(\alpha)}x^{\alpha - 1} \exp(-
 </ol>
 
 
-<div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list" style="display: none">
+<div id="refs" class="references csl-bib-body hanging-indent" role="list" style="display: none">
 <div id="ref-TSP2007" class="csl-entry" role="listitem">
-Hahsler, Michael, 和 Kurt Hornik. 2007. <span>《<span>TSP</span>: <span>I</span>nfrastructure for the traveling salesperson problem》</span>. <em>Journal of Statistical Software</em> 23 (2): 1–21. <a href="https://doi.org/10.18637/jss.v023.i02">https://doi.org/10.18637/jss.v023.i02</a>.
+Hahsler, Michael, 和 Kurt Hornik. 2007年. <span>《<span>TSP</span>: <span>I</span>nfrastructure for the traveling salesperson problem》</span>. <em>Journal of Statistical Software</em> 23 (2): 1～21. <a href="https://doi.org/10.18637/jss.v023.i02">https://doi.org/10.18637/jss.v023.i02</a>.
 </div>
 <div id="ref-Hasselblad1969" class="csl-entry" role="listitem">
-Hasselblad, Victor. 1969. <span>《Estimation of Finite Mixtures of Distributions from the Exponential Family》</span>. <em>Journal of the American Statistical Association</em> 64 (328): 1459–71. <a href="https://doi.org/10.1080/01621459.1969.10501071">https://doi.org/10.1080/01621459.1969.10501071</a>.
+Hasselblad, Victor. 1969年. <span>《Estimation of Finite Mixtures of Distributions from the Exponential Family》</span>. <em>Journal of the American Statistical Association</em> 64 (328): 1459～71. <a href="https://doi.org/10.1080/01621459.1969.10501071">https://doi.org/10.1080/01621459.1969.10501071</a>.
 </div>
 <div id="ref-Schilling1947" class="csl-entry" role="listitem">
-Schilling, Walter. 1947. <span>《A Frequency Distribution Represented as the Sum of Two Poisson Distributions》</span>. <em>Journal of the American Statistical Association</em> 42 (239): 407–24.
+Schilling, Walter. 1947年. <span>《A Frequency Distribution Represented as the Sum of Two Poisson Distributions》</span>. <em>Journal of the American Statistical Association</em> 42 (239): 407～24.
 </div>
 <div id="ref-BB2009" class="csl-entry" role="listitem">
-Varadhan, Ravi, 和 Paul Gilbert. 2009. <span>《<span>BB</span>: An <span>R</span> Package for Solving a Large System of Nonlinear Equations and for Optimizing a High-Dimensional Nonlinear Objective Function》</span>. <em>Journal of Statistical Software</em> 32 (4): 1–26. <a href="https://www.jstatsoft.org/v32/i04/">https://www.jstatsoft.org/v32/i04/</a>.
+Varadhan, Ravi, 和 Paul Gilbert. 2009年. <span>《<span>BB</span>: An <span>R</span> Package for Solving a Large System of Nonlinear Equations and for Optimizing a High-Dimensional Nonlinear Objective Function》</span>. <em>Journal of Statistical Software</em> 32 (4): 1～26. <a href="https://www.jstatsoft.org/v32/i04/">https://www.jstatsoft.org/v32/i04/</a>.
 </div>
 <div id="ref-Ripley1987" class="csl-entry" role="listitem">
-Warnes, J. J., 和 B. D. Ripley. 1987. <span>《Problems with likelihood estimation of covariance functions of spatial gaussian processes》</span>. <em>Biometrika</em> 74 (3): 640–42.
+Warnes, J. J., 和 B. D. Ripley. 1987年. <span>《Problems with likelihood estimation of covariance functions of spatial gaussian processes》</span>. <em>Biometrika</em> 74 (3): 640～42.
 </div>
 </div>
 </section></main><!-- /main --><script id="quarto-html-after-body" type="application/javascript">

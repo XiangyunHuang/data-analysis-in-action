@@ -2,10 +2,13 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="zh-Hans" xml:lang="zh-Hans"><head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.8.24">
+<meta name="generator" content="quarto-1.9.36">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 <title>16&nbsp; 分类数据的分析 – R 语言数据分析实战</title>
 <style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
 div.columns{display: flex; gap: min(4vw, 1.5em);}
@@ -56,7 +59,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 div.csl-bib-body { }
 div.csl-entry {
   clear: both;
-  margin-bottom: 0em;
 }
 .hanging-indent div.csl-entry {
   margin-left:2em;
@@ -85,19 +87,18 @@ div.csl-indent {
 <link href="./regression-and-correlation.html" rel="prev">
 <script src="site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
-<script src="site_libs/quarto-html/axe/axe-check.js" type="module"></script>
 <script src="site_libs/quarto-html/popper.min.js"></script>
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="site_libs/quarto-html/anchor.min.js"></script>
 <link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-dc55a5b9e770e841cd82e46aadbfb9b0.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-dark-b651517ce65839d647a86e2780455cfb.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-dc55a5b9e770e841cd82e46aadbfb9b0.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-dark-f418161beb48e0141c760e455f12af2c.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-22e83d4e5eff2a99ccc45532742ac980.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="site_libs/bootstrap/bootstrap-dark-234501a227967ac462f24af7be37efa8.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="site_libs/bootstrap/bootstrap-22e83d4e5eff2a99ccc45532742ac980.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light"><script id="quarto-search-options" type="application/json">{
+<link href="site_libs/bootstrap/bootstrap-b9eaee60a963b5d74e9d33cc267de6a6.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark-aa873432a3c62897e6c2091c0d30a948.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="site_libs/bootstrap/bootstrap-b9eaee60a963b5d74e9d33cc267de6a6.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light"><script id="quarto-search-options" type="application/json">{
   "location": "sidebar",
   "copy-button": false,
   "collapse-after": 3,
@@ -137,7 +138,7 @@ MathJax ={
     }
   }
 };
-</script><script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script><script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script><script type="text/javascript">
+</script><script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script><script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script><script type="text/javascript">
 const typesetMath = (el) => {
   if (window.MathJax) {
     // MathJax Typeset
@@ -342,9 +343,7 @@ window.Quarto = {
     </div>
   </nav></header><!-- content --><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
 <!-- sidebar -->
-  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto"><div class="pt-lg-2 mt-2 text-left sidebar-header sidebar-header-stacked">
-      <a href="./index.html" class="sidebar-logo-link">
-      </a>
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto"><div class="pt-lg-2 mt-2 text-left sidebar-header">
     <div class="sidebar-title mb-0 py-0">
       <a href="./">R 语言数据分析实战</a> 
         <div class="sidebar-tools-main tools-wide">
@@ -682,12 +681,12 @@ window.Quarto = {
 <span class="header-section-number">16.1</span> 比例检验</h2>
 <section id="单样本检验" class="level3" data-number="16.1.1"><h3 data-number="16.1.1" class="anchored" data-anchor-id="单样本检验">
 <span class="header-section-number">16.1.1</span> 单样本检验</h3>
-<p>比例检验函数 <code><a href="https://rdrr.io/r/stats/prop.test.html">prop.test()</a></code> 检验比例是否等于给定的值。单样本的比例检验结果中比例的区间估计与 Wilson 区间估计 <span class="citation" data-cites="Wilson1927">(<a href="references.html#ref-Wilson1927" role="doc-biblioref">Wilson 1927</a>)</span> 是相关的。区间估计与假设检验是有紧密关系的，对于二项分布比例的 11 种区间估计方法的比较 <span class="citation" data-cites="Newcombe1998">(<a href="references.html#ref-Newcombe1998" role="doc-biblioref">Newcombe 1998</a>)</span>。</p>
+<p>比例检验函数 <code><a href="https://rdrr.io/r/stats/prop.test.html">prop.test()</a></code> 检验比例是否等于给定的值。单样本的比例检验结果中比例的区间估计与 Wilson 区间估计 <span class="citation" data-cites="Wilson1927">(<a href="references.html#ref-Wilson1927" role="doc-biblioref">Wilson 1927年</a>)</span> 是相关的。区间估计与假设检验是有紧密关系的，对于二项分布比例的 11 种区间估计方法的比较 <span class="citation" data-cites="Newcombe1998">(<a href="references.html#ref-Newcombe1998" role="doc-biblioref">Newcombe 1998年</a>)</span>。</p>
 <section id="近似检验" class="level4" data-number="16.1.1.1"><h4 data-number="16.1.1.1" class="anchored" data-anchor-id="近似检验">
 <span class="header-section-number">16.1.1.1</span> 近似检验</h4>
 </section><section id="精确检验" class="level4" data-number="16.1.1.2"><h4 data-number="16.1.1.2" class="anchored" data-anchor-id="精确检验">
 <span class="header-section-number">16.1.1.2</span> 精确检验</h4>
-<p>函数 <code><a href="https://rdrr.io/r/stats/binom.test.html">binom.test()</a></code> 来做二项检验，函数 <code><a href="https://rdrr.io/r/stats/binom.test.html">binom.test()</a></code> 用来检验伯努利试验中成功概率 <span class="math inline">\(p\)</span> 和给定概率 <span class="math inline">\(p_0\)</span> 的关系，属于精确检验 <span class="citation" data-cites="Clopper1934">(<a href="references.html#ref-Clopper1934" role="doc-biblioref">Clopper 和 Pearson 1934</a>)</span>。</p>
+<p>函数 <code><a href="https://rdrr.io/r/stats/binom.test.html">binom.test()</a></code> 来做二项检验，函数 <code><a href="https://rdrr.io/r/stats/binom.test.html">binom.test()</a></code> 用来检验伯努利试验中成功概率 <span class="math inline">\(p\)</span> 和给定概率 <span class="math inline">\(p_0\)</span> 的关系，属于精确检验 <span class="citation" data-cites="Clopper1934">(<a href="references.html#ref-Clopper1934" role="doc-biblioref">Clopper 和 Pearson 1934年</a>)</span>。</p>
 <p>比例 <span class="math inline">\(p\)</span> 的检验，做 <span class="math inline">\(n\)</span> 次独立试验，样本 <span class="math inline">\(X_1,\ldots,X_n \sim b(1, p)\)</span>，事件发生的总次数 <span class="math inline">\(\sum_{i=1}^{n}X_i\)</span>。</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1"></a><span class="co"># 模拟一组样本</span></span>
@@ -761,7 +760,7 @@ T = \frac{\bar{X} - \bar{Y}}{\sqrt{\frac{\bar{X}(1-\bar{X})}{n} + \frac{\bar{Y}(
 \]</span></p>
 <p>根据 Slutsky 定理，检验统计量 <span class="math inline">\(T\)</span> 近似服从标准正态分布，当 <span class="math inline">\(T\)</span> 偏大时，拒绝 <span class="math inline">\(H_0\)</span>。该方法的优势在于当 <span class="math inline">\(n,m\)</span> 比较大时，二项分布比较复杂，无法建立统计表，利用标准正态分布表来给出检验所需要的临界值，简便易行！</p>
 <p>当 <span class="math inline">\(p\)</span> 和 <span class="math inline">\(\theta\)</span> 都比较小，上述方法检验效果不好，原因在于由中心极限定理对 <span class="math inline">\(\bar{X}\)</span> 和 <span class="math inline">\(\bar{Y}\)</span> 的正态分布近似效果不好，或者间接地导致 <span class="math inline">\(\bar{X}-\bar{Y}\)</span> 的方差偏小，进而 <span class="math inline">\(T\)</span> 的分辨都不好，而且当 <span class="math inline">\(p,\theta\)</span> 很接近 1 时，上述现象也会产生！</p>
-<p>下面介绍新的解决办法，办法来自两个二项总体成功概率的比较 <span class="citation" data-cites="Song2011">(<a href="references.html#ref-Song2011" role="doc-biblioref">宋泽熙 2011</a>)</span>。</p>
+<p>下面介绍新的解决办法，办法来自两个二项总体成功概率的比较 <span class="citation" data-cites="Song2011">(<a href="references.html#ref-Song2011" role="doc-biblioref">宋泽熙 2011年</a>)</span>。</p>
 <p>上面的检验问题等价于</p>
 <p><span class="math display">\[
 H_0: \frac{P_A}{P_B} \geq 1 \quad vs. \quad H_1: \frac{P_A}{P_B} &lt; 1
@@ -1353,7 +1352,7 @@ p(x) = \frac{\lambda^x\exp(-\lambda)}{x!}, x = 0, 1, \cdots .
   height: 0px !important;
 }
 </style>
-<table class="gt_table do-not-create-environment cell caption-top table table-sm table-striped small" data-quarto-bootstrap="false">
+<table class="gt_table cell caption-top table table-sm table-striped small" data-quarto-bootstrap="false">
 <thead><tr class="gt_col_headings header">
 <th id="Class" class="gt_col_heading gt_columns_bottom_border gt_center" data-quarto-table-cell-role="th" scope="col">船舱</th>
 <th id="Sex" class="gt_col_heading gt_columns_bottom_border gt_center" data-quarto-table-cell-role="th" scope="col">性别</th>
@@ -1509,7 +1508,7 @@ p(x) = \frac{\lambda^x\exp(-\lambda)}{x!}, x = 0, 1, \cdots .
 <p><strong>ggstats</strong> 包提供的图层 <code>stat_prop()</code> 是 <code>stat_count()</code> 的变种， <code>as.data.frame(Titanic)</code> 中 Age 一列会自动聚合吗？ by = Class 按 Class 分组聚合，统计 Survived 的比例，提供 prop 计算的变量，传递给 <code>geom_text()</code> 以添加注释，position 设置将注释放在柱子的中间</p>
 </section><section id="桑基图" class="level3" data-number="16.3.3"><h3 data-number="16.3.3" class="anchored" data-anchor-id="桑基图">
 <span class="header-section-number">16.3.3</span> 桑基图</h3>
-<p>用 <a href="https://github.com/corybrunson/ggalluvial/"><strong>ggalluvial</strong></a> 包<span class="citation" data-cites="Brunson2020">(<a href="references.html#ref-Brunson2020" role="doc-biblioref">Brunson 2020</a>)</span>绘制桑基图展示多维分类数据。</p>
+<p>用 <a href="https://github.com/corybrunson/ggalluvial/"><strong>ggalluvial</strong></a> 包<span class="citation" data-cites="Brunson2020">(<a href="references.html#ref-Brunson2020" role="doc-biblioref">Brunson 2020年</a>)</span>绘制桑基图展示多维分类数据。</p>
 <div class="cell">
 <details class="code-fold"><summary>代码</summary><div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1"></a><span class="fu">library</span>(ggplot2)</span>
 <span id="cb16-2"><a href="#cb16-2"></a><span class="fu">library</span>(ggalluvial)</span>
@@ -1557,7 +1556,7 @@ p(x) = \frac{\lambda^x\exp(-\lambda)}{x!}, x = 0, 1, \cdots .
 </div>
 </div>
 </div>
-<p><a href="https://cran.r-project.org/package=vcd"><strong>vcd</strong></a> 包针对分类数据做了很多专门的可视化工作，内置了很多数据集和绘图函数，在 Base R 绘图基础上，整合了许多统计分析功能，提供了一个统一的可视化框架<span class="citation" data-cites="Meyer2006 Zeileis2007">(<a href="references.html#ref-Meyer2006" role="doc-biblioref">Meyer, Zeileis, 和 Hornik 2006</a>; <a href="references.html#ref-Zeileis2007" role="doc-biblioref">Zeileis, Meyer, 和 Hornik 2007</a>)</span>，更多细节见著作《Discrete Data Analysis with R: Visualization and Modeling Techniques for Categorical and Count Data》及其附带的 R 包 <a href="https://github.com/friendly/vcdExtra"><strong>vcdExtra</strong></a><span class="citation" data-cites="Friendly2016">(<a href="references.html#ref-Friendly2016" role="doc-biblioref">Friendly 和 Meyer 2016</a>)</span>。</p>
+<p><a href="https://cran.r-project.org/package=vcd"><strong>vcd</strong></a> 包针对分类数据做了很多专门的可视化工作，内置了很多数据集和绘图函数，在 Base R 绘图基础上，整合了许多统计分析功能，提供了一个统一的可视化框架<span class="citation" data-cites="Meyer2006 Zeileis2007">(<a href="references.html#ref-Meyer2006" role="doc-biblioref">Meyer 等 2006年</a>; <a href="references.html#ref-Zeileis2007" role="doc-biblioref">Zeileis 等 2007年</a>)</span>，更多细节见著作《Discrete Data Analysis with R: Visualization and Modeling Techniques for Categorical and Count Data》及其附带的 R 包 <a href="https://github.com/friendly/vcdExtra"><strong>vcdExtra</strong></a><span class="citation" data-cites="Friendly2016">(<a href="references.html#ref-Friendly2016" role="doc-biblioref">Friendly 和 Meyer 2016年</a>)</span>。</p>
 <div class="cell">
 <details class="code-fold"><summary>代码</summary><div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1"></a><span class="fu">library</span>(grid)</span>
 <span id="cb18-2"><a href="#cb18-2"></a><span class="fu">library</span>(vcd)</span>
@@ -1585,7 +1584,7 @@ p(x) = \frac{\lambda^x\exp(-\lambda)}{x!}, x = 0, 1, \cdots .
 <li>边际独立 Marginal independence 当忽略第三个变量时，两个变量是独立的。列联表压缩</li>
 <li>条件独立 Conditional independence 当固定第三个变量时，两个变量是独立的，<span class="math inline">\(X \perp Y | Z\)</span>。</li>
 </ol>
-<p>本节数据来自著作《An Introduction to Categorical Data Analysis》<span class="citation" data-cites="Agresti2007">(<a href="references.html#ref-Agresti2007" role="doc-biblioref">Agresti 2007</a>)</span> 的第2章习题 2.33，探索 1976-1977 年美国佛罗里达州的凶杀案件中被告肤色和死刑判决的关系。</p>
+<p>本节数据来自著作《An Introduction to Categorical Data Analysis》<span class="citation" data-cites="Agresti2007">(<a href="references.html#ref-Agresti2007" role="doc-biblioref">Agresti 2007年</a>)</span> 的第2章习题 2.33，探索 1976-1977 年美国佛罗里达州的凶杀案件中被告肤色和死刑判决的关系。</p>
 <div class="cell">
 <details class="code-fold"><summary>代码</summary><div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb19"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1"></a>tbl <span class="ot">&lt;-</span> <span class="fu">expand.grid</span>(</span>
 <span id="cb19-2"><a href="#cb19-2"></a>  <span class="at">Death =</span> <span class="fu">c</span>(<span class="st">"Yes"</span>, <span class="st">"No"</span>), <span class="co"># 判决结果 是否死刑</span></span>
@@ -2067,7 +2066,7 @@ p(x) = \frac{\lambda^x\exp(-\lambda)}{x!}, x = 0, 1, \cdots .
   height: 0px !important;
 }
 </style>
-<table class="gt_table do-not-create-environment cell caption-top table table-sm table-striped small" data-quarto-bootstrap="false">
+<table class="gt_table cell caption-top table table-sm table-striped small" data-quarto-bootstrap="false">
 <colgroup>
 <col style="width: 25%">
 <col style="width: 25%">
@@ -2899,7 +2898,7 @@ p(x) = \frac{\lambda^x\exp(-\lambda)}{x!}, x = 0, 1, \cdots .
   height: 0px !important;
 }
 </style>
-<table class="gt_table do-not-create-environment cell caption-top table table-sm table-striped small" data-quarto-bootstrap="false">
+<table class="gt_table cell caption-top table table-sm table-striped small" data-quarto-bootstrap="false">
 <colgroup>
 <col style="width: 20%">
 <col style="width: 20%">
@@ -3130,7 +3129,7 @@ p(x) = \frac{\lambda^x\exp(-\lambda)}{x!}, x = 0, 1, \cdots .
 #&gt; Number of Fisher Scoring iterations: 5</code></pre>
 </div>
 </div>
-<p>此辛普森悖论现象的解释是女生倾向于申请录取率低的院系，而男生倾向于申请录取率高的院系，最终导致整体上，男生的录取率显著高于女生。至于为什么女生会倾向于申请录取率低的院系？这可能要看具体的院系是哪些，招生政策如何？这已经不是仅仅依靠招生办的统计数字就可以完全解释得了的，更多详情见文献 <span class="citation" data-cites="Bickel1975">Bickel, Hammel, 和 O’Connell (<a href="references.html#ref-Bickel1975" role="doc-biblioref">1975</a>)</span> 。</p>
+<p>此辛普森悖论现象的解释是女生倾向于申请录取率低的院系，而男生倾向于申请录取率高的院系，最终导致整体上，男生的录取率显著高于女生。至于为什么女生会倾向于申请录取率低的院系？这可能要看具体的院系是哪些，招生政策如何？这已经不是仅仅依靠招生办的统计数字就可以完全解释得了的，更多详情见文献 <span class="citation" data-cites="Bickel1975">Bickel 等 (<a href="references.html#ref-Bickel1975" role="doc-biblioref">1975年</a>)</span> 。</p>
 <div class="callout callout-style-default callout-tip callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -3206,36 +3205,36 @@ p(x) = \frac{\lambda^x\exp(-\lambda)}{x!}, x = 0, 1, \cdots .
 </div>
 
 
-<div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list" style="display: none">
+<div id="refs" class="references csl-bib-body hanging-indent" role="list" style="display: none">
 <div id="ref-Agresti2007" class="csl-entry" role="listitem">
-Agresti, Alan. 2007. <em>An Introduction to Categorical Data Analysis</em>. 2nd 本. Hoboken, New Jersey: John Wiley &amp; Sons, Inc.
+Agresti, Alan. 2007年. <em>An Introduction to Categorical Data Analysis</em>. 2nd 版. John Wiley &amp; Sons, Inc.
 </div>
 <div id="ref-Bickel1975" class="csl-entry" role="listitem">
-Bickel, P. J., E. A. Hammel, 和 J. W. O’Connell. 1975. <span>《Sex Bias in Graduate Admissions: Data from Berkeley》</span>. <em>Science</em> 187 (4175): 398–404. <a href="https://doi.org/10.1126/science.187.4175.398">https://doi.org/10.1126/science.187.4175.398</a>.
+Bickel, P. J., E. A. Hammel, 和 J. W. O’Connell. 1975年. <span>《Sex Bias in Graduate Admissions: Data from Berkeley》</span>. <em>Science</em> 187 (4175): 398～404. <a href="https://doi.org/10.1126/science.187.4175.398">https://doi.org/10.1126/science.187.4175.398</a>.
 </div>
 <div id="ref-Brunson2020" class="csl-entry" role="listitem">
-Brunson, Jason Cory. 2020. <span>《<span>ggalluvial</span>: Layered Grammar for Alluvial Plots》</span>. <em>Journal of Open Source Software</em> 5 (49): 2017. <a href="https://doi.org/10.21105/joss.02017">https://doi.org/10.21105/joss.02017</a>.
+Brunson, Jason Cory. 2020年. <span>《<span>ggalluvial</span>: Layered Grammar for Alluvial Plots》</span>. <em>Journal of Open Source Software</em> 5 (49): 2017. <a href="https://doi.org/10.21105/joss.02017">https://doi.org/10.21105/joss.02017</a>.
 </div>
 <div id="ref-Clopper1934" class="csl-entry" role="listitem">
-Clopper, C. J., 和 E. S. Pearson. 1934. <span>《The Use of Confidence or Fiducial Limits Illustrated In The Case of The Binomial》</span>. <em>Biometrika</em> 26 (4): 404–13. <a href="https://doi.org/10.1093/biomet/26.4.404">https://doi.org/10.1093/biomet/26.4.404</a>.
+Clopper, C. J., 和 E. S. Pearson. 1934年. <span>《The Use of Confidence or Fiducial Limits Illustrated In The Case of The Binomial》</span>. <em>Biometrika</em> 26 (4): 404～13. <a href="https://doi.org/10.1093/biomet/26.4.404">https://doi.org/10.1093/biomet/26.4.404</a>.
 </div>
 <div id="ref-Friendly2016" class="csl-entry" role="listitem">
-Friendly, Michael, 和 David Meyer. 2016. <em>Discrete Data Analysis with R: Visualization and Modeling Techniques for Categorical and Count Data</em>. 1st 本. Boca Raton, Florida: Chapman; Hall/CRC.
+Friendly, Michael, 和 David Meyer. 2016年. <em>Discrete Data Analysis with R: Visualization and Modeling Techniques for Categorical and Count Data</em>. 1st 版. Chapman; Hall/CRC.
 </div>
 <div id="ref-Meyer2006" class="csl-entry" role="listitem">
-Meyer, David, Achim Zeileis, 和 Kurt Hornik. 2006. <span>《The Strucplot Framework: Visualizing Multi-Way Contingency Tables with <span>vcd</span>》</span>. <em>Journal of Statistical Software</em> 17 (3): 1–48. <a href="https://doi.org/10.18637/jss.v017.i03">https://doi.org/10.18637/jss.v017.i03</a>.
+Meyer, David, Achim Zeileis, 和 Kurt Hornik. 2006年. <span>《The Strucplot Framework: Visualizing Multi-Way Contingency Tables with <span>vcd</span>》</span>. <em>Journal of Statistical Software</em> 17 (3): 1～48. <a href="https://doi.org/10.18637/jss.v017.i03">https://doi.org/10.18637/jss.v017.i03</a>.
 </div>
 <div id="ref-Newcombe1998" class="csl-entry" role="listitem">
-Newcombe, Robert G. 1998. <span>《Interval estimation for the difference between independent proportions: comparison of eleven methods》</span>. <em>Statistics in Medicine</em> 17 (8): 873–90. <a href="https://doi.org/10.1002/(SICI)1097-0258(19980430)17:8<873::AID-SIM779>3.0.CO;2-I">https://doi.org/10.1002/(SICI)1097-0258(19980430)17:8&lt;873::AID-SIM779&gt;3.0.CO;2-I</a>.
+Newcombe, Robert G. 1998年. <span>《Interval estimation for the difference between independent proportions: comparison of eleven methods》</span>. <em>Statistics in Medicine</em> 17 (8): 873～90. <a href="https://doi.org/10.1002/(SICI)1097-0258(19980430)17:8<873::AID-SIM779>3.0.CO;2-I">https://doi.org/10.1002/(SICI)1097-0258(19980430)17:8&lt;873::AID-SIM779&gt;3.0.CO;2-I</a>.
 </div>
 <div id="ref-Wilson1927" class="csl-entry" role="listitem">
-Wilson, Edwin B. 1927. <span>《Probable inference, the law of succession, and statistical inference》</span>. <em>Journal of the American Statistical Association</em> 22 (158): 209–12. <a href="https://doi.org/10.1080/01621459.1927.10502953">https://doi.org/10.1080/01621459.1927.10502953</a>.
+Wilson, Edwin B. 1927年. <span>《Probable inference, the law of succession, and statistical inference》</span>. <em>Journal of the American Statistical Association</em> 22 (158): 209～12. <a href="https://doi.org/10.1080/01621459.1927.10502953">https://doi.org/10.1080/01621459.1927.10502953</a>.
 </div>
 <div id="ref-Zeileis2007" class="csl-entry" role="listitem">
-Zeileis, Achim, David Meyer, 和 Kurt Hornik. 2007. <span>《Residual-based Shadings for Visualizing (Conditional) Independence》</span>. <em>Journal of Computational and Graphical Statistics</em> 16 (3): 507–25. <a href="https://doi.org/10.1198/106186007X237856">https://doi.org/10.1198/106186007X237856</a>.
+Zeileis, Achim, David Meyer, 和 Kurt Hornik. 2007年. <span>《Residual-based Shadings for Visualizing (Conditional) Independence》</span>. <em>Journal of Computational and Graphical Statistics</em> 16 (3): 507～25. <a href="https://doi.org/10.1198/106186007X237856">https://doi.org/10.1198/106186007X237856</a>.
 </div>
 <div id="ref-Song2011" class="csl-entry" role="listitem">
-宋泽熙. 2011. <span>《两个二项总体成功概率的比较》</span>. <em>中国校外教育（理论）</em> z1: 81. <a href="https://doi.org/10.3969/j.issn.1004-8502-B.2011.z1.0919">https://doi.org/10.3969/j.issn.1004-8502-B.2011.z1.0919</a>.
+宋泽熙. 2011年. <span>《两个二项总体成功概率的比较》</span>. <em>中国校外教育（理论）</em> z1: 81. <a href="https://doi.org/10.3969/j.issn.1004-8502-B.2011.z1.0919">https://doi.org/10.3969/j.issn.1004-8502-B.2011.z1.0919</a>.
 </div>
 </div>
 </section><section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes"><hr>

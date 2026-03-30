@@ -2,10 +2,13 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="zh-Hans" xml:lang="zh-Hans"><head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.8.24">
+<meta name="generator" content="quarto-1.9.36">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 <title>14&nbsp; 常见的统计检验 – R 语言数据分析实战</title>
 <style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
 div.columns{display: flex; gap: min(4vw, 1.5em);}
@@ -56,7 +59,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 div.csl-bib-body { }
 div.csl-entry {
   clear: both;
-  margin-bottom: 0em;
 }
 .hanging-indent div.csl-entry {
   margin-left:2em;
@@ -85,19 +87,18 @@ div.csl-indent {
 <link href="./sampling-distributions.html" rel="prev">
 <script src="site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
-<script src="site_libs/quarto-html/axe/axe-check.js" type="module"></script>
 <script src="site_libs/quarto-html/popper.min.js"></script>
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="site_libs/quarto-html/anchor.min.js"></script>
 <link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-dc55a5b9e770e841cd82e46aadbfb9b0.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-dark-b651517ce65839d647a86e2780455cfb.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-dc55a5b9e770e841cd82e46aadbfb9b0.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-dark-f418161beb48e0141c760e455f12af2c.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-22e83d4e5eff2a99ccc45532742ac980.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="site_libs/bootstrap/bootstrap-dark-234501a227967ac462f24af7be37efa8.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="site_libs/bootstrap/bootstrap-22e83d4e5eff2a99ccc45532742ac980.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light"><script id="quarto-search-options" type="application/json">{
+<link href="site_libs/bootstrap/bootstrap-b9eaee60a963b5d74e9d33cc267de6a6.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark-aa873432a3c62897e6c2091c0d30a948.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="site_libs/bootstrap/bootstrap-b9eaee60a963b5d74e9d33cc267de6a6.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light"><script id="quarto-search-options" type="application/json">{
   "location": "sidebar",
   "copy-button": false,
   "collapse-after": 3,
@@ -138,7 +139,7 @@ MathJax ={
   }
 };
 </script><script src="site_libs/quarto-diagram/mermaid.min.js"></script><script src="site_libs/quarto-diagram/mermaid-init.js"></script><link href="site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script><script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script><script type="text/javascript">
+<script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script><script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script><script type="text/javascript">
 const typesetMath = (el) => {
   if (window.MathJax) {
     // MathJax Typeset
@@ -343,9 +344,7 @@ window.Quarto = {
     </div>
   </nav></header><!-- content --><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
 <!-- sidebar -->
-  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto"><div class="pt-lg-2 mt-2 text-left sidebar-header sidebar-header-stacked">
-      <a href="./index.html" class="sidebar-logo-link">
-      </a>
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto"><div class="pt-lg-2 mt-2 text-left sidebar-header">
     <div class="sidebar-title mb-0 py-0">
       <a href="./">R 语言数据分析实战</a> 
         <div class="sidebar-tools-main tools-wide">
@@ -723,7 +722,7 @@ window.Quarto = {
 </div>
 <blockquote class="blockquote">
 <p>The Earth is Round (<span class="math inline">\(p &lt; 0.05\)</span>)</p>
-<p>— Jacob Cohen <span class="citation" data-cites="Cohen1994">(<a href="references.html#ref-Cohen1994" role="doc-biblioref">Cohen 1994</a>)</span></p>
+<p>— Jacob Cohen <span class="citation" data-cites="Cohen1994">(<a href="references.html#ref-Cohen1994" role="doc-biblioref">Cohen 1994年</a>)</span></p>
 </blockquote>
 <p>Jacob Cohen 实际谈的是更加深刻的问题。开篇介绍为什么需要假设检验，做检验和不做检验有什么区别？R. A. Fisher 将抽样分布、参数估计和假设检验列为统计推断的三个中心内容，可见假设检验的重要地位。经过近百余年的发展，假设检验具有丰富的内容，可以从不同的角度对检验方法进行归类。</p>
 <ul>
@@ -880,7 +879,7 @@ t = \frac{\bar{x} - \mu_0}{s/\sqrt{n}}
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p>英国统计学家 William Sealy Gosset (1876-1937) 于 1908 年在杂志 《Biometrics》 上以笔名 Student 发表论文《The Probable Error of a Mean》<span class="citation" data-cites="Gosset1908">(<a href="references.html#ref-Gosset1908" role="doc-biblioref">"Student" 1908</a>)</span>，论文中展示了独立同正态分布的样本 <span class="math inline">\(x_1, \ldots, x_n \stackrel{i.i.d}{\sim} \mathcal{N}(\mu,\sigma^2)\)</span> 的样本方差 <span class="math inline">\(s^2\)</span> 和样本标准差 <span class="math inline">\(s\)</span> 的抽样分布，根据均值和标准差不相关的性质导出 t 分布，宣告 t 分布的诞生，因其在小样本领域的突出贡献，W. S. Gosset 进入世纪名人录 <span class="citation" data-cites="Heyde2001">(<a href="references.html#ref-Heyde2001" role="doc-biblioref">Heyde 等 2001</a>)</span>。</p>
+<p>英国统计学家 William Sealy Gosset (1876-1937) 于 1908 年在杂志 《Biometrics》 上以笔名 Student 发表论文《The Probable Error of a Mean》<span class="citation" data-cites="Gosset1908">(<a href="references.html#ref-Gosset1908" role="doc-biblioref">"Student" 1908年</a>)</span>，论文中展示了独立同正态分布的样本 <span class="math inline">\(x_1, \ldots, x_n \stackrel{i.i.d}{\sim} \mathcal{N}(\mu,\sigma^2)\)</span> 的样本方差 <span class="math inline">\(s^2\)</span> 和样本标准差 <span class="math inline">\(s\)</span> 的抽样分布，根据均值和标准差不相关的性质导出 t 分布，宣告 t 分布的诞生，因其在小样本领域的突出贡献，W. S. Gosset 进入世纪名人录 <span class="citation" data-cites="Heyde2001">(<a href="references.html#ref-Heyde2001" role="doc-biblioref">Heyde 等 2001年</a>)</span>。</p>
 </div>
 </div>
 <div class="cell">
@@ -889,7 +888,7 @@ t = \frac{\bar{x} - \mu_0}{s/\sqrt{n}}
 表&nbsp;14.1: <span class="math inline">\(t\)</span> 分布的分位数表
 </figcaption><div aria-describedby="tbl-t-quantile-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="cell-output-display">
-<table class="do-not-create-environment cell caption-top table table-sm table-striped small">
+<table class="cell caption-top table table-sm table-striped small">
 <colgroup>
 <col style="width: 4%">
 <col style="width: 10%">
@@ -1077,7 +1076,7 @@ P(\chi^2(n) \leq \chi^2_p(n)) = p
 表&nbsp;14.2: <span class="math inline">\(\chi^2\)</span> 分布的分位数表
 </figcaption><div aria-describedby="tbl-chisq-quantile-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="cell-output-display">
-<table class="do-not-create-environment cell caption-top table table-sm table-striped small">
+<table class="cell caption-top table table-sm table-striped small">
 <colgroup>
 <col style="width: 3%">
 <col style="width: 8%">
@@ -1557,7 +1556,7 @@ l = \frac{s_0^4}{ \frac{s_x^4}{n_1^2(n_1 - 1)} + \frac{s_y^4}{n_2^2(n_2-1)} }
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p>Egon Pearson 接过他父亲 Karl Pearson 的职位，担任伦敦大学学院的高尔顿统计教授。许宝騄（Pao-Lu Hsu）在 Jerzy Neyman 和 Egon Pearson 主编的杂志《Statistical Research Memoirs》发表第一篇关于 Behrens-Fisher 问题的论文 <span class="citation" data-cites="Hsu1938">(<a href="references.html#ref-Hsu1938" role="doc-biblioref">HSU 1938</a>)</span>，1998 年关于 Behrens-Fisher 问题的综述 <span class="citation" data-cites="Kim1998">(<a href="references.html#ref-Kim1998" role="doc-biblioref">Kim 和 Cohen 1998</a>)</span>。陈家鼎和郑忠国一起整理了许宝騄的生平事迹和学术成就，见<a href="https://www.math.pku.edu.cn/misc/probstat/doc.pdf">《许宝騄先生的生平和学术成就》</a>。钟开涞（Kai-Lai Chung）将许宝騄的论文集整理出版 <span class="citation" data-cites="HSU1983">(<a href="references.html#ref-HSU1983" role="doc-biblioref">HSU 1983</a>)</span>。</p>
+<p>Egon Pearson 接过他父亲 Karl Pearson 的职位，担任伦敦大学学院的高尔顿统计教授。许宝騄（Pao-Lu Hsu）在 Jerzy Neyman 和 Egon Pearson 主编的杂志《Statistical Research Memoirs》发表第一篇关于 Behrens-Fisher 问题的论文 <span class="citation" data-cites="Hsu1938">(<a href="references.html#ref-Hsu1938" role="doc-biblioref">HSU 1938年</a>)</span>，1998 年关于 Behrens-Fisher 问题的综述 <span class="citation" data-cites="Kim1998">(<a href="references.html#ref-Kim1998" role="doc-biblioref">Kim 和 Cohen 1998年</a>)</span>。陈家鼎和郑忠国一起整理了许宝騄的生平事迹和学术成就，见<a href="https://www.math.pku.edu.cn/misc/probstat/doc.pdf">《许宝騄先生的生平和学术成就》</a>。钟开涞（Kai-Lai Chung）将许宝騄的论文集整理出版 <span class="citation" data-cites="HSU1983">(<a href="references.html#ref-HSU1983" role="doc-biblioref">HSU 1983年</a>)</span>。</p>
 </div>
 </div>
 <p>t 检验的影响是如此巨大，以至于广泛存在于具有统计功能的软件中，比如办公软件里的 t 检验。以 MacOS 上的 Numbers 表格软件为例，如 <a href="#fig-numbers-ttest" class="quarto-xref">图&nbsp;<span>14.5</span></a> 所示，首先打开 Numbers 软件，新建工作表，输入两组数值，然后点击空白处，再从顶部导航栏找到「插入」菜单，「公式」选项，点击扩展选项「新建公式」，在弹出的会话条里输入 TTEST，依次选择第一组，第二组值，检验类型和样本类型，最后点击确认，即可得到两样本 t 检验的 P 值结果。</p>
@@ -1657,7 +1656,7 @@ l = \frac{s_0^4}{ \frac{s_x^4}{n_1^2(n_1 - 1)} + \frac{s_y^4}{n_2^2(n_2-1)} }
 #&gt; Z = -1.8541, p-value = 0.06372
 #&gt; alternative hypothesis: true mu is not equal to 0
 #&gt; 95 percent confidence interval:
-#&gt;  -3.500000e+00  1.270214e-10
+#&gt;  -3.500000e+00  1.270205e-10
 #&gt; sample estimates:
 #&gt; difference in location 
 #&gt;              -1.347344</code></pre>
@@ -1725,7 +1724,7 @@ l = \frac{s_0^4}{ \frac{s_x^4}{n_1^2(n_1 - 1)} + \frac{s_y^4}{n_2^2(n_2-1)} }
 </div>
 </figure>
 </div>
-<p>以 A. R. Ansari 和 R. A. Bradley 命名的 Ansari-Bradley 检验 <span class="citation" data-cites="ansari1960">(<a href="references.html#ref-ansari1960" role="doc-biblioref">Ansari 和 Bradley 1960</a>)</span>，对应的 R 函数是 <code><a href="https://rdrr.io/r/stats/ansari.test.html">ansari.test()</a></code> ，以 A. M. Mood 命名的 Mood 检验 <span class="citation" data-cites="mood1954">(<a href="references.html#ref-mood1954" role="doc-biblioref">Mood 1954</a>)</span>，对应的 R 函数是 <code><a href="https://rdrr.io/r/stats/mood.test.html">mood.test()</a></code> ，这两者都属于两样本的非参数检验，检验尺度参数是否相同（齐性）。以 M. A. Fligner 和 T. J. Killeen 命名的 Fligner-Killeen 检验 <span class="citation" data-cites="fligner1976">(<a href="references.html#ref-fligner1976" role="doc-biblioref">Fligner 和 Killeen 1976</a>)</span>，对应的 R 函数是 <code><a href="https://rdrr.io/r/stats/fligner.test.html">fligner.test()</a></code> ，也属于非参数检验，适用于两样本和多样本的情况。非参数检验常涉及位置参数和尺度参数这一对概念，就正态分布而言，位置参数可以理解为均值 <span class="math inline">\(\mu\)</span> ，尺度参数可以理解为方差 <span class="math inline">\(\sigma^2\)</span> 。</p>
+<p>以 A. R. Ansari 和 R. A. Bradley 命名的 Ansari-Bradley 检验 <span class="citation" data-cites="ansari1960">(<a href="references.html#ref-ansari1960" role="doc-biblioref">Ansari 和 Bradley 1960年</a>)</span>，对应的 R 函数是 <code><a href="https://rdrr.io/r/stats/ansari.test.html">ansari.test()</a></code> ，以 A. M. Mood 命名的 Mood 检验 <span class="citation" data-cites="mood1954">(<a href="references.html#ref-mood1954" role="doc-biblioref">Mood 1954年</a>)</span>，对应的 R 函数是 <code><a href="https://rdrr.io/r/stats/mood.test.html">mood.test()</a></code> ，这两者都属于两样本的非参数检验，检验尺度参数是否相同（齐性）。以 M. A. Fligner 和 T. J. Killeen 命名的 Fligner-Killeen 检验 <span class="citation" data-cites="fligner1976">(<a href="references.html#ref-fligner1976" role="doc-biblioref">Fligner 和 Killeen 1976年</a>)</span>，对应的 R 函数是 <code><a href="https://rdrr.io/r/stats/fligner.test.html">fligner.test()</a></code> ，也属于非参数检验，适用于两样本和多样本的情况。非参数检验常涉及位置参数和尺度参数这一对概念，就正态分布而言，位置参数可以理解为均值 <span class="math inline">\(\mu\)</span> ，尺度参数可以理解为方差 <span class="math inline">\(\sigma^2\)</span> 。</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb66"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb66-1"><a href="#cb66-1"></a><span class="fu">ansari.test</span>(extra <span class="sc">~</span> group, <span class="at">data =</span> sleep)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stderr">
@@ -1783,7 +1782,7 @@ l = \frac{s_0^4}{ \frac{s_x^4}{n_1^2(n_1 - 1)} + \frac{s_y^4}{n_2^2(n_2-1)} }
 </div>
 </div>
 </div>
-<p>本节考虑 Base R 内置的 PlantGrowth 数据集，它收集自 Annette J. Dobson 所著书籍《An Introduction to Statistical Modelling》<span class="citation" data-cites="Dobson1983">(<a href="references.html#ref-Dobson1983" role="doc-biblioref">Dobson 1983</a>)</span> 第 2 章第 2 节的案例 — 研究植物在两种不同试验条件下的生长情况，植物通过光合作用吸收土壤的养分和空气中的二氧化碳，完成积累，故以植物的干重来刻画植物的生长情况，首先将几乎相同的种子随机地分配到实验组和对照组，基于完全随机实验设计（completely randomized experimental design），经过预定的时间后，将植物收割，干燥并称重。</p>
+<p>本节考虑 Base R 内置的 PlantGrowth 数据集，它收集自 Annette J. Dobson 所著书籍《An Introduction to Statistical Modelling》<span class="citation" data-cites="Dobson1983">(<a href="references.html#ref-Dobson1983" role="doc-biblioref">Dobson 1983年</a>)</span> 第 2 章第 2 节的案例 — 研究植物在两种不同试验条件下的生长情况，植物通过光合作用吸收土壤的养分和空气中的二氧化碳，完成积累，故以植物的干重来刻画植物的生长情况，首先将几乎相同的种子随机地分配到实验组和对照组，基于完全随机实验设计（completely randomized experimental design），经过预定的时间后，将植物收割，干燥并称重。</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb73"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb73-1"><a href="#cb73-1"></a><span class="fu">str</span>(PlantGrowth)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
@@ -1867,7 +1866,7 @@ y_{ij} = \mu + \epsilon_{ij}, i = 1,2,3
 表&nbsp;14.4: 线性回归的输出
 </figcaption><div aria-describedby="tbl-lm-plant-growth-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
 <div class="cell-output-display">
-<table class="do-not-create-environment cell caption-top table table-sm table-striped small">
+<table class="cell caption-top table table-sm table-striped small">
 <thead><tr class="header">
 <th style="text-align: left;"></th>
 <th style="text-align: right;">估计值</th>
@@ -2431,7 +2430,7 @@ y_{ij} = \mu + \epsilon_{ij}, i = 1,2,3
 <p>— Frank Harrell <a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a></p>
 </blockquote>
 <p>检验：拒绝原假设和接受原假设的风险，数据本身和理论的正态分布的距离，抛开 P 值</p>
-<p>Shapiro 和 Wilk 提出的 W 检验 <span class="citation" data-cites="shapiro1965">(<a href="references.html#ref-shapiro1965" role="doc-biblioref">Shapiro 和 Wilk 1965</a>)</span> ，对应的 R 函数为 <code><a href="https://rdrr.io/r/stats/shapiro.test.html">shapiro.test()</a></code></p>
+<p>Shapiro 和 Wilk 提出的 W 检验 <span class="citation" data-cites="shapiro1965">(<a href="references.html#ref-shapiro1965" role="doc-biblioref">Shapiro 和 Wilk 1965年</a>)</span> ，对应的 R 函数为 <code><a href="https://rdrr.io/r/stats/shapiro.test.html">shapiro.test()</a></code></p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb137"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb137-1"><a href="#cb137-1"></a><span class="fu">set.seed</span>(<span class="dv">20232023</span>)</span>
 <span id="cb137-2"><a href="#cb137-2"></a>x <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="dv">100</span>, <span class="at">mean =</span> <span class="dv">5</span>, <span class="at">sd =</span> <span class="dv">3</span>)</span>
@@ -2448,7 +2447,7 @@ y_{ij} = \mu + \epsilon_{ij}, i = 1,2,3
 <p>The issue really comes down to the fact that the questions: “exactly normal?”, and “normal enough?” are 2 very different questions (with the difference becoming greater with increased sample size) and while the first is the easier to answer, the second is generally the more useful one.</p>
 <p>— Greg Snow <a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a></p>
 </blockquote>
-<p>EP 检验对多种备择假设有较高的效率，利用样本的特征函数和正态分布的特征函数的差的模的平方产生的一个加权积分得到 EP 检验统计量 <span class="citation" data-cites="Epps1983">(<a href="references.html#ref-Epps1983" role="doc-biblioref">Epps 和 Pulley 1983</a>)</span></p>
+<p>EP 检验对多种备择假设有较高的效率，利用样本的特征函数和正态分布的特征函数的差的模的平方产生的一个加权积分得到 EP 检验统计量 <span class="citation" data-cites="Epps1983">(<a href="references.html#ref-Epps1983" role="doc-biblioref">Epps 和 Pulley 1983年</a>)</span></p>
 <div class="callout callout-style-default callout-tip callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -3296,7 +3295,7 @@ f(X) = \frac{1}{2^{\frac{mp}{2}}|\Sigma|^{\frac{m}{2}}\Gamma_{p}(\frac{m}{2})}|X
 </ul></section></section><section id="sec-common-statistical-tests-exercise" class="level2" data-number="14.9"><h2 data-number="14.9" class="anchored" data-anchor-id="sec-common-statistical-tests-exercise">
 <span class="header-section-number">14.9</span> 习题</h2>
 <ol type="1">
-<li><p>分析《红楼梦》的情景描写。参考 2009 年东南大学韦博成教授将两个独立二项总体的等价性检验应用于《红楼梦》前80回与后40回某些文风差异的统计分析 <span class="citation" data-cites="Wei2009">(<a href="references.html#ref-Wei2009" role="doc-biblioref">韦博成 2009</a>)</span>。</p></li>
+<li><p>分析《红楼梦》的情景描写。参考 2009 年东南大学韦博成教授将两个独立二项总体的等价性检验应用于《红楼梦》前80回与后40回某些文风差异的统计分析 <span class="citation" data-cites="Wei2009">(<a href="references.html#ref-Wei2009" role="doc-biblioref">韦博成 2009年</a>)</span>。</p></li>
 <li>
 <p>根据数据集 chickwts 分析不同喂食方式对小鸡体重的影响。（单因素方差分析）</p>
 <div class="cell">
@@ -3339,45 +3338,45 @@ f(X) = \frac{1}{2^{\frac{mp}{2}}|\Sigma|^{\frac{m}{2}}\Gamma_{p}(\frac{m}{2})}|X
 </ol>
 
 
-<div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list" style="display: none">
+<div id="refs" class="references csl-bib-body hanging-indent" role="list" style="display: none">
 <div id="ref-ansari1960" class="csl-entry" role="listitem">
-Ansari, A. R., 和 R. A. Bradley. 1960. <span>《Rank-Sum Tests for Dispersions》</span>. <em>The Annals of Mathematical Statistics</em> 31 (4): 1174–89. <a href="https://doi.org/10.1214/aoms/1177705688">https://doi.org/10.1214/aoms/1177705688</a>.
+Ansari, A. R., 和 R. A. Bradley. 1960年. <span>《Rank-Sum Tests for Dispersions》</span>. <em>The Annals of Mathematical Statistics</em> 31 (4): 1174～89. <a href="https://doi.org/10.1214/aoms/1177705688">https://doi.org/10.1214/aoms/1177705688</a>.
 </div>
 <div id="ref-Cohen1994" class="csl-entry" role="listitem">
-Cohen, Jacob. 1994. <span>《The Earth Is Round (<span class="math inline">\(p &lt; .05\)</span>)》</span>. <em>American Psychologist</em> 49 (12): 997–1003. <a href="https://doi.org/10.1037/0003-066x.49.12.997">https://doi.org/10.1037/0003-066x.49.12.997</a>.
+Cohen, Jacob. 1994年. <span>《The Earth Is Round (<span class="math inline">\(p &lt; .05\)</span>)》</span>. <em>American Psychologist</em> 49 (12): 997～1003. <a href="https://doi.org/10.1037/0003-066x.49.12.997">https://doi.org/10.1037/0003-066x.49.12.997</a>.
 </div>
 <div id="ref-Dobson1983" class="csl-entry" role="listitem">
-Dobson, Annette J. 1983. <em>An Introduction to Statistical Modelling</em>. 1st 本. London: Chapman; Hall/CRC. <a href="https://doi.org/10.1007/978-1-4899-3174-0">https://doi.org/10.1007/978-1-4899-3174-0</a>.
+Dobson, Annette J. 1983年. <em>An Introduction to Statistical Modelling</em>. 1st 版. Chapman; Hall/CRC. <a href="https://doi.org/10.1007/978-1-4899-3174-0">https://doi.org/10.1007/978-1-4899-3174-0</a>.
 </div>
 <div id="ref-Epps1983" class="csl-entry" role="listitem">
-Epps, T. W., 和 Lawrence B. Pulley. 1983. <span>《A Test for Normality Based on the Empirical Characteristic Function》</span>. <em>Biometrika</em> 70 (3): 723–26. <a href="https://doi.org/10.2307/2336512">https://doi.org/10.2307/2336512</a>.
+Epps, T. W., 和 Lawrence B. Pulley. 1983年. <span>《A Test for Normality Based on the Empirical Characteristic Function》</span>. <em>Biometrika</em> 70 (3): 723～26. <a href="https://doi.org/10.2307/2336512">https://doi.org/10.2307/2336512</a>.
 </div>
 <div id="ref-fligner1976" class="csl-entry" role="listitem">
-Fligner, Michael A., 和 Timothy J. Killeen. 1976. <span>《Distribution-Free Two-Sample Tests for Scale》</span>. <em>Journal of the American Statistical Association</em> 71 (353): 210–13. <a href="https://doi.org/10.1080/01621459.1976.10481517">https://doi.org/10.1080/01621459.1976.10481517</a>.
+Fligner, Michael A., 和 Timothy J. Killeen. 1976年. <span>《Distribution-Free Two-Sample Tests for Scale》</span>. <em>Journal of the American Statistical Association</em> 71 (353): 210～13. <a href="https://doi.org/10.1080/01621459.1976.10481517">https://doi.org/10.1080/01621459.1976.10481517</a>.
 </div>
 <div id="ref-Heyde2001" class="csl-entry" role="listitem">
-Heyde, C. C., E. Seneta, P. Crépel, S. E. Fienberg, 和 J. Gani. 2001. <em>Statisticians of the Centuries</em>. New York, NY: Springer-Verlag. <a href="https://doi.org/10.1007/978-1-4613-0179-0">https://doi.org/10.1007/978-1-4613-0179-0</a>.
+Heyde, C. C., E. Seneta, P. Crépel, S. E. Fienberg, 和 J. Gani. 2001年. <em>Statisticians of the Centuries</em>. Springer-Verlag. <a href="https://doi.org/10.1007/978-1-4613-0179-0">https://doi.org/10.1007/978-1-4613-0179-0</a>.
 </div>
 <div id="ref-Hsu1938" class="csl-entry" role="listitem">
-HSU, P. L. 1938. <span>《Contribution to the theory of "Student’s" <span class="math inline">\(T\)</span>-test as applied to the problem of two samples》</span>. <em>Statistical Research Memoirs</em> 2: 1–24.
+HSU, P. L. 1938年. <span>《Contribution to the theory of "Student’s" <span class="math inline">\(T\)</span>-test as applied to the problem of two samples》</span>. <em>Statistical Research Memoirs</em> 2: 1～24.
 </div>
 <div id="ref-HSU1983" class="csl-entry" role="listitem">
-———. 1983. <em>Collected Papers</em>. New York, NY: Springer-Verlag.
+HSU, P. L. 1983年. <em>Collected Papers</em>. Springer-Verlag.
 </div>
 <div id="ref-Kim1998" class="csl-entry" role="listitem">
-Kim, Seock-Ho, 和 Allan S. Cohen. 1998. <span>《On the Behrens-Fisher Problem: A Review》</span>. <em>Journal of Educational and Behavioral Statistics</em> 23 (4): 356–77. <a href="https://doi.org/10.2307/1165281">https://doi.org/10.2307/1165281</a>.
+Kim, Seock-Ho, 和 Allan S. Cohen. 1998年. <span>《On the Behrens-Fisher Problem: A Review》</span>. <em>Journal of Educational and Behavioral Statistics</em> 23 (4): 356～77. <a href="https://doi.org/10.2307/1165281">https://doi.org/10.2307/1165281</a>.
 </div>
 <div id="ref-mood1954" class="csl-entry" role="listitem">
-Mood, A. M. 1954. <span>《On the Asymptotic Efficiency of Certain Nonparametric Two-Sample Tests》</span>. <em>The Annals of Mathematical Statistics</em> 25 (3): 514–22. <a href="https://doi.org/10.1214/aoms/1177728719">https://doi.org/10.1214/aoms/1177728719</a>.
+Mood, A. M. 1954年. <span>《On the Asymptotic Efficiency of Certain Nonparametric Two-Sample Tests》</span>. <em>The Annals of Mathematical Statistics</em> 25 (3): 514～22. <a href="https://doi.org/10.1214/aoms/1177728719">https://doi.org/10.1214/aoms/1177728719</a>.
 </div>
 <div id="ref-shapiro1965" class="csl-entry" role="listitem">
-Shapiro, S. S., 和 M. B. Wilk. 1965. <span>《An analysis of variance test for normality (complete samples)》</span>. <em>Biometrika</em> 52 (3-4): 591–611. <a href="https://doi.org/10.1093/biomet/52.3-4.591">https://doi.org/10.1093/biomet/52.3-4.591</a>.
+Shapiro, S. S., 和 M. B. Wilk. 1965年. <span>《An analysis of variance test for normality (complete samples)》</span>. <em>Biometrika</em> 52 (3-4): 591～611. <a href="https://doi.org/10.1093/biomet/52.3-4.591">https://doi.org/10.1093/biomet/52.3-4.591</a>.
 </div>
 <div id="ref-Gosset1908" class="csl-entry" role="listitem">
-"Student". 1908. <span>《The probable error of a mean》</span>. <em>Biometrika</em> 6: 1–25.
+"Student". 1908年. <span>《The probable error of a mean》</span>. <em>Biometrika</em> 6: 1～25.
 </div>
 <div id="ref-Wei2009" class="csl-entry" role="listitem">
-韦博成. 2009. <span>《《红楼梦》前80回与后40回某些文风差异的统计分析（两个独立二项总体等价性检验的一个应用）》</span>. <em>应用概率统计</em> 25 (4): 441–48. <a href="https://doi.org/10.3969/j.issn.1001-4268.2009.04.012">https://doi.org/10.3969/j.issn.1001-4268.2009.04.012</a>.
+韦博成. 2009年. <span>《《红楼梦》前80回与后40回某些文风差异的统计分析（两个独立二项总体等价性检验的一个应用）》</span>. <em>应用概率统计</em> 25 (4): 441～48. <a href="https://doi.org/10.3969/j.issn.1001-4268.2009.04.012">https://doi.org/10.3969/j.issn.1001-4268.2009.04.012</a>.
 </div>
 </div>
 </section><section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes"><hr>
